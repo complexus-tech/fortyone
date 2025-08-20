@@ -134,7 +134,7 @@ export const useBulkDeleteStoryMutation = () => {
       });
     },
 
-    onSuccess: (res, { storyIds }) => {
+    onSuccess: (res, { storyIds, hardDelete }) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
@@ -145,12 +145,14 @@ export const useBulkDeleteStoryMutation = () => {
         description: `${storyIds.length} stor${
           storyIds.length === 1 ? "y" : "ies"
         } deleted`,
-        cancel: {
-          label: "Undo",
-          onClick: () => {
-            mutateAsync(storyIds);
-          },
-        },
+        cancel: hardDelete
+          ? undefined
+          : {
+              label: "Undo",
+              onClick: () => {
+                mutateAsync(storyIds);
+              },
+            },
       });
     },
   });
