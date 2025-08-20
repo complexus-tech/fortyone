@@ -1504,12 +1504,6 @@ func (r *repo) shouldUseSQLGrouping(query stories.CoreStoryQuery) bool {
 	}
 }
 
-// shouldUseSimpleOrdering determines if we can use a simpler ordering approach
-func (r *repo) shouldUseSimpleOrdering(orderBy string) bool {
-	// Simple orderings that can use indexes efficiently
-	return orderBy == "created" || orderBy == "updated"
-}
-
 // listGroupedStoriesSQL performs grouping directly in SQL for optimal performance
 func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.listGroupedStoriesSQL")
@@ -1843,7 +1837,6 @@ func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreSto
 func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.deleted_at IS NULL",
 		"s.parent_id IS NULL",
 	}
 
@@ -1853,6 +1846,13 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
 	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
+	}
+
+	// Exclude deleted unless explicitly included
+	if filters.IncludeDeleted != nil && *filters.IncludeDeleted {
+		whereClauses = append(whereClauses, "s.deleted_at IS NOT NULL")
+	} else {
+		whereClauses = append(whereClauses, "s.deleted_at IS NULL")
 	}
 
 	// Handle parent filtering
@@ -2411,7 +2411,6 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	// Build WHERE clauses
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.deleted_at IS NULL",
 		"s.parent_id IS NULL",
 	}
 
@@ -2420,6 +2419,13 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
 	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
+	}
+
+	// Exclude deleted unless explicitly included
+	if filters.IncludeDeleted != nil && *filters.IncludeDeleted {
+		whereClauses = append(whereClauses, "s.deleted_at IS NOT NULL")
+	} else {
+		whereClauses = append(whereClauses, "s.deleted_at IS NULL")
 	}
 
 	// Add filter conditions
@@ -2927,7 +2933,6 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	// Build WHERE clauses (same as buildStoriesQuery)
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.deleted_at IS NULL",
 		"s.parent_id IS NULL",
 	}
 
@@ -2936,6 +2941,13 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "s.archived_at IS NOT NULL")
 	} else {
 		whereClauses = append(whereClauses, "s.archived_at IS NULL")
+	}
+
+	// Exclude deleted unless explicitly included
+	if filters.IncludeDeleted != nil && *filters.IncludeDeleted {
+		whereClauses = append(whereClauses, "s.deleted_at IS NOT NULL")
+	} else {
+		whereClauses = append(whereClauses, "s.deleted_at IS NULL")
 	}
 
 	// Add filter conditions

@@ -297,6 +297,7 @@ type StoryFilters struct {
 	CompletedAfter  *time.Time `json:"completedAfter"`
 	CompletedBefore *time.Time `json:"completedBefore"`
 	IncludeArchived *bool      `json:"includeArchived"`
+	IncludeDeleted  *bool      `json:"includeDeleted"`
 }
 
 // StoryQuery represents query parameters for grouped stories at the handler level

@@ -190,6 +190,7 @@ type CoreStoryFilters struct {
 	IsCompleted     *bool      `json:"isCompleted"`
 	IsNotCompleted  *bool      `json:"isNotCompleted"`
 	IncludeArchived *bool      `json:"includeArchived"`
+	IncludeDeleted  *bool      `json:"includeDeleted"`
 }
 
 // CoreStoryQuery represents query parameters for grouped stories

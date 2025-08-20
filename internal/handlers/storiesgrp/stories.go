@@ -1084,6 +1084,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 	query.Filters.IncludeArchived = parseBoolParam(r, "includeArchived")
+	query.Filters.IncludeDeleted = parseBoolParam(r, "includeDeleted")
 
 	query.Filters.CreatedAfter = parseDateParam(r, "createdAfter")
 	query.Filters.CreatedBefore = parseDateParam(r, "createdBefore")
@@ -1231,6 +1232,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			AssignedToMe:    query.Filters.AssignedToMe,
 			CreatedByMe:     query.Filters.CreatedByMe,
 			IncludeArchived: query.Filters.IncludeArchived,
+			IncludeDeleted:  query.Filters.IncludeDeleted,
 			CreatedAfter:    query.Filters.CreatedAfter,
 			CreatedBefore:   query.Filters.CreatedBefore,
 			UpdatedAfter:    query.Filters.UpdatedAfter,
@@ -1299,6 +1301,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.IncludeArchived != nil {
 		result["include_archived"] = *filters.IncludeArchived
+	}
+	if filters.IncludeDeleted != nil {
+		result["include_deleted"] = *filters.IncludeDeleted
 	}
 	if filters.CreatedAfter != nil {
 		result["created_after"] = *filters.CreatedAfter
