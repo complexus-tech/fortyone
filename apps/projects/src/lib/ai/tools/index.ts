@@ -27,10 +27,6 @@ import {
   assignStoriesToUser,
   duplicateStory,
   restoreStory,
-  listDueSoon,
-  listOverdue,
-  listDueToday,
-  listDueTomorrow,
 } from "@/lib/ai/tools/stories";
 import {
   listSprints,
@@ -107,10 +103,6 @@ export const tools = {
   assignStoriesToUser,
   duplicateStory,
   restoreStory,
-  listDueSoon,
-  listOverdue,
-  listDueToday,
-  listDueTomorrow,
   statuses: statusesTool,
   // Sprints
   listSprints,
