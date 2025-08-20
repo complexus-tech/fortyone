@@ -75,6 +75,7 @@ export async function getUserContext({
 
     **Timezone:**
     - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+    - When displaying dates and times, use the user's timezone, the data returned from the server is in UTC
 
     **Time**
     - Do not display seconds in the time
