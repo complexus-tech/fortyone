@@ -101,6 +101,11 @@ export const listTeamStories = tool({
       })
       .optional()
       .describe("Optional filters for story queries"),
+    includeArchived: z
+      .boolean()
+      .optional()
+      .describe("Include archived stories"),
+    includeDeleted: z.boolean().optional().describe("Include deleted stories"),
   }),
 
   execute: async ({ teamId, filters }) => {

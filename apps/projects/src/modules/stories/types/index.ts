@@ -27,6 +27,8 @@ export type Story = {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+  deletedAt: string | null;
+  archivedAt: string | null;
   labels: string[] | null;
   subStories: Story[];
 };
