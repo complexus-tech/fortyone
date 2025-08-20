@@ -9,7 +9,7 @@ import {
   SprintsIcon,
 } from "icons";
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { formatISO } from "date-fns";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useTerminology } from "@/hooks";
@@ -26,6 +26,7 @@ import { PrioritiesMenu } from "./story/priorities-menu";
 import { AssigneesMenu } from "./story/assignees-menu";
 
 export const StoriesToolbar = () => {
+  const pathname = usePathname();
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
@@ -35,12 +36,16 @@ export const StoriesToolbar = () => {
   if (teams.length === 1) {
     finalTeamId = teams[0].id;
   }
+  const isOnDeletedStoriesPage = pathname.includes("/deleted");
 
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
   const { mutate: bulkUpdateMutate } = useBulkUpdateStoriesMutation();
 
   const handleBulkDelete = () => {
-    bulkDeleteMutate({ storyIds: selectedStories });
+    bulkDeleteMutate({
+      storyIds: selectedStories,
+      hardDelete: isOnDeletedStoriesPage,
+    });
     setSelectedStories([]);
     setIsOpen(false);
   };
@@ -207,7 +212,7 @@ export const StoriesToolbar = () => {
             setIsOpen(true);
           }}
         >
-          Delete
+          {isOnDeletedStoriesPage ? "Delete forever" : "Delete"}
         </Button>
       </Flex>
 
@@ -216,14 +221,15 @@ export const StoriesToolbar = () => {
         <Dialog.Content>
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
             <Dialog.Title className="flex items-center gap-1 text-lg">
-              Delete {selectedStories.length} stories?
+              Delete {selectedStories.length} stories
+              {isOnDeletedStoriesPage ? " forever?" : "?"}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
-              These stories will be moved to the recycle bin and will be
-              permanently deleted after 30 days. You can restore them at any
-              time before that.
+              {isOnDeletedStoriesPage
+                ? "This is an irreversible action. The stories will be permanently deleted. You can't restore them."
+                : "These stories will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore them at any time before that."}
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
