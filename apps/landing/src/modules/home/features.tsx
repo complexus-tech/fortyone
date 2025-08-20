@@ -3,10 +3,11 @@ import { Box, Text } from "ui";
 import { motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import type { StaticImageData } from "next/image";
+import Image from "next/image";
 import { Container } from "@/components/ui";
-import analyticsImg from "../../../public/features/analytics.png";
-import workflowImg from "../../../public/features/workflow.png";
-import okrImg from "../../../public/features/okr.png";
+import goalsImg from "../../../public/features/test.png";
+import planImg from "../../../public/features/test.png";
+import teamImg from "../../../public/features/test1.png";
 
 const Intro = () => (
   <Box className="relative">
@@ -49,10 +50,10 @@ const Intro = () => (
 
 const Card = ({
   description,
-  image: { alt, src },
+  image: { alt, src, srcDark },
 }: {
   description: ReactNode;
-  image: { src: StaticImageData; alt: string };
+  image: { src: StaticImageData; srcDark: StaticImageData; alt: string };
 }) => {
   const [isActive, setIsActive] = useState(false);
   return (
@@ -74,15 +75,28 @@ const Card = ({
           initial={{ y: 0, x: 0 }}
           transition={{ type: "spring", stiffness: 100 }}
         >
-          <Box
-            className="aspect-square overflow-hidden rounded-2xl bg-gray-100 dark:bg-dark-200"
+          <Image
+            alt={alt}
+            className="aspect-square overflow-hidden rounded-3xl border border-gray-50 bg-gray-100 object-cover dark:hidden"
             onMouseEnter={() => {
               setIsActive(true);
             }}
             onMouseLeave={() => {
               setIsActive(false);
             }}
+            src={src}
           />
+          {/* <Image
+            alt={alt}
+            className="hidden aspect-square overflow-hidden rounded-3xl border border-gray-50 bg-gray-100 object-cover dark:block"
+            onMouseEnter={() => {
+              setIsActive(true);
+            }}
+            onMouseLeave={() => {
+              setIsActive(false);
+            }}
+            src={srcDark}
+          /> */}
         </motion.div>
 
         <Box className="mt-6">{description}</Box>
@@ -105,7 +119,8 @@ export const Features = () => {
         </Text>
       ),
       image: {
-        src: workflowImg,
+        src: goalsImg,
+        srcDark: goalsImg,
         alt: "Kanban Board View",
       },
     },
@@ -121,7 +136,8 @@ export const Features = () => {
         </Text>
       ),
       image: {
-        src: analyticsImg,
+        src: planImg,
+        srcDark: planImg,
         alt: "Analytics & Insights",
       },
     },
@@ -137,7 +153,8 @@ export const Features = () => {
         </Text>
       ),
       image: {
-        src: okrImg,
+        src: teamImg,
+        srcDark: teamImg,
         alt: "OKR Tracking",
       },
     },

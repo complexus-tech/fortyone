@@ -10,21 +10,50 @@ export const listKeyResultsTool = tool({
   inputSchema: z.object({
     filters: z
       .object({
-        objectiveIds: z.array(z.string()).optional(),
-        teamIds: z.array(z.string()).optional(),
+        objectiveIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter key results by objective IDs"),
+        teamIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter key results by team IDs"),
         measurementTypes: z
           .array(z.enum(["percentage", "number", "boolean"]))
-          .optional(),
-        createdAfter: z.string().optional(),
-        createdBefore: z.string().optional(),
-        updatedAfter: z.string().optional(),
+          .optional()
+          .describe("Filter key results by measurement type"),
+        createdAfter: z
+          .string()
+          .optional()
+          .describe("Filter key results created after this date (ISO date)"),
+        createdBefore: z
+          .string()
+          .optional()
+          .describe("Filter key results created before this date (ISO date)"),
+        updatedAfter: z
+          .string()
+          .optional()
+          .describe("Filter key results updated after this date (ISO date)"),
         updatedBefore: z.string().optional(),
-        page: z.number().min(1).optional(),
-        pageSize: z.number().min(1).max(100).optional(),
+        page: z
+          .number()
+          .min(1)
+          .optional()
+          .describe("Page number for pagination"),
+        pageSize: z
+          .number()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("Number of key results per page"),
         orderBy: z
           .enum(["name", "created_at", "updated_at", "objective_name"])
-          .optional(),
-        orderDirection: z.enum(["asc", "desc"]).optional(),
+          .optional()
+          .describe("Field to order by"),
+        orderDirection: z
+          .enum(["asc", "desc"])
+          .optional()
+          .describe("Direction to order by"),
       })
       .optional()
       .describe("Filter options for listing key results"),
