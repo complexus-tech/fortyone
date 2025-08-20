@@ -2,6 +2,7 @@
 
 import { Box, Input, Button } from "ui";
 import { CloseIcon } from "icons";
+import { cn } from "lib";
 
 type MemberRowProps = {
   email: string;
@@ -20,7 +21,9 @@ export const MemberRow = ({
     <Box className="flex items-start">
       <Box className="flex-1">
         <Input
-          className="h-[2.7rem] rounded-r-none focus:ring-0"
+          className={cn("h-[2.6rem] focus:ring-0", {
+            "rounded-r-none": isRemovable,
+          })}
           onChange={(e) => {
             onEmailChange(e.target.value);
           }}
@@ -32,7 +35,7 @@ export const MemberRow = ({
       {isRemovable ? (
         <Button
           asIcon
-          className="h-[2.7rem] rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.7rem]"
+          className="h-[2.6rem] rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.7rem]"
           color="tertiary"
           onClick={onRemove}
         >

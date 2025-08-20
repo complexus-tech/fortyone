@@ -68,12 +68,12 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           onClick={addMember}
           type="button"
         >
-          <PlusIcon className="h-[1.1rem]" />
+          <PlusIcon className="h-[1.1rem] text-dark" />
           Add another colleague
         </button>
       ) : (
         <Text className="mt-3 flex items-center gap-1" color="muted">
-          <InfoIcon className="h-[1.1rem] " />
+          <InfoIcon className="h-[1.1rem]" />
           You can invite more colleagues later
         </Text>
       )}
