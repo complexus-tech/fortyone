@@ -14,18 +14,6 @@ import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
 
-// const unassignedMember: unknown = {
-//   id: "unassigned",
-//   username: "Unassigned",
-//   email: "unassigned@example.com",
-//   fullName: "",
-//   avatarUrl: "",
-//   isActive: true,
-//   role: "member",
-//   createdAt: new Date().toISOString(),
-//   updatedAt: new Date().toISOString(),
-// };
-
 const GroupedStories = ({
   meta,
   group,

@@ -32,6 +32,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     includeArchived: meta.filters.includeArchived ?? undefined,
     completedAfter: meta.filters.completedAfter ?? undefined,
     completedBefore: meta.filters.completedBefore ?? undefined,
+    includeDeleted: meta.filters.includeDeleted ?? undefined,
   };
   return finalFilters;
 };
