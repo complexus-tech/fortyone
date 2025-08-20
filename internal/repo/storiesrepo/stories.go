@@ -2209,9 +2209,9 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	}
 
 	// Handle sub-stories
-	if subStoriesData, ok := storyMap["sub_stories"].([]interface{}); ok {
+	if subStoriesData, ok := storyMap["sub_stories"].([]any); ok {
 		for _, subStoryData := range subStoriesData {
-			if subStoryMap, ok := subStoryData.(map[string]interface{}); ok {
+			if subStoryMap, ok := subStoryData.(map[string]any); ok {
 				subStory := r.mapToStoryList(subStoryMap)
 				story.SubStories = append(story.SubStories, subStory)
 			}
@@ -2219,7 +2219,7 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	}
 
 	// Handle labels
-	if labelsData, ok := storyMap["labels"].([]interface{}); ok {
+	if labelsData, ok := storyMap["labels"].([]any); ok {
 		for _, labelData := range labelsData {
 			if labelID, ok := labelData.(string); ok {
 				if parsed, err := uuid.Parse(labelID); err == nil {
