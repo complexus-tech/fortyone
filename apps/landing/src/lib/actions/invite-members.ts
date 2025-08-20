@@ -9,11 +9,12 @@ const apiURL = process.env.NEXT_PUBLIC_API_URL;
 export async function inviteMembers(
   emails: string[],
   teamIds: string[],
-  workspaceId: string,
+  workspaceSlug: string,
 ) {
   try {
     const session = await auth();
-    await ky.post(`${apiURL}/workspaces/${workspaceId}/invitations`, {
+
+    await ky.post(`${apiURL}/workspaces/${workspaceSlug}/invitations`, {
       json: {
         invitations: emails.map((email) => ({
           email,

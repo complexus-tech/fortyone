@@ -44,7 +44,7 @@ export const InviteTeam = ({
     const res = await inviteMembers(
       validEmails,
       teams.map((t) => t.id),
-      activeWorkspace.id,
+      activeWorkspace.slug,
     );
     if (res?.error?.message) {
       setIsLoading(false);

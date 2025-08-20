@@ -2,18 +2,20 @@
 
 import type { ComponentProps } from "react";
 import { Toaster as Sonner } from "sonner";
+import { useTheme } from "next-themes";
 import { toasterIcons } from "@/app/toaster-icons";
 
 type ToasterProps = ComponentProps<typeof Sonner>;
 
 export const Toaster = (_: ToasterProps) => {
+  const { theme } = useTheme();
   return (
     <Sonner
       closeButton
       duration={10000}
       icons={toasterIcons}
       position="bottom-right"
-      theme="dark"
+      theme={theme as "light" | "dark" | "system"}
       toastOptions={{
         className:
           "w-full rounded-[0.6rem] p-4 flex items-center gap-3 shadow-lg",
