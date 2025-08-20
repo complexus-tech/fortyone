@@ -8,6 +8,7 @@ import {
   DeleteIcon,
   ObjectiveIcon,
   SprintsIcon,
+  UndoIcon,
 } from "icons";
 import { useState } from "react";
 import { useParams, usePathname } from "next/navigation";
@@ -15,6 +16,7 @@ import { formatISO } from "date-fns";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
+import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useTerminology } from "@/hooks";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useBulkUpdateStoriesMutation } from "@/modules/stories/hooks/update-mutation";
@@ -35,6 +37,7 @@ export const StoriesToolbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
   const { data: teams = [] } = useTeams();
   let finalTeamId = teamId;
@@ -47,6 +50,7 @@ export const StoriesToolbar = () => {
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
   const { mutate: bulkArchiveMutate } = useBulkArchiveStoryMutation();
   const { mutate: bulkUnarchiveMutate } = useBulkUnarchiveStoryMutation();
+  const { mutate: bulkRestoreMutate } = useBulkRestoreStoryMutation();
   const { mutate: bulkUpdateMutate } = useBulkUpdateStoriesMutation();
 
   const handleBulkDelete = () => {
@@ -75,6 +79,12 @@ export const StoriesToolbar = () => {
     bulkUnarchiveMutate(selectedStories);
     setSelectedStories([]);
     setIsUnarchiveDialogOpen(false);
+  };
+
+  const handleBulkRestore = () => {
+    bulkRestoreMutate(selectedStories);
+    setSelectedStories([]);
+    setIsRestoreDialogOpen(false);
   };
 
   return (
@@ -254,6 +264,19 @@ export const StoriesToolbar = () => {
           </Button>
         ) : null}
 
+        {isOnDeletedStoriesPage ? (
+          <Button
+            color="tertiary"
+            leftIcon={<UndoIcon className="h-[1.15rem]" />}
+            onClick={() => {
+              setIsRestoreDialogOpen(true);
+            }}
+            variant="naked"
+          >
+            Restore
+          </Button>
+        ) : null}
+
         <Button
           leftIcon={
             <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
@@ -335,6 +358,39 @@ export const StoriesToolbar = () => {
                 onClick={handleBulkUnarchive}
               >
                 Unarchive
+              </Button>
+            </Flex>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Restore stories dialog */}
+      <Dialog onOpenChange={setIsRestoreDialogOpen} open={isRestoreDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header className="px-6 pt-6">
+            <Dialog.Title className="text-lg">
+              Restore {selectedStories.length} stories?
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="pt-0">
+            <Text color="muted">
+              These stories will be restored to your active story list and can
+              be assigned to sprints and team members again.
+            </Text>
+            <Flex align="center" className="mt-4" gap={2} justify="end">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsRestoreDialogOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                leftIcon={<UndoIcon className="text-white dark:text-white" />}
+                onClick={handleBulkRestore}
+              >
+                Restore
               </Button>
             </Flex>
           </Dialog.Body>
