@@ -2190,6 +2190,18 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		}
 	}
 
+	if archivedAt, ok := storyMap["archived_at"].(string); ok && archivedAt != "" {
+		if parsed, err := time.Parse(time.RFC3339, archivedAt); err == nil {
+			story.ArchivedAt = &parsed
+		}
+	}
+
+	if deletedAt, ok := storyMap["deleted_at"].(string); ok && deletedAt != "" {
+		if parsed, err := time.Parse(time.RFC3339, deletedAt); err == nil {
+			story.DeletedAt = &parsed
+		}
+	}
+
 	if endDate, ok := storyMap["end_date"].(string); ok && endDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, endDate); err == nil {
 			story.EndDate = &parsed

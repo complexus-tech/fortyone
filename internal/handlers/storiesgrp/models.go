@@ -209,6 +209,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 
 func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 	appStories := make([]AppStoryList, len(stories))
+
 	for i, story := range stories {
 		appStories[i] = AppStoryList{
 			ID:          story.ID,
