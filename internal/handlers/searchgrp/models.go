@@ -26,6 +26,7 @@ type AppSearchStory struct {
 	CreatedAt  time.Time   `json:"createdAt"`
 	UpdatedAt  time.Time   `json:"updatedAt"`
 	Labels     []uuid.UUID `json:"labels"`
+	SubStories []uuid.UUID `json:"subStories"`
 }
 
 // AppSearchObjective represents an objective in search results for the API.
@@ -81,6 +82,7 @@ func toAppSearchStories(stories []search.CoreSearchStory) []AppSearchStory {
 
 // toAppSearchStory converts a core story to an app story.
 func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
+	var subStories []uuid.UUID
 	return AppSearchStory{
 		ID:         story.ID,
 		SequenceID: story.SequenceID,
@@ -99,6 +101,7 @@ func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 		CreatedAt:  story.CreatedAt,
 		UpdatedAt:  story.UpdatedAt,
 		Labels:     story.Labels,
+		SubStories: subStories,
 	}
 }
 
