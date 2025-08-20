@@ -40,7 +40,7 @@
     "@types/qs": "^6.9.15",
     "@uiw/react-heat-map": "^2.2.2",
     "ai": "^5.0.15",
-    "babel-plugin-react-compiler": "19.0.0-beta-21e868a-20250216",
+    "babel-plugin-react-compiler": "19.1.0-rc.2",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.0.28",

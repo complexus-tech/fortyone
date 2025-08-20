@@ -33,7 +33,7 @@ export const bulkDeleteStories = tool({
         };
       }
 
-      const result = await bulkDeleteAction(storyIds);
+      const result = await bulkDeleteAction({ storyIds });
 
       if (result.error?.message) {
         return {
