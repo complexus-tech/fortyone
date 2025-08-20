@@ -111,6 +111,7 @@ export const Header = () => {
           color="tertiary"
           href="/search"
           leftIcon={<SearchIcon className="h-4" />}
+          prefetch
           variant="outline"
         >
           <span className="sr-only">Search</span>
