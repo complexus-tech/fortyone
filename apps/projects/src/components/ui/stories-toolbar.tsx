@@ -42,7 +42,7 @@ export const StoriesToolbar = () => {
     finalTeamId = teams[0].id;
   }
   const isOnDeletedStoriesPage = pathname.includes("/deleted");
-  const isOnArchivePage = pathname.includes("/archive");
+  const isOnArchivePage = pathname.includes("/archived");
 
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
   const { mutate: bulkArchiveMutate } = useBulkArchiveStoryMutation();
@@ -52,7 +52,7 @@ export const StoriesToolbar = () => {
   const handleBulkDelete = () => {
     bulkDeleteMutate({
       storyIds: selectedStories,
-      hardDelete: isOnDeletedStoriesPage,
+      hardDelete: isOnDeletedStoriesPage || isOnArchivePage,
     });
     setSelectedStories([]);
     setIsOpen(false);
@@ -103,7 +103,7 @@ export const StoriesToolbar = () => {
           </Tooltip>
           {selectedStories.length} selected
         </Text>
-        {finalTeamId && !isOnDeletedStoriesPage ? (
+        {finalTeamId && !isOnDeletedStoriesPage && !isOnArchivePage ? (
           <>
             <SprintsMenu>
               <SprintsMenu.Trigger>
@@ -164,48 +164,52 @@ export const StoriesToolbar = () => {
           </>
         ) : null}
 
-        <PrioritiesMenu>
-          <PrioritiesMenu.Trigger>
-            <Button
-              color="tertiary"
-              leftIcon={
-                <PriorityIcon
-                  className="h-[1.15rem] text-success dark:text-success"
-                  priority="High"
-                />
-              }
-              variant="naked"
-            >
-              Priority
-            </Button>
-          </PrioritiesMenu.Trigger>
-          <PrioritiesMenu.Items
-            setPriority={(priority) => {
-              handleBulkUpdate({ priority });
-            }}
-          />
-        </PrioritiesMenu>
+        {!isOnArchivePage && (
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={
+                  <PriorityIcon
+                    className="h-[1.15rem] text-success dark:text-success"
+                    priority="High"
+                  />
+                }
+                variant="naked"
+              >
+                Priority
+              </Button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items
+              setPriority={(priority) => {
+                handleBulkUpdate({ priority });
+              }}
+            />
+          </PrioritiesMenu>
+        )}
 
-        <DatePicker>
-          <DatePicker.Trigger>
-            <Button
-              color="tertiary"
-              leftIcon={
-                <CalendarIcon className="h-[1.15rem] text-primary dark:text-primary" />
-              }
-              variant="naked"
-            >
-              Deadline
-            </Button>
-          </DatePicker.Trigger>
-          <DatePicker.Calendar
-            onDayClick={(day) => {
-              handleBulkUpdate({ endDate: formatISO(day) });
-            }}
-          />
-        </DatePicker>
+        {!isOnArchivePage && (
+          <DatePicker>
+            <DatePicker.Trigger>
+              <Button
+                color="tertiary"
+                leftIcon={
+                  <CalendarIcon className="h-[1.15rem] text-primary dark:text-primary" />
+                }
+                variant="naked"
+              >
+                Deadline
+              </Button>
+            </DatePicker.Trigger>
+            <DatePicker.Calendar
+              onDayClick={(day) => {
+                handleBulkUpdate({ endDate: formatISO(day) });
+              }}
+            />
+          </DatePicker>
+        )}
 
-        {finalTeamId && !isOnDeletedStoriesPage ? (
+        {finalTeamId && !isOnDeletedStoriesPage && !isOnArchivePage ? (
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
               <Button
@@ -258,7 +262,9 @@ export const StoriesToolbar = () => {
             setIsOpen(true);
           }}
         >
-          {isOnDeletedStoriesPage ? "Delete forever" : "Delete"}
+          {isOnDeletedStoriesPage || isOnArchivePage
+            ? "Delete forever"
+            : "Delete"}
         </Button>
       </Flex>
 
