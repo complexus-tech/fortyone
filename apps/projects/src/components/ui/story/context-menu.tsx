@@ -150,7 +150,7 @@ export const StoryContextMenu = ({
             <Button
               className="px-4"
               onClick={() => {
-                deleteStory([story.id]);
+                deleteStory({ storyIds: [story.id] });
                 setIsDeleteOpen(false);
               }}
             >

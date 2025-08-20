@@ -101,7 +101,7 @@ export const useBulkDeleteStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: bulkDeleteAction,
 
-    onMutate: (storyIds) => {
+    onMutate: ({ storyIds }) => {
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();
 
@@ -119,7 +119,7 @@ export const useBulkDeleteStoryMutation = () => {
       return storyIds;
     },
 
-    onError: (error, storyIds) => {
+    onError: (error, payload) => {
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
 
       toast.error("Failed to delete stories", {
@@ -128,13 +128,13 @@ export const useBulkDeleteStoryMutation = () => {
         action: {
           label: "Retry",
           onClick: () => {
-            mutation.mutate(storyIds);
+            mutation.mutate(payload);
           },
         },
       });
     },
 
-    onSuccess: (res, storyIds) => {
+    onSuccess: (res, { storyIds }) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }

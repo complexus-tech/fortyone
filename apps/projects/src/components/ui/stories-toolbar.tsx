@@ -40,7 +40,7 @@ export const StoriesToolbar = () => {
   const { mutate: bulkUpdateMutate } = useBulkUpdateStoriesMutation();
 
   const handleBulkDelete = () => {
-    bulkDeleteMutate(selectedStories);
+    bulkDeleteMutate({ storyIds: selectedStories });
     setSelectedStories([]);
     setIsOpen(false);
   };

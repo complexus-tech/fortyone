@@ -7,13 +7,14 @@ import { getApiError } from "@/utils";
 
 type Payload = {
   storyIds: string[];
+  hardDelete?: boolean;
 };
 
-export const bulkDeleteAction = async (storyIds: string[]) => {
+export const bulkDeleteAction = async ({ storyIds, hardDelete }: Payload) => {
   try {
     const session = await auth();
     const stories = await remove<ApiResponse<Payload>>("stories", session!, {
-      json: { storyIds },
+      json: { storyIds, hardDelete },
     });
     return stories;
   } catch (error) {
