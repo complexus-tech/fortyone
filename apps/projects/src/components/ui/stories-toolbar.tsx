@@ -83,7 +83,7 @@ export const StoriesToolbar = () => {
           </Tooltip>
           {selectedStories.length} selected
         </Text>
-        {finalTeamId ? (
+        {finalTeamId && !isOnDeletedStoriesPage ? (
           <>
             <SprintsMenu>
               <SprintsMenu.Trigger>
@@ -185,7 +185,7 @@ export const StoriesToolbar = () => {
           />
         </DatePicker>
 
-        {finalTeamId ? (
+        {finalTeamId && !isOnDeletedStoriesPage ? (
           <AssigneesMenu>
             <AssigneesMenu.Trigger>
               <Button
