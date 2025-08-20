@@ -243,7 +243,7 @@ export const InviteMembersDialog = ({
               Email addresses*
             </Text>
             <TextArea
-              className="resize-none border py-4 leading-normal dark:bg-transparent"
+              className="resize-none border py-4 leading-normal dark:border-dark-50/80 dark:bg-transparent"
               onChange={(e) => {
                 handleEmailsChange(e.target.value);
               }}
@@ -270,6 +270,13 @@ export const InviteMembersDialog = ({
                     value={role.id}
                   >
                     {role.name}
+                    {(tier === "free" || tier === "trial") &&
+                      role.id !== "admin" && (
+                        <span className="italic">
+                          {" "}
+                          - upgrade to invite members with role {role.name}
+                        </span>
+                      )}
                   </Select.Option>
                 ))}
               </Select.Content>
