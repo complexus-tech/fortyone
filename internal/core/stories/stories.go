@@ -32,6 +32,7 @@ type Repository interface {
 	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	BulkArchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
@@ -442,6 +443,27 @@ func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId 
 		span.RecordError(err)
 		return err
 	}
+	return nil
+}
+
+// BulkArchive archives the stories with the specified IDs.
+func (s *Service) BulkArchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+	s.log.Info(ctx, fmt.Sprintf("Bulk archiving stories: %v", ids), "story_ids", ids)
+	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkArchive")
+	defer span.End()
+
+	if err := s.repo.BulkArchive(ctx, ids, workspaceId); err != nil {
+		s.log.Error(ctx, fmt.Sprintf("Failed to bulk archive stories: %s", err),
+			"story_ids", ids, "error", err)
+		span.RecordError(err)
+		return err
+	}
+
+	s.log.Info(ctx, fmt.Sprintf("Successfully bulk archived stories: %v", ids),
+		"story_ids", ids)
+	span.AddEvent("Stories bulk archived.", trace.WithAttributes(
+		attribute.Int("stories.count", len(ids))))
+
 	return nil
 }
 
