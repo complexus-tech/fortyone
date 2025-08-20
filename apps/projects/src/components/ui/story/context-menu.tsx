@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import { Fragment, useState } from "react";
 import { Box, Button, ContextMenu, Dialog, Text } from "ui";
 import {
+  ArchiveIcon,
   DeleteIcon,
   DuplicateIcon,
   EditIcon,
   NewTabIcon,
   ShareIcon,
+  UndoIcon,
 } from "icons";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
@@ -15,6 +17,9 @@ import type { Story } from "@/modules/stories/types";
 import { useCopyToClipboard } from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
+import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
+import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
+import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useDuplicateStoryMutation } from "@/modules/story/hooks/duplicate-mutation";
 import type { DetailedStory } from "@/modules/story/types";
 import { ContextMenuItem } from "./context-menu-item";
@@ -29,14 +34,35 @@ export const StoryContextMenu = ({
   const router = useRouter();
   const pathname = usePathname();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const [_, copy] = useCopyToClipboard();
   const { mutate: deleteStory } = useBulkDeleteStoryMutation();
+  const { mutate: archiveStory } = useBulkArchiveStoryMutation();
+  const { mutate: unarchiveStory } = useBulkUnarchiveStoryMutation();
+  const { mutate: restoreStory } = useBulkRestoreStoryMutation();
   const { mutate: duplicateStory } = useDuplicateStoryMutation();
 
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
 
   const storyUrl = `/story/${story.id}/${slugify(story.title)}`;
+
+  const handleArchive = () => {
+    archiveStory([story.id]);
+    setIsArchiveDialogOpen(false);
+  };
+
+  const handleUnarchive = () => {
+    unarchiveStory([story.id]);
+    setIsUnarchiveDialogOpen(false);
+  };
+
+  const handleRestore = () => {
+    restoreStory([story.id]);
+    setIsRestoreDialogOpen(false);
+  };
 
   const contextMenu = [
     {
@@ -84,6 +110,42 @@ export const StoryContextMenu = ({
             toast.success("Link copied to clipboard");
           },
         },
+        // Archive option - show only on active stories
+        ...(!isOnDeletedPage && !isOnArchivePage
+          ? [
+              {
+                label: "Archive story",
+                icon: <ArchiveIcon />,
+                onSelect: () => {
+                  setIsArchiveDialogOpen(true);
+                },
+              },
+            ]
+          : []),
+        // Unarchive option - show only on archived stories
+        ...(isOnArchivePage
+          ? [
+              {
+                label: "Unarchive story",
+                icon: <ArchiveIcon />,
+                onSelect: () => {
+                  setIsUnarchiveDialogOpen(true);
+                },
+              },
+            ]
+          : []),
+        // Restore option - show only on deleted stories
+        ...(isOnDeletedPage
+          ? [
+              {
+                label: "Restore story",
+                icon: <UndoIcon />,
+                onSelect: () => {
+                  setIsRestoreDialogOpen(true);
+                },
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -163,6 +225,114 @@ export const StoryContextMenu = ({
               }}
             >
               {isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Archive Dialog */}
+      <Dialog onOpenChange={setIsArchiveDialogOpen} open={isArchiveDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Archive story
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <Text color="muted">
+              This story will be moved to the archive and can be unarchived
+              later. It won&apos;t appear in your active story lists.
+            </Text>
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+            <Button
+              className="px-4"
+              color="tertiary"
+              onClick={() => {
+                setIsArchiveDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-4"
+              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
+              onClick={handleArchive}
+            >
+              Archive
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Unarchive Dialog */}
+      <Dialog
+        onOpenChange={setIsUnarchiveDialogOpen}
+        open={isUnarchiveDialogOpen}
+      >
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Unarchive story
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <Text color="muted">
+              This story will be restored to your active story list and can be
+              assigned to sprints and team members again.
+            </Text>
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+            <Button
+              className="px-4"
+              color="tertiary"
+              onClick={() => {
+                setIsUnarchiveDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-4"
+              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
+              onClick={handleUnarchive}
+            >
+              Unarchive
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Restore Dialog */}
+      <Dialog onOpenChange={setIsRestoreDialogOpen} open={isRestoreDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Restore story
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <Text color="muted">
+              This story will be restored to your active story list and can be
+              assigned to sprints and team members again.
+            </Text>
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+            <Button
+              className="px-4"
+              color="tertiary"
+              onClick={() => {
+                setIsRestoreDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-4"
+              leftIcon={<UndoIcon className="text-white dark:text-white" />}
+              onClick={handleRestore}
+            >
+              Restore
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
