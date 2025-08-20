@@ -2179,13 +2179,13 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 
 	// Handle nullable time fields
 	if startDate, ok := storyMap["start_date"].(string); ok && startDate != "" {
-		if parsed, err := time.Parse(time.RFC3339, startDate); err == nil {
+		if parsed, err := time.Parse("2006-01-02", startDate); err == nil {
 			story.StartDate = &parsed
 		}
 	}
 
 	if endDate, ok := storyMap["end_date"].(string); ok && endDate != "" {
-		if parsed, err := time.Parse(time.RFC3339, endDate); err == nil {
+		if parsed, err := time.Parse("2006-01-02", endDate); err == nil {
 			story.EndDate = &parsed
 		}
 	}
