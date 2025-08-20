@@ -1,6 +1,7 @@
 "use client";
 import { Button, Flex, Text, Tooltip, Dialog, DatePicker } from "ui";
 import {
+  ArchiveIcon,
   AssigneeIcon,
   CalendarIcon,
   CloseIcon,
@@ -12,6 +13,8 @@ import { useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { formatISO } from "date-fns";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
+import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
+import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
 import { useTerminology } from "@/hooks";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useBulkUpdateStoriesMutation } from "@/modules/stories/hooks/update-mutation";
@@ -30,6 +33,8 @@ export const StoriesToolbar = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
   const { data: teams = [] } = useTeams();
   let finalTeamId = teamId;
@@ -37,8 +42,11 @@ export const StoriesToolbar = () => {
     finalTeamId = teams[0].id;
   }
   const isOnDeletedStoriesPage = pathname.includes("/deleted");
+  const isOnArchivePage = pathname.includes("/archive");
 
   const { mutate: bulkDeleteMutate, isPending } = useBulkDeleteStoryMutation();
+  const { mutate: bulkArchiveMutate } = useBulkArchiveStoryMutation();
+  const { mutate: bulkUnarchiveMutate } = useBulkUnarchiveStoryMutation();
   const { mutate: bulkUpdateMutate } = useBulkUpdateStoriesMutation();
 
   const handleBulkDelete = () => {
@@ -55,6 +63,18 @@ export const StoriesToolbar = () => {
       storyIds: selectedStories,
       payload: updates,
     });
+  };
+
+  const handleBulkArchive = () => {
+    bulkArchiveMutate(selectedStories);
+    setSelectedStories([]);
+    setIsArchiveDialogOpen(false);
+  };
+
+  const handleBulkUnarchive = () => {
+    bulkUnarchiveMutate(selectedStories);
+    setSelectedStories([]);
+    setIsUnarchiveDialogOpen(false);
   };
 
   return (
@@ -204,6 +224,32 @@ export const StoriesToolbar = () => {
             />
           </AssigneesMenu>
         ) : null}
+        {!isOnDeletedStoriesPage && !isOnArchivePage && (
+          <Button
+            color="tertiary"
+            leftIcon={<ArchiveIcon className="h-[1.15rem]" />}
+            onClick={() => {
+              setIsArchiveDialogOpen(true);
+            }}
+            variant="naked"
+          >
+            Archive
+          </Button>
+        )}
+
+        {isOnArchivePage ? (
+          <Button
+            color="tertiary"
+            leftIcon={<ArchiveIcon className="h-[1.15rem]" />}
+            onClick={() => {
+              setIsUnarchiveDialogOpen(true);
+            }}
+            variant="naked"
+          >
+            Unarchive
+          </Button>
+        ) : null}
+
         <Button
           leftIcon={
             <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
@@ -216,11 +262,84 @@ export const StoriesToolbar = () => {
         </Button>
       </Flex>
 
+      {/* Archive stories dialog */}
+      <Dialog onOpenChange={setIsArchiveDialogOpen} open={isArchiveDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header className="px-6 pt-6">
+            <Dialog.Title className="text-lg">
+              Archive {selectedStories.length} stories?
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="pt-0">
+            <Text color="muted">
+              These stories will be moved to the archive and can be unarchived
+              later. They won&apos;t appear in your active story lists.
+            </Text>
+            <Flex align="center" className="mt-4" gap={2} justify="end">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsArchiveDialogOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                leftIcon={
+                  <ArchiveIcon className="text-white dark:text-white" />
+                }
+                onClick={handleBulkArchive}
+              >
+                Archive
+              </Button>
+            </Flex>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Unarchive stories dialog */}
+      <Dialog
+        onOpenChange={setIsUnarchiveDialogOpen}
+        open={isUnarchiveDialogOpen}
+      >
+        <Dialog.Content>
+          <Dialog.Header className="px-6 pt-6">
+            <Dialog.Title className="text-lg">
+              Unarchive {selectedStories.length} stories?
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="pt-0">
+            <Text color="muted">
+              These stories will be restored to your active story list and can
+              be assigned to sprints and team members again.
+            </Text>
+            <Flex align="center" className="mt-4" gap={2} justify="end">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsUnarchiveDialogOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                leftIcon={
+                  <ArchiveIcon className="text-white dark:text-white" />
+                }
+                onClick={handleBulkUnarchive}
+              >
+                Unarchive
+              </Button>
+            </Flex>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+
       {/* Delete stories dialog */}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content>
-          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
-            <Dialog.Title className="flex items-center gap-1 text-lg">
+          <Dialog.Header className="px-6 pt-6">
+            <Dialog.Title className="text-lg">
               Delete {selectedStories.length} stories
               {isOnDeletedStoriesPage ? " forever?" : "?"}
             </Dialog.Title>
