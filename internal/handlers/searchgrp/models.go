@@ -82,7 +82,7 @@ func toAppSearchStories(stories []search.CoreSearchStory) []AppSearchStory {
 
 // toAppSearchStory converts a core story to an app story.
 func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
-	var subStories []uuid.UUID
+	var subStories []uuid.UUID = []uuid.UUID{}
 	return AppSearchStory{
 		ID:         story.ID,
 		SequenceID: story.SequenceID,
