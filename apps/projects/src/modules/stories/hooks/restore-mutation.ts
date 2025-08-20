@@ -33,6 +33,7 @@ export const useBulkRestoreStoryMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
+      queryClient.invalidateQueries({ queryKey: storyKeys.all });
       toast.success("Success", {
         description: `${storyIds.length} stories restored`,
       });
