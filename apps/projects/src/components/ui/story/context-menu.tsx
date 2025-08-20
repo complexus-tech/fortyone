@@ -9,7 +9,7 @@ import {
   NewTabIcon,
   ShareIcon,
 } from "icons";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
 import { useCopyToClipboard } from "@/hooks";
@@ -27,10 +27,14 @@ export const StoryContextMenu = ({
   story: Story;
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [_, copy] = useCopyToClipboard();
   const { mutate: deleteStory } = useBulkDeleteStoryMutation();
   const { mutate: duplicateStory } = useDuplicateStoryMutation();
+
+  const isOnDeletedPage = pathname.includes("/deleted");
+  const isOnArchivePage = pathname.includes("/archived");
 
   const storyUrl = `/story/${story.id}/${slugify(story.title)}`;
 
@@ -86,7 +90,8 @@ export const StoryContextMenu = ({
       name: "Danger Zone",
       options: [
         {
-          label: "Delete",
+          label:
+            isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete",
           icon: <DeleteIcon className="text-danger dark:text-danger" />,
           onSelect: () => {
             setIsDeleteOpen(true);
@@ -132,9 +137,9 @@ export const StoryContextMenu = ({
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              This story will be moved to the recycle bin and will be
-              permanently deleted after 30 days. You can restore it at any time
-              before that.
+              {isOnDeletedPage || isOnArchivePage
+                ? "This is an irreversible action. The story will be permanently deleted. You can't restore it."
+                : "This story will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore it at any time before that."}
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
@@ -150,11 +155,14 @@ export const StoryContextMenu = ({
             <Button
               className="px-4"
               onClick={() => {
-                deleteStory({ storyIds: [story.id] });
+                deleteStory({
+                  storyIds: [story.id],
+                  hardDelete: isOnDeletedPage || isOnArchivePage,
+                });
                 setIsDeleteOpen(false);
               }}
             >
-              Delete
+              {isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
