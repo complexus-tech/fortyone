@@ -8,6 +8,7 @@ import {
   Features,
   Integrations,
   Maya,
+  CoreValues,
 } from "@/modules/home";
 
 export default function Page() {
@@ -16,6 +17,7 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
+      <CoreValues />
       <Features />
       <Maya />
       <Integrations />
