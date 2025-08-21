@@ -10,35 +10,35 @@ import { FeatureGrid } from "@/components/shared/feature-grid";
 
 const capabilities = [
   {
-    icon: <DashboardIcon className="h-7 text-dark dark:text-white" />,
+    icon: <DashboardIcon className="h-9 text-dark dark:text-white" />,
     title: "Visibility",
     description:
       "Every objective, sprint, and story in one place — no more guessing where things stand.",
   },
   {
-    icon: <OKRIcon className="h-7 text-dark dark:text-white" />,
+    icon: <OKRIcon className="h-9 text-dark dark:text-white" />,
     title: "Alignment",
     description:
       "OKRs tied directly to daily work so everyone rows in the same direction.",
   },
   {
-    icon: <WorkflowIcon className="h-7 text-dark dark:text-white" />,
+    icon: <WorkflowIcon className="h-9 text-dark dark:text-white" />,
     title: "Efficiency",
     description:
       "Less context switching, fewer status meetings, faster delivery.",
   },
   {
-    icon: <ReloadIcon className="h-7 text-dark dark:text-white" />,
+    icon: <ReloadIcon className="h-9 text-dark dark:text-white" />,
     title: "Adaptability",
     description: "Plans shift seamlessly when priorities or goals change.",
   },
   {
-    icon: <AnalyticsIcon className="h-7 text-dark dark:text-white" />,
+    icon: <AnalyticsIcon className="h-9 text-dark dark:text-white" />,
     title: "Insight",
     description: "Instant reports that show progress, blockers, and impact.",
   },
   {
-    icon: <CheckIcon className="h-7 text-dark dark:text-white" />,
+    icon: <CheckIcon className="h-9 text-dark dark:text-white" />,
     title: "Confidence",
     description: "Decisions backed by real data, not just gut feeling.",
   },

@@ -16,11 +16,11 @@ type FeatureGridProps = {
 
 const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
-    <Box className="group border border-transparent bg-gradient-to-b py-10 hover:border-gray-100 hover:from-gray-50 dark:hover:border-dark-100 dark:hover:from-dark-300 md:border-l-gray-100 md:px-7 dark:md:border-l-dark-100">
-      <Flex align="center" className="mb-5" justify="between">
+    <Box className="group border bg-gradient-to-b py-16 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200 md:px-7">
+      <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
-      <Text as="h3" className="mb-3 text-xl dark:text-white">
+      <Text as="h3" className="mb-3 text-2xl dark:text-white">
         {card.title}
       </Text>
       <Text className="text-[0.95rem] leading-relaxed opacity-60">
@@ -47,7 +47,7 @@ export const FeatureGrid = ({
       >
         {mainHeading}
       </Text>
-      <Box className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <Box className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
           <FeatureCardComponent card={card} key={index} />
         ))}
