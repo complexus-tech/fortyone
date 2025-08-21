@@ -107,12 +107,6 @@ type Capability = {
 
 const capabilities: Capability[] = [
   {
-    icon: ReasoningIcon,
-    title: "Clarity",
-    description:
-      "Keep everyone aligned with structure that adapts to your workflow.",
-  },
-  {
     icon: VisionIcon,
     title: "Focus",
     description:
@@ -145,12 +139,6 @@ const capabilities: Capability[] = [
     icon: ReasoningIcon,
     title: "Connection",
     description: "Bring everything together with GitHub, emails, and webhooks.",
-  },
-  {
-    icon: VisionIcon,
-    title: "Perspective",
-    description:
-      "See the bigger picture with analytics that reveal progress and patterns instantly.",
   },
 ];
 
