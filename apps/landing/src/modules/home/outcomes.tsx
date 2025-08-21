@@ -45,12 +45,12 @@ const capabilities = [
   },
 ];
 
-export const CoreValues = () => {
+export const CoreOutcomes = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      mainHeading="Made for the way you work"
-      smallHeading="[ What's inside ]"
+      mainHeading="Outcomes for teams"
+      smallHeading="[ What your team gets ]"
     />
   );
 };
