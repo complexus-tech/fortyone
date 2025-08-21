@@ -39,9 +39,18 @@ export const navigation = tool({
 
     // Route within team context
     route: z
-      .enum(["stories", "sprints", "objectives", "backlog"])
+      .enum([
+        "stories",
+        "sprints",
+        "objectives",
+        "backlog",
+        "deleted",
+        "archived",
+      ])
       .optional()
-      .describe("Specific route within team context (for team targetType)"),
+      .describe(
+        "Specific route within team context (for team targetType) Only admins can access and navigate to deleted and archived, if a non admin navigates via direct link or this tool, they will be redirected to the stories page",
+      ),
   }),
 
   execute: async ({ targetType, entityId, teamId, route }) => {
