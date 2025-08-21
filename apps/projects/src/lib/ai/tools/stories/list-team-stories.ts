@@ -73,6 +73,14 @@ export const listTeamStories = tool({
           .string()
           .optional()
           .describe("Filter stories completed before this date (ISO string)"),
+        includeArchived: z
+          .boolean()
+          .optional()
+          .describe("Include archived stories"),
+        includeDeleted: z
+          .boolean()
+          .optional()
+          .describe("Include deleted stories"),
         categories: z
           .array(
             z.enum([
@@ -101,14 +109,13 @@ export const listTeamStories = tool({
       })
       .optional()
       .describe("Optional filters for story queries"),
-    includeArchived: z
-      .boolean()
-      .optional()
-      .describe("Include archived stories"),
-    includeDeleted: z.boolean().optional().describe("Include deleted stories"),
+    groupBy: z
+      .enum(["status", "assignee", "priority", "none"])
+      .default("status")
+      .describe("Group by status, assignee, or priority"),
   }),
 
-  execute: async ({ teamId, filters }) => {
+  execute: async ({ teamId, filters, groupBy }) => {
     try {
       const session = await auth();
 
@@ -123,7 +130,7 @@ export const listTeamStories = tool({
       const userRole = workspace.userRole;
 
       const params: GroupedStoryParams = {
-        groupBy: "status",
+        groupBy,
         teamIds: [teamId],
         ...filters,
       };

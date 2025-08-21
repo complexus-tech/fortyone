@@ -19,13 +19,13 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group border-[0.5px] border-gray-100 bg-gradient-to-b px-7 py-16 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200",
+        "group border-[0.5px] border-gray-100 bg-gradient-to-b px-6 py-8 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200 md:px-7 md:py-16",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
-      <Text as="h3" className="mb-3 text-2xl dark:text-white">
+      <Text as="h3" className="mb-3 text-xl dark:text-white md:text-2xl">
         {card.title}
       </Text>
       <Text className="text-[0.95rem] leading-relaxed opacity-60 group-hover:opacity-100">
