@@ -40,10 +40,14 @@ export const FeatureGrid = ({
       <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
         {smallHeading}
       </Text>
-      <Text as="h2" className="text-5xl font-semibold md:text-6xl">
+      <Text
+        as="h2"
+        className="pb-4 text-5xl font-semibold md:text-6xl"
+        color="gradientDark"
+      >
         {mainHeading}
       </Text>
-      <Box className="mt-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <Box className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
           <FeatureCardComponent card={card} key={index} />
         ))}
