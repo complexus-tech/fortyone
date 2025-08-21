@@ -10,36 +10,36 @@ import { FeatureGrid } from "@/components/shared/feature-grid";
 
 const capabilities = [
   {
-    icon: <OKRIcon className="h-8 text-dark dark:text-white" />,
+    icon: <OKRIcon className="h-7 text-dark dark:text-white" />,
     title: "Focus",
     description:
       "Turn big goals into daily progress with objectives and key results.",
   },
   {
-    icon: <SprintsIcon className="h-8 text-dark dark:text-white" />,
+    icon: <SprintsIcon className="h-7 text-dark dark:text-white" />,
     title: "Momentum",
     description: "Plan, prioritize, and move fast with stories and sprints.",
   },
   {
-    icon: <AiIcon className="h-8 text-dark dark:text-white" />,
+    icon: <AiIcon className="h-7 text-dark dark:text-white" />,
     title: "Intelligence",
     description:
       "Work smarter with Maya, your AI assistant for projects and insights.",
   },
   {
-    icon: <ReloadIcon className="h-8 text-dark dark:text-white" />,
+    icon: <ReloadIcon className="h-7 text-dark dark:text-white" />,
     title: "Flow",
     description:
       "Stay in sync with real-time updates no refreshing, no delays.",
   },
   {
-    icon: <SettingsIcon className="h-8 text-dark dark:text-white" />,
+    icon: <SettingsIcon className="h-7 text-dark dark:text-white" />,
     title: "Identity",
     description:
       "Make the system your own with custom terms for stories, sprints, and goals.",
   },
   {
-    icon: <GitIcon className="h-8 text-dark dark:text-white" />,
+    icon: <GitIcon className="h-7 text-dark dark:text-white" />,
     title: "Connection",
     description: "Bring everything together with GitHub, emails, and webhooks.",
   },
