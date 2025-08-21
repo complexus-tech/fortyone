@@ -15,27 +15,11 @@ type FeatureGridProps = {
   cards: FeatureCard[];
 };
 
-const FeatureCardComponent = ({
-  card,
-  index,
-  totalCards,
-}: {
-  card: FeatureCard;
-  index: number;
-  totalCards: number;
-}) => {
-  const isLastInRow = (index + 1) % 3 === 0;
-  const isInLastRow = index >= totalCards - 3;
-
+const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group bg-gradient-to-b px-7 py-16 hover:from-gray-50 dark:hover:from-dark-200",
-        "border-l border-t dark:border-dark-50",
-        {
-          "border-r": isLastInRow,
-          "border-b": isInLastRow,
-        },
+        "group border-[0.5px] border-gray-100 bg-gradient-to-b px-7 py-16 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">
@@ -68,14 +52,9 @@ export const FeatureGrid = ({
       >
         {mainHeading}
       </Text>
-      <Box className="mt-6 grid grid-cols-1 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
+      <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100 dark:border-dark-50 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
-          <FeatureCardComponent
-            card={card}
-            index={index}
-            key={index}
-            totalCards={cards.length}
-          />
+          <FeatureCardComponent card={card} key={index} />
         ))}
       </Box>
     </Container>

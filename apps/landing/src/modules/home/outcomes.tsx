@@ -13,7 +13,7 @@ const capabilities = [
     icon: <DashboardIcon className="h-9 text-dark dark:text-white" />,
     title: "Visibility",
     description:
-      "Every objective, sprint, and story in one place — no more guessing where things stand.",
+      "Every objective, sprint, and story in one place no more guessing where things stand.",
   },
   {
     icon: <OKRIcon className="h-9 text-dark dark:text-white" />,
