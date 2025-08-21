@@ -71,7 +71,7 @@ const CapabilityCard = ({ capability }: { capability: Capability }) => {
 
 export const CoreValues = () => {
   return (
-    <Container className="pb-28 pt-12">
+    <Container className="pb-28 pt-20">
       <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
         [ What’s inside ]
       </Text>
