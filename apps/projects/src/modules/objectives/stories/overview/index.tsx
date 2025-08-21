@@ -118,7 +118,7 @@ export const Overview = () => {
           <BoardDividedPanel.MainPanel>
             <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
               <Box>
-                <Flex align="center" gap={6} justify="between">
+                <Flex align="start" gap={6} justify="between">
                   <TextEditor
                     asTitle
                     className="text-4xl font-semibold antialiased"
