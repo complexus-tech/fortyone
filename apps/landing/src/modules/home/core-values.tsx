@@ -108,40 +108,49 @@ type Capability = {
 const capabilities: Capability[] = [
   {
     icon: ReasoningIcon,
-    title: "Reasoning",
+    title: "Clarity",
     description:
-      "Understand the universe: solve humanity's most difficult scientific problems with deep thought.",
+      "Keep everyone aligned with structure that adapts to your workflow.",
   },
   {
     icon: VisionIcon,
-    title: "Vision",
+    title: "Focus",
     description:
-      "See the world through vision, interpreting images and visuals with sharp, insightful understanding.",
+      "Turn big goals into daily progress with objectives and key results.",
   },
   {
     icon: ToolCallingIcon,
-    title: "Tool calling",
-    description:
-      "Harness external power with tool calling, seamlessly integrating third-party functions.",
+    title: "Momentum",
+    description: "Plan, prioritize, and move fast with stories and sprints.",
   },
   {
     icon: StructuredOutputsIcon,
-    title: "Structured outputs",
+    title: "Intelligence",
     description:
-      "Organize chaos with structured outputs, delivering clean, predictable responses.",
+      "Work smarter with Maya, your AI assistant for projects and insights.",
   },
   {
     icon: ImageGenerationIcon,
-    title: "Image generation",
+    title: "Flow",
     description:
-      "Bring your ideas to life with image generation, creating visuals that are as unique as you are.",
+      "Stay in sync with real-time updates — no refreshing, no delays.",
   },
   {
     icon: SearchIcon,
-    title: "Search",
+    title: "Identity",
     description:
-      "Tap into the now with real-time search, pulling fresh, relevant data from the web and X instantly.",
-    isNew: true,
+      "Make the system your own with custom terms for stories, sprints, and goals.",
+  },
+  {
+    icon: ReasoningIcon,
+    title: "Connection",
+    description: "Bring everything together with GitHub, emails, and webhooks.",
+  },
+  {
+    icon: VisionIcon,
+    title: "Perspective",
+    description:
+      "See the bigger picture with analytics that reveal progress and patterns instantly.",
   },
 ];
 
