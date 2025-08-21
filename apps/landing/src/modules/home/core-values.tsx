@@ -169,10 +169,10 @@ export const CoreValues = () => {
   return (
     <Container className="pb-28 pt-12">
       <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
-        [ CAPABILITIES ]
+        [ What’s inside ]
       </Text>
       <Text as="h2" className="text-4xl font-semibold md:text-5xl">
-        Models that fit your needs
+        Made for the way you work
       </Text>
 
       <Box className="mt-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
