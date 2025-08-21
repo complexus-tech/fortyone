@@ -29,7 +29,7 @@ export const Maya = () => {
       >
         <Text
           className="mb-16 max-w-5xl text-5xl font-semibold leading-[1.15]"
-          color="gradient"
+          color="gradientDark"
         >
           Your AI assistant, helps your team plan sprints, track objectives, and
           catch bottlenecks before they slow you down.
@@ -71,7 +71,7 @@ export const Maya = () => {
         </Box>
       </motion.div>
 
-      <Box className="mt-20 grid grid-cols-1 gap-16 md:grid-cols-2">
+      {/* <Box className="mt-20 grid grid-cols-1 gap-16 md:grid-cols-2">
         <motion.div
           initial="hidden"
           variants={fadeUp}
@@ -107,7 +107,7 @@ export const Maya = () => {
             <Box className="mt-8 h-60 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
           </Box>
         </motion.div>
-      </Box>
+      </Box> */}
     </Container>
   );
 };
