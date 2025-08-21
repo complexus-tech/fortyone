@@ -1,47 +1,39 @@
-import {
-  AiIcon,
-  GitIcon,
-  OKRIcon,
-  ReloadIcon,
-  SettingsIcon,
-  SprintsIcon,
-} from "icons";
+import { AiIcon, OKRIcon, ReloadIcon, SettingsIcon, SprintsIcon } from "icons";
 import { FeatureGrid } from "@/components/shared/feature-grid";
 
 const capabilities = [
   {
     icon: <OKRIcon className="h-8 text-dark dark:text-white" />,
-    title: "Focus",
+    title: "Visibility",
     description:
-      "Turn big goals into daily progress with objectives and key results.",
+      "Every objective, sprint, and story in one place — no more guessing where things stand.",
   },
   {
     icon: <SprintsIcon className="h-8 text-dark dark:text-white" />,
-    title: "Momentum",
-    description: "Plan, prioritize, and move fast with stories and sprints.",
+    title: "Alignment",
+    description:
+      "OKRs tied directly to daily work so everyone rows in the same direction.",
   },
   {
     icon: <AiIcon className="h-8 text-dark dark:text-white" />,
-    title: "Intelligence",
+    title: "Efficiency",
     description:
-      "Work smarter with Maya, your AI assistant for projects and insights.",
+      "Less context switching, fewer status meetings, faster delivery.",
   },
   {
     icon: <ReloadIcon className="h-8 text-dark dark:text-white" />,
-    title: "Flow",
-    description:
-      "Stay in sync with real-time updates no refreshing, no delays.",
+    title: "Adaptability",
+    description: "Plans shift seamlessly when priorities or goals change.",
   },
   {
     icon: <SettingsIcon className="h-8 text-dark dark:text-white" />,
-    title: "Identity",
-    description:
-      "Make the system your own with custom terms for stories, sprints, and goals.",
+    title: "Insight",
+    description: "Instant reports that show progress, blockers, and impact.",
   },
   {
-    icon: <GitIcon className="h-8 text-dark dark:text-white" />,
-    title: "Connection",
-    description: "Bring everything together with GitHub, emails, and webhooks.",
+    icon: <SettingsIcon className="h-8 text-dark dark:text-white" />,
+    title: "Confidence",
+    description: "Decisions backed by real data, not just gut feeling.",
   },
 ];
 
