@@ -50,7 +50,11 @@ const Intro = () => (
 
 const Card = ({
   description,
-  image: { alt, src, srcDark },
+  image: {
+    alt,
+    src,
+    //  srcDark
+  },
 }: {
   description: ReactNode;
   image: { src: StaticImageData; srcDark: StaticImageData; alt: string };
