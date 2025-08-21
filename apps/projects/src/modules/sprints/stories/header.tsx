@@ -71,7 +71,7 @@ export const Header = ({
             {
               name: sprintName,
               icon: <SprintsIcon className="h-4 w-auto" />,
-              url: `/teams/${team.id}/sprints/${sprint.id}`,
+              url: `/teams/${team.id}/sprints/${sprint.id}/stories`,
             },
             {
               name: getTermDisplay("storyTerm", {
