@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Text, Box, Flex } from "ui";
+import { cn } from "lib";
 import { Container } from "@/components/ui";
 
 type FeatureCard = {
@@ -14,9 +15,29 @@ type FeatureGridProps = {
   cards: FeatureCard[];
 };
 
-const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
+const FeatureCardComponent = ({
+  card,
+  index,
+  totalCards,
+}: {
+  card: FeatureCard;
+  index: number;
+  totalCards: number;
+}) => {
+  const isLastInRow = (index + 1) % 3 === 0;
+  const isInLastRow = index >= totalCards - 3;
+
   return (
-    <Box className="group border bg-gradient-to-b py-16 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200 md:px-7">
+    <Box
+      className={cn(
+        "group bg-gradient-to-b px-7 py-16 hover:from-gray-50 dark:hover:from-dark-200",
+        "border-l border-t dark:border-dark-50",
+        {
+          "border-r": isLastInRow,
+          "border-b": isInLastRow,
+        },
+      )}
+    >
       <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
@@ -49,7 +70,12 @@ export const FeatureGrid = ({
       </Text>
       <Box className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
-          <FeatureCardComponent card={card} key={index} />
+          <FeatureCardComponent
+            card={card}
+            index={index}
+            key={index}
+            totalCards={cards.length}
+          />
         ))}
       </Box>
     </Container>
