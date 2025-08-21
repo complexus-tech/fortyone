@@ -28,7 +28,7 @@ export const Maya = () => {
         whileInView="show"
       >
         <Text
-          className="mb-16 max-w-5xl text-6xl font-semibold leading-[1.15]"
+          className="mb-10 max-w-5xl text-4xl font-semibold leading-[1.15] md:mb-16 md:text-6xl"
           color="gradientDark"
         >
           Your AI assistant, helps your team plan sprints, track objectives, and

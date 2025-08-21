@@ -57,18 +57,18 @@ export const FeatureGrid = ({
   cards,
 }: FeatureGridProps) => {
   return (
-    <Container className="py-28">
+    <Container className="py-10 md:py-28">
       <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
         {smallHeading}
       </Text>
       <Text
         as="h2"
-        className="pb-4 text-5xl font-semibold md:text-6xl"
+        className="pb-4 text-4xl font-semibold md:text-6xl"
         color="gradientDark"
       >
         {mainHeading}
       </Text>
-      <Box className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <Box className="mt-6 grid grid-cols-1 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
           <FeatureCardComponent
             card={card}
