@@ -55,7 +55,7 @@ const capabilities: Capability[] = [
 
 const CapabilityCard = ({ capability }: { capability: Capability }) => {
   return (
-    <Box className="group border border-transparent border-l-gray-100 bg-gradient-to-b px-7 py-10 hover:border-gray-100 hover:from-gray-50 dark:border-l-dark-100 dark:hover:border-dark-100 dark:hover:from-dark-300">
+    <Box className="group border border-transparent bg-gradient-to-b py-10 hover:border-gray-100 hover:from-gray-50 dark:hover:border-dark-100 dark:hover:from-dark-300 md:border-l-gray-100 md:px-7 dark:md:border-l-dark-100">
       <Flex align="center" className="mb-5" justify="between">
         {capability.icon}
       </Flex>
@@ -75,7 +75,7 @@ export const CoreValues = () => {
       <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
         [ What’s inside ]
       </Text>
-      <Text as="h2" className="text-4xl font-semibold md:text-5xl">
+      <Text as="h2" className="text-5xl font-semibold md:text-6xl">
         Made for the way you work
       </Text>
 
