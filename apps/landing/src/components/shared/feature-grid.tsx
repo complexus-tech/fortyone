@@ -23,7 +23,7 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
       <Text as="h3" className="mb-3 text-2xl dark:text-white">
         {card.title}
       </Text>
-      <Text className="text-[0.95rem] leading-relaxed opacity-60">
+      <Text className="text-[0.95rem] leading-relaxed opacity-60 group-hover:opacity-100">
         {card.description}
       </Text>
     </Box>
