@@ -1,5 +1,7 @@
+"use client";
 import type { ReactNode } from "react";
 import { Text, Box, Flex } from "ui";
+import { motion } from "framer-motion";
 import { cn } from "lib";
 import { Container } from "@/components/ui";
 
@@ -42,21 +44,42 @@ export const FeatureGrid = ({
 }: FeatureGridProps) => {
   return (
     <Container className="py-10 md:py-28">
-      <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
-        {smallHeading}
-      </Text>
-      <Text
-        as="h2"
-        className="pb-4 text-4xl font-semibold md:text-6xl"
-        color="gradientDark"
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        transition={{ duration: 0.6, delay: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        whileInView={{ y: 0, opacity: 1 }}
       >
-        {mainHeading}
-      </Text>
-      <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100 dark:border-dark-50 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card, index) => (
-          <FeatureCardComponent card={card} key={index} />
-        ))}
-      </Box>
+        <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
+          {smallHeading}
+        </Text>
+      </motion.div>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true, amount: 0.5 }}
+        whileInView={{ y: 0, opacity: 1 }}
+      >
+        <Text
+          as="h2"
+          className="pb-4 text-4xl font-semibold md:text-6xl"
+          color="gradientDark"
+        >
+          {mainHeading}
+        </Text>
+      </motion.div>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true, amount: 0.5 }}
+        whileInView={{ y: 0, opacity: 1 }}
+      >
+        <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100 dark:border-dark-50 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
+          {cards.map((card, index) => (
+            <FeatureCardComponent card={card} key={index} />
+          ))}
+        </Box>
+      </motion.div>
     </Container>
   );
 };
