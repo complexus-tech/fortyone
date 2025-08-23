@@ -112,6 +112,27 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		span.RecordError(err)
 	}
 
+	// Publish story created event for notifications
+	payload := events.StoryCreatedPayload{
+		StoryID:     cs.ID,
+		WorkspaceID: workspaceId,
+		Title:       cs.Title,
+		AssigneeID:  cs.Assignee,
+		ReporterID:  *ns.Reporter,
+	}
+
+	event := events.Event{
+		Type:      events.StoryCreated,
+		Payload:   payload,
+		Timestamp: time.Now(),
+		ActorID:   *ns.Reporter,
+	}
+
+	if err := s.publisher.Publish(context.Background(), event); err != nil {
+		s.log.Error(ctx, "failed to publish story created event", "error", err)
+		// Don't return error as this is not critical
+	}
+
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
 	))

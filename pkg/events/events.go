@@ -9,6 +9,7 @@ import (
 type EventType string
 
 const (
+	StoryCreated       EventType = "story.created"
 	StoryUpdated       EventType = "story.updated"
 	StoryDuplicated    EventType = "story.duplicated"
 	CommentCreated     EventType = "comment.created"
@@ -27,6 +28,15 @@ type Event struct {
 	Payload   any       `json:"payload"`
 	Timestamp time.Time `json:"timestamp"`
 	ActorID   uuid.UUID `json:"actor_id"`
+}
+
+// StoryCreatedPayload contains data for story creation events
+type StoryCreatedPayload struct {
+	StoryID     uuid.UUID  `json:"story_id"`
+	WorkspaceID uuid.UUID  `json:"workspace_id"`
+	Title       string     `json:"title"`
+	AssigneeID  *uuid.UUID `json:"assignee_id,omitempty"`
+	ReporterID  uuid.UUID  `json:"reporter_id"`
 }
 
 // StoryUpdatedPayload contains data for story update events

@@ -28,6 +28,39 @@ func NewRules(log *logger.Logger, stories *stories.Service, users *users.Service
 	}
 }
 
+// ProcessStoryCreated applies notification rules for story creation
+func (r *Rules) ProcessStoryCreated(ctx context.Context, payload events.StoryCreatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
+	r.log.Info(ctx, "ProcessStoryCreated", "payload", payload, "actor_id", actorID)
+
+	var notifications []CoreNewNotification
+
+	// Notify assignee if story is created with an assignee
+	if payload.AssigneeID != nil && shouldNotify(*payload.AssigneeID, actorID) {
+		actorName := r.getUserName(ctx, actorID)
+
+		message := NotificationMessage{
+			Template: "{actor} assigned you a new story",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+
+		notification := CoreNewNotification{
+			RecipientID: *payload.AssigneeID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "story_update",
+			EntityType:  "story",
+			EntityID:    payload.StoryID,
+			ActorID:     actorID,
+			Title:       payload.Title,
+			Message:     message,
+		}
+		notifications = append(notifications, notification)
+	}
+
+	return notifications, nil
+}
+
 // ProcessStoryUpdate applies notification rules for story updates
 func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
 	r.log.Info(ctx, "ProcessStoryUpdate", "payload", payload, "actor_id", actorID)

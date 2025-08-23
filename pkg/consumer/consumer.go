@@ -215,6 +215,8 @@ func (c *Consumer) claimPendingMessages(ctx context.Context, instanceID string) 
 // handleEvent routes events to the appropriate handler based on the event type
 func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 	switch event.Type {
+	case events.StoryCreated:
+		return c.handleStoryCreated(ctx, event)
 	case events.StoryUpdated:
 		return c.handleStoryUpdated(ctx, event)
 	case events.CommentCreated:
@@ -270,6 +272,38 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	// Workspace broadcasting
 	if c.hasSignificantChanges(payload.Updates) {
 		c.broadcastToWorkspace(ctx, payload, event.ActorID)
+	}
+
+	return nil
+}
+
+// handleStoryCreated processes story creation events
+func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) error {
+	var payload events.StoryCreatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	c.log.Info(ctx, "consumer.handleStoryCreated", "story_id", payload.StoryID, "workspace_id", payload.WorkspaceID, "assignee_id", payload.AssigneeID)
+
+	// Use notification rules to process the story creation
+	notifications, err := c.notificationRules.ProcessStoryCreated(ctx, payload, event.ActorID)
+	if err != nil {
+		c.log.Error(ctx, "failed to process story creation notifications", "error", err)
+		return err
+	}
+
+	// Create all notifications
+	for _, notification := range notifications {
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
+			// Continue with other notifications even if one fails
+		}
 	}
 
 	return nil
