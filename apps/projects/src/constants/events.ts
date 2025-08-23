@@ -14,7 +14,12 @@ const objectives = [
   "objective_restored",
 ] as const;
 
-const teams = ["team_created", "team_updated", "team_deleted"] as const;
+const teams = [
+  "team_created",
+  "team_updated",
+  "team_deleted",
+  "teams_reordered",
+] as const;
 const keyResults = ["key_result_created", "key_result_updated"] as const;
 const search = [
   "search_performed",

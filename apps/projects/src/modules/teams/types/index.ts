@@ -51,3 +51,7 @@ export type UpdateSprintSettingsInput = Partial<
 export type UpdateStoryAutomationSettingsInput = Partial<
   Omit<TeamStoryAutomationSettings, "createdAt" | "updatedAt">
 >;
+
+export type ReorderTeamsInput = {
+  teamIds: string[];
+};
