@@ -78,7 +78,7 @@ export const Team = ({
   return (
     <ContextMenu>
       <ContextMenu.Trigger>
-        <Box>
+        <Box className="group">
           <Flex align="center" gap={1} justify="between">
             <Flex
               align="center"
@@ -113,7 +113,7 @@ export const Team = ({
               <Menu.Button>
                 <Button
                   asIcon
-                  className=""
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
                   color="tertiary"
                   leftIcon={<MoreHorizontalIcon />}
                   rounded="full"
@@ -125,11 +125,46 @@ export const Team = ({
               </Menu.Button>
               <Menu.Items>
                 <Menu.Group>
-                  <Menu.Item disabled={userRole !== "admin"}>
-                    <Link href={`/teams/${id}/settings`}>
+                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                    <Link
+                      className="flex items-center gap-1.5 py-1.5"
+                      href={`/settings/workspace/teams/${id}`}
+                    >
                       <SettingsIcon />
                       Team settings
                     </Link>
+                  </Menu.Item>
+                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                    <Link
+                      className="flex items-center gap-1.5 py-1.5"
+                      href={`/teams/${id}/archived`}
+                    >
+                      <ArchiveIcon />
+                      Archived{" "}
+                      {getTermDisplay("storyTerm", { variant: "plural" })}
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                    <Link
+                      className="flex items-center gap-1.5 py-1.5"
+                      href={`/teams/${id}/deleted`}
+                    >
+                      <DeleteIcon />
+                      Deleted{" "}
+                      {getTermDisplay("storyTerm", { variant: "plural" })}
+                    </Link>
+                  </Menu.Item>
+                </Menu.Group>
+                <Menu.Separator />
+                <Menu.Group>
+                  <Menu.Item
+                    disabled={totalTeams === 1}
+                    onClick={() => {
+                      setIsLeaving(true);
+                    }}
+                  >
+                    <LogoutIcon />
+                    Leave team
                   </Menu.Item>
                 </Menu.Group>
               </Menu.Items>
