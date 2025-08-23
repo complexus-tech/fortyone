@@ -29,6 +29,7 @@ const MenuItem = ({
   <Link
     className="flex w-[17rem] gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
     href={href}
+    prefetch
   >
     {icon}
     <Box>
@@ -163,6 +164,7 @@ export const Navigation = () => {
               )}
               href={href}
               key={title}
+              prefetch
             >
               {title}
             </NavLink>
@@ -228,7 +230,7 @@ export const Navigation = () => {
                         setIsMenuOpen(false);
                       }}
                     >
-                      <NavLink className="flex text-xl" href={href}>
+                      <NavLink className="flex text-xl" href={href} prefetch>
                         {title}
                       </NavLink>
                     </Menu.Item>

@@ -71,7 +71,7 @@ export const FeatureGrid = ({
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        viewport={{ once: true, amount: 0.5 }}
+        viewport={{ once: true, amount: 0.2 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100 dark:border-dark-50 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
