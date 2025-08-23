@@ -18,6 +18,7 @@ import {
 } from "icons";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useSortable } from "@dnd-kit/sortable";
 import {
   useLocalStorage,
   useTerminology,
@@ -51,6 +52,24 @@ export const Team = ({
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+  });
+
+  const style = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    transition,
+  };
+
   const links = [
     {
       name: "Backlog",
@@ -79,129 +98,146 @@ export const Team = ({
   return (
     <ContextMenu>
       <ContextMenu.Trigger>
-        <Box className="group">
-          <Flex align="center" className="relative" gap={1} justify="between">
-            <DragIcon
-              className="absolute -left-2.5 top-3 h-[1.1rem] opacity-0 transition-opacity hover:cursor-grab group-hover:opacity-100"
-              strokeWidth={3.5}
-            />
-            <Flex
-              align="center"
-              className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
-              justify="between"
-              onClick={() => {
-                setIsOpen(!isOpen);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+        <div
+          className={cn("group", {
+            "opacity-80 backdrop-blur": isDragging,
+            "shadow-lg": isDragging,
+          })}
+          ref={setNodeRef}
+          style={style}
+        >
+          <Box>
+            <Flex align="center" className="relative" gap={1} justify="between">
+              <DragIcon
+                className={cn(
+                  "absolute -left-2.5 top-3 h-[1.1rem] opacity-0 transition-opacity group-hover:opacity-100",
+                  {
+                    "cursor-grab": !isDragging,
+                    "cursor-grabbing": isDragging,
+                  },
+                )}
+                strokeWidth={3.5}
+                {...attributes}
+                {...listeners}
+              />
+              <Flex
+                align="center"
+                className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
+                justify="between"
+                onClick={() => {
                   setIsOpen(!isOpen);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <span className="flex items-center gap-1">
-                <TeamColor color={color} />
-                <span className="ml-1 block max-w-[15ch] truncate">
-                  {teamName}
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setIsOpen(!isOpen);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <span className="flex items-center gap-1">
+                  <TeamColor color={color} />
+                  <span className="ml-1 block max-w-[15ch] truncate">
+                    {teamName}
+                  </span>
+                  <ArrowRightIcon
+                    className={cn("relative top-px h-3.5", {
+                      "rotate-90": isOpen,
+                    })}
+                    strokeWidth={3.5}
+                    suppressHydrationWarning
+                  />
                 </span>
-                <ArrowRightIcon
-                  className={cn("relative top-px h-3.5", {
-                    "rotate-90": isOpen,
-                  })}
-                  strokeWidth={3.5}
-                  suppressHydrationWarning
-                />
-              </span>
-            </Flex>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  asIcon
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
-                  color="tertiary"
-                  leftIcon={<MoreHorizontalIcon />}
-                  rounded="full"
-                  size="sm"
-                  variant="naked"
-                >
-                  <span className="sr-only">Team menu</span>
-                </Button>
-              </Menu.Button>
-              <Menu.Items>
-                <Menu.Group>
-                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
-                    <Link
-                      className="flex items-center gap-1.5 py-1.5"
-                      href={`/settings/workspace/teams/${id}`}
-                    >
-                      <SettingsIcon />
-                      Team settings
-                    </Link>
-                  </Menu.Item>
-                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
-                    <Link
-                      className="flex items-center gap-1.5 py-1.5"
-                      href={`/teams/${id}/archived`}
-                    >
-                      <ArchiveIcon />
-                      Archived{" "}
-                      {getTermDisplay("storyTerm", { variant: "plural" })}
-                    </Link>
-                  </Menu.Item>
-                  <Menu.Item className="py-0" disabled={userRole !== "admin"}>
-                    <Link
-                      className="flex items-center gap-1.5 py-1.5"
-                      href={`/teams/${id}/deleted`}
-                    >
-                      <DeleteIcon />
-                      Deleted{" "}
-                      {getTermDisplay("storyTerm", { variant: "plural" })}
-                    </Link>
-                  </Menu.Item>
-                </Menu.Group>
-                <Menu.Separator />
-                <Menu.Group>
-                  <Menu.Item
-                    disabled={totalTeams === 1}
-                    onClick={() => {
-                      setIsLeaving(true);
-                    }}
+              </Flex>
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    asIcon
+                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                    color="tertiary"
+                    leftIcon={<MoreHorizontalIcon />}
+                    rounded="full"
+                    size="sm"
+                    variant="naked"
                   >
-                    <LogoutIcon />
-                    Leave team
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Flex>
-          <Flex
-            className={cn(
-              "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-200/80 pl-2 transition-all duration-300 dark:border-dark-50",
-              {
-                "mt-2 h-max": isOpen,
-              },
-            )}
-            direction="column"
-            gap={1}
-            suppressHydrationWarning
-          >
-            {links
-              .filter(({ disabled }) => !disabled)
-              .map(({ name, icon, href }) => {
-                const isActive =
-                  href === "/"
-                    ? pathname === href || pathname.startsWith("/dashboard")
-                    : pathname.startsWith(href);
-                return (
-                  <NavLink active={isActive} href={href} key={name}>
-                    {icon}
-                    <span className="capitalize">{name}</span>
-                  </NavLink>
-                );
-              })}
-          </Flex>
-        </Box>
+                    <span className="sr-only">Team menu</span>
+                  </Button>
+                </Menu.Button>
+                <Menu.Items>
+                  <Menu.Group>
+                    <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                      <Link
+                        className="flex items-center gap-1.5 py-1.5"
+                        href={`/settings/workspace/teams/${id}`}
+                      >
+                        <SettingsIcon />
+                        Team settings
+                      </Link>
+                    </Menu.Item>
+                    <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                      <Link
+                        className="flex items-center gap-1.5 py-1.5"
+                        href={`/teams/${id}/archived`}
+                      >
+                        <ArchiveIcon />
+                        Archived{" "}
+                        {getTermDisplay("storyTerm", { variant: "plural" })}
+                      </Link>
+                    </Menu.Item>
+                    <Menu.Item className="py-0" disabled={userRole !== "admin"}>
+                      <Link
+                        className="flex items-center gap-1.5 py-1.5"
+                        href={`/teams/${id}/deleted`}
+                      >
+                        <DeleteIcon />
+                        Deleted{" "}
+                        {getTermDisplay("storyTerm", { variant: "plural" })}
+                      </Link>
+                    </Menu.Item>
+                  </Menu.Group>
+                  <Menu.Separator />
+                  <Menu.Group>
+                    <Menu.Item
+                      disabled={totalTeams === 1}
+                      onClick={() => {
+                        setIsLeaving(true);
+                      }}
+                    >
+                      <LogoutIcon />
+                      Leave team
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            </Flex>
+            <Flex
+              className={cn(
+                "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-200/80 pl-2 transition-all duration-300 dark:border-dark-50",
+                {
+                  "mt-2 h-max": isOpen,
+                },
+              )}
+              direction="column"
+              gap={1}
+              suppressHydrationWarning
+            >
+              {links
+                .filter(({ disabled }) => !disabled)
+                .map(({ name, icon, href }) => {
+                  const isActive =
+                    href === "/"
+                      ? pathname === href || pathname.startsWith("/dashboard")
+                      : pathname.startsWith(href);
+                  return (
+                    <NavLink active={isActive} href={href} key={name}>
+                      {icon}
+                      <span className="capitalize">{name}</span>
+                    </NavLink>
+                  );
+                })}
+            </Flex>
+          </Box>
+        </div>
       </ContextMenu.Trigger>
       <ContextMenu.Items>
         <ContextMenu.Group>
