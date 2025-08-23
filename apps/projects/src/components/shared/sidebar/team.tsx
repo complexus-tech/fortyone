@@ -101,7 +101,6 @@ export const Team = ({
         <div
           className={cn("group", {
             "opacity-80 backdrop-blur": isDragging,
-            "shadow-lg": isDragging,
           })}
           ref={setNodeRef}
           style={style}
@@ -110,7 +109,7 @@ export const Team = ({
             <Flex align="center" className="relative" gap={1} justify="between">
               <DragIcon
                 className={cn(
-                  "absolute -left-2.5 top-3 h-[1.1rem] opacity-0 transition-opacity group-hover:opacity-100",
+                  "absolute -left-2.5 bottom-1/2 top-1/2 h-[1.1rem] -translate-y-1/2 opacity-0 outline-none transition-opacity group-hover:opacity-100",
                   {
                     "cursor-grab": !isDragging,
                     "cursor-grabbing": isDragging,
