@@ -32,4 +32,5 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/teams/{id}", h.Delete, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/teams/{id}/members", h.AddMember, auth, workspace, gzip)
 	app.Delete("/workspaces/{workspaceSlug}/teams/{id}/members/{userId}", h.RemoveMember, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/teams/order", h.UpdateTeamOrdering, auth, workspace)
 }

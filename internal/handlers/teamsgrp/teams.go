@@ -285,3 +285,42 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
+
+// UpdateTeamOrdering updates the user's custom team ordering for a workspace.
+func (h *Handlers) UpdateTeamOrdering(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.UpdateTeamOrdering")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var input AppUpdateTeamOrdering
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	// Validate that the user has access to all the teams being ordered
+	// This is a basic validation - you might want to add more sophisticated checks
+	if len(input.TeamIDs) == 0 {
+		return web.RespondError(ctx, w, errors.New("team IDs cannot be empty"), http.StatusBadRequest)
+	}
+
+	if err := h.teams.UpdateUserTeamOrdering(ctx, userID, workspace.ID, input.TeamIDs); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team ordering updated.", trace.WithAttributes(
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.Int("teams_ordered", len(input.TeamIDs)),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}

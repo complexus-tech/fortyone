@@ -56,3 +56,7 @@ type AppUpdateTeam struct {
 type AppNewTeamMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
 }
+
+type AppUpdateTeamOrdering struct {
+	TeamIDs []uuid.UUID `json:"teamIds" validate:"required,min=1"`
+}
