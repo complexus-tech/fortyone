@@ -22,6 +22,7 @@ type Repository interface {
 	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
+	UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error
 }
 
 // TeamSettingsRepository provides access to the team settings storage.
@@ -195,6 +196,25 @@ func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, wo
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
 		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return nil
+}
+
+// UpdateUserTeamOrdering updates the user's custom team ordering for a workspace.
+func (s *Service) UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error {
+	s.log.Info(ctx, "business.core.teams.updateUserTeamOrdering")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.UpdateUserTeamOrdering")
+	defer span.End()
+
+	if err := s.repo.UpdateUserTeamOrdering(ctx, userID, workspaceID, teamIds); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("user team ordering updated.", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.Int("teams_ordered", len(teamIds)),
 	))
 	return nil
 }
