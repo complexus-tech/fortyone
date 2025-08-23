@@ -2,13 +2,14 @@
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Box, ContextMenu, Flex } from "ui";
+import { Box, Button, ContextMenu, Flex, Menu } from "ui";
 import {
   ArchiveIcon,
-  ArrowRight2Icon,
+  ArrowRightIcon,
   BacklogIcon,
   DeleteIcon,
   LogoutIcon,
+  MoreHorizontalIcon,
   ObjectiveIcon,
   SettingsIcon,
   SprintsIcon,
@@ -78,32 +79,61 @@ export const Team = ({
     <ContextMenu>
       <ContextMenu.Trigger>
         <Box>
-          <Flex
-            align="center"
-            className="group h-[2.5rem] select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition hover:bg-gray-250/5 focus:bg-gray-250/5 hover:dark:bg-dark-50/60 focus:dark:bg-dark-50/60"
-            justify="between"
-            onClick={() => {
-              setIsOpen(!isOpen);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+          <Flex align="center" gap={1} justify="between">
+            <Flex
+              align="center"
+              className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
+              justify="between"
+              onClick={() => {
                 setIsOpen(!isOpen);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <span className="flex items-center gap-2">
-              <TeamColor color={color} />
-              <span className="block max-w-[15ch] truncate">{teamName}</span>
-            </span>
-            <ArrowRight2Icon
-              className={cn("h-4", {
-                "rotate-90": isOpen,
-              })}
-              strokeWidth={3.5}
-              suppressHydrationWarning
-            />
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setIsOpen(!isOpen);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <span className="flex items-center gap-1">
+                <TeamColor color={color} />
+                <span className="ml-1 block max-w-[15ch] truncate">
+                  {teamName}
+                </span>
+                <ArrowRightIcon
+                  className={cn("relative top-px h-3.5", {
+                    "rotate-90": isOpen,
+                  })}
+                  strokeWidth={3.5}
+                  suppressHydrationWarning
+                />
+              </span>
+            </Flex>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  asIcon
+                  className=""
+                  color="tertiary"
+                  leftIcon={<MoreHorizontalIcon />}
+                  rounded="full"
+                  size="sm"
+                  variant="naked"
+                >
+                  <span className="sr-only">Team menu</span>
+                </Button>
+              </Menu.Button>
+              <Menu.Items>
+                <Menu.Group>
+                  <Menu.Item disabled={userRole !== "admin"}>
+                    <Link href={`/teams/${id}/settings`}>
+                      <SettingsIcon />
+                      Team settings
+                    </Link>
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
           </Flex>
           <Flex
             className={cn(
