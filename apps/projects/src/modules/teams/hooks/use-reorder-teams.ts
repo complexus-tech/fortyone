@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useAnalytics } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import { reorderTeamsAction } from "../actions/reorder-teams";
+import type { Team } from "../types";
 
 export const useReorderTeamsMutation = () => {
   const queryClient = useQueryClient();
@@ -12,7 +13,12 @@ export const useReorderTeamsMutation = () => {
   const mutation = useMutation({
     mutationFn: reorderTeamsAction,
     onMutate: (data) => {
-      const previousTeams = queryClient.getQueryData(teamKeys.lists());
+      const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists());
+      // reorder the teams
+      const reorderedTeams = data.teamIds.map((id) => {
+        return previousTeams?.find((t) => t.id === id);
+      });
+      queryClient.setQueryData(teamKeys.lists(), reorderedTeams);
 
       return { previousTeams };
     },
