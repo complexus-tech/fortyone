@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Box, Button, ContextMenu, Flex, Menu } from "ui";
 import {
   ArchiveIcon,
-  ArrowRightIcon,
+  ArrowRight2Icon,
   BacklogIcon,
   DeleteIcon,
   DragIcon,
@@ -134,13 +134,13 @@ export const Team = ({
                 role="button"
                 tabIndex={0}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5">
                   <TeamColor color={color} />
-                  <span className="ml-1 block max-w-[15ch] truncate">
+                  <span className="ml-0.5 block max-w-[15ch] truncate">
                     {teamName}
                   </span>
-                  <ArrowRightIcon
-                    className={cn("relative top-px h-3.5", {
+                  <ArrowRight2Icon
+                    className={cn("relative h-3.5", {
                       "rotate-90": isOpen,
                     })}
                     strokeWidth={3.5}
