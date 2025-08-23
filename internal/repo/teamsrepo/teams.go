@@ -56,15 +56,25 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			) as member_count
 		FROM
 			teams t
+		LEFT JOIN user_team_orders uto ON
+			t.team_id = uto.team_id
+			AND uto.user_id = :user_id
+			AND uto.workspace_id = :workspace_id
 		WHERE
 			t.workspace_id = :workspace_id
 			AND EXISTS (
-				SELECT 1 
-				FROM team_members tm 
-				WHERE tm.team_id = t.team_id 
+				SELECT 1
+				FROM team_members tm
+				WHERE tm.team_id = t.team_id
 				AND tm.user_id = :user_id
 			)
-		ORDER BY t.created_at DESC;
+		ORDER BY
+			CASE
+				WHEN uto.order_index IS NOT NULL THEN 0
+				ELSE 1
+			END,
+			uto.order_index ASC NULLS LAST,
+			t.created_at DESC;
 	`
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -75,7 +85,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	}
 	defer stmt.Close()
 
-	r.log.Info(ctx, "Fetching teams.")
+	r.log.Info(ctx, "Fetching teams with user ordering.")
 	if err := stmt.SelectContext(ctx, &teams, params); err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve teams from the database: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -622,6 +632,76 @@ func (r *repo) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid
 		span.RecordError(errors.New("failed to add team member"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
 	}
+
+	return nil
+}
+
+// UpdateUserTeamOrdering updates the user's custom team ordering for a workspace.
+func (r *repo) UpdateUserTeamOrdering(ctx context.Context, userID, workspaceId uuid.UUID, teamIds []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.UpdateUserTeamOrdering")
+	defer span.End()
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to begin transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to begin transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer tx.Rollback()
+
+	// Delete existing ordering
+	deleteQuery := `
+		DELETE FROM user_team_orders
+		WHERE user_id = :user_id AND workspace_id = :workspace_id
+	`
+
+	deleteParams := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceId,
+	}
+
+	if _, err := tx.NamedExecContext(ctx, deleteQuery, deleteParams); err != nil {
+		errMsg := fmt.Sprintf("failed to delete existing ordering: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete existing ordering"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	// Insert new ordering
+	insertQuery := `
+		INSERT INTO user_team_orders (user_id, team_id, workspace_id, order_index)
+		VALUES (:user_id, :team_id, :workspace_id, :order_index)
+	`
+
+	for i, teamId := range teamIds {
+		insertParams := map[string]any{
+			"user_id":      userID,
+			"team_id":      teamId,
+			"workspace_id": workspaceId,
+			"order_index":  i,
+		}
+
+		if _, err := tx.NamedExecContext(ctx, insertQuery, insertParams); err != nil {
+			errMsg := fmt.Sprintf("failed to insert team ordering: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to insert team ordering"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to commit transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	span.AddEvent("user team ordering updated.", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceId.String()),
+		attribute.Int("teams_ordered", len(teamIds)),
+	))
 
 	return nil
 }
