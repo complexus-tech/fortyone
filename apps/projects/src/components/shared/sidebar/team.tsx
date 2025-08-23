@@ -8,6 +8,7 @@ import {
   ArrowRightIcon,
   BacklogIcon,
   DeleteIcon,
+  DragIcon,
   LogoutIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
@@ -79,7 +80,11 @@ export const Team = ({
     <ContextMenu>
       <ContextMenu.Trigger>
         <Box className="group">
-          <Flex align="center" gap={1} justify="between">
+          <Flex align="center" className="relative" gap={1} justify="between">
+            <DragIcon
+              className="absolute -left-2.5 top-3 h-[1.1rem] opacity-0 transition-opacity hover:cursor-grab group-hover:opacity-100"
+              strokeWidth={3.5}
+            />
             <Flex
               align="center"
               className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
