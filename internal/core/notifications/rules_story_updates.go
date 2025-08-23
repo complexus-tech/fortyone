@@ -72,7 +72,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	oldAssigneeID := payload.AssigneeID
 	newAssigneeID := getNewAssignee(payload.Updates)
 
-	if oldAssigneeID == nil || newAssigneeID == nil || !shouldNotify(*oldAssigneeID, actorID) {
+	if oldAssigneeID == nil || newAssigneeID == nil {
 		return nil
 	}
 
@@ -80,22 +80,39 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	newAssigneeName := r.getUserName(ctx, *newAssigneeID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 
-	template := "{actor} reassigned story to {assignee}"
-	if actorName == newAssigneeName {
-		template = "{actor} reassigned story to themselves"
+	var notifications []CoreNewNotification
+
+	// Notify old assignee about who the story went to (only if they're not the actor)
+	if shouldNotify(*oldAssigneeID, actorID) {
+		template := "{actor} reassigned story to {assignee}"
+		if actorName == newAssigneeName {
+			template = "{actor} reassigned story to themselves"
+		}
+
+		message := NotificationMessage{
+			Template: template,
+			Variables: map[string]Variable{
+				"actor":    {Value: actorName, Type: "actor"},
+				"assignee": {Value: newAssigneeName, Type: "assignee"},
+			},
+		}
+
+		notifications = append(notifications, r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message))
 	}
 
-	message := NotificationMessage{
-		Template: template,
-		Variables: map[string]Variable{
-			"actor":    {Value: actorName, Type: "actor"},
-			"assignee": {Value: newAssigneeName, Type: "assignee"},
-		},
+	// Notify new assignee that they received the story (only if they're not the actor)
+	if shouldNotify(*newAssigneeID, actorID) {
+		message := NotificationMessage{
+			Template: "{actor} assigned you a story",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+
+		notifications = append(notifications, r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message))
 	}
 
-	return []CoreNewNotification{
-		r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message),
-	}
+	return notifications
 }
 
 // handlePureUnassignment creates notifications for pure unassignments (no new assignee)
