@@ -6,7 +6,7 @@ import { Container } from "@/components/ui";
 
 export const Integrations = () => {
   return (
-    <Box className="relative mt-20 bg-gradient-to-b from-gray-50 to-white py-16 grayscale dark:from-dark dark:via-dark dark:to-black md:mb-28 md:py-40">
+    <Box className="relative mt-20 bg-gradient-to-b from-gray-50 to-white py-16 dark:from-dark dark:via-dark dark:to-black md:mb-28 md:py-40">
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute left-16 top-24 hidden rotate-6 md:block"

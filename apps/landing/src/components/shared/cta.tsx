@@ -19,7 +19,7 @@ const scaleIn = {
 
 export const CallToAction = () => {
   return (
-    <Box className="overflow-hidden border-b border-gray-100/70 bg-gradient-to-t from-gray-50 grayscale dark:border-dark-200 dark:from-dark-300/70">
+    <Box className="overflow-hidden border-b border-gray-100/70 bg-gradient-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
         <Flex
           align="center"
