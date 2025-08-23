@@ -140,7 +140,7 @@ export const Team = ({
                     {teamName}
                   </span>
                   <ArrowRight2Icon
-                    className={cn("relative h-3.5", {
+                    className={cn("relative top-[0.5px] h-3.5", {
                       "rotate-90": isOpen,
                     })}
                     strokeWidth={3.5}
