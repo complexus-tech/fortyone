@@ -21,6 +21,7 @@
     "gray-matter": "^4.0.3",
     "gsap": "^3.12.5",
     "icons": "workspace:*",
+    "babel-plugin-react-compiler": "19.1.0-rc.2",
     "ky": "^1.5.0",
     "lib": "workspace:*",
     "mouse-follower": "^1.1.2",

@@ -7,7 +7,11 @@ const nextConfig = {
   pageExtensions: ["tsx", "ts", "mdx"],
   experimental: {
     mdxRs: true,
-    viewTransition: true,
+    reactCompiler: true,
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   images: {
     remotePatterns: [
