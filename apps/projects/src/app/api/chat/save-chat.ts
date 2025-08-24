@@ -1,3 +1,4 @@
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
 import { generateObject } from "ai";
@@ -25,7 +26,7 @@ export const saveChat = async ({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
+  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -45,7 +46,12 @@ export const saveChat = async ({
       schema: z.object({
         title: z.string(),
       }),
-      temperature: 0.6,
+      providerOptions: {
+        openai: {
+          reasoningEffort: "minimal",
+          textVerbosity: "low",
+        } satisfies OpenAIResponsesProviderOptions,
+      },
       prompt: `You're generating a short title for a conversation in Complexus, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
     
       User message: "${messageContent}"`,

@@ -1,3 +1,4 @@
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamObject } from "ai";
 import { withTracing } from "@posthog/ai";
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-nano"), phClient, {
+  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
     posthogDistinctId: session.user.email ?? "",
     posthogProperties: {
       action: "generate_key_results",
@@ -83,8 +84,9 @@ export async function POST(req: Request) {
       prompt: improvedPrompt,
       providerOptions: {
         openai: {
-          reasoningEffort: "low",
-        },
+          reasoningEffort: "minimal",
+          textVerbosity: "low",
+        } satisfies OpenAIResponsesProviderOptions,
       },
     });
 

@@ -1,4 +1,5 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- this is ok */
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
 import {
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+  const model = withTracing(openaiClient("gpt-5-mini-2025-08-07"), phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -68,7 +69,6 @@ export async function POST(req: NextRequest) {
       model,
       messages: modelMessages,
       maxOutputTokens: 4000,
-      // temperature: 0.5,
       stopWhen: [stepCountIs(15)],
       tools,
       system: systemPrompt + userContext,
@@ -76,11 +76,16 @@ export async function POST(req: NextRequest) {
         delayInMs: 20,
         chunking: "word",
       }),
-      // providerOptions: {
-      //   openai: { reasoningEffort: "low" },
-      // },
+      providerOptions: {
+        openai: {
+          reasoningEffort: "low",
+          reasoningSummary: "auto",
+          textVerbosity: "low",
+        } satisfies OpenAIResponsesProviderOptions,
+      },
     });
     return result.toUIMessageStreamResponse({
+      sendReasoning: true,
       originalMessages: messagesFromRequest,
       onFinish: ({ messages }) => {
         saveChat({ id, messages });
