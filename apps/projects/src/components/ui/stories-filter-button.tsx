@@ -328,6 +328,7 @@ export const StoriesFilterButton = ({
   const pathname = usePathname();
   const { teamId } = useParams<{ teamId: string }>();
   const isBacklog = pathname.includes("/backlog");
+  const isOnSprint = pathname.includes("/sprints/");
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
@@ -498,7 +499,7 @@ export const StoriesFilterButton = ({
           </>
         ) : null}
 
-        {!isBacklog && (
+        {!isBacklog && !isOnSprint && (
           <>
             <Divider />
             <FilterSection title="Sprint">

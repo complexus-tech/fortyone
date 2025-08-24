@@ -11,6 +11,7 @@ import {
   StoriesViewOptionsButton,
   SideDetailsSwitch,
   TeamColor,
+  StoriesFilterButton,
 } from "@/components/ui";
 import { useTerminology, useUserRole } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
@@ -30,7 +31,8 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions, setViewOptions } = useSprintOptions();
+  const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
+    useSprintOptions();
   const { teamId, sprintId } = useParams<{
     teamId: string;
     sprintId: string;
@@ -119,6 +121,11 @@ export const Header = ({
           layout={layout}
           options={["list", "kanban"]}
           setLayout={setLayout}
+        />
+        <StoriesFilterButton
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
         />
         <StoriesViewOptionsButton
           layout={layout}

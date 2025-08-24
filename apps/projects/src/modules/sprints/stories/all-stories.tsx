@@ -11,13 +11,20 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     sprintId: string;
     teamId: string;
   }>();
-  const { viewOptions } = useSprintOptions();
+  const { viewOptions, filters } = useSprintOptions();
   const { data: groupedStories, isPending } = useSprintStoriesGrouped(
     sprintId,
     viewOptions.groupBy,
     {
       orderBy: viewOptions.orderBy,
       teamIds: [teamId],
+      statusIds: filters.statusIds ?? undefined,
+      priorities: filters.priorities ?? undefined,
+      assigneeIds: filters.assigneeIds ?? undefined,
+      reporterIds: filters.reporterIds ?? undefined,
+      assignedToMe: filters.assignedToMe ? true : undefined,
+      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
+      createdByMe: filters.createdByMe ? true : undefined,
     },
   );
 
