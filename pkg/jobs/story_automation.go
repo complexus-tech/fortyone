@@ -349,10 +349,10 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 	ctx, span := web.AddSpan(ctx, "jobs.processSprintMigrationBatch")
 	defer span.End()
 
-	// Find ended sprints with incomplete stories and migrate them in one query
+	// Find ended sprints with incomplete stories and migrate them to the chronologically next sprint
 	migrationQuery := `
 		WITH ended_sprints AS (
-			SELECT DISTINCT 
+			SELECT DISTINCT
 				s.sprint_id,
 				s.team_id,
 				s.workspace_id,
@@ -362,10 +362,10 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 			WHERE s.end_date < CURRENT_DATE
 				AND tss.move_incomplete_stories_enabled = true
 				AND EXISTS (
-					SELECT 1 
-					FROM stories st 
+					SELECT 1
+					FROM stories st
 					JOIN statuses stat ON st.status_id = stat.status_id
-					WHERE st.sprint_id = s.sprint_id 
+					WHERE st.sprint_id = s.sprint_id
 						AND stat.category IN ('unstarted', 'started')
 					LIMIT 1
 				)
@@ -373,20 +373,23 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 			LIMIT :batch_size
 		),
 		next_sprints AS (
-			SELECT DISTINCT ON (es.team_id)
+			SELECT DISTINCT ON (es.sprint_id)
 				es.sprint_id as ended_sprint_id,
 				es.team_id,
 				es.workspace_id,
-				ns.sprint_id as next_sprint_id
+				ns.sprint_id as next_sprint_id,
+				ns.name as next_sprint_name,
+				ns.start_date as next_sprint_start_date
 			FROM ended_sprints es
-			LEFT JOIN sprints ns ON es.team_id = ns.team_id 
-				AND ns.start_date <= CURRENT_DATE 
-				AND ns.end_date >= CURRENT_DATE
+			LEFT JOIN sprints ns ON es.team_id = ns.team_id
+				AND ns.start_date > es.end_date  -- Next sprint must start after the ended sprint
+				AND ns.start_date <= CURRENT_DATE + INTERVAL '30 days' -- Allow up to 30 days in the future
+				AND ns.deleted_at IS NULL  -- Ensure the next sprint isn't deleted
 			WHERE ns.sprint_id IS NOT NULL
-			ORDER BY es.team_id, ns.sprint_id
+			ORDER BY es.sprint_id, ns.start_date ASC -- Get the chronologically next sprint
 		)
-		UPDATE stories 
-		SET 
+		UPDATE stories
+		SET
 			sprint_id = ns.next_sprint_id
 		FROM next_sprints ns, statuses stat
 		WHERE stories.sprint_id = ns.ended_sprint_id
@@ -395,9 +398,9 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 			AND stat.category IN ('unstarted', 'started')
 			AND stories.deleted_at IS NULL
 			AND stories.archived_at IS NULL
-		RETURNING 
-			stories.id, 
-			stories.workspace_id, 
+		RETURNING
+			stories.id,
+			stories.workspace_id,
 			stories.team_id,
 			ns.ended_sprint_id as previous_sprint_id,
 			stories.sprint_id as new_sprint_id`
@@ -425,7 +428,22 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 
 	if err := stmt.SelectContext(ctx, &migratedStories, params); err != nil {
 		span.RecordError(err)
+		log.Error(ctx, "Failed to migrate stories batch", "error", err, "batch_size", batchSize)
 		return 0, 0, fmt.Errorf("failed to migrate stories batch: %w", err)
+	}
+
+	// Log detailed migration results for debugging
+	if len(migratedStories) > 0 {
+		log.Info(ctx, "Sprint migration batch details", "stories_migrated", len(migratedStories))
+		for _, story := range migratedStories {
+			log.Info(ctx, "Story migrated",
+				"story_id", story.ID,
+				"from_sprint", story.PreviousSprintID,
+				"to_sprint", story.NewSprintID,
+				"team_id", story.TeamID)
+		}
+	} else {
+		log.Info(ctx, "No stories were migrated in this batch - this could indicate no ended sprints with incomplete stories, or no available next sprints")
 	}
 
 	activitiesRecorded := 0
