@@ -9,7 +9,7 @@ import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
   NewStoryButton,
-  // StoriesFilterButton,
+  StoriesFilterButton,
   StoriesViewOptionsButton,
   TeamColor,
 } from "@/components/ui";
@@ -39,7 +39,8 @@ export const Header = ({
   const { name: objectiveName } = objectives.find(
     (objective) => objective.id === objectiveId,
   )!;
-  const { viewOptions, setViewOptions } = useObjectiveOptions();
+  const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
+    useObjectiveOptions();
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -94,11 +95,11 @@ export const Header = ({
         {tab === "stories" && (
           <>
             <LayoutSwitcher layout={layout} setLayout={setLayout} />
-            {/* <StoriesFilterButton
+            <StoriesFilterButton
               filters={filters}
               resetFilters={resetFilters}
               setFilters={setFilters}
-            /> */}
+            />
             <StoriesViewOptionsButton
               layout={layout}
               setViewOptions={setViewOptions}
