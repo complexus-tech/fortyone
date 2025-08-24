@@ -428,11 +428,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       </Box>
-      <Text
-        align="center"
-        className="pt-2 antialiased opacity-90"
-        color="muted"
-      >
+      <Text align="center" className="pt-2 opacity-90" color="muted">
         Maya can make mistakes, so double-check important info.
       </Text>
     </Box>
