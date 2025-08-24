@@ -4,7 +4,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import type { ChatStatus } from "ai";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
 import type { User } from "@/types";
@@ -15,6 +15,7 @@ import { NewStoryDialog } from "../new-story-dialog";
 import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 import { AttachmentsDisplay } from "./attachments-display";
+import { Reasoning } from "./reasoning";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -35,21 +36,18 @@ const RenderMessage = ({
   status: ChatStatus;
   onPromptSelect: (prompt: string) => void;
 }) => {
-  const [hasText, setHasText] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (message.parts.some((p) => p.type === "text")) {
-      setHasText(true);
-    }
-  }, [message.parts]);
-
-  const isProcessing =
-    !hasText && message.parts.some((p) => p.type === "step-start");
+  // check if the messages has reasoning and if status is streaming
+  const hasReasoning = message.parts.some((p) => p.type === "reasoning");
+  const hasText = message.parts.some((p) => p.type === "text");
 
   return (
     <>
-      {isProcessing ? <Thinking /> : null}
+      {(status === "submitted" || status === "streaming") &&
+      message.role === "assistant" &&
+      !hasReasoning ? (
+        <Thinking />
+      ) : null}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -67,8 +65,15 @@ const RenderMessage = ({
               </Markdown>
             </Box>
           );
-        } else if (part.type === "reasoning") {
-          return <Box key={index}>{part.text}</Box>;
+        } else if (part.type === "reasoning" && !hasText) {
+          return (
+            <Reasoning
+              className="mb-2"
+              content={part.text}
+              isStreaming={status === "streaming"}
+              key={index}
+            />
+          );
         } else if (part.type === "tool-getSprintDetailsTool") {
           if (part.state === "input-available") {
             return <Thinking key={index} message="Getting sprint details" />;

@@ -1,6 +1,5 @@
-/* eslint-disable turbo/no-undeclared-env-vars -- this is ok */
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI } from "@ai-sdk/openai";
+// import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
@@ -9,10 +8,10 @@ import {
   smoothStream,
 } from "ai";
 import type { NextRequest } from "next/server";
-import { withTracing } from "@posthog/ai";
+// import { withTracing } from "@posthog/ai";
 import { tools } from "@/lib/ai/tools";
-import { auth } from "@/auth";
-import posthogServer from "@/app/posthog-server";
+// import { auth } from "@/auth";
+// import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system-xml";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
@@ -48,25 +47,26 @@ export async function POST(req: NextRequest) {
     workspace,
   });
 
-  const session = await auth();
+  // const session = await auth();
 
-  const phClient = posthogServer();
+  // const phClient = posthogServer();
 
-  const openaiClient = createOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  // const openaiClient = createOpenAI({
+  //   apiKey: process.env.OPENAI_API_KEY,
+  // });
 
-  const model = withTracing(openaiClient("gpt-5-mini-2025-08-07"), phClient, {
-    posthogDistinctId: session?.user?.email ?? undefined,
-    posthogProperties: {
-      conversation_id: id,
-      paid: subscription?.status === "active",
-    },
-  });
+  // const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
+  //   posthogDistinctId: session?.user?.email ?? undefined,
+  //   posthogProperties: {
+  //     conversation_id: id,
+  //     paid: subscription?.status === "active",
+  //   },
+  // });
 
   try {
     const result = streamText({
-      model,
+      model: "google/gemini-2.5-flash",
+      // model,
       messages: modelMessages,
       maxOutputTokens: 4000,
       stopWhen: [stepCountIs(15)],
@@ -78,10 +78,16 @@ export async function POST(req: NextRequest) {
       }),
       providerOptions: {
         openai: {
-          reasoningEffort: "low",
+          reasoningEffort: "medium",
           reasoningSummary: "auto",
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
+        google: {
+          thinkingConfig: {
+            thinkingBudget: -1,
+            includeThoughts: true,
+          },
+        },
       },
     });
     return result.toUIMessageStreamResponse({

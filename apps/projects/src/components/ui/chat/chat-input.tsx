@@ -421,7 +421,7 @@ export const ChatInput = ({
             >
               {isRecording ? (
                 <CheckIcon className="text-current dark:text-current" />
-              ) : status === "submitted" ? (
+              ) : status === "submitted" || status === "streaming" ? (
                 <StopIcon className="text-current dark:text-current" />
               ) : (
                 <SendIcon />
