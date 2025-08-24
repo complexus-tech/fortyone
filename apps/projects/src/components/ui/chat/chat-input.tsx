@@ -257,9 +257,7 @@ export const ChatInput = ({
       {recordingState !== "idle" && (
         <Flex
           align="center"
-          className={cn("mb-2 px-1 pt-2 text-sm", {
-            "md:text-base": isOnPage,
-          })}
+          className="mb-2 px-1 pt-2"
           gap={2}
           justify="between"
         >
@@ -268,7 +266,7 @@ export const ChatInput = ({
           </Text>
           <Flex align="center" gap={1}>
             <Text
-              className={cn("text-sm", {
+              className={cn({
                 "text-success dark:text-success": recordingDuration < 40,
                 "text-warning dark:text-warning":
                   recordingDuration >= 40 && recordingDuration < 50,
