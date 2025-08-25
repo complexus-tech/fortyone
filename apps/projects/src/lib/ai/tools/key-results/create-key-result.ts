@@ -26,6 +26,12 @@ export const createKeyResultTool = tool({
     targetValue: z
       .number()
       .describe("Target value (required for percentage and number types)"),
+    startDate: z.string().describe("Start date (ISO format)"),
+    endDate: z.string().describe("End date (ISO format)"),
+    lead: z.string().describe("Lead user ID (optional)"),
+    contributors: z
+      .array(z.string())
+      .describe("Contributors user IDs (optional)"),
   }),
 
   execute: async ({
@@ -35,6 +41,10 @@ export const createKeyResultTool = tool({
     startValue,
     currentValue,
     targetValue,
+    startDate,
+    endDate,
+    lead,
+    contributors,
   }) => {
     const session = await auth();
 
@@ -73,6 +83,10 @@ export const createKeyResultTool = tool({
       startValue,
       targetValue,
       currentValue: finalCurrentValue,
+      startDate,
+      endDate,
+      lead,
+      contributors,
     });
 
     if (result.error) {

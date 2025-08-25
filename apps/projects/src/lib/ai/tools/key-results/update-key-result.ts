@@ -17,6 +17,16 @@ export const updateKeyResultTool = tool({
       .optional()
       .describe("Updated current progress value"),
     targetValue: z.number().optional().describe("Updated target value"),
+    startDate: z
+      .string()
+      .optional()
+      .describe("Updated start date (ISO format)"),
+    endDate: z.string().optional().describe("Updated end date (ISO format)"),
+    lead: z.string().optional().describe("Updated lead user ID (optional)"),
+    contributors: z
+      .array(z.string())
+      .optional()
+      .describe("Updated contributors user IDs (optional)"),
   }),
 
   execute: async ({
@@ -26,6 +36,10 @@ export const updateKeyResultTool = tool({
     currentValue,
     targetValue,
     objectiveId,
+    startDate,
+    endDate,
+    lead,
+    contributors,
   }) => {
     const session = await auth();
 
@@ -52,6 +66,10 @@ export const updateKeyResultTool = tool({
       startValue,
       currentValue,
       targetValue,
+      startDate,
+      endDate,
+      lead,
+      contributors,
     });
 
     if (result.error) {
