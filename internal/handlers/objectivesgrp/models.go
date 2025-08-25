@@ -169,16 +169,20 @@ type AppUpdateObjective struct {
 
 // AppKeyResult represents a key result in the application
 type AppKeyResult struct {
-	ID              uuid.UUID `json:"id"`
-	ObjectiveID     uuid.UUID `json:"objectiveId"`
-	Name            string    `json:"name"`
-	MeasurementType string    `json:"measurementType"`
-	StartValue      float64   `json:"startValue"`
-	CurrentValue    float64   `json:"currentValue"`
-	TargetValue     float64   `json:"targetValue"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	CreatedBy       uuid.UUID `json:"createdBy"`
+	ID              uuid.UUID   `json:"id"`
+	ObjectiveID     uuid.UUID   `json:"objectiveId"`
+	Name            string      `json:"name"`
+	MeasurementType string      `json:"measurementType"`
+	StartValue      float64     `json:"startValue"`
+	CurrentValue    float64     `json:"currentValue"`
+	TargetValue     float64     `json:"targetValue"`
+	Lead            *uuid.UUID  `json:"lead"`
+	Contributors    []uuid.UUID `json:"contributors"`
+	StartDate       *time.Time  `json:"startDate"`
+	EndDate         *time.Time  `json:"endDate"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	UpdatedAt       time.Time   `json:"updatedAt"`
+	CreatedBy       uuid.UUID   `json:"createdBy"`
 }
 
 func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
@@ -190,6 +194,10 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		StartValue:      kr.StartValue,
 		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
+		Lead:            kr.Lead,
+		Contributors:    kr.Contributors,
+		StartDate:       kr.StartDate,
+		EndDate:         kr.EndDate,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
 		CreatedBy:       kr.CreatedBy,

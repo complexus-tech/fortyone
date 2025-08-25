@@ -33,17 +33,19 @@ type dbObjective struct {
 }
 
 type dbKeyResult struct {
-	ID              uuid.UUID `db:"id"`
-	ObjectiveID     uuid.UUID `db:"objective_id"`
-	Name            string    `db:"name"`
-	MeasurementType string    `db:"measurement_type"`
-	StartValue      float64   `db:"start_value"`
-	CurrentValue    float64   `db:"current_value"`
-	TargetValue     float64   `db:"target_value"`
-	CreatedAt       time.Time `db:"created_at"`
-	UpdatedAt       time.Time `db:"updated_at"`
-	CreatedBy       uuid.UUID `db:"created_by"`
-	LastUpdatedBy   uuid.UUID `db:"last_updated_by"`
+	ID              uuid.UUID  `db:"id"`
+	ObjectiveID     uuid.UUID  `db:"objective_id"`
+	Name            string     `db:"name"`
+	MeasurementType string     `db:"measurement_type"`
+	StartValue      float64    `db:"start_value"`
+	CurrentValue    float64    `db:"current_value"`
+	TargetValue     float64    `db:"target_value"`
+	Lead            *uuid.UUID `db:"lead"`
+	StartDate       *time.Time `db:"start_date"`
+	EndDate         *time.Time `db:"end_date"`
+	CreatedAt       time.Time  `db:"created_at"`
+	UpdatedAt       time.Time  `db:"updated_at"`
+	CreatedBy       uuid.UUID  `db:"created_by"`
 }
 
 func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObjective {
@@ -96,7 +98,7 @@ func toCoreObjectives(do []dbObjective) []objectives.CoreObjective {
 	return objectives
 }
 
-func toDBKeyResult(kr keyresults.CoreNewKeyResult, createdBy uuid.UUID, lastUpdatedBy uuid.UUID) dbKeyResult {
+func toDBKeyResult(kr keyresults.CoreNewKeyResult, createdBy uuid.UUID) dbKeyResult {
 	return dbKeyResult{
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
@@ -104,8 +106,10 @@ func toDBKeyResult(kr keyresults.CoreNewKeyResult, createdBy uuid.UUID, lastUpda
 		StartValue:      kr.StartValue,
 		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
+		Lead:            kr.Lead,
+		StartDate:       kr.StartDate,
+		EndDate:         kr.EndDate,
 		CreatedBy:       createdBy,
-		LastUpdatedBy:   lastUpdatedBy,
 	}
 }
 
@@ -118,6 +122,9 @@ func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
 		StartValue:      dbkr.StartValue,
 		CurrentValue:    dbkr.CurrentValue,
 		TargetValue:     dbkr.TargetValue,
+		Lead:            dbkr.Lead,
+		StartDate:       dbkr.StartDate,
+		EndDate:         dbkr.EndDate,
 		CreatedAt:       dbkr.CreatedAt,
 		UpdatedAt:       dbkr.UpdatedAt,
 		CreatedBy:       dbkr.CreatedBy,

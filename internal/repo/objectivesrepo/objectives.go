@@ -102,7 +102,7 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 		for _, kr := range keyResults {
 			kr.ObjectiveID = createdObj.ID
 			var dbKR dbKeyResult
-			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr, kr.CreatedBy, kr.CreatedBy)); err != nil {
+			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr, kr.CreatedBy)); err != nil {
 				return objectives.CoreObjective{}, nil, err
 			}
 			createdKRs = append(createdKRs, toCoreKeyResult(dbKR))
