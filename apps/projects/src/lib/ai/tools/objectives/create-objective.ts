@@ -38,6 +38,10 @@ export const createObjectiveTool = tool({
             .describe("How the key result is measured"),
           startValue: z.number().describe("Starting value"),
           targetValue: z.number().describe("Target value"),
+          startDate: z.string().describe("Start date (ISO string)"),
+          endDate: z.string().describe("End date (ISO string)"),
+          contributors: z.array(z.string()).describe("Contributors (UUIDs)"),
+          lead: z.string().describe("Lead user ID (UUID)"),
         }),
       )
       .optional()
