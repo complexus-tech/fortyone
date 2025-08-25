@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { formatISO } from "date-fns";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
@@ -27,6 +28,8 @@ export const UpdateKeyResultDialog = ({
     targetValue: keyResult.targetValue,
     currentValue: keyResult.currentValue,
     contributors: keyResult.contributors,
+    startDate: keyResult.startDate,
+    endDate: keyResult.endDate,
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -47,6 +50,8 @@ export const UpdateKeyResultDialog = ({
         targetValue: form.targetValue,
         currentValue: form.currentValue,
         contributors: form.contributors,
+        startDate: form.startDate,
+        endDate: form.endDate,
       },
     });
     onOpenChange(false);
@@ -56,6 +61,8 @@ export const UpdateKeyResultDialog = ({
       targetValue: keyResult.targetValue,
       currentValue: keyResult.currentValue,
       contributors: keyResult.contributors,
+      startDate: keyResult.startDate,
+      endDate: keyResult.endDate,
     });
   };
 
@@ -66,12 +73,14 @@ export const UpdateKeyResultDialog = ({
       targetValue: keyResult.targetValue,
       currentValue: keyResult.currentValue,
       contributors: keyResult.contributors,
+      startDate: keyResult.startDate,
+      endDate: keyResult.endDate,
     });
   }, [keyResult]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={isOpen}>
-      <Dialog.Content>
+      <Dialog.Content className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title className="text-lg capitalize">
@@ -89,6 +98,30 @@ export const UpdateKeyResultDialog = ({
               required
               value={form.name}
             />
+            <Box className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Date"
+                onChange={(e) => {
+                  setForm({ ...form, startDate: e.target.value });
+                }}
+                required
+                type="date"
+                value={formatISO(new Date(form.startDate), {
+                  representation: "date",
+                })}
+              />
+              <Input
+                label="Deadline"
+                onChange={(e) => {
+                  setForm({ ...form, endDate: e.target.value });
+                }}
+                required
+                type="date"
+                value={formatISO(new Date(form.endDate), {
+                  representation: "date",
+                })}
+              />
+            </Box>
             <Box className="grid grid-cols-3 gap-4">
               {keyResult.measurementType === "boolean" ? (
                 <Box className="col-span-3">

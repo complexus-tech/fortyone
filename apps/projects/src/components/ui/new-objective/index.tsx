@@ -623,6 +623,8 @@ export const NewObjectiveDialog = ({
                           currentValue: 0,
                           startValue: 0,
                           targetValue: 0,
+                          startDate: "",
+                          endDate: "",
                         };
                         setEditingKeyResult(newKr);
                         setEditingIndex(null);

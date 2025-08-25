@@ -55,7 +55,7 @@ export const KeyResultEditor = ({
 
   return (
     <form
-      className="mb-6 space-y-4 rounded-xl border border-gray-200 px-5 py-4 dark:border-dark-100"
+      className="mb-6 space-y-4 rounded-2xl border border-gray-100/80 px-5 py-4 dark:border-dark-100"
       onSubmit={handleSave}
     >
       <Input
@@ -68,6 +68,27 @@ export const KeyResultEditor = ({
         required
         value={keyResult.name}
       />
+      <Box className="grid grid-cols-2 gap-4">
+        <Input
+          label="Start Date"
+          onChange={(e) => {
+            onUpdate(0, { startDate: e.target.value });
+          }}
+          required
+          type="date"
+          value={keyResult.startDate}
+        />
+        <Input
+          label="Deadline"
+          onChange={(e) => {
+            onUpdate(0, { endDate: e.target.value });
+          }}
+          required
+          type="date"
+          value={keyResult.endDate}
+        />
+      </Box>
+
       <Box
         className={cn("grid grid-cols-3 gap-4", {
           "grid-cols-2": keyResult.measurementType === "boolean",

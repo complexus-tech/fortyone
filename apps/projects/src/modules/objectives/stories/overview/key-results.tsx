@@ -95,6 +95,7 @@ const Okr = ({
   createdBy,
   updatedAt,
 }: KeyResult) => {
+  const { getTermDisplay } = useTerminology();
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -114,11 +115,41 @@ const Okr = ({
   };
 
   const getOverDueColor = () => {
-    const daysLeft = differenceInDays(new Date(endDate), new Date());
+    const daysLeft = differenceInDays(new Date(), new Date(endDate));
     if (getProgress() < 100) {
-      return "warning";
+      if (new Date() > new Date(endDate)) {
+        return "danger";
+      }
+      if (daysLeft <= 7) {
+        return "warning";
+      }
     }
     return "muted";
+  };
+
+  const getOverDueText = () => {
+    const color = getOverDueColor();
+    if (color === "danger") {
+      return (
+        <Text>
+          {getTermDisplay("keyResultTerm", {
+            variant: "singular",
+          })}{" "}
+          is overdue
+        </Text>
+      );
+    }
+    if (color === "warning") {
+      return (
+        <Text>
+          {getTermDisplay("keyResultTerm", {
+            variant: "singular",
+          })}{" "}
+          is due soon
+        </Text>
+      );
+    }
+    return null;
   };
 
   const handleDelete = () => {
@@ -136,12 +167,12 @@ const Okr = ({
         </Badge>
         <Box>
           <Text className="line-clamp-1">{name}</Text>
-          <Tooltip title={null}>
+          <Tooltip title={getOverDueText()}>
             <Text
               className="flex items-center gap-1 text-[0.95rem] opacity-80"
               color={getOverDueColor()}
             >
-              <CalendarIcon className="h-4" />
+              <CalendarIcon className="h-4 text-current dark:text-current" />
               {format(new Date(startDate), "MMM d, yyyy")} -{" "}
               {format(new Date(endDate), "MMM d, yyyy")}
             </Text>
@@ -150,7 +181,7 @@ const Okr = ({
       </Flex>
       <Flex
         align="center"
-        className="justify-between divide-x divide-gray-100 dark:divide-dark-100/80"
+        className="shrink-0 justify-between divide-x divide-gray-100 dark:divide-dark-100/80"
       >
         <Flex
           align="center"

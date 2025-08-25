@@ -41,6 +41,8 @@ export const NewKeyResultButton = ({
     targetValue: 0,
     currentValue: 0,
     measurementType: "number",
+    startDate: "",
+    endDate: "",
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -78,6 +80,8 @@ export const NewKeyResultButton = ({
       targetValue: 0,
       currentValue: 0,
       measurementType: "number",
+      startDate: "",
+      endDate: "",
     });
   };
 
@@ -112,6 +116,26 @@ export const NewKeyResultButton = ({
                 required
                 value={form.name}
               />
+              <Box className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Start Date"
+                  onChange={(e) => {
+                    setForm({ ...form, startDate: e.target.value });
+                  }}
+                  required
+                  type="date"
+                  value={form.startDate}
+                />
+                <Input
+                  label="Deadline"
+                  onChange={(e) => {
+                    setForm({ ...form, endDate: e.target.value });
+                  }}
+                  required
+                  type="date"
+                  value={form.endDate}
+                />
+              </Box>
               <Box
                 className={cn("grid grid-cols-3 gap-4", {
                   "grid-cols-7": form.measurementType === "boolean",
@@ -256,6 +280,8 @@ export const NewKeyResultButton = ({
                     targetValue: 0,
                     currentValue: 0,
                     measurementType: "number",
+                    startDate: "",
+                    endDate: "",
                   });
                 }}
                 type="button"
