@@ -179,7 +179,6 @@ type AppKeyResult struct {
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 	CreatedBy       uuid.UUID `json:"createdBy"`
-	LastUpdatedBy   uuid.UUID `json:"lastUpdatedBy"`
 }
 
 func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
@@ -194,7 +193,6 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
 		CreatedBy:       kr.CreatedBy,
-		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }
 

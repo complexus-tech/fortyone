@@ -27,6 +27,9 @@ type Repository interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
 	List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]CoreKeyResult, error)
 	ListPaginated(ctx context.Context, filters CoreKeyResultFilters) (CoreKeyResultListResponse, error)
+	AddContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
+	UpdateContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
+	GetContributors(ctx context.Context, keyResultID uuid.UUID) ([]uuid.UUID, error)
 }
 
 type repo struct {
@@ -50,11 +53,12 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 	const q = `
 		INSERT INTO key_results (
 			objective_id, name, measurement_type,
-			start_value, current_value, target_value, created_by, last_updated_by
+			start_value, current_value, target_value,
+			lead, start_date, end_date, created_by
 		) VALUES (
 			:objective_id, :name, :measurement_type,
-			:start_value, :current_value, :target_value, 
-			:created_by, :last_updated_by
+			:start_value, :current_value, :target_value,
+			:lead, :start_date, :end_date, :created_by
 		)
 	`
 
@@ -185,7 +189,16 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (Co
 		return CoreKeyResult{}, err
 	}
 
-	return toCoreKeyResult(kr), nil
+	// Get contributors
+	contributors, err := r.GetContributors(ctx, id)
+	if err != nil {
+		return CoreKeyResult{}, fmt.Errorf("failed to get contributors: %w", err)
+	}
+
+	coreKr := toCoreKeyResult(kr)
+	coreKr.Contributors = contributors
+
+	return coreKr, nil
 }
 
 // List retrieves all key results for an objective
@@ -194,7 +207,7 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 	defer span.End()
 
 	const q = `
-		SELECT 
+		SELECT
 			kr.id,
 			kr.objective_id,
 			kr.name,
@@ -202,10 +215,12 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 			kr.start_value,
 			kr.current_value,
 			kr.target_value,
+			kr.lead,
+			kr.start_date,
+			kr.end_date,
 			kr.created_at,
 			kr.updated_at,
-			kr.created_by,
-			kr.last_updated_by
+			kr.created_by
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.objective_id = :objective_id
@@ -234,13 +249,29 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 		span.RecordError(errors.New("failed to list key results"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
-	return toCoreKeyResults(keyResults), nil
+
+	// Convert to core models and populate contributors
+	coreKeyResults := make([]CoreKeyResult, len(keyResults))
+	for i, kr := range keyResults {
+		coreKr := toCoreKeyResult(kr)
+
+		// Get contributors for this key result
+		contributors, err := r.GetContributors(ctx, kr.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get contributors for key result %s: %w", kr.ID, err)
+		}
+		coreKr.Contributors = contributors
+
+		coreKeyResults[i] = coreKr
+	}
+
+	return coreKeyResults, nil
 }
 
 // getKeyResultById retrieves a key result by ID and verifies it belongs to the workspace
 func (r *repo) getKeyResultById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbKeyResult, error) {
 	const q = `
-		SELECT 
+		SELECT
 			kr.id,
 			kr.objective_id,
 			kr.name,
@@ -248,10 +279,12 @@ func (r *repo) getKeyResultById(ctx context.Context, id uuid.UUID, workspaceId u
 			kr.start_value,
 			kr.current_value,
 			kr.target_value,
+			kr.lead,
+			kr.start_date,
+			kr.end_date,
 			kr.created_at,
 			kr.updated_at,
-			kr.created_by,
-			kr.last_updated_by
+			kr.created_by
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.id = :id
@@ -328,8 +361,18 @@ func (r *repo) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) 
 		return CoreKeyResultListResponse{}, err
 	}
 
-	// Convert to core models
-	keyResults := toCoreKeyResultsWithObjective(dbResults)
+	// Convert to core models and populate contributors
+	keyResults := make([]CoreKeyResultWithObjective, len(dbResults))
+	for i, dbResult := range dbResults {
+		// Get contributors for this key result
+		contributors, err := r.GetContributors(ctx, dbResult.ID)
+		if err != nil {
+			return CoreKeyResultListResponse{}, fmt.Errorf("failed to get contributors for key result %s: %w", dbResult.ID, err)
+		}
+		dbResult.Contributors = contributors
+
+		keyResults[i] = toCoreKeyResultWithObjective(dbResult)
+	}
 
 	hasMore := (filters.Page * filters.PageSize) < totalCount
 
@@ -344,10 +387,11 @@ func (r *repo) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) 
 
 func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[string]interface{}) {
 	query := `
-		SELECT 
+		SELECT
 			kr.id, kr.objective_id, kr.name, kr.measurement_type,
 			kr.start_value, kr.current_value, kr.target_value,
-			kr.created_at, kr.updated_at, kr.created_by, kr.last_updated_by,
+			kr.lead, kr.start_date, kr.end_date,
+			kr.created_at, kr.updated_at, kr.created_by,
 			o.name as objective_name, o.team_id, t.name as team_name, o.workspace_id
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
@@ -432,6 +476,154 @@ func (r *repo) buildCountQuery(filters CoreKeyResultFilters) string {
 	}
 
 	return query
+}
+
+// AddContributors adds contributors to a key result
+func (r *repo) AddContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.AddContributors")
+	defer span.End()
+
+	if len(contributorIDs) == 0 {
+		return nil
+	}
+
+	query := `
+		INSERT INTO key_result_contributors (
+			key_result_id,
+			user_id,
+			created_at,
+			updated_at
+		) VALUES (
+			:key_result_id,
+			:user_id,
+			NOW(),
+			NOW()
+		)
+	`
+
+	for _, contributorID := range contributorIDs {
+		params := map[string]any{
+			"key_result_id": keyResultID,
+			"user_id":       contributorID,
+		}
+
+		if _, err := r.db.NamedExecContext(ctx, query, params); err != nil {
+			errMsg := fmt.Sprintf("failed to add contributor: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to add contributor"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return err
+		}
+	}
+
+	span.AddEvent("contributors added", trace.WithAttributes(
+		attribute.Int("contributors.count", len(contributorIDs)),
+		attribute.String("key_result.id", keyResultID.String()),
+	))
+
+	return nil
+}
+
+// UpdateContributors replaces all contributors for a key result
+func (r *repo) UpdateContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.UpdateContributors")
+	defer span.End()
+
+	// Start transaction
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete existing contributors
+	deleteQuery := `DELETE FROM key_result_contributors WHERE key_result_id = :key_result_id`
+	deleteParams := map[string]any{"key_result_id": keyResultID}
+
+	if _, err := tx.NamedExecContext(ctx, deleteQuery, deleteParams); err != nil {
+		errMsg := fmt.Sprintf("failed to delete existing contributors: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to delete contributors"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	// Add new contributors if any
+	if len(contributorIDs) > 0 {
+		insertQuery := `
+			INSERT INTO key_result_contributors (
+				key_result_id,
+				user_id,
+				created_at,
+				updated_at
+			) VALUES (
+				:key_result_id,
+				:user_id,
+				NOW(),
+				NOW()
+			)
+		`
+
+		for _, contributorID := range contributorIDs {
+			params := map[string]any{
+				"key_result_id": keyResultID,
+				"user_id":       contributorID,
+			}
+
+			if _, err := tx.NamedExecContext(ctx, insertQuery, params); err != nil {
+				errMsg := fmt.Sprintf("failed to add contributor: %s", err)
+				r.log.Error(ctx, errMsg)
+				span.RecordError(errors.New("failed to add contributor"), trace.WithAttributes(attribute.String("error", errMsg)))
+				return err
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		errMsg := fmt.Sprintf("failed to commit transaction: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to commit transaction"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	span.AddEvent("contributors updated", trace.WithAttributes(
+		attribute.Int("contributors.count", len(contributorIDs)),
+		attribute.String("key_result.id", keyResultID.String()),
+	))
+
+	return nil
+}
+
+// GetContributors retrieves all contributor user IDs for a key result
+func (r *repo) GetContributors(ctx context.Context, keyResultID uuid.UUID) ([]uuid.UUID, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.GetContributors")
+	defer span.End()
+
+	query := `
+		SELECT user_id
+		FROM key_result_contributors
+		WHERE key_result_id = :key_result_id
+		ORDER BY created_at ASC
+	`
+
+	params := map[string]any{"key_result_id": keyResultID}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var contributorIDs []uuid.UUID
+	if err := stmt.SelectContext(ctx, &contributorIDs, params); err != nil {
+		errMsg := fmt.Sprintf("failed to get contributors: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get contributors"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+
+	return contributorIDs, nil
 }
 
 func (r *repo) getOrderByClause(orderBy, orderDirection string) string {

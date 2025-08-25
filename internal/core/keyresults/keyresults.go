@@ -42,12 +42,22 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResu
 		StartValue:      nkr.StartValue,
 		CurrentValue:    nkr.CurrentValue,
 		TargetValue:     nkr.TargetValue,
+		Lead:            nkr.Lead,
+		Contributors:    nkr.Contributors,
+		StartDate:       nkr.StartDate,
+		EndDate:         nkr.EndDate,
 		CreatedBy:       nkr.CreatedBy,
-		LastUpdatedBy:   nkr.CreatedBy,
 	}
 
 	if err := s.repo.Create(ctx, &kr); err != nil {
 		return CoreKeyResult{}, fmt.Errorf("create: %w", err)
+	}
+
+	// Add contributors if provided
+	if len(nkr.Contributors) > 0 {
+		if err := s.repo.AddContributors(ctx, kr.ID, nkr.Contributors); err != nil {
+			return CoreKeyResult{}, fmt.Errorf("failed to add contributors: %w", err)
+		}
 	}
 
 	return CoreKeyResult{
@@ -58,10 +68,13 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResu
 		StartValue:      kr.StartValue,
 		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
+		Lead:            kr.Lead,
+		Contributors:    kr.Contributors,
+		StartDate:       kr.StartDate,
+		EndDate:         kr.EndDate,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
 		CreatedBy:       kr.CreatedBy,
-		LastUpdatedBy:   kr.LastUpdatedBy,
 	}, nil
 }
 
@@ -70,11 +83,27 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Update")
 	defer span.End()
 
+	// Handle contributors separately
+	var contributors []uuid.UUID
+	if contribVal, exists := updates["contributors"]; exists {
+		if contribSlice, ok := contribVal.([]uuid.UUID); ok {
+			contributors = contribSlice
+		}
+		delete(updates, "contributors") // Remove from updates map
+	}
+
 	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
 		if errors.Is(err, keyresultsrepo.ErrNotFound) {
 			return ErrNotFound
 		}
 		return err
+	}
+
+	// Update contributors if provided
+	if contributors != nil {
+		if err := s.repo.UpdateContributors(ctx, id, contributors); err != nil {
+			return fmt.Errorf("failed to update contributors: %w", err)
+		}
 	}
 
 	span.AddEvent("key result updated", trace.WithAttributes(

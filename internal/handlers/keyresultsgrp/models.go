@@ -14,36 +14,47 @@ import (
 
 // AppKeyResult represents a key result in the application
 type AppKeyResult struct {
-	ID              uuid.UUID `json:"id"`
-	ObjectiveID     uuid.UUID `json:"objectiveId"`
-	Name            string    `json:"name"`
-	MeasurementType string    `json:"measurementType"`
-	StartValue      float64   `json:"startValue"`
-	CurrentValue    float64   `json:"currentValue"`
-	TargetValue     float64   `json:"targetValue"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	CreatedBy       uuid.UUID `json:"createdBy"`
-	LastUpdatedBy   uuid.UUID `json:"lastUpdatedBy"`
+	ID              uuid.UUID   `json:"id"`
+	ObjectiveID     uuid.UUID   `json:"objectiveId"`
+	Name            string      `json:"name"`
+	MeasurementType string      `json:"measurementType"`
+	StartValue      float64     `json:"startValue"`
+	CurrentValue    float64     `json:"currentValue"`
+	TargetValue     float64     `json:"targetValue"`
+	Lead            *uuid.UUID  `json:"lead,omitempty"`
+	Contributors    []uuid.UUID `json:"contributors,omitempty"`
+	StartDate       *time.Time  `json:"startDate,omitempty"`
+	EndDate         *time.Time  `json:"endDate,omitempty"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	UpdatedAt       time.Time   `json:"updatedAt"`
+	CreatedBy       uuid.UUID   `json:"createdBy"`
 }
 
 // AppNewKeyResult represents the data needed to create a new key result
 type AppNewKeyResult struct {
-	ObjectiveID     uuid.UUID `json:"objectiveId" validate:"required"`
-	Name            string    `json:"name" validate:"required"`
-	MeasurementType string    `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      float64   `json:"startValue"`
-	CurrentValue    float64   `json:"currentValue"`
-	TargetValue     float64   `json:"targetValue"`
+	ObjectiveID     uuid.UUID   `json:"objectiveId" validate:"required"`
+	Name            string      `json:"name" validate:"required"`
+	MeasurementType string      `json:"measurementType" validate:"required,oneof=percentage number boolean"`
+	StartValue      float64     `json:"startValue"`
+	CurrentValue    float64     `json:"currentValue"`
+	TargetValue     float64     `json:"targetValue"`
+	Lead            *uuid.UUID  `json:"lead,omitempty"`
+	Contributors    []uuid.UUID `json:"contributors,omitempty"`
+	StartDate       *time.Time  `json:"startDate,omitempty"`
+	EndDate         *time.Time  `json:"endDate,omitempty"`
 }
 
 // AppUpdateKeyResult represents the data needed to update a key result
 type AppUpdateKeyResult struct {
-	Name            string   `json:"name" db:"name"`
-	MeasurementType string   `json:"measurementType" db:"measurement_type" validate:"omitempty,oneof=percentage number boolean"`
-	StartValue      *float64 `json:"startValue" db:"start_value"`
-	CurrentValue    *float64 `json:"currentValue" db:"current_value"`
-	TargetValue     *float64 `json:"targetValue" db:"target_value"`
+	Name            string       `json:"name" db:"name"`
+	MeasurementType string       `json:"measurementType" db:"measurement_type" validate:"omitempty,oneof=percentage number boolean"`
+	StartValue      *float64     `json:"startValue" db:"start_value"`
+	CurrentValue    *float64     `json:"currentValue" db:"current_value"`
+	TargetValue     *float64     `json:"targetValue" db:"target_value"`
+	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
+	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
+	StartDate       *time.Time   `json:"startDate,omitempty" db:"start_date"`
+	EndDate         *time.Time   `json:"endDate,omitempty" db:"end_date"`
 }
 
 // AppKeyResultWithObjective extends AppKeyResult with objective info
@@ -143,10 +154,13 @@ func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 		StartValue:      kr.StartValue,
 		CurrentValue:    kr.CurrentValue,
 		TargetValue:     kr.TargetValue,
+		Lead:            kr.Lead,
+		Contributors:    kr.Contributors,
+		StartDate:       kr.StartDate,
+		EndDate:         kr.EndDate,
 		CreatedAt:       kr.CreatedAt,
 		UpdatedAt:       kr.UpdatedAt,
 		CreatedBy:       kr.CreatedBy,
-		LastUpdatedBy:   kr.LastUpdatedBy,
 	}
 }
 
@@ -196,6 +210,10 @@ func toCoreNewKeyResult(nkr AppNewKeyResult, userID uuid.UUID) keyresults.CoreNe
 		StartValue:      nkr.StartValue,
 		CurrentValue:    nkr.CurrentValue,
 		TargetValue:     nkr.TargetValue,
+		Lead:            nkr.Lead,
+		Contributors:    nkr.Contributors,
+		StartDate:       nkr.StartDate,
+		EndDate:         nkr.EndDate,
 		CreatedBy:       userID,
 	}
 }

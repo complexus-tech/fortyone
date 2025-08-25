@@ -14,6 +14,10 @@ type CoreNewKeyResult struct {
 	StartValue      float64
 	CurrentValue    float64
 	TargetValue     float64
+	Lead            *uuid.UUID
+	Contributors    []uuid.UUID
+	StartDate       *time.Time
+	EndDate         *time.Time
 	CreatedBy       uuid.UUID
 }
 
@@ -26,8 +30,11 @@ type CoreKeyResult struct {
 	StartValue      float64
 	CurrentValue    float64
 	TargetValue     float64
+	Lead            *uuid.UUID
+	Contributors    []uuid.UUID
+	StartDate       *time.Time
+	EndDate         *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	CreatedBy       uuid.UUID
-	LastUpdatedBy   uuid.UUID
 }

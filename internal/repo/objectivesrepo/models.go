@@ -121,6 +121,5 @@ func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
 		CreatedAt:       dbkr.CreatedAt,
 		UpdatedAt:       dbkr.UpdatedAt,
 		CreatedBy:       dbkr.CreatedBy,
-		LastUpdatedBy:   dbkr.LastUpdatedBy,
 	}
 }
