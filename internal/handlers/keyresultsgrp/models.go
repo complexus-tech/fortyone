@@ -40,8 +40,8 @@ type AppNewKeyResult struct {
 	TargetValue     float64     `json:"targetValue"`
 	Lead            *uuid.UUID  `json:"lead,omitempty"`
 	Contributors    []uuid.UUID `json:"contributors,omitempty"`
-	StartDate       *time.Time  `json:"startDate,omitempty"`
-	EndDate         *time.Time  `json:"endDate,omitempty"`
+	StartDate       *time.Time  `json:"startDate" validate:"required"`
+	EndDate         *time.Time  `json:"endDate" validate:"required"`
 }
 
 // AppUpdateKeyResult represents the data needed to update a key result
@@ -53,8 +53,8 @@ type AppUpdateKeyResult struct {
 	TargetValue     *float64     `json:"targetValue" db:"target_value"`
 	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
-	StartDate       *time.Time   `json:"startDate,omitempty" db:"start_date"`
-	EndDate         *time.Time   `json:"endDate,omitempty" db:"end_date"`
+	StartDate       *time.Time   `json:"startDate" db:"start_date" validate:"required"`
+	EndDate         *time.Time   `json:"endDate" db:"end_date" validate:"required"`
 }
 
 // AppKeyResultWithObjective extends AppKeyResult with objective info
@@ -115,7 +115,21 @@ func (a AppNewKeyResult) Validate() error {
 			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
 		}
 	}
-	return err
+
+	// Custom date validations
+	if a.StartDate != nil && a.EndDate != nil {
+		if a.EndDate.Before(*a.StartDate) || a.EndDate.Equal(*a.StartDate) {
+			return fmt.Errorf("Deadline must be after startDate")
+		}
+	}
+
+	// Ensure start date is not in the past (optional business rule)
+	now := time.Now()
+	if a.StartDate != nil && a.StartDate.Before(now) {
+		return fmt.Errorf("startDate cannot be in the past")
+	}
+
+	return nil
 }
 
 // formatOptions formats the options for error messages
@@ -142,6 +156,47 @@ func getJSONTagName(t reflect.Type, fieldName string) string {
 		return fieldName
 	}
 	return name
+}
+
+// Validate validates the AppUpdateKeyResult struct
+func (a AppUpdateKeyResult) Validate() error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	err := validate.Struct(a)
+	if err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			var errorMessages []string
+			for _, e := range validationErrors {
+				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
+				switch e.Tag() {
+				case "required":
+					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
+				case "oneof":
+					options := strings.Split(e.Param(), " ")
+					formattedOptions := formatOptions(options)
+					errorMessages = append(errorMessages, fmt.Sprintf("%s should be one of: %s", fieldName, formattedOptions))
+				default:
+					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
+				}
+			}
+			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
+		}
+	}
+
+	// Custom date validations
+	if a.StartDate != nil && a.EndDate != nil {
+		if a.EndDate.Before(*a.StartDate) || a.EndDate.Equal(*a.StartDate) {
+			return fmt.Errorf("Deadline must be after startDate")
+		}
+	}
+
+	// Ensure start date is not in the past (optional business rule)
+	now := time.Now()
+	if a.StartDate != nil && a.StartDate.Before(now) {
+		return fmt.Errorf("startDate cannot be in the past")
+	}
+
+	return nil
 }
 
 // toAppKeyResult converts a CoreKeyResult to an AppKeyResult
