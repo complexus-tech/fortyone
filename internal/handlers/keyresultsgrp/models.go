@@ -21,10 +21,10 @@ type AppKeyResult struct {
 	StartValue      float64     `json:"startValue"`
 	CurrentValue    float64     `json:"currentValue"`
 	TargetValue     float64     `json:"targetValue"`
-	Lead            *uuid.UUID  `json:"lead,omitempty"`
-	Contributors    []uuid.UUID `json:"contributors,omitempty"`
-	StartDate       *time.Time  `json:"startDate,omitempty"`
-	EndDate         *time.Time  `json:"endDate,omitempty"`
+	Lead            *uuid.UUID  `json:"lead"`
+	Contributors    []uuid.UUID `json:"contributors"`
+	StartDate       *time.Time  `json:"startDate"`
+	EndDate         *time.Time  `json:"endDate"`
 	CreatedAt       time.Time   `json:"createdAt"`
 	UpdatedAt       time.Time   `json:"updatedAt"`
 	CreatedBy       uuid.UUID   `json:"createdBy"`
