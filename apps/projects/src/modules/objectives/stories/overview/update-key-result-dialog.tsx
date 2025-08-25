@@ -102,7 +102,10 @@ export const UpdateKeyResultDialog = ({
               <Input
                 label="Start Date"
                 onChange={(e) => {
-                  setForm({ ...form, startDate: e.target.value });
+                  setForm({
+                    ...form,
+                    startDate: new Date(e.target.value).toISOString(),
+                  });
                 }}
                 required
                 type="date"
@@ -113,7 +116,10 @@ export const UpdateKeyResultDialog = ({
               <Input
                 label="Deadline"
                 onChange={(e) => {
-                  setForm({ ...form, endDate: e.target.value });
+                  setForm({
+                    ...form,
+                    endDate: new Date(e.target.value).toISOString(),
+                  });
                 }}
                 required
                 type="date"

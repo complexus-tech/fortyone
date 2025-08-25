@@ -5,6 +5,7 @@ import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { formatISO } from "date-fns";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useCreateKeyResultMutation, useObjective } from "../../hooks";
@@ -120,20 +121,38 @@ export const NewKeyResultButton = ({
                 <Input
                   label="Start Date"
                   onChange={(e) => {
-                    setForm({ ...form, startDate: e.target.value });
+                    setForm({
+                      ...form,
+                      startDate: new Date(e.target.value).toISOString(),
+                    });
                   }}
                   required
                   type="date"
-                  value={form.startDate}
+                  value={
+                    form.startDate
+                      ? formatISO(new Date(form.startDate), {
+                          representation: "date",
+                        })
+                      : ""
+                  }
                 />
                 <Input
                   label="Deadline"
                   onChange={(e) => {
-                    setForm({ ...form, endDate: e.target.value });
+                    setForm({
+                      ...form,
+                      endDate: new Date(e.target.value).toISOString(),
+                    });
                   }}
                   required
                   type="date"
-                  value={form.endDate}
+                  value={
+                    form.endDate
+                      ? formatISO(new Date(form.endDate), {
+                          representation: "date",
+                        })
+                      : ""
+                  }
                 />
               </Box>
               <Box

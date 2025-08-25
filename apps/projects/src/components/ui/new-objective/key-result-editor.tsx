@@ -72,7 +72,7 @@ export const KeyResultEditor = ({
         <Input
           label="Start Date"
           onChange={(e) => {
-            onUpdate(0, { startDate: e.target.value });
+            onUpdate(0, { startDate: new Date(e.target.value).toISOString() });
           }}
           required
           type="date"
@@ -81,7 +81,7 @@ export const KeyResultEditor = ({
         <Input
           label="Deadline"
           onChange={(e) => {
-            onUpdate(0, { endDate: e.target.value });
+            onUpdate(0, { endDate: new Date(e.target.value).toISOString() });
           }}
           required
           type="date"
