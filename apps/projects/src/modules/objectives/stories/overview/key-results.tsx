@@ -9,7 +9,6 @@ import {
   Badge,
   Divider,
   Checkbox,
-  Avatar,
   Tooltip,
 } from "ui";
 import {
@@ -26,7 +25,6 @@ import React, { useState, useEffect } from "react";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
-import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
@@ -99,10 +97,10 @@ const Okr = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const { data: members = [] } = useMembers();
+  // const { data: members = [] } = useMembers();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
 
-  const leadMember = members.find((member) => member.id === lead);
+  // const leadMember = members.find((member) => member.id === lead);
 
   const getProgress = () => {
     if (measurementType === "boolean") {
@@ -210,8 +208,8 @@ const Okr = ({
         </Flex>
 
         {isAdminOrOwner ? (
-          <Flex align="center" className="h-full pl-2" gap={2}>
-            <Avatar src={leadMember?.avatarUrl} />
+          <Flex align="center" className="h-full py-2 pl-4" gap={2}>
+            {/* <Avatar src={leadMember?.avatarUrl} /> */}
             <Menu>
               <Menu.Button>
                 <Button
