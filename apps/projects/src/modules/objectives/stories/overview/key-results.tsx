@@ -9,6 +9,8 @@ import {
   Badge,
   Divider,
   Checkbox,
+  Avatar,
+  Tooltip,
 } from "ui";
 import {
   AiIcon,
@@ -17,11 +19,12 @@ import {
   MoreHorizontalIcon,
   OKRIcon,
   InfoIcon,
+  CalendarIcon,
 } from "icons";
 import { useParams } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
+import { differenceInDays, format } from "date-fns";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -107,7 +110,15 @@ const Okr = ({
     // Calculate progress relative to start value
     const totalChange = targetValue - startValue;
     const actualChange = currentValue - startValue;
-    return Math.round((actualChange / totalChange) * 100);
+    return Math.min(Math.round((actualChange / totalChange) * 100), 100);
+  };
+
+  const getOverDueColor = () => {
+    const daysLeft = differenceInDays(new Date(endDate), new Date());
+    if (getProgress() < 100) {
+      return "warning";
+    }
+    return "muted";
   };
 
   const handleDelete = () => {
@@ -125,31 +136,16 @@ const Okr = ({
         </Badge>
         <Box>
           <Text className="line-clamp-1">{name}</Text>
-          <Text
-            className="line-clamp-1 text-[0.95rem] opacity-80"
-            color="muted"
-          >
-            {lead ? (
-              <>
-                Lead:{" "}
-                <Link
-                  className="text-dark dark:text-white/85"
-                  href={`/profile/${leadMember?.id}`}
-                >
-                  {leadMember?.username}
-                </Link>
-              </>
-            ) : (
-              "No lead assigned"
-            )}
-            {contributors.length > 0 && (
-              <>
-                {" "}
-                • {contributors.length} contributor
-                {contributors.length !== 1 ? "s" : ""}
-              </>
-            )}
-          </Text>
+          <Tooltip title={null}>
+            <Text
+              className="flex items-center gap-1 text-[0.95rem] opacity-80"
+              color={getOverDueColor()}
+            >
+              <CalendarIcon className="h-4" />
+              {format(new Date(startDate), "MMM d, yyyy")} -{" "}
+              {format(new Date(endDate), "MMM d, yyyy")}
+            </Text>
+          </Tooltip>
         </Box>
       </Flex>
       <Flex
@@ -183,7 +179,8 @@ const Okr = ({
         </Flex>
 
         {isAdminOrOwner ? (
-          <Box className="h-full py-2 pl-4 md:pl-6">
+          <Flex align="center" className="h-full pl-2" gap={2}>
+            <Avatar src={leadMember?.avatarUrl} />
             <Menu>
               <Menu.Button>
                 <Button
@@ -217,7 +214,7 @@ const Okr = ({
                 </Menu.Group>
               </Menu.Items>
             </Menu>
-          </Box>
+          </Flex>
         ) : null}
       </Flex>
       <ConfirmDialog
