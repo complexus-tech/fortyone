@@ -137,7 +137,7 @@ export const Overview = () => {
                           }
                           onClick={() => {
                             openChat(
-                              `Suggest work items that can be added to the objective "${objective?.name}"`,
+                              `Suggest work items that can be added to the objective "${objective?.name}" from the team`,
                             );
                           }}
                           size="sm"
