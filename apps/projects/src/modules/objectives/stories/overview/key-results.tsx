@@ -167,7 +167,7 @@ const Okr = ({
           <Text className="line-clamp-1">{name}</Text>
           <Tooltip title={getOverDueText()}>
             <Text
-              className="flex items-center gap-1 text-[0.95rem] opacity-80"
+              className="flex items-center gap-1 text-[0.95rem]"
               color={getOverDueColor()}
             >
               <CalendarIcon className="h-4 text-current dark:text-current" />
