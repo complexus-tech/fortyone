@@ -150,7 +150,7 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		WHERE id = :id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id": id,
 	}
 
@@ -189,16 +189,8 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (Co
 		return CoreKeyResult{}, err
 	}
 
-	// Get contributors
-	contributors, err := r.GetContributors(ctx, id)
-	if err != nil {
-		return CoreKeyResult{}, fmt.Errorf("failed to get contributors: %w", err)
-	}
-
-	coreKr := toCoreKeyResult(kr)
-	coreKr.Contributors = contributors
-
-	return coreKr, nil
+	// Contributors are now handled in getKeyResultById and toCoreKeyResult
+	return toCoreKeyResult(kr), nil
 }
 
 // List retrieves all key results for an objective
@@ -220,7 +212,15 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 			kr.end_date,
 			kr.created_at,
 			kr.updated_at,
-			kr.created_by
+			kr.created_by,
+			-- Aggregate contributors from junction table into JSON array
+			COALESCE(
+				(
+					SELECT json_agg(krc.user_id)
+					FROM key_result_contributors krc
+					WHERE krc.key_result_id = kr.id
+				), '[]'
+			) AS contributors
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.objective_id = :objective_id
@@ -228,7 +228,7 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 		ORDER BY kr.created_at DESC
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveId,
 		"workspace_id": workspaceId,
 	}
@@ -250,19 +250,10 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 		return nil, err
 	}
 
-	// Convert to core models and populate contributors
+	// Convert to core models (contributors are now handled in toCoreKeyResult)
 	coreKeyResults := make([]CoreKeyResult, len(keyResults))
 	for i, kr := range keyResults {
-		coreKr := toCoreKeyResult(kr)
-
-		// Get contributors for this key result
-		contributors, err := r.GetContributors(ctx, kr.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get contributors for key result %s: %w", kr.ID, err)
-		}
-		coreKr.Contributors = contributors
-
-		coreKeyResults[i] = coreKr
+		coreKeyResults[i] = toCoreKeyResult(kr)
 	}
 
 	return coreKeyResults, nil
@@ -284,14 +275,22 @@ func (r *repo) getKeyResultById(ctx context.Context, id uuid.UUID, workspaceId u
 			kr.end_date,
 			kr.created_at,
 			kr.updated_at,
-			kr.created_by
+			kr.created_by,
+			-- Aggregate contributors from junction table into JSON array
+			COALESCE(
+				(
+					SELECT json_agg(krc.user_id)
+					FROM key_result_contributors krc
+					WHERE krc.key_result_id = kr.id
+				), '[]'
+			) AS contributors
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		WHERE kr.id = :id
 		AND o.workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id":           id,
 		"workspace_id": workspaceId,
 	}
@@ -361,16 +360,9 @@ func (r *repo) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) 
 		return CoreKeyResultListResponse{}, err
 	}
 
-	// Convert to core models and populate contributors
+	// Convert to core models (contributors are now handled in toCoreKeyResult)
 	keyResults := make([]CoreKeyResultWithObjective, len(dbResults))
 	for i, dbResult := range dbResults {
-		// Get contributors for this key result
-		contributors, err := r.GetContributors(ctx, dbResult.ID)
-		if err != nil {
-			return CoreKeyResultListResponse{}, fmt.Errorf("failed to get contributors for key result %s: %w", dbResult.ID, err)
-		}
-		dbResult.Contributors = contributors
-
 		keyResults[i] = toCoreKeyResultWithObjective(dbResult)
 	}
 
@@ -385,14 +377,22 @@ func (r *repo) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) 
 	}, nil
 }
 
-func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[string]interface{}) {
+func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[string]any) {
 	query := `
 		SELECT
 			kr.id, kr.objective_id, kr.name, kr.measurement_type,
 			kr.start_value, kr.current_value, kr.target_value,
 			kr.lead, kr.start_date, kr.end_date,
 			kr.created_at, kr.updated_at, kr.created_by,
-			o.name as objective_name, o.team_id, t.name as team_name, o.workspace_id
+			o.name as objective_name, o.team_id, t.name as team_name, o.workspace_id,
+			-- Aggregate contributors from junction table into JSON array
+			COALESCE(
+				(
+					SELECT json_agg(krc.user_id)
+					FROM key_result_contributors krc
+					WHERE krc.key_result_id = kr.id
+				), '[]'
+			) AS contributors
 		FROM key_results kr
 		INNER JOIN objectives o ON kr.objective_id = o.objective_id
 		INNER JOIN teams t ON o.team_id = t.team_id
@@ -400,7 +400,7 @@ func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[st
 		WHERE o.workspace_id = :workspace_id
 	`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"workspace_id":    filters.WorkspaceID,
 		"current_user_id": filters.CurrentUserID,
 		"offset":          (filters.Page - 1) * filters.PageSize,
