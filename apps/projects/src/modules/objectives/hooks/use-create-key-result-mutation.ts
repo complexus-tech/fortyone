@@ -27,7 +27,8 @@ export const useCreateKeyResultMutation = () => {
         ...newKeyResult,
         id: "optimistic",
         createdBy: session?.user?.id || "",
-        lastUpdatedBy: session?.user?.id || "",
+        lead: newKeyResult.lead || null,
+        contributors: newKeyResult.contributors || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

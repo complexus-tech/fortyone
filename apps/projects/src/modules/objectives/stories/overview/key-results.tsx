@@ -7,7 +7,6 @@ import {
   ProgressBar,
   Menu,
   Badge,
-  TimeAgo,
   Divider,
   Checkbox,
 } from "ui";
@@ -86,7 +85,10 @@ const Okr = ({
   targetValue,
   currentValue,
   measurementType,
-  lastUpdatedBy,
+  lead,
+  contributors,
+  startDate,
+  endDate,
   createdBy,
   updatedAt,
 }: KeyResult) => {
@@ -96,9 +98,7 @@ const Okr = ({
   const { data: members = [] } = useMembers();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
 
-  const lastUpdatedByMember = members.find(
-    (member) => member.id === lastUpdatedBy,
-  );
+  const leadMember = members.find((member) => member.id === lead);
 
   const getProgress = () => {
     if (measurementType === "boolean") {
@@ -129,13 +129,26 @@ const Okr = ({
             className="line-clamp-1 text-[0.95rem] opacity-80"
             color="muted"
           >
-            Last updated <TimeAgo timestamp={updatedAt} /> by{" "}
-            <Link
-              className="text-dark dark:text-white/85"
-              href={`/profile/${lastUpdatedByMember?.id}`}
-            >
-              {lastUpdatedByMember?.username}
-            </Link>
+            {lead ? (
+              <>
+                Lead:{" "}
+                <Link
+                  className="text-dark dark:text-white/85"
+                  href={`/profile/${leadMember?.id}`}
+                >
+                  {leadMember?.username}
+                </Link>
+              </>
+            ) : (
+              "No lead assigned"
+            )}
+            {contributors.length > 0 && (
+              <>
+                {" "}
+                • {contributors.length} contributor
+                {contributors.length !== 1 ? "s" : ""}
+              </>
+            )}
           </Text>
         </Box>
       </Flex>
@@ -227,6 +240,10 @@ const Okr = ({
           targetValue,
           currentValue,
           measurementType,
+          lead,
+          contributors,
+          startDate,
+          endDate,
           createdAt: "",
           updatedAt,
         }}
@@ -291,6 +308,10 @@ export const KeyResults = () => {
         startValue: kr?.startValue ?? 0,
         targetValue: kr?.targetValue ?? 0,
         currentValue: kr?.startValue ?? 0,
+        startDate: kr?.startDate ?? "",
+        endDate: kr?.endDate ?? "",
+        lead: null,
+        contributors: [],
       });
     });
     clearSelection();

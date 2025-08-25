@@ -39,10 +39,13 @@ export type KeyResult = {
   startValue: number;
   targetValue: number;
   currentValue: number;
+  lead: string | null;
+  contributors: string[];
+  startDate: string;
+  endDate: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
-  lastUpdatedBy: string;
 };
 
 export type NewKeyResult = {
@@ -51,6 +54,10 @@ export type NewKeyResult = {
   startValue: number;
   targetValue: number;
   currentValue: number;
+  lead?: string | null;
+  contributors?: string[];
+  startDate: string;
+  endDate: string;
 };
 
 export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">>;

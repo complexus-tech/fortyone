@@ -9,6 +9,8 @@ export const keyResultGenerationSchema = z.object({
         .describe("How the key result is measured"),
       startValue: z.number().describe("Starting value"),
       targetValue: z.number().describe("Target value"),
+      startDate: z.string().describe("Start date (ISO format)"),
+      endDate: z.string().describe("End date (ISO format)"),
     }),
   ),
 });

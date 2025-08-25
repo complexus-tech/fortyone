@@ -36,6 +36,10 @@ export type CreateKeyResultRequest = {
   startValue?: number;
   currentValue?: number;
   targetValue?: number;
+  lead?: string | null;
+  contributors?: string[];
+  startDate: string;
+  endDate: string;
 };
 
 export type UpdateKeyResultRequest = {
@@ -44,4 +48,8 @@ export type UpdateKeyResultRequest = {
   startValue?: number;
   currentValue?: number;
   targetValue?: number;
+  lead?: string | null;
+  contributors?: string[];
+  startDate?: string;
+  endDate?: string;
 };

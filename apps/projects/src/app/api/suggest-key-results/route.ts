@@ -42,6 +42,8 @@ export async function POST(req: Request) {
     Context - Objective:
      - Name: ${objective.name}
      - Description: ${objective.description}
+     - Start Date: ${objective.startDate}
+     - End Date: ${objective.endDate}
      - Current Key Results: ${keyResults.map((kr) => kr.name).join("\n ") || "None"} don't suggest key results that are already in the list or similar to existing key results
 
     ## Guidelines
@@ -57,6 +59,8 @@ export async function POST(req: Request) {
       - "boolean": For binary outcomes (complete/incomplete)
     - **Start Value**: Realistic baseline value
     - **Target Value**: Ambitious but achievable target
+    - **Start Date**: Start date of the key result
+    - **End Date**: End date of the key result
 
     ## Examples
     - Number: "Increase monthly active users from 10,000 to 15,000"
@@ -74,6 +78,7 @@ export async function POST(req: Request) {
     - Duplicating existing key results this this very important, also don't suggest key results similar to existing key results
     - Unrealistic targets
     - Non-measurable outcomes
+    - Using dates that are not in the objective's start and end date range
 
     Generate 1-5 key results with appropriate measurement types and realistic start/target values that follow these principles.
 `;

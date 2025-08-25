@@ -8,7 +8,7 @@ import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
 type UpdateKeyResultDialogProps = {
-  keyResult: Omit<KeyResult, "createdBy" | "lastUpdatedBy">;
+  keyResult: Omit<KeyResult, "createdBy">;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 };
@@ -26,6 +26,7 @@ export const UpdateKeyResultDialog = ({
     startValue: keyResult.startValue,
     targetValue: keyResult.targetValue,
     currentValue: keyResult.currentValue,
+    contributors: keyResult.contributors,
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -45,6 +46,7 @@ export const UpdateKeyResultDialog = ({
         startValue: form.startValue,
         targetValue: form.targetValue,
         currentValue: form.currentValue,
+        contributors: form.contributors,
       },
     });
     onOpenChange(false);
@@ -53,6 +55,7 @@ export const UpdateKeyResultDialog = ({
       startValue: keyResult.startValue,
       targetValue: keyResult.targetValue,
       currentValue: keyResult.currentValue,
+      contributors: keyResult.contributors,
     });
   };
 
@@ -62,6 +65,7 @@ export const UpdateKeyResultDialog = ({
       startValue: keyResult.startValue,
       targetValue: keyResult.targetValue,
       currentValue: keyResult.currentValue,
+      contributors: keyResult.contributors,
     });
   }, [keyResult]);
 

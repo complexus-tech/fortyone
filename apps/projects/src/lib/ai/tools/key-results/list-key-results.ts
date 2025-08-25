@@ -99,7 +99,10 @@ export const listKeyResultsTool = tool({
         createdAt: kr.createdAt,
         updatedAt: kr.updatedAt,
         createdBy: kr.createdBy,
-        lastUpdatedBy: kr.lastUpdatedBy,
+        lead: kr.lead,
+        contributors: kr.contributors,
+        startDate: kr.startDate,
+        endDate: kr.endDate,
       })),
       count: response.totalCount,
       pagination: {
