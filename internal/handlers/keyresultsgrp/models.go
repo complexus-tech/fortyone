@@ -53,8 +53,8 @@ type AppUpdateKeyResult struct {
 	TargetValue     *float64     `json:"targetValue" db:"target_value"`
 	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
-	StartDate       *time.Time   `json:"startDate" db:"start_date" validate:"required"`
-	EndDate         *time.Time   `json:"endDate" db:"end_date" validate:"required"`
+	StartDate       *time.Time   `json:"startDate" db:"start_date"`
+	EndDate         *time.Time   `json:"endDate" db:"end_date"`
 }
 
 // AppKeyResultWithObjective extends AppKeyResult with objective info
