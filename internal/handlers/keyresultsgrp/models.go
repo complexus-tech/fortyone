@@ -116,19 +116,6 @@ func (a AppNewKeyResult) Validate() error {
 		}
 	}
 
-	// Custom date validations
-	if a.StartDate != nil && a.EndDate != nil {
-		if a.EndDate.Before(*a.StartDate) || a.EndDate.Equal(*a.StartDate) {
-			return fmt.Errorf("Deadline must be after startDate")
-		}
-	}
-
-	// Ensure start date is not in the past (optional business rule)
-	now := time.Now()
-	if a.StartDate != nil && a.StartDate.Before(now) {
-		return fmt.Errorf("startDate cannot be in the past")
-	}
-
 	return nil
 }
 
@@ -181,19 +168,6 @@ func (a AppUpdateKeyResult) Validate() error {
 			}
 			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
 		}
-	}
-
-	// Custom date validations
-	if a.StartDate != nil && a.EndDate != nil {
-		if a.EndDate.Before(*a.StartDate) || a.EndDate.Equal(*a.StartDate) {
-			return fmt.Errorf("Deadline must be after startDate")
-		}
-	}
-
-	// Ensure start date is not in the past (optional business rule)
-	now := time.Now()
-	if a.StartDate != nil && a.StartDate.Before(now) {
-		return fmt.Errorf("startDate cannot be in the past")
 	}
 
 	return nil
