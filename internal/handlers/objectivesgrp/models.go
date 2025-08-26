@@ -316,35 +316,33 @@ func toAppProgressChart(progressChart []objectives.CoreObjectiveProgressDataPoin
 
 // AppObjectiveActivity represents an objective activity in the application
 type AppObjectiveActivity struct {
-	ID            uuid.UUID  `json:"id"`
-	ObjectiveID   uuid.UUID  `json:"objectiveId"`
-	KeyResultID   *uuid.UUID `json:"keyResultId"`
-	UserID        uuid.UUID  `json:"userId"`
-	Type          string     `json:"type"`
-	UpdateType    string     `json:"updateType"`
-	Field         string     `json:"field"`
-	CurrentValue  string     `json:"currentValue"`
-	PreviousValue string     `json:"previousValue"`
-	Comment       string     `json:"comment"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	WorkspaceID   uuid.UUID  `json:"workspaceId"`
+	ID           uuid.UUID  `json:"id"`
+	ObjectiveID  uuid.UUID  `json:"objectiveId"`
+	KeyResultID  *uuid.UUID `json:"keyResultId"`
+	UserID       uuid.UUID  `json:"userId"`
+	Type         string     `json:"type"`
+	UpdateType   string     `json:"updateType"`
+	Field        string     `json:"field"`
+	CurrentValue string     `json:"currentValue"`
+	Comment      string     `json:"comment"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	WorkspaceID  uuid.UUID  `json:"workspaceId"`
 }
 
 // toAppObjectiveActivity converts a CoreActivity to an AppObjectiveActivity
 func toAppObjectiveActivity(a okractivities.CoreActivity) AppObjectiveActivity {
 	return AppObjectiveActivity{
-		ID:            a.ID,
-		ObjectiveID:   a.ObjectiveID,
-		KeyResultID:   a.KeyResultID,
-		UserID:        a.UserID,
-		Type:          string(a.Type),
-		UpdateType:    string(a.UpdateType),
-		Field:         a.Field,
-		CurrentValue:  a.CurrentValue,
-		PreviousValue: a.PreviousValue,
-		Comment:       a.Comment,
-		CreatedAt:     a.CreatedAt,
-		WorkspaceID:   a.WorkspaceID,
+		ID:           a.ID,
+		ObjectiveID:  a.ObjectiveID,
+		KeyResultID:  a.KeyResultID,
+		UserID:       a.UserID,
+		Type:         string(a.Type),
+		UpdateType:   string(a.UpdateType),
+		Field:        a.Field,
+		CurrentValue: a.CurrentValue,
+		Comment:      a.Comment,
+		CreatedAt:    a.CreatedAt,
+		WorkspaceID:  a.WorkspaceID,
 	}
 }
 

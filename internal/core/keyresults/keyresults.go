@@ -68,16 +68,15 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 
 	// Record the create activity
 	activity := okractivities.CoreNewActivity{
-		ObjectiveID:   kr.ObjectiveID,
-		KeyResultID:   &id,
-		UserID:        nkr.CreatedBy,
-		Type:          okractivities.ActivityTypeCreate,
-		UpdateType:    okractivities.UpdateTypeKeyResult,
-		Field:         "all",
-		CurrentValue:  kr.Name,
-		PreviousValue: "",
-		Comment:       "",
-		WorkspaceID:   workspaceID,
+		ObjectiveID:  kr.ObjectiveID,
+		KeyResultID:  &id,
+		UserID:       nkr.CreatedBy,
+		Type:         okractivities.ActivityTypeCreate,
+		UpdateType:   okractivities.UpdateTypeKeyResult,
+		Field:        "all",
+		CurrentValue: kr.Name,
+		Comment:      "",
+		WorkspaceID:  workspaceID,
 	}
 
 	if err := s.okrActivities.Create(ctx, activity); err != nil {
@@ -145,27 +144,40 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 				strs[i] = u.String()
 			}
 			activity := okractivities.CoreNewActivity{
-				ObjectiveID:   previousKR.ObjectiveID,
-				KeyResultID:   &id,
-				UserID:        userID,
-				Type:          okractivities.ActivityTypeUpdate,
-				UpdateType:    okractivities.UpdateTypeKeyResult,
-				Field:         "contributors",
-				CurrentValue:  strings.Join(strs, ","),
-				PreviousValue: "",
-				Comment:       comment,
-				WorkspaceID:   workspaceId,
+				ObjectiveID:  previousKR.ObjectiveID,
+				KeyResultID:  &id,
+				UserID:       userID,
+				Type:         okractivities.ActivityTypeUpdate,
+				UpdateType:   okractivities.UpdateTypeKeyResult,
+				Field:        "contributors",
+				CurrentValue: strings.Join(strs, ","),
+				Comment:      comment,
+				WorkspaceID:  workspaceId,
 			}
 			fmt.Println("activity", activity)
-			// if err := s.okrActivities.Create(ctx, activity); err != nil {
-			// 	s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
-			// 	// Don't fail the update operation if activity recording fails
-			// }
+			if err := s.okrActivities.Create(ctx, activity); err != nil {
+				s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
+				// Don't fail the update operation if activity recording fails
+			}
 		}
 	}
 
 	for field, value := range updates {
-		fmt.Println("field", field, "currentValue", s.formatValue(value))
+		activity := okractivities.CoreNewActivity{
+			ObjectiveID:  previousKR.ObjectiveID,
+			KeyResultID:  &id,
+			UserID:       userID,
+			Type:         okractivities.ActivityTypeUpdate,
+			UpdateType:   okractivities.UpdateTypeKeyResult,
+			Field:        field,
+			CurrentValue: s.formatValue(value),
+			Comment:      comment,
+			WorkspaceID:  workspaceId,
+		}
+		if err := s.okrActivities.Create(ctx, activity); err != nil {
+			s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
+			// Don't fail the update operation if activity recording fails
+		}
 	}
 
 	span.AddEvent("key result updated", trace.WithAttributes(
@@ -201,15 +213,14 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	// Record the delete activity
 	activity := okractivities.CoreNewActivity{
-		ObjectiveID:   objId,
-		UserID:        userID,
-		Type:          okractivities.ActivityTypeDelete,
-		UpdateType:    okractivities.UpdateTypeKeyResult,
-		Field:         "all",
-		CurrentValue:  "",
-		PreviousValue: name,
-		Comment:       "",
-		WorkspaceID:   workspaceId,
+		ObjectiveID:  objId,
+		UserID:       userID,
+		Type:         okractivities.ActivityTypeDelete,
+		UpdateType:   okractivities.UpdateTypeKeyResult,
+		Field:        "all",
+		CurrentValue: name,
+		Comment:      "",
+		WorkspaceID:  workspaceId,
 	}
 
 	if err := s.okrActivities.Create(ctx, activity); err != nil {

@@ -34,23 +34,22 @@ func (r *repo) Create(ctx context.Context, na okractivities.CoreNewActivity) err
 	const query = `
         INSERT INTO okr_activities (
             objective_id, key_result_id, user_id, activity_type, update_type,
-            field_changed, current_value, previous_value, comment, workspace_id
+            field_changed, current_value, comment, workspace_id
         ) VALUES (
             :objective_id, :key_result_id, :user_id, :activity_type, :update_type,
-            :field_changed, :current_value, :previous_value, :comment, :workspace_id
+            :field_changed, :current_value, :comment, :workspace_id
         )`
 
 	activity := dbActivity{
-		ObjectiveID:   na.ObjectiveID,
-		KeyResultID:   na.KeyResultID,
-		UserID:        na.UserID,
-		Type:          string(na.Type),
-		UpdateType:    string(na.UpdateType),
-		Field:         na.Field,
-		CurrentValue:  na.CurrentValue,
-		PreviousValue: na.PreviousValue,
-		Comment:       na.Comment,
-		WorkspaceID:   na.WorkspaceID,
+		ObjectiveID:  na.ObjectiveID,
+		KeyResultID:  na.KeyResultID,
+		UserID:       na.UserID,
+		Type:         string(na.Type),
+		UpdateType:   string(na.UpdateType),
+		Field:        na.Field,
+		CurrentValue: na.CurrentValue,
+		Comment:      na.Comment,
+		WorkspaceID:  na.WorkspaceID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -76,7 +75,7 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
 	const query = `
         SELECT 
             activity_id, objective_id, key_result_id, user_id, activity_type, update_type,
-            field_changed, current_value, previous_value, comment, created_at, workspace_id
+            field_changed, current_value, comment, created_at, workspace_id
         FROM okr_activities
         WHERE objective_id = :objective_id
         ORDER BY created_at DESC
@@ -117,7 +116,7 @@ func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID
 	const query = `
         SELECT 
             activity_id, objective_id, key_result_id, user_id, activity_type, update_type,
-            field_changed, current_value, previous_value, comment, created_at, workspace_id
+            field_changed, current_value, comment, created_at, workspace_id
         FROM okr_activities
         WHERE key_result_id = :key_result_id
         ORDER BY created_at DESC
