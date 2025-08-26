@@ -181,7 +181,16 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	// Record activity only for fields that actually changed
 	if len(changedUpdates) > 0 {
+		fieldCount := 0
+		totalFields := len(changedUpdates)
 		for field, value := range changedUpdates {
+			fieldCount++
+			// Only add comment to the last activity
+			activityComment := ""
+			if fieldCount == totalFields {
+				activityComment = comment
+			}
+
 			activity := okractivities.CoreNewActivity{
 				ObjectiveID:  previousKR.ObjectiveID,
 				KeyResultID:  &id,
@@ -190,7 +199,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 				UpdateType:   okractivities.UpdateTypeKeyResult,
 				Field:        field,
 				CurrentValue: s.formatValue(value),
-				Comment:      "",
+				Comment:      activityComment,
 				WorkspaceID:  workspaceId,
 			}
 			ca = append(ca, activity)
