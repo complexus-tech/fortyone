@@ -21,7 +21,7 @@ var (
 
 // Repository defines the repository for key results
 type Repository interface {
-	Create(ctx context.Context, kr *CoreKeyResult) error
+	Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
@@ -46,7 +46,7 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 }
 
 // Create inserts a new key result into the database
-func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
+func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Create")
 	defer span.End()
 
@@ -59,7 +59,7 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 			:objective_id, :name, :measurement_type,
 			:start_value, :current_value, :target_value,
 			:lead, :start_date, :end_date, :created_by
-		)
+		) RETURNING id
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -67,16 +67,17 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return uuid.Nil, err
 	}
 	defer stmt.Close()
 
 	r.log.Info(ctx, "creating key result")
-	if _, err := stmt.ExecContext(ctx, toDBKeyResult(*kr)); err != nil {
+	var id uuid.UUID
+	if err := stmt.GetContext(ctx, &id, toDBKeyResult(*kr)); err != nil {
 		errMsg := fmt.Sprintf("failed to create key result: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create key result"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return err
+		return uuid.Nil, err
 	}
 
 	r.log.Info(ctx, "key result created successfully")
@@ -84,7 +85,7 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) error {
 		attribute.String("key_result.name", kr.Name),
 	))
 
-	return nil
+	return id, nil
 }
 
 // Update modifies data about a key result

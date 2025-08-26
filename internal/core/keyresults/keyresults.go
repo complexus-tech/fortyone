@@ -52,13 +52,14 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 		CreatedBy:       nkr.CreatedBy,
 	}
 
-	if err := s.repo.Create(ctx, &kr); err != nil {
+	id, err := s.repo.Create(ctx, &kr)
+	if err != nil {
 		return CoreKeyResult{}, fmt.Errorf("create: %w", err)
 	}
 
 	// Add contributors if provided
 	if len(nkr.Contributors) > 0 {
-		if err := s.repo.AddContributors(ctx, kr.ID, nkr.Contributors); err != nil {
+		if err := s.repo.AddContributors(ctx, id, nkr.Contributors); err != nil {
 			return CoreKeyResult{}, fmt.Errorf("failed to add contributors: %w", err)
 		}
 	}
@@ -66,7 +67,7 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 	// Record the create activity
 	activity := okractivities.CoreNewActivity{
 		ObjectiveID:   kr.ObjectiveID,
-		KeyResultID:   &kr.ID,
+		KeyResultID:   &id,
 		UserID:        nkr.CreatedBy,
 		Type:          okractivities.ActivityTypeCreate,
 		UpdateType:    okractivities.UpdateTypeKeyResult,
@@ -83,7 +84,7 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 	}
 
 	return CoreKeyResult{
-		ID:              kr.ID,
+		ID:              id,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
