@@ -133,12 +133,12 @@ export const UpdateKeyResultDialog = ({
                 <Box className="col-span-3">
                   <Text className="mb-[0.35rem]">Current Value</Text>
                   <Flex
-                    className="rounded-[0.45rem] border bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
+                    className="rounded-xl border border-gray-100 bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
                     gap={1}
                   >
                     <Button
                       align="center"
-                      className={cn("rounded-[0.35rem] border-0", {
+                      className={cn("border-0", {
                         "bg-transparent dark:bg-transparent":
                           form.currentValue !== 0,
                       })}
@@ -147,7 +147,6 @@ export const UpdateKeyResultDialog = ({
                       onClick={() => {
                         setForm({ ...form, currentValue: 0 });
                       }}
-                      size="sm"
                       type="button"
                       variant={form.currentValue === 0 ? "solid" : "outline"}
                     >
@@ -155,7 +154,7 @@ export const UpdateKeyResultDialog = ({
                     </Button>
                     <Button
                       align="center"
-                      className={cn("rounded-[0.35rem] border-0", {
+                      className={cn("border-0", {
                         "bg-transparent dark:bg-transparent":
                           form.currentValue !== 1,
                       })}
@@ -164,7 +163,6 @@ export const UpdateKeyResultDialog = ({
                       onClick={() => {
                         setForm({ ...form, currentValue: 1 });
                       }}
-                      size="sm"
                       type="button"
                       variant={form.currentValue === 1 ? "solid" : "outline"}
                     >
