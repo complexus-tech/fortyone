@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
@@ -164,8 +165,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	}
 
 	for field, value := range updates {
-		currentValue := fmt.Sprintf("%v", value)
-		fmt.Println("field", field, "currentValue", currentValue)
+		fmt.Println("field", field, "currentValue", s.formatValue(value))
 	}
 
 	span.AddEvent("key result updated", trace.WithAttributes(
@@ -269,4 +269,29 @@ func (s *Service) ListPaginated(ctx context.Context, filters keyresultsrepo.Core
 	}
 
 	return response, nil
+}
+
+func (s *Service) formatValue(value any) string {
+	if value == nil {
+		return "nil"
+	}
+	switch v := value.(type) {
+	case *float64:
+		if v != nil {
+			return fmt.Sprintf("%.2f", *v)
+		}
+		return "nil"
+	case *uuid.UUID:
+		if v != nil {
+			return v.String()
+		}
+		return "nil"
+	case *time.Time:
+		if v != nil {
+			return v.Format(time.RFC3339)
+		}
+		return "nil"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
