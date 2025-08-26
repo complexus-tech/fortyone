@@ -282,6 +282,7 @@ export const ObjectiveActivityComponent = ({
                   as="span"
                   className="max-w-[16ch] shrink-0 truncate text-sm italic md:text-[0.95rem]"
                   color="muted"
+                  title={keyResult?.name}
                 >
                   {keyResult?.name}
                 </Text>
@@ -304,6 +305,7 @@ export const ObjectiveActivityComponent = ({
                   <Text
                     as="span"
                     className="inline-block max-w-[24ch] shrink-0 truncate text-sm text-black dark:text-white md:text-[0.95rem]"
+                    title={currentValue}
                   >
                     {fieldMap[field].render(currentValue) || currentValue}
                   </Text>
