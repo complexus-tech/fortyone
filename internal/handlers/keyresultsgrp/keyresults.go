@@ -89,6 +89,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -136,7 +140,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["contributors"] = *ukr.Contributors
 	}
 
-	if err := h.keyResults.Update(ctx, id, workspace.ID, updates); err != nil {
+	// For now, use empty comment
+	comment := ""
+	if err := h.keyResults.Update(ctx, id, workspace.ID, userID, updates, comment); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil

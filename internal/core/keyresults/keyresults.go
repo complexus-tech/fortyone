@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
@@ -102,9 +103,18 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 }
 
 // Update updates a key result in the system
-func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID, updates map[string]any, comment string) error {
 	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Update")
 	defer span.End()
+
+	// Get the current key result before updating to capture its details
+	previousKR, err := s.repo.Get(ctx, id, workspaceId)
+	if err != nil {
+		if errors.Is(err, keyresultsrepo.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
 
 	// Handle contributors separately
 	var contributors []uuid.UUID
@@ -126,6 +136,29 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	if contributors != nil {
 		if err := s.repo.UpdateContributors(ctx, id, contributors); err != nil {
 			return fmt.Errorf("failed to update contributors: %w", err)
+		}
+		if len(contributors) > 0 {
+			// record the update activity
+			strs := make([]string, len(contributors))
+			for i, u := range contributors {
+				strs[i] = u.String()
+			}
+			activity := okractivities.CoreNewActivity{
+				ObjectiveID:   previousKR.ObjectiveID,
+				KeyResultID:   &id,
+				UserID:        userID,
+				Type:          okractivities.ActivityTypeUpdate,
+				UpdateType:    okractivities.UpdateTypeKeyResult,
+				Field:         "contributors",
+				CurrentValue:  strings.Join(strs, ","),
+				PreviousValue: "",
+				Comment:       comment,
+				WorkspaceID:   workspaceId,
+			}
+			if err := s.okrActivities.Create(ctx, activity); err != nil {
+				s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
+				// Don't fail the update operation if activity recording fails
+			}
 		}
 	}
 
