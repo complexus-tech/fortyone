@@ -110,6 +110,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err := web.Decode(r, &ukr); err != nil {
 		return err
 	}
+	comment := ""
+	if ukr.Comment != nil {
+		comment = *ukr.Comment
+	}
 
 	updates := make(map[string]any)
 	if ukr.Name != "" {
@@ -140,8 +144,6 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["contributors"] = *ukr.Contributors
 	}
 
-	// For now, use empty comment
-	comment := ""
 	if err := h.keyResults.Update(ctx, id, workspace.ID, userID, updates, comment); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)

@@ -172,6 +172,7 @@ type AppUpdateObjective struct {
 	Status      *uuid.UUID `json:"statusId" db:"status_id"`
 	Priority    *string    `json:"priority" db:"priority"`
 	Health      *string    `json:"health" db:"health"`
+	Comment     *string    `json:"comment" db:"comment"`
 }
 
 // AppKeyResult represents a key result in the application

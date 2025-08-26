@@ -3,6 +3,8 @@ package objectives
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
@@ -82,7 +84,7 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.U
 }
 
 // Update updates an objective in the system
-func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error {
+func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, userId uuid.UUID, comment string, updates map[string]any) error {
 	s.log.Info(ctx, "business.core.objectives.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.objectives.Update")
 	defer span.End()
@@ -93,6 +95,30 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		}
 		span.RecordError(err)
 		return err
+	}
+
+	activities := []okractivities.CoreNewActivity{}
+	for field, value := range updates {
+		if field == "description" {
+			continue
+		}
+		activity := okractivities.CoreNewActivity{
+			ObjectiveID:  id,
+			KeyResultID:  nil,
+			UserID:       userId,
+			Type:         okractivities.ActivityTypeUpdate,
+			UpdateType:   okractivities.UpdateTypeObjective,
+			Field:        field,
+			CurrentValue: s.formatValue(value),
+			Comment:      comment,
+			WorkspaceID:  workspaceId,
+		}
+		activities = append(activities, activity)
+	}
+
+	if err := s.okrActivities.CreateBatch(ctx, activities); err != nil {
+		s.log.Error(ctx, "failed to record objective update activities", "error", err, "objectiveID", id)
+		// Don't fail the update operation if activity recording fails
 	}
 
 	span.AddEvent("objective updated", trace.WithAttributes(
@@ -196,4 +222,29 @@ func (s *Service) GetAnalytics(ctx context.Context, objectiveID uuid.UUID, works
 	))
 
 	return analytics, nil
+}
+
+func (s *Service) formatValue(value any) string {
+	if value == nil {
+		return "nil"
+	}
+	switch v := value.(type) {
+	case *float64:
+		if v != nil {
+			return fmt.Sprintf("%.2f", *v)
+		}
+		return "nil"
+	case *uuid.UUID:
+		if v != nil {
+			return v.String()
+		}
+		return "nil"
+	case *time.Time:
+		if v != nil {
+			return v.Format(time.RFC3339)
+		}
+		return "nil"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

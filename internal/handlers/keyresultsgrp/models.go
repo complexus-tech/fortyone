@@ -56,6 +56,7 @@ type AppUpdateKeyResult struct {
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
 	StartDate       *time.Time   `json:"startDate" db:"start_date"`
 	EndDate         *time.Time   `json:"endDate" db:"end_date"`
+	Comment         *string      `json:"comment" db:"comment"`
 }
 
 // AppKeyResultWithObjective extends AppKeyResult with objective info

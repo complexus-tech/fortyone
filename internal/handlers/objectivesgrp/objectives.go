@@ -147,6 +147,11 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
 	objectiveID := web.Params(r, "id")
 	objID, err := uuid.Parse(objectiveID)
 	if err != nil {
@@ -157,6 +162,11 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	var uo AppUpdateObjective
 	if err := web.Decode(r, &uo); err != nil {
 		return err
+	}
+
+	comment := ""
+	if uo.Comment != nil {
+		comment = *uo.Comment
 	}
 
 	updates := make(map[string]any)
@@ -189,7 +199,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["health"] = health
 	}
 
-	if err := h.objectives.Update(ctx, objID, workspace.ID, updates); err != nil {
+	if err := h.objectives.Update(ctx, objID, workspace.ID, userID, comment, updates); err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
