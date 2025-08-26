@@ -768,6 +768,8 @@ func (s *Service) formatValue(value any) string {
 			return v.Format(time.RFC3339)
 		}
 		return "nil"
+	case time.Time:
+		return v.Format(time.RFC3339)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
