@@ -393,7 +393,7 @@ export const KeyResults = () => {
             variant="naked"
           >
             {isLoading ? (
-              <Thinking message="Maya is thinking" />
+              <Thinking message={isDesktop ? "Maya is thinking" : "Thinking"} />
             ) : (
               <>
                 Suggest{" "}
