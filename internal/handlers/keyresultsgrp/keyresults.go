@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -24,16 +25,18 @@ var (
 )
 
 type Handlers struct {
-	keyResults *keyresults.Service
-	log        *logger.Logger
-	cache      *cache.Service
+	keyResults    *keyresults.Service
+	okrActivities *okractivities.Service
+	log           *logger.Logger
+	cache         *cache.Service
 }
 
-func New(keyResults *keyresults.Service, cache *cache.Service, log *logger.Logger) *Handlers {
+func New(keyResults *keyresults.Service, okrActivities *okractivities.Service, cache *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
-		keyResults: keyResults,
-		log:        log,
-		cache:      cache,
+		keyResults:    keyResults,
+		okrActivities: okrActivities,
+		log:           log,
+		cache:         cache,
 	}
 }
 
@@ -288,4 +291,35 @@ func parseUUIDArray(values []string) []uuid.UUID {
 		}
 	}
 	return uuids
+}
+
+func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	keyResultID := web.Params(r, "id")
+	id, err := uuid.Parse(keyResultID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Use your existing pagination helper functions
+	page := getIntParam(r.URL.Query(), "page", 1)
+	pageSize := getIntParam(r.URL.Query(), "pageSize", 20)
+
+	activities, hasMore, err := h.okrActivities.GetKeyResultActivities(ctx, id, page, pageSize)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	response := map[string]any{
+		"activities": toAppKeyResultActivities(activities),
+		"pagination": map[string]any{
+			"page":     page,
+			"pageSize": pageSize,
+			"hasMore":  hasMore,
+		},
+	}
+
+	web.Respond(ctx, w, response, http.StatusOK)
+	return nil
 }

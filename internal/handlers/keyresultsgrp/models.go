@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -198,6 +199,49 @@ func toAppKeyResults(krs []keyresults.CoreKeyResult) []AppKeyResult {
 	result := make([]AppKeyResult, len(krs))
 	for i, kr := range krs {
 		result[i] = toAppKeyResult(kr)
+	}
+	return result
+}
+
+// AppKeyResultActivity represents a key result activity in the application
+type AppKeyResultActivity struct {
+	ID            uuid.UUID  `json:"id"`
+	ObjectiveID   uuid.UUID  `json:"objectiveId"`
+	KeyResultID   *uuid.UUID `json:"keyResultId"`
+	UserID        uuid.UUID  `json:"userId"`
+	Type          string     `json:"type"`
+	UpdateType    string     `json:"updateType"`
+	Field         string     `json:"field"`
+	CurrentValue  string     `json:"currentValue"`
+	PreviousValue string     `json:"previousValue"`
+	Comment       string     `json:"comment"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	WorkspaceID   uuid.UUID  `json:"workspaceId"`
+}
+
+// toAppKeyResultActivity converts a CoreActivity to an AppKeyResultActivity
+func toAppKeyResultActivity(a okractivities.CoreActivity) AppKeyResultActivity {
+	return AppKeyResultActivity{
+		ID:            a.ID,
+		ObjectiveID:   a.ObjectiveID,
+		KeyResultID:   a.KeyResultID,
+		UserID:        a.UserID,
+		Type:          string(a.Type),
+		UpdateType:    string(a.UpdateType),
+		Field:         a.Field,
+		CurrentValue:  a.CurrentValue,
+		PreviousValue: a.PreviousValue,
+		Comment:       a.Comment,
+		CreatedAt:     a.CreatedAt,
+		WorkspaceID:   a.WorkspaceID,
+	}
+}
+
+// toAppKeyResultActivities converts a slice of CoreActivity to a slice of AppKeyResultActivity
+func toAppKeyResultActivities(acts []okractivities.CoreActivity) []AppKeyResultActivity {
+	result := make([]AppKeyResultActivity, len(acts))
+	for i, a := range acts {
+		result[i] = toAppKeyResultActivity(a)
 	}
 	return result
 }
