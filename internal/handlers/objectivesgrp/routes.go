@@ -23,7 +23,7 @@ type Config struct {
 
 func Routes(cfg Config, app *web.App) {
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepo.New(cfg.Log, cfg.DB))
-	objectivesService := objectives.New(cfg.Log, objectivesrepo.New(cfg.Log, cfg.DB))
+	objectivesService := objectives.New(cfg.Log, objectivesrepo.New(cfg.Log, cfg.DB), okrActivitiesService)
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB), okrActivitiesService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

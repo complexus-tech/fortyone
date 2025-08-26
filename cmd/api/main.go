@@ -15,6 +15,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/notifications"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
@@ -23,6 +24,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
+	"github.com/complexus-tech/projects-api/internal/repo/okractivitiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
@@ -258,7 +260,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb, tasksService)
 	mentionsRepo := mentionsrepo.New(log, db)
 	storiesService := stories.New(log, storiesrepo.New(log, db), mentionsRepo, publisher)
-	objectivesService := objectives.New(log, objectivesrepo.New(log, db))
+	okrActivitiesService := okractivities.New(log, okractivitiesrepo.New(log, db))
+	objectivesService := objectives.New(log, objectivesrepo.New(log, db), okrActivitiesService)
 	usersService := users.New(log, usersrepo.New(log, db), tasksService)
 	statusesService := states.New(log, statesrepo.New(log, db))
 

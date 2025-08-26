@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -28,17 +29,19 @@ type Repository interface {
 	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (CoreObjectiveAnalytics, error)
 }
 
-// Service provides story-related operations.
+// Service provides objective-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo          Repository
+	okrActivities *okractivities.Service
+	log           *logger.Logger
 }
 
-// New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository) *Service {
+// New constructs a new objectives service instance with the provided repository.
+func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:          repo,
+		okrActivities: okrActivities,
+		log:           log,
 	}
 }
 
@@ -130,6 +133,40 @@ func (s *Service) Create(ctx context.Context, newObjective CoreNewObjective, wor
 	if err != nil {
 		span.RecordError(err)
 		return CoreObjective{}, nil, err
+	}
+
+	// Record the create activity
+	ca := []okractivities.CoreNewActivity{}
+	activity := okractivities.CoreNewActivity{
+		ObjectiveID:  createdObj.ID,
+		KeyResultID:  nil,
+		UserID:       newObjective.CreatedBy,
+		Type:         okractivities.ActivityTypeCreate,
+		UpdateType:   okractivities.UpdateTypeObjective,
+		Field:        "all",
+		CurrentValue: createdObj.Name,
+		Comment:      "",
+		WorkspaceID:  workspaceID,
+	}
+	ca = append(ca, activity)
+
+	for _, kr := range createdKRs {
+		activity := okractivities.CoreNewActivity{
+			ObjectiveID:  createdObj.ID,
+			KeyResultID:  &kr.ID,
+			UserID:       newObjective.CreatedBy,
+			Type:         okractivities.ActivityTypeCreate,
+			UpdateType:   okractivities.UpdateTypeKeyResult,
+			CurrentValue: kr.Name,
+			Comment:      "",
+			WorkspaceID:  workspaceID,
+		}
+		ca = append(ca, activity)
+	}
+
+	if err := s.okrActivities.CreateBatch(ctx, ca); err != nil {
+		s.log.Error(ctx, "failed to record objective create activity", "error", err, "objectiveID", createdObj.ID)
+		// Don't fail the create operation if activity recording fails
 	}
 
 	span.AddEvent("objective created.", trace.WithAttributes(
