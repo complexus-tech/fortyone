@@ -203,7 +203,7 @@ export const Links = ({
       )}
 
       {isLinksOpen && links.length > 0 ? (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100/60 pb-0 dark:border-dark-200">
+        <Box className="mt-2 border-t-[0.5px] border-gray-100 pb-0 dark:border-dark-100">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}
