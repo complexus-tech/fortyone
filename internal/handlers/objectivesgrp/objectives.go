@@ -322,6 +322,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 			CurrentValue:    kr.CurrentValue,
 			TargetValue:     kr.TargetValue,
 			CreatedBy:       userID,
+			Lead:            kr.Lead,
+			Contributors:    kr.Contributors,
+			StartDate:       kr.StartDate,
+			EndDate:         kr.EndDate,
 		})
 	}
 

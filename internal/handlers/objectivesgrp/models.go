@@ -98,11 +98,16 @@ type AppNewObjective struct {
 
 // AppNewKeyResult represents a new key result to be created
 type AppNewKeyResult struct {
-	Name            string  `json:"name" validate:"required"`
-	MeasurementType string  `json:"measurementType" validate:"required,oneof=percentage number boolean"`
-	StartValue      float64 `json:"startValue"`
-	CurrentValue    float64 `json:"currentValue"`
-	TargetValue     float64 `json:"targetValue"`
+	Name            string      `json:"name" validate:"required"`
+	MeasurementType string      `json:"measurementType" validate:"required,oneof=percentage number boolean"`
+	StartValue      float64     `json:"startValue"`
+	CurrentValue    float64     `json:"currentValue"`
+	TargetValue     float64     `json:"targetValue"`
+	Lead            *uuid.UUID  `json:"lead"`
+	Contributors    []uuid.UUID `json:"contributors"`
+	StartDate       *time.Time  `json:"startDate"`
+	EndDate         *time.Time  `json:"endDate"`
+	CreatedBy       uuid.UUID   `json:"createdBy"`
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
