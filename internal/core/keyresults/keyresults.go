@@ -162,6 +162,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		}
 	}
 
+	ca := []okractivities.CoreNewActivity{}
 	for field, value := range updates {
 		activity := okractivities.CoreNewActivity{
 			ObjectiveID:  previousKR.ObjectiveID,
@@ -174,10 +175,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 			Comment:      comment,
 			WorkspaceID:  workspaceId,
 		}
-		if err := s.okrActivities.Create(ctx, activity); err != nil {
-			s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
-			// Don't fail the update operation if activity recording fails
-		}
+		ca = append(ca, activity)
+	}
+
+	if err := s.okrActivities.CreateBatch(ctx, ca); err != nil {
+		s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
+		// Don't fail the update operation if activity recording fails
 	}
 
 	span.AddEvent("key result updated", trace.WithAttributes(

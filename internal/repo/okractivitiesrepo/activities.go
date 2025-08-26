@@ -81,7 +81,7 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
         ORDER BY created_at DESC
         LIMIT :limit OFFSET :offset`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"objective_id": objectiveID,
 		"limit":        limit,
 		"offset":       offset,
@@ -122,7 +122,7 @@ func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID
         ORDER BY created_at DESC
         LIMIT :limit OFFSET :offset`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"key_result_id": keyResultID,
 		"limit":         limit,
 		"offset":        offset,
