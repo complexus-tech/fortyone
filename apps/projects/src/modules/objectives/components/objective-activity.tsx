@@ -111,7 +111,7 @@ export const ObjectiveActivityComponent = ({
                 size="xs"
                 src={members.find((m) => m.id === value)?.avatarUrl}
               />
-              {members.find((m) => m.id === value)?.username}
+              {members.find((m) => m.id === value)?.username || "deleted user"}
             </Link>
           )}
         </>
@@ -180,7 +180,7 @@ export const ObjectiveActivityComponent = ({
                 size="xs"
                 src={members.find((m) => m.id === value)?.avatarUrl}
               />
-              {members.find((m) => m.id === value)?.username}
+              {members.find((m) => m.id === value)?.username || "deleted user"}
             </Link>
           )}
         </>
