@@ -26,7 +26,7 @@ import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import {
   useCreateKeyResultMutation,
@@ -289,6 +289,7 @@ export const KeyResults = () => {
     new Set(),
   );
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-key-results",
@@ -396,10 +397,12 @@ export const KeyResults = () => {
             ) : (
               <>
                 Suggest{" "}
-                {getTermDisplay("keyResultTerm", {
-                  capitalize: true,
-                  variant: "plural",
-                })}
+                {isDesktop
+                  ? getTermDisplay("keyResultTerm", {
+                      capitalize: true,
+                      variant: "plural",
+                    })
+                  : null}
               </>
             )}
           </Button>

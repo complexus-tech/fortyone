@@ -19,7 +19,7 @@ import { useState } from "react";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
-import { useDebounce, useFeatures, useTerminology, useUserRole } from "@/hooks";
+import { useDebounce, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useChatContext } from "@/context/chat-context";
 import {
@@ -31,7 +31,6 @@ import { Sidebar } from "../sidebar";
 import type { ObjectiveUpdate } from "../../types";
 import { Activity } from "./activity";
 import { Properties } from "./properties";
-import { KeyResults } from "./key-results";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
@@ -39,7 +38,6 @@ export const Overview = () => {
   const { objectiveId } = useParams<{
     objectiveId: string;
   }>();
-  const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -183,7 +181,6 @@ export const Overview = () => {
               <Properties />
               <Divider className="my-8" />
               <Activity />
-              {features.keyResultEnabled ? <KeyResults /> : null}
             </Container>
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
@@ -238,7 +235,6 @@ export const Overview = () => {
           <Properties />
           <Divider className="my-6 md:my-8" />
           <Activity />
-          {features.keyResultEnabled ? <KeyResults /> : null}
         </Container>
       </Box>
 

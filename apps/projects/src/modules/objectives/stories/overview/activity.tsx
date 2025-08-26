@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import { HealthMenu } from "@/components/ui/health-menu";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { KeyResults } from "@/modules/objectives/stories/overview/key-results";
+import { useFeatures } from "@/hooks";
 import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
 import type { ObjectiveHealth } from "../../types";
 import { Summary } from "./summary";
@@ -12,6 +14,7 @@ import { Updates } from "./updates";
 
 export const Activity = () => {
   const { data: session } = useSession();
+  const features = useFeatures();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const updateMutation = useUpdateObjectiveMutation();
@@ -69,6 +72,7 @@ export const Activity = () => {
       </Flex>
       <Tabs.Panel value="summary">
         <Summary />
+        {features.keyResultEnabled ? <KeyResults /> : null}
       </Tabs.Panel>
       <Tabs.Panel value="updates">
         <Updates objectiveId={objectiveId} />
