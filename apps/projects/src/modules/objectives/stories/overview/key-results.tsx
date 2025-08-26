@@ -97,6 +97,9 @@ const Okr = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [updateMode, setUpdateMode] = useState<"progress" | "other">(
+    "progress",
+  );
   // const { data: members = [] } = useMembers();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
 
@@ -226,10 +229,20 @@ const Okr = ({
                 <Menu.Group>
                   <Menu.Item
                     onSelect={() => {
+                      setUpdateMode("other");
                       setIsUpdateOpen(true);
                     }}
                   >
                     <EditIcon />
+                    Edit...
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      setUpdateMode("progress");
+                      setIsUpdateOpen(true);
+                    }}
+                  >
+                    <OKRIcon />
                     Update progress...
                   </Menu.Item>
                   <Menu.Item
@@ -274,6 +287,7 @@ const Okr = ({
           updatedAt,
         }}
         onOpenChange={setIsUpdateOpen}
+        updateMode={updateMode}
       />
     </Wrapper>
   );

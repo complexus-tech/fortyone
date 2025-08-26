@@ -12,12 +12,14 @@ type UpdateKeyResultDialogProps = {
   keyResult: Omit<KeyResult, "createdBy">;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  updateMode: "progress" | "other";
 };
 
 export const UpdateKeyResultDialog = ({
   keyResult,
   isOpen,
   onOpenChange,
+  updateMode,
 }: UpdateKeyResultDialogProps) => {
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateKeyResultMutation();
@@ -49,7 +51,7 @@ export const UpdateKeyResultDialog = ({
         name: form.name,
         startValue: form.startValue,
         targetValue: form.targetValue,
-        currentValue: form.currentValue,
+        currentValue: updateMode === "progress" ? form.currentValue : undefined,
         contributors: form.contributors,
         startDate: form.startDate,
         endDate: form.endDate,
@@ -84,7 +86,9 @@ export const UpdateKeyResultDialog = ({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={isOpen}>
-      <Dialog.Content className="max-w-2xl">
+      <Dialog.Content
+        className={cn("max-w-2xl", { "max-w-xl": updateMode === "progress" })}
+      >
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title className="text-lg capitalize">
@@ -93,150 +97,169 @@ export const UpdateKeyResultDialog = ({
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="space-y-4 pb-0">
-            <Input
-              label="Name"
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-              }}
-              placeholder={`Enter a name for the ${getTermDisplay("keyResultTerm")}`}
-              required
-              value={form.name}
-            />
-            <Box className="grid grid-cols-2 gap-4">
-              <Input
-                label="Start Date"
-                onChange={(e) => {
-                  setForm({
-                    ...form,
-                    startDate: new Date(e.target.value).toISOString(),
-                  });
-                }}
-                required
-                type="date"
-                value={formatISO(new Date(form.startDate), {
-                  representation: "date",
-                })}
-              />
-              <Input
-                label="Deadline"
-                onChange={(e) => {
-                  setForm({
-                    ...form,
-                    endDate: new Date(e.target.value).toISOString(),
-                  });
-                }}
-                required
-                type="date"
-                value={formatISO(new Date(form.endDate), {
-                  representation: "date",
-                })}
-              />
-            </Box>
-            <Box className="grid grid-cols-3 gap-4">
-              {keyResult.measurementType === "boolean" ? (
-                <Box className="col-span-3">
-                  <Text className="mb-[0.35rem]">Current Value</Text>
-                  <Flex
-                    className="rounded-xl border border-gray-100 bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
-                    gap={1}
-                  >
-                    <Button
-                      align="center"
-                      className={cn("border-0", {
-                        "bg-transparent dark:bg-transparent":
-                          form.currentValue !== 0,
-                      })}
-                      color={form.currentValue === 0 ? "primary" : "tertiary"}
-                      fullWidth
-                      onClick={() => {
-                        setForm({ ...form, currentValue: 0 });
-                      }}
-                      type="button"
-                      variant={form.currentValue === 0 ? "solid" : "outline"}
-                    >
-                      Incomplete
-                    </Button>
-                    <Button
-                      align="center"
-                      className={cn("border-0", {
-                        "bg-transparent dark:bg-transparent":
-                          form.currentValue !== 1,
-                      })}
-                      color={form.currentValue === 1 ? "primary" : "tertiary"}
-                      fullWidth
-                      onClick={() => {
-                        setForm({ ...form, currentValue: 1 });
-                      }}
-                      type="button"
-                      variant={form.currentValue === 1 ? "solid" : "outline"}
-                    >
-                      Complete
-                    </Button>
-                  </Flex>
-                </Box>
-              ) : (
-                <>
-                  <Box className="opacity-40 focus-within:opacity-80">
-                    <Input
-                      className="h-[2.7rem]"
-                      label={isMobile ? "Starting" : "Starting Value"}
-                      onChange={(e) => {
-                        setForm({
-                          ...form,
-                          startValue: Number(e.target.value),
-                        });
-                      }}
-                      placeholder="0"
-                      required
-                      type="number"
-                      value={form.startValue}
-                    />
-                  </Box>
+            {updateMode === "other" && (
+              <>
+                <Input
+                  label="Name"
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                  }}
+                  placeholder={`Enter a name for the ${getTermDisplay("keyResultTerm")}`}
+                  required
+                  value={form.name}
+                />
+                <Box className="grid grid-cols-2 gap-4">
                   <Input
-                    className="h-[2.7rem]"
-                    label={isMobile ? "Current" : "Current Value"}
+                    label="Start Date"
                     onChange={(e) => {
                       setForm({
                         ...form,
-                        currentValue: Number(e.target.value),
+                        startDate: new Date(e.target.value).toISOString(),
                       });
                     }}
-                    placeholder="0"
                     required
-                    type="number"
-                    value={form.currentValue}
+                    type="date"
+                    value={formatISO(new Date(form.startDate), {
+                      representation: "date",
+                    })}
                   />
-                  <Box className="opacity-40 focus-within:opacity-80">
+                  <Input
+                    label="Deadline"
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        endDate: new Date(e.target.value).toISOString(),
+                      });
+                    }}
+                    required
+                    type="date"
+                    value={formatISO(new Date(form.endDate), {
+                      representation: "date",
+                    })}
+                  />
+                </Box>
+              </>
+            )}
+
+            <Box
+              className={cn("grid grid-cols-1 gap-4", {
+                "grid-cols-2":
+                  updateMode === "other" &&
+                  keyResult.measurementType !== "boolean",
+              })}
+            >
+              {keyResult.measurementType === "boolean" &&
+                updateMode === "progress" && (
+                  <Box className="col-span-3">
+                    <Text className="mb-[0.35rem]">Current Value</Text>
+                    <Flex
+                      className="rounded-xl border border-gray-100 bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
+                      gap={1}
+                    >
+                      <Button
+                        align="center"
+                        className={cn("border-0", {
+                          "bg-transparent dark:bg-transparent":
+                            form.currentValue !== 0,
+                        })}
+                        color={form.currentValue === 0 ? "primary" : "tertiary"}
+                        fullWidth
+                        onClick={() => {
+                          setForm({ ...form, currentValue: 0 });
+                        }}
+                        type="button"
+                        variant={form.currentValue === 0 ? "solid" : "outline"}
+                      >
+                        Incomplete
+                      </Button>
+                      <Button
+                        align="center"
+                        className={cn("border-0", {
+                          "bg-transparent dark:bg-transparent":
+                            form.currentValue !== 1,
+                        })}
+                        color={form.currentValue === 1 ? "primary" : "tertiary"}
+                        fullWidth
+                        onClick={() => {
+                          setForm({ ...form, currentValue: 1 });
+                        }}
+                        type="button"
+                        variant={form.currentValue === 1 ? "solid" : "outline"}
+                      >
+                        Complete
+                      </Button>
+                    </Flex>
+                  </Box>
+                )}
+              {keyResult.measurementType !== "boolean" ? (
+                <>
+                  {updateMode === "progress" ? (
                     <Input
                       className="h-[2.7rem]"
-                      label={isMobile ? "Target" : "Target Value"}
+                      label={isMobile ? "Current" : "Current Value"}
                       onChange={(e) => {
                         setForm({
                           ...form,
-                          targetValue: Number(e.target.value),
+                          currentValue: Number(e.target.value),
                         });
                       }}
                       placeholder="0"
                       required
+                      rightIcon={
+                        <Text color="muted">/ {form.targetValue}</Text>
+                      }
                       type="number"
-                      value={form.targetValue}
+                      value={form.currentValue}
                     />
-                  </Box>
+                  ) : (
+                    <>
+                      <Input
+                        className="h-[2.7rem]"
+                        label={isMobile ? "Starting" : "Starting Value"}
+                        onChange={(e) => {
+                          setForm({
+                            ...form,
+                            startValue: Number(e.target.value),
+                          });
+                        }}
+                        placeholder="0"
+                        required
+                        type="number"
+                        value={form.startValue}
+                      />
+                      <Input
+                        className="h-[2.7rem]"
+                        label={isMobile ? "Target" : "Target Value"}
+                        onChange={(e) => {
+                          setForm({
+                            ...form,
+                            targetValue: Number(e.target.value),
+                          });
+                        }}
+                        placeholder="0"
+                        required
+                        type="number"
+                        value={form.targetValue}
+                      />
+                    </>
+                  )}
                 </>
-              )}
+              ) : null}
             </Box>
-            <Box className="mt-3">
-              <TextArea
-                className="resize-none rounded-2xl border py-4 text-base leading-normal dark:border-dark-50/80 dark:bg-transparent"
-                label="Comment"
-                onChange={(e) => {
-                  setForm({ ...form, comment: e.target.value });
-                }}
-                placeholder="Describe what progress was made, any blockers encountered, or next steps..."
-                rows={4}
-                value={form.comment}
-              />
-            </Box>
+            {updateMode === "progress" && (
+              <Box className="mt-3">
+                <TextArea
+                  className="resize-none rounded-2xl border py-4 text-base leading-normal dark:border-dark-50/80 dark:bg-transparent"
+                  label="Comment"
+                  onChange={(e) => {
+                    setForm({ ...form, comment: e.target.value });
+                  }}
+                  placeholder="Describe what progress was made, any blockers encountered, or next steps..."
+                  rows={4}
+                  value={form.comment}
+                />
+              </Box>
+            )}
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-2 border-0">
             <Button
