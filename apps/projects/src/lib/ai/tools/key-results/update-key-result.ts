@@ -9,7 +9,6 @@ export const updateKeyResultTool = tool({
     "Update existing key results. Can update name, measurement type, and values.",
   inputSchema: z.object({
     keyResultId: z.string().describe("Key result ID to update"),
-    objectiveId: z.string().describe("Objective ID to update"),
     name: z.string().optional().describe("Updated key result name"),
     startValue: z.number().optional().describe("Updated starting value"),
     currentValue: z
@@ -35,7 +34,6 @@ export const updateKeyResultTool = tool({
     startValue,
     currentValue,
     targetValue,
-    objectiveId,
     startDate,
     endDate,
     lead,
@@ -61,7 +59,7 @@ export const updateKeyResultTool = tool({
       };
     }
 
-    const result = await updateKeyResult(keyResultId, objectiveId, {
+    const result = await updateKeyResult(keyResultId, {
       name,
       startValue,
       currentValue,
