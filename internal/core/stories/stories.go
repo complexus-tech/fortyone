@@ -268,7 +268,7 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	ca := []CoreActivity{}
 
 	for field, value := range updates {
-		currentValue := fmt.Sprintf("%v", value)
+		currentValue := s.formatValue(value)
 		na := CoreActivity{
 			StoryID:      storyID,
 			Type:         "update",
@@ -746,4 +746,29 @@ func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamI
 	))
 
 	return stories, hasMore, nil
+}
+
+func (s *Service) formatValue(value any) string {
+	if value == nil {
+		return "nil"
+	}
+	switch v := value.(type) {
+	case *float64:
+		if v != nil {
+			return fmt.Sprintf("%.2f", *v)
+		}
+		return "nil"
+	case *uuid.UUID:
+		if v != nil {
+			return v.String()
+		}
+		return "nil"
+	case *time.Time:
+		if v != nil {
+			return v.Format(time.RFC3339)
+		}
+		return "nil"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
