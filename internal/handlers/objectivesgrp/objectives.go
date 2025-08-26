@@ -9,6 +9,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -19,10 +20,11 @@ import (
 )
 
 type Handlers struct {
-	objectives *objectives.Service
-	keyResults *keyresults.Service
-	cache      *cache.Service
-	log        *logger.Logger
+	objectives    *objectives.Service
+	keyResults    *keyresults.Service
+	okrActivities *okractivities.Service
+	cache         *cache.Service
+	log           *logger.Logger
 }
 
 var (
@@ -30,12 +32,13 @@ var (
 	ErrInvalidObjectiveID = errors.New("objective id is not in its proper form")
 )
 
-func New(objectives *objectives.Service, keyResults *keyresults.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
+func New(objectives *objectives.Service, keyResults *keyresults.Service, okrActivities *okractivities.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
-		objectives: objectives,
-		keyResults: keyResults,
-		cache:      cacheService,
-		log:        log,
+		objectives:    objectives,
+		keyResults:    keyResults,
+		okrActivities: okrActivities,
+		cache:         cacheService,
+		log:           log,
 	}
 }
 
@@ -370,5 +373,51 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	web.Respond(ctx, w, toAppObjectiveAnalytics(analytics), http.StatusOK)
+	return nil
+}
+
+func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	objectiveID := web.Params(r, "id")
+	objID, err := uuid.Parse(objectiveID)
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
+		return nil
+	}
+
+	// Use web.GetFilters like your existing List method
+	var af AppFilters
+	_, err = web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+
+	// Use the typed af struct directly
+	page := af.Page
+	if page <= 0 {
+		page = 1
+	}
+
+	pageSize := af.PageSize
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	activities, hasMore, err := h.okrActivities.GetObjectiveActivities(ctx, objID, page, pageSize)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	response := map[string]any{
+		"activities": toAppObjectiveActivities(activities),
+		"pagination": map[string]any{
+			"page":     page,
+			"pageSize": pageSize,
+			"hasMore":  hasMore,
+		},
+	}
+
+	web.Respond(ctx, w, response, http.StatusOK)
 	return nil
 }

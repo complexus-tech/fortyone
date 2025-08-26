@@ -5,6 +5,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/google/uuid"
 )
 
@@ -38,7 +39,8 @@ type ObjectiveStats struct {
 }
 
 type AppFilters struct {
-	Team *uuid.UUID `json:"teamId" db:"team_id"`
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
 }
 
 // toAppObjectives converts a list of core objectives to a list of application objectives.
@@ -308,6 +310,49 @@ func toAppProgressChart(progressChart []objectives.CoreObjectiveProgressDataPoin
 			InProgress: p.InProgress,
 			Total:      p.Total,
 		}
+	}
+	return result
+}
+
+// AppObjectiveActivity represents an objective activity in the application
+type AppObjectiveActivity struct {
+	ID            uuid.UUID  `json:"id"`
+	ObjectiveID   uuid.UUID  `json:"objectiveId"`
+	KeyResultID   *uuid.UUID `json:"keyResultId"`
+	UserID        uuid.UUID  `json:"userId"`
+	Type          string     `json:"type"`
+	UpdateType    string     `json:"updateType"`
+	Field         string     `json:"field"`
+	CurrentValue  string     `json:"currentValue"`
+	PreviousValue string     `json:"previousValue"`
+	Comment       string     `json:"comment"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	WorkspaceID   uuid.UUID  `json:"workspaceId"`
+}
+
+// toAppObjectiveActivity converts a CoreActivity to an AppObjectiveActivity
+func toAppObjectiveActivity(a okractivities.CoreActivity) AppObjectiveActivity {
+	return AppObjectiveActivity{
+		ID:            a.ID,
+		ObjectiveID:   a.ObjectiveID,
+		KeyResultID:   a.KeyResultID,
+		UserID:        a.UserID,
+		Type:          string(a.Type),
+		UpdateType:    string(a.UpdateType),
+		Field:         a.Field,
+		CurrentValue:  a.CurrentValue,
+		PreviousValue: a.PreviousValue,
+		Comment:       a.Comment,
+		CreatedAt:     a.CreatedAt,
+		WorkspaceID:   a.WorkspaceID,
+	}
+}
+
+// toAppObjectiveActivities converts a slice of CoreActivity to a slice of AppObjectiveActivity
+func toAppObjectiveActivities(acts []okractivities.CoreActivity) []AppObjectiveActivity {
+	result := make([]AppObjectiveActivity, len(acts))
+	for i, a := range acts {
+		result[i] = toAppObjectiveActivity(a)
 	}
 	return result
 }

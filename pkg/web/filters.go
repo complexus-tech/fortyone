@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
 )
 
 // Convert url.Values to map[string]json.RawMessage
@@ -47,11 +48,30 @@ func GetFilters(queryMap url.Values, data any) (map[string]any, error) {
 		dbTag := t.Field(i).Tag.Get("db")
 
 		if rawValue, ok := requestData[jsonTag]; ok {
-			err := json.Unmarshal(rawValue, field.Addr().Interface())
-			if err != nil {
-				return nil, err
+			// Handle string-to-int conversion for numeric fields
+			if field.Kind() == reflect.Int || field.Kind() == reflect.Int64 {
+				// Extract the string value from the raw message
+				var strValue string
+				if err := json.Unmarshal(rawValue, &strValue); err != nil {
+					return nil, err
+				}
+
+				// Convert string to int
+				if intValue, err := strconv.Atoi(strValue); err == nil {
+					field.SetInt(int64(intValue))
+					updates[dbTag] = intValue
+				} else {
+					// If conversion fails, skip this field
+					continue
+				}
+			} else {
+				// For non-numeric fields, use the original JSON unmarshaling
+				err := json.Unmarshal(rawValue, field.Addr().Interface())
+				if err != nil {
+					return nil, err
+				}
+				updates[dbTag] = field.Interface()
 			}
-			updates[dbTag] = field.Interface()
 		}
 	}
 
