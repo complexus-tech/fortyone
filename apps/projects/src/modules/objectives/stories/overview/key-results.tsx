@@ -167,7 +167,9 @@ const Okr = ({
           <OKRIcon strokeWidth={2.8} />
         </Badge>
         <Box>
-          <Text className="line-clamp-1">{name}</Text>
+          <Text className="line-clamp-1" title={name}>
+            {name}
+          </Text>
           <Tooltip title={getOverDueText()}>
             <Text
               className="flex items-center gap-1 text-[0.95rem]"
