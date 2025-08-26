@@ -137,15 +137,45 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 }
 
 // Delete removes a key result from the system
-func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.core.keyresults.Delete")
 	defer span.End()
 
+	// Get the current key result before deletion to capture its details
+	currentKR, err := s.repo.Get(ctx, id, workspaceId)
+	if err != nil {
+		if errors.Is(err, keyresultsrepo.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	name := currentKR.Name
+	objId := currentKR.ObjectiveID
+
+	// Delete the key result
 	if err := s.repo.Delete(ctx, id, workspaceId); err != nil {
 		if errors.Is(err, keyresultsrepo.ErrNotFound) {
 			return ErrNotFound
 		}
 		return err
+	}
+
+	// Record the delete activity
+	activity := okractivities.CoreNewActivity{
+		ObjectiveID:   objId,
+		UserID:        userID,
+		Type:          okractivities.ActivityTypeDelete,
+		UpdateType:    okractivities.UpdateTypeKeyResult,
+		Field:         "all",
+		CurrentValue:  "",
+		PreviousValue: name,
+		Comment:       "",
+		WorkspaceID:   workspaceId,
+	}
+
+	if err := s.okrActivities.Create(ctx, activity); err != nil {
+		s.log.Error(ctx, "failed to record key result delete activity", "error", err, "keyResultID", id)
+		// Don't fail the delete operation if activity recording fails
 	}
 
 	span.AddEvent("key result deleted", trace.WithAttributes(
