@@ -197,12 +197,13 @@ export const Team = ({
                   <Menu.Separator />
                   <Menu.Group>
                     <Menu.Item
+                      className="text-danger dark:text-danger"
                       disabled={totalTeams === 1}
                       onClick={() => {
                         setIsLeaving(true);
                       }}
                     >
-                      <LogoutIcon />
+                      <LogoutIcon className="text-danger dark:text-danger" />
                       Leave team
                     </Menu.Item>
                   </Menu.Group>
@@ -271,12 +272,13 @@ export const Team = ({
         <ContextMenu.Separator />
         <ContextMenu.Group>
           <ContextMenu.Item
+            className="text-danger dark:text-danger"
             disabled={totalTeams === 1}
             onClick={() => {
               setIsLeaving(true);
             }}
           >
-            <LogoutIcon />
+            <LogoutIcon className="text-danger dark:text-danger" />
             Leave team
           </ContextMenu.Item>
         </ContextMenu.Group>

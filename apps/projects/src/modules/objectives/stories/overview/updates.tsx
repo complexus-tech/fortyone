@@ -20,12 +20,12 @@ export const Updates = ({ objectiveId }: { objectiveId: string }) => {
 
   if (isPending) {
     return (
-      <Box className="mb-6 space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <Box className="mb-6 mt-4 space-y-6">
+        {Array.from({ length: 7 }).map((_, i) => (
           <Box className="flex gap-3" key={i}>
             <Skeleton className="h-8 w-8 rounded-full" />
             <Box className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-8/12" />
               <Skeleton className="h-4 w-48" />
             </Box>
           </Box>
