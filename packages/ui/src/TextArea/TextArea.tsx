@@ -10,7 +10,7 @@ export const TextArea: FC<Props> = (props) => {
   return (
     <label>
       {label && (
-        <span className="mb-3 block dark:text-white font-medium">
+        <span className="mb-[0.35rem] block dark:text-white font-medium">
           {label}
           {required && <span className="text-danger">*</span>}
         </span>

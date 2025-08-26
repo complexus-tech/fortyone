@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, Input, Flex, Box, Text } from "ui";
+import { Button, Dialog, Input, Flex, Box, Text, TextArea } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { formatISO } from "date-fns";
@@ -30,6 +30,7 @@ export const UpdateKeyResultDialog = ({
     contributors: keyResult.contributors,
     startDate: keyResult.startDate,
     endDate: keyResult.endDate,
+    comment: "",
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -63,6 +64,7 @@ export const UpdateKeyResultDialog = ({
       contributors: keyResult.contributors,
       startDate: keyResult.startDate,
       endDate: keyResult.endDate,
+      comment: "",
     });
   };
 
@@ -75,6 +77,7 @@ export const UpdateKeyResultDialog = ({
       contributors: keyResult.contributors,
       startDate: keyResult.startDate,
       endDate: keyResult.endDate,
+      comment: "",
     });
   }, [keyResult]);
 
@@ -220,6 +223,18 @@ export const UpdateKeyResultDialog = ({
                   </Box>
                 </>
               )}
+            </Box>
+            <Box className="mt-3">
+              <TextArea
+                className="resize-none rounded-2xl border py-4 text-base leading-normal dark:border-dark-50/80 dark:bg-transparent"
+                label="Comment"
+                onChange={(e) => {
+                  setForm({ ...form, comment: e.target.value });
+                }}
+                placeholder="Write your update here..."
+                rows={4}
+                value={form.comment}
+              />
             </Box>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-2 border-0">
