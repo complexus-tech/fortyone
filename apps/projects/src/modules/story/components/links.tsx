@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- ok for metadata image */
 import { Flex, Button, Tooltip, Box, Text, TimeAgo, Menu } from "ui";
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
+  ArrowDown2Icon,
+  ArrowUp2Icon,
   CopyIcon,
   DeleteIcon,
   EditIcon,
@@ -173,9 +173,9 @@ export const Links = ({
             }}
             rightIcon={
               isLinksOpen ? (
-                <ArrowDownIcon className="h-4 w-auto" />
+                <ArrowDown2Icon className="h-4 w-auto" />
               ) : (
-                <ArrowUpIcon className="h-4 w-auto" />
+                <ArrowUp2Icon className="h-4 w-auto" />
               )
             }
             size="sm"
