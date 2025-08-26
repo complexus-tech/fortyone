@@ -71,7 +71,7 @@ export const Activity = () => {
         <Summary />
       </Tabs.Panel>
       <Tabs.Panel value="updates">
-        <Updates />
+        <Updates objectiveId={objectiveId} />
       </Tabs.Panel>
     </Tabs>
   );
