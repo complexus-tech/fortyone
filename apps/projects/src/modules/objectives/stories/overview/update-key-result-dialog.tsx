@@ -53,6 +53,7 @@ export const UpdateKeyResultDialog = ({
         contributors: form.contributors,
         startDate: form.startDate,
         endDate: form.endDate,
+        comment: form.comment,
       },
     });
     onOpenChange(false);
@@ -91,7 +92,7 @@ export const UpdateKeyResultDialog = ({
               progress
             </Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="space-y-4">
+          <Dialog.Body className="space-y-4 pb-0">
             <Input
               label="Name"
               onChange={(e) => {
@@ -231,7 +232,7 @@ export const UpdateKeyResultDialog = ({
                 onChange={(e) => {
                   setForm({ ...form, comment: e.target.value });
                 }}
-                placeholder="Write your update here..."
+                placeholder="Describe what progress was made, any blockers encountered, or next steps..."
                 rows={4}
                 value={form.comment}
               />

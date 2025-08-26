@@ -8,7 +8,6 @@ import type { KeyResultUpdate } from "../types";
 
 export const updateKeyResult = async (
   keyResultId: string,
-  objectiveId: string,
   params: KeyResultUpdate,
 ) => {
   try {

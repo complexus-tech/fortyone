@@ -16,12 +16,8 @@ export const useUpdateKeyResultMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: ({
-      keyResultId,
-      objectiveId,
-      data,
-    }: UpdateKeyResultVariables) =>
-      updateKeyResult(keyResultId, objectiveId, data),
+    mutationFn: ({ keyResultId, data }: UpdateKeyResultVariables) =>
+      updateKeyResult(keyResultId, data),
 
     onMutate: async ({ keyResultId, objectiveId, data }) => {
       await queryClient.cancelQueries({

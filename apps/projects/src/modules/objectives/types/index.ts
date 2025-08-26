@@ -60,7 +60,9 @@ export type NewKeyResult = {
   endDate: string;
 };
 
-export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">>;
+export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">> & {
+  comment?: string;
+};
 
 export type NewObjectiveKeyResult = NewKeyResult & {
   objectiveId: string;
