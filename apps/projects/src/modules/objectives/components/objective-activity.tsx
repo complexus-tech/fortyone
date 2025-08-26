@@ -335,7 +335,7 @@ export const ObjectiveActivityComponent = ({
             size="xs"
             src={member?.avatarUrl}
           />
-          <Box className="rounded-xl border border-gray-100/60 bg-gray-50/60 px-4 py-2">
+          <Box className="max-w-lg rounded-xl rounded-tl-md border border-gray-100/60 bg-gray-50/60 px-4 py-2 dark:border-dark-100/80 dark:bg-dark-300/80">
             <Text color="muted">{comment}</Text>
           </Box>
         </Flex>

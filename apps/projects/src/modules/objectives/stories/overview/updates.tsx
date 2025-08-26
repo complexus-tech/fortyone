@@ -20,7 +20,7 @@ export const Updates = ({ objectiveId }: { objectiveId: string }) => {
 
   if (isPending) {
     return (
-      <Box className="space-y-3">
+      <Box className="mb-6 space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Box className="flex gap-3" key={i}>
             <Skeleton className="h-8 w-8 rounded-full" />
@@ -35,7 +35,7 @@ export const Updates = ({ objectiveId }: { objectiveId: string }) => {
   }
 
   return (
-    <Box className="min-h-44 pl-1">
+    <Box className="mb-6 min-h-44 pl-1 md:mb-8">
       <Flex direction="column">
         {allActivities.length === 0 && (
           <Text className="text-muted-foreground text-sm">

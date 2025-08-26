@@ -1,8 +1,9 @@
 import { ArrowDownIcon, ClockIcon, ObjectiveIcon } from "icons";
-import { Button, Flex, Text, Tabs, Dialog } from "ui";
+import { Button, Flex, Text, Tabs, Dialog, TextArea } from "ui";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import { HealthMenu } from "@/components/ui/health-menu";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -27,12 +28,23 @@ export const Activity = () => {
   const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const handleUpdate = () => {
-    if (health) {
-      updateMutation.mutate({ objectiveId, data: { health, comment } });
-      setIsCommentOpen(false);
-      setComment("");
-      setHealth(null);
+    if (!health) {
+      toast.warning("Validation error", {
+        description: "Please select a health status",
+      });
+      return;
     }
+
+    if (!comment) {
+      toast.warning("Validation error", {
+        description: "Please provide a comment",
+      });
+      return;
+    }
+    updateMutation.mutate({ objectiveId, data: { health, comment } });
+    setIsCommentOpen(false);
+    setComment("");
+    setHealth(null);
   };
 
   return (
@@ -100,9 +112,37 @@ export const Activity = () => {
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Description>
-            Adding members to your workspace will add more seats to your plan
-            once the member accepts the invitation.
+            Please provide a brief comment explaining why you&apos;re changing
+            the objective health status.
           </Dialog.Description>
+          <Dialog.Body>
+            <Text className="mb-1.5 mt-3" color="muted">
+              Comment*
+            </Text>
+            <TextArea
+              className="resize-none rounded-2xl border py-4 leading-normal dark:border-dark-50/80 dark:bg-transparent"
+              onChange={(e) => {
+                setComment(e.target.value);
+              }}
+              placeholder={`e.g, We're on track to complete the ${getTermDisplay("objectiveTerm")} by the end of the quarter.`}
+              rows={4}
+              value={comment}
+            />
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-2">
+            <Button
+              color="tertiary"
+              onClick={() => {
+                setIsCommentOpen(false);
+              }}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={!comment} onClick={handleUpdate}>
+              Update health
+            </Button>
+          </Dialog.Footer>
         </Dialog.Content>
       </Dialog>
     </>
