@@ -9,4 +9,10 @@ export const objectiveKeys = {
     [...objectiveKeys.all, objectiveId, "key-results"] as const,
   analytics: (objectiveId: string) =>
     [...objectiveKeys.all, "analytics", objectiveId] as const,
+  activitiesInfinite: (objectiveId: string) =>
+    [
+      ...objectiveKeys.objective(objectiveId),
+      "activities",
+      "infinite",
+    ] as const,
 };
