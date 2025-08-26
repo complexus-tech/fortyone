@@ -7,12 +7,14 @@ import {
   updateObjectiveTool,
   getObjectiveDetailsTool,
   objectiveAnalyticsTool,
+  getObjectiveActivitiesTool,
 } from "@/lib/ai/tools/objectives";
 import {
   listKeyResultsTool,
   createKeyResultTool,
   updateKeyResultTool,
   deleteKeyResultTool,
+  getKeyResultActivitiesTool,
 } from "@/lib/ai/tools/key-results";
 import {
   listTeamStories,
@@ -115,6 +117,7 @@ export const tools = {
   createKeyResultTool,
   updateKeyResultTool,
   deleteKeyResultTool,
+  getKeyResultActivitiesTool,
   // Attachments
   listAttachments,
   deleteAttachment,
@@ -126,6 +129,7 @@ export const tools = {
   deleteObjectiveTool,
   objectiveAnalyticsTool,
   getObjectiveDetailsTool,
+  getObjectiveActivitiesTool,
   // Links
   links: linksTool,
   labels: labelsTool,
