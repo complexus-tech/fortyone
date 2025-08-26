@@ -75,6 +75,9 @@ export const useCreateKeyResultMutation = () => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
       });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.activitiesInfinite(newKeyResult.objectiveId),
+      });
     },
   });
 

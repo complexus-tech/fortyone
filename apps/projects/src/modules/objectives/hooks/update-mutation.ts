@@ -126,6 +126,9 @@ export const useUpdateObjectiveMutation = () => {
         queryKey: objectiveKeys.objective(objectiveId),
       });
       queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.activitiesInfinite(objectiveId),
+      });
     },
   });
 

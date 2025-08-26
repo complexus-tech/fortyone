@@ -61,6 +61,10 @@ export const useDeleteKeyResultMutation = () => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(objectiveId),
       });
+
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.activitiesInfinite(objectiveId),
+      });
     },
   });
 
