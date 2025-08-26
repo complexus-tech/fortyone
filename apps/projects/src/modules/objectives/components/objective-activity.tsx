@@ -3,13 +3,14 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, Tooltip, Button, TimeAgo } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, HealthIcon } from "icons";
+import { CalendarIcon } from "icons";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon } from "@/components/ui/priority-icon";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useKeyResults } from "@/modules/objectives/hooks";
+import { ObjectiveHealthIcon } from "@/components/ui";
 import type { ObjectiveActivity, ObjectiveHealth } from "../types";
 
 export const ObjectiveActivityComponent = ({
@@ -73,13 +74,7 @@ export const ObjectiveActivityComponent = ({
         const health = value as ObjectiveHealth;
         return (
           <span className="flex items-center gap-1">
-            <HealthIcon
-              className={cn("h-4", {
-                "text-warning dark:text-warning": health === "At Risk",
-                "text-danger dark:text-danger": health === "Off Track",
-                "text-success dark:text-success": health === "On Track",
-              })}
-            />
+            <ObjectiveHealthIcon health={health} />
             {value}
           </span>
         );

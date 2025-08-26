@@ -81,6 +81,7 @@ export type NewObjective = {
 
 export type ObjectiveUpdate = Partial<Omit<NewObjective, "keyResults">> & {
   health?: ObjectiveHealth;
+  comment?: string;
 };
 
 export type ObjectiveStatus = {
