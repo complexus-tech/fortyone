@@ -123,3 +123,26 @@ export type ObjectiveAnalytics = {
     total: number;
   }[];
 };
+
+export type ObjectiveActivity = {
+  id: string;
+  objectiveId: string;
+  keyResultId: string | null;
+  userId: string;
+  type: "update" | "create" | "delete";
+  updateType: "objective" | "key_result";
+  field: string;
+  currentValue: string;
+  comment: string;
+  createdAt: string;
+  workspaceId: string;
+};
+
+export type ActivitiesResponse = {
+  activities: ObjectiveActivity[];
+  pagination: {
+    hasMore: boolean;
+    page: number;
+    pageSize: number;
+  };
+};
