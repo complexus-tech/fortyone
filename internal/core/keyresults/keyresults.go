@@ -118,22 +118,43 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	// Handle contributors separately
 	var contributors []uuid.UUID
+	var contributorsChanged bool
 	if contribVal, exists := updates["contributors"]; exists {
 		if contribSlice, ok := contribVal.([]uuid.UUID); ok {
 			contributors = contribSlice
+			contributorsChanged = haveContributorsChanged(contributors, previousKR.Contributors)
 		}
 		delete(updates, "contributors") // Remove from updates map
 	}
 
-	if err := s.repo.Update(ctx, id, workspaceId, updates); err != nil {
-		if errors.Is(err, keyresultsrepo.ErrNotFound) {
-			return ErrNotFound
+	// Filter updates to only include fields that have actually changed
+	changedUpdates := make(map[string]any)
+	currentKR := CoreKeyResult(previousKR) // Convert to core type for comparison
+	for field, value := range updates {
+		if s.hasFieldChanged(field, value, currentKR) {
+			changedUpdates[field] = value
 		}
-		return err
 	}
 
-	// Update contributors if provided
-	if contributors != nil {
+	if len(changedUpdates) == 0 && !contributorsChanged {
+		span.AddEvent("no changes detected", trace.WithAttributes(
+			attribute.String("key_result.id", id.String()),
+		))
+		return nil
+	}
+
+	// Only update if there are actual changes
+	if len(changedUpdates) > 0 {
+		if err := s.repo.Update(ctx, id, workspaceId, changedUpdates); err != nil {
+			if errors.Is(err, keyresultsrepo.ErrNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+	}
+	ca := []okractivities.CoreNewActivity{}
+	// Update contributors if they changed
+	if contributorsChanged {
 		if err := s.repo.UpdateContributors(ctx, id, contributors); err != nil {
 			return fmt.Errorf("failed to update contributors: %w", err)
 		}
@@ -151,40 +172,42 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 				UpdateType:   okractivities.UpdateTypeKeyResult,
 				Field:        "contributors",
 				CurrentValue: strings.Join(strs, ","),
-				Comment:      comment,
+				Comment:      "",
 				WorkspaceID:  workspaceId,
 			}
-			fmt.Println("activity", activity)
-			if err := s.okrActivities.Create(ctx, activity); err != nil {
-				s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
-				// Don't fail the update operation if activity recording fails
+			ca = append(ca, activity)
+		}
+	}
+
+	// Record activity only for fields that actually changed
+	if len(changedUpdates) > 0 {
+		for field, value := range changedUpdates {
+			activity := okractivities.CoreNewActivity{
+				ObjectiveID:  previousKR.ObjectiveID,
+				KeyResultID:  &id,
+				UserID:       userID,
+				Type:         okractivities.ActivityTypeUpdate,
+				UpdateType:   okractivities.UpdateTypeKeyResult,
+				Field:        field,
+				CurrentValue: s.formatValue(value),
+				Comment:      "",
+				WorkspaceID:  workspaceId,
 			}
+			ca = append(ca, activity)
 		}
-	}
 
-	ca := []okractivities.CoreNewActivity{}
-	for field, value := range updates {
-		activity := okractivities.CoreNewActivity{
-			ObjectiveID:  previousKR.ObjectiveID,
-			KeyResultID:  &id,
-			UserID:       userID,
-			Type:         okractivities.ActivityTypeUpdate,
-			UpdateType:   okractivities.UpdateTypeKeyResult,
-			Field:        field,
-			CurrentValue: s.formatValue(value),
-			Comment:      comment,
-			WorkspaceID:  workspaceId,
+	}
+	if len(ca) > 0 {
+		if err := s.okrActivities.CreateBatch(ctx, ca); err != nil {
+			s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
+			// Don't fail the update operation if activity recording fails
 		}
-		ca = append(ca, activity)
-	}
-
-	if err := s.okrActivities.CreateBatch(ctx, ca); err != nil {
-		s.log.Error(ctx, "failed to record key result update activity", "error", err, "keyResultID", id)
-		// Don't fail the update operation if activity recording fails
 	}
 
 	span.AddEvent("key result updated", trace.WithAttributes(
 		attribute.String("key_result.id", id.String()),
+		attribute.Int("fields_changed", len(changedUpdates)),
+		attribute.Bool("contributors_changed", contributorsChanged),
 	))
 
 	return nil
@@ -283,6 +306,76 @@ func (s *Service) ListPaginated(ctx context.Context, filters keyresultsrepo.Core
 	}
 
 	return response, nil
+}
+
+// hasFieldChanged compares a field value with the current key result value
+func (s *Service) hasFieldChanged(fieldName string, newValue any, currentKR CoreKeyResult) bool {
+	switch fieldName {
+	case "name":
+		if currentValue, ok := newValue.(string); ok {
+			return currentValue != currentKR.Name
+		}
+	case "measurementType", "measurement_type":
+		if currentValue, ok := newValue.(string); ok {
+			return currentValue != currentKR.MeasurementType
+		}
+	case "startValue", "start_value":
+		if currentValue, ok := newValue.(float64); ok {
+			return currentValue != currentKR.StartValue
+		}
+	case "currentValue", "current_value":
+		if currentValue, ok := newValue.(float64); ok {
+			return currentValue != currentKR.CurrentValue
+		}
+	case "targetValue", "target_value":
+		if currentValue, ok := newValue.(float64); ok {
+			return currentValue != currentKR.TargetValue
+		}
+	case "lead":
+		if currentValue, ok := newValue.(*uuid.UUID); ok {
+			if currentValue == nil && currentKR.Lead == nil {
+				return false
+			}
+			if currentValue == nil || currentKR.Lead == nil {
+				return true
+			}
+			return *currentValue != *currentKR.Lead
+		}
+	case "startDate", "start_date":
+		if currentValue, ok := newValue.(*time.Time); ok {
+			if currentValue == nil && currentKR.StartDate == nil {
+				return false
+			}
+			if currentValue == nil || currentKR.StartDate == nil {
+				return true
+			}
+			return !currentValue.Equal(*currentKR.StartDate)
+		}
+	case "endDate", "end_date":
+		if currentValue, ok := newValue.(*time.Time); ok {
+			if currentValue == nil && currentKR.EndDate == nil {
+				return false
+			}
+			if currentValue == nil || currentKR.EndDate == nil {
+				return true
+			}
+			return !currentValue.Equal(*currentKR.EndDate)
+		}
+	}
+	return true // If we can't compare, assume it changed
+}
+
+// haveContributorsChanged compares contributor UUID slices
+func haveContributorsChanged(newContributors []uuid.UUID, currentContributors []uuid.UUID) bool {
+	if len(newContributors) != len(currentContributors) {
+		return true
+	}
+	for i, contributor := range newContributors {
+		if i >= len(currentContributors) || contributor != currentContributors[i] {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) formatValue(value any) string {
