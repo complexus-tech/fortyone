@@ -22,8 +22,8 @@ type Config struct {
 
 // Routes sets up all the key results routes
 func Routes(cfg Config, app *web.App) {
-	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB))
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepo.New(cfg.Log, cfg.DB))
+	keyResultsService := keyresults.New(cfg.Log, keyresultsrepo.New(cfg.Log, cfg.DB), okrActivitiesService)
 	h := New(keyResultsService, okrActivitiesService, cfg.Cache, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)

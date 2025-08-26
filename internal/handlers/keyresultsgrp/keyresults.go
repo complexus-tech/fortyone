@@ -76,7 +76,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr, userID))
+	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr, userID), workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil

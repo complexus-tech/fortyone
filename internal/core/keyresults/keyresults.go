@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -20,20 +21,22 @@ var (
 
 // Service manages the key result operations
 type Service struct {
-	repo keyresultsrepo.Repository
-	log  *logger.Logger
+	repo          keyresultsrepo.Repository
+	okrActivities *okractivities.Service
+	log           *logger.Logger
 }
 
 // New creates a new key result service
-func New(log *logger.Logger, repo keyresultsrepo.Repository) *Service {
+func New(log *logger.Logger, repo keyresultsrepo.Repository, okrActivities *okractivities.Service) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		repo:          repo,
+		okrActivities: okrActivities,
+		log:           log,
 	}
 }
 
 // Create inserts a new key result into the system
-func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResult, error) {
+func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID uuid.UUID) (CoreKeyResult, error) {
 
 	kr := keyresultsrepo.CoreKeyResult{
 		ObjectiveID:     nkr.ObjectiveID,
@@ -58,6 +61,25 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult) (CoreKeyResu
 		if err := s.repo.AddContributors(ctx, kr.ID, nkr.Contributors); err != nil {
 			return CoreKeyResult{}, fmt.Errorf("failed to add contributors: %w", err)
 		}
+	}
+
+	// Record the create activity
+	activity := okractivities.CoreNewActivity{
+		ObjectiveID:   kr.ObjectiveID,
+		KeyResultID:   &kr.ID,
+		UserID:        nkr.CreatedBy,
+		Type:          okractivities.ActivityTypeCreate,
+		UpdateType:    okractivities.UpdateTypeKeyResult,
+		Field:         "all",
+		CurrentValue:  kr.Name,
+		PreviousValue: "",
+		Comment:       "",
+		WorkspaceID:   workspaceID,
+	}
+
+	if err := s.okrActivities.Create(ctx, activity); err != nil {
+		s.log.Error(ctx, "failed to record key result create activity", "error", err, "keyResultID", kr.ID)
+		// Don't fail the create operation if activity recording fails
 	}
 
 	return CoreKeyResult{
