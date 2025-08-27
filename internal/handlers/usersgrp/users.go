@@ -198,7 +198,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 			Email:     payload.Claims["email"].(string),
 			FullName:  payload.Claims["name"].(string),
 			AvatarURL: payload.Claims["picture"].(string),
-			Timezone:  "UTC", // Default timezone for new users
+			Timezone:  "Antarctica/Troll", // Default timezone for new users
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {
@@ -316,7 +316,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	if errors.Is(err, users.ErrNotFound) {
 		newUser := users.CoreNewUser{
 			Email:    req.Email,
-			Timezone: "UTC", // Default timezone for new users
+			Timezone: "Antarctica/Troll", // Default timezone for new users
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {
