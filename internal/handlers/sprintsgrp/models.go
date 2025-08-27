@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/google/uuid"
 )
 
@@ -55,16 +56,16 @@ type AppNewSprint struct {
 	Goal      *string    `json:"goal"`
 	Objective *uuid.UUID `json:"objectiveId"`
 	Team      uuid.UUID  `json:"teamId" validate:"required"`
-	StartDate time.Time  `json:"startDate" validate:"required"`
-	EndDate   time.Time  `json:"endDate" validate:"required"`
+	StartDate date.Date  `json:"startDate" validate:"required"`
+	EndDate   date.Date  `json:"endDate" validate:"required"`
 }
 
 type AppUpdateSprint struct {
 	Name      *string    `json:"name,omitempty"`
 	Goal      *string    `json:"goal,omitempty"`
 	Objective *uuid.UUID `json:"objectiveId,omitempty"`
-	StartDate *time.Time `json:"startDate,omitempty"`
-	EndDate   *time.Time `json:"endDate,omitempty"`
+	StartDate *date.Date `json:"startDate,omitempty"`
+	EndDate   *date.Date `json:"endDate,omitempty"`
 }
 
 // toAppSprints converts a list of core sprints to a list of application sprints.

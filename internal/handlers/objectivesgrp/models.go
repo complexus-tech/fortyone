@@ -6,6 +6,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/google/uuid"
 )
 
@@ -88,8 +89,8 @@ type AppNewObjective struct {
 	Description *string           `json:"description"`
 	LeadUser    *uuid.UUID        `json:"leadUser"`
 	Team        uuid.UUID         `json:"teamId" validate:"required"`
-	StartDate   *time.Time        `json:"startDate"`
-	EndDate     *time.Time        `json:"endDate"`
+	StartDate   *date.Date        `json:"startDate"`
+	EndDate     *date.Date        `json:"endDate"`
 	IsPrivate   bool              `json:"isPrivate"`
 	Status      uuid.UUID         `json:"statusId"`
 	Priority    *string           `json:"priority"`
@@ -105,8 +106,8 @@ type AppNewKeyResult struct {
 	TargetValue     float64     `json:"targetValue"`
 	Lead            *uuid.UUID  `json:"lead"`
 	Contributors    []uuid.UUID `json:"contributors"`
-	StartDate       *time.Time  `json:"startDate"`
-	EndDate         *time.Time  `json:"endDate"`
+	StartDate       *date.Date  `json:"startDate"`
+	EndDate         *date.Date  `json:"endDate"`
 	CreatedBy       uuid.UUID   `json:"createdBy"`
 }
 
@@ -117,8 +118,8 @@ func toCoreNewObjective(ano AppNewObjective, createdBy uuid.UUID) objectives.Cor
 		Description: ano.Description,
 		LeadUser:    ano.LeadUser,
 		Team:        ano.Team,
-		StartDate:   ano.StartDate,
-		EndDate:     ano.EndDate,
+		StartDate:   ano.StartDate.TimePtr(),
+		EndDate:     ano.EndDate.TimePtr(),
 		IsPrivate:   ano.IsPrivate,
 		Status:      ano.Status,
 		Priority:    ano.Priority,
@@ -166,8 +167,8 @@ type AppUpdateObjective struct {
 	Name        *string    `json:"name" db:"name"`
 	Description *string    `json:"description" db:"description"`
 	LeadUser    *uuid.UUID `json:"leadUser" db:"lead_user_id"`
-	StartDate   *time.Time `json:"startDate" db:"start_date"`
-	EndDate     *time.Time `json:"endDate" db:"end_date"`
+	StartDate   *date.Date `json:"startDate" db:"start_date"`
+	EndDate     *date.Date `json:"endDate" db:"end_date"`
 	IsPrivate   *bool      `json:"isPrivate" db:"is_private"`
 	Status      *uuid.UUID `json:"statusId" db:"status_id"`
 	Priority    *string    `json:"priority" db:"priority"`

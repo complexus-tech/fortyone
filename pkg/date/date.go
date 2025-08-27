@@ -28,10 +28,10 @@ func (d Date) Time() time.Time {
 	return time.Time(d)
 }
 
-// func (d *Date) TimePtr() *time.Time {
-// 	if d == nil {
-// 		return nil
-// 	}
-// 	t := d.Time()
-// 	return &t
-// }
+func (d *Date) TimePtr() *time.Time {
+	if d == nil {
+		return nil
+	}
+	t := d.Time()
+	return &t
+}

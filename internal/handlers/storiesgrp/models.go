@@ -8,6 +8,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -250,9 +251,8 @@ type AppUpdateStory struct {
 	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
 	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
 	KeyResult       uuid.UUID  `json:"keyResultId" db:"key_result_id"`
-	StartDate       *time.Time `json:"startDate" db:"start_date"`
-	EndDate         *time.Time `json:"endDate" db:"end_date"`
-	CompletedAt     *time.Time `json:"completedAt" db:"completed_at"`
+	StartDate       *date.Date `json:"startDate" db:"start_date"`
+	EndDate         *date.Date `json:"endDate" db:"end_date"`
 }
 
 type AppNewStory struct {
@@ -267,8 +267,8 @@ type AppNewStory struct {
 	Sprint          *uuid.UUID `json:"sprintId"`
 	KeyResult       *uuid.UUID `json:"keyResultId"`
 	Team            uuid.UUID  `json:"teamId" validate:"required"`
-	StartDate       *time.Time `json:"startDate"`
-	EndDate         *time.Time `json:"endDate"`
+	StartDate       *date.Date `json:"startDate"`
+	EndDate         *date.Date `json:"endDate"`
 }
 
 type AppNewComment struct {
@@ -444,8 +444,8 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		Priority:        a.Priority,
 		Sprint:          a.Sprint,
 		KeyResult:       a.KeyResult,
-		StartDate:       a.StartDate,
-		EndDate:         a.EndDate,
+		StartDate:       a.StartDate.TimePtr(),
+		EndDate:         a.EndDate.TimePtr(),
 		Team:            a.Team,
 	}
 }

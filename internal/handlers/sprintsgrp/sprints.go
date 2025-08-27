@@ -123,8 +123,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Objective: app.Objective,
 		Team:      app.Team,
 		Workspace: workspace.ID,
-		StartDate: app.StartDate,
-		EndDate:   app.EndDate,
+		StartDate: app.StartDate.Time(),
+		EndDate:   app.EndDate.Time(),
 	}
 
 	result, err := h.sprints.Create(ctx, sprint)
@@ -167,8 +167,8 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Name:      app.Name,
 		Goal:      app.Goal,
 		Objective: app.Objective,
-		StartDate: app.StartDate,
-		EndDate:   app.EndDate,
+		StartDate: app.StartDate.TimePtr(),
+		EndDate:   app.EndDate.TimePtr(),
 	}
 
 	result, err := h.sprints.Update(ctx, sprintId, workspace.ID, sprint)

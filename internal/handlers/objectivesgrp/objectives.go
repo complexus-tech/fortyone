@@ -334,8 +334,8 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 			CreatedBy:       userID,
 			Lead:            kr.Lead,
 			Contributors:    kr.Contributors,
-			StartDate:       kr.StartDate,
-			EndDate:         kr.EndDate,
+			StartDate:       kr.StartDate.TimePtr(),
+			EndDate:         kr.EndDate.TimePtr(),
 		})
 	}
 
