@@ -176,7 +176,7 @@ export const Properties = () => {
             variant={isMobile ? "solid" : "naked"}
           >
             {objective?.endDate ? (
-              format(new Date(objective.endDate), "MMM d, yy")
+              format(new Date(objective.endDate), "MMM d, yyyy")
             ) : (
               <Text color="muted">Deadline</Text>
             )}
