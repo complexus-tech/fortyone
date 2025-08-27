@@ -113,7 +113,8 @@ export const Team = ({
                   {
                     "cursor-grab": !isDragging,
                     "cursor-grabbing": isDragging,
-                    "pointer-events-none cursor-default !opacity-0": isOpen,
+                    "pointer-events-none cursor-default !opacity-0":
+                      isOpen || totalTeams === 1,
                   },
                 )}
                 strokeWidth={3.5}
