@@ -149,10 +149,12 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	const q = `
 		DELETE FROM key_results
 		WHERE id = :id
+		AND workspace_id = :workspace_id
 	`
 
 	params := map[string]any{
-		"id": id,
+		"id":           id,
+		"workspace_id": workspaceId,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

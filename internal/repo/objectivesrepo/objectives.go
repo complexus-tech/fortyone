@@ -370,11 +370,9 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	defer span.End()
 
 	query := `
-		UPDATE objectives
-		SET deleted_at = NOW()
+		DELETE FROM objectives
 		WHERE objective_id = :objective_id
 		AND workspace_id = :workspace_id
-		AND deleted_at IS NULL
 	`
 
 	params := map[string]any{
