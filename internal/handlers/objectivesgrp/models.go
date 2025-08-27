@@ -40,7 +40,7 @@ type ObjectiveStats struct {
 }
 
 type AppFilters struct {
-	Team     uuid.UUID `json:"teamId"`
+	Team     uuid.UUID `json:"teamId" db:"team_id"`
 	Page     int       `json:"page"`
 	PageSize int       `json:"pageSize"`
 }
