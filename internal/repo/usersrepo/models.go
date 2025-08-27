@@ -15,6 +15,7 @@ type dbUser struct {
 	AvatarURL           string     `db:"avatar_url"`
 	IsActive            bool       `db:"is_active"`
 	HasSeenWalkthrough  bool       `db:"has_seen_walkthrough"`
+	Timezone            string     `db:"timezone"`
 	LastLoginAt         time.Time  `db:"last_login_at"`
 	LastUsedWorkspaceID *uuid.UUID `db:"last_used_workspace_id"`
 	CreatedAt           time.Time  `db:"created_at"`
@@ -55,6 +56,7 @@ func toCoreUser(p dbUser) users.CoreUser {
 		AvatarURL:           p.AvatarURL,
 		IsActive:            p.IsActive,
 		HasSeenWalkthrough:  p.HasSeenWalkthrough,
+		Timezone:            p.Timezone,
 		LastLoginAt:         p.LastLoginAt,
 		LastUsedWorkspaceID: p.LastUsedWorkspaceID,
 		CreatedAt:           p.CreatedAt,

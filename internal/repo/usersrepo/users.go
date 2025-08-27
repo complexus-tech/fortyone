@@ -51,6 +51,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.avatar_url,
 			u.is_active,
 			u.has_seen_walkthrough,
+			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
@@ -103,6 +104,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.avatar_url,
 			u.is_active,
 			u.has_seen_walkthrough,
+			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
 			u.created_at,
@@ -172,6 +174,11 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		params["has_seen_walkthrough"] = *updates.HasSeenWalkthrough
 	}
 
+	if updates.Timezone != nil {
+		setClauses = append(setClauses, "timezone = :timezone")
+		params["timezone"] = *updates.Timezone
+	}
+
 	// If no fields to update, just return the current user
 	if len(setClauses) == 0 {
 		return r.GetUser(ctx, userID)
@@ -194,6 +201,7 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 			avatar_url,
 			is_active,
 			has_seen_walkthrough,
+			timezone,
 			last_login_at,
 			last_used_workspace_id,
 			created_at,
@@ -329,6 +337,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			email,
 			full_name,
 			avatar_url,
+			timezone,
 			last_login_at
 		)
 		VALUES (
@@ -336,6 +345,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			:email,
 			:full_name,
 			:avatar_url,
+			:timezone,
 			:last_login_at
 		)
 		RETURNING
@@ -344,6 +354,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			email,
 			full_name,
 			avatar_url,
+			timezone,
 			last_login_at,
 			last_used_workspace_id
 	`
@@ -353,6 +364,7 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 		"email":         user.Email,
 		"full_name":     user.FullName,
 		"avatar_url":    user.AvatarURL,
+		"timezone":      user.Timezone,
 		"last_login_at": user.LastLoginAt,
 	}
 
@@ -397,6 +409,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.timezone,
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
@@ -419,6 +432,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.timezone,
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,

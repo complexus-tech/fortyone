@@ -83,6 +83,9 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 	if req.HasSeenWalkthrough != nil {
 		updates.HasSeenWalkthrough = req.HasSeenWalkthrough
 	}
+	if req.Timezone != nil {
+		updates.Timezone = req.Timezone
+	}
 
 	if err := h.users.UpdateUser(ctx, userID, updates); err != nil {
 		if errors.Is(err, users.ErrNotFound) {
@@ -195,6 +198,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 			Email:     payload.Claims["email"].(string),
 			FullName:  payload.Claims["name"].(string),
 			AvatarURL: payload.Claims["picture"].(string),
+			Timezone:  "UTC", // Default timezone for new users
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {
@@ -311,7 +315,8 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 
 	if errors.Is(err, users.ErrNotFound) {
 		newUser := users.CoreNewUser{
-			Email: req.Email,
+			Email:    req.Email,
+			Timezone: "UTC", // Default timezone for new users
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {

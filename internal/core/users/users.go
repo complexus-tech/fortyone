@@ -142,6 +142,7 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		Email:       newUser.Email,
 		FullName:    newUser.FullName,
 		AvatarURL:   newUser.AvatarURL,
+		Timezone:    newUser.Timezone,
 		IsActive:    true,
 		LastLoginAt: time.Now(),
 	}

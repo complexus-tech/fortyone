@@ -28,6 +28,7 @@ type CoreUser struct {
 	AvatarURL           string
 	IsActive            bool
 	HasSeenWalkthrough  bool
+	Timezone            string
 	LastLoginAt         time.Time
 	LastUsedWorkspaceID *uuid.UUID
 	CreatedAt           time.Time
@@ -42,6 +43,7 @@ type CoreUpdateUser struct {
 	FullName           *string
 	AvatarURL          *string
 	HasSeenWalkthrough *bool
+	Timezone           *string
 }
 
 // CoreNewUser represents a new user to be created.
@@ -49,6 +51,7 @@ type CoreNewUser struct {
 	Email     string
 	FullName  string
 	AvatarURL string
+	Timezone  string
 }
 
 // CoreAutomationPreferences represents the automation preferences for a user in a workspace
