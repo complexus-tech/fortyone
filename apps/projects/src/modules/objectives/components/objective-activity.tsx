@@ -127,7 +127,7 @@ export const ObjectiveActivityComponent = ({
       render: (value: string) => <span>{value}</span>,
     },
     current_value: {
-      label: "Current value",
+      label: "Progress",
       render: (value: string) => <span>{value}</span>,
     },
     start_value: {
@@ -135,7 +135,7 @@ export const ObjectiveActivityComponent = ({
       render: (value: string) => <span>{value}</span>,
     },
     target_value: {
-      label: "Target value",
+      label: "Target",
       render: (value: string) => <span>{value}</span>,
     },
     start_date: {
@@ -266,7 +266,7 @@ export const ObjectiveActivityComponent = ({
         </Tooltip>
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {type === "create" ? `created the ${entityType}` : "changed"}
+            {type === "create" ? `created the ${entityType}` : "changed the"}
           </Text>
           {type === "update" && (
             <>
@@ -280,7 +280,7 @@ export const ObjectiveActivityComponent = ({
               {entityType === "key result" && keyResultId ? (
                 <Text
                   as="span"
-                  className="max-w-[16ch] shrink-0 truncate text-sm italic md:text-[0.95rem]"
+                  className="max-w-[16ch] shrink-0 truncate text-sm font-semibold italic md:text-[0.95rem]"
                   color="muted"
                   title={keyResult?.name}
                 >

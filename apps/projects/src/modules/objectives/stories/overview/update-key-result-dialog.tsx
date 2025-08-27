@@ -6,7 +6,7 @@ import { cn } from "lib";
 import { formatISO } from "date-fns";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
-import type { KeyResult } from "../../types";
+import type { KeyResult, KeyResultUpdate } from "../../types";
 
 type UpdateKeyResultDialogProps = {
   keyResult: Omit<KeyResult, "createdBy">;
@@ -44,19 +44,27 @@ export const UpdateKeyResultDialog = ({
       return;
     }
 
-    updateMutation.mutate({
-      keyResultId: keyResult.id,
-      objectiveId: keyResult.objectiveId,
-      data: {
+    let payload: KeyResultUpdate = {
+      currentValue: form.currentValue,
+      comment: form.comment,
+    };
+
+    if (updateMode === "other") {
+      payload = {
+        ...payload,
         name: form.name,
         startValue: form.startValue,
         targetValue: form.targetValue,
-        currentValue: updateMode === "progress" ? form.currentValue : undefined,
-        contributors: form.contributors,
         startDate: form.startDate,
         endDate: form.endDate,
-        comment: form.comment,
-      },
+        contributors: form.contributors,
+      };
+    }
+
+    updateMutation.mutate({
+      keyResultId: keyResult.id,
+      objectiveId: keyResult.objectiveId,
+      data: payload,
     });
     onOpenChange(false);
     setForm({
