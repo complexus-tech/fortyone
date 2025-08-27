@@ -54,7 +54,9 @@ export const storyActivitiesTool = tool({
     since: z
       .string()
       .optional()
-      .describe("Filter activities since this date (ISO string)"),
+      .describe(
+        "Filter activities since this date (ISO date string e.g 2005-06-13)",
+      ),
   }),
 
   execute: async ({ action, storyId, limit = 20 }) => {

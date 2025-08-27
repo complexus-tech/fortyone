@@ -33,6 +33,18 @@ export const bulkUpdateStories = tool({
           .string()
           .optional()
           .describe("Updated objective ID for all stories"),
+        startDate: z
+          .string()
+          .optional()
+          .describe(
+            "Updated start date for all stories (ISO date string e.g 2005-06-13)",
+          ),
+        endDate: z
+          .string()
+          .optional()
+          .describe(
+            "Updated end date for all stories (ISO date string e.g 2005-06-13)",
+          ),
       })
       .describe("Update data to apply to all stories (required)"),
   }),

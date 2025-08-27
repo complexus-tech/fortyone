@@ -22,8 +22,12 @@ export const createObjectiveTool = tool({
       .string()
       .optional()
       .describe("Lead user ID (UUID) for the objective"),
-    startDate: z.string().describe("Start date (ISO string, required)"),
-    endDate: z.string().describe("End date (ISO string, required)"),
+    startDate: z
+      .string()
+      .describe("Start date (ISO  date string e.g 2005-06-13, required)"),
+    endDate: z
+      .string()
+      .describe("End date (ISO  date string e.g 2005-06-13, required)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .optional()
@@ -38,8 +42,12 @@ export const createObjectiveTool = tool({
             .describe("How the key result is measured"),
           startValue: z.number().describe("Starting value"),
           targetValue: z.number().describe("Target value"),
-          startDate: z.string().describe("Start date (ISO string)"),
-          endDate: z.string().describe("End date (ISO string)"),
+          startDate: z
+            .string()
+            .describe("Start date (ISO  date string e.g 2005-06-13)"),
+          endDate: z
+            .string()
+            .describe("End date (ISO  date string e.g 2005-06-13)"),
           contributors: z.array(z.string()).describe("Contributors (UUIDs)"),
           lead: z.string().describe("Lead user ID (UUID)"),
         }),

@@ -80,7 +80,7 @@ const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "past_due"];
  * - displayTier: Human-readable tier name (includes trial indicator)
  * - isOnTrial: Whether the user is currently on a trial period
  * - trialDaysRemaining: Number of days left in trial period
- * - trialEndsOn: Trial end date ISO string if applicable
+ * - trialEndsOn: Trial end date ISO  date string e.g 2005-06-13 if applicable
  * - hasFeature: Check if a feature is available
  * - getLimit: Get the limit value for a feature
  * - withinLimit: Check if a count is within feature limits

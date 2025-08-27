@@ -19,8 +19,11 @@ export const updateObjectiveTool = tool({
     startDate: z
       .string()
       .optional()
-      .describe("Updated start date (ISO string)"),
-    endDate: z.string().optional().describe("Updated end date (ISO string)"),
+      .describe("Updated start date (ISO  date string e.g 2005-06-13)"),
+    endDate: z
+      .string()
+      .optional()
+      .describe("Updated end date (ISO  date string e.g 2005-06-13)"),
     statusId: z.string().optional().describe("Updated status ID"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])

@@ -26,8 +26,10 @@ export const createKeyResultTool = tool({
     targetValue: z
       .number()
       .describe("Target value (required for percentage and number types)"),
-    startDate: z.string().describe("Start date (ISO format)"),
-    endDate: z.string().describe("End date (ISO format)"),
+    startDate: z
+      .string()
+      .describe("Start date (ISO date string e.g 2005-06-13)"),
+    endDate: z.string().describe("End date (ISO date string e.g 2005-06-13)"),
     lead: z.string().describe("Lead user ID (optional)"),
     contributors: z
       .array(z.string())

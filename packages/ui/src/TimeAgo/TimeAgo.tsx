@@ -13,7 +13,7 @@ import {
 import ReactTimeAgo from "react-time-ago";
 
 const parseTimestamp = (timestamp: string): Date => {
-  // Try parsing as ISO string first
+  // Try parsing as ISO  date string e.g 2005-06-13 first
   let date = parseISO(timestamp);
 
   // If invalid, try parsing as "dd/MM/yyyy" format
@@ -24,7 +24,7 @@ const parseTimestamp = (timestamp: string): Date => {
   // If still invalid, throw an error
   if (isNaN(date.getTime())) {
     throw new Error(
-      "Invalid date format. Please use ISO string or dd/MM/yyyy format."
+      "Invalid date format. Please use ISO  date string e.g 2005-06-13 or dd/MM/yyyy format."
     );
   }
 

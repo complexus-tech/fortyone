@@ -15,8 +15,14 @@ export const createSprint = tool({
       .describe("Sprint goal or description (HTML format)"),
     teamId: z.string().describe("Team ID where sprint belongs (required)"),
     objectiveId: z.string().optional().describe("Objective ID to link sprint"),
-    startDate: z.string().describe("Sprint start date (ISO string) (required)"),
-    endDate: z.string().describe("Sprint end date (ISO string) (required)"),
+    startDate: z
+      .string()
+      .describe(
+        "Sprint start date (ISO  date string e.g 2005-06-13) (required)",
+      ),
+    endDate: z
+      .string()
+      .describe("Sprint end date (ISO  date string e.g 2005-06-13) (required)"),
   }),
 
   execute: async ({ name, goal, teamId, objectiveId, startDate, endDate }) => {

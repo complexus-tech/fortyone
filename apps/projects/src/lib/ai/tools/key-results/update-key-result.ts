@@ -19,8 +19,11 @@ export const updateKeyResultTool = tool({
     startDate: z
       .string()
       .optional()
-      .describe("Updated start date (ISO format)"),
-    endDate: z.string().optional().describe("Updated end date (ISO format)"),
+      .describe("Updated start date (ISO date string e.g 2005-06-13)"),
+    endDate: z
+      .string()
+      .optional()
+      .describe("Updated end date (ISO date string e.g 2005-06-13)"),
     lead: z.string().optional().describe("Updated lead user ID (optional)"),
     contributors: z
       .array(z.string())

@@ -35,11 +35,11 @@ export const bulkCreateStories = tool({
           startDate: z
             .string()
             .optional()
-            .describe("Story start date (ISO string)"),
+            .describe("Story start date (ISO  date string e.g 2005-06-13)"),
           endDate: z
             .string()
             .optional()
-            .describe("Story end date (ISO string)"),
+            .describe("Story end date (ISO  date string e.g 2005-06-13)"),
         }),
       )
       .describe("Array of story data for bulk creation (required)"),

@@ -40,39 +40,51 @@ export const listTeamStories = tool({
         createdAfter: z
           .string()
           .optional()
-          .describe("Filter stories created after this date (ISO string)"),
+          .describe(
+            "Filter stories created after this date (ISO  date string e.g 2005-06-13)",
+          ),
         createdBefore: z
           .string()
           .optional()
-          .describe("Filter stories created before this date (ISO string)"),
+          .describe(
+            "Filter stories created before this date (ISO  date string e.g 2005-06-13)",
+          ),
         updatedAfter: z
           .string()
           .optional()
-          .describe("Filter stories updated after this date (ISO string)"),
+          .describe(
+            "Filter stories updated after this date (ISO  date string e.g 2005-06-13)",
+          ),
         updatedBefore: z
           .string()
           .optional()
-          .describe("Filter stories updated before this date (ISO string)"),
+          .describe(
+            "Filter stories updated before this date (ISO  date string e.g 2005-06-13)",
+          ),
         deadlineAfter: z
           .string()
           .optional()
           .describe(
-            "Filter stories with deadlines after this date (ISO string)",
+            "Filter stories with deadlines after this date (ISO  date string e.g 2005-06-13)",
           ),
         deadlineBefore: z
           .string()
           .optional()
           .describe(
-            "Filter stories with deadlines before this date (ISO string)",
+            "Filter stories with deadlines before this date (ISO  date string e.g 2005-06-13)",
           ),
         completedAfter: z
           .string()
           .optional()
-          .describe("Filter stories completed after this date (ISO string)"),
+          .describe(
+            "Filter stories completed after this date (ISO  date string e.g 2005-06-13)",
+          ),
         completedBefore: z
           .string()
           .optional()
-          .describe("Filter stories completed before this date (ISO string)"),
+          .describe(
+            "Filter stories completed before this date (ISO  date string e.g 2005-06-13)",
+          ),
         includeArchived: z
           .boolean()
           .optional()
