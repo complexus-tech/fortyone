@@ -71,11 +71,6 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	if err := nkr.Validate(); err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
-		return nil
-	}
-
 	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr, userID), workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -135,10 +130,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["lead"] = ukr.Lead
 	}
 	if ukr.StartDate != nil {
-		updates["start_date"] = ukr.StartDate
+		updates["start_date"] = ukr.StartDate.TimePtr()
 	}
 	if ukr.EndDate != nil {
-		updates["end_date"] = ukr.EndDate
+		updates["end_date"] = ukr.EndDate.TimePtr()
 	}
 	if ukr.Contributors != nil {
 		updates["contributors"] = *ukr.Contributors

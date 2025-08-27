@@ -9,6 +9,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -41,8 +42,8 @@ type AppNewKeyResult struct {
 	TargetValue     float64     `json:"targetValue"`
 	Lead            *uuid.UUID  `json:"lead,omitempty"`
 	Contributors    []uuid.UUID `json:"contributors,omitempty"`
-	StartDate       *time.Time  `json:"startDate" validate:"required"`
-	EndDate         *time.Time  `json:"endDate" validate:"required"`
+	StartDate       *date.Date  `json:"startDate" validate:"required"`
+	EndDate         *date.Date  `json:"endDate" validate:"required"`
 }
 
 // AppUpdateKeyResult represents the data needed to update a key result
@@ -54,8 +55,8 @@ type AppUpdateKeyResult struct {
 	TargetValue     *float64     `json:"targetValue" db:"target_value"`
 	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
-	StartDate       *time.Time   `json:"startDate" db:"start_date"`
-	EndDate         *time.Time   `json:"endDate" db:"end_date"`
+	StartDate       *date.Date   `json:"startDate" db:"start_date"`
+	EndDate         *date.Date   `json:"endDate" db:"end_date"`
 	Comment         *string      `json:"comment" db:"comment"`
 }
 
@@ -284,8 +285,8 @@ func toCoreNewKeyResult(nkr AppNewKeyResult, userID uuid.UUID) keyresults.CoreNe
 		TargetValue:     nkr.TargetValue,
 		Lead:            nkr.Lead,
 		Contributors:    nkr.Contributors,
-		StartDate:       nkr.StartDate,
-		EndDate:         nkr.EndDate,
+		StartDate:       nkr.StartDate.TimePtr(),
+		EndDate:         nkr.EndDate.TimePtr(),
 		CreatedBy:       userID,
 	}
 }
