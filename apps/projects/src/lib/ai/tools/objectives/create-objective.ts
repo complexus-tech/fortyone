@@ -30,6 +30,7 @@ export const createObjectiveTool = tool({
       .describe("End date (ISO  date string e.g 2005-06-13, required)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+      .default("No Priority")
       .optional()
       .describe("Objective priority"),
     statusId: z.string().describe("Status ID for the objective"),

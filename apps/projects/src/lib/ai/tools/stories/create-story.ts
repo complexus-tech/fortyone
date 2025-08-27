@@ -27,6 +27,7 @@ export const createStory = tool({
     assigneeId: z.string().optional().describe("Assignee user ID (UUID)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+      .default("No Priority")
       .describe("Story priority (required)"),
     sprintId: z
       .string()
