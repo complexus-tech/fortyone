@@ -180,10 +180,10 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		updates["lead_user_id"] = *uo.LeadUser
 	}
 	if uo.StartDate != nil {
-		updates["start_date"] = *uo.StartDate
+		updates["start_date"] = *uo.StartDate.TimePtr()
 	}
 	if uo.EndDate != nil {
-		updates["end_date"] = *uo.EndDate
+		updates["end_date"] = *uo.EndDate.TimePtr()
 	}
 	if uo.IsPrivate != nil {
 		updates["is_private"] = *uo.IsPrivate
