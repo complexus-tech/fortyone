@@ -350,10 +350,18 @@ const Bar = <T extends GanttItem>({
     const finalStartDate = addDays(dateRange.start, roundedStartOffset);
     const finalEndDate = addDays(finalStartDate, roundedDuration);
 
-    const originalStartISO = formatISO(dragStart.originalStartDate);
-    const originalEndISO = formatISO(dragStart.originalEndDate);
-    const finalStartISO = formatISO(finalStartDate);
-    const finalEndISO = formatISO(finalEndDate);
+    const originalStartISO = formatISO(dragStart.originalStartDate, {
+      representation: "date",
+    });
+    const originalEndISO = formatISO(dragStart.originalEndDate, {
+      representation: "date",
+    });
+    const finalStartISO = formatISO(finalStartDate, {
+      representation: "date",
+    });
+    const finalEndISO = formatISO(finalEndDate, {
+      representation: "date",
+    });
 
     if (originalStartISO !== finalStartISO || originalEndISO !== finalEndISO) {
       // Set optimistic state to maintain visual position until props update
