@@ -426,7 +426,7 @@ export const Options = ({
                 <DatePicker.Calendar
                   onDayClick={(day) => {
                     handleUpdate({
-                      startDate: formatISO(day),
+                      startDate: formatISO(day, { representation: "date" }),
                     });
                   }}
                   selected={startDate ? new Date(startDate) : undefined}
@@ -489,7 +489,7 @@ export const Options = ({
                 <DatePicker.Calendar
                   onDayClick={(day) => {
                     handleUpdate({
-                      endDate: formatISO(day),
+                      endDate: formatISO(day, { representation: "date" }),
                     });
                   }}
                   selected={endDate ? new Date(endDate) : undefined}
