@@ -10,6 +10,7 @@ import {
   Divider,
   Checkbox,
   Tooltip,
+  Avatar,
 } from "ui";
 import {
   AiIcon,
@@ -24,7 +25,8 @@ import { useParams } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
-import { ConfirmDialog, RowWrapper } from "@/components/ui";
+import { cn } from "lib";
+import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
@@ -32,7 +34,9 @@ import {
   useCreateKeyResultMutation,
   useKeyResults,
   useObjective,
+  useUpdateKeyResultMutation,
 } from "@/modules/objectives/hooks";
+import { useMembers } from "@/lib/hooks/members";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
@@ -93,6 +97,7 @@ const Okr = ({
   createdBy,
   updatedAt,
 }: KeyResult) => {
+  const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -100,10 +105,11 @@ const Okr = ({
   const [updateMode, setUpdateMode] = useState<"progress" | "other">(
     "progress",
   );
-  // const { data: members = [] } = useMembers();
+  const { data: members = [] } = useMembers();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
+  const { mutate: updateKeyResult } = useUpdateKeyResultMutation();
 
-  // const leadMember = members.find((member) => member.id === lead);
+  const leadMember = members.find((member) => member.id === lead);
 
   const getProgress = () => {
     if (measurementType === "boolean") {
@@ -214,15 +220,54 @@ const Okr = ({
 
         {isAdminOrOwner ? (
           <Flex align="center" className="h-full py-2 pl-4" gap={2}>
-            {/* <Avatar src={leadMember?.avatarUrl} /> */}
+            <AssigneesMenu>
+              <AssigneesMenu.Trigger>
+                <Button
+                  asIcon
+                  className={cn("font-medium", {
+                    "text-gray-200 dark:text-gray-300": !lead,
+                  })}
+                  color="tertiary"
+                  leftIcon={
+                    <Avatar
+                      className={cn({
+                        "text-dark/80 dark:text-gray-200": !lead,
+                      })}
+                      name={leadMember?.username}
+                      size="sm"
+                      src={leadMember?.avatarUrl}
+                    />
+                  }
+                  rounded="full"
+                  size="sm"
+                  type="button"
+                  variant="naked"
+                >
+                  <span className="sr-only">{leadMember?.username}</span>
+                </Button>
+              </AssigneesMenu.Trigger>
+              <AssigneesMenu.Items
+                assigneeId={lead}
+                onAssigneeSelected={(leadUser) => {
+                  updateKeyResult({
+                    keyResultId: id,
+                    objectiveId,
+                    data: { lead: leadUser },
+                  });
+                }}
+                placeholder="Assign lead..."
+                teamId={teamId}
+              />
+            </AssigneesMenu>
             <Menu>
               <Menu.Button>
                 <Button
                   asIcon
+                  className="border-gray-100/60"
                   color="tertiary"
                   leftIcon={<MoreHorizontalIcon />}
                   rounded="full"
-                  size="sm"
+                  size="xs"
                 >
                   <span className="sr-only">Edit</span>
                 </Button>
