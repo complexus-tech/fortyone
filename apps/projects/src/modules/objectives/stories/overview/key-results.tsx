@@ -220,45 +220,49 @@ const Okr = ({
 
         {isAdminOrOwner ? (
           <Flex align="center" className="h-full py-2 pl-4" gap={2}>
-            <AssigneesMenu>
-              <AssigneesMenu.Trigger>
-                <Button
-                  asIcon
-                  className={cn("font-medium", {
-                    "text-gray-200 dark:text-gray-300": !lead,
-                  })}
-                  color="tertiary"
-                  leftIcon={
-                    <Avatar
-                      className={cn({
-                        "text-dark/80 dark:text-gray-200": !lead,
+            <Tooltip title="Lead">
+              <span>
+                <AssigneesMenu>
+                  <AssigneesMenu.Trigger>
+                    <Button
+                      asIcon
+                      className={cn("font-medium", {
+                        "text-gray-200 dark:text-gray-300": !lead,
                       })}
-                      name={leadMember?.username}
+                      color="tertiary"
+                      leftIcon={
+                        <Avatar
+                          className={cn({
+                            "text-dark/80 dark:text-gray-200": !lead,
+                          })}
+                          name={leadMember?.username}
+                          size="sm"
+                          src={leadMember?.avatarUrl}
+                        />
+                      }
+                      rounded="full"
                       size="sm"
-                      src={leadMember?.avatarUrl}
-                    />
-                  }
-                  rounded="full"
-                  size="sm"
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="sr-only">{leadMember?.username}</span>
-                </Button>
-              </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items
-                assigneeId={lead}
-                onAssigneeSelected={(leadUser) => {
-                  updateKeyResult({
-                    keyResultId: id,
-                    objectiveId,
-                    data: { lead: leadUser },
-                  });
-                }}
-                placeholder="Assign lead..."
-                teamId={teamId}
-              />
-            </AssigneesMenu>
+                      type="button"
+                      variant="naked"
+                    >
+                      <span className="sr-only">{leadMember?.username}</span>
+                    </Button>
+                  </AssigneesMenu.Trigger>
+                  <AssigneesMenu.Items
+                    assigneeId={lead}
+                    onAssigneeSelected={(leadUser) => {
+                      updateKeyResult({
+                        keyResultId: id,
+                        objectiveId,
+                        data: { lead: leadUser },
+                      });
+                    }}
+                    placeholder="Assign lead..."
+                    teamId={teamId}
+                  />
+                </AssigneesMenu>
+              </span>
+            </Tooltip>
             <Menu>
               <Menu.Button>
                 <Button
