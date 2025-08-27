@@ -40,8 +40,9 @@ type ObjectiveStats struct {
 }
 
 type AppFilters struct {
-	Page     int `json:"page"`
-	PageSize int `json:"pageSize"`
+	Team     *uuid.UUID `json:"teamId"`
+	Page     int        `json:"page"`
+	PageSize int        `json:"pageSize"`
 }
 
 // toAppObjectives converts a list of core objectives to a list of application objectives.
