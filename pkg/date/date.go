@@ -1,6 +1,7 @@
 package date
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -13,7 +14,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 
 	t, err := time.Parse("2006-01-02", str)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid date format: Expected YYYY-MM-DD (e.g 2006-01-02), got %s", str)
 	}
 
 	*d = Date(t)
