@@ -35,6 +35,39 @@ export const UpdateKeyResultDialog = ({
     comment: "",
   });
 
+  const getChangedFields = () => {
+    const changes: Partial<KeyResultUpdate> = {};
+
+    if (form.name !== keyResult.name) changes.name = form.name;
+    if (form.startValue !== keyResult.startValue)
+      changes.startValue = form.startValue;
+    if (form.targetValue !== keyResult.targetValue)
+      changes.targetValue = form.targetValue;
+    if (form.currentValue !== keyResult.currentValue)
+      changes.currentValue = form.currentValue;
+    if (
+      formatISO(new Date(form.startDate), { representation: "date" }) !==
+      formatISO(new Date(keyResult.startDate), { representation: "date" })
+    ) {
+      changes.startDate = form.startDate;
+    }
+    if (
+      formatISO(new Date(form.endDate), { representation: "date" }) !==
+      formatISO(new Date(keyResult.endDate), { representation: "date" })
+    ) {
+      changes.endDate = form.endDate;
+    }
+
+    if (
+      JSON.stringify(form.contributors) !==
+      JSON.stringify(keyResult.contributors)
+    ) {
+      changes.contributors = form.contributors;
+    }
+
+    return changes;
+  };
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.name) {
@@ -44,20 +77,14 @@ export const UpdateKeyResultDialog = ({
       return;
     }
 
-    let payload: KeyResultUpdate = {
-      currentValue: form.currentValue,
-      comment: form.comment,
-    };
+    let payload: KeyResultUpdate;
 
     if (updateMode === "other") {
+      payload = getChangedFields();
+    } else {
       payload = {
-        ...payload,
-        name: form.name,
-        startValue: form.startValue,
-        targetValue: form.targetValue,
-        startDate: form.startDate,
-        endDate: form.endDate,
-        contributors: form.contributors,
+        currentValue: form.currentValue,
+        ...(form.comment && { comment: form.comment }),
       };
     }
 
