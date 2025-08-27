@@ -3,6 +3,7 @@ package storiesgrp
 import (
 	"encoding/json"
 	"reflect"
+	"time"
 )
 
 // getUpdates returns a map of database field names and their values from the given request data.
@@ -22,7 +23,18 @@ func getUpdates(requestData map[string]json.RawMessage) (map[string]any, error) 
 			if err != nil {
 				return nil, err
 			}
-			updates[dbTag] = field.Interface()
+
+			// Handle date.Date fields specially - convert to *time.Time
+			if field.Type().Implements(reflect.TypeOf((*interface{ TimePtr() *time.Time })(nil)).Elem()) {
+				if !field.IsNil() {
+					dateValue := field.Interface().(interface{ TimePtr() *time.Time })
+					updates[dbTag] = dateValue.TimePtr()
+				} else {
+					updates[dbTag] = nil
+				}
+			} else {
+				updates[dbTag] = field.Interface()
+			}
 		}
 	}
 
