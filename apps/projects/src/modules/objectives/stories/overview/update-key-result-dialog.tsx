@@ -77,21 +77,20 @@ export const UpdateKeyResultDialog = ({
       return;
     }
 
-    let payload: KeyResultUpdate;
-
-    if (updateMode === "other") {
-      payload = getChangedFields();
-    } else {
-      payload = {
-        currentValue: form.currentValue,
-        ...(form.comment && { comment: form.comment }),
-      };
+    if (Object.keys(getChangedFields()).length === 0) {
+      toast.info("No changes detected", {
+        description: "The key result is already up to date",
+      });
+      return;
     }
 
     updateMutation.mutate({
       keyResultId: keyResult.id,
       objectiveId: keyResult.objectiveId,
-      data: payload,
+      data: {
+        ...getChangedFields(),
+        ...(form.comment && { comment: form.comment }),
+      },
     });
     onOpenChange(false);
     setForm({
@@ -118,6 +117,21 @@ export const UpdateKeyResultDialog = ({
       comment: "",
     });
   }, [keyResult]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setForm({
+        name: keyResult.name,
+        startValue: keyResult.startValue,
+        targetValue: keyResult.targetValue,
+        currentValue: keyResult.currentValue,
+        contributors: keyResult.contributors,
+        startDate: keyResult.startDate,
+        endDate: keyResult.endDate,
+        comment: "",
+      });
+    }
+  }, [isOpen, keyResult]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={isOpen}>
@@ -241,7 +255,9 @@ export const UpdateKeyResultDialog = ({
                       placeholder="0"
                       required
                       rightIcon={
-                        <Text color="muted">/ {form.targetValue}</Text>
+                        <Text className="pl-1" color="muted">
+                          / {form.targetValue}
+                        </Text>
                       }
                       type="number"
                       value={form.currentValue}
@@ -307,7 +323,11 @@ export const UpdateKeyResultDialog = ({
             >
               Cancel
             </Button>
-            <Button className="capitalize" type="submit">
+            <Button
+              className="capitalize"
+              disabled={Object.keys(getChangedFields()).length === 0}
+              type="submit"
+            >
               Update {getTermDisplay("keyResultTerm")}
             </Button>
           </Dialog.Footer>
