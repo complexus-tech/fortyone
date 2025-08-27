@@ -14,7 +14,7 @@ import { useParams } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { CalendarIcon } from "icons";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { useSession } from "next-auth/react";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -144,7 +144,9 @@ export const Sidebar = ({ className }: { className?: string }) => {
               </DatePicker.Trigger>
               <DatePicker.Calendar
                 onDayClick={(day: Date) => {
-                  handleUpdate({ startDate: day.toISOString() });
+                  handleUpdate({
+                    startDate: formatISO(day, { representation: "date" }),
+                  });
                 }}
                 selected={
                   objective?.startDate
@@ -185,7 +187,9 @@ export const Sidebar = ({ className }: { className?: string }) => {
               </DatePicker.Trigger>
               <DatePicker.Calendar
                 onDayClick={(day: Date) => {
-                  handleUpdate({ endDate: day.toISOString() });
+                  handleUpdate({
+                    endDate: formatISO(day, { representation: "date" }),
+                  });
                 }}
                 selected={
                   objective?.endDate ? new Date(objective.endDate) : undefined

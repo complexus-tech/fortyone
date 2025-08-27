@@ -1,7 +1,7 @@
 import { CalendarIcon } from "icons";
 import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
@@ -150,7 +150,9 @@ export const Properties = () => {
         </DatePicker.Trigger>
         <DatePicker.Calendar
           onDayClick={(day) => {
-            handleUpdate({ startDate: day.toISOString() });
+            handleUpdate({
+              startDate: formatISO(day, { representation: "date" }),
+            });
           }}
           selected={
             objective?.startDate ? new Date(objective.startDate) : undefined
@@ -184,7 +186,9 @@ export const Properties = () => {
         </DatePicker.Trigger>
         <DatePicker.Calendar
           onDayClick={(day) => {
-            handleUpdate({ endDate: day.toISOString() });
+            handleUpdate({
+              endDate: formatISO(day, { representation: "date" }),
+            });
           }}
           selected={
             objective?.endDate ? new Date(objective.endDate) : undefined

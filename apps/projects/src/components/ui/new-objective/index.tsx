@@ -32,7 +32,7 @@ import {
   CrownIcon,
 } from "icons";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { cn } from "lib";
 import { useRouter } from "next/navigation";
 import {
@@ -503,7 +503,7 @@ export const NewObjectiveDialog = ({
                   onDayClick={(date) => {
                     setObjectiveForm((prev) => ({
                       ...prev,
-                      startDate: date.toISOString(),
+                      startDate: formatISO(date, { representation: "date" }),
                     }));
                   }}
                 />
@@ -547,7 +547,7 @@ export const NewObjectiveDialog = ({
                   onDayClick={(date) => {
                     setObjectiveForm((prev) => ({
                       ...prev,
-                      endDate: date.toISOString(),
+                      endDate: formatISO(date, { representation: "date" }),
                     }));
                   }}
                 />

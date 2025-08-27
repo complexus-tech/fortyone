@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Box, Button, Divider, Flex, Popover, Text, DatePicker } from "ui";
 import { CalendarIcon, CloseIcon } from "icons";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, formatISO } from "date-fns";
 import { cn } from "lib";
 
 type DatePreset = {
@@ -70,13 +70,19 @@ const DateRangeSelector = ({
 
   const handlePresetSelect = (preset: DatePreset) => {
     const { startDate: presetStart, endDate: presetEnd } = preset.getDates();
-    onDateChange(presetStart.toISOString(), presetEnd.toISOString());
+    onDateChange(
+      formatISO(presetStart, { representation: "date" }),
+      formatISO(presetEnd, { representation: "date" }),
+    );
   };
 
   const handleCustomDateChange = (start?: Date, end?: Date) => {
     setCustomStartDate(start);
     setCustomEndDate(end);
-    onDateChange(start?.toISOString(), end?.toISOString());
+    onDateChange(
+      start ? formatISO(start, { representation: "date" }) : undefined,
+      end ? formatISO(end, { representation: "date" }) : undefined,
+    );
   };
 
   const clearDates = () => {

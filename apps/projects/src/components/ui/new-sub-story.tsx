@@ -14,7 +14,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
 import { CalendarIcon, CloseIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
-import { addDays, format } from "date-fns";
+import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -231,7 +231,7 @@ export const NewSubStory = ({
                   onDayClick={(date) => {
                     setStoryForm({
                       ...storyForm,
-                      startDate: date.toISOString(),
+                      startDate: formatISO(date, { representation: "date" }),
                     });
                   }}
                 />
@@ -281,7 +281,10 @@ export const NewSubStory = ({
                       : undefined
                   }
                   onDayClick={(date) => {
-                    setStoryForm({ ...storyForm, endDate: date.toISOString() });
+                    setStoryForm({
+                      ...storyForm,
+                      endDate: formatISO(date, { representation: "date" }),
+                    });
                   }}
                 />
               </DatePicker>

@@ -21,7 +21,7 @@ import {
 } from "icons";
 import { toast } from "sonner";
 import { cn } from "lib";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -274,7 +274,7 @@ export const NewSprintDialog = ({
                 onDayClick={(date) => {
                   setSprintForm((prev) => ({
                     ...prev,
-                    startDate: date.toISOString(),
+                    startDate: formatISO(date, { representation: "date" }),
                   }));
                 }}
               />
@@ -318,7 +318,7 @@ export const NewSprintDialog = ({
                 onDayClick={(date) => {
                   setSprintForm((prev) => ({
                     ...prev,
-                    endDate: date.toISOString(),
+                    endDate: formatISO(date, { representation: "date" }),
                   }));
                 }}
               />

@@ -2,6 +2,7 @@ import { Box, Button, Flex, Input, Select, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import type { FormEvent } from "react";
+import { formatISO } from "date-fns";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
 import { useTerminology } from "@/hooks";
 
@@ -72,7 +73,11 @@ export const KeyResultEditor = ({
         <Input
           label="Start Date"
           onChange={(e) => {
-            onUpdate(0, { startDate: new Date(e.target.value).toISOString() });
+            onUpdate(0, {
+              startDate: formatISO(new Date(e.target.value), {
+                representation: "date",
+              }),
+            });
           }}
           required
           type="date"
@@ -81,7 +86,11 @@ export const KeyResultEditor = ({
         <Input
           label="Deadline"
           onChange={(e) => {
-            onUpdate(0, { endDate: new Date(e.target.value).toISOString() });
+            onUpdate(0, {
+              endDate: formatISO(new Date(e.target.value), {
+                representation: "date",
+              }),
+            });
           }}
           required
           type="date"

@@ -49,7 +49,7 @@ import {
   CrownIcon,
 } from "icons";
 import { toast } from "sonner";
-import { addDays, format } from "date-fns";
+import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -586,7 +586,7 @@ export const NewStoryDialog = ({
                     dispatch({
                       type: "SET_FIELD",
                       field: "startDate",
-                      value: date.toISOString(),
+                      value: formatISO(date, { representation: "date" }),
                     });
                   }}
                 />
@@ -640,7 +640,7 @@ export const NewStoryDialog = ({
                     dispatch({
                       type: "SET_FIELD",
                       field: "endDate",
-                      value: date.toISOString(),
+                      value: formatISO(date, { representation: "date" }),
                     });
                   }}
                 />

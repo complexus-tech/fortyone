@@ -163,7 +163,9 @@ export const UpdateKeyResultDialog = ({
                     onChange={(e) => {
                       setForm({
                         ...form,
-                        startDate: new Date(e.target.value).toISOString(),
+                        startDate: formatISO(new Date(e.target.value), {
+                          representation: "date",
+                        }),
                       });
                     }}
                     required
@@ -177,7 +179,9 @@ export const UpdateKeyResultDialog = ({
                     onChange={(e) => {
                       setForm({
                         ...form,
-                        endDate: new Date(e.target.value).toISOString(),
+                        endDate: formatISO(new Date(e.target.value), {
+                          representation: "date",
+                        }),
                       });
                     }}
                     required

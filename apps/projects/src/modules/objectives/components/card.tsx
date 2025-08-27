@@ -12,7 +12,7 @@ import {
 } from "ui";
 import Link from "next/link";
 import { ObjectiveIcon, CalendarIcon } from "icons";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -262,7 +262,9 @@ export const ObjectiveCard = ({
               </DatePicker.Trigger>
               <DatePicker.Calendar
                 onDayClick={(day) => {
-                  handleUpdate({ endDate: day.toISOString() });
+                  handleUpdate({
+                    endDate: formatISO(day, { representation: "date" }),
+                  });
                 }}
                 selected={endDate ? new Date(endDate) : undefined}
               />

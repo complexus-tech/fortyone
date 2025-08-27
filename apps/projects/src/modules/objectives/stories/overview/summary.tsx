@@ -2,7 +2,7 @@ import { CalendarIcon, HealthIcon, OKRIcon } from "icons";
 import { Box, Text, Wrapper, ProgressBar, Flex, DatePicker } from "ui";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays, format, formatISO } from "date-fns";
 import { useSession } from "next-auth/react";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useFeatures, useTerminology } from "@/hooks";
@@ -152,7 +152,9 @@ export const Summary = () => {
                 <DatePicker.Calendar
                   onDayClick={(day) => {
                     if (canUpdate) {
-                      handleSetTargetDate(day.toISOString());
+                      handleSetTargetDate(
+                        formatISO(day, { representation: "date" }),
+                      );
                     }
                   }}
                   selected={

@@ -4,6 +4,7 @@ import {
   parseAsArrayOf,
   parseAsString,
 } from "nuqs";
+import { formatISO } from "date-fns";
 import type { AnalyticsFilters } from "@/modules/analytics/types";
 
 export const useAppliedFilters = () => {
@@ -16,8 +17,16 @@ export const useAppliedFilters = () => {
   });
 
   const analyticsFilters: AnalyticsFilters = {
-    startDate: filters.startDate?.toISOString() ?? undefined,
-    endDate: filters.endDate?.toISOString() ?? undefined,
+    startDate: filters.startDate
+      ? formatISO(filters.startDate, {
+          representation: "date",
+        })
+      : undefined,
+    endDate: filters.endDate
+      ? formatISO(filters.endDate, {
+          representation: "date",
+        })
+      : undefined,
     teamIds: filters.teamIds?.length ? filters.teamIds : undefined,
     sprintIds: filters.sprintIds?.length ? filters.sprintIds : undefined,
     objectiveIds: filters.objectiveIds?.length

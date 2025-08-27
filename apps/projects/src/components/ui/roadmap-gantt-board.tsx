@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, formatISO } from "date-fns";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -187,8 +187,10 @@ const ObjectiveRow = ({
                 setDates(range);
                 if (range?.from && range.to) {
                   handleUpdate(objective.id, {
-                    startDate: range.from.toISOString(),
-                    endDate: range.to.toISOString(),
+                    startDate: formatISO(range.from, {
+                      representation: "date",
+                    }),
+                    endDate: formatISO(range.to, { representation: "date" }),
                   });
                 }
               }}

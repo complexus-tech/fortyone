@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, formatISO } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Link from "next/link";
@@ -215,8 +215,10 @@ const StoryRow = ({
                   setDates(range);
                   if (range?.from && range.to) {
                     handleUpdate(story.id, {
-                      startDate: range.from.toISOString(),
-                      endDate: range.to.toISOString(),
+                      startDate: formatISO(range.from, {
+                        representation: "date",
+                      }),
+                      endDate: formatISO(range.to, { representation: "date" }),
                     });
                   }
                 }}
