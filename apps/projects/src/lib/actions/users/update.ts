@@ -9,6 +9,7 @@ export type UpdateProfile = {
   fullName?: string;
   username?: string;
   hasSeenWalkthrough?: boolean;
+  timezone?: string;
 };
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;

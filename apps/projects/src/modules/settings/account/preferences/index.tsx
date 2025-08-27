@@ -3,6 +3,7 @@
 import { Box, Text } from "ui";
 import { useUserRole } from "@/hooks";
 import { Theming } from "./components/theming";
+import { Timezone } from "./components/timezone";
 import { Automations } from "./components/automations";
 
 export const PreferencesSettings = () => {
@@ -14,6 +15,7 @@ export const PreferencesSettings = () => {
         Preferences
       </Text>
       <Theming />
+      <Timezone />
       {userRole !== "guest" && <Automations />}
     </Box>
   );

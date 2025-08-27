@@ -16,6 +16,7 @@ export type User = {
   isActive: boolean;
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
 };

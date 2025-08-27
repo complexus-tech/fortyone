@@ -8,6 +8,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export type UpdateProfile = {
   fullName?: string;
   username?: string;
+  timezone?: string;
 };
 
 export async function updateProfile(updates: UpdateProfile) {

@@ -10,6 +10,7 @@ import { updateProfile } from "@/lib/actions/update-profile";
 
 export const CreateAccountForm = () => {
   const { data: session } = useSession();
+  const currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState(session?.user?.name || "");
   const [receiveUpdates, setReceiveUpdates] = useState(false);
@@ -25,7 +26,7 @@ export const CreateAccountForm = () => {
     }
     try {
       setIsLoading(true);
-      const _ = await updateProfile({ fullName });
+      await updateProfile({ fullName, timezone: currentTimezone });
     } catch (error) {
       setIsLoading(false);
     } finally {
