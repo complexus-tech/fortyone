@@ -25,7 +25,6 @@ import {
 import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-analytics";
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTeamMembers } from "@/lib/hooks/team-members";
 import { ProgressChart } from "./progress-chart";
 
 const Option = ({
@@ -61,7 +60,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { data: analytics } = useObjectiveAnalytics(objectiveId);
-  const { data: members = [] } = useTeamMembers(objective?.teamId);
   const updateMutation = useUpdateObjectiveMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
 
@@ -82,7 +80,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
     priorityBreakdown,
     progressChart,
   } = analytics;
-  const createdBy = members.find((m) => m.id === objective?.createdBy);
   const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   // Map progress breakdown to status categories
@@ -118,28 +115,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
     >
       <Box className="mb-6">
         <Text fontWeight="semibold">Properties</Text>
-        <Option
-          label="Created by"
-          value={
-            <Button
-              className="font-medium"
-              color="tertiary"
-              href={`/profile/${createdBy?.id}`}
-              leftIcon={
-                <Avatar
-                  name={createdBy?.fullName || createdBy?.username}
-                  size="xs"
-                  src={createdBy?.avatarUrl}
-                />
-              }
-              type="button"
-              variant="naked"
-            >
-              {createdBy?.username}
-            </Button>
-          }
-        />
-
         <Option
           label="Start date"
           value={
