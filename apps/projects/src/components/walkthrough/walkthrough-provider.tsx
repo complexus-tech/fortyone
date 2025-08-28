@@ -95,7 +95,7 @@ export const WalkthroughProvider = ({
     isActive: false,
     currentStep: 0,
     totalSteps: 0,
-    hasSeenWalkthrough: profile?.hasSeenWalkthrough || false,
+    hasSeenWalkthrough: profile?.hasSeenWalkthrough || true,
     walkthroughVersion: version,
   });
 

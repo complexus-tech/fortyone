@@ -20,7 +20,6 @@ import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
-import { getProfile } from "@/lib/queries/users/profile";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
@@ -71,11 +70,6 @@ export const fetchNonCriticalImportantQueries = (
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
     queryFn: () => getWorkspaceSettings(session),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-  });
-  queryClient.prefetchQuery({
-    queryKey: userKeys.profile(),
-    queryFn: () => getProfile(session),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({

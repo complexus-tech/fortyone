@@ -10,6 +10,7 @@ import {
   statusKeys,
   workspaceKeys,
   sprintKeys,
+  userKeys,
 } from "@/constants/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
@@ -20,6 +21,8 @@ import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints
 import { Chat } from "@/components/ui/chat";
 import { ChatProvider } from "@/context/chat-context";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
+import { getProfile } from "@/lib/queries/users/profile";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
@@ -81,6 +84,11 @@ export default async function RootLayout({
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(),
       queryFn: () => getRunningSprints(session!),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: userKeys.profile(),
+      queryFn: () => getProfile(session!),
+      staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     switchWorkspace(workspace.id),
   ]);
