@@ -64,11 +64,10 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	filtersStr := ""
-	if filters != nil {
-		for k, v := range filters {
-			filtersStr += fmt.Sprintf("%s:%v;", k, v)
-		}
+	for k, v := range filters {
+		filtersStr += fmt.Sprintf("%s:%v;", k, v)
 	}
+
 	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, filtersStr)
 	var cachedObjectives []objectives.CoreObjective
 
