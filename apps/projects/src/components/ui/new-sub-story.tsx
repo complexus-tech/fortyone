@@ -322,6 +322,7 @@ export const NewSubStory = ({
                   onAssigneeSelected={(assigneeId) => {
                     setStoryForm({ ...storyForm, assigneeId });
                   }}
+                  teamId={teamId}
                 />
               </AssigneesMenu>
             </Flex>
