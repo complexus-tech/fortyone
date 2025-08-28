@@ -674,6 +674,7 @@ export const NewStoryDialog = ({
                       value: assigneeId,
                     });
                   }}
+                  teamId={currentTeamId}
                 />
               </AssigneesMenu>
               {features.objectiveEnabled && objectives.length > 0 ? (
