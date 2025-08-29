@@ -129,3 +129,4 @@ export * from "./volume";
 export * from "./pause";
 export * from "./stop";
 export * from "./minus-icon";
+export * from "./book";
