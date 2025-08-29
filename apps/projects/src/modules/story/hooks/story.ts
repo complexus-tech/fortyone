@@ -9,6 +9,6 @@ export const useStoryById = (id: string) => {
   return useQuery({
     queryKey: storyKeys.detail(id),
     queryFn: () => getStory(id, session!),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+    staleTime: Number(DURATION_FROM_MILLISECONDS.MINUTE),
   });
 };

@@ -7,6 +7,7 @@ import type { ChatStatus } from "ai";
 import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
+// import { Streamdown } from "streamdown";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -65,6 +66,16 @@ const RenderMessage = ({
               </Markdown>
             </Box>
           );
+          // return (
+          //   <Streamdown
+          //     className={cn("chat-tables", {
+          //       "text-white dark:text-dark": message.role === "user",
+          //     })}
+          //     key={index}
+          //   >
+          //     {part.text}
+          //   </Streamdown>
+          // );
         } else if (part.type === "reasoning" && !hasText) {
           return (
             <Reasoning
