@@ -12,6 +12,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.11",
     "@ai-sdk/openai": "^2.0.15",
     "@ai-sdk/react": "^2.0.15",
     "@dnd-kit/core": "^6.1.0",

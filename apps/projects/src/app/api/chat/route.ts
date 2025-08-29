@@ -1,5 +1,6 @@
 // import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI } from "@ai-sdk/openai";
+// import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
@@ -51,12 +52,16 @@ export async function POST(req: NextRequest) {
 
   const phClient = posthogServer();
 
-  const openaiClient = createOpenAI({
+  // const openaiClient = createOpenAI({
+  //   // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok
+  //   apiKey: process.env.OPENAI_API_KEY,
+  // });
+  const googleClient = createGoogleGenerativeAI({
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.GOOGLE_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+  const model = withTracing(googleClient("gemini-2.5-flash"), phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -64,9 +69,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+  //   posthogDistinctId: session?.user?.email ?? undefined,
+  //   posthogProperties: {
+  //     conversation_id: id,
+  //     paid: subscription?.status === "active",
+  //   },
+  // });
+
   try {
     const result = streamText({
-      // model: "google/gemini-2.5-flash",
       model,
       messages: modelMessages,
       maxOutputTokens: 4000,
