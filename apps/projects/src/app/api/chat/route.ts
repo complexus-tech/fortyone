@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
-    webSearch = true,
+    webSearch = false,
     provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
     });
     return result.toUIMessageStreamResponse({
       sendReasoning: true,
+      sendSources: true,
       originalMessages: messagesFromRequest,
       onFinish: ({ messages }) => {
         saveChat({ id, messages });
