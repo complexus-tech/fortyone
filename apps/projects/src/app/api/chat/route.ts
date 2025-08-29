@@ -1,8 +1,8 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- ok */
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { UIMessage } from "ai";
+import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import type { Tool, UIMessage } from "ai";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
+    webSearch = false,
     provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
@@ -80,7 +81,12 @@ export async function POST(req: NextRequest) {
       messages: modelMessages,
       maxOutputTokens: 4000,
       stopWhen: [stepCountIs(15)],
-      tools,
+      tools: {
+        ...tools,
+        ...(webSearch
+          ? { google_search: google.tools.googleSearch({}) as Tool }
+          : {}),
+      },
       system: systemPrompt + userContext,
       experimental_transform: smoothStream({
         delayInMs: 20,
