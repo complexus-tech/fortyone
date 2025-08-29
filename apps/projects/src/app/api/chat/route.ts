@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
-    webSearch = false,
+    webSearchEnabled = false,
     provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       stopWhen: [stepCountIs(15)],
       tools: {
         ...tools,
-        ...(webSearch
+        ...(webSearchEnabled
           ? { google_search: google.tools.googleSearch({}) as Tool }
           : {}),
       },
