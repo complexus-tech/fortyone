@@ -1,5 +1,6 @@
-// import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-// import { createOpenAI } from "@ai-sdk/openai";
+/* eslint-disable turbo/no-undeclared-env-vars -- ok */
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { UIMessage } from "ai";
 import {
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
+    provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -52,30 +54,25 @@ export async function POST(req: NextRequest) {
 
   const phClient = posthogServer();
 
-  // const openaiClient = createOpenAI({
-  //   // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok
-  //   apiKey: process.env.OPENAI_API_KEY,
-  // });
+  const openaiClient = createOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
   const googleClient = createGoogleGenerativeAI({
-    // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok
     apiKey: process.env.GOOGLE_API_KEY,
   });
 
-  const model = withTracing(googleClient("gemini-2.5-flash"), phClient, {
+  const client =
+    provider === "openai"
+      ? openaiClient("gpt-5-mini-2025-08-07")
+      : googleClient("gemini-2.5-flash");
+
+  const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
       paid: subscription?.status === "active",
     },
   });
-
-  // const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
-  //   posthogDistinctId: session?.user?.email ?? undefined,
-  //   posthogProperties: {
-  //     conversation_id: id,
-  //     paid: subscription?.status === "active",
-  //   },
-  // });
 
   try {
     const result = streamText({
@@ -90,11 +87,11 @@ export async function POST(req: NextRequest) {
         chunking: "word",
       }),
       providerOptions: {
-        // openai: {
-        //   reasoningEffort: "medium",
-        //   reasoningSummary: "auto",
-        //   textVerbosity: "low",
-        // } satisfies OpenAIResponsesProviderOptions,
+        openai: {
+          reasoningEffort: "low",
+          reasoningSummary: "auto",
+          textVerbosity: "low",
+        } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
             thinkingBudget: -1,
