@@ -7,50 +7,10 @@ import {
 } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
+import { useTheme } from "next-themes";
 import { useProfile } from "@/lib/hooks/profile";
 import { useMediaQuery } from "@/hooks/media";
 import { PriorityIcon } from "../priority-icon";
-
-const SUGGESTED_PROMPTS = [
-  {
-    icon: <TeamIcon className="text-success dark:text-success" />,
-    label: "Who's on my team?",
-    value: "See a list of everyone in your current team and their roles.",
-    classes: "bg-success/10 dark:bg-success/10",
-  },
-  {
-    icon: <StoryIcon className="text-warning dark:text-warning" />,
-    label: "What's on my plate?",
-    value: "View all stories assigned to you across teams.",
-    classes: "bg-warning/10 dark:bg-warning/10",
-  },
-  {
-    icon: <NotificationsIcon className="text-info dark:text-info" />,
-    label: "What's new for me?",
-    value: "Check your latest unread notifications and updates.",
-    classes: "bg-info/10 dark:bg-info/10",
-  },
-  {
-    icon: (
-      <PriorityIcon className="text-danger dark:text-danger" priority="High" />
-    ),
-    label: "High priority work",
-    value: "Find your most urgent stories across teams to focus on.",
-    classes: "bg-danger/10 dark:bg-danger/10",
-  },
-  {
-    icon: <SunIcon className="text-secondary dark:text-white/80" />,
-    label: "Switch between light and dark mode",
-    value: "Change the app's appearance to match your preference.",
-    classes: "bg-secondary/10 dark:bg-secondary/10",
-  },
-  {
-    icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
-    label: "How can you help me?",
-    value: "Learn about what I can do and how to use the app effectively.",
-    classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
-  },
-];
 
 type SuggestedPromptsProps = {
   onPromptSelect: (prompt: string) => void;
@@ -61,9 +21,57 @@ export const SuggestedPrompts = ({
   onPromptSelect,
   isOnPage,
 }: SuggestedPromptsProps) => {
+  const { resolvedTheme } = useTheme();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
+
+  const SUGGESTED_PROMPTS = [
+    {
+      icon: <TeamIcon className="text-success dark:text-success" />,
+      label: "Who's on my team?",
+      value: "See a list of everyone in your current team and their roles.",
+      classes: "bg-success/10 dark:bg-success/10",
+    },
+    {
+      icon: <StoryIcon className="text-warning dark:text-warning" />,
+      label: "What's on my plate?",
+      value: "View all stories assigned to you across teams.",
+      classes: "bg-warning/10 dark:bg-warning/10",
+    },
+    {
+      icon: <NotificationsIcon className="text-info dark:text-info" />,
+      label: "What's new for me?",
+      value: "Check your latest unread notifications and updates.",
+      classes: "bg-info/10 dark:bg-info/10",
+    },
+    {
+      icon: (
+        <PriorityIcon
+          className="text-danger dark:text-danger"
+          priority="High"
+        />
+      ),
+      label: "High priority work",
+      value: "Find your most urgent stories across teams to focus on.",
+      classes: "bg-danger/10 dark:bg-danger/10",
+    },
+    {
+      icon: <SunIcon className="text-secondary dark:text-white/80" />,
+      label:
+        resolvedTheme === "dark"
+          ? "Switch to light mode"
+          : "Switch to dark mode",
+      value: "Change the app's appearance to match your preference.",
+      classes: "bg-secondary/10 dark:bg-secondary/10",
+    },
+    {
+      icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
+      label: "How can you help me?",
+      value: "Learn about what I can do and how to use the app effectively.",
+      classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
+    },
+  ];
   return (
     <Box
       className={cn("px-6 py-4", {
