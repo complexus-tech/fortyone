@@ -48,7 +48,7 @@ export const StoryPage = ({
       main: 72,
       side: 28,
       maxSide: 35,
-      minSide: 25,
+      minSide: 20,
     };
   };
 

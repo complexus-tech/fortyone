@@ -25,7 +25,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
           <ResizablePanel.Panel
             // collapsedSize={5}
             // collapsible
-            defaultSize={15}
+            defaultSize={14}
             maxSize={20}
             minSize={12}
           >
