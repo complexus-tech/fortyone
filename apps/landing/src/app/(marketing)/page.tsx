@@ -10,7 +10,6 @@ import {
   Maya,
   CoreValues,
 } from "@/modules/home";
-import { CoreOutcomes } from "@/modules/home/outcomes";
 
 export default function Page() {
   return (
@@ -21,7 +20,6 @@ export default function Page() {
       <CoreValues />
       {/* <Features /> */}
       <Maya />
-      <CoreOutcomes />
       <Integrations />
       <Pricing className="md:pb-16 md:pt-0" hideDescription />
       <Faqs />
