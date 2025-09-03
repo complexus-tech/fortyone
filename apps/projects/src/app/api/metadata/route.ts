@@ -3,6 +3,7 @@ import ky from "ky";
 import * as cheerio from "cheerio";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 export type LinkMetadata = {
   title?: string;
@@ -11,6 +12,11 @@ export type LinkMetadata = {
 };
 
 async function fetchMetadata(url: string): Promise<LinkMetadata | null> {
+  const session = await auth();
+  if (!session) {
+    return null;
+  }
+
   try {
     const html = await ky
       .get(url, {
