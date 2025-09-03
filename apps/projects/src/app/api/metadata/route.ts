@@ -22,6 +22,7 @@ async function fetchMetadata(url: string): Promise<LinkMetadata | null> {
           "Accept-Language": "en-US,en;q=0.5",
           "Accept-Encoding": "gzip, deflate",
           Connection: "keep-alive",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=60", // 24 hours, 1 minute stale-while-revalidate
         },
       })
       .text();
