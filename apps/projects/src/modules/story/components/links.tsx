@@ -40,7 +40,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
             {metadata?.image ? (
               <img
                 alt={metadata.title || link.title || link.url}
-                className="size-6 rounded-full object-cover"
+                className="size-6 rounded-lg object-cover"
                 src={metadata.image}
               />
             ) : (
