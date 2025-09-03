@@ -1,6 +1,4 @@
 import ky from "ky";
-import { linkTags } from "@/constants/keys";
-import { DURATION_FROM_SECONDS } from "@/constants/time";
 
 export type LinkMetadata = {
   title?: string;
@@ -8,22 +6,25 @@ export type LinkMetadata = {
   image?: string;
 };
 
-export const getLinkMetadata = async (url: string) => {
+export const getLinkMetadata = async (url: string): Promise<LinkMetadata> => {
   try {
-    const metadata = await ky
-      .get(`https://api.dub.co/metatags?url=${url}`, {
+    // Validate URL
+    const validUrl = new URL(url);
+    const response = await ky
+      .get(`/api/metadata?url=${encodeURIComponent(validUrl.href)}`, {
         next: {
-          revalidate: DURATION_FROM_SECONDS.DAY * 10,
-          tags: [linkTags.metadata(url)],
+          revalidate: 60 * 60 * 24, // 24 hours
         },
       })
       .json<LinkMetadata>();
-    return metadata;
-  } catch {
+
+    return response;
+  } catch (error) {
+    // Return empty metadata on error
     return {
-      title: "",
-      description: "",
-      image: "",
+      title: undefined,
+      description: undefined,
+      image: undefined,
     };
   }
 };

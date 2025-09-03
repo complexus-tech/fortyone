@@ -43,6 +43,7 @@
     "ai": "^5.0.15",
     "babel-plugin-react-compiler": "19.1.0-rc.2",
     "canvas-confetti": "^1.9.3",
+    "cheerio": "^1.1.2",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.0.28",
     "icons": "workspace:*",
