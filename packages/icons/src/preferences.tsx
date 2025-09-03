@@ -2,7 +2,7 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const PreferencesIcon = (props: Icon) => {
-  const { className, strokeWidth = 2.5, ...rest } = props;
+  const { className, strokeWidth = 2.8, ...rest } = props;
   return (
     <svg
       {...rest}
