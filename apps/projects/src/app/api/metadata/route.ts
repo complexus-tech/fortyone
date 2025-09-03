@@ -1,5 +1,4 @@
 /* eslint-disable no-nested-ternary -- ok */
-import ky from "ky";
 import * as cheerio from "cheerio";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -18,21 +17,8 @@ async function fetchMetadata(url: string): Promise<LinkMetadata | null> {
   }
 
   try {
-    const html = await ky
-      .get(url, {
-        timeout: 10000,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; LinkMetadataBot/1.0)",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.5",
-          "Accept-Encoding": "gzip, deflate",
-          Connection: "keep-alive",
-          "Cache-Control": "public, max-age=86400, stale-while-revalidate=60", // 24 hours, 1 minute stale-while-revalidate
-        },
-      })
-      .text();
-    const $ = cheerio.load(html);
+    // eslint-disable-next-line import/namespace -- ok
+    const $ = await cheerio.fromURL(url);
     const title =
       $('meta[property="og:title"]').attr("content") ||
       $('meta[name="twitter:title"]').attr("content") ||
@@ -83,18 +69,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Validate URL
     const validUrl = new URL(url);
-    // Use the validated URL
     const metadata = await fetchMetadata(validUrl.href);
-
     if (!metadata) {
       return NextResponse.json(
         { error: "Failed to fetch metadata" },
         { status: 500 },
       );
     }
-
     return NextResponse.json(metadata);
   } catch {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
