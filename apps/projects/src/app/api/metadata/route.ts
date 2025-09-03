@@ -40,9 +40,9 @@ async function fetchMetadata(url: string): Promise<LinkMetadata | null> {
       $('link[rel="apple-touch-icon-precomposed"]').attr("href");
 
     const finalImage = favicon
-      ? new URL(favicon as string, url).href
+      ? new URL(favicon, url).href
       : image
-        ? new URL(image as string, url).href
+        ? new URL(image, url).href
         : undefined;
 
     return {
