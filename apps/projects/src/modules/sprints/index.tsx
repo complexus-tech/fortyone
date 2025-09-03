@@ -1,9 +1,10 @@
 "use client";
-import { Box, Flex, Text } from "ui";
-import { SprintsIcon } from "icons";
+import { Box, Flex, Text, Button } from "ui";
+import { SprintsIcon, GitIcon } from "icons";
 import { useParams } from "next/navigation";
 import { BodyContainer } from "@/components/shared";
 import { NewSprintButton } from "@/components/ui";
+import { useUserRole } from "@/hooks";
 import { SprintsHeader } from "./components/header";
 import { SprintRow } from "./components/row";
 import { SprintsSkeleton } from "./components/sprints-skeleton";
@@ -13,6 +14,7 @@ export const SprintsList = () => {
   const { teamId } = useParams<{
     teamId: string;
   }>();
+  const { userRole } = useUserRole();
 
   const { data: sprints = [], isPending } = useTeamSprints(teamId);
   if (isPending) {
@@ -35,9 +37,21 @@ export const SprintsList = () => {
                 sprint to get started.
               </Text>
               <Flex gap={2}>
-                <NewSprintButton color="tertiary" size="md" teamId={teamId}>
-                  Create new sprint
-                </NewSprintButton>
+                {userRole === "member" && (
+                  <NewSprintButton color="tertiary" teamId={teamId}>
+                    Create new sprint
+                  </NewSprintButton>
+                )}
+                {userRole === "admin" && (
+                  <Button
+                    color="tertiary"
+                    href={`/settings/workspace/teams/${teamId}?tab=automations`}
+                    leftIcon={<GitIcon />}
+                    size="sm"
+                  >
+                    Set up automations
+                  </Button>
+                )}
               </Flex>
             </Box>
           </Box>

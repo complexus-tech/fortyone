@@ -13,18 +13,10 @@ import { getQueryClient } from "@/app/get-query-client";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export default function Providers({
-  children,
-  // session,
-}: {
-  children: React.ReactNode;
-  // session: Session | null;
-}) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" enableSystem>
-      <SessionProvider
-      // session={session}
-      >
+      <SessionProvider>
         <QueryClientProvider client={getQueryClient()}>
           <PostHogProvider>
             <CursorProvider>{children}</CursorProvider>

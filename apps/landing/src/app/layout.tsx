@@ -2,18 +2,11 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-// import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { body } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
-// import { auth } from "@/auth";
-// import { getWorkspaces } from "@/lib/queries/get-workspaces";
-// import { getProfile } from "@/lib/queries/profile";
-// import { workspaceKeys } from "@/lib/hooks/workspaces";
-// import { userKeys } from "@/lib/hooks/profile";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
-// import { getQueryClient } from "./get-query-client";
 
 export const metadata: Metadata = {
   title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
@@ -65,34 +58,13 @@ export const metadata: Metadata = {
 const isProduction = process.env.NODE_ENV === "production";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // const session = await auth();
-  // const queryClient = getQueryClient();
-  // if (session) {
-  //   await Promise.all([
-  //     queryClient.prefetchQuery({
-  //       queryKey: workspaceKeys.lists(),
-  //       queryFn: () => getWorkspaces(session.token),
-  //     }),
-  //     queryClient.prefetchQuery({
-  //       queryKey: userKeys.profile(),
-  //       queryFn: () => getProfile(session),
-  //     }),
-  //   ]);
-  // }
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
       </head>
       <body className={cn(body.variable)}>
-        <Providers
-        // session={session}
-        >
-          {/* <HydrationBoundary state={dehydrate(queryClient)}> */}
-          {children}
-          {/* </HydrationBoundary> */}
-        </Providers>
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
       {isProduction ? (
