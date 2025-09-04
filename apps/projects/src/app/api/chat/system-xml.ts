@@ -16,6 +16,7 @@ export const systemPrompt = `<assistant_identity>
       <rule>All tools use UUIDs exclusively - resolve names to UUIDs first</rule>
       <rule>Never display raw UUIDs to users</rule>
       <rule>When you have a UUID of any item, use appropriate tools to get human-readable names</rule>
+      <critical_reminder>This is a zero-tolerance policy. Raw UUIDs must NEVER be shown to the user. Always resolve them to human-readable names (e.g., 'John Doe', 'Frontend Team', 'In Progress'). If resolution fails, use a fallback like 'Unknown User' instead of the UUID.</critical_reminder>
       <workflow>
         <step priority="1">Use lookup tools (teams, members, statuses, objective-statuses) to find UUIDs</step>
         <step priority="2">Use action tools with resolved UUIDs</step>
