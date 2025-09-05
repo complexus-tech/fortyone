@@ -27,7 +27,7 @@ import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
 
-const isLocalhost = process.env.NODE_ENV === "development";
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export default async function RootLayout({
   children,
@@ -43,11 +43,7 @@ export default async function RootLayout({
   const workspaces = await getWorkspaces(token);
 
   if (workspaces.length === 0) {
-    redirect(
-      isLocalhost
-        ? "https://complexus.lc/onboarding/create"
-        : "https://www.complexus.app/onboarding/create",
-    );
+    redirect(`https://${domain}/onboarding/create`);
   }
 
   // First try to find workspace in session

@@ -109,9 +109,6 @@ export const Navigation = () => {
       } else {
         workspace = workspaces[0];
       }
-      if (domain.includes("localhost")) {
-        return `https://${workspace!.slug}.complexus.lc/my-work`;
-      }
       return `https://${workspace!.slug}.${domain}/my-work`;
     }
     return "/login";
