@@ -32,6 +32,7 @@ const RenderMessage = ({
   message,
   onPromptSelect,
   status,
+  isLast,
 }: {
   isLast: boolean;
   message: MayaUIMessage;
@@ -50,6 +51,7 @@ const RenderMessage = ({
     <>
       {(status === "submitted" || status === "streaming") &&
       message.role === "assistant" &&
+      isLast &&
       !hasReasoning ? (
         <Thinking />
       ) : null}
