@@ -22,19 +22,15 @@ export const HeroCards = () => {
   const { resolvedTheme } = useTheme();
 
   const cards = [
-    ...(resolvedTheme === "dark"
-      ? [
-          {
-            id: 1,
-            title: "List stories",
-            image: {
-              src: listImg,
-              srcLight: listImgLight,
-              alt: "List stories",
-            },
-          },
-        ]
-      : []),
+    {
+      id: 1,
+      title: "List stories",
+      image: {
+        src: listImg,
+        srcLight: listImgLight,
+        alt: "List stories",
+      },
+    },
     {
       id: 2,
       title: "Kanban",
@@ -44,19 +40,15 @@ export const HeroCards = () => {
         alt: "Kanban",
       },
     },
-    ...(resolvedTheme === "dark"
-      ? [
-          {
-            id: 3,
-            title: "Objective",
-            image: {
-              src: objectiveImg,
-              srcLight: objectiveImgLight,
-              alt: "Objective",
-            },
-          },
-        ]
-      : []),
+    {
+      id: 3,
+      title: "Objective",
+      image: {
+        src: objectiveImg,
+        srcLight: objectiveImgLight,
+        alt: "Objective",
+      },
+    },
   ];
 
   return (
@@ -92,7 +84,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-gray-100 bg-dark/5 p-0.5 shadow-xl shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-gray-100 bg-dark/5 p-0.5 shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Flex
@@ -122,7 +114,6 @@ export const HeroCards = () => {
                     priority
                     src={card.image.srcLight}
                   />
-                  <Box className="absolute inset-0 hidden bg-gradient-to-t from-white via-white/5 dark:block dark:from-black dark:via-black/10" />
                 </Box>
               </SwiperSlide>
             ))}
