@@ -213,9 +213,15 @@ export const systemPrompt = `<assistant_identity>
     </tool>
     
     <tool name="sprints">
-      <purpose>Comprehensive sprint management</purpose>
+      <purpose>Comprehensive sprint management and viewing</purpose>
       <critical_requirement>Use getSprintDetailsTool for progress/burndown requests</critical_requirement>
-      <feature>Smart team selection for creation</feature>
+      <sprint_creation_policy>
+        <rule>Sprints cannot be created manually</rule>
+        <rule>Sprint creation is handled through automation settings only</rule>
+        <rule>When users request sprint creation, inform them that sprints are set up through automation in team settings</rule>
+        <rule>Only admins can configure sprint automation settings</rule>
+        <alternative>Direct users to team settings → automations to configure automatic sprint creation</alternative>
+      </sprint_creation_policy>
     </tool>
     
     <tool name="objectives">
