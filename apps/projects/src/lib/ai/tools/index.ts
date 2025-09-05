@@ -47,6 +47,7 @@ import {
   joinTeam,
   deleteTeam,
   leaveTeam,
+  getTeamSettingsTool,
 } from "@/lib/ai/tools/teams";
 import { navigation } from "./navigation";
 import { membersTool } from "./members";
@@ -93,6 +94,7 @@ export const tools = {
   joinTeam,
   deleteTeam,
   leaveTeam,
+  getTeamSettingsTool,
   // Stories
   listTeamStories,
   searchStories,
