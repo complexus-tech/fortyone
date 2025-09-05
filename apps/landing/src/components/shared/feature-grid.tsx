@@ -21,7 +21,7 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group border-[0.5px] border-gray-100 bg-gradient-to-b px-6 py-8 hover:from-gray-50 dark:border-dark-50 dark:hover:from-dark-200 md:px-7 md:py-16",
+        "group border-[0.5px] border-gray-100/80 bg-gradient-to-b px-6 py-8 hover:from-gray-50 dark:border-dark-50/80 dark:hover:from-dark-200 md:px-7 md:py-16",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">
@@ -74,7 +74,7 @@ export const FeatureGrid = ({
         viewport={{ once: true, amount: 0.2 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100 dark:border-dark-50 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
+        <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-gray-100/80 dark:border-dark-50/60 md:mt-16 md:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, index) => (
             <FeatureCardComponent card={card} key={index} />
           ))}

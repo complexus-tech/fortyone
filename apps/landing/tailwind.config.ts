@@ -10,9 +10,9 @@ const config: Pick<
     fontFamily: {
       heading: ["var(--font-heading)"],
       body: [
-        // "-apple-system",
-        // "BlinkMacSystemFont",
         "var(--font-body)",
+        "-apple-system",
+        "BlinkMacSystemFont",
         "Segoe UI",
         "sans-serif",
       ],

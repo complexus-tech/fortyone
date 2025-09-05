@@ -16,7 +16,7 @@ export const Hero = () => {
       <Container className="pt-12">
         <Flex
           align="center"
-          className="mb-8 mt-12 text-center md:mt-16"
+          className="mb-8 mt-12 text-center md:mt-20"
           direction="column"
         >
           <motion.span
