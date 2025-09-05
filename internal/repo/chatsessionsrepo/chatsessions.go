@@ -144,7 +144,7 @@ func (r *repo) ListSessions(ctx context.Context, userID, workspaceID uuid.UUID) 
 		SELECT id, user_id, workspace_id, title, created_at, updated_at
 		FROM chat_sessions
 		WHERE user_id = :user_id AND workspace_id = :workspace_id
-		ORDER BY updated_at DESC
+		ORDER BY updated_at DESC LIMIT 25
 	`
 
 	var sessions []dbChatSession
