@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import { body } from "@/styles/fonts";
+import { body, heading } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <JsonLd />
       </head>
-      <body className={cn(body.variable)}>
+      <body className={cn(body.variable, heading.variable)}>
         <Providers>{children}</Providers>
         <Toaster />
       </body>

@@ -39,18 +39,6 @@ html {
   @apply overflow-x-hidden scroll-smooth font-body font-medium text-dark-200 antialiased dark:bg-black dark:text-gray-200;
 }
 
-body {
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    Inter,
-    Segoe UI,
-    Roboto,
-    Noto Sans,
-    Ubuntu,
-    sans-serif;
-}
-
 svg {
   shape-rendering: auto;
   vector-effect: non-scaling-stroke;
