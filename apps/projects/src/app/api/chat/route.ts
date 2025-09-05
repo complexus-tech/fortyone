@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
-    webSearchEnabled = true,
+    webSearchEnabled = false,
     provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
