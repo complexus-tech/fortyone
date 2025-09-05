@@ -4,7 +4,7 @@ import { SprintsIcon, GitIcon } from "icons";
 import { useParams } from "next/navigation";
 import { BodyContainer } from "@/components/shared";
 import { NewSprintButton } from "@/components/ui";
-import { useUserRole } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import { SprintsHeader } from "./components/header";
 import { SprintRow } from "./components/row";
 import { SprintsSkeleton } from "./components/sprints-skeleton";
@@ -15,6 +15,7 @@ export const SprintsList = () => {
     teamId: string;
   }>();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
 
   const { data: sprints = [], isPending } = useTeamSprints(teamId);
   if (isPending) {
@@ -30,16 +31,18 @@ export const SprintsList = () => {
             <Box className="flex flex-col items-center">
               <SprintsIcon className="h-20 w-auto" strokeWidth={1.3} />
               <Text className="mb-6 mt-8" fontSize="3xl">
-                No sprints found
+                No {getTermDisplay("sprintTerm", { variant: "plural" })} found
               </Text>
               <Text className="mb-6 max-w-md text-center" color="muted">
-                Oops! This team doesn&apos;t have any sprints yet. Create a new
-                sprint to get started.
+                Oops! This team doesn&apos;t have any{" "}
+                {getTermDisplay("sprintTerm")} yet.{" "}
+                {userRole !== "admin" &&
+                  `Ask an admin to set up ${getTermDisplay("sprintTerm")} automations.`}
               </Text>
               <Flex gap={2}>
                 {userRole === "member" && (
                   <NewSprintButton color="tertiary" teamId={teamId}>
-                    Create new sprint
+                    Create new {getTermDisplay("sprintTerm")}
                   </NewSprintButton>
                 )}
                 {userRole === "admin" && (
