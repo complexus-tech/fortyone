@@ -34,7 +34,6 @@ import {
   listSprints,
   listRunningSprints,
   getSprintDetailsTool,
-  createSprint,
   updateSprintSettings,
 } from "@/lib/ai/tools/sprints";
 import {
@@ -113,7 +112,6 @@ export const tools = {
   listSprints,
   listRunningSprints,
   getSprintDetailsTool,
-  createSprint,
   updateSprintSettings,
   objectiveStatuses: objectiveStatusesTool,
   // Key Results
