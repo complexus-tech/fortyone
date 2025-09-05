@@ -24,7 +24,7 @@ func (s *Service) EnqueueSprintAutoCreation(opts ...asynq.Option) (*asynq.TaskIn
 		asynq.Queue("automation"),
 		asynq.MaxRetry(3),
 		asynq.TaskID("sprint_auto_creation"),
-		asynq.ProcessIn(1 * time.Minute),
+		asynq.ProcessIn(30 * time.Second),
 	}
 
 	finalOpts := append(defaultOpts, opts...)
