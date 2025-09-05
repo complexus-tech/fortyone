@@ -62,7 +62,7 @@ export const FeatureGrid = ({
       >
         <Text
           as="h2"
-          className="pb-4 text-4xl font-semibold md:text-5xl"
+          className="pb-4 text-4xl font-semibold md:text-6xl"
           color="gradientDark"
         >
           {mainHeading}
