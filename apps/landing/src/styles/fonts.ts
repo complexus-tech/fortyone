@@ -1,4 +1,4 @@
-import { Englebert, Inter } from "next/font/google";
+import { Englebert, Inter_Tight as Inter, Inconsolata } from "next/font/google";
 
 export const body = Inter({
   variable: "--font-body",
@@ -13,4 +13,10 @@ export const heading = Englebert({
   subsets: ["latin"],
   weight: "400",
   style: "normal",
+});
+
+export const mono = Inconsolata({
+  variable: "--font-mono",
+  display: "swap",
+  subsets: ["latin"],
 });
