@@ -69,6 +69,7 @@ export const CreateAccountForm = () => {
       <Button
         align="center"
         className="mt-4"
+        color="invert"
         fullWidth
         loading={isLoading}
         loadingText="Creating account..."

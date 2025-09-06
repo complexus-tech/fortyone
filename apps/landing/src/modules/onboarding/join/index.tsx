@@ -15,7 +15,7 @@ export const JoinWorkspace = async ({
 
   return (
     <Box className="w-full px-6 md:max-w-md md:px-0">
-      <Logo asIcon className="relative -left-2 h-10 text-white" />
+      <Logo />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Your invitation to {workspaceName}
       </Text>
@@ -35,7 +35,13 @@ export const JoinWorkspace = async ({
       {canJoin ? (
         <JoinForm invitation={invitation} />
       ) : (
-        <Button align="center" className="md:py-3" fullWidth href="/login">
+        <Button
+          align="center"
+          className="md:py-3"
+          color="invert"
+          fullWidth
+          href="/login"
+        >
           Sign in
         </Button>
       )}

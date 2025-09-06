@@ -62,14 +62,20 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           {page === "login" ? (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Don&apos;t have an account?{" "}
-              <Link className="text-primary" href="/signup">
+              <Link
+                className="text-dark underline dark:text-white"
+                href="/signup"
+              >
                 Create one
               </Link>
             </Text>
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
-              <Link className="text-primary" href="/login">
+              <Link
+                className="text-dark underline dark:text-white"
+                href="/login"
+              >
                 Sign in
               </Link>
             </Text>
@@ -95,6 +101,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             <Button
               align="center"
               className="mt-4"
+              color="invert"
               fullWidth
               loading={loading}
               loadingText="Logging you in..."

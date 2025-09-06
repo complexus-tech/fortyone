@@ -31,7 +31,7 @@ export const Welcome = ({
 
   return (
     <Container className="max-w-md md:max-w-lg">
-      <Logo asIcon className="relative -left-2 h-10 text-white" />
+      <Logo />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Welcome to FortyOne👋
       </Text>
@@ -48,11 +48,13 @@ export const Welcome = ({
       <Box className="grid gap-4">
         <ActionCard
           description="Collaborate better by inviting your teammates to join your workspace."
+          href={redirectUrl}
           icon={<TeamIcon />}
           title="Build your team"
         />
         <ActionCard
           description="Connect your GitHub repositories and Slack channels for seamless integration."
+          href={redirectUrl}
           icon={<SettingsIcon />}
           title="Set up integrations"
         />
@@ -70,11 +72,18 @@ export const Welcome = ({
               for help)
             </>
           }
+          href={redirectUrl}
           icon={<CommandIcon />}
           title="Master shortcuts"
         />
       </Box>
-      <Button align="center" className="mt-4" fullWidth href={redirectUrl}>
+      <Button
+        align="center"
+        className="mt-4"
+        color="invert"
+        fullWidth
+        href={redirectUrl}
+      >
         Get Started
       </Button>
     </Container>

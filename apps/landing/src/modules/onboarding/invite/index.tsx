@@ -61,7 +61,7 @@ export const InviteTeam = ({
 
   return (
     <Container className="max-h-dvh max-w-[30rem] overflow-y-auto md:max-w-lg">
-      <Logo asIcon className="relative -left-1 h-10 text-white" />
+      <Logo />
       <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
         Build With Your Team
       </Text>
@@ -73,6 +73,7 @@ export const InviteTeam = ({
       <Button
         align="center"
         className="mt-4 md:h-[2.7rem]"
+        color="invert"
         disabled={!isValid}
         fullWidth
         loading={isLoading}
