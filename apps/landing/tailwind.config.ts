@@ -8,7 +8,7 @@ const config: Pick<
   darkMode: "class",
   theme: {
     fontFamily: {
-      heading: ["var(--font-heading)"],
+      heading: ["var(--font-figtree)"],
       body: [
         "var(--font-body)",
         "-apple-system",

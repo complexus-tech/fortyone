@@ -1,4 +1,9 @@
-import { Englebert, Inter_Tight as Inter, Inconsolata } from "next/font/google";
+import {
+  Englebert,
+  Inter_Tight as Inter,
+  Inconsolata,
+  Figtree,
+} from "next/font/google";
 
 export const body = Inter({
   variable: "--font-body",
@@ -17,6 +22,12 @@ export const heading = Englebert({
 
 export const mono = Inconsolata({
   variable: "--font-mono",
+  display: "swap",
+  subsets: ["latin"],
+});
+
+export const figtree = Figtree({
+  variable: "--font-figtree",
   display: "swap",
   subsets: ["latin"],
 });
