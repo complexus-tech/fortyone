@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import { body, figtree, heading, mono } from "@/styles/fonts";
+import { body, heading, mono } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           body.variable,
           heading.variable,
           mono.variable,
-          figtree.variable,
+          heading.variable,
         )}
       >
         <Providers>{children}</Providers>

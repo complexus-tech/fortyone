@@ -8,7 +8,7 @@ const config: Pick<
   darkMode: "class",
   theme: {
     fontFamily: {
-      heading: ["var(--font-figtree)"],
+      heading: ["var(--font-heading)"],
       body: [
         "var(--font-body)",
         "-apple-system",
@@ -16,6 +16,7 @@ const config: Pick<
         "Segoe UI",
         "sans-serif",
       ],
+      mono: ["var(--font-mono)"],
     },
   },
   content: [

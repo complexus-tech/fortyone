@@ -50,7 +50,7 @@ export const FeatureGrid = ({
         viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Text className="mb-8 text-sm uppercase tracking-wider opacity-70">
+        <Text className="font-mono mb-8 uppercase tracking-wider opacity-80">
           {smallHeading}
         </Text>
       </motion.div>

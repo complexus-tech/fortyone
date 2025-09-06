@@ -13,7 +13,7 @@ export const Logo = ({
   return (
     <Link
       className={cn(
-        "font-mono inline-block text-[1.6rem] font-bold text-black dark:text-white",
+        "inline-block text-[1.6rem] font-bold text-black dark:text-white",
         className,
       )}
       href="/"
