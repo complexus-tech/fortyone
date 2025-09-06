@@ -50,12 +50,20 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-6xl md:leading-[1.1]",
+                "relative z-[1] mt-8 pb-2 text-5xl font-semibold md:max-w-4xl md:text-6xl md:leading-[1.1]",
               )}
             >
               The AI Everything App for{" "}
               <span className="text-stroke-white">Projects</span> & OKRs
             </Text>
+            {/* <Text
+              as="h1"
+              className={cn(
+                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-2xl md:text-[4rem] md:leading-[1.1]",
+              )}
+            >
+              Go from planning to done With AI.
+            </Text> */}
           </motion.span>
 
           <motion.span
@@ -68,8 +76,8 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Connect every task, sprint, and project directly to your goals so
-              your team always knows what matters most.
+              Plan sprints, manage stories, and connect OKRs to daily work with
+              built-in AI for summaries, updates, and automation.
             </Text>
           </motion.span>
 
