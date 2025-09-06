@@ -3,7 +3,7 @@ import { CallToAction } from "@/components/shared";
 import { Hero, Features } from "@/modules/features/okrs";
 
 export const metadata: Metadata = {
-  title: "OKRs | Objectives and Key Results Framework | Complexus",
+  title: "OKRs | Objectives and Key Results Framework | Forty One",
   description:
     "Set and achieve strategic goals with Complexus OKRs. Our powerful framework helps teams track objectives and key results for improved performance and alignment.",
   keywords: [
@@ -19,12 +19,12 @@ export const metadata: Metadata = {
     "key results tracking",
   ],
   openGraph: {
-    title: "OKRs | Objectives and Key Results Framework | Complexus",
+    title: "OKRs | Objectives and Key Results Framework | Forty One",
     description:
       "Set and achieve strategic goals with Complexus OKRs. Our powerful framework helps teams track objectives and key results for improved performance and alignment.",
   },
   twitter: {
-    title: "OKRs | Objectives and Key Results Framework | Complexus",
+    title: "OKRs | Objectives and Key Results Framework | Forty One",
     description:
       "Set and achieve strategic goals with Complexus OKRs. Our powerful framework helps teams track objectives and key results for improved performance and alignment.",
   },

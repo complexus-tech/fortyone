@@ -9,10 +9,10 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+  title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
   description:
-    "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
-  metadataBase: new URL("https://www.complexus.app"),
+    "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+  metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management",
     "OKR software",
@@ -33,25 +33,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+    title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
-    siteName: "Complexus",
+      "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    siteName: "Forty One",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    site: "@complexus_app",
-    creator: "@complexus_app",
-    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+    site: "@fortyoneapp",
+    creator: "@fortyoneapp",
+    title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+      "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   },
   alternates: {
     canonical: "/",
     languages: {
-      "en-US": "https://www.complexus.app",
-      "x-default": "https://www.complexus.app",
+      "en-US": "https://www.fortyone.app",
+      "x-default": "https://www.fortyone.app",
     },
   },
 };

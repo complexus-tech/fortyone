@@ -3,7 +3,7 @@ import { CallToAction } from "@/components/shared";
 import { Hero, Features } from "@/modules/features/stories";
 
 export const metadata: Metadata = {
-  title: "Stories | Task Management & Project Tracking | Complexus",
+  title: "Stories | Task Management & Project Tracking | Forty One",
   description:
     "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   keywords: [
@@ -17,12 +17,12 @@ export const metadata: Metadata = {
     "project tracking",
   ],
   openGraph: {
-    title: "Stories | Task Management & Project Tracking | Complexus",
+    title: "Stories | Task Management & Project Tracking | Forty One",
     description:
       "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   },
   twitter: {
-    title: "Stories | Task Management & Project Tracking | Complexus",
+    title: "Stories | Task Management & Project Tracking | Forty One",
     description:
       "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   },
