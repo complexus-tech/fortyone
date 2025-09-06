@@ -17,7 +17,7 @@ export default function Unauthorized() {
         </Text>
         <Flex gap={2}>
           <Back />
-          <Button color="tertiary" href="https://complexus.app/contact">
+          <Button color="tertiary" href="https://fortyone.app/contact">
             Contact Support
           </Button>
         </Flex>

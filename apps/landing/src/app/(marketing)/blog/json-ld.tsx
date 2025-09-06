@@ -3,12 +3,12 @@ import type { WithContext, Blog, BreadcrumbList } from "schema-dts";
 const blogSchema: WithContext<Blog> = {
   "@context": "https://schema.org",
   "@type": "Blog",
-  name: "Forty One Project Management Blog",
+  name: "FortyOne Project Management Blog",
   description:
     "Expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
   publisher: {
     "@type": "Organization",
-    name: "Forty One",
+    name: "FortyOne",
     logo: "https://fortyone.app/images/logo.png",
   },
 };

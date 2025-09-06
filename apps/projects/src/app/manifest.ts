@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Complexus",
-    short_name: "Complexus",
+    name: "FortyOne",
+    short_name: "FortyOne",
     description: "A Product Management Platform",
     start_url: "/",
     display: "standalone",

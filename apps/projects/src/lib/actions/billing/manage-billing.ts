@@ -6,7 +6,7 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 export const manageBilling = async (
-  returnUrl = "https://www.complexus.app/login",
+  returnUrl = "https://www.fortyone.app/login",
 ) => {
   try {
     const session = await auth();

@@ -1,5 +1,5 @@
 import { Flex, Box, Text } from "ui";
-import { ComplexusLogo } from "@/components/ui";
+import { FortyOneLogo } from "@/components/ui";
 
 export default function Loading() {
   return (
@@ -10,7 +10,7 @@ export default function Loading() {
     >
       <Flex align="center" direction="column" justify="center">
         <Box className="aspect-square w-max animate-pulse rounded-full bg-primary p-4">
-          <ComplexusLogo className="h-8 text-white" />
+          <FortyOneLogo className="h-8 text-white" />
         </Box>
         <Text className="mt-4" color="muted" fontWeight="medium">
           Loading workspace...

@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "icons";
 import { Box, Button, Text } from "ui";
 import { useEffect } from "react";
 import { Instrument_Sans as InstrumentSans } from "next/font/google";
-import { ComplexusLogo } from "@/components/ui";
+import { FortyOneLogo } from "@/components/ui";
 
 const font = InstrumentSans({
   subsets: ["latin"],
@@ -27,7 +27,7 @@ export default function GlobalError({
       <body>
         <Box className="flex h-screen items-center justify-center">
           <Box className="flex flex-col items-center">
-            <ComplexusLogo className="h-8 text-white" />
+            <FortyOneLogo className="h-8 text-white" />
             <Text className="mb-6 mt-10" fontSize="3xl">
               There was an error
             </Text>

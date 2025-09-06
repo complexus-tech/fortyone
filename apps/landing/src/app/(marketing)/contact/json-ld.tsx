@@ -3,12 +3,12 @@ import type { ContactPage, WithContext } from "schema-dts";
 const contactPage: WithContext<ContactPage> = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  name: "Contact Forty One",
+  name: "Contact FortyOne",
   description:
-    "Contact page for Forty One - Modern OKR & Project Management Platform",
+    "Contact page for FortyOne - Modern OKR & Project Management Platform",
   mainEntity: {
     "@type": "Organization",
-    name: "Forty One",
+    name: "FortyOne",
     url: "https://fortyone.app",
     logo: "https://fortyone.app/images/logo.png",
     contactPoint: {

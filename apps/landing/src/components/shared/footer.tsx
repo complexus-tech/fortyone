@@ -43,7 +43,7 @@ const Copyright = () => {
       <Box className="3xl:gap-16 flex gap-8">
         <Link
           className="hover:text-primary"
-          href="https://x.com/complexus_app"
+          href="https://x.com/fortyoneapp"
           target="_blank"
         >
           <span className="sr-only">Twitter</span>
@@ -80,8 +80,7 @@ const Copyright = () => {
         </Link>
         |
         <Text fontSize="sm">
-          © {new Date().getFullYear()} Complexus LLC &bull; All rights
-          reserved.
+          © {new Date().getFullYear()} FortyOne LLC &bull; All rights reserved.
         </Text>
       </Box>
     </Box>
@@ -133,7 +132,7 @@ export const Footer = () => {
   const resources = [
     {
       title: "Help Center",
-      href: "https://docs.complexus.app",
+      href: "https://docs.fortyone.app",
     },
     {
       title: "Blog",
@@ -193,7 +192,7 @@ export const Footer = () => {
         <Copyright />
         <Flex className="mt-6" justify="between">
           <Text color="muted" fontSize="sm">
-            Forty One is a product of Complexus LLC.
+            FortyOne is a product of FortyOne LLC.
           </Text>
           <Flex className="flex gap-5">
             <Tooltip title="System">

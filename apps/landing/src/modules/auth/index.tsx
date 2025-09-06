@@ -58,8 +58,8 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             fontWeight="semibold"
           >
             {page === "login"
-              ? "Sign in to Complexus"
-              : "Get started with Complexus"}
+              ? "Sign in to FortyOne"
+              : "Get started with FortyOne"}
           </Text>
           {page === "login" ? (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
@@ -124,7 +124,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             </Button>
           </form>
           <Text className="mt-3 pl-[1px] text-[90%]" color="muted">
-            &copy; {new Date().getFullYear()} &bull; Powered by Complexus &bull;
+            &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
             All Rights Reserved.
           </Text>
         </>

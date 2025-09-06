@@ -62,7 +62,7 @@ export const CreateAccountForm = () => {
         />
         <Text color="muted">
           I&apos;d like to receive occasional product updates and tips from
-          Complexus.
+          FortyOne.
         </Text>
       </label>
 

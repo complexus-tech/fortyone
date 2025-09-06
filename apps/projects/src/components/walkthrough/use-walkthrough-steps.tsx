@@ -14,7 +14,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         {
           id: "welcome",
           target: "[data-workspace-switcher]",
-          title: `Welcome ${session?.user?.name || "to Complexus"}! 👋`,
+          title: `Welcome ${session?.user?.name || "to FortyOne"}! 👋`,
           content: (
             <Box className="space-y-3">
               <Text color="muted">
@@ -170,7 +170,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           content: (
             <Box className="space-y-3">
               <Text color="muted">
-                Complexus is built for speed. Learn keyboard shortcuts to boost
+                FortyOne is built for speed. Learn keyboard shortcuts to boost
                 your productivity.
               </Text>
               <Text color="muted">

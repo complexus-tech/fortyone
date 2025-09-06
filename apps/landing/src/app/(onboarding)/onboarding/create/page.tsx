@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CreateWorkspace } from "@/modules/onboarding/create";
 
 export const metadata: Metadata = {
-  title: "Create Workspace - Complexus",
+  title: "Create Workspace - FortyOne",
   description: "Create a new workspace",
 };
 

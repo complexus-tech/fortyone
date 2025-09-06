@@ -1,6 +1,6 @@
 import type { Icon } from "icons/src/types";
 
-export const ComplexusLogo = ({ className }: Icon) => {
+export const FortyOneLogo = ({ className }: Icon) => {
   return (
     <svg
       className={className}

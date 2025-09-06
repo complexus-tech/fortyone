@@ -3,9 +3,9 @@ import { CallToAction } from "@/components/shared";
 import { Hero, Features } from "@/modules/features/stories";
 
 export const metadata: Metadata = {
-  title: "Stories | Task Management & Project Tracking | Forty One",
+  title: "Stories | Task Management & Project Tracking | FortyOne",
   description:
-    "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
+    "Streamline your project management with FortyOne Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   keywords: [
     "project management stories",
     "task tracking",
@@ -17,14 +17,14 @@ export const metadata: Metadata = {
     "project tracking",
   ],
   openGraph: {
-    title: "Stories | Task Management & Project Tracking | Forty One",
+    title: "Stories | Task Management & Project Tracking | FortyOne",
     description:
-      "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
+      "Streamline your project management with FortyOne Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   },
   twitter: {
-    title: "Stories | Task Management & Project Tracking | Forty One",
+    title: "Stories | Task Management & Project Tracking | FortyOne",
     description:
-      "Streamline your project management with Complexus Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
+      "Streamline your project management with FortyOne Stories. Create, track, and manage tasks efficiently with our intuitive story-based workflow system.",
   },
 };
 

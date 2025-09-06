@@ -8,7 +8,7 @@ import { CallToAction } from "@/components/shared";
 import { BlogJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
-  title: "Project Management Resources & Guides | Forty One Blog",
+  title: "Project Management Resources & Guides | FortyOne Blog",
   description:
     "Access expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
   keywords: [
@@ -22,12 +22,12 @@ export const metadata: Metadata = {
     "project management best practices",
   ],
   openGraph: {
-    title: "Project Management Resources & Guides | Forty One Blog",
+    title: "Project Management Resources & Guides | FortyOne Blog",
     description:
       "Access expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
   },
   twitter: {
-    title: "Project Management Resources & Guides | Forty One Blog",
+    title: "Project Management Resources & Guides | FortyOne Blog",
     description:
       "Access expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
   },

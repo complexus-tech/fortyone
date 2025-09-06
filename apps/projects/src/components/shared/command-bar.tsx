@@ -56,7 +56,7 @@ export const CommandBar = ({
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.complexus.app?signedOut=true";
+      window.location.href = "https://www.fortyone.app?signedOut=true";
     }
   };
 

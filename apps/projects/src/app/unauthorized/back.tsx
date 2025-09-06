@@ -11,7 +11,7 @@ export const Back = () => {
       await logOut();
       analytics.logout(true);
     } finally {
-      window.location.href = "https://www.complexus.app?signedOut=true";
+      window.location.href = "https://www.fortyone.app?signedOut=true";
     }
   };
 

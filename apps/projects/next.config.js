@@ -33,11 +33,11 @@ module.exports = {
       },
       {
         protocol: "https",
-        hostname: "www.complexus.app",
+        hostname: "www.fortyone.app",
       },
       {
         protocol: "https",
-        hostname: "www.complexus.lc",
+        hostname: "www.fortyone.lc",
       },
     ],
   },

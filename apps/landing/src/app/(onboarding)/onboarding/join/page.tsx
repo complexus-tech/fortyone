@@ -5,7 +5,7 @@ import { verifyInvitation } from "@/lib/queries/verify-invitation";
 import { Logo } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Join Workspace - Complexus",
+  title: "Join Workspace - FortyOne",
   description: "Join a workspace",
 };
 

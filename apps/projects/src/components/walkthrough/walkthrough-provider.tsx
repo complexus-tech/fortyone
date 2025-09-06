@@ -89,7 +89,7 @@ export const WalkthroughProvider = ({
   const { mutate: updateProfile } = useUpdateProfileMutation();
   const [walkthroughClosedAt, setWalkthroughClosedAt] = useLocalStorage<
     string | null
-  >("complexus:walkthrough-closed-at", null);
+  >("fortyone:walkthrough-closed-at", null);
 
   const [state, setState] = useState<WalkthroughState>({
     isActive: false,

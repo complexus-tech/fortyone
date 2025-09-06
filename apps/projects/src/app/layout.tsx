@@ -17,8 +17,8 @@ const font = InstrumentSans({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Complexus",
-    default: "Complexus",
+    template: "%s | FortyOne",
+    default: "FortyOne",
   },
 };
 

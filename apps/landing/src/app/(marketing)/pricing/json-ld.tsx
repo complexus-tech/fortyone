@@ -3,7 +3,7 @@ import type { WithContext, Product } from "schema-dts";
 const pricingPage: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Forty One Project Management Platform",
+  name: "FortyOne Project Management Platform",
   description:
     "A comprehensive project management solution featuring OKR tracking, sprint planning, and team collaboration tools.",
   offers: {
@@ -74,7 +74,7 @@ const pricingPage: WithContext<Product> = {
   },
   brand: {
     "@type": "Brand",
-    name: "Forty One",
+    name: "FortyOne",
     logo: "https://fortyone.app/images/logo.png",
   },
 };

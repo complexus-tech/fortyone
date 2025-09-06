@@ -5,8 +5,8 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 
 export const metadata: Metadata = {
-  title: "Welcome - Complexus",
-  description: "Welcome to Complexus",
+  title: "Welcome - FortyOne",
+  description: "Welcome to FortyOne",
 };
 
 export default async function WelcomePage() {

@@ -134,7 +134,7 @@ export const Sidebar = () => {
                   </Menu.Item>
                   <Menu.Item
                     onSelect={() => {
-                      window.open("https://docs.complexus.app", "_blank");
+                      window.open("https://docs.fortyone.app", "_blank");
                     }}
                   >
                     <DocsIcon />

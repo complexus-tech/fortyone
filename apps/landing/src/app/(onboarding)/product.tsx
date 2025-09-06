@@ -30,7 +30,7 @@ export const ProductImage = () => {
           Connect with us
         </Text>
         <Box className="3xl:gap-16 flex gap-8">
-          <Link href="https://x.com/complexus_app" target="_blank">
+          <Link href="https://x.com/fortyoneapp" target="_blank">
             <TwitterIcon className="dark:hover:text-primary" />
           </Link>
           <Link

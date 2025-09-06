@@ -20,16 +20,15 @@ export const Hero = () => {
           color="gradient"
           fontWeight="medium"
         >
-          Achieve your goals with Complexus
+          Achieve your goals with FortyOne
         </Text>
         <Text
           className="mb-6 max-w-6xl text-xl leading-snug opacity-80 md:mb-20 md:text-2xl"
           fontWeight="normal"
         >
-          At Complexus, we believe in simplifying project management for teams
-          of all sizes. Our platform is designed to empower you to organize
-          tasks, collaborate effectively, and achieve your project goals with
-          ease.
+          At FortyOne, we believe in simplifying project management for teams of
+          all sizes. Our platform is designed to empower you to organize tasks,
+          collaborate effectively, and achieve your project goals with ease.
         </Text>
       </Container>
     </Box>

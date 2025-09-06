@@ -9,9 +9,9 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
+  title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
   description:
-    "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management",
@@ -33,19 +33,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
+    title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
-    siteName: "Forty One",
+      "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    siteName: "FortyOne",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "Meet Forty One - AI-powered all-in-one Projects & OKRs platform",
+    title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
     description:
-      "Forty One is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+      "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
   },
   alternates: {
     canonical: "/",

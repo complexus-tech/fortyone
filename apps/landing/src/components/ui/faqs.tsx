@@ -25,23 +25,23 @@ const faqItems: FaqItem[] = [
       "Maya accelerates planning and execution by drafting stories from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
   },
   {
-    question: "How does Complexus link OKRs to daily work?",
+    question: "How does FortyOne link OKRs to daily work?",
     answer:
       "Objectives and key results are first class. You can link stories and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
   },
   {
-    question: "How is Complexus priced? Is there a free plan?",
+    question: "How is FortyOne priced? Is there a free plan?",
     answer:
       "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members to get started quickly. Paid plans are per user with monthly or annual billing, and annual saves 20%. Higher tiers unlock advanced workflows, custom terminology and permissions, unlimited teams, and priority support. You can upgrade, downgrade, or cancel at any time.",
   },
   {
     question:
-      "How does Complexus handle security and privacy? Is private cloud available?",
+      "How does FortyOne handle security and privacy? Is private cloud available?",
     answer:
       "We use industry standard encryption in transit and at rest, support SSO with Google, and provide role based permissions and private teams to control access. Audit friendly activity history and fine grained visibility help maintain compliance practices. For organizations with stricter controls, the Enterprise plan offers private cloud or on premise deployment with tailored onboarding.",
   },
   {
-    question: "Can Complexus adapt to our workflow?",
+    question: "Can FortyOne adapt to our workflow?",
     answer:
       "Yes. Teams can customize statuses and workflows, define their own terminology, and set granular permissions by role or team. Automations help reduce repetitive work, and you can structure backlogs and boards to mirror how your org plans and executes. As needs evolve, you can adjust configurations without breaking historical data or reports.",
   },

@@ -5,7 +5,7 @@ import { Box, Flex, Input, Text, Button } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { redirect } from "next/navigation";
-import { ComplexusLogo } from "@/components/ui";
+import { FortyOneLogo } from "@/components/ui";
 import { logIn } from "./actions";
 
 export const LoginPage = () => {
@@ -39,7 +39,7 @@ export const LoginPage = () => {
     <Flex align="center" className="h-screen" justify="center">
       <Box className="mx-auto w-full max-w-md rounded-xl">
         <Box className="mx-auto w-max rounded-full bg-primary p-3.5">
-          <ComplexusLogo className="h-8 w-auto text-white" />
+          <FortyOneLogo className="h-8 w-auto text-white" />
         </Box>
         <Text
           align="center"
@@ -79,7 +79,7 @@ export const LoginPage = () => {
           </Button>
         </form>
         <Text className="textt-[90%] mt-3 pl-[1px]" color="muted">
-          &copy; {new Date().getFullYear()} &bull; Powered by Complexus &bull;
+          &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
           All Rights Reserved.
         </Text>
       </Box>

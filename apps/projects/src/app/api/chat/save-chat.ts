@@ -52,7 +52,7 @@ export const saveChat = async ({
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
       },
-      prompt: `You're generating a short title for a conversation in Complexus, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
+      prompt: `You're generating a short title for a conversation in FortyOne, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
     
       User message: "${messageContent}"`,
     });
