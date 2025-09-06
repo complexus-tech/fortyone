@@ -54,7 +54,7 @@ export const HeroCards = () => {
   return (
     <Box className="relative">
       <Container className="relative mt-12">
-        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[100px] -translate-x-1/2 dark:bg-white/15 md:h-[600px] md:w-[800px]" />
+        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[100px] -translate-x-1/2 bg-warning/10 dark:bg-white/15 md:h-[600px] md:w-[800px]" />
         <Box
           className="relative"
           onMouseEnter={() => {
