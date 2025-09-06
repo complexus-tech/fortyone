@@ -11,7 +11,14 @@ import { BlogIcon, DocsIcon } from "icons";
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: <MainLogo className="h-6 relative -left-3.5" />,
+    title: (
+      <div className="text-[1.5rem] font-bold text-black dark:text-white">
+        forty
+        <span className="ml-0.5 inline-block bg-[#000000] px-0.5 pb-0.5 leading-none text-white dark:bg-white dark:text-black">
+          one
+        </span>
+      </div>
+    ),
   },
   // see https://fumadocs.dev/docs/ui/navigation/links
   links: [],
