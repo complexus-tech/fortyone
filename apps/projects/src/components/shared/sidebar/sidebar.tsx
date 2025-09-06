@@ -22,13 +22,14 @@ export const Sidebar = () => {
   const { userRole } = useUserRole();
 
   return (
-    <Box className="flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:from-[#000000] dark:to-dark-300/60">
-      <Box className="px-4">
+    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark-300">
+      <div className="pointer-events-none absolute inset-0 bg-[url(/noise.png)] bg-repeat opacity-30" />
+      <Box className="relative z-[1] px-4">
         <Header />
         <Navigation />
         <Teams />
       </Box>
-      <Box>
+      <Box className="relative z-[1]">
         <Box className="mb-2.5 px-3.5">
           {tier === "free" && (
             <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
