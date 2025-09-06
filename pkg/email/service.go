@@ -177,8 +177,8 @@ func (s *service) SendTemplatedEmail(ctx context.Context, templateEmail Template
 	// Add default data that all templates need
 	data := map[string]any{
 		"Year":        time.Now().Year(),
-		"LogoURL":     "https://complexus.app/images/logo.png",
-		"CompanyName": "Complexus",
+		"LogoURL":     "https://fortyone.app/images/logo.png",
+		"CompanyName": "FortyOne",
 	}
 
 	// If templateEmail.Data is provided, merge it with our default data

@@ -580,7 +580,7 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Ev
 		"INVITER_NAME":   payload.InviterName,
 		"INVITEE_NAME":   payload.InviteeName,
 		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.complexus.app", payload.WorkspaceSlug),
+		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
 		"ROLE":           payload.Role,
 		"LOGIN_URL":      fmt.Sprintf("%s/login", c.websiteURL),
 	}

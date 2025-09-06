@@ -29,7 +29,7 @@ import (
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
-	restrictedSlugs       = []string{"admin", "internal", "qa", "staging", "ops", "team", "complexus", "dev", "test", "prod", "staging", "development", "testing", "production", "staff", "hr", "finance", "legal", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "auth"}
+	restrictedSlugs       = []string{"admin", "internal", "qa", "staging", "ops", "team", "complexus", "dev", "test", "prod", "staging", "development", "testing", "production", "staff", "hr", "finance", "legal", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "auth", "fortyone", "forty-one"}
 )
 
 type Handlers struct {

@@ -36,7 +36,7 @@ var restrictedSlugs = []string{
 	"dev", "test", "prod", "staging", "development", "testing",
 	"production", "staff", "hr", "finance", "legal", "marketing",
 	"sales", "support", "it", "security", "engineering", "design",
-	"product", "auth",
+	"product", "auth", "fortyone", "forty-one",
 }
 
 // AttachmentsService provides workspace logo operations.

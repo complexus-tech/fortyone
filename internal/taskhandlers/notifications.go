@@ -175,7 +175,7 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	parsedMessage := parseNotificationMessage(notificationMsg)
 
 	// Send email with real data
-	workspaceURL := fmt.Sprintf("https://%s.complexus.app", data.WorkspaceSlug)
+	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
 
 	if err := h.brevoService.SendEmailNotification(ctx, brevo.TemplateNotification, brevo.EmailNotificationParams{
 		UserName:            data.UserName,
