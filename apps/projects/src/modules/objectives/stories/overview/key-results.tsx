@@ -28,7 +28,7 @@ import { differenceInDays, format } from "date-fns";
 import { cn } from "lib";
 import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import {
   useCreateKeyResultMutation,
@@ -346,7 +346,6 @@ const Okr = ({
 
 export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
-  const { userRole } = useUserRole();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const keyResultMutation = useCreateKeyResultMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
@@ -356,6 +355,7 @@ export const KeyResults = () => {
   );
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-key-results",
@@ -448,7 +448,7 @@ export const KeyResults = () => {
           })}
         </Text>
         <Flex align="center" gap={2}>
-          {userRole !== "guest" && (
+          {isAdminOrOwner ? (
             <Button
               color="tertiary"
               disabled={isLoading}
@@ -475,7 +475,7 @@ export const KeyResults = () => {
                 </>
               )}
             </Button>
-          )}
+          ) : null}
 
           {keyResults.length > 0 && (
             <NewKeyResultButton className="capitalize" size="sm" />
