@@ -1,4 +1,8 @@
-import { Inter_Tight as Inter, Inconsolata, Figtree } from "next/font/google";
+import {
+  Inter_Tight as Inter,
+  Inconsolata,
+  Instrument_Sans as InstrumentSans,
+} from "next/font/google";
 
 export const body = Inter({
   variable: "--font-body",
@@ -13,8 +17,9 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = Figtree({
+export const heading = InstrumentSans({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],
+  weight: "variable",
 });
