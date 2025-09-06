@@ -1,35 +1,35 @@
-# Main landing app (complexus.lc)
-complexus.lc {
+# Main landing app (fortyone.lc)
+fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3000
 }
 
-# Docs app (docs.complexus.lc)
-docs.complexus.lc {
+# Docs app (docs.fortyone.lc)
+docs.fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3002
 }
 
 # Projects app - handles specific workspace subdomains
-qa.complexus.lc {
+qa.fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3001
 }
 
-payments.complexus.lc {
+payments.fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3001
 }
 
-growth.complexus.lc {
+growth.fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3001
 }
 
 # Optional: redirect www to main domain
-www.complexus.lc {
+www.fortyone.lc {
 	tls internal
-	redir https://complexus.lc{uri}
+	redir https://fortyone.lc{uri}
 }
 
 
