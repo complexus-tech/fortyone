@@ -85,8 +85,8 @@ export const Logo = ({
   // fill,
 }: {
   className?: string;
-  // asIcon?: boolean;
-  // fill?: string;
+  asIcon?: boolean;
+  fill?: string;
 }) => {
   return (
     <Link
