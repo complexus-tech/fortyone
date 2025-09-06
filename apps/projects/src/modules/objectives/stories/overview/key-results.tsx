@@ -28,7 +28,7 @@ import { differenceInDays, format } from "date-fns";
 import { cn } from "lib";
 import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useMediaQuery, useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import {
   useCreateKeyResultMutation,
@@ -346,6 +346,7 @@ const Okr = ({
 
 export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const keyResultMutation = useCreateKeyResultMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
@@ -440,37 +441,42 @@ export const KeyResults = () => {
   return (
     <Box className="my-8">
       <Flex align="center" className="mb-3" justify="between">
-        <Text className="text-lg capitalize antialiased" fontWeight="semibold">
+        <Text className="text-lg capitalize" fontWeight="semibold">
           {getTermDisplay("keyResultTerm", {
             variant: "plural",
             capitalize: true,
           })}
         </Text>
         <Flex align="center" gap={2}>
-          <Button
-            color="tertiary"
-            disabled={isLoading}
-            leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-            onClick={() => {
-              submit({ objective, keyResults });
-            }}
-            size="sm"
-            variant="naked"
-          >
-            {isLoading ? (
-              <Thinking message={isDesktop ? "Maya is thinking" : "Thinking"} />
-            ) : (
-              <>
-                Suggest{" "}
-                {isDesktop
-                  ? getTermDisplay("keyResultTerm", {
-                      capitalize: true,
-                      variant: "plural",
-                    })
-                  : null}
-              </>
-            )}
-          </Button>
+          {userRole !== "guest" && (
+            <Button
+              color="tertiary"
+              disabled={isLoading}
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              onClick={() => {
+                submit({ objective, keyResults });
+              }}
+              size="sm"
+              variant="naked"
+            >
+              {isLoading ? (
+                <Thinking
+                  message={isDesktop ? "Maya is thinking" : "Thinking"}
+                />
+              ) : (
+                <>
+                  Suggest{" "}
+                  {isDesktop
+                    ? getTermDisplay("keyResultTerm", {
+                        capitalize: true,
+                        variant: "plural",
+                      })
+                    : null}
+                </>
+              )}
+            </Button>
+          )}
+
           {keyResults.length > 0 && (
             <NewKeyResultButton className="capitalize" size="sm" />
           )}
