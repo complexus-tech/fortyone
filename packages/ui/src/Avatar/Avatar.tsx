@@ -13,8 +13,8 @@ const avatar = cva(
         full: "rounded-full",
         none: "rounded-none",
         sm: "rounded-sm",
-        md: "rounded-md",
-        lg: "rounded-[0.6rem]",
+        md: "rounded-lg",
+        lg: "rounded-[0.7rem]",
       },
       color: {
         primary: "text-white bg-primary",
