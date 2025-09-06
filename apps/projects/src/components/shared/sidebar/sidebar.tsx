@@ -22,8 +22,7 @@ export const Sidebar = () => {
   const { userRole } = useUserRole();
 
   return (
-    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark-300">
-      <div className="pointer-events-none absolute inset-0 bg-[url(/noise.png)] bg-repeat opacity-30" />
+    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark">
       <Box className="relative z-[1] px-4">
         <Header />
         <Navigation />
