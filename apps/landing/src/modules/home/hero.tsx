@@ -53,7 +53,8 @@ export const Hero = () => {
                 "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-4xl md:text-6xl md:leading-[1.1]",
               )}
             >
-              The AI Everything App for Projects & OKRs
+              The AI Everything App for{" "}
+              <span className="text-stroke-white">Projects</span> & OKRs
             </Text>
           </motion.span>
 
