@@ -3,13 +3,13 @@ import type { WithContext, Blog, BreadcrumbList } from "schema-dts";
 const blogSchema: WithContext<Blog> = {
   "@context": "https://schema.org",
   "@type": "Blog",
-  name: "Complexus Project Management Blog",
+  name: "Forty One Project Management Blog",
   description:
     "Expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
   publisher: {
     "@type": "Organization",
-    name: "Complexus",
-    logo: "https://complexus.app/images/logo.png",
+    name: "Forty One",
+    logo: "https://fortyone.app/images/logo.png",
   },
 };
 
@@ -21,7 +21,7 @@ const breadcrumbSchema: WithContext<BreadcrumbList> = {
       "@type": "ListItem",
       position: 1,
       item: {
-        "@id": "https://complexus.app",
+        "@id": "https://fortyone.app",
         name: "Home",
       },
     },
@@ -29,7 +29,7 @@ const breadcrumbSchema: WithContext<BreadcrumbList> = {
       "@type": "ListItem",
       position: 2,
       item: {
-        "@id": "https://complexus.app/blog",
+        "@id": "https://fortyone.app/blog",
         name: "Blog",
       },
     },

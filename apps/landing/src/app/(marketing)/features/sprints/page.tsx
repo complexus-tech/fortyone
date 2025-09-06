@@ -3,7 +3,7 @@ import { CallToAction } from "@/components/shared";
 import { Hero, Features } from "@/modules/features/sprints";
 
 export const metadata: Metadata = {
-  title: "Sprints | Agile Sprint Planning & Management | Complexus",
+  title: "Sprints | Agile Sprint Planning & Management | Forty One",
   description:
     "Plan, execute and track sprints efficiently with Complexus Sprint Management. Streamline your agile development process and boost team productivity.",
   keywords: [
@@ -19,12 +19,12 @@ export const metadata: Metadata = {
     "agile team management",
   ],
   openGraph: {
-    title: "Sprints | Agile Sprint Planning & Management | Complexus",
+    title: "Sprints | Agile Sprint Planning & Management | Forty One",
     description:
       "Plan, execute and track sprints efficiently with Complexus Sprint Management. Streamline your agile development process and boost team productivity.",
   },
   twitter: {
-    title: "Sprints | Agile Sprint Planning & Management | Complexus",
+    title: "Sprints | Agile Sprint Planning & Management | Forty One",
     description:
       "Plan, execute and track sprints efficiently with Complexus Sprint Management. Streamline your agile development process and boost team productivity.",
   },

@@ -3,14 +3,14 @@ import type { ContactPage, WithContext } from "schema-dts";
 const contactPage: WithContext<ContactPage> = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  name: "Contact Complexus",
+  name: "Contact Forty One",
   description:
-    "Contact page for Complexus - Modern OKR & Project Management Platform",
+    "Contact page for Forty One - Modern OKR & Project Management Platform",
   mainEntity: {
     "@type": "Organization",
-    name: "Complexus",
-    url: "https://complexus.app",
-    logo: "https://complexus.app/images/logo.png",
+    name: "Forty One",
+    url: "https://fortyone.app",
+    logo: "https://fortyone.app/images/logo.png",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
