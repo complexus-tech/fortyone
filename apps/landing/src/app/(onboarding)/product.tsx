@@ -26,30 +26,30 @@ export const ProductImage = () => {
         src="/images/login-light.webp"
       />
       <Container className="absolute inset-0 z-10 flex flex-col items-center justify-end bg-gradient-to-t from-gray-50 via-gray-50 via-30% py-28 dark:from-black dark:via-black">
-        <Text align="center" className="mb-8 opacity-80" color="muted">
+        <Text align="center" className="mb-8" color="muted">
           Connect with us
         </Text>
         <Box className="3xl:gap-16 flex gap-8">
           <Link href="https://x.com/fortyoneapp" target="_blank">
-            <TwitterIcon className="dark:hover:text-primary" />
+            <TwitterIcon className="text-dark dark:text-white dark:hover:text-primary" />
           </Link>
           <Link
             href="https://www.linkedin.com/company/complexus-tech/"
             target="_blank"
           >
-            <LinkedinIcon className="dark:hover:text-primary" />
+            <LinkedinIcon className="text-dark dark:text-white dark:hover:text-primary" />
           </Link>
           <Link
             href="https://www.instagram.com/complexus_tech/"
             target="_blank"
           >
-            <InstagramIcon className="dark:hover:text-primary" />
+            <InstagramIcon className="text-dark dark:text-white dark:hover:text-primary" />
           </Link>
           <Link href="https://www.facebook.com/complexus.tech" target="_blank">
-            <FacebookIcon className="dark:hover:text-primary" />
+            <FacebookIcon className="text-dark dark:text-white dark:hover:text-primary" />
           </Link>
         </Box>
-        <Text className="mt-8 text-[0.95rem] opacity-90" color="muted">
+        <Text className="mt-8 text-[0.95rem]" color="muted">
           By{" "}
           {pathname?.includes("signup")
             ? "signing up"
@@ -57,11 +57,11 @@ export const ProductImage = () => {
               ? "signing in"
               : "continuing"}
           , you agree to our{" "}
-          <Link className="text-primary" href="/terms">
+          <Link className="text-dark underline dark:text-white" href="/terms">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link className="text-primary" href="/privacy">
+          <Link className="text-dark underline dark:text-white" href="/privacy">
             Privacy Policy
           </Link>
         </Text>
