@@ -15,6 +15,7 @@ const config: Pick<
         "Segoe UI",
         "sans-serif",
       ],
+      heading: ["var(--font-heading)"],
     },
   },
   content: [

@@ -36,7 +36,16 @@
 
 body,
 html {
-  @apply overflow-x-hidden scroll-smooth font-body font-medium tracking-wide text-dark-200 antialiased dark:bg-black dark:text-gray-200;
+  @apply overflow-x-hidden scroll-smooth font-body text-[15px] font-medium tracking-wide text-dark-200 antialiased dark:bg-black dark:text-gray-200;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  /* font-family: var(--font-heading); */
 }
 
 svg {

@@ -1,6 +1,6 @@
-import { MainLogo } from "@/components/logo";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { BlogIcon, DocsIcon } from "icons";
+import { cn } from "lib";
+import { heading } from "./layout";
 
 /**
  * Shared layout configurations
@@ -12,7 +12,12 @@ import { BlogIcon, DocsIcon } from "icons";
 export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
-      <div className="text-[1.5rem] font-bold text-black dark:text-white">
+      <div
+        className={cn(
+          "text-[1.5rem] font-semibold text-black dark:text-white",
+          heading.className
+        )}
+      >
         forty
         <span className="ml-0.5 inline-block bg-[#000000] px-0.5 pb-0.5 leading-none text-white dark:bg-white dark:text-black">
           one

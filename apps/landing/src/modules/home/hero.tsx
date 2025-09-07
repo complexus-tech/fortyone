@@ -50,7 +50,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-8 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4rem] md:leading-[1.1]",
+                "relative z-[1] mt-8 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4.25rem] md:leading-[1.1]",
               )}
             >
               The AI Everything App for{" "}

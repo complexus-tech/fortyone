@@ -1,7 +1,7 @@
 import {
   Inter_Tight as Inter,
   Inconsolata,
-  Instrument_Sans as InstrumentSans,
+  Bricolage_Grotesque as BricolageGrotesque,
 } from "next/font/google";
 
 export const body = Inter({
@@ -17,7 +17,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = InstrumentSans({
+export const heading = BricolageGrotesque({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],

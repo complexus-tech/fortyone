@@ -28,6 +28,7 @@ export const Maya = () => {
         whileInView="show"
       >
         <Text
+          as="h3"
           className="mb-10 max-w-5xl pb-2 text-4xl font-semibold leading-[1.15] md:mb-16 md:text-5xl"
           color="gradientDark"
         >

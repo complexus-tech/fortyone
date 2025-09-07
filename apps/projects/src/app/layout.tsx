@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans as InstrumentSans } from "next/font/google";
+import {
+  Instrument_Sans as InstrumentSans,
+  Bricolage_Grotesque as BricolageGrotesque,
+} from "next/font/google";
 import { type ReactNode } from "react";
 import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
+import { cn } from "lib";
 import { auth } from "@/auth";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
@@ -12,6 +16,13 @@ const font = InstrumentSans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  weight: "variable",
+});
+
+const heading = BricolageGrotesque({
+  variable: "--font-heading",
+  display: "swap",
+  subsets: ["latin"],
   weight: "variable",
 });
 
@@ -42,7 +53,11 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html className={font.variable} lang="en" suppressHydrationWarning>
+    <html
+      className={cn(font.variable, heading.variable)}
+      lang="en"
+      suppressHydrationWarning
+    >
       <body>
         <SessionProvider session={session}>
           <Providers>
