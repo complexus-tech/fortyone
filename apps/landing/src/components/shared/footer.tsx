@@ -80,7 +80,8 @@ const Copyright = () => {
         </Link>
         |
         <Text fontSize="sm">
-          © {new Date().getFullYear()} FortyOne LLC &bull; All rights reserved.
+          © {new Date().getFullYear()} Complexus LLC &bull; All rights
+          reserved.
         </Text>
       </Box>
     </Box>
