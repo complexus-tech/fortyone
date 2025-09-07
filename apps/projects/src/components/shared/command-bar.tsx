@@ -66,6 +66,7 @@ export const CommandBar = ({
       items: [
         {
           label: `New ${getTermDisplay("storyTerm")}`,
+          disabled: userRole === "guest",
           icon: <PlusIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
@@ -80,6 +81,7 @@ export const CommandBar = ({
         },
         {
           label: `New ${getTermDisplay("objectiveTerm")}`,
+          disabled: userRole === "guest",
           icon: <PlusIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
@@ -94,6 +96,7 @@ export const CommandBar = ({
         },
         {
           label: `New ${getTermDisplay("sprintTerm")}`,
+          disabled: userRole === "guest",
           icon: <PlusIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
@@ -313,6 +316,7 @@ export const CommandBar = ({
                     {command.items.map((item) => (
                       <Command.Item
                         className="justify-between rounded-[0.6rem] p-3 text-[1.1rem] opacity-85"
+                        disabled={item.disabled}
                         key={item.label}
                         onSelect={item.action}
                       >
