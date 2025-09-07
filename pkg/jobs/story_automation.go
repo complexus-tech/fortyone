@@ -366,7 +366,7 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 					FROM stories st
 					JOIN statuses stat ON st.status_id = stat.status_id
 					WHERE st.sprint_id = s.sprint_id
-						AND stat.category IN ('unstarted', 'started')
+						AND stat.category IN ('backlog', 'unstarted', 'started')
 					LIMIT 1
 				)
 			ORDER BY s.end_date ASC
