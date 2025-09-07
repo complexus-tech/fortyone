@@ -384,7 +384,6 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 			LEFT JOIN sprints ns ON es.team_id = ns.team_id
 				AND ns.start_date > es.end_date  -- Next sprint must start after the ended sprint
 				AND ns.start_date <= CURRENT_DATE + INTERVAL '30 days' -- Allow up to 30 days in the future
-				AND ns.deleted_at IS NULL  -- Ensure the next sprint isn't deleted
 			WHERE ns.sprint_id IS NOT NULL
 			ORDER BY es.sprint_id, ns.start_date ASC -- Get the chronologically next sprint
 		)
@@ -395,7 +394,7 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 		WHERE stories.sprint_id = ns.ended_sprint_id
 			AND stories.status_id = stat.status_id
 			AND stat.team_id = ns.team_id
-			AND stat.category IN ('unstarted', 'started')
+			AND stat.category IN ('backlog', 'unstarted', 'started')
 			AND stories.deleted_at IS NULL
 			AND stories.archived_at IS NULL
 		RETURNING
