@@ -7,15 +7,18 @@ export const ContextMenuItem = ({
   icon,
   subMenu,
   shortCut,
+  disabled,
   onSelect,
 }: {
   label: string;
   icon: ReactNode;
+  disabled?: boolean;
   subMenu?: {
     label: string;
     icon: ReactNode;
     shortCut?: string;
     onSelect?: () => void;
+    disabled?: boolean;
   }[];
   shortCut?: string;
   onSelect?: () => void;
@@ -49,10 +52,12 @@ export const ContextMenuItem = ({
                   icon: subIcon,
                   shortCut: subShortCut,
                   onSelect: subOnSelect,
+                  disabled: subDisabled,
                 }) => (
                   <ContextMenu.Item
                     className="mb-1 justify-between py-1.5"
-                    key={label}
+                    disabled={subDisabled}
+                    key={subLabel}
                     onSelect={subOnSelect}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center gap-1">
@@ -73,7 +78,11 @@ export const ContextMenuItem = ({
           </ContextMenu.SubItems>
         </ContextMenu.SubMenu>
       ) : (
-        <ContextMenu.Item className="justify-between" onSelect={onSelect}>
+        <ContextMenu.Item
+          className="justify-between"
+          disabled={disabled}
+          onSelect={onSelect}
+        >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
             <span className="flex text-gray dark:text-gray-200">{icon}</span>
             <Text className="max-w-[10rem] truncate">{label}</Text>

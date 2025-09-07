@@ -9,12 +9,13 @@ import {
   EditIcon,
   NewTabIcon,
   ShareIcon,
+  StoryIcon,
   UndoIcon,
 } from "icons";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard, useUserRole } from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
@@ -43,6 +44,7 @@ export const StoryContextMenu = ({
   const { mutate: unarchiveStory } = useBulkUnarchiveStoryMutation();
   const { mutate: restoreStory } = useBulkRestoreStoryMutation();
   const { mutate: duplicateStory } = useDuplicateStoryMutation();
+  const { userRole } = useUserRole();
 
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
@@ -69,8 +71,8 @@ export const StoryContextMenu = ({
       name: "Main",
       options: [
         {
-          label: "Edit",
-          icon: <EditIcon />,
+          label: userRole === "guest" ? "View" : "Edit",
+          icon: userRole === "guest" ? <StoryIcon /> : <EditIcon />,
           onSelect: () => {
             router.push(storyUrl);
           },
@@ -78,6 +80,7 @@ export const StoryContextMenu = ({
         {
           label: "Duplicate",
           icon: <DuplicateIcon />,
+          disabled: userRole === "guest",
           onSelect: () => {
             duplicateStory({
               storyId: story.id,
@@ -115,6 +118,7 @@ export const StoryContextMenu = ({
           ? [
               {
                 label: "Archive story",
+                disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
                   setIsArchiveDialogOpen(true);
@@ -127,6 +131,7 @@ export const StoryContextMenu = ({
           ? [
               {
                 label: "Unarchive story",
+                disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
                   setIsUnarchiveDialogOpen(true);
@@ -139,6 +144,7 @@ export const StoryContextMenu = ({
           ? [
               {
                 label: "Restore story",
+                disabled: userRole === "guest",
                 icon: <UndoIcon />,
                 onSelect: () => {
                   setIsRestoreDialogOpen(true);
@@ -155,6 +161,7 @@ export const StoryContextMenu = ({
           label:
             isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete",
           icon: <DeleteIcon className="text-danger dark:text-danger" />,
+          disabled: userRole === "guest",
           onSelect: () => {
             setIsDeleteOpen(true);
           },
@@ -173,8 +180,9 @@ export const StoryContextMenu = ({
           {contextMenu.map(({ name, options }) => (
             <Fragment key={name}>
               <ContextMenu.Group key={name}>
-                {options.map(({ label, icon, onSelect }) => (
+                {options.map(({ label, icon, onSelect, disabled }) => (
                   <ContextMenuItem
+                    disabled={disabled}
                     icon={icon}
                     key={label}
                     label={label}
