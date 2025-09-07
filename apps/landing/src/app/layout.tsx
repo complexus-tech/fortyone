@@ -79,7 +79,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <GoogleAnalytics
             gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID!}
           />
-          <GoogleTagManager gtmId="AW-684738787" />
+          <GoogleTagManager gtmId="G-TYRV8FKD2E" />
         </>
       ) : null}
     </html>
