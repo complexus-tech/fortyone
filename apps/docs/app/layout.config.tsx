@@ -1,6 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { cn } from "lib";
-import { heading } from "./layout";
 
 /**
  * Shared layout configurations
@@ -14,8 +13,7 @@ export const baseOptions: BaseLayoutProps = {
     title: (
       <div
         className={cn(
-          "text-[1.5rem] font-semibold text-black dark:text-white",
-          heading.className
+          "text-[1.5rem] font-semibold text-black dark:text-white font-(family-name:--font-heading)"
         )}
       >
         forty
