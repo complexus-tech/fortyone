@@ -130,7 +130,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"0 1 * * *", // Every day at 1:00 AM (avoids Sunday collision)
+		"10 1 * * *", // Every day at 1:10 AM (avoids Sunday collision)
 		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
 		asynq.Queue("automation"),
 	)
@@ -157,7 +157,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		"5 1 * * *", // Daily at 1:05 AM
+		"0 1 * * *", // Daily at 1:00 AM
 		asynq.NewTask(tasks.TypeSprintStoryMigration, nil),
 		asynq.Queue("automation"),
 	)
