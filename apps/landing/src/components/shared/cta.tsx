@@ -37,10 +37,10 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-2xl pb-2 text-5xl font-semibold md:text-6xl md:leading-[1.1]"
+              className="mt-6 h-max max-w-3xl text-balance pb-2 text-5xl font-semibold md:text-6xl md:leading-[1.1]"
             >
-              Work <span className="text-stroke-white">smarter</span> with AI
-              that’s in the loop.
+              Ready to <span className="text-stroke-white">10x</span> Your
+              Team&apos;s Velocity? Start Free
             </Text>
           </motion.div>
           <motion.div
