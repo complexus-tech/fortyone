@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
+import Script from "next/script";
 import { body, heading, mono } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
-import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
