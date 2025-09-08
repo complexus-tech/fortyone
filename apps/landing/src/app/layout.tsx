@@ -58,7 +58,7 @@ export const metadata: Metadata = {
       "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   },
   alternates: {
-    canonical: "/",
+    canonical: "https://www.fortyone.app",
     languages: {
       "en-US": "https://www.fortyone.app",
       "x-default": "https://www.fortyone.app",
