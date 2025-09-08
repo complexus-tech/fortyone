@@ -37,9 +37,9 @@ const capabilities = [
         strokeWidth={1.8}
       />
     ),
-    title: "Focus",
+    title: "Goal Management",
     description:
-      "Turn big goals into daily progress with objectives and key results.",
+      "Transform strategic objectives into actionable tasks with integrated OKR tracking and progress monitoring.",
   },
   {
     icon: (
@@ -48,14 +48,15 @@ const capabilities = [
         strokeWidth={1.6}
       />
     ),
-    title: "Momentum",
-    description: "Plan, prioritize, and move fast with stories and sprints.",
+    title: "Sprint Velocity",
+    description:
+      "Accelerate project delivery with agile sprint planning, story prioritization, and velocity tracking.",
   },
   {
     icon: <AiIcon className="h-7 w-auto text-dark dark:text-white md:h-10" />,
-    title: "Intelligence",
+    title: "AI-Powered Insights",
     description:
-      "Work smarter with Maya, your AI assistant for projects and insights.",
+      "Work smarter with Maya, your AI assistant for project management, automated summaries, and predictive insights.",
   },
   {
     icon: (
@@ -64,9 +65,9 @@ const capabilities = [
         strokeWidth={1.6}
       />
     ),
-    title: "Flow",
+    title: "Real-Time Collaboration",
     description:
-      "Stay in sync with real-time updates no refreshing, no delays.",
+      "Keep your project team synchronized with live updates, instant notifications, and seamless collaboration tools.",
   },
   {
     icon: (
@@ -75,9 +76,9 @@ const capabilities = [
         strokeWidth={1.6}
       />
     ),
-    title: "Identity",
+    title: "Custom Workflows",
     description:
-      "Make the system your own with custom terms for stories, sprints, and goals.",
+      "Adapt the project management platform to your team's needs with custom terminology, statuses, and workflow configurations.",
   },
   {
     icon: (
@@ -86,8 +87,9 @@ const capabilities = [
         strokeWidth={1.6}
       />
     ),
-    title: "Connection",
-    description: "Bring everything together with GitHub, emails, and webhooks.",
+    title: "Tool Integrations",
+    description:
+      "Connect your project management workflow with GitHub, email notifications, Slack, and custom webhooks.",
   },
 ];
 

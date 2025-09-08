@@ -66,7 +66,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg opacity-70 md:text-xl">
+            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-2xl">
               Plan sprints, manage stories, and connect OKRs to daily work with
               built-in AI for summaries, updates, and automation.
             </Text>
