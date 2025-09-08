@@ -28,7 +28,7 @@ export const HeroCards = () => {
       image: {
         src: listImg,
         srcLight: listImgLight,
-        alt: "List stories",
+        alt: "Project management list view - story tracking",
       },
     },
     {
@@ -37,7 +37,7 @@ export const HeroCards = () => {
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,
-        alt: "Kanban",
+        alt: "Project management kanban board - task workflow",
       },
     },
     {
@@ -46,7 +46,7 @@ export const HeroCards = () => {
       image: {
         src: objectiveImg,
         srcLight: objectiveImgLight,
-        alt: "Objective",
+        alt: "OKR objective tracking in project management platform",
       },
     },
   ];

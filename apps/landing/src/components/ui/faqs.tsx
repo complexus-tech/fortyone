@@ -20,12 +20,13 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "How does the AI assistant (Maya) help my team?",
+    question: "How does AI improve project management workflows?",
     answer:
       "Maya accelerates planning and execution by drafting stories from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
   },
   {
-    question: "How does FortyOne link OKRs to daily work?",
+    question:
+      "How does your project management platform connect OKRs to daily tasks?",
     answer:
       "Objectives and key results are first class. You can link stories and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
   },

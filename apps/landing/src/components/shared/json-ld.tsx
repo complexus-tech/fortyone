@@ -10,7 +10,7 @@ const softwareApplication: WithContext<WebApplication> = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "FortyOne",
-  applicationCategory: "ProjectManagementApplication",
+  applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   offers: {
     "@type": "AggregateOffer",
@@ -40,6 +40,10 @@ const softwareApplication: WithContext<WebApplication> = {
     ],
   },
   featureList: [
+    "Project Management",
+    "Team Collaboration Platform",
+    "OKR Software",
+    "Sprint Planning Tool",
     "OKR Management",
     "Strategic Roadmapping",
     "Team Collaboration",

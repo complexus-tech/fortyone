@@ -10,11 +10,18 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
+  title:
+    "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
   description:
-    "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
+    "project management platform",
+    "project management software",
+    "team project management",
+    "agile project management platform",
+    "project management tool",
+    "okr project management",
     "project management",
     "OKR software",
     "team collaboration",
@@ -34,9 +41,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
+    title:
+      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
     description:
-      "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -44,9 +52,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
+    title:
+      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
     description:
-      "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   },
   alternates: {
     canonical: "/",
