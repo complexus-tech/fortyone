@@ -50,20 +50,11 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-8 pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4.25rem] md:leading-[1.1]",
+                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.25rem] md:leading-[1.1]",
               )}
             >
-              The AI Everything App for{" "}
-              <span className="text-stroke-white">Projects</span> & OKRs
+              The AI-Powered Project Management Platform for OKRs & Teams
             </Text>
-            {/* <Text
-              as="h1"
-              className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-2xl md:text-[4rem] md:leading-[1.1]",
-              )}
-            >
-              Go from planning to done With AI.
-            </Text> */}
           </motion.span>
 
           <motion.span
@@ -75,7 +66,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
+            <Text className="mt-8 max-w-[700px] text-lg opacity-80 md:text-xl">
               Plan sprints, manage stories, and connect OKRs to daily work with
               built-in AI for summaries, updates, and automation.
             </Text>
