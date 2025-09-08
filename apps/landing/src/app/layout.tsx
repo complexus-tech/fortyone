@@ -7,6 +7,7 @@ import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
@@ -60,6 +61,20 @@ const isProduction = process.env.NODE_ENV === "production";
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <Script id="brevo-conversations" strategy="afterInteractive">
+        {`
+        (function(d, w, c) {
+            w.BrevoConversationsID = '6834856b58b6d2f7800e0e5e';
+            w[c] = w[c] || function() {
+                (w[c].q = w[c].q || []).push(arguments);
+            };
+            var s = d.createElement('script');
+            s.async = true;
+            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
+            if (d.head) d.head.appendChild(s);
+        })(document, window, 'BrevoConversations');
+      `}
+      </Script>
       <head>
         <JsonLd />
       </head>
