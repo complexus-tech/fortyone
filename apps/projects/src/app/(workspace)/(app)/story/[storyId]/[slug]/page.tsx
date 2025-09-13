@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { notFound } from "next/navigation";
 import { StoryPage } from "@/modules/story";
 import { getQueryClient } from "@/app/get-query-client";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -21,10 +22,14 @@ export default async function Page(props: Props) {
 
   const { storyId } = params;
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery({
+  const story = await queryClient.fetchQuery({
     queryKey: storyKeys.detail(storyId),
     queryFn: () => getStory(storyId, session!),
   });
+
+  if (!story) {
+    notFound();
+  }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
