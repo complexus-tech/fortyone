@@ -8,6 +8,7 @@ export type Team = {
   createdAt: string;
   updatedAt: string;
   memberCount: number;
+  sprintsEnabled: boolean;
 };
 
 export type CreateTeamInput = {
