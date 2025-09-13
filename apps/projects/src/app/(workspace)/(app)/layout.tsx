@@ -1,21 +1,33 @@
 import type { ReactNode } from "react";
-import { notFound } from "next/navigation";
 import { ApplicationLayout } from "@/components/layouts";
-import { auth } from "@/auth";
-import { getTeam } from "@/modules/teams/queries";
 
 export default async function RootLayout({
   children,
-  params,
 }: {
   children: ReactNode;
-  params: Promise<{ teamId: string }>;
 }) {
-  const session = await auth();
-  const { teamId } = await params;
-  const team = await getTeam(teamId, session!);
-  if (!team) {
-    notFound();
-  }
-  return <ApplicationLayout>{children}</ApplicationLayout>;
+  return (
+    <ApplicationLayout>
+      {/* <Box className="flex h-screen items-center justify-center">
+        <Box className="flex flex-col items-center">
+          <TeamIcon className="h-16 w-auto" />
+          <Text className="mb-6 mt-10" fontSize="3xl">
+            404: Team not found {data.error.message}
+          </Text>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            This team might not exist or you do not belong to this team.
+          </Text>
+          <Button
+            className="gap-1 pl-2"
+            color="tertiary"
+            href="/my-work"
+            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+          >
+            Go to my work
+          </Button>
+        </Box>
+      </Box> */}
+      {children}]
+    </ApplicationLayout>
+  );
 }

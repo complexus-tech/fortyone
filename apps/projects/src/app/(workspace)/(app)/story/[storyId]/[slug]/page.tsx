@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { notFound } from "next/navigation";
+import { Box, Button, Text } from "ui";
+import { ArrowLeftIcon, StoryMissingIcon } from "icons";
 import { StoryPage } from "@/modules/story";
 import { getQueryClient } from "@/app/get-query-client";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -28,7 +29,27 @@ export default async function Page(props: Props) {
   });
 
   if (!story) {
-    notFound();
+    return (
+      <Box className="flex h-screen items-center justify-center">
+        <Box className="flex flex-col items-center">
+          <StoryMissingIcon className="h-20 w-auto rotate-12" />
+          <Text className="mb-6 mt-10" fontSize="3xl">
+            404: Item not found
+          </Text>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            This item might not exist or you do not have access to it.
+          </Text>
+          <Button
+            className="gap-1 pl-2"
+            color="tertiary"
+            href="/my-work"
+            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+          >
+            Go to my work
+          </Button>
+        </Box>
+      </Box>
+    );
   }
 
   return (
