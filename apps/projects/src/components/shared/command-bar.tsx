@@ -94,21 +94,6 @@ export const CommandBar = ({
             setIsOpen(false);
           },
         },
-        {
-          label: `New ${getTermDisplay("sprintTerm")}`,
-          disabled: userRole === "guest",
-          icon: <PlusIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>⇧</Kbd>
-              <Kbd>s</Kbd>
-            </Flex>
-          ),
-          action: () => {
-            setIsSprintsOpen(true);
-            setIsOpen(false);
-          },
-        },
         ...(userRole === "admin"
           ? [
               {

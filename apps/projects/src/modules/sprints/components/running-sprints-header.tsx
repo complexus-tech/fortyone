@@ -2,7 +2,6 @@
 import { BreadCrumbs, Flex } from "ui";
 import { SprintsIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { NewSprintButton } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 
 export const RunningSprintsHeader = () => {
@@ -37,7 +36,6 @@ export const RunningSprintsHeader = () => {
           className="hidden md:flex"
         />
       </Flex>
-      <NewSprintButton />
     </HeaderContainer>
   );
 };

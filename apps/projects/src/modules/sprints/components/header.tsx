@@ -1,11 +1,11 @@
 "use client";
-import { BreadCrumbs, Flex, Button } from "ui";
-import { GitIcon, SprintsIcon } from "icons";
+import { BreadCrumbs, Flex } from "ui";
+import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { TeamColor } from "@/components/ui";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology } from "@/hooks";
 
 export const SprintsHeader = () => {
   const { teamId } = useParams<{
@@ -13,7 +13,6 @@ export const SprintsHeader = () => {
   }>();
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
-  const { userRole } = useUserRole();
 
   const { name, color } = teams.find((team) => team.id === teamId)!;
   return (
@@ -48,19 +47,6 @@ export const SprintsHeader = () => {
           ]}
           className="hidden md:flex"
         />
-      </Flex>
-      <Flex align="center" gap={2}>
-        {userRole === "admin" && (
-          <Button
-            color="tertiary"
-            href={`/settings/workspace/teams/${teamId}?tab=automations`}
-            leftIcon={<GitIcon />}
-            size="sm"
-            variant="naked"
-          >
-            Set up automations
-          </Button>
-        )}
       </Flex>
     </HeaderContainer>
   );
