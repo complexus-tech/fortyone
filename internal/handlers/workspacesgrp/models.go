@@ -83,7 +83,6 @@ type AppWorkspaceSettings struct {
 	SprintTerm       string    `json:"sprintTerm"`
 	ObjectiveTerm    string    `json:"objectiveTerm"`
 	KeyResultTerm    string    `json:"keyResultTerm"`
-	SprintEnabled    bool      `json:"sprintEnabled"`
 	ObjectiveEnabled bool      `json:"objectiveEnabled"`
 	KeyResultEnabled bool      `json:"keyResultEnabled"`
 	CreatedAt        time.Time `json:"createdAt"`
@@ -96,7 +95,6 @@ type AppUpdateWorkspaceSettings struct {
 	SprintTerm       string `json:"sprintTerm,omitempty"`
 	ObjectiveTerm    string `json:"objectiveTerm,omitempty"`
 	KeyResultTerm    string `json:"keyResultTerm,omitempty"`
-	SprintEnabled    *bool  `json:"sprintEnabled,omitempty"`
 	ObjectiveEnabled *bool  `json:"objectiveEnabled,omitempty"`
 	KeyResultEnabled *bool  `json:"keyResultEnabled,omitempty"`
 }
@@ -109,15 +107,11 @@ func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uu
 		SprintTerm:       settings.SprintTerm,
 		ObjectiveTerm:    settings.ObjectiveTerm,
 		KeyResultTerm:    settings.KeyResultTerm,
-		SprintEnabled:    current.SprintEnabled,
 		ObjectiveEnabled: current.ObjectiveEnabled,
 		KeyResultEnabled: current.KeyResultEnabled,
 	}
 
 	// Only update boolean fields if they are provided
-	if settings.SprintEnabled != nil {
-		result.SprintEnabled = *settings.SprintEnabled
-	}
 	if settings.ObjectiveEnabled != nil {
 		result.ObjectiveEnabled = *settings.ObjectiveEnabled
 	}
@@ -135,7 +129,6 @@ func toAppWorkspaceSettings(settings workspaces.CoreWorkspaceSettings) AppWorksp
 		SprintTerm:       settings.SprintTerm,
 		ObjectiveTerm:    settings.ObjectiveTerm,
 		KeyResultTerm:    settings.KeyResultTerm,
-		SprintEnabled:    settings.SprintEnabled,
 		ObjectiveEnabled: settings.ObjectiveEnabled,
 		KeyResultEnabled: settings.KeyResultEnabled,
 		CreatedAt:        settings.CreatedAt,

@@ -45,7 +45,6 @@ type CoreWorkspaceSettings struct {
 	SprintTerm       string
 	ObjectiveTerm    string
 	KeyResultTerm    string
-	SprintEnabled    bool
 	ObjectiveEnabled bool
 	KeyResultEnabled bool
 	CreatedAt        time.Time

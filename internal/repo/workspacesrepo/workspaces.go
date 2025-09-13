@@ -709,7 +709,6 @@ func (r *repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) 
 			sprint_term,
 			objective_term,
 			key_result_term,
-			sprint_enabled,
 			objective_enabled,
 			key_result_enabled,
 			created_at,
@@ -759,7 +758,6 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 			sprint_term = CASE WHEN :sprint_term = '' THEN sprint_term ELSE :sprint_term END,
 			objective_term = CASE WHEN :objective_term = '' THEN objective_term ELSE :objective_term END,
 			key_result_term = CASE WHEN :key_result_term = '' THEN key_result_term ELSE :key_result_term END,
-			sprint_enabled = :sprint_enabled,
 			objective_enabled = :objective_enabled,
 			key_result_enabled = :key_result_enabled,
 			updated_at = NOW()
@@ -771,7 +769,6 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 			sprint_term,
 			objective_term,
 			key_result_term,
-			sprint_enabled,
 			objective_enabled,
 			key_result_enabled,
 			created_at,
@@ -784,7 +781,6 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 		"sprint_term":        settings.SprintTerm,
 		"objective_term":     settings.ObjectiveTerm,
 		"key_result_term":    settings.KeyResultTerm,
-		"sprint_enabled":     settings.SprintEnabled,
 		"objective_enabled":  settings.ObjectiveEnabled,
 		"key_result_enabled": settings.KeyResultEnabled,
 	}
@@ -823,7 +819,6 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 			sprint_term,
 			objective_term,
 			key_result_term,
-			sprint_enabled,
 			objective_enabled,
 			key_result_enabled
 		)
@@ -833,7 +828,6 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 			'sprint',
 			'objective',
 			'key result',
-			true,
 			true,
 			true
 		)

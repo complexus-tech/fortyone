@@ -40,7 +40,6 @@ type dbWorkspaceSettings struct {
 	SprintTerm       string    `db:"sprint_term"`
 	ObjectiveTerm    string    `db:"objective_term"`
 	KeyResultTerm    string    `db:"key_result_term"`
-	SprintEnabled    bool      `db:"sprint_enabled"`
 	ObjectiveEnabled bool      `db:"objective_enabled"`
 	KeyResultEnabled bool      `db:"key_result_enabled"`
 	CreatedAt        time.Time `db:"created_at"`
@@ -92,7 +91,6 @@ func toCoreWorkspaceSettings(s dbWorkspaceSettings) workspaces.CoreWorkspaceSett
 		SprintTerm:       s.SprintTerm,
 		ObjectiveTerm:    s.ObjectiveTerm,
 		KeyResultTerm:    s.KeyResultTerm,
-		SprintEnabled:    s.SprintEnabled,
 		ObjectiveEnabled: s.ObjectiveEnabled,
 		KeyResultEnabled: s.KeyResultEnabled,
 		CreatedAt:        s.CreatedAt,
