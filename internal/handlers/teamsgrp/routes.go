@@ -26,6 +26,7 @@ func Routes(cfg Config, app *web.App) {
 	h := New(teamsService, cfg.Cache)
 
 	app.Get("/workspaces/{workspaceSlug}/teams", h.List, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/teams/{id}", h.GetByID, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/teams/public", h.ListPublicTeams, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/teams", h.Create, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/teams/{id}", h.Update, auth, workspace)

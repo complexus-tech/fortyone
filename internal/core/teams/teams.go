@@ -15,6 +15,7 @@ import (
 type Repository interface {
 	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
 	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
+	GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
 	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
@@ -75,6 +76,25 @@ func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, us
 		attribute.Int("teams.count", len(teams)),
 	))
 	return teams, nil
+}
+
+func (s *Service) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error) {
+	s.log.Info(ctx, "business.core.teams.getByID")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.GetByID")
+	defer span.End()
+
+	team, err := s.repo.GetByID(ctx, teamID, workspaceID, userID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeam{}, err
+	}
+
+	span.AddEvent("team retrieved.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+	return team, nil
 }
 
 func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {

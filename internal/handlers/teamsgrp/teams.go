@@ -51,6 +51,43 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.GetByID")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	team, err := h.teams.GetByID(ctx, teamID, workspace.ID, userID)
+	if err != nil {
+		if err.Error() == "team not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team retrieved.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, toAppTeams([]teams.CoreTeam{team})[0], http.StatusOK)
+}
+
 func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
