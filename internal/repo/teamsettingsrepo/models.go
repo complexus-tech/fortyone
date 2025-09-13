@@ -10,7 +10,6 @@ import (
 type dbTeamSprintSettings struct {
 	TeamID                       uuid.UUID `db:"team_id"`
 	WorkspaceID                  uuid.UUID `db:"workspace_id"`
-	SprintsEnabled               bool      `db:"sprints_enabled"`
 	AutoCreateSprints            bool      `db:"auto_create_sprints"`
 	UpcomingSprintsCount         int       `db:"upcoming_sprints_count"`
 	SprintDurationWeeks          int       `db:"sprint_duration_weeks"`
@@ -36,7 +35,6 @@ func toCoreTeamSprintSettings(s dbTeamSprintSettings) teamsettings.CoreTeamSprin
 	return teamsettings.CoreTeamSprintSettings{
 		TeamID:                       s.TeamID,
 		WorkspaceID:                  s.WorkspaceID,
-		SprintsEnabled:               s.SprintsEnabled,
 		AutoCreateSprints:            s.AutoCreateSprints,
 		UpcomingSprintsCount:         s.UpcomingSprintsCount,
 		SprintDurationWeeks:          s.SprintDurationWeeks,

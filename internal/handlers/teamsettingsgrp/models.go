@@ -7,7 +7,6 @@ import (
 )
 
 type AppTeamSprintSettings struct {
-	SprintsEnabled               bool      `json:"sprintsEnabled"`
 	AutoCreateSprints            bool      `json:"autoCreateSprints"`
 	UpcomingSprintsCount         int       `json:"upcomingSprintsCount"`
 	SprintDurationWeeks          int       `json:"sprintDurationWeeks"`
@@ -32,7 +31,6 @@ type AppTeamSettings struct {
 }
 
 type AppUpdateTeamSprintSettings struct {
-	SprintsEnabled               *bool   `json:"sprintsEnabled,omitempty"`
 	AutoCreateSprints            *bool   `json:"autoCreateSprints,omitempty"`
 	UpcomingSprintsCount         *int    `json:"upcomingSprintsCount,omitempty"`
 	SprintDurationWeeks          *int    `json:"sprintDurationWeeks,omitempty"`
@@ -50,7 +48,6 @@ type AppUpdateTeamStoryAutomationSettings struct {
 // Conversion functions
 func toAppTeamSprintSettings(settings teamsettings.CoreTeamSprintSettings) AppTeamSprintSettings {
 	return AppTeamSprintSettings{
-		SprintsEnabled:               settings.SprintsEnabled,
 		AutoCreateSprints:            settings.AutoCreateSprints,
 		UpcomingSprintsCount:         settings.UpcomingSprintsCount,
 		SprintDurationWeeks:          settings.SprintDurationWeeks,
@@ -81,7 +78,6 @@ func toAppTeamSettings(settings teamsettings.CoreTeamSettings) AppTeamSettings {
 
 func toCoreUpdateTeamSprintSettings(app AppUpdateTeamSprintSettings) teamsettings.CoreUpdateTeamSprintSettings {
 	return teamsettings.CoreUpdateTeamSprintSettings{
-		SprintsEnabled:               app.SprintsEnabled,
 		AutoCreateSprints:            app.AutoCreateSprints,
 		UpcomingSprintsCount:         app.UpcomingSprintsCount,
 		SprintDurationWeeks:          app.SprintDurationWeeks,

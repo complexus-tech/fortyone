@@ -54,7 +54,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 					WHERE tm.team_id = t.team_id
 				), 0
 			) as member_count,
-			COALESCE(tss.sprints_enabled, false) as sprints_enabled
+			COALESCE(tss.auto_create_sprints, false) as sprints_enabled
 		FROM
 			teams t
 		LEFT JOIN user_team_orders uto ON
@@ -133,7 +133,7 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 					WHERE tm.team_id = t.team_id
 				), 0
 			) as member_count,
-			COALESCE(tss.sprints_enabled, false) as sprints_enabled
+			COALESCE(tss.auto_create_sprints, false) as sprints_enabled
 		FROM
 			teams t
 		LEFT JOIN team_sprint_settings tss ON

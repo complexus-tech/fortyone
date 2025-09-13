@@ -38,7 +38,6 @@ func (r *repo) GetSprintSettings(ctx context.Context, teamID, workspaceID uuid.U
 		SELECT
 			team_id,
 			workspace_id,
-			sprints_enabled,
 			auto_create_sprints,
 			upcoming_sprints_count,
 			sprint_duration_weeks,
@@ -100,10 +99,6 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 		"workspace_id": workspaceID,
 	}
 
-	if updates.SprintsEnabled != nil {
-		setClauses = append(setClauses, "sprints_enabled = :sprints_enabled")
-		params["sprints_enabled"] = *updates.SprintsEnabled
-	}
 	if updates.AutoCreateSprints != nil {
 		setClauses = append(setClauses, "auto_create_sprints = :auto_create_sprints")
 		params["auto_create_sprints"] = *updates.AutoCreateSprints
@@ -309,7 +304,6 @@ func (r *repo) GetTeamsWithAutoSprintCreation(ctx context.Context) ([]teamsettin
 		SELECT
 			team_id,
 			workspace_id,
-			sprints_enabled,
 			auto_create_sprints,
 			upcoming_sprints_count,
 			sprint_duration_weeks,
@@ -321,8 +315,7 @@ func (r *repo) GetTeamsWithAutoSprintCreation(ctx context.Context) ([]teamsettin
 		FROM
 			team_sprint_settings
 		WHERE
-			sprints_enabled = true
-			AND auto_create_sprints = true
+			auto_create_sprints = true
 	`
 
 	r.log.Info(ctx, "Fetching teams with auto sprint creation.")
@@ -394,7 +387,6 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 		INSERT INTO team_sprint_settings (
 			team_id,
 			workspace_id,
-			sprints_enabled,
 			auto_create_sprints,
 			upcoming_sprints_count,
 			sprint_duration_weeks,
@@ -404,7 +396,6 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 		) VALUES (
 			:team_id,
 			:workspace_id,
-			true,
 			false,
 			2,
 			2,
@@ -415,7 +406,6 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 		RETURNING
 			team_id,
 			workspace_id,
-			sprints_enabled,
 			auto_create_sprints,
 			upcoming_sprints_count,
 			sprint_duration_weeks,

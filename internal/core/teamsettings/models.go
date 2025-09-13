@@ -9,7 +9,6 @@ import (
 type CoreTeamSprintSettings struct {
 	TeamID                       uuid.UUID
 	WorkspaceID                  uuid.UUID
-	SprintsEnabled               bool
 	AutoCreateSprints            bool
 	UpcomingSprintsCount         int
 	SprintDurationWeeks          int
@@ -37,7 +36,6 @@ type CoreTeamSettings struct {
 }
 
 type CoreUpdateTeamSprintSettings struct {
-	SprintsEnabled               *bool
 	AutoCreateSprints            *bool
 	UpcomingSprintsCount         *int
 	SprintDurationWeeks          *int
