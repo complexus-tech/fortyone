@@ -40,7 +40,6 @@ export const TerminologyPreferences = () => {
       sprintTerm: "sprint",
       objectiveTerm: "objective",
       keyResultTerm: "key result",
-      sprintEnabled: true,
       objectiveEnabled: true,
       keyResultEnabled: true,
     },
@@ -82,7 +81,7 @@ export const TerminologyPreferences = () => {
           { label: "Cycle", value: "cycle" },
           { label: "Iteration", value: "iteration" },
         ],
-        disabled: !settings.sprintEnabled,
+        disabled: false,
       },
       {
         name: getTermDisplay("objectiveTerm", {
@@ -225,12 +224,10 @@ export const TerminologyPreferences = () => {
               <StoryIcon />
               My {getTermDisplay("storyTerm", { variant: "plural" })}
             </RowWrapper>
-            {settings.sprintEnabled ? (
-              <RowWrapper className="justify-start gap-2 py-3 md:px-6">
-                <SprintsIcon />
-                Active {getTermDisplay("sprintTerm", { variant: "plural" })}
-              </RowWrapper>
-            ) : null}
+            <RowWrapper className="justify-start gap-2 py-3 md:px-6">
+              <SprintsIcon />
+              Active {getTermDisplay("sprintTerm", { variant: "plural" })}
+            </RowWrapper>
 
             {settings.objectiveEnabled ? (
               <RowWrapper className="justify-start gap-2 py-3 md:px-6">
@@ -255,11 +252,9 @@ export const TerminologyPreferences = () => {
                   Create {getTermDisplay("objectiveTerm", { capitalize: true })}
                 </Button>
               ) : null}
-              {settings.sprintEnabled ? (
-                <Button color="tertiary" leftIcon={<SprintsIcon />}>
-                  Start {getTermDisplay("sprintTerm", { capitalize: true })}
-                </Button>
-              ) : null}
+              <Button color="tertiary" leftIcon={<SprintsIcon />}>
+                Start {getTermDisplay("sprintTerm", { capitalize: true })}
+              </Button>
               <Button color="tertiary" leftIcon={<PlusIcon />}>
                 Create {getTermDisplay("storyTerm", { capitalize: true })}
               </Button>

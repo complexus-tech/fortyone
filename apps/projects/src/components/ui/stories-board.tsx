@@ -27,7 +27,7 @@ import type {
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useFeatures, useTerminology } from "@/hooks";
+import { useFeatures, useTerminology, useSprintsEnabled } from "@/hooks";
 import { StoriesList } from "@/components/ui/stories-list";
 import { BodyContainer } from "@/components/shared/body";
 import { moveStoryBetweenGroups } from "@/modules/stories/utils/optimistic";
@@ -155,6 +155,7 @@ export const StoriesBoard = ({
   }>();
 
   const features = useFeatures();
+  const sprintsEnabled = useSprintsEnabled(teamId);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
   const [groupedStories, setGroupedStories] = useState<
@@ -166,15 +167,11 @@ export const StoriesBoard = ({
   // Memoize the isColumnVisible function
   const isColumnVisible = useCallback(
     (column: DisplayColumn) => {
-      if (column === "Sprint" && !features.sprintEnabled) return false;
+      if (column === "Sprint" && !sprintsEnabled) return false;
       if (column === "Objective" && !features.objectiveEnabled) return false;
       return viewOptions.displayColumns.includes(column);
     },
-    [
-      features.objectiveEnabled,
-      features.sprintEnabled,
-      viewOptions.displayColumns,
-    ],
+    [features.objectiveEnabled, sprintsEnabled, viewOptions.displayColumns],
   );
 
   const handleDragStart = (e: DragStartEvent) => {

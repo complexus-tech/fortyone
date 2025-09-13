@@ -104,7 +104,6 @@ export type WorkspaceSettings = {
   sprintTerm: "sprint" | "cycle" | "iteration";
   objectiveTerm: "objective" | "goal" | "project";
   keyResultTerm: "key result" | "milestone" | "focus area";
-  sprintEnabled: boolean;
   objectiveEnabled: boolean;
   keyResultEnabled: boolean;
 };

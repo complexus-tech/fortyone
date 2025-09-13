@@ -11,7 +11,7 @@ export const WorkspaceFeatures = () => {
   const features = useFeatures();
   const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
   const handleToggleFeature = (
-    feature: "sprintEnabled" | "objectiveEnabled" | "keyResultEnabled",
+    feature: "objectiveEnabled" | "keyResultEnabled",
   ) => {
     updateSettings({ [feature]: !features[feature] });
   };
@@ -39,26 +39,6 @@ export const WorkspaceFeatures = () => {
             checked={features.objectiveEnabled}
             onCheckedChange={() => {
               handleToggleFeature("objectiveEnabled");
-            }}
-          />
-        </RowWrapper>
-
-        <RowWrapper className="md:px-6">
-          <Box>
-            <Text className="font-medium">
-              {getTermDisplay("sprintTerm", {
-                variant: "plural",
-                capitalize: true,
-              })}
-            </Text>
-            <Text color="muted">
-              Plan and organize work into time-boxed periods
-            </Text>
-          </Box>
-          <Switch
-            checked={features.sprintEnabled}
-            onCheckedChange={() => {
-              handleToggleFeature("sprintEnabled");
             }}
           />
         </RowWrapper>
