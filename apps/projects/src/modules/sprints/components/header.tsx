@@ -4,7 +4,7 @@ import { GitIcon, SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { NewSprintButton, TeamColor } from "@/components/ui";
+import { TeamColor } from "@/components/ui";
 import { useTerminology, useUserRole } from "@/hooks";
 
 export const SprintsHeader = () => {
@@ -61,7 +61,6 @@ export const SprintsHeader = () => {
             Set up automations
           </Button>
         )}
-        <NewSprintButton teamId={teamId} />
       </Flex>
     </HeaderContainer>
   );

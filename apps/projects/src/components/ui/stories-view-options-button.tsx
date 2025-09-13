@@ -82,9 +82,7 @@ export const StoriesViewOptionsButton = ({
     ...(layout === "list" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
       : []),
-    ...(features.sprintEnabled && isDesktop
-      ? (["Sprint"] as DisplayColumn[])
-      : []),
+    ...(isDesktop ? (["Sprint"] as DisplayColumn[]) : []),
     ...(features.objectiveEnabled && isDesktop
       ? (["Objective"] as DisplayColumn[])
       : []),
