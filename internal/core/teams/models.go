@@ -14,15 +14,16 @@ var ErrTeamCodeExists = errors.New("team code already exists")
 var ErrTeamMemberExists = errors.New("user is already a member of this team")
 
 type CoreTeam struct {
-	ID          uuid.UUID
-	Name        string
-	Code        string
-	Color       string
-	IsPrivate   bool
-	Workspace   uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	MemberCount int
+	ID             uuid.UUID
+	Name           string
+	Code           string
+	Color          string
+	IsPrivate      bool
+	Workspace      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	MemberCount    int
+	SprintsEnabled bool
 }
 
 type DefaultStatus struct {

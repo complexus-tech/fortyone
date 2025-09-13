@@ -53,13 +53,17 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 					FROM team_members tm
 					WHERE tm.team_id = t.team_id
 				), 0
-			) as member_count
+			) as member_count,
+			COALESCE(tss.sprints_enabled, false) as sprints_enabled
 		FROM
 			teams t
 		LEFT JOIN user_team_orders uto ON
 			t.team_id = uto.team_id
 			AND uto.user_id = :user_id
 			AND uto.workspace_id = :workspace_id
+		LEFT JOIN team_sprint_settings tss ON
+			t.team_id = tss.team_id
+			AND t.workspace_id = tss.workspace_id
 		WHERE
 			t.workspace_id = :workspace_id
 			AND EXISTS (
@@ -128,9 +132,13 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 					FROM team_members tm
 					WHERE tm.team_id = t.team_id
 				), 0
-			) as member_count
+			) as member_count,
+			COALESCE(tss.sprints_enabled, false) as sprints_enabled
 		FROM
 			teams t
+		LEFT JOIN team_sprint_settings tss ON
+			t.team_id = tss.team_id
+			AND t.workspace_id = tss.workspace_id
 		WHERE
 			t.workspace_id = :workspace_id
 			AND t.is_private = false
