@@ -13,7 +13,8 @@ export const updateNotificationPreferences = async (
     | "comment_reply"
     | "mention"
     | "key_result_update"
-    | "story_comment",
+    | "story_comment"
+    | "overdue_stories",
 ) => {
   try {
     const session = await auth();
