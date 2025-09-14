@@ -7,6 +7,7 @@ import (
 
 // EmailNotificationParams represents parameters for notification emails
 type EmailNotificationParams struct {
+	Subject             string `json:"SUBJECT"`
 	UserName            string `json:"USER_NAME"`
 	ActorName           string `json:"ACTOR_NAME"`
 	UserEmail           string `json:"USER_EMAIL"`
@@ -30,6 +31,11 @@ func (service *Service) SendEmailNotification(ctx context.Context, templateId in
 		"NOTIFICATION_TYPE":    params.NotificationType,
 	}
 
+	subject := fmt.Sprintf("Update from %s", params.ActorName)
+	if params.Subject != "" {
+		subject = params.Subject
+	}
+
 	req := SendTemplatedEmailRequest{
 		TemplateID: templateId,
 		To: []EmailRecipient{
@@ -38,7 +44,7 @@ func (service *Service) SendEmailNotification(ctx context.Context, templateId in
 				Name:  params.UserName,
 			},
 		},
-		Subject: fmt.Sprintf("Update from %s", params.ActorName),
+		Subject: subject,
 		Params:  templateParams,
 		Tags:    []string{"notification", params.NotificationType},
 	}
