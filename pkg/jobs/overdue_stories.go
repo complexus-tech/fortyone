@@ -52,7 +52,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 
 			if len(stories) > 0 {
 				// Send email directly for this assignee
-				err := sendOverdueStoriesEmailForAssignee(ctx, log, brevoService, assigneeID, stories)
+				err := sendOverdueStoriesEmailForAssignee(ctx, log, brevoService, stories)
 				if err != nil {
 					log.Error(ctx, "Failed to send email", "assignee_id", assigneeID, "error", err)
 					continue
@@ -221,7 +221,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 }
 
 // sendOverdueStoriesEmailForAssignee sends email directly for a specific assignee
-func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, brevoService *brevo.Service, assigneeID uuid.UUID, stories []OverdueStory) error {
+func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, brevoService *brevo.Service, stories []OverdueStory) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendOverdueStoriesEmailForAssignee")
 	defer span.End()
 
