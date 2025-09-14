@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient } from "@/app/get-query-client";
 import { memberKeys, teamKeys } from "@/constants/keys";
@@ -5,6 +6,21 @@ import { getTeamMembers } from "@/lib/queries/members/get-members";
 import { TeamManagement } from "@/modules/settings/workspace/teams/management";
 import { auth } from "@/auth";
 import { getTeamSettings } from "@/modules/teams/queries/get-team-settings";
+import { getTeam } from "@/modules/teams/queries/get-team";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  const session = await auth();
+  const teamData = await getTeam(teamId, session!);
+
+  return {
+    title: `Settings › ${teamData.data?.name || "Team"}`,
+  };
+}
 
 export default async function TeamManagementPage({
   params,
