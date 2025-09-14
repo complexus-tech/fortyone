@@ -165,6 +165,16 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register sprint story migration task: %w", err)
 	}
 
+	_, err = scheduler.Register(
+		// "0 9 * * *", // Daily at 9:00 AM
+		"@every 1m",
+		asynq.NewTask("overdue:stories:email", nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register overdue stories email task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -204,6 +214,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)
 	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
 	mux.HandleFunc(tasks.TypeSprintStoryMigration, cleanupHandlers.HandleSprintStoryMigration)
+	mux.HandleFunc("overdue:stories:email", cleanupHandlers.HandleOverdueStoriesEmail)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",

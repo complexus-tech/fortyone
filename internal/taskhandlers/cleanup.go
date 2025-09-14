@@ -117,3 +117,16 @@ func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asy
 	c.log.Info(ctx, "HANDLER: Successfully processed SprintStoryMigration task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleOverdueStoriesEmail processes the overdue stories email task
+func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process overdue stories email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("overdue stories email failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
