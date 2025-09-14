@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ import (
 )
 
 // ProcessOverdueStoriesEmail processes overdue stories and sends emails directly
-func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, brevoService *brevo.Service) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessOverdueStoriesEmail")
 	defer span.End()
 
@@ -51,7 +52,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 
 			if len(stories) > 0 {
 				// Send email directly for this assignee
-				err := sendOverdueStoriesEmailForAssignee(ctx, log, stories)
+				err := sendOverdueStoriesEmailForAssignee(ctx, log, brevoService, assigneeID, stories)
 				if err != nil {
 					log.Error(ctx, "Failed to send email", "assignee_id", assigneeID, "error", err)
 					continue
@@ -220,7 +221,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 }
 
 // sendOverdueStoriesEmailForAssignee sends email directly for a specific assignee
-func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, stories []OverdueStory) error {
+func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, brevoService *brevo.Service, assigneeID uuid.UUID, stories []OverdueStory) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendOverdueStoriesEmailForAssignee")
 	defer span.End()
 
@@ -249,15 +250,29 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	// Format email content
 	emailContent := formatOverdueStoriesEmailContent(firstStory, dueSoonStories, dueTodayStories, overdueStories, workspaceURL)
 
-	// TODO: Send email via Brevo service
-	// This would need to be implemented with the actual Brevo service
-	log.Info(ctx, "Would send overdue stories email",
+	// Send email via Brevo service
+	totalCount := len(dueSoonStories) + len(dueTodayStories) + len(overdueStories)
+	params := brevo.EmailNotificationParams{
+		UserName: firstStory.AssigneeName,
+		// UserEmail:           firstStory.AssigneeEmail,
+		UserEmail:           "josemukorivo@gmail.com",
+		WorkspaceName:       firstStory.WorkspaceName,
+		WorkspaceURL:        workspaceURL,
+		NotificationTitle:   fmt.Sprintf("%d stories need attention", totalCount),
+		NotificationMessage: emailContent,
+		NotificationType:    "overdue_stories",
+	}
+
+	if err := brevoService.SendEmailNotification(ctx, brevo.TemplateOverdueStories, params); err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to send overdue stories email: %w", err)
+	}
+
+	log.Info(ctx, "Successfully sent overdue stories email",
 		"assignee_id", firstStory.AssigneeID,
 		"assignee_email", firstStory.AssigneeEmail,
 		"workspace_name", firstStory.WorkspaceName,
-		"total_stories", len(stories),
-		"email_content_length", len(emailContent),
-		"email_content", emailContent)
+		"total_stories", totalCount)
 
 	span.AddEvent("email prepared", trace.WithAttributes(
 		attribute.String("assignee_id", firstStory.AssigneeID.String()),

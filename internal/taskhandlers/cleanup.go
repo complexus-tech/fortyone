@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -15,14 +16,16 @@ import (
 type CleanupHandlers struct {
 	log          *logger.Logger
 	db           *sqlx.DB
+	brevoService *brevo.Service
 	systemUserID uuid.UUID
 }
 
 // NewCleanupHandlers creates a new CleanupHandlers instance
-func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, systemUserID uuid.UUID) *CleanupHandlers {
+func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, systemUserID uuid.UUID) *CleanupHandlers {
 	return &CleanupHandlers{
 		log:          log,
 		db:           db,
+		brevoService: brevoService,
 		systemUserID: systemUserID,
 	}
 }
@@ -122,7 +125,7 @@ func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asy
 func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log); err != nil {
+	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log, c.brevoService); err != nil {
 		c.log.Error(ctx, "Failed to process overdue stories email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("overdue stories email failed: %w", err)
 	}

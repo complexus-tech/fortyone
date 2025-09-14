@@ -198,7 +198,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Set up task handlers
 	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, systemUserID)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, brevoService, systemUserID)
 
 	mux := asynq.NewServeMux()
 	// Register existing handlers
