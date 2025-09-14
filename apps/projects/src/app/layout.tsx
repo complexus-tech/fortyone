@@ -27,10 +27,7 @@ const heading = BricolageGrotesque({
 });
 
 export const metadata: Metadata = {
-  title: {
-    template: "%s | FortyOne",
-    default: "FortyOne",
-  },
+  title: "FortyOne",
 };
 
 export const viewport: Viewport = {
