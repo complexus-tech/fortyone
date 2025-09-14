@@ -41,6 +41,7 @@ export type NotificationPreferences = {
     objective_update: NotificationChannel;
     story_comment: NotificationChannel;
     story_update: NotificationChannel;
+    overdue_stories: NotificationChannel;
   };
   createdAt: string;
   updatedAt: string;
@@ -52,7 +53,8 @@ export type NotificationType =
   | "comment_reply"
   | "mention"
   | "key_result_update"
-  | "story_comment";
+  | "story_comment"
+  | "overdue_stories";
 
 export type UpdateNotificationPreferences = {
   emailEnabled?: boolean;
