@@ -287,39 +287,39 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 // formatOverdueStoriesEmailContent formats the email content
 func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, dueTodayStories, overdueStories []OverdueStory, workspaceURL string) string {
 	content := fmt.Sprintf(`
-		<h2>Hi %s,</h2>
+		<h3>Hi %s,</h3>
 		<p>You have %d stories that need attention in %s.</p>
 	`, firstStory.AssigneeName, len(dueSoonStories)+len(dueTodayStories)+len(overdueStories), firstStory.WorkspaceName)
 
 	if len(dueSoonStories) > 0 {
 		content += fmt.Sprintf(`
-			<h3>DUE SOON (%d stories)</h3>
+			<p><strong>Due soon (%d stories)</strong></p>
 			<ul>
 		`, len(dueSoonStories))
 		for _, story := range dueSoonStories {
 			content += fmt.Sprintf(`
-				<li><strong>%s</strong> - Due %s (%s) <a href="%s/story/%s">View</a></li>
-			`, story.Title, story.EndDate.Format("January 2, 2006"), story.TeamName, workspaceURL, story.ID.String())
+				<li><a href="%s/story/%s">%s</a> - Due %s (%s)</li>
+			`, workspaceURL, story.ID.String(), story.Title, story.EndDate.Format("January 2, 2006"), story.TeamName)
 		}
 		content += "</ul>"
 	}
 
 	if len(dueTodayStories) > 0 {
 		content += fmt.Sprintf(`
-			<h3>DUE TODAY (%d stories)</h3>
+			<p><strong>Due today (%d stories)</strong></p>
 			<ul>
 		`, len(dueTodayStories))
 		for _, story := range dueTodayStories {
 			content += fmt.Sprintf(`
-				<li><strong>%s</strong> - Due today (%s) <a href="%s/story/%s">View</a></li>
-			`, story.Title, story.TeamName, workspaceURL, story.ID.String())
+				<li><a href="%s/story/%s">%s</a> - Due today (%s)</li>
+			`, workspaceURL, story.ID.String(), story.Title, story.TeamName)
 		}
 		content += "</ul>"
 	}
 
 	if len(overdueStories) > 0 {
 		content += fmt.Sprintf(`
-			<h3>OVERDUE (%d stories)</h3>
+			<p><strong>Overdue (%d stories)</strong></p>
 			<ul>
 		`, len(overdueStories))
 		for _, story := range overdueStories {
@@ -328,15 +328,11 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><strong>%s</strong> - %d %s overdue (%s) <a href="%s/story/%s">View</a></li>
-			`, story.Title, story.DaysDifference, daysText, story.TeamName, workspaceURL, story.ID.String())
+				<li><a href="%s/story/%s">%s</a> - %d %s overdue (%s)</li>
+			`, workspaceURL, story.ID.String(), story.Title, story.DaysDifference, daysText, story.TeamName)
 		}
 		content += "</ul>"
 	}
-
-	content += fmt.Sprintf(`
-		<p><a href="%s/stories?filter=my-overdue">View all stories</a></p>
-	`, workspaceURL)
 
 	return content
 }
