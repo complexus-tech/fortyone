@@ -327,9 +327,10 @@ func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UU
 
 	// Update specific channel preferences
 	for key, value := range updates {
-		if key == "email_enabled" {
+		switch key {
+		case "email_enabled":
 			prefs[notificationType]["email"] = value.(bool)
-		} else if key == "in_app_enabled" {
+		case "in_app_enabled":
 			prefs[notificationType]["in_app"] = value.(bool)
 		}
 	}
@@ -662,6 +663,10 @@ func getDefaultPreferences() map[string]map[string]bool {
 			"in_app": true,
 		},
 		"mention": {
+			"email":  true,
+			"in_app": true,
+		},
+		"overdue_stories": {
 			"email":  true,
 			"in_app": true,
 		},

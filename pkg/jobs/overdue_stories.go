@@ -31,7 +31,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 		batchCount++
 		log.Info(ctx, fmt.Sprintf("Processing assignee batch %d", batchCount))
 
-		// Get next batch of assignees with overdue stories
+		// Get next batch of assignees with overdue stories (filtered by email preferences)
 		assignees, err := getAssigneesWithOverdueStories(ctx, db, assigneeBatchSize, batchCount-1)
 		if err != nil {
 			span.RecordError(err)
@@ -43,10 +43,11 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 		}
 
 		// Process each assignee in this batch
-		for _, assigneeID := range assignees {
-			stories, err := getOverdueStoriesForAssignee(ctx, db, assigneeID)
+		for _, assignee := range assignees {
+			// Get stories for this specific assignee
+			stories, err := getOverdueStoriesForAssignee(ctx, db, assignee.AssigneeID)
 			if err != nil {
-				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assigneeID, "error", err)
+				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "error", err)
 				continue
 			}
 
@@ -54,7 +55,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 				// Send email directly for this assignee
 				err := sendOverdueStoriesEmailForAssignee(ctx, log, brevoService, stories)
 				if err != nil {
-					log.Error(ctx, "Failed to send email", "assignee_id", assigneeID, "error", err)
+					log.Error(ctx, "Failed to send email", "assignee_id", assignee.AssigneeID, "error", err)
 					continue
 				}
 				totalEmailsCreated++
@@ -100,18 +101,28 @@ type OverdueStory struct {
 	StatusCategory string    `db:"status_category"`
 	DeadlineStatus string    `db:"deadline_status"`
 	DaysDifference int       `db:"days_difference"`
+	EmailEnabled   bool      `db:"email_enabled"`
 }
 
-// getAssigneesWithOverdueStories gets a batch of assignees who have stories needing attention
-func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]uuid.UUID, error) {
+// getAssigneesWithOverdueStories gets a batch of assignees who have stories needing attention and email enabled
+func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]OverdueStory, error) {
 	ctx, span := web.AddSpan(ctx, "jobs.getAssigneesWithOverdueStories")
 	defer span.End()
 
 	query := `
-		SELECT DISTINCT s.assignee_id
+		SELECT DISTINCT 
+			s.assignee_id,
+			u.email as assignee_email,
+			COALESCE(NULLIF(u.full_name, ''), u.username) as assignee_name,
+			w.workspace_id,
+			w.name as workspace_name,
+			w.slug as workspace_slug,
+			CAST(COALESCE(np.preferences -> 'overdue_stories' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
 		FROM stories s
 		JOIN users u ON s.assignee_id = u.user_id
+		JOIN workspaces w ON s.workspace_id = w.workspace_id
 		JOIN statuses st ON s.status_id = st.status_id
+		LEFT JOIN notification_preferences np ON s.assignee_id = np.user_id AND s.workspace_id = np.workspace_id
 		WHERE s.end_date IS NOT NULL
 			AND st.category NOT IN ('completed', 'cancelled')
 			AND s.deleted_at IS NULL
@@ -120,6 +131,7 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 			AND s.assignee_id IS NOT NULL
 			AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
 			AND u.is_active = true
+			AND CAST(COALESCE(np.preferences -> 'overdue_stories' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY s.assignee_id
 		LIMIT :batch_size OFFSET :offset`
 
@@ -135,19 +147,19 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 	}
 	defer stmt.Close()
 
-	var assigneeIDs []uuid.UUID
-	if err := stmt.SelectContext(ctx, &assigneeIDs, params); err != nil {
+	var assignees []OverdueStory
+	if err := stmt.SelectContext(ctx, &assignees, params); err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to execute assignees query: %w", err)
 	}
 
 	span.AddEvent("assignees retrieved", trace.WithAttributes(
-		attribute.Int("assignees.count", len(assigneeIDs)),
+		attribute.Int("assignees.count", len(assignees)),
 		attribute.Int("batch_size", batchSize),
 		attribute.Int("offset", offset),
 	))
 
-	return assigneeIDs, nil
+	return assignees, nil
 }
 
 // getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee
