@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { Back } from "./back";
+
+export const metadata: Metadata = {
+  title: "Unauthorized Access",
+};
 
 export default function Unauthorized() {
   return (

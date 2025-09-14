@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowLeftIcon, TeamIcon } from "icons";
+import { ArrowLeft2Icon, TeamIcon } from "icons";
 import { Box, Button, Text } from "ui";
 import { auth } from "@/auth";
 import { getTeam } from "@/modules/teams/queries/get-team";
@@ -29,7 +29,7 @@ export default async function Layout({
             className="gap-1 pl-2"
             color="tertiary"
             href="/my-work"
-            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+            leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
           >
             Go to my work
           </Button>

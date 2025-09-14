@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Box } from "ui";
@@ -8,10 +7,6 @@ import { getQueryClient } from "@/app/get-query-client";
 import { getNotifications } from "@/modules/notifications/queries/get-notifications";
 import { notificationKeys } from "@/constants/keys";
 import { auth } from "@/auth";
-
-export const metadata: Metadata = {
-  title: "Notifications",
-};
 
 export default async function Layout({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Box, Button, Text } from "ui";
-import { ArrowLeftIcon, StoryMissingIcon } from "icons";
+import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
 import { StoryPage } from "@/modules/story";
 import { getQueryClient } from "@/app/get-query-client";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -43,7 +43,7 @@ export default async function Page(props: Props) {
             className="gap-1 pl-2"
             color="tertiary"
             href="/my-work"
-            leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+            leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
           >
             Go to my work
           </Button>
