@@ -286,49 +286,66 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 
 // formatOverdueStoriesEmailContent formats the email content
 func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, dueTodayStories, overdueStories []OverdueStory, workspaceURL string) string {
+	totalItems := len(dueSoonStories) + len(dueTodayStories) + len(overdueStories)
+	itemText := "item"
+	if totalItems > 1 {
+		itemText = "items"
+	}
 	content := fmt.Sprintf(`
 		<h3>Hi %s,</h3>
-		<p>You have %d stories that need attention in %s.</p>
-	`, firstStory.AssigneeName, len(dueSoonStories)+len(dueTodayStories)+len(overdueStories), firstStory.WorkspaceName)
+		<p>You have %d %s that need attention</p>
+	`, firstStory.AssigneeName, totalItems, itemText)
 
 	if len(dueSoonStories) > 0 {
+		itemText := "item"
+		if len(dueSoonStories) > 1 {
+			itemText = "items"
+		}
 		content += fmt.Sprintf(`
-			<p><strong>Due soon (%d stories)</strong></p>
+			<p><strong>Due soon (%d %s)</strong></p>
 			<ul>
-		`, len(dueSoonStories))
+		`, len(dueSoonStories), itemText)
 		for _, story := range dueSoonStories {
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s">%s</a> - Due %s (%s)</li>
+				<li><a href="%s/story/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s (%s)</li>
 			`, workspaceURL, story.ID.String(), story.Title, story.EndDate.Format("January 2, 2006"), story.TeamName)
 		}
 		content += "</ul>"
 	}
 
 	if len(dueTodayStories) > 0 {
+		itemText := "item"
+		if len(dueTodayStories) > 1 {
+			itemText = "items"
+		}
 		content += fmt.Sprintf(`
-			<p><strong>Due today (%d stories)</strong></p>
+			<p><strong>Due today (%d %s)</strong></p>
 			<ul>
-		`, len(dueTodayStories))
+		`, len(dueTodayStories), itemText)
 		for _, story := range dueTodayStories {
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s">%s</a> - Due today (%s)</li>
+				<li><a href="%s/story/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due today (%s)</li>
 			`, workspaceURL, story.ID.String(), story.Title, story.TeamName)
 		}
 		content += "</ul>"
 	}
 
 	if len(overdueStories) > 0 {
+		itemText := "item"
+		if len(overdueStories) > 1 {
+			itemText = "items"
+		}
 		content += fmt.Sprintf(`
-			<p><strong>Overdue (%d stories)</strong></p>
+			<p><strong>Overdue (%d %s)</strong></p>
 			<ul>
-		`, len(overdueStories))
+		`, len(overdueStories), itemText)
 		for _, story := range overdueStories {
 			daysText := "day"
 			if story.DaysDifference > 1 {
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s">%s</a> - %d %s overdue (%s)</li>
+				<li><a href="%s/story/%s" style="color: #000000; text-decoration: underline;">%s</a> - %d %s overdue (%s)</li>
 			`, workspaceURL, story.ID.String(), story.Title, story.DaysDifference, daysText, story.TeamName)
 		}
 		content += "</ul>"
