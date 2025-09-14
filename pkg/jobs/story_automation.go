@@ -359,7 +359,8 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 				s.end_date
 			FROM sprints s
 			JOIN team_sprint_settings tss ON s.team_id = tss.team_id
-			WHERE s.end_date < CURRENT_DATE
+			WHERE s.end_date >= CURRENT_DATE - INTERVAL '2 days' -- Allow up to 2 days in the past
+        AND s.end_date < CURRENT_DATE
 				AND tss.move_incomplete_stories_enabled = true
 				AND EXISTS (
 					SELECT 1
