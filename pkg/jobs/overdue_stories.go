@@ -259,10 +259,9 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
 	params := brevo.EmailNotificationParams{
-		Subject:  title,
-		UserName: firstStory.AssigneeName,
-		// UserEmail:           firstStory.AssigneeEmail,
-		UserEmail:           "josemukorivo@gmail.com",
+		Subject:             title,
+		UserName:            firstStory.AssigneeName,
+		UserEmail:           firstStory.AssigneeEmail,
 		WorkspaceName:       firstStory.WorkspaceName,
 		WorkspaceURL:        workspaceURL,
 		NotificationTitle:   title,

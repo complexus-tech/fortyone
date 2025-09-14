@@ -166,8 +166,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
-		// "0 9 * * *", // Daily at 9:00 AM
-		"@every 1m",
+		"0 9 * * *", // Daily at 9:00 AM
 		asynq.NewTask("overdue:stories:email", nil),
 		asynq.Queue("automation"),
 	)
