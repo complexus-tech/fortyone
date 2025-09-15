@@ -25,6 +25,29 @@ type AppActivity struct {
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
 
+// AppActivityWithUser represents an activity with embedded user details
+type AppActivityWithUser struct {
+	ID           uuid.UUID `json:"id"`
+	StoryID      uuid.UUID `json:"storyId"`
+	UserID       uuid.UUID `json:"userId"`
+	Type         string    `json:"type"`
+	Field        string    `json:"field"`
+	CurrentValue string    `json:"currentValue"`
+	CreatedAt    time.Time `json:"createdAt"`
+	WorkspaceID  uuid.UUID `json:"workspaceId"`
+
+	// Embedded user details
+	User AppUserDetails `json:"user"`
+}
+
+// AppUserDetails represents basic user information for activities
+type AppUserDetails struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
+}
+
 // AppNewLabels represents a new label in the application.
 type AppNewLabels struct {
 	Labels []uuid.UUID `json:"labels"`
@@ -43,11 +66,39 @@ func toAppActivity(i stories.CoreActivity) AppActivity {
 	}
 }
 
+func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
+	return AppActivityWithUser{
+		ID:           i.ID,
+		StoryID:      i.StoryID,
+		UserID:       i.UserID,
+		Type:         i.Type,
+		Field:        i.Field,
+		CurrentValue: i.CurrentValue,
+		CreatedAt:    i.CreatedAt,
+		WorkspaceID:  i.WorkspaceID,
+		User: AppUserDetails{
+			ID:        i.User.ID,
+			Username:  i.User.Username,
+			FullName:  i.User.FullName,
+			AvatarURL: i.User.AvatarURL,
+		},
+	}
+}
+
 // toAppActivities converts a list of core activities to a list of application activities
 func toAppActivities(activities []stories.CoreActivity) []AppActivity {
 	appActivities := make([]AppActivity, len(activities))
 	for i, activity := range activities {
 		appActivities[i] = toAppActivity(activity)
+	}
+	return appActivities
+}
+
+// toAppActivitiesWithUser converts a list of core activities with user details to a list of application activities
+func toAppActivitiesWithUser(activities []stories.CoreActivityWithUser) []AppActivityWithUser {
+	appActivities := make([]AppActivityWithUser, len(activities))
+	for i, activity := range activities {
+		appActivities[i] = toAppActivityWithUser(activity)
 	}
 	return appActivities
 }
@@ -64,6 +115,12 @@ type ActivitiesPagination struct {
 type ActivitiesResponse struct {
 	Activities []AppActivity        `json:"activities"`
 	Pagination ActivitiesPagination `json:"pagination"`
+}
+
+// ActivitiesResponseWithUser represents the response for paginated activities with user details
+type ActivitiesResponseWithUser struct {
+	Activities []AppActivityWithUser `json:"activities"`
+	Pagination ActivitiesPagination  `json:"pagination"`
 }
 
 // CommentsPagination represents pagination information for comments

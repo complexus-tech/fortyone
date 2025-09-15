@@ -673,20 +673,20 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	// Note: Cache is disabled for paginated requests since we need different cache keys per page
 	// TODO: Consider implementing page-specific caching if needed
 
-	activitiesList, hasMore, err := h.stories.GetActivities(ctx, storyId, page, pageSize)
+	activitiesList, hasMore, err := h.stories.GetActivitiesWithUser(ctx, storyId, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	appActivities := toAppActivities(activitiesList)
+	appActivities := toAppActivitiesWithUser(activitiesList)
 
 	nextPage := page + 1
 	if !hasMore {
 		nextPage = 0
 	}
 
-	response := ActivitiesResponse{
+	response := ActivitiesResponseWithUser{
 		Activities: appActivities,
 		Pagination: ActivitiesPagination{
 			Page:     page,

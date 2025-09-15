@@ -154,6 +154,27 @@ type CoreActivity struct {
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
 
+// CoreActivityWithUser represents an activity with embedded user details
+type CoreActivityWithUser struct {
+	ID           uuid.UUID   `json:"id"`
+	StoryID      uuid.UUID   `json:"storyId"`
+	UserID       uuid.UUID   `json:"userId"`
+	Type         string      `json:"type"`
+	Field        string      `json:"field"`
+	CurrentValue string      `json:"currentValue"`
+	CreatedAt    time.Time   `json:"createdAt"`
+	WorkspaceID  uuid.UUID   `json:"workspaceId"`
+	User         UserDetails `json:"user"`
+}
+
+// UserDetails represents basic user information for activities
+type UserDetails struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
+}
+
 type CoreNewComment struct {
 	StoryID  uuid.UUID
 	Parent   *uuid.UUID

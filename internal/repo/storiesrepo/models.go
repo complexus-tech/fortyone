@@ -188,6 +188,22 @@ type dbActivity struct {
 	WorkspaceID  uuid.UUID `db:"workspace_id"`
 }
 
+// dbActivityWithUser represents the database model for an activity with user details
+type dbActivityWithUser struct {
+	ID           uuid.UUID `db:"activity_id"`
+	StoryID      uuid.UUID `db:"story_id"`
+	UserID       uuid.UUID `db:"user_id"`
+	Type         string    `db:"activity_type"`
+	Field        string    `db:"field_changed"`
+	CurrentValue string    `db:"current_value"`
+	CreatedAt    time.Time `db:"created_at"`
+	WorkspaceID  uuid.UUID `db:"workspace_id"`
+	// User details
+	Username  string `db:"username"`
+	FullName  string `db:"full_name"`
+	AvatarURL string `db:"avatar_url"`
+}
+
 // toCoreActivity converts a dbActivity to a CoreActivity.
 func toCoreActivity(i dbActivity) stories.CoreActivity {
 	return stories.CoreActivity{
@@ -219,6 +235,35 @@ func toCoreActivities(is []dbActivity) []stories.CoreActivity {
 	ca := make([]stories.CoreActivity, len(is))
 	for i, activity := range is {
 		ca[i] = toCoreActivity(activity)
+	}
+	return ca
+}
+
+// toCoreActivityWithUser converts a dbActivityWithUser to a CoreActivityWithUser.
+func toCoreActivityWithUser(i dbActivityWithUser) stories.CoreActivityWithUser {
+	return stories.CoreActivityWithUser{
+		ID:           i.ID,
+		StoryID:      i.StoryID,
+		UserID:       i.UserID,
+		Type:         i.Type,
+		Field:        i.Field,
+		CurrentValue: i.CurrentValue,
+		CreatedAt:    i.CreatedAt,
+		WorkspaceID:  i.WorkspaceID,
+		User: stories.UserDetails{
+			ID:        i.UserID,
+			Username:  i.Username,
+			FullName:  i.FullName,
+			AvatarURL: i.AvatarURL,
+		},
+	}
+}
+
+// toCoreActivitiesWithUser converts a slice of dbActivityWithUser to a slice of CoreActivityWithUser.
+func toCoreActivitiesWithUser(is []dbActivityWithUser) []stories.CoreActivityWithUser {
+	ca := make([]stories.CoreActivityWithUser, len(is))
+	for i, activity := range is {
+		ca[i] = toCoreActivityWithUser(activity)
 	}
 	return ca
 }

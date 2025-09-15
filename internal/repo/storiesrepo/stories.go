@@ -1294,6 +1294,77 @@ func (r *repo) GetActivities(ctx context.Context, storyID uuid.UUID, page, pageS
 	return toCoreActivities(activities), hasMore, nil
 }
 
+// GetActivitiesWithUser returns activities for a given story ID with user details and pagination.
+func (r *repo) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]stories.CoreActivityWithUser, bool, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetActivitiesWithUser")
+	defer span.End()
+
+	// Calculate offset and fetch one extra to check if there are more
+	offset := (page - 1) * pageSize
+	limit := pageSize + 1
+
+	params := map[string]any{
+		"story_id": storyID,
+		"limit":    limit,
+		"offset":   offset,
+	}
+
+	q := `
+		SELECT 
+			sa.activity_id,
+			sa.story_id,
+			sa.user_id,
+			sa.activity_type,
+			sa.field_changed,
+			sa.current_value,
+			sa.created_at,
+			sa.workspace_id,
+			u.username,
+			u.full_name,
+			u.avatar_url
+		FROM story_activities sa
+		INNER JOIN users u ON sa.user_id = u.user_id
+		WHERE sa.story_id = :story_id
+			AND u.is_active = true
+		ORDER BY sa.created_at DESC
+		LIMIT :limit OFFSET :offset
+	`
+
+	var activities []dbActivityWithUser
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, false, fmt.Errorf("failed to get activities: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &activities, params); err != nil {
+		errMsg := fmt.Sprintf("Failed to get activities: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get activities"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, false, fmt.Errorf("failed to get activities: %w", err)
+	}
+
+	// Check if there are more activities
+	hasMore := len(activities) > pageSize
+	if hasMore {
+		// Remove the extra activity we fetched
+		activities = activities[:pageSize]
+	}
+
+	span.AddEvent("activities with user details retrieved.", trace.WithAttributes(
+		attribute.Int("activity.count", len(activities)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return toCoreActivitiesWithUser(activities), hasMore, nil
+}
+
 func (r *repo) CreateComment(ctx context.Context, cnc stories.CoreNewComment) (comments.CoreComment, error) {
 	r.log.Info(ctx, "business.repository.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.CreateComment")

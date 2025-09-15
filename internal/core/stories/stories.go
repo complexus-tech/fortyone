@@ -43,6 +43,7 @@ type Repository interface {
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
 	GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
+	GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error)
 	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
@@ -522,6 +523,28 @@ func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID, page, pa
 	}
 
 	span.AddEvent("activities retrieved.", trace.WithAttributes(
+		attribute.Int("activity.count", len(activities)),
+		attribute.Int("page", page),
+		attribute.Int("pageSize", pageSize),
+		attribute.Bool("has.more", hasMore),
+	))
+
+	return activities, hasMore, nil
+}
+
+// GetActivitiesWithUser returns the activities for a story with user details and pagination.
+func (s *Service) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error) {
+	s.log.Info(ctx, "business.core.activities.GetActivitiesWithUser")
+	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivitiesWithUser")
+	defer span.End()
+
+	activities, hasMore, err := s.repo.GetActivitiesWithUser(ctx, storyID, page, pageSize)
+	if err != nil {
+		span.RecordError(err)
+		return nil, false, err
+	}
+
+	span.AddEvent("activities with user details retrieved.", trace.WithAttributes(
 		attribute.Int("activity.count", len(activities)),
 		attribute.Int("page", page),
 		attribute.Int("pageSize", pageSize),
