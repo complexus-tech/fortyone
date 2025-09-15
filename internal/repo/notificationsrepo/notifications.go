@@ -36,10 +36,13 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 		INSERT INTO notifications (
 			recipient_id, workspace_id, type, entity_type,
 			entity_id, actor_id, title, message
-		) VALUES (
-			:recipient_id, :workspace_id, :type, :entity_type,
-			:entity_id, :actor_id, :title, :message	
 		) 
+		SELECT 
+			:recipient_id, :workspace_id, :type, :entity_type,
+			:entity_id, :actor_id, :title, :message
+		FROM users u
+		WHERE u.user_id = :recipient_id 
+			AND u.is_active = true
 		ON CONFLICT (recipient_id, workspace_id, entity_id, entity_type)
 		DO UPDATE SET
 			title = :title,

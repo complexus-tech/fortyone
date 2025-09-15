@@ -100,7 +100,8 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			AND n.workspace_id = np.workspace_id
 		WHERE
 			n.notification_id = :notification_id
-			AND n.read_at IS NULL;
+			AND n.read_at IS NULL
+			AND u.is_active = true;
 		`
 
 	params := map[string]any{
