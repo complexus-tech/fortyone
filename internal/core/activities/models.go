@@ -16,6 +16,17 @@ type CoreActivity struct {
 	CurrentValue string    `db:"current_value"`
 	CreatedAt    time.Time `db:"created_at"`
 	WorkspaceID  uuid.UUID `db:"workspace_id"`
+
+	// User details (populated when fetching activities)
+	User UserDetails `json:"user"`
+}
+
+// UserDetails represents basic user information for activities
+type UserDetails struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
 }
 
 // CoreNewActivity represents the data needed to create a new activity

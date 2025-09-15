@@ -16,6 +16,11 @@ type dbActivity struct {
 	CurrentValue string    `db:"current_value"`
 	CreatedAt    time.Time `db:"created_at"`
 	WorkspaceID  uuid.UUID `db:"workspace_id"`
+
+	// User details from JOIN
+	Username  string `db:"username"`
+	FullName  string `db:"full_name"`
+	AvatarURL string `db:"avatar_url"`
 }
 
 func toCoreActivity(a dbActivity) activities.CoreActivity {
@@ -28,6 +33,12 @@ func toCoreActivity(a dbActivity) activities.CoreActivity {
 		CurrentValue: a.CurrentValue,
 		CreatedAt:    a.CreatedAt,
 		WorkspaceID:  a.WorkspaceID,
+		User: activities.UserDetails{
+			ID:        a.UserID,
+			Username:  a.Username,
+			FullName:  a.FullName,
+			AvatarURL: a.AvatarURL,
+		},
 	}
 }
 

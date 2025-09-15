@@ -16,6 +16,17 @@ type AppActivity struct {
 	CurrentValue string    `json:"currentValue"`
 	CreatedAt    time.Time `json:"createdAt"`
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
+
+	// User details
+	User AppUserDetails `json:"user"`
+}
+
+// AppUserDetails represents basic user information for activities
+type AppUserDetails struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
 }
 
 type AppFilters struct {
@@ -32,6 +43,12 @@ func toAppActivity(a activities.CoreActivity) AppActivity {
 		CurrentValue: a.CurrentValue,
 		CreatedAt:    a.CreatedAt,
 		WorkspaceID:  a.WorkspaceID,
+		User: AppUserDetails{
+			ID:        a.User.ID,
+			Username:  a.User.Username,
+			FullName:  a.User.FullName,
+			AvatarURL: a.User.AvatarURL,
+		},
 	}
 }
 

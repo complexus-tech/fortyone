@@ -59,11 +59,14 @@ func (r *repo) Create(ctx context.Context, na activities.CoreNewActivity) error 
 func (r *repo) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID) ([]activities.CoreActivity, error) {
 	const query = `
 		SELECT 
-			activity_id, story_id, user_id, activity_type, field_changed, current_value, created_at, workspace_id
-		FROM story_activities
-		WHERE user_id = :user_id
-		AND workspace_id = :workspace_id
-		ORDER BY created_at DESC
+			sa.activity_id, sa.story_id, sa.user_id, sa.activity_type, sa.field_changed, sa.current_value, sa.created_at, sa.workspace_id,
+			u.username, u.full_name, u.avatar_url
+		FROM story_activities sa
+		JOIN users u ON sa.user_id = u.user_id
+		WHERE sa.user_id = :user_id
+		AND sa.workspace_id = :workspace_id
+		AND u.is_active = true
+		ORDER BY sa.created_at DESC
 		LIMIT :limit`
 
 	params := map[string]interface{}{
