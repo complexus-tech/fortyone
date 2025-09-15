@@ -13,18 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// AppActivity represents an activity in the application layer
-type AppActivity struct {
-	ID           uuid.UUID `json:"id"`
-	StoryID      uuid.UUID `json:"storyId"`
-	UserID       uuid.UUID `json:"userId"`
-	Type         string    `json:"type"`
-	Field        string    `json:"field"`
-	CurrentValue string    `json:"currentValue"`
-	CreatedAt    time.Time `json:"createdAt"`
-	WorkspaceID  uuid.UUID `json:"workspaceId"`
-}
-
 // AppActivityWithUser represents an activity with embedded user details
 type AppActivityWithUser struct {
 	ID           uuid.UUID `json:"id"`
@@ -53,19 +41,6 @@ type AppNewLabels struct {
 	Labels []uuid.UUID `json:"labels"`
 }
 
-func toAppActivity(i stories.CoreActivity) AppActivity {
-	return AppActivity{
-		ID:           i.ID,
-		StoryID:      i.StoryID,
-		UserID:       i.UserID,
-		Type:         i.Type,
-		Field:        i.Field,
-		CurrentValue: i.CurrentValue,
-		CreatedAt:    i.CreatedAt,
-		WorkspaceID:  i.WorkspaceID,
-	}
-}
-
 func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 	return AppActivityWithUser{
 		ID:           i.ID,
@@ -85,15 +60,6 @@ func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 	}
 }
 
-// toAppActivities converts a list of core activities to a list of application activities
-func toAppActivities(activities []stories.CoreActivity) []AppActivity {
-	appActivities := make([]AppActivity, len(activities))
-	for i, activity := range activities {
-		appActivities[i] = toAppActivity(activity)
-	}
-	return appActivities
-}
-
 // toAppActivitiesWithUser converts a list of core activities with user details to a list of application activities
 func toAppActivitiesWithUser(activities []stories.CoreActivityWithUser) []AppActivityWithUser {
 	appActivities := make([]AppActivityWithUser, len(activities))
@@ -109,12 +75,6 @@ type ActivitiesPagination struct {
 	PageSize int  `json:"pageSize"`
 	HasMore  bool `json:"hasMore"`
 	NextPage int  `json:"nextPage"`
-}
-
-// ActivitiesResponse represents the response for paginated activities
-type ActivitiesResponse struct {
-	Activities []AppActivity        `json:"activities"`
-	Pagination ActivitiesPagination `json:"pagination"`
 }
 
 // ActivitiesResponseWithUser represents the response for paginated activities with user details

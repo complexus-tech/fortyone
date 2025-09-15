@@ -42,7 +42,6 @@ type Repository interface {
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
-	GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
 	GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
 	GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error)
@@ -508,28 +507,6 @@ func (s *Service) BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceI
 		attribute.Int("stories.count", len(ids))))
 
 	return nil
-}
-
-// GetActivities returns the activities for a story with pagination.
-func (s *Service) GetActivities(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
-	s.log.Info(ctx, "business.core.activities.GetActivities")
-	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivities")
-	defer span.End()
-
-	activities, hasMore, err := s.repo.GetActivities(ctx, storyID, page, pageSize)
-	if err != nil {
-		span.RecordError(err)
-		return nil, false, err
-	}
-
-	span.AddEvent("activities retrieved.", trace.WithAttributes(
-		attribute.Int("activity.count", len(activities)),
-		attribute.Int("page", page),
-		attribute.Int("pageSize", pageSize),
-		attribute.Bool("has.more", hasMore),
-	))
-
-	return activities, hasMore, nil
 }
 
 // GetActivitiesWithUser returns the activities for a story with user details and pagination.
