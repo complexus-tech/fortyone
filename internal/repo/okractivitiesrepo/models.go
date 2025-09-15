@@ -19,6 +19,11 @@ type dbActivity struct {
 	Comment      string     `db:"comment"`
 	CreatedAt    time.Time  `db:"created_at"`
 	WorkspaceID  uuid.UUID  `db:"workspace_id"`
+
+	// User details from JOIN
+	Username  string `db:"username"`
+	FullName  string `db:"full_name"`
+	AvatarURL string `db:"avatar_url"`
 }
 
 func toCoreActivity(a dbActivity) okractivities.CoreActivity {
@@ -34,6 +39,12 @@ func toCoreActivity(a dbActivity) okractivities.CoreActivity {
 		Comment:      a.Comment,
 		CreatedAt:    a.CreatedAt,
 		WorkspaceID:  a.WorkspaceID,
+		User: okractivities.UserDetails{
+			ID:        a.UserID,
+			Username:  a.Username,
+			FullName:  a.FullName,
+			AvatarURL: a.AvatarURL,
+		},
 	}
 }
 

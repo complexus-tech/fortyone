@@ -74,11 +74,14 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
 
 	const query = `
         SELECT 
-            activity_id, objective_id, key_result_id, user_id, activity_type, update_type,
-            field_changed, current_value, comment, created_at, workspace_id
-        FROM okr_activities
-        WHERE objective_id = :objective_id
-        ORDER BY created_at DESC
+            oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
+            oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
+            u.username, u.full_name, u.avatar_url
+        FROM okr_activities oa
+        JOIN users u ON oa.user_id = u.user_id
+        WHERE oa.objective_id = :objective_id
+            AND u.is_active = true
+        ORDER BY oa.created_at DESC
         LIMIT :limit OFFSET :offset`
 
 	params := map[string]any{
@@ -115,11 +118,14 @@ func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID
 
 	const query = `
         SELECT 
-            activity_id, objective_id, key_result_id, user_id, activity_type, update_type,
-            field_changed, current_value, comment, created_at, workspace_id
-        FROM okr_activities
-        WHERE key_result_id = :key_result_id
-        ORDER BY created_at DESC
+            oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
+            oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
+            u.username, u.full_name, u.avatar_url
+        FROM okr_activities oa
+        JOIN users u ON oa.user_id = u.user_id
+        WHERE oa.key_result_id = :key_result_id
+            AND u.is_active = true
+        ORDER BY oa.created_at DESC
         LIMIT :limit OFFSET :offset`
 
 	params := map[string]any{

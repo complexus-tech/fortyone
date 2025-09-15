@@ -335,6 +335,17 @@ type AppObjectiveActivity struct {
 	Comment      string     `json:"comment"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	WorkspaceID  uuid.UUID  `json:"workspaceId"`
+
+	// User details
+	User AppUserDetails `json:"user"`
+}
+
+// AppUserDetails represents basic user information for activities
+type AppUserDetails struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
 }
 
 // toAppObjectiveActivity converts a CoreActivity to an AppObjectiveActivity
@@ -351,6 +362,12 @@ func toAppObjectiveActivity(a okractivities.CoreActivity) AppObjectiveActivity {
 		Comment:      a.Comment,
 		CreatedAt:    a.CreatedAt,
 		WorkspaceID:  a.WorkspaceID,
+		User: AppUserDetails{
+			ID:        a.User.ID,
+			Username:  a.User.Username,
+			FullName:  a.User.FullName,
+			AvatarURL: a.User.AvatarURL,
+		},
 	}
 }
 
