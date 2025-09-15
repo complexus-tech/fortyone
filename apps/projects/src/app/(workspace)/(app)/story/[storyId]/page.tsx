@@ -8,9 +8,18 @@ import { getStory } from "@/modules/story/queries/get-story";
 import { storyKeys } from "@/modules/stories/constants";
 import { auth } from "@/auth";
 
-export const metadata: Metadata = {
-  title: "Story",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storyId: string }>;
+}): Promise<Metadata> {
+  const { storyId } = await params;
+  const session = await auth();
+  const story = await getStory(storyId, session!);
+  return {
+    title: story?.title || "Story",
+  };
+}
 
 type Props = {
   params: Promise<{
