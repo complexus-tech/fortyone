@@ -92,3 +92,30 @@ func (s *Service) AddContactsToList(ctx context.Context, listID int64, req AddCo
 
 	return nil
 }
+
+// DeleteContactRequest represents the request to delete a contact
+type DeleteContactRequest struct {
+	Email string `json:"email"`
+}
+
+// DeleteContact deletes a contact from Brevo.
+func (s *Service) DeleteContact(ctx context.Context, req DeleteContactRequest) error {
+	s.log.Info(ctx, "Deleting contact in Brevo", "email", req.Email)
+
+	if req.Email == "" {
+		return fmt.Errorf("brevo: email is required")
+	}
+
+	// Call the Brevo API
+	response, err := s.client.ContactsApi.DeleteContact(ctx, req.Email)
+	if err != nil {
+		s.log.Error(ctx, "Failed to delete contact in Brevo",
+			"error", err,
+			"email", req.Email,
+			"response_status", response.Status)
+		return fmt.Errorf("brevo: failed to delete contact: %w", err)
+	}
+
+	s.log.Info(ctx, "Successfully deleted contact in Brevo", "email", req.Email)
+	return nil
+}

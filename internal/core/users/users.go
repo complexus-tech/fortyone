@@ -201,9 +201,24 @@ func (s *Service) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
 
+	user, err := s.repo.GetUser(ctx, userID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
 	if err := s.repo.DeleteUser(ctx, userID); err != nil {
 		span.RecordError(err)
 		return err
+	}
+
+	// Enqueue subscriber delete task
+	_, err = s.tasksService.EnqueueSubscriberDelete(tasks.SubscriberDeletePayload{
+		Email: user.Email,
+	})
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "Error enqueuing subscriber delete task: %v", err)
 	}
 
 	return nil
