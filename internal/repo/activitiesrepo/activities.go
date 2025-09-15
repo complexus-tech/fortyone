@@ -58,9 +58,9 @@ func (r *repo) Create(ctx context.Context, na activities.CoreNewActivity) error 
 // GetActivities gets activities for a user.
 func (r *repo) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID) ([]activities.CoreActivity, error) {
 	const query = `
-		SELECT 
-			sa.activity_id, sa.story_id, sa.user_id, sa.activity_type, sa.field_changed, sa.current_value, sa.created_at, sa.workspace_id,
-			u.username, u.full_name, u.avatar_url
+SELECT
+		sa.activity_id, sa.story_id, sa.user_id, sa.activity_type, sa.field_changed, sa.current_value, sa.created_at, sa.workspace_id,
+		u.username, u.full_name, u.avatar_url, u.is_active
 		FROM story_activities sa
 		JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.user_id = :user_id

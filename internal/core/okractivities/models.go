@@ -47,6 +47,7 @@ type UserDetails struct {
 	Username  string    `json:"username"`
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
 }
 
 // CoreNewActivity represents the data needed to create a new activity

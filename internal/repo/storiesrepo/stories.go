@@ -1244,18 +1244,19 @@ func (r *repo) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, pag
 	}
 
 	q := `
-		SELECT 
-			sa.activity_id,
-			sa.story_id,
-			sa.user_id,
-			sa.activity_type,
-			sa.field_changed,
-			sa.current_value,
-			sa.created_at,
-			sa.workspace_id,
-			u.username,
-			u.full_name,
-			u.avatar_url
+SELECT
+		sa.activity_id,
+		sa.story_id,
+		sa.user_id,
+		sa.activity_type,
+		sa.field_changed,
+		sa.current_value,
+		sa.created_at,
+		sa.workspace_id,
+		u.username,
+		u.full_name,
+		u.avatar_url,
+		u.is_active
 		FROM story_activities sa
 		INNER JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.story_id = :story_id

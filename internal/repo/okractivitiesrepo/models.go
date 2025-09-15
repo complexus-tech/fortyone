@@ -24,6 +24,7 @@ type dbActivity struct {
 	Username  string `db:"username"`
 	FullName  string `db:"full_name"`
 	AvatarURL string `db:"avatar_url"`
+	IsActive  bool   `db:"is_active"`
 }
 
 func toCoreActivity(a dbActivity) okractivities.CoreActivity {
@@ -44,6 +45,7 @@ func toCoreActivity(a dbActivity) okractivities.CoreActivity {
 			Username:  a.Username,
 			FullName:  a.FullName,
 			AvatarURL: a.AvatarURL,
+			IsActive:  a.IsActive,
 		},
 	}
 }

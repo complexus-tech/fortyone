@@ -34,6 +34,7 @@ type AppUserDetails struct {
 	Username  string    `json:"username"`
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
 }
 
 // AppNewLabels represents a new label in the application.
@@ -56,6 +57,7 @@ func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 			Username:  i.User.Username,
 			FullName:  i.User.FullName,
 			AvatarURL: i.User.AvatarURL,
+			IsActive:  i.User.IsActive,
 		},
 	}
 }

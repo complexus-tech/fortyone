@@ -76,7 +76,7 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
         SELECT 
             oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
             oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
-            u.username, u.full_name, u.avatar_url
+            u.username, u.full_name, u.avatar_url, u.is_active
         FROM okr_activities oa
         JOIN users u ON oa.user_id = u.user_id
         WHERE oa.objective_id = :objective_id
@@ -120,7 +120,7 @@ func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID
         SELECT 
             oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
             oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
-            u.username, u.full_name, u.avatar_url
+            u.username, u.full_name, u.avatar_url, u.is_active
         FROM okr_activities oa
         JOIN users u ON oa.user_id = u.user_id
         WHERE oa.key_result_id = :key_result_id

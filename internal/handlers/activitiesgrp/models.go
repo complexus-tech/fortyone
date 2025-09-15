@@ -27,6 +27,7 @@ type AppUserDetails struct {
 	Username  string    `json:"username"`
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
 }
 
 type AppFilters struct {
@@ -48,6 +49,7 @@ func toAppActivity(a activities.CoreActivity) AppActivity {
 			Username:  a.User.Username,
 			FullName:  a.User.FullName,
 			AvatarURL: a.User.AvatarURL,
+			IsActive:  a.User.IsActive,
 		},
 	}
 }

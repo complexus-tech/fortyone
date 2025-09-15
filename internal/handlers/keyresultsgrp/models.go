@@ -229,6 +229,7 @@ type AppUserDetails struct {
 	Username  string    `json:"username"`
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
 }
 
 // toAppKeyResultActivity converts a CoreActivity to an AppKeyResultActivity
@@ -250,6 +251,7 @@ func toAppKeyResultActivity(a okractivities.CoreActivity) AppKeyResultActivity {
 			Username:  a.User.Username,
 			FullName:  a.User.FullName,
 			AvatarURL: a.User.AvatarURL,
+			IsActive:  a.User.IsActive,
 		},
 	}
 }
