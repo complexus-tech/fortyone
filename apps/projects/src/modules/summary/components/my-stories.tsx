@@ -47,11 +47,7 @@ const StoryRow = ({
       <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
         <Flex align="center" className="relative select-none" gap={2}>
           <Flex align="center" gap={2}>
-            <Text
-              className="hidden opacity-80 md:block"
-              color="muted"
-              fontWeight="normal"
-            >
+            <Text className="hidden opacity-80 md:block" color="muted">
               {getTeamLabel()}-{sequenceId}
             </Text>
             <PriorityIcon className="relative -top-px" priority={priority} />
