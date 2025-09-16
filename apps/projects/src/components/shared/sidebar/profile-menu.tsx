@@ -106,7 +106,7 @@ export const ProfileMenu = () => {
                     ) : (
                       <MoonIcon className="h-[1.15rem]" />
                     )}
-                    Color theme
+                    Appearance
                   </span>
                   <span className="flex items-center gap-1">
                     <Text
