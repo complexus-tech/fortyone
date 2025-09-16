@@ -21,7 +21,7 @@ export const WorkspaceGeneralSettings = () => {
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
   const { mutate: deleteWorkspace, isPending } = useDeleteWorkspaceMutation(
-    workspace?.id || "",
+    workspace?.slug || "",
   );
 
   const handleDeleteWorkspace = async () => {
