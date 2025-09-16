@@ -118,6 +118,11 @@ export const buttonVariants = cva(
         className: "text-primary dark:text-primary",
       },
       {
+        variant: "naked",
+        color: "danger",
+        className: "text-danger dark:text-danger dark:bg-danger/5 bg-danger/5",
+      },
+      {
         disabled: true,
         variant: ["outline", "naked"],
         className: "bg-opacity-100 text-white",
