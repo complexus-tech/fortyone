@@ -7,7 +7,6 @@ import { ConfirmDialog } from "@/components/ui";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 import { useDeleteWorkspaceMutation } from "@/lib/hooks/delete-workspace-mutation";
-import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useAnalytics } from "@/hooks";
 import { SectionHeader } from "../../components";
 import { WorkspaceForm } from "./components/form";
@@ -18,11 +17,8 @@ const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const WorkspaceGeneralSettings = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
-  const { mutate: deleteWorkspace, isPending } = useDeleteWorkspaceMutation(
-    workspace?.slug || "",
-  );
+  const { mutate: deleteWorkspace, isPending } = useDeleteWorkspaceMutation();
 
   const handleDeleteWorkspace = async () => {
     try {
