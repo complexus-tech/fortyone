@@ -52,9 +52,11 @@ export const WorkspaceForm = () => {
           value={host}
         />
       </Box>
-      <Button disabled={!hasChanges} type="submit">
-        Save changes
-      </Button>
+      {hasChanges ? (
+        <Button disabled={!hasChanges} type="submit">
+          Save changes
+        </Button>
+      ) : null}
     </form>
   );
 };
