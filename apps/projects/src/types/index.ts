@@ -94,6 +94,7 @@ export type Workspace = {
   avatarUrl: string | null;
   userRole: UserRole;
   trialEndsOn: string | null;
+  deletedAt: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
