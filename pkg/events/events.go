@@ -143,6 +143,7 @@ type WorkspaceDeletionScheduledConfirmationPayload struct {
 	WorkspaceName string    `json:"workspace_name"`
 	WorkspaceSlug string    `json:"workspace_slug"`
 	ActorEmail    string    `json:"actor_email"`
+	ActorName     string    `json:"actor_name"`
 }
 
 // WorkspaceDeletionScheduledNotificationPayload contains data for workspace deletion notification events
@@ -151,6 +152,8 @@ type WorkspaceDeletionScheduledNotificationPayload struct {
 	WorkspaceName string    `json:"workspace_name"`
 	WorkspaceSlug string    `json:"workspace_slug"`
 	ActorID       uuid.UUID `json:"actor_id"`
+	ActorName     string    `json:"actor_name"`
+	ActorEmail    string    `json:"actor_email"`
 	AdminEmails   []string  `json:"admin_emails"`
 }
 
@@ -160,6 +163,7 @@ type WorkspaceRestoredConfirmationPayload struct {
 	WorkspaceName string    `json:"workspace_name"`
 	WorkspaceSlug string    `json:"workspace_slug"`
 	ActorEmail    string    `json:"actor_email"`
+	ActorName     string    `json:"actor_name"`
 }
 
 // WorkspaceRestoredNotificationPayload contains data for workspace restore notification events
@@ -168,5 +172,6 @@ type WorkspaceRestoredNotificationPayload struct {
 	WorkspaceName string    `json:"workspace_name"`
 	WorkspaceSlug string    `json:"workspace_slug"`
 	ActorID       uuid.UUID `json:"actor_id"`
+	ActorName     string    `json:"actor_name"`
 	AdminEmails   []string  `json:"admin_emails"`
 }

@@ -276,10 +276,15 @@ func (s *Service) publishWorkspaceDeletionEvents(ctx context.Context, workspaceI
 		return fmt.Errorf("failed to get workspace details: %w", err)
 	}
 
-	// Get actor email
-	actorEmail, err := s.getUserEmail(ctx, actorID)
+	// Get actor details
+	actor, err := s.users.GetUser(ctx, actorID)
 	if err != nil {
-		return fmt.Errorf("failed to get actor email: %w", err)
+		return fmt.Errorf("failed to get actor details: %w", err)
+	}
+
+	actorName := actor.FullName
+	if actorName == "" {
+		actorName = actor.Username
 	}
 
 	// Publish confirmation event for the actor
@@ -289,7 +294,8 @@ func (s *Service) publishWorkspaceDeletionEvents(ctx context.Context, workspaceI
 			WorkspaceID:   workspaceID,
 			WorkspaceName: workspace.Name,
 			WorkspaceSlug: workspace.Slug,
-			ActorEmail:    actorEmail,
+			ActorEmail:    actor.Email,
+			ActorName:     actorName,
 		},
 		Timestamp: time.Now(),
 		ActorID:   actorID,
@@ -316,6 +322,8 @@ func (s *Service) publishWorkspaceDeletionEvents(ctx context.Context, workspaceI
 			WorkspaceName: workspace.Name,
 			WorkspaceSlug: workspace.Slug,
 			ActorID:       actorID,
+			ActorName:     actorName,
+			ActorEmail:    actor.Email,
 			AdminEmails:   adminEmails,
 		},
 		Timestamp: time.Now(),
@@ -338,10 +346,15 @@ func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID
 		return fmt.Errorf("failed to get workspace details: %w", err)
 	}
 
-	// Get actor email
-	actorEmail, err := s.getUserEmail(ctx, actorID)
+	// Get actor details
+	actor, err := s.users.GetUser(ctx, actorID)
 	if err != nil {
-		return fmt.Errorf("failed to get actor email: %w", err)
+		return fmt.Errorf("failed to get actor details: %w", err)
+	}
+
+	actorName := actor.FullName
+	if actorName == "" {
+		actorName = actor.Username
 	}
 
 	// Publish confirmation event for the actor
@@ -351,7 +364,8 @@ func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID
 			WorkspaceID:   workspaceID,
 			WorkspaceName: workspace.Name,
 			WorkspaceSlug: workspace.Slug,
-			ActorEmail:    actorEmail,
+			ActorEmail:    actor.Email,
+			ActorName:     actorName,
 		},
 		Timestamp: time.Now(),
 		ActorID:   actorID,
@@ -378,6 +392,7 @@ func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID
 			WorkspaceName: workspace.Name,
 			WorkspaceSlug: workspace.Slug,
 			ActorID:       actorID,
+			ActorName:     actorName,
 			AdminEmails:   adminEmails,
 		},
 		Timestamp: time.Now(),
@@ -390,16 +405,6 @@ func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID
 	}
 
 	return nil
-}
-
-// getUserEmail retrieves a user's email by their ID
-func (s *Service) getUserEmail(ctx context.Context, userID uuid.UUID) (string, error) {
-	user, err := s.users.GetUser(ctx, userID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get user: %w", err)
-	}
-
-	return user.Email, nil
 }
 
 func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {

@@ -80,7 +80,10 @@ func (c *Consumer) handleWorkspaceDeletionScheduledNotification(ctx context.Cont
 
 	// Prepare Brevo template parameters
 	brevoParams := map[string]any{
+		"ACTOR_NAME":     payload.ActorName,
+		"ACTOR_EMAIL":    payload.ActorEmail,
 		"WORKSPACE_NAME": payload.WorkspaceName,
+		"WORKSPACE_SLUG": payload.WorkspaceSlug,
 		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
 		"RESTORE_URL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
 		"DELETION_TIME":  "48 hours",
@@ -90,7 +93,7 @@ func (c *Consumer) handleWorkspaceDeletionScheduledNotification(ctx context.Cont
 	req := brevo.SendTemplatedEmailRequest{
 		TemplateID: brevo.TemplateWorkspaceDeletionScheduledNotification,
 		To:         make([]brevo.EmailRecipient, len(payload.AdminEmails)),
-		Subject:    fmt.Sprintf("Workspace %s scheduled for deletion", payload.WorkspaceName),
+		Subject:    fmt.Sprintf("%s has scheduled your %s workspace for deletion", payload.ActorName, payload.WorkspaceName),
 		Params:     brevoParams,
 	}
 
@@ -184,7 +187,7 @@ func (c *Consumer) handleWorkspaceRestoredNotification(ctx context.Context, even
 	req := brevo.SendTemplatedEmailRequest{
 		TemplateID: brevo.TemplateWorkspaceRestoredNotification,
 		To:         make([]brevo.EmailRecipient, len(payload.AdminEmails)),
-		Subject:    fmt.Sprintf("Workspace %s has been restored", payload.WorkspaceName),
+		Subject:    fmt.Sprintf("%s has restored your %s workspace", payload.ActorName, payload.WorkspaceName),
 		Params:     brevoParams,
 	}
 
