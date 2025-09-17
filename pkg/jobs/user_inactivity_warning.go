@@ -43,7 +43,7 @@ func ProcessUserInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.
 
 		// Process each user in this batch
 		for _, user := range users {
-			if err := sendUserInactivityWarning(ctx, brevoService, user.Email, user.FullName, user.LastLoginAt); err != nil {
+			if err := sendUserInactivityWarning(ctx, brevoService, user.Email); err != nil {
 				log.Error(ctx, "Failed to send user inactivity warning", "error", err, "user_id", user.UserID, "email", user.Email)
 				continue
 			}
@@ -118,24 +118,16 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 }
 
 // sendUserInactivityWarning sends a warning email to inactive user
-func sendUserInactivityWarning(ctx context.Context, brevoService *brevo.Service, email, fullName string, lastLoginAt time.Time) error {
-	// Calculate days since last login
-	daysSinceLogin := int(time.Since(lastLoginAt).Hours() / 24)
-
-	// Email template parameters
-	brevoParams := map[string]any{
-		"USER_NAME":         fullName,
-		"DAYS_INACTIVE":     daysSinceLogin,
-		"DEACTIVATION_DATE": time.Now().AddDate(0, 0, 30).Format("January 2, 2006"),
-	}
+func sendUserInactivityWarning(ctx context.Context, brevoService *brevo.Service, email string) error {
+	// Email template parameters (no dynamic variables needed)
+	brevoParams := map[string]any{}
 
 	// Send templated email via Brevo service
 	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateUserInactivityWarning, // You'll need to add this template ID
+		TemplateID: brevo.TemplateUserInactivityWarning,
 		To: []brevo.EmailRecipient{
 			{
 				Email: email,
-				Name:  fullName,
 			},
 		},
 		Params: brevoParams,

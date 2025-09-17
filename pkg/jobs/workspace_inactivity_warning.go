@@ -143,15 +143,9 @@ func sendWorkspaceInactivityWarning(ctx context.Context, brevoService *brevo.Ser
 		return fmt.Errorf("no admin emails found for workspace %s", ws.Name)
 	}
 
-	// Calculate days since last access
-	daysSinceAccess := int(time.Since(ws.LastAccessedAt).Hours() / 24)
-
 	// Email template parameters
 	brevoParams := map[string]any{
 		"WORKSPACE_NAME": ws.Name,
-		"WORKSPACE_SLUG": ws.Slug,
-		"DAYS_INACTIVE":  daysSinceAccess,
-		"DELETION_DATE":  time.Now().AddDate(0, 0, 30).Format("January 2, 2006"),
 	}
 
 	// Create email recipients for all admins
