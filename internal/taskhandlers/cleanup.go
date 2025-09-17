@@ -146,3 +146,55 @@ func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asyn
 	c.log.Info(ctx, "HANDLER: Successfully processed OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleWorkspaceInactivityWarning processes the workspace inactivity warning task
+func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessWorkspaceInactivityWarning(ctx, c.db, c.log, c.brevoService); err != nil {
+		c.log.Error(ctx, "Failed to process workspace inactivity warning", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("workspace inactivity warning failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
+// HandleUserInactivityWarning processes the user inactivity warning task
+func (c *CleanupHandlers) HandleUserInactivityWarning(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing UserInactivityWarning task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessUserInactivityWarning(ctx, c.db, c.log, c.brevoService); err != nil {
+		c.log.Error(ctx, "Failed to process user inactivity warning", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("user inactivity warning failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed UserInactivityWarning task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
+// HandleWorkspaceDeletion processes the workspace deletion task
+func (c *CleanupHandlers) HandleWorkspaceDeletion(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing WorkspaceDeletion task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessWorkspaceDeletion(ctx, c.db, c.log, c.systemUserID); err != nil {
+		c.log.Error(ctx, "Failed to process workspace deletion", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("workspace deletion failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed WorkspaceDeletion task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
+// HandleUserDeactivation processes the user deactivation task
+func (c *CleanupHandlers) HandleUserDeactivation(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing UserDeactivation task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessUserDeactivation(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process user deactivation", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("user deactivation failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed UserDeactivation task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}

@@ -10,4 +10,6 @@ var (
 	TemplateWorkspaceDeletionScheduledConfirmation = int64(22)
 	TemplateWorkspaceRestoredConfirmation          = int64(23)
 	TemplateWorkspaceRestoredNotification          = int64(24)
+	TemplateWorkspaceInactivityWarning             = int64(25)
+	TemplateUserInactivityWarning                  = int64(26)
 )

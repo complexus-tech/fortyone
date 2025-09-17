@@ -183,6 +183,43 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register overdue stories email task: %w", err)
 	}
 
+	// Register lifecycle management tasks - weekly on Sundays
+	_, err = scheduler.Register(
+		"0 1 * * 0", // Sunday 01:00 AM
+		asynq.NewTask(tasks.TypeWorkspaceInactivityWarning, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register workspace inactivity warning task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 2 * * 0", // Sunday 02:00 AM
+		asynq.NewTask(tasks.TypeUserInactivityWarning, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register user inactivity warning task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 3 * * 0", // Sunday 03:00 AM
+		asynq.NewTask(tasks.TypeWorkspaceDeletion, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register workspace deletion task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 4 * * 0", // Sunday 04:00 AM
+		asynq.NewTask(tasks.TypeUserDeactivation, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register user deactivation task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -224,6 +261,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
 	mux.HandleFunc(tasks.TypeSprintStoryMigration, cleanupHandlers.HandleSprintStoryMigration)
 	mux.HandleFunc("overdue:stories:email", cleanupHandlers.HandleOverdueStoriesEmail)
+	// Register lifecycle management handlers
+	mux.HandleFunc(tasks.TypeWorkspaceInactivityWarning, cleanupHandlers.HandleWorkspaceInactivityWarning)
+	mux.HandleFunc(tasks.TypeUserInactivityWarning, cleanupHandlers.HandleUserInactivityWarning)
+	mux.HandleFunc(tasks.TypeWorkspaceDeletion, cleanupHandlers.HandleWorkspaceDeletion)
+	mux.HandleFunc(tasks.TypeUserDeactivation, cleanupHandlers.HandleUserDeactivation)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",
