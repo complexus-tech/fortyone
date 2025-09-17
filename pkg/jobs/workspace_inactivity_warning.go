@@ -146,6 +146,7 @@ func sendWorkspaceInactivityWarning(ctx context.Context, brevoService *brevo.Ser
 	// Email template parameters
 	brevoParams := map[string]any{
 		"WORKSPACE_NAME": ws.Name,
+		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", ws.Slug),
 	}
 
 	// Create email recipients for all admins
