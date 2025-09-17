@@ -29,6 +29,7 @@ func (c *Consumer) handleWorkspaceDeletionScheduledConfirmation(ctx context.Cont
 	// Prepare Brevo template parameters
 	brevoParams := map[string]any{
 		"WORKSPACE_NAME": payload.WorkspaceName,
+		"WORKSPACE_SLUG": payload.WorkspaceSlug,
 		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
 		"RESTORE_URL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
 		"DELETION_TIME":  "48 hours",
@@ -42,7 +43,7 @@ func (c *Consumer) handleWorkspaceDeletionScheduledConfirmation(ctx context.Cont
 				Email: payload.ActorEmail,
 			},
 		},
-		Subject: fmt.Sprintf("You have scheduled %s for deletion", payload.WorkspaceName),
+		Subject: fmt.Sprintf("You have scheduled workspace %s for deletion", payload.WorkspaceName),
 		Params:  brevoParams,
 	}
 
@@ -131,6 +132,9 @@ func (c *Consumer) handleWorkspaceRestoredConfirmation(ctx context.Context, even
 	brevoParams := map[string]any{
 		"WORKSPACE_NAME": payload.WorkspaceName,
 		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"ACTOR_NAME":     payload.ActorName,
+		"ACTOR_EMAIL":    payload.ActorEmail,
+		"WORKSPACE_SLUG": payload.WorkspaceSlug,
 	}
 
 	// Send templated email via Brevo service
@@ -141,7 +145,7 @@ func (c *Consumer) handleWorkspaceRestoredConfirmation(ctx context.Context, even
 				Email: payload.ActorEmail,
 			},
 		},
-		Subject: fmt.Sprintf("You have restored %s", payload.WorkspaceName),
+		Subject: fmt.Sprintf("You have restored workspace %s", payload.WorkspaceName),
 		Params:  brevoParams,
 	}
 
@@ -181,6 +185,9 @@ func (c *Consumer) handleWorkspaceRestoredNotification(ctx context.Context, even
 	brevoParams := map[string]any{
 		"WORKSPACE_NAME": payload.WorkspaceName,
 		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"ACTOR_NAME":     payload.ActorName,
+		"ACTOR_EMAIL":    payload.ActorEmail,
+		"WORKSPACE_SLUG": payload.WorkspaceSlug,
 	}
 
 	// Send templated email to all workspace admins

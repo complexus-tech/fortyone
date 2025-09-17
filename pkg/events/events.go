@@ -173,5 +173,6 @@ type WorkspaceRestoredNotificationPayload struct {
 	WorkspaceSlug string    `json:"workspace_slug"`
 	ActorID       uuid.UUID `json:"actor_id"`
 	ActorName     string    `json:"actor_name"`
+	ActorEmail    string    `json:"actor_email"`
 	AdminEmails   []string  `json:"admin_emails"`
 }
