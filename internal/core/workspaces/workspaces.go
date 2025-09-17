@@ -51,6 +51,7 @@ type Repository interface {
 	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
 	Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error
+	Restore(ctx context.Context, workspaceID uuid.UUID) error
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
@@ -228,6 +229,22 @@ func (s *Service) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) 
 	span.AddEvent("workspace scheduled for deletion.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.String("deleted_by", deletedBy.String()),
+	))
+	return nil
+}
+
+func (s *Service) Restore(ctx context.Context, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.workspaces.restore")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Restore")
+	defer span.End()
+
+	if err := s.repo.Restore(ctx, workspaceID); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("workspace restored.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return nil
 }

@@ -211,6 +211,54 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Restore")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Clear cache for the workspace
+	cacheKeys := cache.InvalidateWorkspaceKeys(workspace.ID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+			}
+		} else {
+			if err := h.cache.Delete(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
+			}
+		}
+	}
+
+	userCacheKey := cache.WorkspacesListCacheKey(userID)
+	if err := h.cache.Delete(ctx, userCacheKey); err != nil {
+		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
+	}
+
+	if err := h.workspaces.Restore(ctx, workspace.ID); err != nil {
+		if err.Error() == "workspace not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("workspace restored.", trace.WithAttributes(
+		attribute.String("workspaceId", workspace.ID.String()),
+		attribute.String("restoredBy", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.AddMember")
 	defer span.End()

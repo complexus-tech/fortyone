@@ -331,6 +331,54 @@ func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, 
 	return nil
 }
 
+func (r *repo) Restore(ctx context.Context, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Restore")
+	defer span.End()
+
+	query := `
+		UPDATE workspaces
+		SET 
+			deleted_at = NULL,
+			deleted_by = NULL,
+			updated_at = NOW()
+		WHERE 
+			workspace_id = :workspace_id
+			AND deleted_at IS NOT NULL
+	`
+
+	params := map[string]any{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to restore workspace: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to restore workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return workspaces.ErrNotFound
+	}
+
+	return nil
+}
+
 func (r *repo) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {
 	return r.addMemberImpl(ctx, r.db, workspaceID, userID, role)
 }
