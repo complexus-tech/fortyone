@@ -393,6 +393,7 @@ func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID
 			WorkspaceSlug: workspace.Slug,
 			ActorID:       actorID,
 			ActorName:     actorName,
+			ActorEmail:    actor.Email,
 			AdminEmails:   adminEmails,
 		},
 		Timestamp: time.Now(),
