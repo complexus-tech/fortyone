@@ -76,7 +76,9 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 			w.created_at,
 			w.color,
 			w.updated_at,
-			w.trial_ends_on
+			w.trial_ends_on,
+			w.deleted_at,
+			w.deleted_by
 		FROM
 			workspaces w
 		INNER JOIN
@@ -418,7 +420,9 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 			wm.role as user_role,
 			w.created_at,
 			w.updated_at,
-			w.trial_ends_on
+			w.trial_ends_on,
+			w.deleted_at,
+			w.deleted_by
 		FROM
 			workspaces w
 		INNER JOIN
@@ -485,7 +489,9 @@ func (r *repo) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (wo
 			wm.role as user_role,
 			w.created_at,
 			w.updated_at,
-			w.trial_ends_on
+			w.trial_ends_on,
+			w.deleted_at,
+			w.deleted_by
 		FROM
 			workspaces w
 		INNER JOIN

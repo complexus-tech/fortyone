@@ -17,6 +17,8 @@ type dbWorkspace struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
 	TrialEndsOn *time.Time `db:"trial_ends_on"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	DeletedBy   *uuid.UUID `db:"deleted_by"`
 }
 
 // dbWorkspaceWithRole extends workspace data with user role information
@@ -31,6 +33,8 @@ type dbWorkspaceWithRole struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
 	TrialEndsOn *time.Time `db:"trial_ends_on"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	DeletedBy   *uuid.UUID `db:"deleted_by"`
 }
 
 // dbWorkspaceSettings represents workspace settings in the database.
@@ -57,6 +61,8 @@ func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 		TrialEndsOn: p.TrialEndsOn,
+		DeletedAt:   p.DeletedAt,
+		DeletedBy:   p.DeletedBy,
 	}
 }
 
@@ -72,6 +78,8 @@ func toCoreWorkspaceWithRole(p dbWorkspaceWithRole) workspaces.CoreWorkspace {
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 		TrialEndsOn: p.TrialEndsOn,
+		DeletedAt:   p.DeletedAt,
+		DeletedBy:   p.DeletedBy,
 	}
 }
 

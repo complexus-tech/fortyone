@@ -18,6 +18,8 @@ type AppWorkspace struct {
 	TrialEndsOn *time.Time `json:"trialEndsOn"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
+	DeletedAt   *time.Time `json:"deletedAt"`
+	DeletedBy   *uuid.UUID `json:"deletedBy"`
 }
 
 func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
@@ -32,6 +34,8 @@ func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 		TrialEndsOn: workspace.TrialEndsOn,
 		CreatedAt:   workspace.CreatedAt,
 		UpdatedAt:   workspace.UpdatedAt,
+		DeletedAt:   workspace.DeletedAt,
+		DeletedBy:   workspace.DeletedBy,
 	}
 }
 

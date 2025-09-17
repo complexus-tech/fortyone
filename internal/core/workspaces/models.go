@@ -19,6 +19,8 @@ type CoreWorkspace struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	TrialEndsOn *time.Time
+	DeletedAt   *time.Time
+	DeletedBy   *uuid.UUID
 }
 
 // DefaultStatus defines a default status that gets created with each workspace
