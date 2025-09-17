@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { MayaChatPage } from "@/modules/maya/maya";
 
 export const metadata: Metadata = {
-  title: "Maya",
+  title: "Maya | AI Assistant",
   description: "Your AI Assistant",
 };
 
