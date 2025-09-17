@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"mime/multipart"
 
@@ -14,7 +15,9 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/teams"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/pkg/cache"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -51,7 +54,8 @@ type Repository interface {
 	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
 	Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error
-	Restore(ctx context.Context, workspaceID uuid.UUID) error
+	Restore(ctx context.Context, workspaceID, restoredBy uuid.UUID) error
+	GetWorkspaceAdminEmails(ctx context.Context, workspaceID, actorID uuid.UUID) ([]string, error)
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
@@ -78,10 +82,11 @@ type Service struct {
 	attachments     AttachmentsService
 	cache           *cache.Service
 	systemUserID    uuid.UUID
+	publisher       *publisher.Publisher
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID, publisher *publisher.Publisher) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -95,6 +100,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		attachments:     attachments,
 		cache:           cache,
 		systemUserID:    systemUserID,
+		publisher:       publisher,
 	}
 }
 
@@ -226,6 +232,12 @@ func (s *Service) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) 
 		return err
 	}
 
+	// Publish notification events
+	if err := s.publishWorkspaceDeletionEvents(ctx, workspaceID, deletedBy); err != nil {
+		s.log.Error(ctx, "failed to publish workspace deletion events", "error", err, "workspace_id", workspaceID)
+		// Don't fail the deletion if event publishing fails
+	}
+
 	span.AddEvent("workspace scheduled for deletion.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
 		attribute.String("deleted_by", deletedBy.String()),
@@ -233,20 +245,161 @@ func (s *Service) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) 
 	return nil
 }
 
-func (s *Service) Restore(ctx context.Context, workspaceID uuid.UUID) error {
+func (s *Service) Restore(ctx context.Context, workspaceID, restoredBy uuid.UUID) error {
 	s.log.Info(ctx, "business.core.workspaces.restore")
 	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Restore")
 	defer span.End()
 
-	if err := s.repo.Restore(ctx, workspaceID); err != nil {
+	if err := s.repo.Restore(ctx, workspaceID, restoredBy); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
+	// Publish notification events
+	if err := s.publishWorkspaceRestoreEvents(ctx, workspaceID, restoredBy); err != nil {
+		s.log.Error(ctx, "failed to publish workspace restore events", "error", err, "workspace_id", workspaceID)
+		// Don't fail the restore if event publishing fails
+	}
+
 	span.AddEvent("workspace restored.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("restored_by", restoredBy.String()),
 	))
 	return nil
+}
+
+// publishWorkspaceDeletionEvents publishes both confirmation and notification events for workspace deletion
+func (s *Service) publishWorkspaceDeletionEvents(ctx context.Context, workspaceID uuid.UUID, actorID uuid.UUID) error {
+	// Get workspace details
+	workspace, err := s.repo.Get(ctx, workspaceID, actorID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace details: %w", err)
+	}
+
+	// Get actor email
+	actorEmail, err := s.getUserEmail(ctx, actorID)
+	if err != nil {
+		return fmt.Errorf("failed to get actor email: %w", err)
+	}
+
+	// Publish confirmation event for the actor
+	confirmationEvent := events.Event{
+		Type: events.WorkspaceDeletionScheduledConfirmation,
+		Payload: events.WorkspaceDeletionScheduledConfirmationPayload{
+			WorkspaceID:   workspaceID,
+			WorkspaceName: workspace.Name,
+			WorkspaceSlug: workspace.Slug,
+			ActorEmail:    actorEmail,
+		},
+		Timestamp: time.Now(),
+		ActorID:   actorID,
+	}
+
+	if err := s.publisher.Publish(ctx, confirmationEvent); err != nil {
+		s.log.Error(ctx, "failed to publish workspace deletion confirmation event", "error", err, "workspace_id", workspaceID)
+		return fmt.Errorf("failed to publish workspace deletion confirmation event: %w", err)
+	}
+
+	// Get admin emails for notification
+	adminEmails, err := s.repo.GetWorkspaceAdminEmails(ctx, workspaceID, actorID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get workspace admin emails", "error", err, "workspace_id", workspaceID)
+		// Continue without admin emails - the consumer will handle empty list
+		adminEmails = []string{}
+	}
+
+	// Publish notification event for other admins
+	notificationEvent := events.Event{
+		Type: events.WorkspaceDeletionScheduledNotification,
+		Payload: events.WorkspaceDeletionScheduledNotificationPayload{
+			WorkspaceID:   workspaceID,
+			WorkspaceName: workspace.Name,
+			WorkspaceSlug: workspace.Slug,
+			ActorID:       actorID,
+			AdminEmails:   adminEmails,
+		},
+		Timestamp: time.Now(),
+		ActorID:   actorID,
+	}
+
+	if err := s.publisher.Publish(ctx, notificationEvent); err != nil {
+		s.log.Error(ctx, "failed to publish workspace deletion notification event", "error", err, "workspace_id", workspaceID)
+		return fmt.Errorf("failed to publish workspace deletion notification event: %w", err)
+	}
+
+	return nil
+}
+
+// publishWorkspaceRestoreEvents publishes both confirmation and notification events for workspace restore
+func (s *Service) publishWorkspaceRestoreEvents(ctx context.Context, workspaceID uuid.UUID, actorID uuid.UUID) error {
+	// Get workspace details
+	workspace, err := s.repo.Get(ctx, workspaceID, actorID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace details: %w", err)
+	}
+
+	// Get actor email
+	actorEmail, err := s.getUserEmail(ctx, actorID)
+	if err != nil {
+		return fmt.Errorf("failed to get actor email: %w", err)
+	}
+
+	// Publish confirmation event for the actor
+	confirmationEvent := events.Event{
+		Type: events.WorkspaceRestoredConfirmation,
+		Payload: events.WorkspaceRestoredConfirmationPayload{
+			WorkspaceID:   workspaceID,
+			WorkspaceName: workspace.Name,
+			WorkspaceSlug: workspace.Slug,
+			ActorEmail:    actorEmail,
+		},
+		Timestamp: time.Now(),
+		ActorID:   actorID,
+	}
+
+	if err := s.publisher.Publish(ctx, confirmationEvent); err != nil {
+		s.log.Error(ctx, "failed to publish workspace restore confirmation event", "error", err, "workspace_id", workspaceID)
+		return fmt.Errorf("failed to publish workspace restore confirmation event: %w", err)
+	}
+
+	// Get admin emails for notification
+	adminEmails, err := s.repo.GetWorkspaceAdminEmails(ctx, workspaceID, actorID)
+	if err != nil {
+		s.log.Error(ctx, "failed to get workspace admin emails", "error", err, "workspace_id", workspaceID)
+		// Continue without admin emails - the consumer will handle empty list
+		adminEmails = []string{}
+	}
+
+	// Publish notification event for other admins
+	notificationEvent := events.Event{
+		Type: events.WorkspaceRestoredNotification,
+		Payload: events.WorkspaceRestoredNotificationPayload{
+			WorkspaceID:   workspaceID,
+			WorkspaceName: workspace.Name,
+			WorkspaceSlug: workspace.Slug,
+			ActorID:       actorID,
+			AdminEmails:   adminEmails,
+		},
+		Timestamp: time.Now(),
+		ActorID:   actorID,
+	}
+
+	if err := s.publisher.Publish(ctx, notificationEvent); err != nil {
+		s.log.Error(ctx, "failed to publish workspace restore notification event", "error", err, "workspace_id", workspaceID)
+		return fmt.Errorf("failed to publish workspace restore notification event: %w", err)
+	}
+
+	return nil
+}
+
+// getUserEmail retrieves a user's email by their ID
+func (s *Service) getUserEmail(ctx context.Context, userID uuid.UUID) (string, error) {
+	user, err := s.users.GetUser(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user.Email, nil
 }
 
 func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error {

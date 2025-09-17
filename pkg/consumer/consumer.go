@@ -235,6 +235,14 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 		return c.handleInvitationEmail(ctx, event)
 	case events.InvitationAccepted:
 		return c.handleInvitationAccepted(ctx, event)
+	case events.WorkspaceDeletionScheduledConfirmation:
+		return c.handleWorkspaceDeletionScheduledConfirmation(ctx, event)
+	case events.WorkspaceDeletionScheduledNotification:
+		return c.handleWorkspaceDeletionScheduledNotification(ctx, event)
+	case events.WorkspaceRestoredConfirmation:
+		return c.handleWorkspaceRestoredConfirmation(ctx, event)
+	case events.WorkspaceRestoredNotification:
+		return c.handleWorkspaceRestoredNotification(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}

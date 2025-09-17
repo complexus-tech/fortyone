@@ -331,7 +331,7 @@ func (r *repo) createDefaultObjectiveStatuses(ctx context.Context, tx *sqlx.Tx, 
 	return nil
 }
 
-func (r *repo) Restore(ctx context.Context, workspaceID uuid.UUID) error {
+func (r *repo) Restore(ctx context.Context, workspaceID, restoredBy uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Restore")
 	defer span.End()
 
@@ -914,4 +914,53 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 	}
 
 	return nil
+}
+
+// GetWorkspaceAdminEmails retrieves email addresses of workspace admins (excluding the actor)
+func (r *repo) GetWorkspaceAdminEmails(ctx context.Context, workspaceID, actorID uuid.UUID) ([]string, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetWorkspaceAdminEmails")
+	defer span.End()
+
+	query := `
+		SELECT u.email
+		FROM users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
+		WHERE wm.workspace_id = :workspace_id
+		AND wm.role = 'admin'
+		AND u.user_id != :actor_id
+		AND u.is_active = TRUE
+	`
+
+	params := map[string]any{
+		"workspace_id": workspaceID,
+		"actor_id":     actorID,
+	}
+
+	rows, err := r.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to query workspace admin emails: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to query workspace admin emails"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []string
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			errMsg := fmt.Sprintf("failed to scan email: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to scan email"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return nil, err
+		}
+		emails = append(emails, email)
+	}
+
+	span.AddEvent("workspace admin emails retrieved", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.Int("admin_count", len(emails)),
+	))
+
+	return emails, nil
 }

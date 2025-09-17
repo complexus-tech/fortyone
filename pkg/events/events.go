@@ -9,17 +9,21 @@ import (
 type EventType string
 
 const (
-	StoryCreated       EventType = "story.created"
-	StoryUpdated       EventType = "story.updated"
-	StoryDuplicated    EventType = "story.duplicated"
-	CommentCreated     EventType = "comment.created"
-	CommentReplied     EventType = "comment.replied"
-	UserMentioned      EventType = "user.mentioned"
-	ObjectiveUpdated   EventType = "objective.updated"
-	KeyResultUpdated   EventType = "keyresult.updated"
-	EmailVerification  EventType = "email.verification"
-	InvitationEmail    EventType = "invitation.email"
-	InvitationAccepted EventType = "invitation.accepted"
+	StoryCreated                           EventType = "story.created"
+	StoryUpdated                           EventType = "story.updated"
+	StoryDuplicated                        EventType = "story.duplicated"
+	CommentCreated                         EventType = "comment.created"
+	CommentReplied                         EventType = "comment.replied"
+	UserMentioned                          EventType = "user.mentioned"
+	ObjectiveUpdated                       EventType = "objective.updated"
+	KeyResultUpdated                       EventType = "keyresult.updated"
+	EmailVerification                      EventType = "email.verification"
+	InvitationEmail                        EventType = "invitation.email"
+	InvitationAccepted                     EventType = "invitation.accepted"
+	WorkspaceDeletionScheduledConfirmation EventType = "workspace.deletion.scheduled.confirmation"
+	WorkspaceDeletionScheduledNotification EventType = "workspace.deletion.scheduled.notification"
+	WorkspaceRestoredConfirmation          EventType = "workspace.restored.confirmation"
+	WorkspaceRestoredNotification          EventType = "workspace.restored.notification"
 )
 
 // Event is the base event structure
@@ -131,4 +135,38 @@ type UserMentionedPayload struct {
 	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	MentionedUser uuid.UUID `json:"mentioned_user"`
 	Content       string    `json:"content"`
+}
+
+// WorkspaceDeletionScheduledConfirmationPayload contains data for workspace deletion confirmation events
+type WorkspaceDeletionScheduledConfirmationPayload struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	WorkspaceSlug string    `json:"workspace_slug"`
+	ActorEmail    string    `json:"actor_email"`
+}
+
+// WorkspaceDeletionScheduledNotificationPayload contains data for workspace deletion notification events
+type WorkspaceDeletionScheduledNotificationPayload struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	WorkspaceSlug string    `json:"workspace_slug"`
+	ActorID       uuid.UUID `json:"actor_id"`
+	AdminEmails   []string  `json:"admin_emails"`
+}
+
+// WorkspaceRestoredConfirmationPayload contains data for workspace restore confirmation events
+type WorkspaceRestoredConfirmationPayload struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	WorkspaceSlug string    `json:"workspace_slug"`
+	ActorEmail    string    `json:"actor_email"`
+}
+
+// WorkspaceRestoredNotificationPayload contains data for workspace restore notification events
+type WorkspaceRestoredNotificationPayload struct {
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	WorkspaceName string    `json:"workspace_name"`
+	WorkspaceSlug string    `json:"workspace_slug"`
+	ActorID       uuid.UUID `json:"actor_id"`
+	AdminEmails   []string  `json:"admin_emails"`
 }

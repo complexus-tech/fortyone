@@ -244,7 +244,7 @@ func (h *Handlers) Restore(ctx context.Context, w http.ResponseWriter, r *http.R
 		h.log.Error(ctx, "failed to delete cache", "key", userCacheKey, "error", err)
 	}
 
-	if err := h.workspaces.Restore(ctx, workspace.ID); err != nil {
+	if err := h.workspaces.Restore(ctx, workspace.ID, userID); err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
