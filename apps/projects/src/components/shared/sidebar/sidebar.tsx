@@ -2,10 +2,12 @@
 import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
 import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
+import { addHours, differenceInHours } from "date-fns";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole } from "@/hooks";
+import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { Commands } from "../commands";
 import { CommandBar } from "../command-bar";
 import { Header } from "./header";
@@ -17,9 +19,20 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+  const { workspace } = useCurrentWorkspace();
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
+
+  const getTimeRemaining = () => {
+    if (!workspace?.deletedAt) return null;
+    const hoursRemaining = differenceInHours(
+      addHours(new Date(workspace.deletedAt), -1),
+      new Date(),
+    );
+    if (hoursRemaining <= 0) return null;
+    return hoursRemaining;
+  };
 
   return (
     <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark">
@@ -30,50 +43,82 @@ export const Sidebar = () => {
       </Box>
       <Box className="relative z-[1]">
         <Box className="mb-2.5 px-3.5">
-          {tier === "free" && (
-            <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
-              <Text fontWeight="medium">You&apos;re on the free plan</Text>
-              <Text className="mt-2" color="muted">
-                {userRole === "admin"
-                  ? "Upgrade to a paid plan to get more features."
-                  : "Ask your admin to upgrade to a paid plan to get more features."}
+          {workspace?.deletedAt ? (
+            <Box className="rounded-xl border-[0.5px] border-warning bg-warning/20 p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
+              <Text fontWeight="semibold">
+                Workspace scheduled for deletion
               </Text>
+              {getTimeRemaining() ? (
+                <Text className="mt-1 opacity-80">
+                  Your workspace is scheduled for deletion in about{" "}
+                  {getTimeRemaining()} hour{getTimeRemaining() !== 1 ? "s" : ""}
+                  .
+                </Text>
+              ) : (
+                <Text className="mt-1 opacity-80">
+                  Your workspace will be deleted anytime from now or has been
+                  deleted by now.
+                </Text>
+              )}
               {userRole === "admin" && (
                 <Button
                   className="mt-3 px-3"
-                  color="tertiary"
-                  href="/settings/workspace/billing"
+                  color="warning"
+                  href="/settings"
                   prefetch
                   size="sm"
                 >
-                  Upgrade plan
+                  Restore workspace
                 </Button>
               )}
             </Box>
-          )}
-
-          {tier === "trial" && (
-            <Tooltip
-              className="ml-2 max-w-56 py-3"
-              title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
-            >
-              <span>
-                <Button
-                  className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
-                  href={
-                    userRole === "admin"
-                      ? "/settings/workspace/billing"
-                      : undefined
-                  }
-                  prefetch
-                  rounded="lg"
-                  size="sm"
+          ) : (
+            <>
+              {tier === "free" && (
+                <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
+                  <Text fontWeight="medium">You&apos;re on the free plan</Text>
+                  <Text className="mt-2" color="muted">
+                    {userRole === "admin"
+                      ? "Upgrade to a paid plan to get more features."
+                      : "Ask your admin to upgrade to a paid plan to get more features."}
+                  </Text>
+                  {userRole === "admin" && (
+                    <Button
+                      className="mt-3 px-3"
+                      color="tertiary"
+                      href="/settings/workspace/billing"
+                      prefetch
+                      size="sm"
+                    >
+                      Upgrade plan
+                    </Button>
+                  )}
+                </Box>
+              )}
+              {tier === "trial" && (
+                <Tooltip
+                  className="ml-2 max-w-56 py-3"
+                  title={`${trialDaysRemaining} days left in your trial. ${userRole === "admin" ? "Upgrade" : "Ask your admin to upgrade"} to a paid plan to get more premium features.`}
                 >
-                  {trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}{" "}
-                  left in trial
-                </Button>
-              </span>
-            </Tooltip>
+                  <span>
+                    <Button
+                      className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
+                      href={
+                        userRole === "admin"
+                          ? "/settings/workspace/billing"
+                          : undefined
+                      }
+                      prefetch
+                      rounded="lg"
+                      size="sm"
+                    >
+                      {trialDaysRemaining} day
+                      {trialDaysRemaining !== 1 ? "s" : ""} left in trial
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            </>
           )}
 
           <Flex align="center" className="mt-3" justify="between">
