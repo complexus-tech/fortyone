@@ -80,6 +80,12 @@ func Workspace(log *logger.Logger, db *sqlx.DB, cache *cache.Service) web.Middle
 				// Don't fail the request - this is not critical
 			}
 
+			// Update workspace last_accessed_at
+			if err := updateWorkspaceLastAccessed(ctx, db, workspace.ID); err != nil {
+				log.Error(ctx, "failed to update workspace last accessed", "error", err, "workspaceID", workspace.ID)
+				// Don't fail the request - this is not critical
+			}
+
 			ctx = context.WithValue(ctx, workspaceKey, workspace)
 
 			return next(ctx, w, r)
@@ -125,6 +131,21 @@ func getWorkspace(ctx context.Context, db *sqlx.DB, workspaceSlug string, userID
 func updateUserLastLogin(ctx context.Context, db *sqlx.DB, userID uuid.UUID) error {
 	query := `UPDATE users SET last_login_at = NOW() WHERE user_id = :user_id AND is_active = true`
 	params := map[string]any{"user_id": userID}
+
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, params)
+	return err
+}
+
+// updateWorkspaceLastAccessed updates the workspace's last accessed timestamp
+func updateWorkspaceLastAccessed(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
+	query := `UPDATE workspaces SET last_accessed_at = NOW() WHERE workspace_id = :workspace_id`
+	params := map[string]any{"workspace_id": workspaceID}
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
