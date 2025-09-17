@@ -96,6 +96,14 @@ func Workspace(log *logger.Logger, db *sqlx.DB, cache *cache.Service) web.Middle
 				log.Error(ctx, "failed to set workspace cache", "error", err)
 			}
 
+			// Update last_login_at after successful workspace access and caching
+			updateQuery := `UPDATE users SET last_login_at = NOW() WHERE user_id = :user_id AND is_active = true`
+			updateParams := map[string]any{"user_id": userID}
+			if _, err := db.NamedExecContext(ctx, updateQuery, updateParams); err != nil {
+				log.Error(ctx, "failed to update last login", "error", err, "userID", userID)
+				// Don't fail the request - this is not critical
+			}
+
 			ctx = context.WithValue(ctx, workspaceKey, workspace)
 
 			return next(ctx, w, r)
