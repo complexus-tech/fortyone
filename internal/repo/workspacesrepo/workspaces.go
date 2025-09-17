@@ -247,18 +247,24 @@ func (r *repo) Update(ctx context.Context, workspaceID uuid.UUID, updates worksp
 	return toCoreWorkspace(result), nil
 }
 
-func (r *repo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
+func (r *repo) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Delete")
 	defer span.End()
 
 	query := `
-		DELETE FROM workspaces
+		UPDATE workspaces
+		SET 
+			deleted_at = NOW(),
+			deleted_by = :deleted_by,
+			updated_at = NOW()
 		WHERE 
 			workspace_id = :workspace_id
+			AND deleted_at IS NULL
 	`
 
 	params := map[string]any{
 		"workspace_id": workspaceID,
+		"deleted_by":   deletedBy,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

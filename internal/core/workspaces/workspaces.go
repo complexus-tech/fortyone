@@ -50,7 +50,7 @@ type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
 	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
-	Delete(ctx context.Context, workspaceID uuid.UUID) error
+	Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
@@ -215,18 +215,19 @@ func (s *Service) Update(ctx context.Context, workspaceID uuid.UUID, updates Cor
 	return workspace, nil
 }
 
-func (s *Service) Delete(ctx context.Context, workspaceID uuid.UUID) error {
+func (s *Service) Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error {
 	s.log.Info(ctx, "business.core.workspaces.delete")
 	ctx, span := web.AddSpan(ctx, "business.core.workspaces.Delete")
 	defer span.End()
 
-	if err := s.repo.Delete(ctx, workspaceID); err != nil {
+	if err := s.repo.Delete(ctx, workspaceID, deletedBy); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	span.AddEvent("workspace deleted.", trace.WithAttributes(
+	span.AddEvent("workspace scheduled for deletion.", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("deleted_by", deletedBy.String()),
 	))
 	return nil
 }

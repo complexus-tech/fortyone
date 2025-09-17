@@ -196,15 +196,16 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		h.log.Error(ctx, "failed to cancel subscription", "workspaceId", workspace.ID.String(), "error", err)
 	}
 
-	if err := h.workspaces.Delete(ctx, workspace.ID); err != nil {
+	if err := h.workspaces.Delete(ctx, workspace.ID, userID); err != nil {
 		if err.Error() == "workspace not found" {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	span.AddEvent("workspace deleted.", trace.WithAttributes(
+	span.AddEvent("workspace scheduled for deletion.", trace.WithAttributes(
 		attribute.String("workspaceId", workspace.ID.String()),
+		attribute.String("deletedBy", userID.String()),
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
