@@ -130,6 +130,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	_, err = scheduler.Register(
+		"0 */4 * * *", // Every 4 hours
+		asynq.NewTask(tasks.TypeWorkspaceCleanup, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register workspace cleanup task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"10 1 * * *", // Every day at 1:10 AM (avoids Sunday collision)
 		asynq.NewTask(tasks.TypeSprintAutoCreation, nil),
 		asynq.Queue("automation"),
@@ -208,6 +217,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
+	mux.HandleFunc(tasks.TypeWorkspaceCleanup, cleanupHandlers.HandleWorkspaceCleanup)
 	// Register automation handlers
 	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
 	mux.HandleFunc(tasks.TypeStoryAutoArchive, cleanupHandlers.HandleStoryAutoArchive)

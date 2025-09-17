@@ -69,6 +69,19 @@ func (c *CleanupHandlers) HandleWebhookCleanup(ctx context.Context, t *asynq.Tas
 	return nil
 }
 
+// HandleWorkspaceCleanup processes the workspace cleanup task
+func (c *CleanupHandlers) HandleWorkspaceCleanup(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing WorkspaceCleanup task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.PurgeDeletedWorkspaces(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to purge deleted workspaces", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("workspace cleanup failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed WorkspaceCleanup task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleSprintAutoCreation processes the sprint auto-creation task
 func (c *CleanupHandlers) HandleSprintAutoCreation(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing SprintAutoCreation task", "task_id", t.ResultWriter().TaskID())
