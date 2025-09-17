@@ -60,30 +60,8 @@ func Workspace(log *logger.Logger, db *sqlx.DB, cache *cache.Service) web.Middle
 			}
 
 			// Cache miss or error - get from database
-			query := `
-				SELECT 
-					w.workspace_id as id,
-					w.name,
-					w.slug,
-					wm.role as user_role
-				FROM workspaces w
-				INNER JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
-				WHERE w.slug = :slug AND wm.user_id = :user_id
-			`
-
-			params := map[string]any{
-				"slug":    workspaceSlug,
-				"user_id": userID,
-			}
-
-			stmt, err := db.PrepareNamedContext(ctx, query)
+			workspace, err = getWorkspace(ctx, db, workspaceSlug, userID)
 			if err != nil {
-				log.Error(ctx, "failed to prepare named statement", "error", err)
-				return web.RespondError(ctx, w, errors.New("internal server error"), http.StatusInternalServerError)
-			}
-			defer stmt.Close()
-
-			if err := stmt.GetContext(ctx, &workspace, params); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					return web.RespondError(ctx, w, errors.New("access denied"), http.StatusNotFound)
 				}
@@ -97,9 +75,7 @@ func Workspace(log *logger.Logger, db *sqlx.DB, cache *cache.Service) web.Middle
 			}
 
 			// Update last_login_at after successful workspace access and caching
-			updateQuery := `UPDATE users SET last_login_at = NOW() WHERE user_id = :user_id AND is_active = true`
-			updateParams := map[string]any{"user_id": userID}
-			if _, err := db.NamedExecContext(ctx, updateQuery, updateParams); err != nil {
+			if err := updateUserLastLogin(ctx, db, userID); err != nil {
 				log.Error(ctx, "failed to update last login", "error", err, "userID", userID)
 				// Don't fail the request - this is not critical
 			}
@@ -111,4 +87,51 @@ func Workspace(log *logger.Logger, db *sqlx.DB, cache *cache.Service) web.Middle
 		return h
 	}
 	return m
+}
+
+// getWorkspace retrieves workspace information from the database
+func getWorkspace(ctx context.Context, db *sqlx.DB, workspaceSlug string, userID uuid.UUID) (WorkspaceInfo, error) {
+	query := `
+		SELECT 
+			w.workspace_id as id,
+			w.name,
+			w.slug,
+			wm.role as user_role
+		FROM workspaces w
+		INNER JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
+		WHERE w.slug = :slug AND wm.user_id = :user_id
+	`
+
+	params := map[string]any{
+		"slug":    workspaceSlug,
+		"user_id": userID,
+	}
+
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return WorkspaceInfo{}, err
+	}
+	defer stmt.Close()
+
+	var workspace WorkspaceInfo
+	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
+		return WorkspaceInfo{}, err
+	}
+
+	return workspace, nil
+}
+
+// updateUserLastLogin updates the user's last login timestamp
+func updateUserLastLogin(ctx context.Context, db *sqlx.DB, userID uuid.UUID) error {
+	query := `UPDATE users SET last_login_at = NOW() WHERE user_id = :user_id AND is_active = true`
+	params := map[string]any{"user_id": userID}
+
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, params)
+	return err
 }
