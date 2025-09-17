@@ -216,7 +216,7 @@ export const Team = ({
             </Flex>
             <Flex
               className={cn(
-                "ml-5 h-0 overflow-hidden border-l border-gray-200/80 pl-2 transition-all duration-300 dark:border-dark-50",
+                "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-200/80 pl-2 transition-all duration-300 dark:border-dark-50",
                 {
                   "mt-2 h-max": isOpen,
                 },

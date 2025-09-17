@@ -27,7 +27,7 @@ export const Sidebar = () => {
   const getTimeRemaining = () => {
     if (!workspace?.deletedAt) return null;
     const hoursRemaining = differenceInHours(
-      addHours(new Date(workspace.deletedAt), -1),
+      addHours(new Date(workspace.deletedAt), 48),
       new Date(),
     );
     if (hoursRemaining <= 0) return null;
@@ -44,8 +44,8 @@ export const Sidebar = () => {
       <Box className="relative z-[1]">
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
-            <Box className="rounded-xl border-[0.5px] border-warning bg-warning/20 p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
-              <Text fontWeight="semibold">
+            <Box className="mb-4 rounded-xl border-[0.5px] border-warning bg-warning/20 p-4 shadow-lg shadow-gray-100 dark:border-warning/20 dark:bg-warning/10 dark:shadow-none">
+              <Text className="dark:text-white" fontWeight="semibold">
                 Workspace scheduled for deletion
               </Text>
               {getTimeRemaining() ? (
@@ -56,8 +56,8 @@ export const Sidebar = () => {
                 </Text>
               ) : (
                 <Text className="mt-1 opacity-80">
-                  Your workspace will be deleted anytime from now or has been
-                  deleted by now.
+                  Your workspace has been scheduled for deletion and may be
+                  deleted at any time.
                 </Text>
               )}
               {userRole === "admin" && (
@@ -121,74 +121,76 @@ export const Sidebar = () => {
             </>
           )}
 
-          <Flex align="center" className="mt-3" justify="between">
-            {userRole === "admin" ? (
-              <button
-                className="flex items-center justify-start gap-2 px-1 text-left"
-                data-invite-button
-                onClick={() => {
-                  setIsOpen(true);
-                }}
-                type="button"
-              >
-                <PlusIcon />
-                <span className="line-clamp-1">Invite members</span>
-              </button>
-            ) : (
-              <Button
-                color="tertiary"
-                onClick={() => {
-                  setIsCommandBarOpen(true);
-                }}
-                size="xs"
-              >
-                <CommandIcon className="h-4" /> K
-              </Button>
-            )}
-
-            <Menu>
-              <Menu.Button>
-                <Button
-                  asIcon
-                  className="border-[0.5px]"
-                  color="tertiary"
-                  data-help-button
-                  rounded="full"
-                  variant="naked"
+          {!workspace?.deletedAt ? (
+            <Flex align="center" className="mt-3" justify="between">
+              {userRole === "admin" ? (
+                <button
+                  className="flex items-center justify-start gap-2 px-1 text-left"
+                  data-invite-button
+                  onClick={() => {
+                    setIsOpen(true);
+                  }}
+                  type="button"
                 >
-                  <HelpIcon className="h-6" />
+                  <PlusIcon />
+                  <span className="line-clamp-1">Invite members</span>
+                </button>
+              ) : (
+                <Button
+                  color="tertiary"
+                  onClick={() => {
+                    setIsCommandBarOpen(true);
+                  }}
+                  size="xs"
+                >
+                  <CommandIcon className="h-4" /> K
                 </Button>
-              </Menu.Button>
-              <Menu.Items align="end">
-                <Menu.Group>
-                  <Menu.Item
-                    onSelect={() => {
-                      setIsKeyboardShortcutsOpen(true);
-                    }}
+              )}
+
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    asIcon
+                    className="border-[0.5px]"
+                    color="tertiary"
+                    data-help-button
+                    rounded="full"
+                    variant="naked"
                   >
-                    <CommandIcon />
-                    Keyboard shortcuts
-                  </Menu.Item>
-                  <Menu.Item
-                    onSelect={() => {
-                      window.open("mailto:support@complexus.app", "_blank");
-                    }}
-                  >
-                    <EmailIcon />
-                    Contact support
-                  </Menu.Item>
-                  <Menu.Item
-                    onSelect={() => {
-                      window.open("https://docs.fortyone.app", "_blank");
-                    }}
-                  >
-                    <DocsIcon />
-                    Documentation
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Flex>
+                    <HelpIcon className="h-6" />
+                  </Button>
+                </Menu.Button>
+                <Menu.Items align="end">
+                  <Menu.Group>
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsKeyboardShortcutsOpen(true);
+                      }}
+                    >
+                      <CommandIcon />
+                      Keyboard shortcuts
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        window.open("mailto:support@complexus.app", "_blank");
+                      }}
+                    >
+                      <EmailIcon />
+                      Contact support
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        window.open("https://docs.fortyone.app", "_blank");
+                      }}
+                    >
+                      <DocsIcon />
+                      Documentation
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            </Flex>
+          ) : null}
         </Box>
         <ProfileMenu />
       </Box>
