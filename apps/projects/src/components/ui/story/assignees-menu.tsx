@@ -169,6 +169,7 @@ const Items = ({
               >
                 <Flex align="center" gap={2}>
                   <Avatar
+                    color="primary"
                     name={fullName || username}
                     size="sm"
                     src={avatarUrl}
