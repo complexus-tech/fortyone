@@ -23,6 +23,7 @@ func ProcessUserDeactivation(ctx context.Context, db *sqlx.DB, log *logger.Logge
 		SET is_active = false
 		WHERE last_login_at < NOW() - INTERVAL '8 months 30 days'
 		AND is_active = true
+		AND inactivity_warning_sent_at IS NOT NULL
 	`
 	result, err := db.ExecContext(ctx, deactivateQuery)
 	if err != nil {

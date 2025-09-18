@@ -43,7 +43,7 @@ func ProcessUserInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.
 
 		// Process each user in this batch
 		for _, user := range users {
-			if err := sendUserInactivityWarning(ctx, brevoService, user.Email); err != nil {
+			if err := sendUserInactivityWarning(ctx, db, brevoService, user); err != nil {
 				log.Error(ctx, "Failed to send user inactivity warning", "error", err, "user_id", user.UserID, "email", user.Email)
 				continue
 			}
@@ -92,6 +92,7 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 		FROM users u
 		WHERE u.last_login_at < NOW() - INTERVAL '8 months'
 		AND u.is_active = true
+		AND u.inactivity_warning_sent_at IS NULL
 		ORDER BY u.last_login_at ASC
 		LIMIT :batch_size OFFSET :offset
 	`
@@ -118,7 +119,7 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 }
 
 // sendUserInactivityWarning sends a warning email to inactive user
-func sendUserInactivityWarning(ctx context.Context, brevoService *brevo.Service, email string) error {
+func sendUserInactivityWarning(ctx context.Context, db *sqlx.DB, brevoService *brevo.Service, user InactiveUser) error {
 	// Email template parameters (no dynamic variables needed)
 	brevoParams := map[string]any{}
 
@@ -127,7 +128,7 @@ func sendUserInactivityWarning(ctx context.Context, brevoService *brevo.Service,
 		TemplateID: brevo.TemplateUserInactivityWarning,
 		To: []brevo.EmailRecipient{
 			{
-				Email: email,
+				Email: user.Email,
 			},
 		},
 		Params: brevoParams,
@@ -135,6 +136,33 @@ func sendUserInactivityWarning(ctx context.Context, brevoService *brevo.Service,
 
 	if err := brevoService.SendTemplatedEmail(ctx, req); err != nil {
 		return fmt.Errorf("failed to send user inactivity warning email: %w", err)
+	}
+
+	// Mark warning as sent to prevent duplicate emails
+	if err := markUserWarningSent(ctx, db, user.UserID); err != nil {
+		return fmt.Errorf("failed to mark user warning as sent: %w", err)
+	}
+
+	return nil
+}
+
+// markUserWarningSent marks that an inactivity warning has been sent to user
+func markUserWarningSent(ctx context.Context, db *sqlx.DB, userID string) error {
+	query := `UPDATE users SET inactivity_warning_sent_at = NOW() WHERE user_id = :user_id`
+
+	params := map[string]any{
+		"user_id": userID,
+	}
+
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare mark user warning query: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to mark user warning as sent: %w", err)
 	}
 
 	return nil

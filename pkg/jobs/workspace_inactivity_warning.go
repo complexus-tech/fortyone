@@ -45,7 +45,7 @@ func ProcessWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, log *lo
 
 		// Process each workspace in this batch
 		for _, ws := range workspaces {
-			if err := sendWorkspaceInactivityWarning(ctx, brevoService, ws); err != nil {
+			if err := sendWorkspaceInactivityWarning(ctx, db, brevoService, ws); err != nil {
 				log.Error(ctx, "Failed to send workspace inactivity warning", "error", err, "workspace_id", ws.WorkspaceID, "workspace_name", ws.Name)
 				continue
 			}
@@ -105,6 +105,7 @@ func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int,
 		FROM workspaces w
 		WHERE w.last_accessed_at < NOW() - INTERVAL '6 months'
 		AND w.deleted_at IS NULL
+		AND w.inactivity_warning_sent_at IS NULL
 		ORDER BY w.last_accessed_at ASC
 		LIMIT :batch_size OFFSET :offset
 	`
@@ -131,7 +132,7 @@ func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int,
 }
 
 // sendWorkspaceInactivityWarning sends a warning email to all workspace admins
-func sendWorkspaceInactivityWarning(ctx context.Context, brevoService *brevo.Service, ws InactiveWorkspace) error {
+func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, brevoService *brevo.Service, ws InactiveWorkspace) error {
 	// Parse admin emails from JSON
 	var adminEmails []string
 	if err := json.Unmarshal(ws.AdminEmails, &adminEmails); err != nil {
@@ -164,6 +165,33 @@ func sendWorkspaceInactivityWarning(ctx context.Context, brevoService *brevo.Ser
 
 	if err := brevoService.SendTemplatedEmail(ctx, req); err != nil {
 		return fmt.Errorf("failed to send workspace inactivity warning email: %w", err)
+	}
+
+	// Mark warning as sent to prevent duplicate emails
+	if err := markWorkspaceWarningSent(ctx, db, ws.WorkspaceID); err != nil {
+		return fmt.Errorf("failed to mark workspace warning as sent: %w", err)
+	}
+
+	return nil
+}
+
+// markWorkspaceWarningSent marks that an inactivity warning has been sent to workspace admins
+func markWorkspaceWarningSent(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
+	query := `UPDATE workspaces SET inactivity_warning_sent_at = NOW() WHERE workspace_id = :workspace_id`
+
+	params := map[string]any{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare mark workspace warning query: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to mark workspace warning as sent: %w", err)
 	}
 
 	return nil

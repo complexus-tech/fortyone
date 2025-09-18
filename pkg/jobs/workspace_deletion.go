@@ -23,6 +23,7 @@ func ProcessWorkspaceDeletion(ctx context.Context, db *sqlx.DB, log *logger.Logg
 		DELETE FROM workspaces
 		WHERE last_accessed_at < NOW() - INTERVAL '6 months 30 days'
 		AND deleted_at IS NULL
+		AND inactivity_warning_sent_at IS NOT NULL
 	`
 	result, err := db.ExecContext(ctx, deleteQuery)
 	if err != nil {
