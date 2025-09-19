@@ -69,7 +69,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="mx-0 h-screen w-full rounded-none outline-none dark:bg-black/80"
+          className="m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0 dark:bg-dark/90"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >
@@ -79,18 +79,18 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-dvh max-h-dvh flex-col justify-between px-4 py-10">
+          <Dialog.Body className="flex h-[calc(100dvh-4rem)] max-h-dvh flex-col justify-between px-4 py-10">
             <Box>
               <Flex className="pl-2" direction="column" gap={7}>
                 {navItems.map(({ label, href, items }) => {
                   if (items) {
                     return (
                       <div key={label}>
-                        <div className="mb-4 text-4xl">{label}</div>
+                        <div className="mb-4 text-3xl">{label}</div>
                         <Flex className="pl-5" direction="column" gap={5}>
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="text-3xl"
+                              className="text-2xl opacity-80"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -107,7 +107,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="text-4xl"
+                      className="text-3xl"
                       href={href}
                       key={label}
                       onClick={() => {
