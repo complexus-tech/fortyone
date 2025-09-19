@@ -2,8 +2,45 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon } from "icons";
 import { Box, Dialog, Flex } from "ui";
+import { cn } from "lib";
+
+const NavMenuButton = ({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) => {
+  return (
+    <button
+      className="flex aspect-square h-10 items-center justify-center"
+      onClick={() => {
+        setOpen(!open);
+      }}
+      type="button"
+    >
+      <span>
+        <span
+          className={cn(
+            "mb-[0.4rem] block h-[1px] w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
+            {
+              "mb-0 rotate-45": open,
+            },
+          )}
+        />
+        <span
+          className={cn(
+            "block h-[1px] w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
+            {
+              "-translate-y-[0.05rem] -rotate-45": open,
+            },
+          )}
+        />
+      </span>
+    </button>
+  );
+};
 
 export const MobileNavigation = () => {
   const [open, setOpen] = useState(false);
@@ -26,16 +63,9 @@ export const MobileNavigation = () => {
 
   return (
     <>
-      <button
-        className="flex aspect-square h-10 items-center justify-center md:hidden"
-        onClick={() => {
-          setOpen(true);
-        }}
-        type="button"
-      >
-        <MenuIcon className="h-6" strokeWidth={2} />
-        <span className="sr-only">Open menu</span>
-      </button>
+      <div className="md:hidden">
+        <NavMenuButton open={open} setOpen={setOpen} />
+      </div>
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
