@@ -79,7 +79,7 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-[calc(100dvh-4rem)] max-h-dvh flex-col justify-between px-4 py-10">
+          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 py-10">
             <Box>
               <Flex className="pl-2" direction="column" gap={7}>
                 {navItems.map(({ label, href, items }) => {
