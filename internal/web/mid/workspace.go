@@ -129,7 +129,10 @@ func getWorkspace(ctx context.Context, db *sqlx.DB, workspaceSlug string, userID
 
 // updateUserLastLogin updates the user's last login timestamp
 func updateUserLastLogin(ctx context.Context, db *sqlx.DB, userID uuid.UUID) error {
-	query := `UPDATE users SET last_login_at = NOW() WHERE user_id = :user_id AND is_active = true`
+	query := `UPDATE users 
+	SET last_login_at = NOW(),
+		inactivity_warning_sent_at = NULL
+		WHERE user_id = :user_id AND is_active = true`
 	params := map[string]any{"user_id": userID}
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
@@ -144,7 +147,10 @@ func updateUserLastLogin(ctx context.Context, db *sqlx.DB, userID uuid.UUID) err
 
 // updateWorkspaceLastAccessed updates the workspace's last accessed timestamp
 func updateWorkspaceLastAccessed(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
-	query := `UPDATE workspaces SET last_accessed_at = NOW() WHERE workspace_id = :workspace_id`
+	query := `UPDATE workspaces 
+						SET last_accessed_at = NOW(),
+						inactivity_warning_sent_at = NULL
+						WHERE workspace_id = :workspace_id`
 	params := map[string]any{"workspace_id": workspaceID}
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
