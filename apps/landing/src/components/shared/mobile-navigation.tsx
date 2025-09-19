@@ -1,0 +1,98 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { MenuIcon } from "icons";
+import { Box, Dialog, Flex } from "ui";
+
+export const MobileNavigation = () => {
+  const [open, setOpen] = useState(false);
+
+  const navItems = [
+    {
+      label: "Product",
+      items: [
+        { label: "Stories", href: "/features/stories" },
+        { label: "Objectives", href: "/features/objectives" },
+        { label: "OKRs", href: "/features/okrs" },
+        { label: "Sprints", href: "/features/sprints" },
+      ],
+    },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Contact", href: "/contact" },
+    { label: "Blog", href: "/blog" },
+    { label: "Help Center", href: "https://docs.fortyone.app" },
+  ];
+
+  return (
+    <>
+      <button
+        className="flex aspect-square h-10 items-center justify-center md:hidden"
+        onClick={() => {
+          setOpen(true);
+        }}
+        type="button"
+      >
+        <MenuIcon className="h-6" strokeWidth={2} />
+        <span className="sr-only">Open menu</span>
+      </button>
+
+      <Dialog onOpenChange={setOpen} open={open}>
+        <Dialog.Content
+          className="mx-0 h-dvh w-full rounded-none dark:bg-black/80"
+          hideClose
+          overlayClassName="bg-transparent dark:bg-transparent"
+        >
+          <Dialog.Header className="sr-only">
+            <Dialog.Title className="sr-only">Menu</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Description className="sr-only">
+            Menu dialog
+          </Dialog.Description>
+          <Dialog.Body className="flex h-dvh max-h-dvh flex-col justify-between px-4 py-10">
+            <Box>
+              <Flex className="pl-2" direction="column" gap={7}>
+                {navItems.map(({ label, href, items }) => {
+                  if (items) {
+                    return (
+                      <div key={label}>
+                        <div className="mb-4 text-4xl">{label}</div>
+                        <Flex className="pl-5" direction="column" gap={5}>
+                          {items.map(({ label: itemLabel, href: itemHref }) => (
+                            <Link
+                              className="text-3xl"
+                              href={itemHref}
+                              key={itemLabel}
+                              onClick={() => {
+                                setOpen(false);
+                              }}
+                            >
+                              {itemLabel}
+                            </Link>
+                          ))}
+                        </Flex>
+                      </div>
+                    );
+                  }
+
+                  return href ? (
+                    <Link
+                      className="text-4xl"
+                      href={href}
+                      key={label}
+                      onClick={() => {
+                        setOpen(false);
+                      }}
+                    >
+                      {label}
+                    </Link>
+                  ) : null;
+                })}
+              </Flex>
+            </Box>
+          </Dialog.Body>
+        </Dialog.Content>
+      </Dialog>
+    </>
+  );
+};
