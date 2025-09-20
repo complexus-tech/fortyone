@@ -531,27 +531,30 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 
 	content := "<ul style=\"margin-left: 20px;\">"
 	for _, kr := range keyResults {
-		if kr.DeadlineStatus == "overdue" || kr.DeadlineStatus == "due_today" || kr.DeadlineStatus == "due_tomorrow" || kr.DeadlineStatus == "due_in_7_days" {
-			statusText := ""
-			switch kr.DeadlineStatus {
-			case "overdue":
-				daysText := "day"
-				if kr.DaysDifference > 1 {
-					daysText = "days"
-				}
-				statusText = fmt.Sprintf("%d %s overdue", kr.DaysDifference, daysText)
-			case "due_today":
-				statusText = "due today"
-			case "due_tomorrow":
-				statusText = "due tomorrow"
-			case "due_in_7_days":
-				statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+		// Display all key results that were fetched (they're already filtered in the SQL query)
+		statusText := ""
+		switch kr.DeadlineStatus {
+		case "overdue":
+			daysText := "day"
+			if kr.DaysDifference > 1 {
+				daysText = "days"
 			}
-
-			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %s</li>
-			`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
+			statusText = fmt.Sprintf("%d %s overdue", kr.DaysDifference, daysText)
+		case "due_today":
+			statusText = "due today"
+		case "due_tomorrow":
+			statusText = "due tomorrow"
+		case "due_in_7_days":
+			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+		case "future":
+			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+		default:
+			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
 		}
+
+		content += fmt.Sprintf(`
+			<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %s</li>
+		`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
 	}
 	content += "</ul>"
 	return content
