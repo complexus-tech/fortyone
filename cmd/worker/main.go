@@ -183,6 +183,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register overdue stories email task: %w", err)
 	}
 
+	_, err = scheduler.Register(
+		"0 10 * * 1", // Monday at 10:00 AM
+		asynq.NewTask("overdue:objectives:email", nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register objective overdue email task: %w", err)
+	}
+
 	// Register lifecycle management tasks - weekly on Sundays
 	_, err = scheduler.Register(
 		"0 1 * * 0", // Sunday 01:00 AM
@@ -261,6 +270,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeStoryAutoClose, cleanupHandlers.HandleStoryAutoClose)
 	mux.HandleFunc(tasks.TypeSprintStoryMigration, cleanupHandlers.HandleSprintStoryMigration)
 	mux.HandleFunc("overdue:stories:email", cleanupHandlers.HandleOverdueStoriesEmail)
+	mux.HandleFunc("overdue:objectives:email", cleanupHandlers.HandleObjectiveOverdueEmail)
 	// Register lifecycle management handlers
 	mux.HandleFunc(tasks.TypeWorkspaceInactivityWarning, cleanupHandlers.HandleWorkspaceInactivityWarning)
 	mux.HandleFunc(tasks.TypeUserInactivityWarning, cleanupHandlers.HandleUserInactivityWarning)

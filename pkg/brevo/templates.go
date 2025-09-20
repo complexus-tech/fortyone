@@ -12,4 +12,5 @@ var (
 	TemplateWorkspaceRestoredNotification          = int64(24)
 	TemplateUserInactivityWarning                  = int64(25)
 	TemplateWorkspaceInactivityWarning             = int64(26)
+	TemplateObjectiveOverdue                       = int64(27)
 )

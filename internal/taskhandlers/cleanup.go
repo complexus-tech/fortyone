@@ -147,6 +147,19 @@ func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asyn
 	return nil
 }
 
+// HandleObjectiveOverdueEmail processes the objective overdue email task
+func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing ObjectiveOverdueEmail task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessObjectiveOverdue(ctx, c.db, c.log, c.brevoService); err != nil {
+		c.log.Error(ctx, "Failed to process objective overdue email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("objective overdue email failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed ObjectiveOverdueEmail task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleWorkspaceInactivityWarning processes the workspace inactivity warning task
 func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())

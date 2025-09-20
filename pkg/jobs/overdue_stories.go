@@ -117,7 +117,7 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 			w.workspace_id,
 			w.name as workspace_name,
 			w.slug as workspace_slug,
-			CAST(COALESCE(np.preferences -> 'overdue_stories' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
+			CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
 		FROM stories s
 		JOIN users u ON s.assignee_id = u.user_id
 		JOIN workspaces w ON s.workspace_id = w.workspace_id
@@ -131,7 +131,7 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 			AND s.assignee_id IS NOT NULL
 			AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
 			AND u.is_active = true
-			AND CAST(COALESCE(np.preferences -> 'overdue_stories' ->> 'email', 'true') AS BOOLEAN) = true
+			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY s.assignee_id
 		LIMIT :batch_size OFFSET :offset`
 
@@ -278,7 +278,7 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 		WorkspaceURL:        workspaceURL,
 		NotificationTitle:   title,
 		NotificationMessage: emailContent,
-		NotificationType:    "overdue_stories",
+		NotificationType:    "reminders",
 	}
 
 	if err := brevoService.SendEmailNotification(ctx, brevo.TemplateOverdueStories, params); err != nil {

@@ -669,7 +669,7 @@ func getDefaultPreferences() map[string]map[string]bool {
 			"email":  true,
 			"in_app": true,
 		},
-		"overdue_stories": {
+		"reminders": {
 			"email":  true,
 			"in_app": true,
 		},
