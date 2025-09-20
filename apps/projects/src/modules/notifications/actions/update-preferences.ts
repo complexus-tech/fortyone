@@ -14,7 +14,7 @@ export const updateNotificationPreferences = async (
     | "mention"
     | "key_result_update"
     | "story_comment"
-    | "overdue_stories",
+    | "reminders",
 ) => {
   try {
     const session = await auth();

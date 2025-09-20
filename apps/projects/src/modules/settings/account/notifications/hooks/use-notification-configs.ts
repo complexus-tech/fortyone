@@ -53,9 +53,10 @@ export function useNotificationConfigs(): NotificationConfig[] {
     }
 
     configs.push({
-      type: "overdue_stories",
-      title: `Overdue ${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })}`,
-      description: `Get notified when ${getTermDisplay("storyTerm", { variant: "plural" })} become overdue`,
+      type: "reminders",
+      title: "Reminders",
+      description:
+        "Get notified about due dates, reminders, and important updates",
     });
 
     return configs;
