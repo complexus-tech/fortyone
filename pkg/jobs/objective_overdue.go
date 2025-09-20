@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -98,6 +99,20 @@ type OverdueObjective struct {
 	TeamID         uuid.UUID `db:"team_id"`
 	DeadlineStatus string    `db:"deadline_status"`
 	DaysDifference int       `db:"days_difference"`
+	KeyResults     string    `db:"key_results"` // JSON string containing key results
+}
+
+// OverdueKeyResult represents a key result that needs attention
+type OverdueKeyResult struct {
+	ID              uuid.UUID `json:"id"`
+	Name            string    `json:"name"`
+	EndDate         time.Time `json:"end_date"`
+	MeasurementType string    `json:"measurement_type"`
+	CurrentValue    float64   `json:"current_value"`
+	TargetValue     float64   `json:"target_value"`
+	IsCompleted     bool      `json:"is_completed"`
+	DeadlineStatus  string    `json:"deadline_status"`
+	DaysDifference  int       `json:"days_difference"`
 }
 
 // getLeadsWithOverdueObjectives gets a batch of leads who have objectives needing attention and email enabled
@@ -120,13 +135,28 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 		JOIN objective_statuses os ON o.status_id = os.status_id
 		JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 		LEFT JOIN notification_preferences np ON o.lead_user_id = np.user_id AND o.workspace_id = np.workspace_id
-		WHERE o.end_date IS NOT NULL
-			AND o.lead_user_id IS NOT NULL
-			AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
-			AND u.is_active = true
-			AND os.category NOT IN ('completed', 'cancelled', 'paused')
-			AND ws.objective_enabled = true
-			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
+		WHERE (
+			-- Objectives that are overdue or due soon
+			o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+			OR
+			-- Objectives that have overdue key results (only if key results are enabled)
+			(ws.key_result_enabled = true AND o.objective_id IN (
+				SELECT DISTINCT kr.objective_id 
+				FROM key_results kr
+				WHERE kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+					-- Only include objectives with incomplete key results
+					AND NOT (
+						(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
+						(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
+						(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
+					)
+			))
+		)
+		AND o.lead_user_id IS NOT NULL
+		AND u.is_active = true
+		AND os.category NOT IN ('completed', 'cancelled', 'paused')
+		AND ws.objective_enabled = true
+		AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY o.lead_user_id
 		LIMIT :batch_size OFFSET :offset`
 
@@ -179,15 +209,74 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 				CASE 
 					WHEN o.end_date < CURRENT_DATE THEN CAST(CURRENT_DATE - o.end_date AS int)
 					ELSE CAST(o.end_date - CURRENT_DATE AS int)
-				END as days_difference
+				END as days_difference,
+				-- Aggregate key results for this objective (only if key results are enabled)
+				CASE 
+					WHEN ws.key_result_enabled = true THEN COALESCE(
+						(
+							SELECT json_agg(
+								json_build_object(
+									'id', kr.id,
+									'name', kr.name,
+									'end_date', kr.end_date,
+									'measurement_type', kr.measurement_type,
+									'current_value', kr.current_value,
+									'target_value', kr.target_value,
+									'is_completed', CASE 
+										WHEN kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value THEN true
+										WHEN kr.measurement_type = 'number' AND kr.current_value >= kr.target_value THEN true
+										WHEN kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value THEN true
+										ELSE false
+									END,
+									'deadline_status', CASE 
+										WHEN kr.end_date = CURRENT_DATE THEN 'due_today'
+										WHEN kr.end_date = CURRENT_DATE + INTERVAL '1 day' THEN 'due_tomorrow'
+										WHEN kr.end_date = CURRENT_DATE + INTERVAL '7 days' THEN 'due_in_7_days'
+										WHEN kr.end_date < CURRENT_DATE THEN 'overdue'
+										ELSE 'future'
+									END,
+									'days_difference', CASE 
+										WHEN kr.end_date < CURRENT_DATE THEN CAST(CURRENT_DATE - kr.end_date AS int)
+										ELSE CAST(kr.end_date - CURRENT_DATE AS int)
+									END
+								)
+							)
+							FROM key_results kr
+							WHERE kr.objective_id = o.objective_id
+								AND kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+								-- Only include key results that are NOT completed
+								AND NOT (
+									(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
+									(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
+									(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
+								)
+						), '[]'
+					)
+					ELSE '[]'
+				END AS key_results
 			FROM objectives o
 			JOIN users u ON o.lead_user_id = u.user_id
 			JOIN workspaces w ON o.workspace_id = w.workspace_id
 			JOIN objective_statuses os ON o.status_id = os.status_id
 			JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 			WHERE o.lead_user_id = :lead_id
-				AND o.end_date IS NOT NULL
-				AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+				AND (
+					-- Objectives that are overdue or due soon
+					o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+					OR
+					-- Objectives that have overdue key results (only if key results are enabled)
+					(ws.key_result_enabled = true AND o.objective_id IN (
+						SELECT DISTINCT kr.objective_id 
+						FROM key_results kr
+						WHERE kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+							-- Only include objectives with incomplete key results
+							AND NOT (
+								(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
+								(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
+								(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
+							)
+					))
+				)
 				AND u.is_active = true
 				AND os.category NOT IN ('completed', 'cancelled', 'paused')
 				AND ws.objective_enabled = true
@@ -195,6 +284,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 		SELECT * 
 		FROM objective_deadlines 
 		WHERE deadline_status IN ('due_today', 'due_tomorrow', 'due_in_7_days', 'overdue')
+			OR json_array_length(key_results) > 0
 		ORDER BY deadline_status, end_date;
 `
 
@@ -318,6 +408,11 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			content += fmt.Sprintf(`
 				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
 			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+
+			// Add key results if any
+			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
+				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+			}
 		}
 		content += "</ul>"
 	}
@@ -335,6 +430,11 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			content += fmt.Sprintf(`
 				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due today</li>
 			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+
+			// Add key results if any
+			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
+				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+			}
 		}
 		content += "</ul>"
 	}
@@ -356,9 +456,57 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			content += fmt.Sprintf(`
 				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %d %s overdue</li>
 			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
+
+			// Add key results if any
+			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
+				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+			}
 		}
 		content += "</ul>"
 	}
 
+	return content
+}
+
+// parseKeyResults parses the JSON string of key results
+func parseKeyResults(keyResultsJSON string) []OverdueKeyResult {
+	var keyResults []OverdueKeyResult
+	if keyResultsJSON != "" && keyResultsJSON != "[]" {
+		json.Unmarshal([]byte(keyResultsJSON), &keyResults)
+	}
+	return keyResults
+}
+
+// formatKeyResultsForEmail formats key results for email display
+func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string, teamID uuid.UUID, objectiveID uuid.UUID) string {
+	if len(keyResults) == 0 {
+		return ""
+	}
+
+	content := "<ul style=\"margin-left: 20px;\">"
+	for _, kr := range keyResults {
+		if kr.DeadlineStatus == "overdue" || kr.DeadlineStatus == "due_today" || kr.DeadlineStatus == "due_tomorrow" || kr.DeadlineStatus == "due_in_7_days" {
+			statusText := ""
+			switch kr.DeadlineStatus {
+			case "overdue":
+				daysText := "day"
+				if kr.DaysDifference > 1 {
+					daysText = "days"
+				}
+				statusText = fmt.Sprintf("%d %s overdue", kr.DaysDifference, daysText)
+			case "due_today":
+				statusText = "due today"
+			case "due_tomorrow":
+				statusText = "due tomorrow"
+			case "due_in_7_days":
+				statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+			}
+
+			content += fmt.Sprintf(`
+				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %s</li>
+			`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
+		}
+	}
+	content += "</ul>"
 	return content
 }
