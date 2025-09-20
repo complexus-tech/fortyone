@@ -46,7 +46,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 
 	query := `
 		INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence) 
-		VALUES (:workspace_id, :team_id, 1) 
+		VALUES (:workspace_id, :team_id, 0) 
 		ON CONFLICT (workspace_id, team_id) 
 		DO UPDATE SET current_sequence = team_story_sequences.current_sequence + 1 
 		RETURNING current_sequence
