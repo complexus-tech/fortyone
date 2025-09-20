@@ -9,10 +9,11 @@ import (
 
 // Team settings automation task types
 const (
-	TypeSprintAutoCreation   = "automation:sprints:create"
-	TypeStoryAutoArchive     = "automation:stories:archive"
-	TypeStoryAutoClose       = "automation:stories:close"
-	TypeSprintStoryMigration = "automation:sprints:migrate_stories"
+	TypeSprintAutoCreation        = "automation:sprints:create"
+	TypeStoryAutoArchive          = "automation:stories:archive"
+	TypeStoryAutoClose            = "automation:stories:close"
+	TypeSprintStoryMigration      = "automation:sprints:migrate_stories"
+	TypeDisableInactiveAutomation = "automation:disable:inactive"
 )
 
 // EnqueueSprintAutoCreation enqueues a task to auto-create sprints for teams.

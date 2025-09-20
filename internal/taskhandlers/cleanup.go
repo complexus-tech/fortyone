@@ -211,3 +211,16 @@ func (c *CleanupHandlers) HandleUserDeactivation(ctx context.Context, t *asynq.T
 	c.log.Info(ctx, "HANDLER: Successfully processed UserDeactivation task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
+
+// HandleDisableInactiveAutomation processes the disable inactive automation task
+func (c *CleanupHandlers) HandleDisableInactiveAutomation(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing DisableInactiveAutomation task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.DisableAutomationForInactiveTeams(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to disable automation for inactive teams", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("disable inactive automation failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed DisableInactiveAutomation task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}

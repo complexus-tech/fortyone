@@ -216,6 +216,53 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 	return createdSprints, nil
 }
 
+// DisableAutomationForInactiveTeams disables sprint automation for teams with no recent activity
+func DisableAutomationForInactiveTeams(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+	ctx, span := web.AddSpan(ctx, "jobs.DisableAutomationForInactiveTeams")
+	defer span.End()
+
+	log.Info(ctx, "Processing disable automation for inactive teams")
+
+	query := `
+		WITH inactive_teams AS (
+			SELECT t.team_id, t.workspace_id, t.name
+			FROM teams t
+			INNER JOIN team_sprint_settings tss ON tss.team_id = t.team_id AND tss.workspace_id = t.workspace_id
+			WHERE tss.auto_create_sprints = true
+				AND t.created_at <= NOW() - INTERVAL '30 days'
+				AND NOT EXISTS (
+					SELECT 1
+					FROM stories s
+					WHERE s.team_id = t.team_id AND s.workspace_id = t.workspace_id
+						AND s.updated_at >= NOW() - INTERVAL '30 days'
+				)
+		)
+		UPDATE team_sprint_settings 
+		SET auto_create_sprints = false, updated_at = NOW()
+		WHERE (team_id, workspace_id) IN (
+			SELECT team_id, workspace_id FROM inactive_teams
+		)
+		RETURNING team_id, workspace_id;
+	`
+
+	var updatedTeams []struct {
+		TeamID      string `db:"team_id"`
+		WorkspaceID string `db:"workspace_id"`
+	}
+
+	if err := db.SelectContext(ctx, &updatedTeams, query); err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to disable automation for inactive teams: %w", err)
+	}
+
+	log.Info(ctx, fmt.Sprintf("Disabled automation for %d inactive teams", len(updatedTeams)))
+	span.AddEvent("automation disabled", trace.WithAttributes(
+		attribute.Int("teams.disabled", len(updatedTeams)),
+	))
+
+	return nil
+}
+
 func calculateNextSprintStartDate(startDay string) time.Time {
 	now := time.Now()
 

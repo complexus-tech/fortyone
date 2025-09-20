@@ -229,6 +229,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register user deactivation task: %w", err)
 	}
 
+	_, err = scheduler.Register(
+		"0 6 1 * *", // 1st of month at 6:00 AM
+		asynq.NewTask(tasks.TypeDisableInactiveAutomation, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register disable inactive automation task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -276,6 +285,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeUserInactivityWarning, cleanupHandlers.HandleUserInactivityWarning)
 	mux.HandleFunc(tasks.TypeWorkspaceDeletion, cleanupHandlers.HandleWorkspaceDeletion)
 	mux.HandleFunc(tasks.TypeUserDeactivation, cleanupHandlers.HandleUserDeactivation)
+	// Register automation handlers
+	mux.HandleFunc(tasks.TypeDisableInactiveAutomation, cleanupHandlers.HandleDisableInactiveAutomation)
 
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:     "/",
