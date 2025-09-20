@@ -1,5 +1,6 @@
 "use client";
-import posthog from "posthog-js";
+import * as Sentry from "@sentry/nextjs";
+import type Error from "next/error";
 import { ArrowLeft2Icon, ReloadIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { useEffect } from "react";
@@ -21,7 +22,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    posthog.captureException(error);
+    Sentry.captureException(error);
   }, [error]);
   return (
     <html className={font.className} lang="en">
