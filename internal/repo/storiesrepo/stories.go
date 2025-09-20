@@ -38,8 +38,6 @@ func New(log *logger.Logger, db *sqlx.DB) *repo {
 
 // GetNextSequenceID returns the next sequence ID for a team.
 func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error) {
-	var currentSequence int
-
 	// Start a transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -47,11 +45,13 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 	}
 
 	query := `
-		UPDATE team_story_sequences
-		SET current_sequence = current_sequence + 1
-		WHERE workspace_id = :workspace_id AND team_id = :team_id
+		INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence) 
+		VALUES (:workspace_id, :team_id, 1) 
+		ON CONFLICT (workspace_id, team_id) 
+		DO UPDATE SET current_sequence = team_story_sequences.current_sequence + 1 
 		RETURNING current_sequence
 	`
+
 	params := map[string]any{
 		"team_id":      teamID,
 		"workspace_id": workspaceId,
@@ -64,24 +64,8 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 	}
 	defer stmt.Close()
 
+	var currentSequence int
 	err = stmt.GetContext(ctx, &currentSequence, params)
-	if errors.Is(err, sql.ErrNoRows) {
-		// If no record exists, insert a new one starting from 1
-		q := `
-			INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence)
-			VALUES (:workspace_id, :team_id, 0)
-			RETURNING current_sequence
-		`
-		stmt, err = tx.PrepareNamedContext(ctx, q)
-		if err != nil {
-			tx.Rollback()
-			return 0, nil, nil, fmt.Errorf("failed to prepare named statement for insert: %w", err)
-		}
-		defer stmt.Close()
-
-		err = stmt.GetContext(ctx, &currentSequence, params)
-	}
-
 	if err != nil {
 		tx.Rollback()
 		return 0, nil, nil, fmt.Errorf("failed to get/update sequence: %w", err)
