@@ -95,6 +95,7 @@ type OverdueObjective struct {
 	WorkspaceID    uuid.UUID `db:"workspace_id"`
 	WorkspaceName  string    `db:"workspace_name"`
 	WorkspaceSlug  string    `db:"workspace_slug"`
+	TeamID         uuid.UUID `db:"team_id"`
 	DeadlineStatus string    `db:"deadline_status"`
 	DaysDifference int       `db:"days_difference"`
 }
@@ -118,7 +119,6 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 		JOIN workspaces w ON o.workspace_id = w.workspace_id
 		LEFT JOIN notification_preferences np ON o.lead_user_id = np.user_id AND o.workspace_id = np.workspace_id
 		WHERE o.end_date IS NOT NULL
-			AND o.deleted_at IS NULL
 			AND o.lead_user_id IS NOT NULL
 			AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 			AND u.is_active = true
@@ -161,7 +161,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 	query := `
 		WITH objective_deadlines AS (
 			SELECT 
-				o.objective_id, o.name, o.end_date, o.lead_user_id, o.workspace_id,
+				o.objective_id, o.name, o.end_date, o.lead_user_id, o.workspace_id, o.team_id,
 				u.email as lead_email, 
 				COALESCE(NULLIF(u.full_name, ''), u.username) as lead_name,
 				w.name as workspace_name, w.slug as workspace_slug,
@@ -309,8 +309,8 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		`, len(dueSoonObjectives), itemText)
 		for _, objective := range dueSoonObjectives {
 			content += fmt.Sprintf(`
-				<li><a href="%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
-			`, workspaceURL, objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
+			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
 		}
 		content += "</ul>"
 	}
@@ -326,8 +326,8 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		`, len(dueTodayObjectives), itemText)
 		for _, objective := range dueTodayObjectives {
 			content += fmt.Sprintf(`
-				<li><a href="%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due today</li>
-			`, workspaceURL, objective.ID.String(), objective.Name)
+				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due today</li>
+			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
 		}
 		content += "</ul>"
 	}
@@ -347,8 +347,8 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><a href="%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %d %s overdue</li>
-			`, workspaceURL, objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
+				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %d %s overdue</li>
+			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
 		}
 		content += "</ul>"
 	}
