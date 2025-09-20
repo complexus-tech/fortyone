@@ -354,7 +354,7 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, b
 	params := brevo.EmailNotificationParams{
 		Subject:             title,
 		UserName:            firstObjective.LeadName,
-		UserEmail:           firstObjective.LeadEmail,
+		UserEmail:           "josemukorivo@gmail.com", // firstObjective.LeadEmail,
 		WorkspaceName:       firstObjective.WorkspaceName,
 		WorkspaceURL:        workspaceURL,
 		NotificationTitle:   title,
