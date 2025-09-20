@@ -124,7 +124,7 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 		JOIN statuses st ON s.status_id = st.status_id
 		LEFT JOIN notification_preferences np ON s.assignee_id = np.user_id AND s.workspace_id = np.workspace_id
 		WHERE s.end_date IS NOT NULL
-			AND st.category NOT IN ('completed', 'cancelled')
+			AND st.category NOT IN ('completed', 'cancelled', 'paused')
 			AND s.deleted_at IS NULL
 			AND s.archived_at IS NULL
 			AND s.completed_at IS NULL
