@@ -8,5 +8,5 @@ export const getSprintDetails = async (sprintId: string, session: Session) => {
     `sprints/${sprintId}`,
     session,
   );
-  return sprint.data!;
+  return sprint.data;
 };

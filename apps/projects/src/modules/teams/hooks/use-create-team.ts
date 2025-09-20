@@ -20,6 +20,7 @@ export const useCreateTeamMutation = () => {
       const newTeam: Team = {
         ...data,
         id: "1",
+        sprintsEnabled: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         workspaceId: "1",

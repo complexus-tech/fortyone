@@ -5,7 +5,7 @@ import { verifyInvitation } from "@/lib/queries/verify-invitation";
 import { Logo } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Join Workspace - Complexus",
+  title: "Join Workspace - FortyOne",
   description: "Join a workspace",
 };
 
@@ -20,7 +20,7 @@ export default async function JoinWorkspacePage({
   if (res.error?.message) {
     return (
       <Box className="w-full px-6 md:max-w-md md:px-0">
-        <Logo asIcon className="relative -left-2 h-10 text-white" />
+        <Logo />
         <Text
           as="h1"
           className="mb-2 mt-6 text-[1.7rem] first-letter:uppercase"
@@ -33,7 +33,13 @@ export default async function JoinWorkspacePage({
             ? "The invitation has expired. Please contact your team to get a new invitation. New invitations are valid for 24 hours."
             : "If you believe this is an error, please contact your team to get a new invitation."}
         </Text>
-        <Button align="center" className="md:py-3" fullWidth href="/login">
+        <Button
+          align="center"
+          className="md:py-3"
+          color="invert"
+          fullWidth
+          href="/login"
+        >
           Go back
         </Button>
       </Box>

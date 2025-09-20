@@ -6,7 +6,7 @@ export const SideDetailsSwitch = ({
   isExpanded,
   setIsExpanded,
   disabled,
-  label = "Analytics",
+  label = "Insights",
 }: {
   isExpanded: boolean | null;
   setIsExpanded: (isExpanded: boolean) => void;

@@ -19,7 +19,7 @@ const Trigger = ({
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "relative w-max dark:data-[state=active]:border-dark-50 data-[state=active]:border data-[state=active]:border-gray-200/80 rounded-[0.6rem] text-gray/80 dark:text-gray-300 px-3 py-[0.3rem] hover:dark:text-gray-200 focus:dark:bg-dark-100 focus:outline-0 dark:data-[state=active]:text-gray-200 data-[state=active]:text-dark data-[state=active]:bg-white dark:data-[state=active]:bg-dark-300/80 flex items-center gap-2",
+        "relative w-max dark:data-[state=active]:border-dark-50 data-[state=active]:border data-[state=active]:border-gray-200/80 rounded-[0.7rem] text-gray/80 dark:text-gray-300 px-3 py-[0.3rem] hover:dark:text-gray-200 focus:dark:bg-dark-100 focus:outline-0 dark:data-[state=active]:text-gray-200 data-[state=active]:text-dark data-[state=active]:bg-white dark:data-[state=active]:bg-dark-300/80 flex items-center gap-2",
         className
       )}
       {...rest}
@@ -36,7 +36,7 @@ const List = ({ children, className, ...rest }: ListProps) => {
   return (
     <TabsPrimitive.List
       className={cn(
-        "flex flex-wrap w-max mx-5 md:mx-12 rounded-[0.6rem] bg-gray-50/90 dark:bg-dark-200/60",
+        "flex flex-wrap w-max mx-5 md:mx-12 rounded-[0.7rem] bg-gray-50/90 dark:bg-dark-200/60",
         className
       )}
       {...rest}

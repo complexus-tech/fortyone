@@ -52,6 +52,13 @@ export function useNotificationConfigs(): NotificationConfig[] {
       });
     }
 
+    configs.push({
+      type: "reminders",
+      title: "Reminders",
+      description:
+        "Get notified about due dates, reminders, and important updates",
+    });
+
     return configs;
   }, [getTermDisplay, features]);
 }

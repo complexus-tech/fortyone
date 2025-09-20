@@ -4,23 +4,16 @@ import { deleteWorkspaceAction } from "@/lib/actions/workspaces/delete-workspace
 import { workspaceKeys } from "@/constants/keys";
 import type { Workspace } from "@/types";
 
-export const useDeleteWorkspaceMutation = (id: string) => {
+export const useDeleteWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => deleteWorkspaceAction(id),
+    mutationFn: () => deleteWorkspaceAction(),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
       const previousWorkspaces = queryClient.getQueryData<Workspace[]>(
         workspaceKeys.lists(),
       );
-
-      if (previousWorkspaces) {
-        queryClient.setQueryData<Workspace[]>(
-          workspaceKeys.lists(),
-          previousWorkspaces.filter((workspace) => workspace.id !== id),
-        );
-      }
 
       return { previousWorkspaces };
     },

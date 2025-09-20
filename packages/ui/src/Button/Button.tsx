@@ -18,7 +18,7 @@ export const buttonVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-[0.6rem]",
+        md: "rounded-[0.7rem]",
         lg: "rounded-[0.85rem]",
         xl: "rounded-3xl",
         full: "rounded-full",
@@ -116,6 +116,11 @@ export const buttonVariants = cva(
         variant: "naked",
         color: "primary",
         className: "text-primary dark:text-primary",
+      },
+      {
+        variant: "naked",
+        color: "danger",
+        className: "text-danger dark:text-danger dark:bg-danger/5 bg-danger/5",
       },
       {
         disabled: true,

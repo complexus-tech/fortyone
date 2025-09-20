@@ -355,6 +355,7 @@ export const KeyResults = () => {
   );
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-key-results",
@@ -440,37 +441,42 @@ export const KeyResults = () => {
   return (
     <Box className="my-8">
       <Flex align="center" className="mb-3" justify="between">
-        <Text className="text-lg capitalize antialiased" fontWeight="semibold">
+        <Text className="text-lg capitalize" fontWeight="semibold">
           {getTermDisplay("keyResultTerm", {
             variant: "plural",
             capitalize: true,
           })}
         </Text>
         <Flex align="center" gap={2}>
-          <Button
-            color="tertiary"
-            disabled={isLoading}
-            leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-            onClick={() => {
-              submit({ objective, keyResults });
-            }}
-            size="sm"
-            variant="naked"
-          >
-            {isLoading ? (
-              <Thinking message={isDesktop ? "Maya is thinking" : "Thinking"} />
-            ) : (
-              <>
-                Suggest{" "}
-                {isDesktop
-                  ? getTermDisplay("keyResultTerm", {
-                      capitalize: true,
-                      variant: "plural",
-                    })
-                  : null}
-              </>
-            )}
-          </Button>
+          {isAdminOrOwner ? (
+            <Button
+              color="tertiary"
+              disabled={isLoading}
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              onClick={() => {
+                submit({ objective, keyResults });
+              }}
+              size="sm"
+              variant="naked"
+            >
+              {isLoading ? (
+                <Thinking
+                  message={isDesktop ? "Maya is thinking" : "Thinking"}
+                />
+              ) : (
+                <>
+                  Suggest{" "}
+                  {isDesktop
+                    ? getTermDisplay("keyResultTerm", {
+                        capitalize: true,
+                        variant: "plural",
+                      })
+                    : null}
+                </>
+              )}
+            </Button>
+          ) : null}
+
           {keyResults.length > 0 && (
             <NewKeyResultButton className="capitalize" size="sm" />
           )}

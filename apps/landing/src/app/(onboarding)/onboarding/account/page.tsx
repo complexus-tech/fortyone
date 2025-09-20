@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CreateAccount } from "@/modules/onboarding/account";
 
 export const metadata: Metadata = {
-  title: "Create Account - Complexus",
+  title: "Create Account - FortyOne",
   description: "Create a new account",
 };
 

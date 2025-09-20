@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import Marquee from "react-fast-marquee";
-import { Text } from "ui";
 import { useTheme } from "next-themes";
 import { Container } from "@/components/ui";
 
@@ -29,13 +28,7 @@ export const SampleClients = () => {
   ];
 
   return (
-    <Container className="relative z-10 mb-20 max-w-6xl pt-24 dark:-top-4 dark:pt-0 dark:md:-top-16">
-      <Text
-        as="h2"
-        className="mb-10 hidden text-center font-semibold opacity-80 dark:block md:mb-20"
-      >
-        Trusted by
-      </Text>
+    <Container className="relative z-10 mb-20 max-w-6xl pt-24">
       <Marquee
         gradient
         gradientColor={resolvedTheme === "light" ? "#ffffff" : "#08090a"}

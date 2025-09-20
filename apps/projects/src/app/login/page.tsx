@@ -6,17 +6,12 @@ export const metadata: Metadata = {
   title: "Login",
 };
 
-const isLocalhost = process.env.NODE_ENV === "development";
-
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 export default async function Page() {
   const session = await auth();
   if (session) {
     redirect("/my-work");
   }
 
-  redirect(
-    isLocalhost
-      ? "https://complexus.lc/login"
-      : "https://www.complexus.app/login",
-  );
+  redirect(`https://${domain}/login`);
 }

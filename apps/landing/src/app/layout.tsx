@@ -2,25 +2,26 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { body } from "@/styles/fonts";
+import Script from "next/script";
+import { body, heading, mono } from "@/styles/fonts";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
-import { auth } from "@/auth";
-import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { getProfile } from "@/lib/queries/profile";
-import { workspaceKeys } from "@/lib/hooks/workspaces";
-import { userKeys } from "@/lib/hooks/profile";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
-import { getQueryClient } from "./get-query-client";
 
 export const metadata: Metadata = {
-  title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+  title:
+    "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
   description:
-    "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
-  metadataBase: new URL("https://www.complexus.app"),
+    "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+  metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
+    "project management platform",
+    "project management software",
+    "team project management",
+    "agile project management platform",
+    "project management tool",
+    "okr project management",
     "project management",
     "OKR software",
     "team collaboration",
@@ -40,61 +41,61 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+    title:
+      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
     description:
-      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
-    siteName: "Complexus",
+      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+    siteName: "FortyOne",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    site: "@complexus_app",
-    creator: "@complexus_app",
-    title: "Meet Complexus - AI-powered all-in-one Projects & OKRs platform",
+    site: "@fortyoneapp",
+    creator: "@fortyoneapp",
+    title:
+      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
     description:
-      "Complexus is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   },
   alternates: {
-    canonical: "/",
+    canonical: "https://www.fortyone.app",
     languages: {
-      "en-US": "https://www.complexus.app",
-      "x-default": "https://www.complexus.app",
+      "en-US": "https://www.fortyone.app",
+      "x-default": "https://www.fortyone.app",
     },
   },
 };
 const isProduction = process.env.NODE_ENV === "production";
 
-export default async function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const session = await auth();
-  const queryClient = getQueryClient();
-  if (session) {
-    await Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: workspaceKeys.lists(),
-        queryFn: () => getWorkspaces(session.token),
-      }),
-      queryClient.prefetchQuery({
-        queryKey: userKeys.profile(),
-        queryFn: () => getProfile(session),
-      }),
-    ]);
-  }
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <Script id="brevo-conversations" strategy="afterInteractive">
+        {`
+        (function(d, w, c) {
+            w.BrevoConversationsID = '6834856b58b6d2f7800e0e5e';
+            w[c] = w[c] || function() {
+                (w[c].q = w[c].q || []).push(arguments);
+            };
+            var s = d.createElement('script');
+            s.async = true;
+            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
+            if (d.head) d.head.appendChild(s);
+        })(document, window, 'BrevoConversations');
+      `}
+      </Script>
       <head>
         <JsonLd />
       </head>
-      <body className={cn(body.variable)}>
-        <Providers session={session}>
-          <HydrationBoundary state={dehydrate(queryClient)}>
-            {children}
-          </HydrationBoundary>
-        </Providers>
+      <body
+        className={cn(
+          body.variable,
+          heading.variable,
+          mono.variable,
+          heading.variable,
+        )}
+      >
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
       {isProduction ? (
@@ -102,7 +103,7 @@ export default async function RootLayout({
           <GoogleAnalytics
             gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID!}
           />
-          <GoogleTagManager gtmId="AW-684738787" />
+          <GoogleTagManager gtmId="G-TYRV8FKD2E" />
         </>
       ) : null}
     </html>

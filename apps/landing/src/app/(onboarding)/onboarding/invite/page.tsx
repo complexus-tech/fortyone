@@ -7,8 +7,8 @@ import { getTeams } from "@/lib/queries/get-teams";
 import { getProfile } from "@/lib/queries/profile";
 
 export const metadata: Metadata = {
-  title: "Invite Team - Complexus",
-  description: "Invite your team to Complexus",
+  title: "Invite Team - FortyOne",
+  description: "Invite your team to FortyOne",
 };
 
 export default async function InvitePage() {

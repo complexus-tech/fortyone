@@ -53,6 +53,9 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
         queryKey: teamKeys.settings(teamId),
       });
       queryClient.invalidateQueries({
+        queryKey: teamKeys.lists(),
+      });
+      queryClient.invalidateQueries({
         queryKey: sprintKeys.running(),
       });
     },

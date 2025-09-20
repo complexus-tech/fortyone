@@ -359,22 +359,24 @@ export const ChatInput = ({
             </Box>
           )}
         </Box>
-        <Flex align="center" className="px-3" gap={2} justify="between">
-          <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
-            <Button
-              className="mb-0.5 gap-1 md:h-[2.6rem]"
-              color="tertiary"
-              onClick={open}
-              rounded="lg"
-              variant="outline"
-            >
-              <PlusIcon /> Attach files
-            </Button>
-          </Tooltip>
+        <Flex align="center" className="mb-1 px-3" gap={2} justify="between">
+          <Flex align="center" gap={2}>
+            <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
+              <Button
+                className="gap-1"
+                color="tertiary"
+                onClick={open}
+                rounded="full"
+                variant="naked"
+              >
+                <PlusIcon /> Attach files
+              </Button>
+            </Tooltip>
+          </Flex>
 
           <Flex align="center" gap={2}>
             <Button
-              className="mb-0.5 gap-1 md:h-[2.6rem]"
+              className="gap-1"
               color="tertiary"
               leftIcon={
                 isTranscribing ? (
@@ -393,8 +395,8 @@ export const ChatInput = ({
                   handleVoiceRecording();
                 }
               }}
-              rounded="lg"
-              variant="outline"
+              rounded="full"
+              variant="naked"
             >
               {isTranscribing
                 ? "Transcribing..."
@@ -404,7 +406,7 @@ export const ChatInput = ({
             </Button>
             <Button
               asIcon
-              className="mb-0.5 md:h-10"
+              className=""
               color="invert"
               onClick={() => {
                 if (isRecording) {

@@ -78,7 +78,9 @@ export const WorkspacesMenu = () => {
           suppressHydrationWarning
           variant="naked"
         >
-          <span className="max-w-[18ch] truncate">{workspace?.name}</span>
+          <span className="max-w-[18ch] truncate font-semibold">
+            {workspace?.name}
+          </span>
         </Button>
       </Menu.Button>
       <Menu.Items align="start" className="min-w-80 pt-0">

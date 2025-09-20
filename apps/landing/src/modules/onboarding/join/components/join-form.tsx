@@ -44,7 +44,7 @@ export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
             <Box>
               <Text>{workspaceName}</Text>
               <Text color="muted" fontSize="sm">
-                {workspaceSlug}.complexus.app
+                {workspaceSlug}.fortyone.app
               </Text>
             </Box>
           </Flex>

@@ -30,10 +30,11 @@ export const ProfileSettings = () => {
             active, and you can be invited back by workspace admins at any time.
           </Text>
           <Button
-            color="tertiary"
+            color="danger"
             onClick={() => {
               setIsOpen(true);
             }}
+            variant="naked"
           >
             Leave Workspace
           </Button>
@@ -41,6 +42,7 @@ export const ProfileSettings = () => {
       </Box>
 
       <ConfirmDialog
+        confirmPhrase="leave workspace"
         confirmText="I understand"
         description="You will lose access to all workspace data. Your account will remain active."
         isOpen={isOpen}

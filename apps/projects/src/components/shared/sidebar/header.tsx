@@ -36,11 +36,12 @@ export const Header = () => {
     }
   });
 
-  useHotkeys("shift+s", () => {
-    if (userRole !== "guest" && features.sprintEnabled) {
-      setIsSprintsOpen(true);
-    }
-  });
+  // Sprint creation shortcut disabled - use team automation settings instead
+  // useHotkeys("shift+s", () => {
+  //   if (userRole !== "guest" && features.sprintEnabled) {
+  //     setIsSprintsOpen(true);
+  //   }
+  // });
 
   useHotkeys("alt+shift+l", async () => {
     await handleLogout();

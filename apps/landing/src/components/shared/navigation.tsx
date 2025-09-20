@@ -1,19 +1,18 @@
 "use client";
 
-import { Box, Button, Flex, Menu, NavLink, NavigationMenu, Text } from "ui";
+import { Box, Button, Flex, NavLink, NavigationMenu, Text } from "ui";
 import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { useProfile } from "@/lib/hooks/profile";
-import { MenuButton } from "./menu-button";
 import { RequestDemo } from "./request-demo";
+import { MobileNavigation } from "./mobile-navigation";
 
 const MenuItem = ({
   name,
@@ -47,7 +46,7 @@ export const Navigation = () => {
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
     { title: "Blog", href: "/blog" },
-    { title: "Help Center", href: "https://docs.complexus.app" },
+    { title: "Help Center", href: "https://docs.fortyone.app" },
   ];
 
   const features = [
@@ -90,8 +89,6 @@ export const Navigation = () => {
     },
   ];
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const pathname = usePathname();
   const { data: workspaces = [] } = useWorkspaces();
   const { data: profile } = useProfile();
@@ -109,9 +106,6 @@ export const Navigation = () => {
       } else {
         workspace = workspaces[0];
       }
-      if (domain.includes("localhost")) {
-        return `https://${workspace!.slug}.complexus.lc/my-work`;
-      }
       return `https://${workspace!.slug}.${domain}/my-work`;
     }
     return "/login";
@@ -119,8 +113,8 @@ export const Navigation = () => {
 
   return (
     <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
-      <Container className="flex h-16 items-center justify-between gap-12 font-medium">
-        <Logo className="relative top-0.5 h-6 pl-1 text-dark dark:text-gray-50 md:h-[1.65rem] md:pl-0" />
+      <Container className="flex h-16 items-center justify-between gap-12">
+        <Logo />
         <Flex align="center" className="hidden md:flex" gap={1}>
           <NavigationMenu>
             <NavigationMenu.List>
@@ -207,60 +201,7 @@ export const Navigation = () => {
             </Button>
           )}
 
-          <Box className="flex md:hidden">
-            <Menu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
-              <Menu.Button asChild>
-                <button type="button">
-                  <MenuButton open={isMenuOpen} />
-                </button>
-              </Menu.Button>
-              <Menu.Items
-                align="end"
-                className="relative left-3.5 mt-4 w-[calc(100vw-2.5rem)] rounded-2xl py-4"
-              >
-                <Menu.Group className="px-4 py-2.5">
-                  <Text color="muted">Product</Text>
-                </Menu.Group>
-                <Menu.Group>
-                  {navLinks.map(({ title, href }) => (
-                    <Menu.Item
-                      className="block rounded-xl py-2.5"
-                      key={title}
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <NavLink className="flex text-xl" href={href} prefetch>
-                        {title}
-                      </NavLink>
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-                <Menu.Separator />
-                <Menu.Group className="px-4 py-2.5">
-                  <Text color="muted">Features</Text>
-                </Menu.Group>
-                <Menu.Group>
-                  {features.map(({ id, name, href }) => (
-                    <Menu.Item
-                      className="block rounded-xl py-2.5"
-                      key={id}
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <NavLink
-                        className="flex items-center gap-2 text-xl"
-                        href={href}
-                      >
-                        {name}
-                      </NavLink>
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Box>
+          <MobileNavigation />
         </Flex>
       </Container>
     </Box>

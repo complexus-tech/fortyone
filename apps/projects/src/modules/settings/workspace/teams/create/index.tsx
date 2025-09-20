@@ -66,7 +66,11 @@ export const CreateTeam = () => {
       return;
     }
 
-    await createTeam.mutateAsync(form);
+    await createTeam.mutateAsync({
+      ...form,
+      code: form.code.trim(),
+      name: form.name.trim(),
+    });
     setForm(initialForm);
   };
 

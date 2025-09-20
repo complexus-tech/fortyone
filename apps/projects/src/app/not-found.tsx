@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, StoryMissingIcon } from "icons";
+import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
 import { Box, Button, Text } from "ui";
 
 export default function NotFound() {
@@ -18,7 +18,7 @@ export default function NotFound() {
           className="gap-1 pl-2"
           color="tertiary"
           href="/my-work"
-          leftIcon={<ArrowLeftIcon className="h-[1.05rem] w-auto" />}
+          leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
         >
           Go to my work
         </Button>

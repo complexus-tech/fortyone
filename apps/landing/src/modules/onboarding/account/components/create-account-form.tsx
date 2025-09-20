@@ -62,13 +62,14 @@ export const CreateAccountForm = () => {
         />
         <Text color="muted">
           I&apos;d like to receive occasional product updates and tips from
-          Complexus.
+          FortyOne.
         </Text>
       </label>
 
       <Button
         align="center"
         className="mt-4"
+        color="invert"
         fullWidth
         loading={isLoading}
         loadingText="Creating account..."

@@ -24,6 +24,7 @@ import {
   useTerminology,
   useFeatures,
   useUserRole,
+  useSprintsEnabled,
 } from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
@@ -42,6 +43,7 @@ export const Team = ({
 }) => {
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
+  const sprintsEnabled = useSprintsEnabled(id);
   const { data: session } = useSession();
   const [isLeaving, setIsLeaving] = useState(false);
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
@@ -91,7 +93,7 @@ export const Team = ({
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
       icon: <SprintsIcon />,
       href: `/teams/${id}/sprints`,
-      disabled: !features.sprintEnabled,
+      disabled: !sprintsEnabled,
     },
   ];
 

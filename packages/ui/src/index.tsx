@@ -45,3 +45,4 @@ export * from "./Skeleton/Skeleton";
 export * from "./Blur/Blur";
 export * from "./Kbd/Kbd";
 export * from "./ProfileUploadDialog/ProfileUploadDialog";
+export * from "./Collapsible/Collapsible";

@@ -4,9 +4,9 @@ import { CallToAction } from "@/components/shared";
 import { ContactJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
-  title: "Contact Complexus | Get Support for OKR & Project Management",
+  title: "Contact FortyOne | Get Support for OKR & Project Management",
   description:
-    "Reach out to Complexus for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
+    "Reach out to FortyOne for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
   keywords: [
     "contact complexus",
     "project management support",
@@ -18,14 +18,14 @@ export const metadata: Metadata = {
     "complexus demo",
   ],
   openGraph: {
-    title: "Contact Complexus | Get Support for OKR & Project Management",
+    title: "Contact FortyOne | Get Support for OKR & Project Management",
     description:
-      "Reach out to Complexus for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
+      "Reach out to FortyOne for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
   },
   twitter: {
-    title: "Contact Complexus | Get Support for OKR & Project Management",
+    title: "Contact FortyOne | Get Support for OKR & Project Management",
     description:
-      "Reach out to Complexus for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
+      "Reach out to FortyOne for expert support with your OKR and project management needs. Get in touch with our team for demos, pricing, or technical assistance.",
   },
 };
 

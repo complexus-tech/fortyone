@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { FileUIPart } from "ai";
 import { generateId } from "ai";
 import { useSession } from "next-auth/react";
-import { notificationKeys, sprintKeys, teamKeys } from "@/constants/keys";
+import { notificationKeys, teamKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
@@ -130,12 +130,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
               queryKey: storyKeys.all,
-            });
-          }
-        } else if (part.type === "tool-createSprint") {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: sprintKeys.all,
             });
           }
         } else if (

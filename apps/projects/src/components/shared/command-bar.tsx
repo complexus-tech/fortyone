@@ -56,7 +56,7 @@ export const CommandBar = ({
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.complexus.app?signedOut=true";
+      window.location.href = "https://www.fortyone.app?signedOut=true";
     }
   };
 
@@ -66,6 +66,7 @@ export const CommandBar = ({
       items: [
         {
           label: `New ${getTermDisplay("storyTerm")}`,
+          disabled: userRole === "guest",
           icon: <PlusIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
@@ -80,6 +81,7 @@ export const CommandBar = ({
         },
         {
           label: `New ${getTermDisplay("objectiveTerm")}`,
+          disabled: userRole === "guest",
           icon: <PlusIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
@@ -89,20 +91,6 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsObjectivesOpen(true);
-            setIsOpen(false);
-          },
-        },
-        {
-          label: `New ${getTermDisplay("sprintTerm")}`,
-          icon: <PlusIcon />,
-          shortcut: (
-            <Flex align="center" gap={1}>
-              <Kbd>⇧</Kbd>
-              <Kbd>s</Kbd>
-            </Flex>
-          ),
-          action: () => {
-            setIsSprintsOpen(true);
             setIsOpen(false);
           },
         },
@@ -313,6 +301,7 @@ export const CommandBar = ({
                     {command.items.map((item) => (
                       <Command.Item
                         className="justify-between rounded-[0.6rem] p-3 text-[1.1rem] opacity-85"
+                        disabled={item.disabled}
                         key={item.label}
                         onSelect={item.action}
                       >

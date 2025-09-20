@@ -1,5 +1,35 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { NotificationDetails } from "@/modules/notifications/details";
+import { getStory } from "@/modules/story/queries/get-story";
+import { auth } from "@/auth";
+import { getObjective } from "@/modules/objectives/queries/get-objective";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  params: Promise<{ notificationId: string }>;
+  searchParams: Promise<{
+    entityId: string;
+    entityType?: "story" | "objective";
+  }>;
+}): Promise<Metadata> {
+  const { entityType, entityId } = await searchParams;
+  const session = await auth();
+
+  let title = "Notification Details";
+  if (entityType === "story") {
+    const storyData = await getStory(entityId, session!);
+
+    title = storyData?.title || "Story";
+  } else if (entityType === "objective") {
+    const objectiveData = await getObjective(entityId, session!);
+    title = objectiveData?.name || "Objective";
+  }
+  return {
+    title,
+  };
+}
 
 export default async function Page({
   params,

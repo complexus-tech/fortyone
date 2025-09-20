@@ -10,7 +10,7 @@ THE INDIVIDUAL ACCEPTING THIS AGREEMENT DOES SO ON BEHALF OF A COMPANY OR OTHER 
 
 ### 1.1. Service Description
 
-Complexus is the owner and provider of a cloud-based project management platform (the "Service"). Anything Customer (including Users) posts, uploads, shares, stores, or otherwise provide through the Service is considered a "User Submission." Customer is solely responsible for all User Submissions it contributes to the Service. The Service may also include templates, help documents, and other documents or information that can assist Customer using the Service ("Complexus Content"). Customer will not receive or have access to the code or software that underlies the Service (collectively the "Software") or receive a copy of the Software itself.
+Complexus is the owner and provider of FortyOne, a cloud-based project management platform (the "Service"). Anything Customer (including Users) posts, uploads, shares, stores, or otherwise provide through the Service is considered a "User Submission." Customer is solely responsible for all User Submissions it contributes to the Service. The Service may also include templates, help documents, and other documents or information that can assist Customer using the Service ("Complexus Content"). Customer will not receive or have access to the code or software that underlies the Service (collectively the "Software") or receive a copy of the Software itself.
 
 ### 1.2. Customer's Subscription
 
@@ -37,7 +37,7 @@ Customer agrees that it will not, and will not allow Users or third parties to, 
 - Modify, translate, copy or create derivative works based on the Service
 - Reverse assemble, reverse compile, reverse engineer, decompile or otherwise attempt to discover the object code, source code, non-public APIs or underlying ideas or algorithms of the Service
 - License, sublicense, sell, resell, rent, lease, transfer, assign, distribute, time share or otherwise commercially exploit or make the Service available to any third party
-- Remove or obscure any copyright, trademark or other proprietary notices, legends or Complexus branding contained in or on the Service
+- Remove or obscure any copyright, trademark or other proprietary notices, legends or FortyOne branding contained in or on the Service
 - Use the Service in any way that violates any applicable federal, state, local or international law or regulation
 - Attempt to gain unauthorized access to, interfere with, damage or disrupt any parts of the Service
 - Use or access the Service to build or support and/or assist a third party in building or supporting products or services competitive to the Service
@@ -64,7 +64,7 @@ Fees do not include any taxes, levies, duties or similar governmental assessment
 
 ### 5.1. Agreement Term and Renewals
 
-Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying Complexus at support@complexus.app or by modifying its subscription through Customer's account within the Service.
+Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying Complexus at info@complexus.app or by modifying its subscription through Customer's account within the Service.
 
 ### 5.2. Termination
 

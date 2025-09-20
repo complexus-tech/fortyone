@@ -39,7 +39,7 @@ const Intro = () => (
         whileInView={{ y: 0, opacity: 1 }}
       >
         <Text className="mt-6 max-w-xl md:mt-1" color="muted" fontSize="xl">
-          Complexus puts an AI assistant at the heart of your workflow helping
+          FortyOne puts an AI assistant at the heart of your workflow helping
           you create stories, plan sprints, track OKRs, and keep everything
           moving, so your team stays aligned and delivers without the chaos.
         </Text>

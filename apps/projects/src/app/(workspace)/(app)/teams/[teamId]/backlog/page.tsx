@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
 import { ListBacklogStories } from "@/modules/teams/backlog/list-stories";
+import { getTeam } from "@/modules/teams/queries/get-team";
+import { auth } from "@/auth";
 
-export const metadata: Metadata = {
-  title: "Backlog",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  const session = await auth();
+  const teamData = await getTeam(teamId, session!);
+
+  return {
+    title: `${teamData.data?.name || "Team"} › Backlog`,
+  };
+}
 
 export default function Page() {
   return <ListBacklogStories />;

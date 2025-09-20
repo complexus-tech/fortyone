@@ -1,6 +1,7 @@
 export { listTeams } from "./list-teams";
 export { listPublicTeams } from "./list-public-teams";
 export { getTeamDetails } from "./get-team-details";
+export { getTeamSettingsTool } from "./get-team-settings";
 export { listTeamMembers } from "./list-team-members";
 export { createTeamTool } from "./create-team";
 export { updateTeam } from "./update-team";

@@ -33,7 +33,7 @@ export const Hero = () => {
         fontWeight="normal"
       >
         Connect with our team for product demos, implementation support, or any
-        questions about getting started with complexus.
+        questions about getting started with fortyone.
       </Text>
     </Container>
   );

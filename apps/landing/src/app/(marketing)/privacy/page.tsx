@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { Markdown } from "@/components/markdown";
 
 export const metadata = {
-  title: "Privacy Policy | Complexus",
-  description: "Learn how Complexus protects your data and privacy.",
+  title: "Privacy Policy | FortyOne",
+  description: "Learn how FortyOne protects your data and privacy.",
 };
 
 async function getPrivacyPolicy() {

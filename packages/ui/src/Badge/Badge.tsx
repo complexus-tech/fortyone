@@ -14,7 +14,7 @@ const badge = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded",
-        md: "rounded-[0.6rem]",
+        md: "rounded-[0.65rem]",
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",

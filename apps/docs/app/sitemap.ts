@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import fs from "fs";
 import path from "path";
 
-const DOCS_BASE_URL = "https://docs.complexus.app";
+const DOCS_BASE_URL = "https://docs.fortyone.app";
 const DOCS_CONTENT_DIR = path.join(process.cwd(), "content/docs");
 
 // Simplified static routes: only the root of the docs.

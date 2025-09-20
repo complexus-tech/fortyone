@@ -47,7 +47,11 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await updateTeam.mutateAsync(form);
+    await updateTeam.mutateAsync({
+      ...form,
+      code: form.code.trim(),
+      name: form.name.trim(),
+    });
   };
 
   return (

@@ -2,7 +2,7 @@
 import { Box, Flex, Text } from "ui";
 import { useEffect } from "react";
 import { logOut } from "@/components/shared/sidebar/actions";
-import { ComplexusLogo } from "@/components/ui";
+import { FortyOneLogo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 
 const clearClientStorage = () => {
@@ -32,7 +32,7 @@ export default function Page() {
         // console.error("Error during logout process:", error);
       } finally {
         clearClientStorage();
-        window.location.href = "https://www.complexus.app?signedOut=true";
+        window.location.href = "https://www.fortyone.app?signedOut=true";
       }
     };
 
@@ -46,7 +46,7 @@ export default function Page() {
     >
       <Flex align="center" direction="column" justify="center">
         <Box className="aspect-square w-max animate-pulse rounded-full bg-primary p-4">
-          <ComplexusLogo className="h-8 text-white" />
+          <FortyOneLogo className="h-8 text-white" />
         </Box>
         <Text className="mt-4" color="muted" fontWeight="medium">
           Logging out...

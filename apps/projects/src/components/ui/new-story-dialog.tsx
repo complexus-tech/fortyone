@@ -59,6 +59,7 @@ import {
   useLocalStorage,
   useTerminology,
   useUserRole,
+  useSprintsEnabled,
 } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
@@ -152,6 +153,7 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === activeTeam?.id) || firstTeam;
 
   const currentTeamId = teamId || validActiveTeam?.id;
+  const sprintsEnabled = useSprintsEnabled(currentTeamId ?? "");
   const currentTeam =
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
@@ -706,7 +708,7 @@ export const NewStoryDialog = ({
                   />
                 </ObjectivesMenu>
               ) : null}
-              {features.sprintEnabled && sprints.length > 0 ? (
+              {sprintsEnabled && sprints.length > 0 ? (
                 <SprintsMenu>
                   <SprintsMenu.Trigger>
                     <Button

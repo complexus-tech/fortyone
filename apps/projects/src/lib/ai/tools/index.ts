@@ -34,7 +34,7 @@ import {
   listSprints,
   listRunningSprints,
   getSprintDetailsTool,
-  createSprint,
+  updateSprintSettings,
 } from "@/lib/ai/tools/sprints";
 import {
   listTeams,
@@ -46,6 +46,7 @@ import {
   joinTeam,
   deleteTeam,
   leaveTeam,
+  getTeamSettingsTool,
 } from "@/lib/ai/tools/teams";
 import { navigation } from "./navigation";
 import { membersTool } from "./members";
@@ -92,6 +93,7 @@ export const tools = {
   joinTeam,
   deleteTeam,
   leaveTeam,
+  getTeamSettingsTool,
   // Stories
   listTeamStories,
   searchStories,
@@ -110,7 +112,7 @@ export const tools = {
   listSprints,
   listRunningSprints,
   getSprintDetailsTool,
-  createSprint,
+  updateSprintSettings,
   objectiveStatuses: objectiveStatusesTool,
   // Key Results
   listKeyResultsTool,

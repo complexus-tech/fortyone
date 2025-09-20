@@ -1,6 +1,6 @@
-# Complexus.tech
+# fortyone.app
 
-A modern web platform built with Next.js, TypeScript, and Turborepo. The Complexus ecosystem consists of multiple interconnected applications served through local subdomains during development.
+A modern web platform built with Next.js, TypeScript, and Turborepo. The Fortyone ecosystem consists of multiple interconnected applications served through local subdomains during development.
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ sudo apt install caddy
 
 ```bash
 git clone <repository-url>
-cd complexus.tech
+cd fortyone.tech
 pnpm install
 ```
 
@@ -63,12 +63,12 @@ sudo nano /etc/hosts
 Add these lines:
 
 ```
-127.0.0.1   complexus.lc
-127.0.0.1   docs.complexus.lc
-127.0.0.1   www.complexus.lc
-127.0.0.1   qa.complexus.lc
-127.0.0.1   payments.complexus.lc
-127.0.0.1   growth.complexus.lc
+127.0.0.1   fortyone.lc
+127.0.0.1   docs.fortyone.lc
+127.0.0.1   www.fortyone.lc
+127.0.0.1   qa.fortyone.lc
+127.0.0.1   payments.fortyone.lc
+127.0.0.1   growth.fortyone.lc
 ```
 
 **Note:** Unlike `.local` or `.localhost` domains, each subdomain must be manually added to both `/etc/hosts` and the `Caddyfile`. When adding new workspaces or subdomains, you'll need to:
@@ -106,12 +106,12 @@ pnpm dev:caddy
 
 Once running, access your applications at:
 
-- **Landing Page**: https://complexus.lc (port 3000)
-- **Documentation**: https://docs.complexus.lc (port 3002)
-- **Projects App**: https://\*.complexus.lc (port 3001)
-  - QA workspace: https://qa.complexus.lc
-  - Payments workspace: https://payments.complexus.lc
-  - Growth workspace: https://growth.complexus.lc
+- **Landing Page**: https://fortyone.lc (port 3000)
+- **Documentation**: https://docs.fortyone.lc (port 3002)
+- **Projects App**: https://\*.fortyone.lc (port 3001)
+  - QA workspace: https://qa.fortyone.lc
+  - Payments workspace: https://payments.fortyone.lc
+  - Growth workspace: https://growth.fortyone.lc
 
 **Note:** All local domains use HTTPS with Caddy's internal CA. You may need to accept the security certificate in your browser on first visit.
 
@@ -120,11 +120,11 @@ Once running, access your applications at:
 This is a Turborepo monorepo with the following structure:
 
 ```
-complexus.tech/
+fortyone.tech/
 ├── apps/                    # Applications
-│   ├── landing/            # Main landing page (complexus.lc)
-│   ├── docs/               # Documentation site (docs.complexus.lc)
-│   └── projects/           # Projects management app (*.complexus.lc)
+│   ├── landing/            # Main landing page (fortyone.lc)
+│   ├── docs/               # Documentation site (docs.fortyone.lc)
+│   └── projects/           # Projects management app (*.fortyone.lc)
 ├── packages/               # Shared packages
 │   ├── ui/                 # Shared React components
 │   ├── icons/              # Icon library
@@ -141,7 +141,7 @@ complexus.tech/
 #### 🏠 Landing App (`apps/landing/`)
 
 - **Purpose**: Main marketing and landing pages
-- **URL**: https://complexus.lc
+- **URL**: https://fortyone.lc
 - **Port**: 3000
 - **Tech Stack**: Next.js 15, React 19, Framer Motion, GSAP
 - **Features**:
@@ -153,7 +153,7 @@ complexus.tech/
 #### 📚 Docs App (`apps/docs/`)
 
 - **Purpose**: Documentation and guides
-- **URL**: https://docs.complexus.lc
+- **URL**: https://docs.fortyone.lc
 - **Port**: 3002
 - **Tech Stack**: Next.js 15, Fumadocs
 - **Features**:
@@ -164,7 +164,7 @@ complexus.tech/
 #### 🚀 Projects App (`apps/projects/`)
 
 - **Purpose**: Main application for project management
-- **URL**: https://\*.complexus.lc (handles workspace-specific subdomain routing)
+- **URL**: https://\*.fortyone.lc (handles workspace-specific subdomain routing)
 - **Port**: 3001
 - **Tech Stack**: Next.js 15, React 19, TanStack Query, Tiptap
 - **Features**:
@@ -239,13 +239,13 @@ When adding a new workspace or subdomain:
 
    ```bash
    sudo nano /etc/hosts
-   # Add: 127.0.0.1   newworkspace.complexus.lc
+   # Add: 127.0.0.1   newworkspace.fortyone.lc
    ```
 
 2. **Update `Caddyfile`:**
 
    ```caddy
-   newworkspace.complexus.lc {
+   newworkspace.fortyone.lc {
        tls internal
        reverse_proxy localhost:3001
    }
@@ -261,9 +261,9 @@ When adding a new workspace or subdomain:
 
 The development environment uses Caddy as a reverse proxy to route subdomain traffic:
 
-- `complexus.lc` → `localhost:3000` (landing)
-- `docs.complexus.lc` → `localhost:3002` (docs)
-- `*.complexus.lc` → `localhost:3001` (projects - workspace-specific routing)
+- `fortyone.lc` → `localhost:3000` (landing)
+- `docs.fortyone.lc` → `localhost:3002` (docs)
+- `*.fortyone.lc` → `localhost:3001` (projects - workspace-specific routing)
 
 This setup allows for:
 
@@ -309,7 +309,7 @@ This setup allows for:
 **OAuth authentication issues:**
 
 - Verify the subdomain is registered in your OAuth provider's console
-- Ensure redirect URIs include the full `https://subdomain.complexus.lc` format
+- Ensure redirect URIs include the full `https://subdomain.fortyone.lc` format
 - Check that the subdomain resolves correctly before testing auth
 
 **Dependencies issues:**

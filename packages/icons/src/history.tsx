@@ -2,7 +2,7 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const HistoryIcon = (props: Icon) => {
-  const { strokeWidth = 2.5, className } = props;
+  const { strokeWidth = 2.4, className } = props;
   return (
     <svg
       {...props}
@@ -15,13 +15,19 @@ export const HistoryIcon = (props: Icon) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M5.04798 8.60657L2.53784 8.45376C4.33712 3.70477 9.503 0.999914 14.5396 2.34474C19.904 3.77711 23.0904 9.26107 21.6565 14.5935C20.2227 19.926 14.7116 23.0876 9.3472 21.6553C5.36419 20.5917 2.58192 17.2946 2 13.4844"
+        d="M12 7.75V12L15.5 15.5"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M12 8V12L14 14"
+        d="M2.75 4.75V8.75H6.75"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3.25 15.0833C4.52169 18.676 7.95303 21.25 11.9864 21.25C17.1026 21.25 21.25 17.1086 21.25 12C21.25 6.89137 17.1026 2.75 11.9864 2.75C8.14808 2.75 4.85497 5.08106 3.44947 8.40278"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"

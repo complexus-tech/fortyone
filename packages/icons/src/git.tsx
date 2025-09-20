@@ -2,50 +2,59 @@ import { cn } from "lib";
 import type { Icon } from "./types";
 
 export const GitIcon = (props: Icon) => {
-  const { className, ...rest } = props;
+  const { className, strokeWidth = 2.5, ...rest } = props;
   return (
     <svg
       {...rest}
       className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
       fill="none"
+      strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M6 7C6.55228 7 7 7.44771 7 8L7 16C7 16.5523 6.55229 17 6 17C5.44772 17 5 16.5523 5 16L5 8C5 7.44771 5.44772 7 6 7Z"
-        fill="currentColor"
+      <circle
+        cx="6"
+        cy="6"
+        r="2.25"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="6"
+        cy="18"
+        r="2.25"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="18"
+        cy="18"
+        r="2.25"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M14.5 7.04186C14.741 7.05631 14.9592 7.07597 15.1581 7.10272C15.8642 7.19765 16.1912 7.36502 16.4138 7.58759C16.6363 7.81016 16.8037 8.13718 16.8986 8.84323C16.9974 9.57805 16.9995 10.5593 16.9995 12.0018V18.0018C16.9995 18.5541 17.4473 19.0018 17.9995 19.0018C18.5518 19.0018 18.9995 18.5541 18.9995 18.0018L18.9995 11.9312C18.9996 10.5771 18.9996 9.4605 18.8808 8.57674C18.756 7.64891 18.4841 6.82949 17.828 6.17338C17.1719 5.51727 16.3524 5.2453 15.4246 5.12056C15.1415 5.0825 14.833 5.05664 14.5 5.03906L14.5 7.04186Z"
-        fill="currentColor"
+        d="M6 8.25V15.75"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        d="M14.5 4.4116C14.5001 4.23596 14.5003 4.02031 14.4782 3.84387L14.4778 3.84052C14.462 3.71408 14.3902 3.13803 13.8246 2.86367C13.2578 2.58871 12.7576 2.89065 12.6494 2.95597L12.181 3.29511C11.8051 3.58974 11.2907 3.99544 10.8997 4.37588C10.7046 4.56571 10.5033 4.78297 10.3445 5.01388C10.2033 5.21914 10 5.56933 10 6C10 6.43066 10.2033 6.78086 10.3445 6.98612C10.5033 7.21702 10.7046 7.43429 10.8997 7.62412C11.2907 8.00455 11.8051 8.41024 12.1809 8.70488L12.6494 9.04402C12.7576 9.10935 13.2578 9.41128 13.8246 9.13632C14.3902 8.86196 14.462 8.28592 14.4778 8.15947L14.4782 8.15612C14.5003 7.97968 14.5001 7.76403 14.5 7.58839L14.5 4.4116Z"
-        fill="currentColor"
+        d="M13 6H15C16.6569 6 18 7.34315 18 9V15.75"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M3.25 18C3.25 16.4812 4.48122 15.25 6 15.25C7.51878 15.25 8.75 16.4812 8.75 18C8.75 19.5188 7.51878 20.75 6 20.75C4.48122 20.75 3.25 19.5188 3.25 18Z"
-        fill="currentColor"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M3.25 6C3.25 4.48121 4.48122 3.25 6 3.25C7.51878 3.25 8.75 4.48121 8.75 6C8.75 7.51878 7.51878 8.75 6 8.75C4.48122 8.75 3.25 7.51878 3.25 6Z"
-        fill="currentColor"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M15.25 18C15.25 16.4812 16.4812 15.25 18 15.25C19.5188 15.25 20.75 16.4812 20.75 18C20.75 19.5188 19.5188 20.75 18 20.75C16.4812 20.75 15.25 19.5188 15.25 18Z"
-        fill="currentColor"
+        d="M14 3.75L11.75 6L14 8.25"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

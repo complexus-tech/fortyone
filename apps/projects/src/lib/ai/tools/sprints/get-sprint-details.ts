@@ -31,7 +31,7 @@ export const getSprintDetailsTool = tool({
         success: true,
         sprint,
         analyticsReport: analytics,
-        message: `Retrieved details for sprint "${sprint.name}".`,
+        message: `Retrieved details for sprint "${sprint?.name}".`,
       };
     } catch (error) {
       return {

@@ -1,6 +1,8 @@
-// import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+/* eslint-disable turbo/no-undeclared-env-vars -- ok */
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
-import type { UIMessage } from "ai";
+import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import type { Tool, UIMessage } from "ai";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -30,6 +32,8 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
+    webSearchEnabled = false,
+    provider = "google",
   } = await req.json();
   const modelMessages = convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -52,11 +56,18 @@ export async function POST(req: NextRequest) {
   const phClient = posthogServer();
 
   const openaiClient = createOpenAI({
-    // eslint-disable-next-line turbo/no-undeclared-env-vars -- ok
     apiKey: process.env.OPENAI_API_KEY,
   });
+  const googleClient = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+  });
 
-  const model = withTracing(openaiClient("gpt-4.1-mini"), phClient, {
+  const client =
+    provider === "openai"
+      ? openaiClient("gpt-5-mini-2025-08-07")
+      : googleClient("gemini-2.5-flash");
+
+  const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
@@ -66,23 +77,27 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = streamText({
-      // model: "google/gemini-2.5-flash",
       model,
       messages: modelMessages,
       maxOutputTokens: 4000,
       stopWhen: [stepCountIs(15)],
-      tools,
+      tools: {
+        ...tools,
+        ...(webSearchEnabled
+          ? { google_search: google.tools.googleSearch({}) as Tool }
+          : {}),
+      },
       system: systemPrompt + userContext,
       experimental_transform: smoothStream({
         delayInMs: 20,
         chunking: "word",
       }),
       providerOptions: {
-        // openai: {
-        //   reasoningEffort: "medium",
-        //   reasoningSummary: "auto",
-        //   textVerbosity: "low",
-        // } satisfies OpenAIResponsesProviderOptions,
+        openai: {
+          reasoningEffort: "low",
+          reasoningSummary: "auto",
+          textVerbosity: "low",
+        } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
             thinkingBudget: -1,
@@ -93,6 +108,7 @@ export async function POST(req: NextRequest) {
     });
     return result.toUIMessageStreamResponse({
       sendReasoning: true,
+      sendSources: true,
       originalMessages: messagesFromRequest,
       onFinish: ({ messages }) => {
         saveChat({ id, messages });

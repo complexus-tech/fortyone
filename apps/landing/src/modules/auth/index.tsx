@@ -34,7 +34,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
 
   return (
     <Box className="max-w-sm">
-      <Logo asIcon className="relative -left-2 h-10 text-white" />
+      <Logo />
       {isSent ? (
         <>
           <Text
@@ -57,21 +57,25 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             className="mb-2 mt-6 text-[1.7rem]"
             fontWeight="semibold"
           >
-            {page === "login"
-              ? "Sign in to Complexus"
-              : "Get started with Complexus"}
+            {page === "login" ? "Welcome back" : "Get started today"}
           </Text>
           {page === "login" ? (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Don&apos;t have an account?{" "}
-              <Link className="text-primary" href="/signup">
+              <Link
+                className="text-dark underline dark:text-white"
+                href="/signup"
+              >
                 Create one
               </Link>
             </Text>
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
-              <Link className="text-primary" href="/login">
+              <Link
+                className="text-dark underline dark:text-white"
+                href="/login"
+              >
                 Sign in
               </Link>
             </Text>
@@ -97,6 +101,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             <Button
               align="center"
               className="mt-4"
+              color="invert"
               fullWidth
               loading={loading}
               loadingText="Logging you in..."
@@ -124,7 +129,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             </Button>
           </form>
           <Text className="mt-3 pl-[1px] text-[90%]" color="muted">
-            &copy; {new Date().getFullYear()} &bull; Powered by Complexus &bull;
+            &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
             All Rights Reserved.
           </Text>
         </>

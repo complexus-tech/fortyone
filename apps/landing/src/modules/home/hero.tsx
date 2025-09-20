@@ -11,12 +11,12 @@ export const Hero = () => {
 
   return (
     <Box>
-      <Box className="absolute inset-0 hidden bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
+      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
         <Flex
           align="center"
-          className="mb-8 mt-12 text-center md:mt-16"
+          className="mb-8 mt-12 text-center md:mt-20"
           direction="column"
         >
           <motion.span
@@ -50,10 +50,10 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-6xl md:leading-[1.1]",
+                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.25rem] md:leading-[1.1]",
               )}
             >
-              The AI Everything App for Projects & OKRs
+              The AI-Powered Project Management Platform for OKRs & Teams
             </Text>
           </motion.span>
 
@@ -66,9 +66,9 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Connect every task, sprint, and project directly to your goals so
-              your team always knows what matters most.
+            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-2xl">
+              Plan sprints, manage stories, and connect OKRs to daily work with
+              built-in AI for summaries, updates, and automation.
             </Text>
           </motion.span>
 

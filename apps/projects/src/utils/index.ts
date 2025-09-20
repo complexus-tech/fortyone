@@ -49,3 +49,7 @@ export const hexToRgba = (hex = "#6B665C", opacity = 0.1): string => {
 
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
+
+export const toTitleCase = (text: string) => {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};

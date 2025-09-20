@@ -8,6 +8,7 @@ export type Team = {
   createdAt: string;
   updatedAt: string;
   memberCount: number;
+  sprintsEnabled: boolean;
 };
 
 export type CreateTeamInput = {
@@ -20,7 +21,6 @@ export type CreateTeamInput = {
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 
 export type TeamSprintSettings = {
-  sprintsEnabled: boolean;
   autoCreateSprints: boolean;
   upcomingSprintsCount: number;
   sprintDurationWeeks: number;

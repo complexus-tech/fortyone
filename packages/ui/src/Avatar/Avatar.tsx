@@ -13,13 +13,13 @@ const avatar = cva(
         full: "rounded-full",
         none: "rounded-none",
         sm: "rounded-sm",
-        md: "rounded-md",
-        lg: "rounded-[0.6rem]",
+        md: "rounded-lg",
+        lg: "rounded-[0.7rem]",
       },
       color: {
         primary: "text-white bg-primary",
         secondary: "text-white bg-secondary",
-        tertiary: "dark:bg-dark-200/50 bg-gray-50",
+        tertiary: "dark:bg-dark-50 bg-gray-100",
         naked: "bg-transparent",
       },
       size: {
@@ -32,7 +32,7 @@ const avatar = cva(
     defaultVariants: {
       size: "md",
       rounded: "full",
-      color: "primary",
+      color: "tertiary",
     },
   }
 );

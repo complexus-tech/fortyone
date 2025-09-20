@@ -2,13 +2,16 @@ import { Box, Input, Button } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
+import { CopyIcon } from "icons";
 import { useUpdateWorkspaceMutation } from "@/lib/hooks/update-workspace-mutation";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { useCopyToClipboard } from "@/hooks";
 
 export const WorkspaceForm = () => {
   const { mutateAsync: updateWorkspace } = useUpdateWorkspaceMutation();
   const { workspace } = useCurrentWorkspace();
   const [host, setHost] = useState("");
+  const [_, copy] = useCopyToClipboard();
   const [form, setForm] = useState({
     name: workspace?.name || "",
   });
@@ -45,16 +48,23 @@ export const WorkspaceForm = () => {
           value={form.name}
         />
         <Input
-          className="lowercase opacity-80"
+          className="cursor-default lowercase opacity-80"
           label="URL (read-only)"
           name="slug"
+          onClick={() => {
+            copy(`https://${host}`);
+            toast.success("Copied to clipboard");
+          }}
           readOnly
-          value={host}
+          rightIcon={<CopyIcon />}
+          value={`https://${host}`}
         />
       </Box>
-      <Button disabled={!hasChanges} type="submit">
-        Save changes
-      </Button>
+      {hasChanges ? (
+        <Button disabled={!hasChanges} type="submit">
+          Save changes
+        </Button>
+      ) : null}
     </form>
   );
 };

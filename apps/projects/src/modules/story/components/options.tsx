@@ -39,6 +39,7 @@ import {
   useMediaQuery,
   useTerminology,
   useUserRole,
+  useSprintsEnabled,
 } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
@@ -110,6 +111,7 @@ export const Options = ({
   } = data!;
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
+  const sprintsEnabled = useSprintsEnabled(teamId);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
@@ -250,7 +252,7 @@ export const Options = ({
 
   useHotkeys("n", (e) => {
     e.preventDefault();
-    if (!isDeleted && !isGuest && features.sprintEnabled) {
+    if (!isDeleted && !isGuest && sprintsEnabled) {
       sprintButtonRef.current?.click();
     }
   });
@@ -536,7 +538,7 @@ export const Options = ({
               }
             />
           ) : null}
-          {features.sprintEnabled ? (
+          {sprintsEnabled ? (
             <Option
               isNotifications={isNotifications}
               label="Sprint"

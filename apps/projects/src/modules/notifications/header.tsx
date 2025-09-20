@@ -57,9 +57,10 @@ export const NotificationsHeader = () => {
         <Menu>
           <Menu.Button>
             <Button
+              asIcon
               className="aspect-square"
               color="tertiary"
-              leftIcon={<FilterIcon className="h-4 w-auto" />}
+              leftIcon={<FilterIcon className="h-[1.15rem]" />}
               size="sm"
             >
               <div className="sr-only">Filter</div>
@@ -87,8 +88,9 @@ export const NotificationsHeader = () => {
         <Menu>
           <Menu.Button>
             <Button
+              asIcon
               color="tertiary"
-              rightIcon={<MoreVerticalIcon className="h-4 w-auto" />}
+              rightIcon={<MoreVerticalIcon />}
               size="sm"
             >
               <span className="sr-only">More options</span>

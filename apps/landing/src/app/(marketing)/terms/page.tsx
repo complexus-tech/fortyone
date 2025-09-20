@@ -5,9 +5,9 @@ import { notFound } from "next/navigation";
 import { Markdown } from "@/components/markdown";
 
 export const metadata = {
-  title: "Terms of Service | Complexus",
+  title: "Terms of Service | FortyOne",
   description:
-    "Read our Terms of Service to understand the rules and guidelines for using Complexus.",
+    "Read our Terms of Service to understand the rules and guidelines for using FortyOne.",
 };
 
 async function getTerms() {

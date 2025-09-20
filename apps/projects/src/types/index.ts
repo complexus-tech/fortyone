@@ -94,6 +94,7 @@ export type Workspace = {
   avatarUrl: string | null;
   userRole: UserRole;
   trialEndsOn: string | null;
+  deletedAt: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -104,7 +105,6 @@ export type WorkspaceSettings = {
   sprintTerm: "sprint" | "cycle" | "iteration";
   objectiveTerm: "objective" | "goal" | "project";
   keyResultTerm: "key result" | "milestone" | "focus area";
-  sprintEnabled: boolean;
   objectiveEnabled: boolean;
   keyResultEnabled: boolean;
 };

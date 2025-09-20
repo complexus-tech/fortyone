@@ -22,7 +22,6 @@ export const useTerminology = () => {
       sprintTerm: "sprint",
       objectiveTerm: "objective",
       keyResultTerm: "key result",
-      sprintEnabled: true,
       objectiveEnabled: true,
       keyResultEnabled: true,
     },

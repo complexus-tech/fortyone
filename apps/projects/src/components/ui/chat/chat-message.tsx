@@ -7,6 +7,7 @@ import type { ChatStatus } from "ai";
 import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
+// import { Streamdown } from "streamdown";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -16,6 +17,7 @@ import { AiIcon } from "./ai";
 import { Thinking } from "./thinking";
 import { AttachmentsDisplay } from "./attachments-display";
 import { Reasoning } from "./reasoning";
+import { Sources } from "./sources";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -30,6 +32,7 @@ const RenderMessage = ({
   message,
   onPromptSelect,
   status,
+  isLast,
 }: {
   isLast: boolean;
   message: MayaUIMessage;
@@ -40,11 +43,15 @@ const RenderMessage = ({
   // check if the messages has reasoning and if status is streaming
   const hasReasoning = message.parts.some((p) => p.type === "reasoning");
   const hasText = message.parts.some((p) => p.type === "text");
+  const totalSources = message.parts.filter(
+    (part) => part.type === "source-url",
+  ).length;
 
   return (
     <>
       {(status === "submitted" || status === "streaming") &&
       message.role === "assistant" &&
+      isLast &&
       !hasReasoning ? (
         <Thinking />
       ) : null}
@@ -65,6 +72,16 @@ const RenderMessage = ({
               </Markdown>
             </Box>
           );
+          // return (
+          //   <Streamdown
+          //     className={cn("chat-tables", {
+          //       "text-white dark:text-dark": message.role === "user",
+          //     })}
+          //     key={index}
+          //   >
+          //     {part.text}
+          //   </Streamdown>
+          // );
         } else if (part.type === "reasoning" && !hasText) {
           return (
             <Reasoning
@@ -137,6 +154,26 @@ const RenderMessage = ({
           })}
         </>
       ) : null}
+
+      {totalSources > 0 && (
+        <Sources>
+          <Sources.Trigger count={totalSources} />
+          <Sources.Content>
+            {message.parts.map((part, index) => {
+              if (part.type === "source-url") {
+                return (
+                  <Sources.Source
+                    href={part.url}
+                    key={`${message.id}-${index}`}
+                    title={part.title}
+                  />
+                );
+              }
+              return null;
+            })}
+          </Sources.Content>
+        </Sources>
+      )}
     </>
   );
 };

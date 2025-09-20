@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { Back } from "./back";
+
+export const metadata: Metadata = {
+  title: "Unauthorized Access",
+};
 
 export default function Unauthorized() {
   return (
@@ -17,7 +22,7 @@ export default function Unauthorized() {
         </Text>
         <Flex gap={2}>
           <Back />
-          <Button color="tertiary" href="https://complexus.app/contact">
+          <Button color="tertiary" href="https://fortyone.app/contact">
             Contact Support
           </Button>
         </Flex>

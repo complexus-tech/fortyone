@@ -34,7 +34,7 @@ export const Navigation = () => {
   const features = useFeatures();
 
   const getSprintsItem = (): MenuItem | null => {
-    if (runningSprints.length === 0 || userRole !== "admin") return null;
+    if (runningSprints.length === 0 || userRole === "guest") return null;
     const sprint = runningSprints[0];
     return {
       name: `Active Board${runningSprints.length > 1 ? "s" : ""}`,

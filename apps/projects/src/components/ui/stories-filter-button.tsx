@@ -315,6 +315,7 @@ const SprintSelector = ({
           </Tooltip>
         );
       })}
+      {sprints.length === 0 && <Text color="muted">No sprints</Text>}
     </Flex>
   );
 };

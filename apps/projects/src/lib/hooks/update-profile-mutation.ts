@@ -47,7 +47,7 @@ export const useUpdateProfileMutation = () => {
         throw new Error(res.error.message);
       }
 
-      if ("hasSeenWalkthrough" in variables) {
+      if ("hasSeenWalkthrough" in variables || "timezone" in variables) {
         return;
       }
       toast.success("Success", {

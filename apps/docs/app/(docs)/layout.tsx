@@ -29,11 +29,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       links={[
         {
           text: "Sign up",
-          url: "https://www.complexus.app/signup",
+          url: "https://www.fortyone.app/signup",
         },
         {
           text: "Login",
-          url: "https://www.complexus.app/login",
+          url: "https://www.fortyone.app/login",
         },
       ]}
       tree={source.pageTree}

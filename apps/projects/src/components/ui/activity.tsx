@@ -44,7 +44,7 @@ export const Activity = ({
       label: "Status",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <StoryStatusIcon className="h-4" statusId={value} />
+          <StoryStatusIcon className="h-5" statusId={value} />
           {statuses.find((status) => status.id === value)?.name}
         </span>
       ),
@@ -53,7 +53,7 @@ export const Activity = ({
       label: "Priority",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <PriorityIcon className="h-4" priority={value as StoryPriority} />
+          <PriorityIcon className="h-5" priority={value as StoryPriority} />
           {value}
         </span>
       ),
@@ -66,7 +66,7 @@ export const Activity = ({
             <span>Unassigned</span>
           ) : (
             <Link
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1.5 pb-0.5"
               href={`/profile/${members.find((m) => m.id === value)?.id}`}
             >
               <Avatar
@@ -85,7 +85,7 @@ export const Activity = ({
       label: "Start date",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <CalendarIcon className="h-4" />
+          <CalendarIcon className="h-[1.15rem]" />
           {value
             ? format(new Date(value.split(" ")[0]), "PP")
             : "No start date"}
@@ -96,7 +96,7 @@ export const Activity = ({
       label: "Deadline",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <CalendarIcon className="h-4" />
+          <CalendarIcon className="h-[1.15rem]" />
           {value ? format(new Date(value.split(" ")[0]), "PP") : "No deadline"}
         </span>
       ),
@@ -112,7 +112,7 @@ export const Activity = ({
               className="flex items-center gap-1"
               href={`/teams/${sprints.find((sprint) => sprint.id === value)?.teamId}/sprints/${sprints.find((sprint) => sprint.id === value)?.id}/stories`}
             >
-              <SprintsIcon className="h-4" />
+              <SprintsIcon className="h-5" />
               {sprints.find((sprint) => sprint.id === value)?.name}
             </Link>
           )}
@@ -134,7 +134,7 @@ export const Activity = ({
               className="flex items-center gap-1"
               href={`/teams/${objectives.find((objective) => objective.id === value)?.teamId}/objectives/${objectives.find((objective) => objective.id === value)?.id}`}
             >
-              <ObjectiveIcon className="h-4" />
+              <ObjectiveIcon className="h-5" />
               {objectives.find((objective) => objective.id === value)?.name}
             </Link>
           )}
