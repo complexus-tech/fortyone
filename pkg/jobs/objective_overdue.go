@@ -118,12 +118,14 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 		JOIN users u ON o.lead_user_id = u.user_id
 		JOIN workspaces w ON o.workspace_id = w.workspace_id
 		JOIN objective_statuses os ON o.status_id = os.status_id
+		JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 		LEFT JOIN notification_preferences np ON o.lead_user_id = np.user_id AND o.workspace_id = np.workspace_id
 		WHERE o.end_date IS NOT NULL
 			AND o.lead_user_id IS NOT NULL
 			AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 			AND u.is_active = true
 			AND os.category NOT IN ('completed', 'cancelled', 'paused')
+			AND ws.objective_enabled = true
 			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY o.lead_user_id
 		LIMIT :batch_size OFFSET :offset`
@@ -182,11 +184,13 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			JOIN users u ON o.lead_user_id = u.user_id
 			JOIN workspaces w ON o.workspace_id = w.workspace_id
 			JOIN objective_statuses os ON o.status_id = os.status_id
+			JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 			WHERE o.lead_user_id = :lead_id
 				AND o.end_date IS NOT NULL
 				AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 				AND u.is_active = true
 				AND os.category NOT IN ('completed', 'cancelled', 'paused')
+				AND ws.objective_enabled = true
 		)
 		SELECT * 
 		FROM objective_deadlines 
