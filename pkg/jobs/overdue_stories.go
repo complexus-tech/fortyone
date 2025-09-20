@@ -194,7 +194,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
     JOIN statuses st ON s.status_id = st.status_id
     WHERE s.assignee_id = :assignee_id
         AND s.end_date IS NOT NULL
-        AND st.category NOT IN ('completed', 'cancelled')
+        AND st.category NOT IN ('completed', 'cancelled', 'paused')
         AND s.deleted_at IS NULL
         AND s.archived_at IS NULL
         AND s.completed_at IS NULL
