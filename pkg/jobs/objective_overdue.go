@@ -181,7 +181,6 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			JOIN workspaces w ON o.workspace_id = w.workspace_id
 			WHERE o.lead_user_id = :lead_id
 				AND o.end_date IS NOT NULL
-				AND o.deleted_at IS NULL
 				AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 				AND u.is_active = true
 		)
