@@ -115,17 +115,28 @@ type OverdueKeyResult struct {
 	DaysDifference  int       `json:"days_difference"`
 }
 
+// OverdueLead represents a lead who has objectives needing attention
+type OverdueLead struct {
+	LeadUserID    uuid.UUID `db:"lead_user_id"`
+	LeadEmail     string    `db:"lead_email"`
+	LeadName      string    `db:"lead_name"`
+	WorkspaceID   uuid.UUID `db:"workspace_id"`
+	WorkspaceName string    `db:"workspace_name"`
+	WorkspaceSlug string    `db:"workspace_slug"`
+	EmailEnabled  bool      `db:"email_enabled"`
+}
+
 // getLeadsWithOverdueObjectives gets a batch of leads who have objectives needing attention and email enabled
-func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]OverdueObjective, error) {
+func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]OverdueLead, error) {
 	ctx, span := web.AddSpan(ctx, "jobs.getLeadsWithOverdueObjectives")
 	defer span.End()
 
 	query := `
 		SELECT DISTINCT 
-			o.lead_user_id,
+			o.lead_user_id as lead_user_id,
 			u.email as lead_email,
 			COALESCE(NULLIF(u.full_name, ''), u.username) as lead_name,
-			w.workspace_id,
+			w.workspace_id as workspace_id,
 			w.name as workspace_name,
 			w.slug as workspace_slug,
 			CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
@@ -172,7 +183,7 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 	}
 	defer stmt.Close()
 
-	var leads []OverdueObjective
+	var leads []OverdueLead
 	if err := stmt.SelectContext(ctx, &leads, params); err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to execute leads query: %w", err)
@@ -326,6 +337,12 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, b
 	var dueSoonObjectives, dueTodayObjectives, overdueObjectives []OverdueObjective
 
 	for _, objective := range objectives {
+		// Check if objective has key results (even if objective itself isn't overdue)
+		hasKeyResults := false
+		if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
+			hasKeyResults = true
+		}
+
 		switch objective.DeadlineStatus {
 		case "due_in_7_days", "due_tomorrow":
 			dueSoonObjectives = append(dueSoonObjectives, objective)
@@ -333,6 +350,11 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, b
 			dueTodayObjectives = append(dueTodayObjectives, objective)
 		case "overdue":
 			overdueObjectives = append(overdueObjectives, objective)
+		case "future":
+			// If objective is on schedule but has key results, add it to due soon
+			if hasKeyResults {
+				dueSoonObjectives = append(dueSoonObjectives, objective)
+			}
 		}
 	}
 
@@ -400,14 +422,38 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		if len(dueSoonObjectives) > 1 {
 			itemText = "objectives"
 		}
+
+		// Check if we have any objectives that are actually due soon vs just have key results
+		hasActualDueSoon := false
+		for _, obj := range dueSoonObjectives {
+			if obj.DeadlineStatus != "future" {
+				hasActualDueSoon = true
+				break
+			}
+		}
+
+		sectionTitle := "Due soon"
+		if !hasActualDueSoon {
+			sectionTitle = "Need attention"
+		}
+
 		content += fmt.Sprintf(`
-			<p><strong>Due soon (%d %s)</strong></p>
+			<p><strong>%s (%d %s)</strong></p>
 			<ul>
-		`, len(dueSoonObjectives), itemText)
+		`, sectionTitle, len(dueSoonObjectives), itemText)
 		for _, objective := range dueSoonObjectives {
-			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
-			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+			// Check if this objective is actually due soon or just has key results
+			if objective.DeadlineStatus == "future" {
+				// Objective is on schedule but has key results
+				content += fmt.Sprintf(`
+					<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - On schedule (key results need attention)</li>
+				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+			} else {
+				// Objective is actually due soon
+				content += fmt.Sprintf(`
+					<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
+				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+			}
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
