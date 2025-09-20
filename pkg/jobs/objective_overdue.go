@@ -106,7 +106,7 @@ type OverdueObjective struct {
 type OverdueKeyResult struct {
 	ID              uuid.UUID `json:"id"`
 	Name            string    `json:"name"`
-	EndDate         time.Time `json:"end_date"`
+	EndDate         string    `json:"end_date"` // Store as string to handle JSON parsing
 	MeasurementType string    `json:"measurement_type"`
 	CurrentValue    float64   `json:"current_value"`
 	TargetValue     float64   `json:"target_value"`
@@ -529,8 +529,14 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 		return ""
 	}
 
-	content := "<ul style=\"margin-left: 20px;\">"
+	content := "<ul style=\"margin-left: 10px; list-style-type: none;\">"
 	for _, kr := range keyResults {
+		// Parse the date string to format it properly
+		endDateStr := kr.EndDate // Default to raw string
+		if endDate, err := time.Parse("2006-01-02", kr.EndDate); err == nil {
+			endDateStr = endDate.Format("Jan 2, 2006")
+		}
+
 		// Display all key results that were fetched (they're already filtered in the SQL query)
 		statusText := ""
 		switch kr.DeadlineStatus {
@@ -539,21 +545,25 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 			if kr.DaysDifference > 1 {
 				daysText = "days"
 			}
-			statusText = fmt.Sprintf("%d %s overdue", kr.DaysDifference, daysText)
+			statusText = fmt.Sprintf("%d %s overdue (due %s)", kr.DaysDifference, daysText, endDateStr)
 		case "due_today":
-			statusText = "due today"
+			statusText = fmt.Sprintf("Due today (%s)", endDateStr)
 		case "due_tomorrow":
-			statusText = "due tomorrow"
+			statusText = fmt.Sprintf("Due tomorrow (%s)", endDateStr)
 		case "due_in_7_days":
-			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+			statusText = fmt.Sprintf("Due %s", endDateStr)
 		case "future":
-			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+			statusText = fmt.Sprintf("Due %s", endDateStr)
 		default:
-			statusText = fmt.Sprintf("due in %d days", kr.DaysDifference)
+			statusText = fmt.Sprintf("Due %s", endDateStr)
 		}
 
 		content += fmt.Sprintf(`
-			<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %s</li>
+			<li style="margin-bottom: 8px;">
+				<span style="font-weight: bold; color: #666;">Key Result:</span> 
+				<a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> 
+				<span style="color: #666;">- %s</span>
+			</li>
 		`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
 	}
 	content += "</ul>"
