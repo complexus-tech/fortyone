@@ -18,6 +18,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -83,10 +84,11 @@ type Service struct {
 	cache           *cache.Service
 	systemUserID    uuid.UUID
 	publisher       *publisher.Publisher
+	tasksService    *tasks.Service
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID, publisher *publisher.Publisher) *Service {
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
@@ -101,6 +103,7 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service,
 		cache:           cache,
 		systemUserID:    systemUserID,
 		publisher:       publisher,
+		tasksService:    tasksService,
 	}
 }
 
@@ -196,6 +199,25 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 				s.log.Error(ctx, "failed to create seed story", err)
 				// Non-critical, continue
 			}
+		}
+	}
+
+	// Get user details for the trial task
+	user, err := s.users.GetUser(ctx, userID)
+	if err != nil {
+		s.log.Error(ctx, "Failed to get user details for trial task", "error", err, "user_id", userID)
+	} else {
+		// Enqueue workspace trial task
+		_, err = s.tasksService.EnqueueWorkspaceTrialStart(tasks.WorkspaceTrialStartPayload{
+			UserID:        userID.String(),
+			Email:         user.Email,
+			FullName:      user.FullName,
+			WorkspaceSlug: workspace.Slug,
+			WorkspaceName: workspace.Name,
+		})
+		if err != nil {
+			s.log.Error(ctx, "Error enqueuing workspace trial task: %v", err)
+			// Non-critical, continue
 		}
 	}
 

@@ -45,3 +45,38 @@ func (h *handlers) HandleUserOnboardingStart(ctx context.Context, t *asynq.Task)
 	h.log.Info(ctx, "HANDLER: Successfully processed UserOnboardingStart task", "user_id", p.UserID)
 	return nil
 }
+
+// HandleWorkspaceTrialStart processes the workspace trial start task.
+func (h *handlers) HandleWorkspaceTrialStart(ctx context.Context, t *asynq.Task) error {
+	var p tasks.WorkspaceTrialStartPayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		h.log.Error(ctx, "Failed to unmarshal WorkspaceTrialStartPayload in Handlers", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("unmarshal payload failed: %w: %w", err, asynq.SkipRetry)
+	}
+
+	h.log.Info(ctx, "HANDLER: Processing WorkspaceTrialStart task",
+		"user_id", p.UserID,
+		"email", p.Email,
+		"full_name", p.FullName,
+		"workspace_slug", p.WorkspaceSlug,
+		"workspace_name", p.WorkspaceName,
+		"task_id", t.ResultWriter().TaskID(),
+	)
+
+	// Brevo integration - add to trial list
+	_, err := h.brevoService.CreateOrUpdateContact(ctx, brevo.CreateOrUpdateContactRequest{
+		Email: p.Email,
+		Attributes: map[string]any{
+			"NAME":           p.FullName,
+			"WORKSPACE_NAME": p.WorkspaceName,
+			"WORKSPACE_SLUG": p.WorkspaceSlug,
+		},
+		ListIDs: []int64{BrevoTrialList},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create/update contact for trial: %w", err)
+	}
+
+	h.log.Info(ctx, "HANDLER: Successfully processed WorkspaceTrialStart task", "user_id", p.UserID, "workspace_slug", p.WorkspaceSlug)
+	return nil
+}
