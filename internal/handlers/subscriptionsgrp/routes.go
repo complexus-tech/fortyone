@@ -47,6 +47,7 @@ func Routes(cfg Config, app *web.App) {
 		subsRepo,
 		cfg.StripeClient,
 		cfg.WebhookSecret,
+		cfg.TasksService,
 	)
 
 	teamsService := teams.New(cfg.Log, teamsrepo.New(cfg.Log, cfg.DB))
