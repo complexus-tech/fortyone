@@ -119,3 +119,35 @@ func (s *Service) DeleteContact(ctx context.Context, req DeleteContactRequest) e
 	s.log.Info(ctx, "Successfully deleted contact in Brevo", "email", req.Email)
 	return nil
 }
+
+// RemoveContactFromList removes a contact from a specific list in Brevo.
+func (s *Service) RemoveContactFromList(ctx context.Context, listID int64, email string) error {
+	s.log.Info(ctx, "Removing contact from list in Brevo", "list_id", listID, "email", email)
+
+	if email == "" {
+		return fmt.Errorf("brevo: email is required")
+	}
+
+	// Prepare the request data
+	removeContactData := brevo.RemoveContactFromList{
+		Emails: []string{email},
+	}
+
+	// Call the Brevo API
+	result, response, err := s.client.ContactsApi.RemoveContactFromList(ctx, listID, removeContactData)
+	if err != nil {
+		s.log.Error(ctx, "Failed to remove contact from list in Brevo",
+			"error", err,
+			"list_id", listID,
+			"email", email,
+			"response_status", response.Status)
+		return fmt.Errorf("brevo: failed to remove contact from list %d: %w", listID, err)
+	}
+
+	s.log.Info(ctx, "Successfully removed contact from list in Brevo",
+		"list_id", listID,
+		"email", email,
+		"result", result)
+
+	return nil
+}

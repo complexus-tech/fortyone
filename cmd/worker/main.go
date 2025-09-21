@@ -267,6 +267,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Register existing handlers
 	mux.HandleFunc(tasks.TypeUserOnboardingStart, workerTaskService.HandleUserOnboardingStart)
 	mux.HandleFunc(tasks.TypeWorkspaceTrialStart, workerTaskService.HandleWorkspaceTrialStart)
+	mux.HandleFunc(tasks.TypeWorkspaceTrialEnd, workerTaskService.HandleWorkspaceTrialEnd)
 	mux.HandleFunc(tasks.TypeSubscriberUpdate, workerTaskService.HandleSubscriberUpdate)
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	// Register cleanup handlers

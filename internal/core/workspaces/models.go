@@ -16,6 +16,7 @@ type CoreWorkspace struct {
 	AvatarURL   *string
 	IsActive    bool
 	UserRole    string
+	CreatedBy   *uuid.UUID
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	TrialEndsOn *time.Time

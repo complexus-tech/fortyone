@@ -107,7 +107,7 @@ func (r *repo) List(ctx context.Context, userID uuid.UUID) ([]workspaces.CoreWor
 	return toCoreWorkspacesWithRole(workspaces), nil
 }
 
-func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.CoreWorkspace) (workspaces.CoreWorkspace, error) {
+func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.CoreWorkspace, createdBy uuid.UUID) (workspaces.CoreWorkspace, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.Create")
 	defer span.End()
 
@@ -121,14 +121,16 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 			slug,
 			color,
 			team_size,
-			trial_ends_on
+			trial_ends_on,
+			created_by
 		)
 		VALUES (
 			:name,
 			:slug,
 			:color,
 			:team_size,
-			:trial_ends_on
+			:trial_ends_on,
+			:created_by
 		)
 		RETURNING
 			workspace_id,
@@ -137,7 +139,8 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 			color,
 			created_at,
 			updated_at,
-			trial_ends_on
+			trial_ends_on,
+			created_by
 	`
 
 	params := map[string]any{
@@ -146,6 +149,7 @@ func (r *repo) Create(ctx context.Context, tx *sqlx.Tx, workspace workspaces.Cor
 		"team_size":     workspace.TeamSize,
 		"color":         generateRandomColor(),
 		"trial_ends_on": trialEndsOn,
+		"created_by":    createdBy,
 	}
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
@@ -472,6 +476,7 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 				ELSE FALSE
 			END as is_active,
 			wm.role as user_role,
+			w.created_by,
 			w.created_at,
 			w.updated_at,
 			w.trial_ends_on,
@@ -515,6 +520,63 @@ func (r *repo) Get(ctx context.Context, workspaceID, userID uuid.UUID) (workspac
 	return toCoreWorkspaceWithRole(workspace), nil
 }
 
+func (r *repo) GetByID(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreWorkspace, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetByID")
+	defer span.End()
+
+	var workspace dbWorkspace
+
+	query := `
+		SELECT
+			w.workspace_id,
+			w.name,
+			w.slug,
+			w.color,
+			w.avatar_url,
+			w.is_active,
+			w.created_by,
+			w.created_at,
+			w.updated_at,
+			w.trial_ends_on,
+			w.deleted_at,
+			w.deleted_by
+		FROM
+			workspaces w
+		WHERE
+			w.workspace_id = :workspace_id
+			AND w.deleted_at IS NULL
+	`
+
+	params := map[string]any{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get workspace by ID: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get workspace by ID"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+
+	span.AddEvent("workspace retrieved by ID.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+
+	return toCoreWorkspace(workspace), nil
+}
+
 func (r *repo) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (workspaces.CoreWorkspace, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetBySlug")
 	defer span.End()
@@ -541,6 +603,7 @@ func (r *repo) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (wo
 				ELSE FALSE
 			END as is_active,
 			wm.role as user_role,
+			w.created_by,
 			w.created_at,
 			w.updated_at,
 			w.trial_ends_on,

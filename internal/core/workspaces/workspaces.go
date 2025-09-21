@@ -52,7 +52,7 @@ type AttachmentsService interface {
 // Repository provides access to the users storage.
 type Repository interface {
 	List(ctx context.Context, userID uuid.UUID) ([]CoreWorkspace, error)
-	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace) (CoreWorkspace, error)
+	Create(ctx context.Context, tx *sqlx.Tx, newWorkspace CoreWorkspace, createdBy uuid.UUID) (CoreWorkspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, updates CoreWorkspace) (CoreWorkspace, error)
 	Delete(ctx context.Context, workspaceID, deletedBy uuid.UUID) error
 	Restore(ctx context.Context, workspaceID, restoredBy uuid.UUID) error
@@ -60,6 +60,7 @@ type Repository interface {
 	AddMember(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
+	GetByID(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspace, error)
 	GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (CoreWorkspace, error)
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
@@ -137,7 +138,7 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 	defer tx.Rollback()
 
 	// Critical operations in transaction
-	workspace, err := s.repo.Create(ctx, tx, newWorkspace)
+	workspace, err := s.repo.Create(ctx, tx, newWorkspace, userID)
 	if err != nil {
 		span.RecordError(err)
 		return CoreWorkspace{}, err

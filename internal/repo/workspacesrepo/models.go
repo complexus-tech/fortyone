@@ -14,6 +14,7 @@ type dbWorkspace struct {
 	Color       string     `db:"color"`
 	AvatarURL   *string    `db:"avatar_url"`
 	IsActive    bool       `db:"is_active"`
+	CreatedBy   *uuid.UUID `db:"created_by"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
 	TrialEndsOn *time.Time `db:"trial_ends_on"`
@@ -30,6 +31,7 @@ type dbWorkspaceWithRole struct {
 	AvatarURL   *string    `db:"avatar_url"`
 	IsActive    bool       `db:"is_active"`
 	UserRole    string     `db:"user_role"`
+	CreatedBy   *uuid.UUID `db:"created_by"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
 	TrialEndsOn *time.Time `db:"trial_ends_on"`
@@ -58,6 +60,7 @@ func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 		Color:       p.Color,
 		AvatarURL:   p.AvatarURL,
 		IsActive:    p.IsActive,
+		CreatedBy:   p.CreatedBy,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 		TrialEndsOn: p.TrialEndsOn,
@@ -75,6 +78,7 @@ func toCoreWorkspaceWithRole(p dbWorkspaceWithRole) workspaces.CoreWorkspace {
 		AvatarURL:   p.AvatarURL,
 		IsActive:    p.IsActive,
 		UserRole:    p.UserRole,
+		CreatedBy:   p.CreatedBy,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 		TrialEndsOn: p.TrialEndsOn,
