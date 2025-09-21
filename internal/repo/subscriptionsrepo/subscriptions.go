@@ -142,8 +142,10 @@ func (r *repo) GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID)
 	query := `
         SELECT COUNT(*) 
         FROM workspace_members
+				INNER JOIN users u ON workspace_members.user_id = u.user_id
         WHERE workspace_id = :workspace_id
         AND role IN ('admin', 'member')
+        AND u.is_active = TRUE
     `
 
 	params := map[string]any{
@@ -630,4 +632,41 @@ func (r *repo) MarkEventAsProcessed(ctx context.Context, eventID string, eventTy
 	}
 
 	return nil
+}
+
+// Get workspace creator email
+func (r *repo) GetWorkspaceCreatorEmail(ctx context.Context, workspaceID uuid.UUID) (string, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.subscriptions.GetWorkspaceCreatorEmail")
+	defer span.End()
+
+	query := `
+		SELECT u.email
+		FROM users u
+		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
+		WHERE wm.workspace_id = :workspace_id
+		AND wm.role = 'admin'
+		AND u.is_active = TRUE
+	`
+
+	params := map[string]any{
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return "", err
+	}
+	defer stmt.Close()
+
+	var email string
+	if err := stmt.GetContext(ctx, &email, params); err != nil {
+		errMsg := fmt.Sprintf("failed to get workspace creator email: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get workspace creator email"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return "", err
+	}
+	return email, nil
 }

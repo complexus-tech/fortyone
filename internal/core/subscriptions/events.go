@@ -232,6 +232,8 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 		return ErrFailedToCreateSubscription
 	}
 
+	// enqueue workspace trial end task here
+
 	s.log.Info(ctx, "New subscription created in database",
 		"subscription_id", stripeSub.ID,
 		"workspace_id", workspaceID,
