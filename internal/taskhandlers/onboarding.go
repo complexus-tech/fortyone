@@ -10,6 +10,11 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+var (
+	BrevoOnboardingList = int64(6)
+	BrevoTrialList      = int64(12)
+)
+
 // HandleUserOnboardingStart processes the user onboarding start task.
 func (h *handlers) HandleUserOnboardingStart(ctx context.Context, t *asynq.Task) error {
 	var p tasks.UserOnboardingStartPayload
@@ -31,7 +36,7 @@ func (h *handlers) HandleUserOnboardingStart(ctx context.Context, t *asynq.Task)
 		Attributes: map[string]any{
 			"NAME": p.FullName,
 		},
-		ListIDs: []int64{6},
+		ListIDs: []int64{BrevoOnboardingList},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create/update contact: %w", err)
