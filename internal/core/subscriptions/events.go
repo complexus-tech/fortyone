@@ -235,7 +235,7 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 
 	creatorEmail, err := s.repo.GetWorkspaceCreatorEmail(ctx, workspaceID)
 	if err != nil {
-		s.log.Warn(ctx, "Failed to get workspace creator email", "error", err, "workspace_id", workspaceID)
+		s.log.Error(ctx, "Failed to get workspace creator email", "error", err, "workspace_id", workspaceID)
 		// no need to return error this is not a critical operation
 	}
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v82"
@@ -51,11 +52,12 @@ type Service struct {
 	repo          Repository
 	log           *logger.Logger
 	stripeClient  *client.API
+	tasksService  *tasks.Service
 	webhookSecret string
 }
 
 // New creates a new subscription service with Stripe support
-func New(log *logger.Logger, repo Repository, stripeClient *client.API, webhookSecret string) *Service {
+func New(log *logger.Logger, repo Repository, stripeClient *client.API, webhookSecret string, tasksService *tasks.Service) *Service {
 	if stripeClient == nil {
 		panic("Stripe client cannot be nil")
 	}
@@ -64,6 +66,7 @@ func New(log *logger.Logger, repo Repository, stripeClient *client.API, webhookS
 		log:           log,
 		stripeClient:  stripeClient,
 		webhookSecret: webhookSecret,
+		tasksService:  tasksService,
 	}
 }
 
