@@ -36,6 +36,7 @@ type Repository interface {
 	HasActiveSubscriptionByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) bool
 	GetInvoicesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]CoreSubscriptionInvoice, error)
 	GetWorkspaceUserCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
+	GetWorkspaceCreatorEmail(ctx context.Context, workspaceID uuid.UUID) (string, error)
 	SaveStripeCustomerID(ctx context.Context, workspaceID uuid.UUID, customerID string) error
 	UpdateSubscriptionDetails(ctx context.Context, subID, custID, itemID string, status SubscriptionStatus, seatCount int, trialEnd *time.Time, tier SubscriptionTier, billingInterval *BillingInterval, billingEndsAt *time.Time) error
 	UpdateSubscriptionStatus(ctx context.Context, subID string, status SubscriptionStatus) error

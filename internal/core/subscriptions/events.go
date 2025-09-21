@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v82"
@@ -232,7 +233,22 @@ func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Ev
 		return ErrFailedToCreateSubscription
 	}
 
+	creatorEmail, err := s.repo.GetWorkspaceCreatorEmail(ctx, workspaceID)
+	if err != nil {
+		s.log.Warn(ctx, "Failed to get workspace creator email", "error", err, "workspace_id", workspaceID)
+		// no need to return error this is not a critical operation
+	}
+
 	// enqueue workspace trial end task here
+	if creatorEmail != "" {
+		_, err = s.tasksService.EnqueueWorkspaceTrialEnd(tasks.WorkspaceTrialEndPayload{
+			Email: creatorEmail,
+		})
+		if err != nil {
+			s.log.Error(ctx, "Failed to enqueue workspace trial end task", "error", err, "workspace_id", workspaceID)
+			// no need to return error this is not a critical operation
+		}
+	}
 
 	s.log.Info(ctx, "New subscription created in database",
 		"subscription_id", stripeSub.ID,
