@@ -642,9 +642,8 @@ func (r *repo) GetWorkspaceCreatorEmail(ctx context.Context, workspaceID uuid.UU
 	query := `
 		SELECT u.email
 		FROM users u
-		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
-		WHERE wm.workspace_id = :workspace_id
-		AND wm.role = 'admin'
+		INNER JOIN workspaces w ON u.user_id = w.created_by
+		WHERE w.workspace_id = :workspace_id
 		AND u.is_active = TRUE
 	`
 
