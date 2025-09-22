@@ -532,7 +532,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 	var dbToken dbVerificationToken
 	maxRetries := 5
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		token, err := generateOTP()
 		if err != nil {
 			return users.CoreVerificationToken{}, fmt.Errorf("generating OTP: %w", err)
