@@ -5,8 +5,9 @@ import { useState } from "react";
 import { Box, Input, Text, Button, Flex } from "ui";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo, GoogleIcon } from "@/components/ui";
+import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
@@ -15,8 +16,12 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const [email, setEmail] = useState("");
   const [isSent, setIsSent] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
+  const [isManual, setIsManual] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
   const searchParams = useSearchParams();
   const error = searchParams?.get("error");
+  const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,6 +37,15 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
     }
   };
 
+  const handleOTPSubmit = async () => {
+    if (otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit code");
+      return;
+    }
+    setOtpLoading(true);
+    router.push(`/verify/${email}/${otp}`);
+  };
+
   return (
     <Box className="max-w-sm">
       <Logo />
@@ -45,10 +59,38 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             Check your email
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
-            A secure sign-in link has been sent to{" "}
+            A secure sign-in {isManual ? "code" : "link"} has been sent to{" "}
             <span className="font-semibold dark:text-white/70">{email}</span>.
             ✨ Please check your inbox to continue.
           </Text>
+          {!isManual ? (
+            <Button
+              align="center"
+              className="mb-3"
+              color="tertiary"
+              size="lg"
+              fullWidth
+              onClick={() => setIsManual(true)}
+            >
+              Enter Code Manually
+            </Button>
+          ) : (
+            <Box className="mb-4">
+              <OTPInput value={otp} onChange={setOtp} className="mb-4" />
+              <Button
+                align="center"
+                className="mb-3"
+                color="invert"
+                fullWidth
+                loading={otpLoading}
+                loadingText="Verifying..."
+                onClick={handleOTPSubmit}
+                disabled={otp.length !== 6}
+              >
+                Verify Code
+              </Button>
+            </Box>
+          )}
         </>
       ) : (
         <>
@@ -80,7 +122,6 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               </Link>
             </Text>
           )}
-
           <form onSubmit={handleSubmit}>
             <Input
               autoFocus
