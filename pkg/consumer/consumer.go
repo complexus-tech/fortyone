@@ -488,6 +488,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 	brevoParams := map[string]any{
 		"VERIFICATION_URL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
 		"EXPIRES_IN":       "10 minutes",
+		"OTP":              payload.Token,
 	}
 
 	// Send templated email via Brevo service
