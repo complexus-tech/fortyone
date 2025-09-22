@@ -2,11 +2,10 @@ package usersrepo
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -463,14 +462,22 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	return toCoreUsers(users), nil
 }
 
-// generateToken creates a cryptographically secure token
-func generateToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
+// generateOTP creates a 6-digit numeric OTP
+func generateOTP() (string, error) {
+	// Generate 6-digit numeric OTP (000000-999999)
+	otp := rand.Intn(1000000)
+	return fmt.Sprintf("%06d", otp), nil
+}
+
+// isUniqueConstraintViolation checks if the error is a unique constraint violation
+func isUniqueConstraintViolation(err error) bool {
+	if err == nil {
+		return false
 	}
-	return base64.URLEncoding.EncodeToString(b), nil
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "duplicate key value violates unique constraint") ||
+		strings.Contains(errStr, "unique constraint") ||
+		strings.Contains(errStr, "violates unique constraint")
 }
 
 // CreateVerificationToken creates a new verification token in the database
@@ -521,41 +528,63 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 		return users.CoreVerificationToken{}, users.ErrTooManyAttempts
 	}
 
-	// Generate new token
-	token, err := generateToken()
-	if err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("generating token: %w", err)
-	}
-
-	// Create new token
+	// Generate new OTP with collision handling
 	var dbToken dbVerificationToken
-	createQ := `
-		INSERT INTO verification_tokens (
-			token, email, expires_at, token_type, created_at, updated_at
-		) VALUES (
-			:token, :email, :expires_at, :token_type, :created_at, :updated_at
-		)
-		RETURNING id, token, email, user_id, expires_at, used_at, token_type, created_at, updated_at
-	`
+	maxRetries := 5
 
-	now := time.Now()
-	createParams := map[string]any{
-		"token":      token,
-		"email":      email,
-		"expires_at": now.Add(10 * time.Minute),
-		"token_type": tokenType,
-		"created_at": now,
-		"updated_at": now,
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		token, err := generateOTP()
+		if err != nil {
+			return users.CoreVerificationToken{}, fmt.Errorf("generating OTP: %w", err)
+		}
+
+		// Create new token
+		createQ := `
+			INSERT INTO verification_tokens (
+				token, email, expires_at, token_type, created_at, updated_at
+			) VALUES (
+				:token, :email, :expires_at, :token_type, :created_at, :updated_at
+			)
+			RETURNING id, token, email, user_id, expires_at, used_at, token_type, created_at, updated_at
+		`
+
+		now := time.Now()
+		createParams := map[string]any{
+			"token":      token,
+			"email":      email,
+			"expires_at": now.Add(10 * time.Minute),
+			"token_type": tokenType,
+			"created_at": now,
+			"updated_at": now,
+		}
+
+		stmt, err := tx.PrepareNamedContext(ctx, createQ)
+		if err != nil {
+			return users.CoreVerificationToken{}, fmt.Errorf("preparing create statement: %w", err)
+		}
+
+		if err := stmt.GetContext(ctx, &dbToken, createParams); err != nil {
+			stmt.Close()
+
+			// Check if it's a unique constraint violation (same email + token)
+			if isUniqueConstraintViolation(err) {
+				r.log.Warn(ctx, "OTP collision detected, retrying",
+					"attempt", attempt+1,
+					"otp", token,
+					"email", email)
+				continue // Retry with new OTP
+			}
+
+			return users.CoreVerificationToken{}, fmt.Errorf("creating token: %w", err)
+		}
+
+		stmt.Close()
+		break // Success, exit retry loop
 	}
 
-	stmt, err = tx.PrepareNamedContext(ctx, createQ)
-	if err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("preparing create statement: %w", err)
-	}
-	defer stmt.Close()
-
-	if err := stmt.GetContext(ctx, &dbToken, createParams); err != nil {
-		return users.CoreVerificationToken{}, fmt.Errorf("creating token: %w", err)
+	// Check if we exhausted all retries
+	if dbToken.ID == uuid.Nil {
+		return users.CoreVerificationToken{}, fmt.Errorf("failed to generate unique OTP after %d retries", maxRetries)
 	}
 
 	// Commit transaction
