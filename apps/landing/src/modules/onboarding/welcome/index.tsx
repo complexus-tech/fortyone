@@ -30,9 +30,9 @@ export const Welcome = ({
   const redirectUrl = getRedirectUrl(workspaces, profile?.lastUsedWorkspaceId);
 
   return (
-    <Container className="max-w-md md:max-w-lg">
-      <Logo />
-      <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
+    <Container className="max-w-md md:max-w-xl">
+      <Logo asIcon />
+      <Text as="h1" className="mb-6 mt-10 text-4xl" fontWeight="semibold">
         Welcome to FortyOne👋
       </Text>
       <Text className="mb-6" color="muted">
@@ -82,6 +82,7 @@ export const Welcome = ({
         className="mt-4"
         color="invert"
         fullWidth
+        size="lg"
         href={redirectUrl}
       >
         Get Started

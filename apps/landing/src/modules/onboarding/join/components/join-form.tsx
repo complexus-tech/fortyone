@@ -74,6 +74,7 @@ export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
         fullWidth
         href="/onboarding/create"
         variant="naked"
+        size="lg"
       >
         Create your own workspace
       </Button>

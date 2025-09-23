@@ -4,9 +4,9 @@ import { CreateAccountForm } from "./components/create-account-form";
 
 export const CreateAccount = () => {
   return (
-    <Box className="w-full px-6 md:max-w-sm md:px-0">
-      <Logo />
-      <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
+    <Box className="w-full px-6 md:max-w-xl">
+      <Logo asIcon />
+      <Text as="h1" className="mb-6 mt-10 text-4xl" fontWeight="semibold">
         Create your account
       </Text>
       <Text className="mb-6" color="muted">

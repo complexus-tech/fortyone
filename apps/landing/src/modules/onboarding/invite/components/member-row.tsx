@@ -21,7 +21,7 @@ export const MemberRow = ({
     <Box className="flex items-start">
       <Box className="flex-1">
         <Input
-          className={cn("h-[2.6rem] focus:ring-0", {
+          className={cn("h-[2.6rem] focus:ring-0 md:h-[2.8rem]", {
             "rounded-r-none": isRemovable,
           })}
           onChange={(e) => {
@@ -35,7 +35,7 @@ export const MemberRow = ({
       {isRemovable ? (
         <Button
           asIcon
-          className="h-[2.6rem] rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.7rem]"
+          className="h-[2.6rem] rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.8rem]"
           color="tertiary"
           onClick={onRemove}
         >

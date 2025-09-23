@@ -60,9 +60,9 @@ export const InviteTeam = ({
   };
 
   return (
-    <Container className="max-h-dvh max-w-[30rem] overflow-y-auto md:max-w-lg">
-      <Logo />
-      <Text as="h1" className="mb-2 mt-6 text-[1.7rem]" fontWeight="semibold">
+    <Container className="max-h-dvh max-w-[30rem] overflow-y-auto md:max-w-xl">
+      <Logo asIcon />
+      <Text as="h1" className="mb-6 mt-10 text-4xl" fontWeight="semibold">
         Build With Your Team
       </Text>
       <Text className="mb-8" color="muted">
@@ -73,22 +73,23 @@ export const InviteTeam = ({
       <Button
         align="center"
         className="mt-4 md:h-[2.7rem]"
-        color="invert"
+        color="tertiary"
+        variant="naked"
         disabled={!isValid}
         fullWidth
         loading={isLoading}
         loadingText="Inviting members..."
         onClick={handleContinue}
       >
-        Continue
+        Invite members
       </Button>
       <Button
         align="center"
-        className="mt-2 opacity-80 dark:hover:bg-transparent"
-        color="tertiary"
+        className="mt-2"
+        color="invert"
         fullWidth
+        size="lg"
         href="/onboarding/welcome"
-        variant="naked"
       >
         I&apos;ll do this later
       </Button>

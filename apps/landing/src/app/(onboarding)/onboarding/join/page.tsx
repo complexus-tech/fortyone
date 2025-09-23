@@ -20,10 +20,10 @@ export default async function JoinWorkspacePage({
   if (res.error?.message) {
     return (
       <Box className="w-full px-6 md:max-w-md md:px-0">
-        <Logo />
+        <Logo asIcon />
         <Text
           as="h1"
-          className="mb-2 mt-6 text-[1.7rem] first-letter:uppercase"
+          className="mb-6 mt-10 text-4xl first-letter:uppercase"
           fontWeight="semibold"
         >
           {res.error.message}
@@ -39,6 +39,7 @@ export default async function JoinWorkspacePage({
           color="invert"
           fullWidth
           href="/login"
+          size="lg"
         >
           Go back
         </Button>

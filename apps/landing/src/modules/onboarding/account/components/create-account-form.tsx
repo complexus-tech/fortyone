@@ -71,6 +71,7 @@ export const CreateAccountForm = () => {
         className="mt-4"
         color="invert"
         fullWidth
+        size="lg"
         loading={isLoading}
         loadingText="Creating account..."
       >

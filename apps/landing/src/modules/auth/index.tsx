@@ -51,11 +51,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       <Logo asIcon className="h-10" />
       {isSent ? (
         <>
-          <Text
-            as="h1"
-            className="mb-2 mt-10 text-[1.7rem]"
-            fontWeight="semibold"
-          >
+          <Text as="h1" className="mb-2 mt-10 text-4xl" fontWeight="semibold">
             Check your email
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">

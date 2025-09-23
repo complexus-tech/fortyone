@@ -143,27 +143,25 @@ export const CreateWorkspaceForm = () => {
         pattern="^[a-z][a-z0-9-]*$"
         required
         rightIcon={
-          form.slug ? (
-            <Flex align="center" gap={2}>
-              <Text
-                className="antialiased"
-                color="muted"
-                fontWeight="semibold"
-              >{`.${domain}`}</Text>
-              {!isAvailable ? (
-                <Flex
-                  align="center"
-                  className="size-5 rounded-full bg-danger"
-                  justify="center"
-                >
-                  <CloseIcon
-                    className="h-3 text-white dark:text-white"
-                    strokeWidth={3}
-                  />
-                </Flex>
-              ) : null}
-            </Flex>
-          ) : null
+          <Flex align="center" gap={2}>
+            <Text
+              className="antialiased"
+              color="muted"
+              fontWeight="semibold"
+            >{`.${domain}`}</Text>
+            {!isAvailable ? (
+              <Flex
+                align="center"
+                className="size-5 rounded-full bg-danger"
+                justify="center"
+              >
+                <CloseIcon
+                  className="h-3 text-white dark:text-white"
+                  strokeWidth={3}
+                />
+              </Flex>
+            ) : null}
+          </Flex>
         }
         value={form.slug}
       />
@@ -220,6 +218,7 @@ export const CreateWorkspaceForm = () => {
         align="center"
         className="mt-4"
         color="invert"
+        size="lg"
         fullWidth
         loading={isLoading}
         loadingText="Creating workspace..."
