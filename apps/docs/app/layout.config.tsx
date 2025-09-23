@@ -29,7 +29,7 @@ const Logo = ({ ...props }) => {
 };
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: <Logo />,
+    title: <Logo className="h-6 w-auto text-black dark:text-white" />,
   },
   // see https://fumadocs.dev/docs/ui/navigation/links
   links: [],
