@@ -14,7 +14,7 @@ export const ProductImage = () => {
     <Box className="relative hidden p-4 md:block">
       <BlurImage
         alt="Login"
-        className="h-full w-full rounded-[1.25rem] object-cover"
+        className="h-full w-full rounded-2xl object-cover"
         quality={100}
         src="/images/mesh.webp"
       />
