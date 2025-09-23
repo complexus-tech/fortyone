@@ -2,7 +2,7 @@
 import { Box, Flex, Text } from "ui";
 import { useEffect } from "react";
 import { logOut } from "@/components/shared/sidebar/actions";
-import { FortyOneLogo } from "@/components/ui";
+import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 
 const clearClientStorage = () => {
@@ -46,7 +46,7 @@ export default function Page() {
     >
       <Flex align="center" direction="column" justify="center">
         <Box className="aspect-square w-max animate-pulse rounded-full bg-primary p-4">
-          <FortyOneLogo className="h-8 text-white" />
+          <Logo className="h-8 text-white" asIcon />
         </Box>
         <Text className="mt-4" color="muted" fontWeight="medium">
           Logging out...
