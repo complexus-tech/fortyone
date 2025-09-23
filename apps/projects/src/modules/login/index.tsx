@@ -5,7 +5,7 @@ import { Box, Flex, Input, Text, Button } from "ui";
 import { toast } from "sonner";
 import nProgress from "nprogress";
 import { redirect } from "next/navigation";
-import { FortyOneLogo } from "@/components/ui";
+import { Logo } from "@/components/ui";
 import { logIn } from "./actions";
 
 export const LoginPage = () => {
@@ -39,7 +39,7 @@ export const LoginPage = () => {
     <Flex align="center" className="h-screen" justify="center">
       <Box className="mx-auto w-full max-w-md rounded-xl">
         <Box className="mx-auto w-max rounded-full bg-primary p-3.5">
-          <FortyOneLogo className="h-8 w-auto text-white" />
+          <Logo className="h-8 text-white" asIcon />
         </Box>
         <Text
           align="center"
