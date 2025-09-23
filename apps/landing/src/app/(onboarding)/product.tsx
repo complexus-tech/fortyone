@@ -21,8 +21,11 @@ export const ProductImage = () => {
       <Container className="absolute inset-0 z-10 flex flex-col justify-between pb-16 pt-12 dark:text-black md:px-16">
         <Logo className="h-7 dark:text-black" />
         <Box>
-          <Text className="mb-4 font-mono font-semibold uppercase dark:text-black">
-            Built for builders
+          <Text
+            as="h2"
+            className="mb-4 font-mono font-semibold uppercase tracking-wider dark:text-black"
+          >
+            [Built for builders]
           </Text>
           <Text
             as="h3"
@@ -33,25 +36,25 @@ export const ProductImage = () => {
           </Text>
           <Box className="3xl:gap-16 flex gap-8">
             <Link href="https://x.com/fortyoneapp" target="_blank">
-              <TwitterIcon className="text-dark dark:text-black dark:hover:text-primary" />
+              <TwitterIcon className="text-dark dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.linkedin.com/company/complexus-tech/"
               target="_blank"
             >
-              <LinkedinIcon className="text-dark dark:text-black dark:hover:text-primary" />
+              <LinkedinIcon className="text-dark dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.instagram.com/complexus_tech/"
               target="_blank"
             >
-              <InstagramIcon className="text-dark dark:text-black dark:hover:text-primary" />
+              <InstagramIcon className="text-dark dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.facebook.com/complexus.tech"
               target="_blank"
             >
-              <FacebookIcon className="text-dark dark:text-black dark:hover:text-primary" />
+              <FacebookIcon className="text-dark dark:text-black dark:hover:text-white" />
             </Link>
           </Box>
           <Text className="mt-10 text-[0.95rem] dark:text-black">
@@ -62,12 +65,15 @@ export const ProductImage = () => {
                 ? "signing in"
                 : "continuing"}
             , you agree to our{" "}
-            <Link className="text-dark underline dark:text-black" href="/terms">
+            <Link
+              className="text-dark underline dark:text-black dark:hover:text-white"
+              href="/terms"
+            >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
-              className="text-dark underline dark:text-black"
+              className="text-dark underline dark:text-black dark:hover:text-white"
               href="/privacy"
             >
               Privacy Policy
