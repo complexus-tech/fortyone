@@ -47,13 +47,13 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   };
 
   return (
-    <Box className="max-w-sm">
-      <Logo />
+    <Box className="md:w-full md:max-w-md">
+      <Logo asIcon className="h-10" />
       {isSent ? (
         <>
           <Text
             as="h1"
-            className="mb-2 mt-6 text-[1.7rem]"
+            className="mb-2 mt-10 text-[1.7rem]"
             fontWeight="semibold"
           >
             Check your email
@@ -94,11 +94,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
         </>
       ) : (
         <>
-          <Text
-            as="h1"
-            className="mb-2 mt-6 text-[1.7rem]"
-            fontWeight="semibold"
-          >
+          <Text as="h1" className="mb-4 mt-10 text-4xl" fontWeight="semibold">
             {page === "login" ? "Welcome back" : "Get started today"}
           </Text>
           {page === "login" ? (
