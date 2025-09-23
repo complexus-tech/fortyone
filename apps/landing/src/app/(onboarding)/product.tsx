@@ -19,7 +19,7 @@ export const ProductImage = () => {
         src="/images/mesh.webp"
       />
       <Container className="absolute inset-0 z-10 flex flex-col justify-between pb-16 pt-12 dark:text-black md:px-16">
-        <Logo className="h-7" />
+        <Logo className="h-7 dark:text-black" />
         <Box>
           <Text className="mb-4 font-mono font-semibold uppercase dark:text-black">
             Built for builders
