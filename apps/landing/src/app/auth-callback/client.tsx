@@ -43,7 +43,7 @@ export const ClientPage = ({
       justify="center"
     >
       <Flex align="center" direction="column" justify="center">
-        <Logo className="mb-1 animate-pulse" />
+        <Logo asIcon className="mb-1 animate-pulse" />
         <Text color="muted" fontWeight="medium">
           Signing into your workspace...
         </Text>

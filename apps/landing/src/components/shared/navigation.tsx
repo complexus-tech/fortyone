@@ -114,7 +114,9 @@ export const Navigation = () => {
   return (
     <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12">
-        <Logo />
+        <Flex className="items-center gap-2">
+          <Logo />
+        </Flex>
         <Flex align="center" className="hidden md:flex" gap={1}>
           <NavigationMenu>
             <NavigationMenu.List>

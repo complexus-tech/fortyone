@@ -1,5 +1,5 @@
 import { Flex, Text } from "ui";
-import { FortyOneLogo } from "@/components/ui";
+import { Logo } from "@/components/ui";
 
 export default function Loading() {
   return (
@@ -9,7 +9,7 @@ export default function Loading() {
       justify="center"
     >
       <Flex align="center" direction="column" justify="center">
-        <FortyOneLogo className="animate-pulse" />
+        <Logo className="animate-pulse" asIcon />
         <Text className="mt-4" color="muted" fontWeight="medium">
           Loading workspace...
         </Text>

@@ -5,7 +5,7 @@ import { ArrowLeft2Icon, ReloadIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { useEffect } from "react";
 import { Instrument_Sans as InstrumentSans } from "next/font/google";
-import { FortyOneLogo } from "@/components/ui";
+import { Logo } from "@/components/ui";
 import "../styles/global.css";
 
 const font = InstrumentSans({
@@ -29,7 +29,7 @@ export default function GlobalError({
       <body>
         <Box className="flex h-screen items-center justify-center">
           <Box className="flex flex-col items-center">
-            <FortyOneLogo className="h-8 text-white" />
+            <Logo className="h-8" />
             <Text className="mb-6 mt-10" fontSize="3xl">
               There was an error
             </Text>

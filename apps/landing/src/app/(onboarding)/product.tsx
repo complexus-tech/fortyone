@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok to nest ternary */
 "use client";
 
-import { Box, Text, BlurImage, Container } from "ui";
+import { Box, Text, BlurImage, Container, Flex } from "ui";
 import Link from "next/link";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
 import { usePathname } from "next/navigation";
@@ -19,7 +19,7 @@ export const ProductImage = () => {
         src="/images/mesh.webp"
       />
       <Container className="absolute inset-0 z-10 flex flex-col justify-between pb-16 pt-12 dark:text-black md:px-16">
-        <Logo asIcon />
+        <Logo className="h-7" />
         <Box>
           <Text className="mb-4 font-mono font-semibold uppercase dark:text-black">
             Built for builders
