@@ -91,13 +91,15 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       ) : (
         <>
           <Text as="h1" className="mb-4 mt-10 text-4xl" fontWeight="semibold">
-            {page === "login" ? "Welcome back" : "Get started today"}
+            {page === "login"
+              ? "Sign into your account"
+              : "Create your account"}
           </Text>
           {page === "login" ? (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Don&apos;t have an account?{" "}
               <Link
-                className="text-dark underline dark:text-white"
+                className="text-primary underline dark:text-white"
                 href="/signup"
               >
                 Create one
@@ -107,7 +109,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
               <Link
-                className="text-dark underline dark:text-white"
+                className="text-primary underline dark:text-white"
                 href="/login"
               >
                 Sign in
@@ -139,6 +141,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               loading={loading}
               loadingText="Logging you in..."
               type="submit"
+              size="lg"
             >
               Continue
             </Button>
@@ -149,7 +152,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             </Flex>
             <Button
               align="center"
-              className="mb-3 border-gray-200 md:h-[2.6rem]"
+              className="mb-3"
               color="tertiary"
               fullWidth
               leftIcon={<GoogleIcon />}
@@ -157,13 +160,14 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
                 await signInWithGoogle();
               }}
               type="button"
+              size="lg"
             >
               Continue with Google
             </Button>
           </form>
           <Text className="mt-3 pl-[1px] text-[90%]" color="muted">
-            &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
-            All Rights Reserved.
+            &copy; {new Date().getFullYear()} &bull; Product of Complexus LLC
+            &bull; All Rights Reserved.
           </Text>
         </>
       )}

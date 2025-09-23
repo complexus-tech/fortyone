@@ -15,7 +15,6 @@ export const ProductImage = () => {
       <BlurImage
         alt="Login"
         className="h-full w-full rounded-2xl object-cover"
-        quality={100}
         src="/images/mesh.webp"
       />
       <Container className="absolute inset-0 z-10 flex flex-col justify-between pb-16 pt-12 dark:text-black md:px-16">
