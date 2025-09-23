@@ -144,11 +144,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            <Text
-              className="antialiased"
-              color="muted"
-              fontWeight="semibold"
-            >{`.${domain}`}</Text>
+            <Text>{`.${domain}`}</Text>
             {!isAvailable ? (
               <Flex
                 align="center"
