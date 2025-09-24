@@ -13,7 +13,7 @@ import {
   TeamColor,
   StoriesFilterButton,
 } from "@/components/ui";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
 import { useTeams } from "../../teams/hooks/teams";
 import { useSprint } from "../hooks/sprint-details";
@@ -41,6 +41,7 @@ export const Header = ({
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
   const { openChat } = useChatContext();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -57,7 +58,7 @@ export const Header = ({
   const team = teams.find((team) => team.id === teamId)!;
   const startDate = format(new Date(sprint.startDate), "MMM d");
   const endDate = format(new Date(sprint.endDate), "MMM d");
-  const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
+  const sprintName = `${sprint.name}${isDesktop ? ` (${startDate} - ${endDate})` : ""}`;
 
   return (
     <HeaderContainer className="justify-between gap-4">
@@ -72,7 +73,7 @@ export const Header = ({
             },
             {
               name: sprintName,
-              icon: <SprintsIcon className="h-4 w-auto" />,
+              icon: <SprintsIcon className="h-[1.1rem]" />,
               url: `/teams/${team.id}/sprints/${sprint.id}/stories`,
             },
             {
@@ -89,7 +90,7 @@ export const Header = ({
           breadCrumbs={[
             {
               name: sprintName,
-              icon: <SprintsIcon className="h-4 w-auto" />,
+              icon: <SprintsIcon className="h-[1.1rem]" />,
               url: `/teams/${team.id}/sprints/${sprint.id}`,
             },
           ]}
@@ -121,6 +122,7 @@ export const Header = ({
           layout={layout}
           options={["list", "kanban"]}
           setLayout={setLayout}
+          className="hidden md:flex"
         />
         <StoriesFilterButton
           filters={filters}

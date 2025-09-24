@@ -335,7 +335,7 @@ export const StoryProperties = ({
           }
         >
           <Badge
-            className="h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] text-dark"
+            className="hidden h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] text-dark md:flex"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {

@@ -2,7 +2,7 @@
 
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useMediaQuery } from "@/hooks";
 import { useSprint } from "../hooks/sprint-details";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
@@ -15,6 +15,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
     "team:sprints:stories:layout",
     "list",
   );
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [isExpanded, setIsExpanded] = useLocalStorage(
     "team:sprints:stories:isExpanded",
     true,
@@ -33,14 +34,19 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
-      <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
-        <BoardDividedPanel.MainPanel>
-          <AllStories layout={layout} />
-        </BoardDividedPanel.MainPanel>
-        <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-          <Sidebar />
-        </BoardDividedPanel.SideBar>
-      </BoardDividedPanel>
+
+      {isMobile ? (
+        <AllStories layout={layout} />
+      ) : (
+        <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
+          <BoardDividedPanel.MainPanel>
+            <AllStories layout={layout} />
+          </BoardDividedPanel.MainPanel>
+          <BoardDividedPanel.SideBar isExpanded={isExpanded}>
+            <Sidebar />
+          </BoardDividedPanel.SideBar>
+        </BoardDividedPanel>
+      )}
     </SprintStoriesProvider>
   );
 };

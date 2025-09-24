@@ -66,7 +66,7 @@ export const Option = ({
   return (
     <Box
       className={cn(
-        "my-4 grid grid-cols-[7.5rem_auto] items-center gap-3",
+        "my-4 grid grid-cols-[7.5rem_auto] items-center gap-3 md:my-5",
         { "grid-cols-1": isNotifications },
         className,
       )}
@@ -315,6 +315,7 @@ export const Options = ({
                     leftIcon={<StoryStatusIcon statusId={statusId} />}
                     ref={statusButtonRef}
                     type="button"
+                    size="sm"
                     variant={isMobile ? "solid" : "naked"}
                   >
                     {name}
@@ -342,6 +343,7 @@ export const Options = ({
                     leftIcon={<PriorityIcon priority={priority} />}
                     ref={priorityButtonRef}
                     type="button"
+                    size="sm"
                     variant={isMobile ? "solid" : "naked"}
                   >
                     {priority}
@@ -380,6 +382,7 @@ export const Options = ({
                     }
                     ref={assigneeButtonRef}
                     type="button"
+                    size="sm"
                     variant={isMobile ? "solid" : "naked"}
                   >
                     {assignee?.username || (
@@ -416,6 +419,7 @@ export const Options = ({
                       />
                     }
                     ref={startDateButtonRef}
+                    size="sm"
                     variant={isMobile ? "solid" : "naked"}
                   >
                     {startDate ? (
@@ -477,6 +481,7 @@ export const Options = ({
                           <CalendarIcon className="h-[1.15rem] w-auto" />
                         }
                         ref={dueDateButtonRef}
+                        size="sm"
                         variant={isMobile ? "solid" : "naked"}
                       >
                         {endDate ? (
@@ -519,6 +524,7 @@ export const Options = ({
                       ref={objectiveButtonRef}
                       title={objectiveId ? objective?.name : undefined}
                       type="button"
+                      size="sm"
                       variant={isMobile ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">
@@ -557,6 +563,7 @@ export const Options = ({
                       }
                       ref={sprintButtonRef}
                       type="button"
+                      size="sm"
                       variant={isMobile ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">
@@ -583,7 +590,9 @@ export const Options = ({
             isNotifications={isNotifications}
             label="Labels"
             value={
-              <>
+              <Box
+                className={cn("md:ml-2.5", { "md:ml-0": labels.length === 0 })}
+              >
                 {labels.length > 0 ? (
                   <Flex align="center" className="gap-1.5" wrap>
                     {labels.slice(0, labels.length - 1).map((label) => (
@@ -683,7 +692,7 @@ export const Options = ({
                     />
                   </LabelsMenu>
                 )}
-              </>
+              </Box>
             }
           />
         </Box>
