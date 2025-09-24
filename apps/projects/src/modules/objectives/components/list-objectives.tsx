@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cn } from "lib";
 import { BodyContainer } from "@/components/shared/body";
 import { NewObjectiveDialog } from "@/components/ui";
-import { useUserRole } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import type { Objective } from "../types";
 import { TableHeader } from "./heading";
 import { ObjectiveCard } from "./card";
@@ -20,6 +20,7 @@ export const ListObjectives = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
 
   return (
     <BodyContainer
@@ -27,19 +28,23 @@ export const ListObjectives = ({
         "h-auto": isInSearch,
       })}
     >
-      {!isInSearch && <TableHeader isInTeam={isInTeam} />}
+      {!isInSearch && objectives.length > 0 && (
+        <TableHeader isInTeam={isInTeam} />
+      )}
       {objectives.length === 0 ? (
         <>
           {isInSearch ? null : (
             <Box className="flex h-full items-center justify-center">
               <Box className="flex flex-col items-center">
-                <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
+                <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.6} />
                 <Text className="mb-6 mt-8" fontSize="3xl">
-                  No objectives found
+                  No {getTermDisplay("objectiveTerm", { variant: "plural" })}{" "}
+                  found
                 </Text>
                 <Text className="mb-6 max-w-md text-center" color="muted">
-                  Oops! This team doesn&apos;t have any objectives yet. Create a
-                  new objective to get started.
+                  Oops! This team doesn&apos;t have any{" "}
+                  {getTermDisplay("objectiveTerm", { variant: "plural" })} yet.
+                  Create a new {getTermDisplay("objectiveTerm")} to get started.
                 </Text>
                 <Flex gap={2}>
                   <Button
@@ -53,7 +58,7 @@ export const ListObjectives = ({
                     }}
                     size="md"
                   >
-                    Create new objective
+                    Create new {getTermDisplay("objectiveTerm")}
                   </Button>
                 </Flex>
               </Box>
