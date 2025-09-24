@@ -58,7 +58,11 @@ export const RoadmapPage = () => {
           />
         </Flex>
         <Flex align="center" gap={1}>
-          <RoadmapLayoutSwitcher layout={layout} setLayout={setLayout} />
+          <RoadmapLayoutSwitcher
+            layout={layout}
+            setLayout={setLayout}
+            className="hidden md:flex"
+          />
           <Box className="hidden md:block">
             <Button
               className="mr-1.5 gap-1 px-3"

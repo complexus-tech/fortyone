@@ -125,7 +125,9 @@ export const ObjectiveCard = ({
             >
               <ObjectiveIcon className="h-4" />
             </Flex>
-            <Text className="truncate font-medium">{name}</Text>
+            <Text className="max-w-[22ch] truncate font-medium md:max-w-full">
+              {name}
+            </Text>
           </Link>
         </Box>
         <Flex align="center" className="gap-2 md:gap-4">

@@ -13,6 +13,7 @@ export const MobileMenuButton = () => {
       <Button
         asIcon
         color="tertiary"
+        className="mr-1"
         leftIcon={<MenuIcon />}
         onClick={() => {
           setIsOpen(true);

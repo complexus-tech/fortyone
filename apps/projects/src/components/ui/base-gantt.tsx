@@ -814,11 +814,7 @@ export const GanttHeader = ({
   };
 
   return (
-    <Flex
-      align="center"
-      className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark"
-      justify="between"
-    >
+    <Box className="sticky top-0 z-10 hidden h-16 items-center justify-between border-b-[0.5px] border-gray-200/60 bg-white px-6 py-2.5 dark:border-dark-100 dark:bg-dark md:flex">
       <Button color="tertiary" onClick={onReset} size="sm">
         Today
       </Button>
@@ -863,7 +859,7 @@ export const GanttHeader = ({
           </Menu.Items>
         </Menu>
       </Flex>
-    </Flex>
+    </Box>
   );
 };
 
