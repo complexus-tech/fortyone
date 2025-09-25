@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   blurContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F5F5F5",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },

@@ -191,7 +191,7 @@ export const NotificationsPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: "#F5F5F5",
   },
   contentContainer: {
     flex: 1,

@@ -77,7 +77,7 @@ export const NotificationList = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: "#F5F5F5",
   },
   flatList: {
     flex: 1,
