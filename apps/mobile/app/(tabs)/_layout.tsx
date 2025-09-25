@@ -13,7 +13,7 @@ export default function TabsLayout() {
         <Icon sf="house.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="inbox">
-        <Label>Inbox</Label>
+        <Label>Notifications</Label>
         <Icon sf="bell.fill" />
         <Badge>9+</Badge>
       </NativeTabs.Trigger>

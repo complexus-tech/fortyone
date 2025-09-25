@@ -22,7 +22,7 @@ export const NotificationHeader = ({
       <View style={styles.blurContainer}>
         <View style={styles.content}>
           <View style={styles.leftSection}>
-            <Text style={styles.title}>Inbox</Text>
+            <Text style={styles.title}>Notifications</Text>
           </View>
 
           <View style={styles.rightSection}>
@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "600",
     color: "#000000",
   },
   rightSection: {
