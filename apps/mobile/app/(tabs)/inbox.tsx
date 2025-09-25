@@ -1,22 +1,6 @@
-import { Text, View, StyleSheet } from "react-native";
+import React from "react";
+import { NotificationsPage } from "../../modules/notifications";
 
-export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Inbox</Text>
-    </View>
-  );
+export default function Inbox() {
+  return <NotificationsPage />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "white",
-  },
-  text: {
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-});
