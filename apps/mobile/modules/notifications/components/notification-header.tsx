@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type NotificationHeaderProps = {
   unreadCount?: number;
@@ -14,49 +15,28 @@ export const NotificationHeader = ({
   onMarkAllRead,
   onDeleteAll,
 }: NotificationHeaderProps) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.leftSection}>
-        <Text style={styles.title}>Notifications</Text>
-        {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.blurContainer}>
+        <View style={styles.content}>
+          <View style={styles.leftSection}>
+            <Text style={styles.title}>Inbox</Text>
           </View>
-        )}
-      </View>
 
-      <View style={styles.rightSection}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            pressed && styles.pressedButton,
-          ]}
-          onPress={onFilterPress}
-        >
-          <Text style={styles.actionText}>Filter</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            pressed && styles.pressedButton,
-          ]}
-          onPress={onMarkAllRead}
-        >
-          <Text style={styles.actionText}>Mark All</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            pressed && styles.pressedButton,
-          ]}
-          onPress={onDeleteAll}
-        >
-          <Text style={styles.actionText}>Delete</Text>
-        </Pressable>
+          <View style={styles.rightSection}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.menuButton,
+                pressed && styles.pressedButton,
+              ]}
+              onPress={onFilterPress}
+            >
+              <Text style={styles.menuDots}>⋯</Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -64,54 +44,45 @@ export const NotificationHeader = ({
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: "transparent",
+  },
+  blurContainer: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  content: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5E5EA",
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
   },
   title: {
-    fontSize: 20,
+    fontSize: 32,
     fontWeight: "700",
     color: "#000000",
   },
-  badge: {
-    backgroundColor: "#FF3B30",
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 8,
-    minWidth: 20,
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
   rightSection: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
   },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  menuButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: "#F2F2F7",
   },
   pressedButton: {
-    backgroundColor: "#E5E5EA",
+    backgroundColor: "#F2F2F7",
   },
-  actionText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#007AFF",
+  menuDots: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000000",
   },
 });

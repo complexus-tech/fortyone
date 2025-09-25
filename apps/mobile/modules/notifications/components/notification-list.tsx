@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, FlatList, RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationCard } from "./notification-card";
 
 type Notification = {
@@ -31,7 +32,15 @@ export const NotificationList = ({
   onNotificationPress,
   onNotificationLongPress,
 }: NotificationListProps) => {
-  const renderNotification = ({ item, index }: { item: Notification; index: number }) => (
+  const insets = useSafeAreaInsets();
+
+  const renderNotification = ({
+    item,
+    index,
+  }: {
+    item: Notification;
+    index: number;
+  }) => (
     <NotificationCard
       notification={item}
       index={index}
@@ -55,7 +64,11 @@ export const NotificationList = ({
           />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 20 },
+        ]}
+        style={styles.flatList}
       />
     </View>
   );
@@ -66,7 +79,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F2F2F7",
   },
+  flatList: {
+    flex: 1,
+  },
   listContent: {
-    paddingBottom: 20,
+    paddingTop: 0,
   },
 });
