@@ -1,6 +1,9 @@
 import { Text, View, StyleSheet, Pressable, Button } from "react-native";
+import { ColorPicker, Host } from "@expo/ui/swift-ui";
+import { useState } from "react";
 
 export default function Index() {
+  const [color, setColor] = useState("#000000");
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home</Text>
@@ -14,6 +17,14 @@ export default function Index() {
       </Pressable>
 
       <Button title="Press me" />
+      {/* 
+      <Host style={{ width: 400, height: 200 }}>
+        <ColorPicker
+          label="Select a color"
+          selection={color}
+          onValueChanged={setColor}
+        />
+      </Host> */}
     </View>
   );
 }
