@@ -1,9 +1,17 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Text, View, StyleSheet, Pressable } from "react-native";
 
 export default function Index() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home</Text>
+      <Pressable
+        onPress={() => {
+          alert("Hello");
+        }}
+        style={styles.button}
+      >
+        <Text style={styles.buttonText}>Press me</Text>
+      </Pressable>
     </View>
   );
 }
@@ -19,5 +27,13 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
     color: "#ffffff",
+  },
+  button: {
+    backgroundColor: "#ffffff",
+    padding: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "#08090a",
   },
 });
