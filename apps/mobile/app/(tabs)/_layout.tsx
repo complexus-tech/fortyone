@@ -9,11 +9,16 @@ export default function TabsLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
+        <Icon sf="square.grid.2x2.fill" />
         <Label>Home</Label>
-        <Icon sf="house.fill" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="inbox">
-        <Label>Notifications</Label>
+      <NativeTabs.Trigger
+        name="inbox"
+        options={{
+          title: "",
+        }}
+      >
+        <Label>Inbox</Label>
         <Icon sf="bell.fill" />
         <Badge>9+</Badge>
       </NativeTabs.Trigger>
