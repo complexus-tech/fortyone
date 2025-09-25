@@ -19,7 +19,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="my-work">
         <Label>My Work</Label>
-        <Icon sf="rectangle.stack.person.crop.fill" />
+        <Icon sf="app.badge.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Label>Profile</Label>
