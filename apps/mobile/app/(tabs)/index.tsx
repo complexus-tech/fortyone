@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, Pressable } from "react-native";
+import { Text, View, StyleSheet, Pressable, Button } from "react-native";
 
 export default function Index() {
   return (
@@ -12,6 +12,8 @@ export default function Index() {
       >
         <Text style={styles.buttonText}>Press me</Text>
       </Pressable>
+
+      <Button title="Press me" />
     </View>
   );
 }
@@ -21,12 +23,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#08090a",
   },
   text: {
     fontSize: 30,
     fontWeight: "bold",
-    color: "#ffffff",
   },
   button: {
     backgroundColor: "#ffffff",
