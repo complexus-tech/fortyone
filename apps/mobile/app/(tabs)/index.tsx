@@ -5,6 +5,7 @@ import {
   Host,
   HStack,
   Image,
+  Picker,
   Section,
   Spacer,
   Switch,
@@ -15,13 +16,13 @@ import { Link } from "expo-router";
 import { useState } from "react";
 
 export default function Settings() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [appearanceMode, setAppearanceMode] = useState(0);
 
   return (
     <Host style={{ flex: 1 }}>
       <Form>
-        {/* Account Section */}
-        <Section title="Account">
+        {/* Account & Settings Section */}
+        <Section title="Account & Settings">
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
@@ -61,10 +62,7 @@ export default function Settings() {
               </HStack>
             </Button>
           </Link>
-        </Section>
 
-        {/* Appearance Section */}
-        <Section>
           <HStack spacing={12}>
             <Image
               systemName="paintbrush"
@@ -76,14 +74,18 @@ export default function Settings() {
                 clipShape("roundedRectangle"),
               ]}
             />
-            <Text>Dark Mode</Text>
+            <Text>Appearance</Text>
             <Spacer />
-            <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
+            <Picker
+              options={["Day mode", "Night mode", "System"]}
+              selectedIndex={appearanceMode}
+              onOptionSelected={({ nativeEvent: { index } }) =>
+                setAppearanceMode(index)
+              }
+              variant="menu"
+            />
           </HStack>
-        </Section>
 
-        {/* Account Management Section */}
-        <Section>
           <Button onPress={() => console.log("Log out")}>
             <HStack spacing={12}>
               <Image
@@ -135,8 +137,8 @@ export default function Settings() {
           </ContextMenu>
         </Section>
 
-        {/* Support & Feedback Section */}
-        <Section>
+        {/* Support & Info Section */}
+        <Section title="Support & Info">
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
@@ -172,10 +174,27 @@ export default function Settings() {
               <Text color="red">Send Feedback</Text>
             </HStack>
           </Button>
-        </Section>
 
-        {/* Legal & Social Section */}
-        <Section>
+          <Link href="/inbox" asChild>
+            <Button>
+              <HStack spacing={12}>
+                <Image
+                  systemName="book"
+                  color="white"
+                  size={20}
+                  modifiers={[
+                    frame({ width: 32, height: 32 }),
+                    background("#007aff"),
+                    clipShape("roundedRectangle"),
+                  ]}
+                />
+                <Text>Help Center</Text>
+                <Spacer />
+                <Image systemName="chevron.right" size={14} color="secondary" />
+              </HStack>
+            </Button>
+          </Link>
+
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
@@ -230,29 +249,6 @@ export default function Settings() {
                   ]}
                 />
                 <Text>Rate the App</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-        </Section>
-
-        {/* Help & Docs Section */}
-        <Section>
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="book"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#007aff"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Help Center</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
