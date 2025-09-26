@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "400",
     color: "#8E8E93",
     textTransform: "uppercase",
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
   },
   settingsItem: {
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+    // borderBottomWidth: 1,
+    // borderBottomColor: "#E5E5EA",
   },
   pressedItem: {
     backgroundColor: "#F2F2F7",
