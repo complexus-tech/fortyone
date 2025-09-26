@@ -9,7 +9,9 @@ const SettingsHeader = () => {
   return (
     <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
       <View style={styles.headerContent}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title} className="text-blue-500">
+          Settings
+        </Text>
       </View>
     </View>
   );
