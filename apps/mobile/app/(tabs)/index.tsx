@@ -12,7 +12,7 @@ import {
   Text,
 } from "@expo/ui/swift-ui";
 import { background, clipShape, frame } from "@expo/ui/swift-ui/modifiers";
-import { Link } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { useState } from "react";
 
 export default function Settings() {
@@ -20,6 +20,7 @@ export default function Settings() {
 
   return (
     <Host style={{ flex: 1 }}>
+      <Stack.Screen options={{ title: "Home", headerShown: true }} />
       <Form>
         {/* Account & Settings Section */}
         <Section title="Account & Settings">
