@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, StyleSheet, Text, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -67,8 +67,6 @@ const SettingsSection = ({
 };
 
 export default function Settings() {
-  const [appearanceMode, setAppearanceMode] = useState(0);
-
   return (
     <View style={styles.container}>
       <SettingsHeader />
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
     fontSize: 14,
