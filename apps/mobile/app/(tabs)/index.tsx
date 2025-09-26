@@ -76,7 +76,7 @@ export default function Settings() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <SettingsSection title="Settings">
+        <SettingsSection>
           <SettingsItem
             title="Account Details"
             onPress={() => console.log("Account Details")}
@@ -144,8 +144,6 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
   },
   headerContent: {
     paddingHorizontal: 16,
