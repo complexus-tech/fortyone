@@ -28,7 +28,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="person.circle"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -48,7 +48,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="arrow.triangle.2.circlepath"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -116,7 +116,7 @@ export default function Settings() {
                 <HStack spacing={12}>
                   <Image
                     systemName="gear"
-                    color="white"
+                    color="#E5E5E7"
                     size={20}
                     modifiers={[
                       frame({ width: 32, height: 32 }),
@@ -144,7 +144,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="questionmark.circle"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -180,7 +180,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="book"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -200,7 +200,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="hand.raised"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -220,7 +220,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="bird"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
@@ -240,7 +240,7 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="star"
-                  color="white"
+                  color="#E5E5E7"
                   size={20}
                   modifiers={[
                     frame({ width: 32, height: 32 }),
