@@ -1,262 +1,234 @@
-import {
-  Button,
-  ContextMenu,
-  Form,
-  Host,
-  HStack,
-  Image,
-  Picker,
-  Section,
-  Spacer,
-  Switch,
-  Text,
-} from "@expo/ui/swift-ui";
-import { background, clipShape, frame } from "@expo/ui/swift-ui/modifiers";
-import { Link, Stack } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
+import { View, StyleSheet, Text, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+
+const SettingsHeader = () => {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+      <View style={styles.headerContent}>
+        <Text style={styles.title}>Settings</Text>
+      </View>
+    </View>
+  );
+};
+
+const SettingsItem = ({
+  icon,
+  title,
+  value,
+  onPress,
+  showChevron = true,
+  destructive = false,
+}: {
+  icon: string;
+  title: string;
+  value?: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+  destructive?: boolean;
+}) => {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.settingsItem,
+        pressed && styles.pressedItem,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.itemContent}>
+        <View style={styles.iconContainer}>
+          <Ionicons name={icon as any} size={20} color="#E5E5E7" />
+        </View>
+        <Text style={[styles.itemTitle, destructive && styles.destructiveText]}>
+          {title}
+        </Text>
+        <View style={styles.rightContent}>
+          {value && <Text style={styles.itemValue}>{value}</Text>}
+          {showChevron && (
+            <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+};
+
+const SettingsSection = ({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) => {
+  return (
+    <View style={styles.section}>
+      {title && <Text style={styles.sectionTitle}>{title}</Text>}
+      <View style={styles.sectionContent}>{children}</View>
+    </View>
+  );
+};
 
 export default function Settings() {
   const [appearanceMode, setAppearanceMode] = useState(0);
 
   return (
-    <Host style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: "Home", headerShown: true }} />
-      <Form>
-        {/* Account & Settings Section */}
-        <Section title="Account & Settings">
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="person.circle"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Account Details</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
+    <View style={styles.container}>
+      <SettingsHeader />
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        <SettingsSection title="Account & Settings">
+          <SettingsItem
+            icon="person-circle-outline"
+            title="Account Details"
+            onPress={() => console.log("Account Details")}
+          />
+          <SettingsItem
+            icon="swap-horizontal-outline"
+            title="Switch Workspace"
+            onPress={() => console.log("Switch Workspace")}
+          />
+          <SettingsItem
+            icon="color-palette-outline"
+            title="Appearance"
+            value="System"
+            onPress={() => console.log("Appearance")}
+          />
+          <SettingsItem
+            icon="log-out-outline"
+            title="Log Out"
+            destructive={true}
+            showChevron={false}
+            onPress={() => console.log("Log Out")}
+          />
+          <SettingsItem
+            icon="settings-outline"
+            title="Manage Account"
+            onPress={() => console.log("Manage Account")}
+          />
+        </SettingsSection>
 
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="arrow.triangle.2.circlepath"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Switch Workspace</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-
-          <HStack spacing={12}>
-            <Image
-              systemName="paintbrush"
-              color="white"
-              size={20}
-              modifiers={[
-                frame({ width: 32, height: 32 }),
-                background("#333333"),
-                clipShape("roundedRectangle"),
-              ]}
-            />
-            <Text color="black">Appearance</Text>
-            <Spacer />
-            <Picker
-              options={["Day mode", "Night mode", "System"]}
-              selectedIndex={appearanceMode}
-              onOptionSelected={({ nativeEvent: { index } }) =>
-                setAppearanceMode(index)
-              }
-              variant="menu"
-            />
-          </HStack>
-
-          <Button onPress={() => console.log("Log out")}>
-            <HStack spacing={12}>
-              <Image
-                systemName="rectangle.portrait.and.arrow.right"
-                color="white"
-                size={20}
-                modifiers={[
-                  frame({ width: 32, height: 32 }),
-                  background("#333333"),
-                  clipShape("roundedRectangle"),
-                ]}
-              />
-              <Text color="black">Log Out</Text>
-            </HStack>
-          </Button>
-
-          <ContextMenu>
-            <ContextMenu.Items>
-              <Button
-                systemImage="trash"
-                onPress={() => console.log("Delete Workspace")}
-              >
-                Delete Workspace
-              </Button>
-            </ContextMenu.Items>
-            <ContextMenu.Trigger>
-              <Button>
-                <HStack spacing={12}>
-                  <Image
-                    systemName="gear"
-                    color="#E5E5E7"
-                    size={20}
-                    modifiers={[
-                      frame({ width: 32, height: 32 }),
-                      background("#333333"),
-                      clipShape("roundedRectangle"),
-                    ]}
-                  />
-                  <Text color="black">Manage Account</Text>
-                  <Spacer />
-                  <Image
-                    systemName="chevron.right"
-                    size={14}
-                    color="secondary"
-                  />
-                </HStack>
-              </Button>
-            </ContextMenu.Trigger>
-          </ContextMenu>
-        </Section>
-
-        {/* Support & Info Section */}
-        <Section title="Support & Info">
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="questionmark.circle"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Support</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-
-          <Button onPress={() => console.log("Send Feedback")}>
-            <HStack spacing={12}>
-              <Image
-                systemName="envelope"
-                color="white"
-                size={20}
-                modifiers={[
-                  frame({ width: 32, height: 32 }),
-                  background("#333333"),
-                  clipShape("roundedRectangle"),
-                ]}
-              />
-              <Text color="black">Send Feedback</Text>
-            </HStack>
-          </Button>
-
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="book"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Help Center</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="hand.raised"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Privacy Policy</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="bird"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Follow on Twitter</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-
-          <Link href="/inbox" asChild>
-            <Button>
-              <HStack spacing={12}>
-                <Image
-                  systemName="star"
-                  color="#E5E5E7"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#333333"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text color="black">Rate the App</Text>
-                <Spacer />
-                <Image systemName="chevron.right" size={14} color="secondary" />
-              </HStack>
-            </Button>
-          </Link>
-        </Section>
-      </Form>
-    </Host>
+        <SettingsSection title="Support & Info">
+          <SettingsItem
+            icon="help-circle-outline"
+            title="Support"
+            onPress={() => console.log("Support")}
+          />
+          <SettingsItem
+            icon="mail-outline"
+            title="Send Feedback"
+            showChevron={false}
+            onPress={() => console.log("Send Feedback")}
+          />
+          <SettingsItem
+            icon="book-outline"
+            title="Help Center"
+            onPress={() => console.log("Help Center")}
+          />
+          <SettingsItem
+            icon="shield-checkmark-outline"
+            title="Privacy Policy"
+            onPress={() => console.log("Privacy Policy")}
+          />
+          <SettingsItem
+            icon="logo-twitter"
+            title="Follow on Twitter"
+            onPress={() => console.log("Follow on Twitter")}
+          />
+          <SettingsItem
+            icon="star-outline"
+            title="Rate the App"
+            onPress={() => console.log("Rate the App")}
+          />
+        </SettingsSection>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  headerContainer: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  headerContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
+    marginTop: 32,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#8E8E93",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginHorizontal: 16,
+  },
+  sectionContent: {
+    backgroundColor: "#FFFFFF",
+  },
+  settingsItem: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  pressedItem: {
+    backgroundColor: "#F2F2F7",
+  },
+  itemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 44,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#333333",
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  itemTitle: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#000000",
+    flex: 1,
+  },
+  destructiveText: {
+    color: "#FF3B30",
+  },
+  rightContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  itemValue: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#8E8E93",
+    marginRight: 8,
+  },
+});
