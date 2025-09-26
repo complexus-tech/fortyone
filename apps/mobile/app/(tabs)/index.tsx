@@ -16,14 +16,12 @@ const SettingsHeader = () => {
 };
 
 const SettingsItem = ({
-  icon,
   title,
   value,
   onPress,
   showChevron = true,
   destructive = false,
 }: {
-  icon: string;
   title: string;
   value?: string;
   onPress?: () => void;
@@ -39,9 +37,6 @@ const SettingsItem = ({
       onPress={onPress}
     >
       <View style={styles.itemContent}>
-        <View style={styles.iconContainer}>
-          <Ionicons name={icon as any} size={20} color="#E5E5E7" />
-        </View>
         <Text style={[styles.itemTitle, destructive && styles.destructiveText]}>
           {title}
         </Text>
@@ -83,30 +78,25 @@ export default function Settings() {
       >
         <SettingsSection title="Account & Settings">
           <SettingsItem
-            icon="person-circle-outline"
             title="Account Details"
             onPress={() => console.log("Account Details")}
           />
           <SettingsItem
-            icon="swap-horizontal-outline"
             title="Switch Workspace"
             onPress={() => console.log("Switch Workspace")}
           />
           <SettingsItem
-            icon="color-palette-outline"
             title="Appearance"
             value="System"
             onPress={() => console.log("Appearance")}
           />
           <SettingsItem
-            icon="log-out-outline"
             title="Log Out"
             destructive={true}
             showChevron={false}
             onPress={() => console.log("Log Out")}
           />
           <SettingsItem
-            icon="settings-outline"
             title="Manage Account"
             onPress={() => console.log("Manage Account")}
           />
@@ -114,33 +104,27 @@ export default function Settings() {
 
         <SettingsSection title="Support & Info">
           <SettingsItem
-            icon="help-circle-outline"
             title="Support"
             onPress={() => console.log("Support")}
           />
           <SettingsItem
-            icon="mail-outline"
             title="Send Feedback"
             showChevron={false}
             onPress={() => console.log("Send Feedback")}
           />
           <SettingsItem
-            icon="book-outline"
             title="Help Center"
             onPress={() => console.log("Help Center")}
           />
           <SettingsItem
-            icon="shield-checkmark-outline"
             title="Privacy Policy"
             onPress={() => console.log("Privacy Policy")}
           />
           <SettingsItem
-            icon="logo-twitter"
             title="Follow on Twitter"
             onPress={() => console.log("Follow on Twitter")}
           />
           <SettingsItem
-            icon="star-outline"
             title="Rate the App"
             onPress={() => console.log("Rate the App")}
           />
@@ -202,15 +186,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     minHeight: 44,
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    backgroundColor: "#333333",
-    borderRadius: 6,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
   },
   itemTitle: {
     fontSize: 16,
