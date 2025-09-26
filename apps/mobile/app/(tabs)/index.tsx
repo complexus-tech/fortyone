@@ -76,7 +76,7 @@ export default function Settings() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <SettingsSection title="Account & Settings">
+        <SettingsSection title="Settings">
           <SettingsItem
             title="Account Details"
             onPress={() => console.log("Account Details")}
@@ -89,16 +89,6 @@ export default function Settings() {
             title="Appearance"
             value="System"
             onPress={() => console.log("Appearance")}
-          />
-          <SettingsItem
-            title="Log Out"
-            destructive={true}
-            showChevron={false}
-            onPress={() => console.log("Log Out")}
-          />
-          <SettingsItem
-            title="Manage Account"
-            onPress={() => console.log("Manage Account")}
           />
         </SettingsSection>
 
@@ -127,6 +117,19 @@ export default function Settings() {
           <SettingsItem
             title="Rate the App"
             onPress={() => console.log("Rate the App")}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Account">
+          <SettingsItem
+            title="Manage Account"
+            onPress={() => console.log("Manage Account")}
+          />
+          <SettingsItem
+            title="Log Out"
+            destructive={true}
+            showChevron={false}
+            onPress={() => console.log("Log Out")}
           />
         </SettingsSection>
       </ScrollView>
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     minHeight: 44,
   },
   itemTitle: {
