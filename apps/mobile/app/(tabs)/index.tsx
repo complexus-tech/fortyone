@@ -21,7 +21,7 @@ export default function Settings() {
     <Host style={{ flex: 1 }}>
       <Form>
         {/* Account Section */}
-        <Section>
+        <Section title="Account">
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
