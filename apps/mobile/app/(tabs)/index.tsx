@@ -26,17 +26,8 @@ export default function Settings() {
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
-                <Image
-                  systemName="person.circle"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#007aff"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Account Details</Text>
+                <Image systemName="person.circle" color="black" size={20} />
+                <Text color="black">Account Details</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -48,15 +39,10 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="arrow.triangle.2.circlepath"
-                  color="white"
+                  color="black"
                   size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#34c759"),
-                    clipShape("roundedRectangle"),
-                  ]}
                 />
-                <Text>Switch Workspace</Text>
+                <Text color="black">Switch Workspace</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -64,17 +50,8 @@ export default function Settings() {
           </Link>
 
           <HStack spacing={12}>
-            <Image
-              systemName="paintbrush"
-              color="white"
-              size={20}
-              modifiers={[
-                frame({ width: 32, height: 32 }),
-                background("#ff9500"),
-                clipShape("roundedRectangle"),
-              ]}
-            />
-            <Text>Appearance</Text>
+            <Image systemName="paintbrush" color="black" size={20} />
+            <Text color="black">Appearance</Text>
             <Spacer />
             <Picker
               options={["Day mode", "Night mode", "System"]}
@@ -90,15 +67,10 @@ export default function Settings() {
             <HStack spacing={12}>
               <Image
                 systemName="rectangle.portrait.and.arrow.right"
-                color="white"
+                color="black"
                 size={20}
-                modifiers={[
-                  frame({ width: 32, height: 32 }),
-                  background("#ff3b30"),
-                  clipShape("roundedRectangle"),
-                ]}
               />
-              <Text>Log Out</Text>
+              <Text color="black">Log Out</Text>
             </HStack>
           </Button>
 
@@ -114,17 +86,8 @@ export default function Settings() {
             <ContextMenu.Trigger>
               <Button>
                 <HStack spacing={12}>
-                  <Image
-                    systemName="gear"
-                    color="white"
-                    size={20}
-                    modifiers={[
-                      frame({ width: 32, height: 32 }),
-                      background("#8e8e93"),
-                      clipShape("roundedRectangle"),
-                    ]}
-                  />
-                  <Text>Manage Account</Text>
+                  <Image systemName="gear" color="black" size={20} />
+                  <Text color="black">Manage Account</Text>
                   <Spacer />
                   <Image
                     systemName="chevron.right"
@@ -144,15 +107,10 @@ export default function Settings() {
               <HStack spacing={12}>
                 <Image
                   systemName="questionmark.circle"
-                  color="white"
+                  color="black"
                   size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#007aff"),
-                    clipShape("roundedRectangle"),
-                  ]}
                 />
-                <Text>Support</Text>
+                <Text color="black">Support</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -161,34 +119,16 @@ export default function Settings() {
 
           <Button onPress={() => console.log("Send Feedback")}>
             <HStack spacing={12}>
-              <Image
-                systemName="envelope"
-                color="white"
-                size={20}
-                modifiers={[
-                  frame({ width: 32, height: 32 }),
-                  background("#ff3b30"),
-                  clipShape("roundedRectangle"),
-                ]}
-              />
-              <Text color="red">Send Feedback</Text>
+              <Image systemName="envelope" color="black" size={20} />
+              <Text color="black">Send Feedback</Text>
             </HStack>
           </Button>
 
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
-                <Image
-                  systemName="book"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#007aff"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Help Center</Text>
+                <Image systemName="book" color="black" size={20} />
+                <Text color="black">Help Center</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -198,17 +138,8 @@ export default function Settings() {
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
-                <Image
-                  systemName="hand.raised"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#8e8e93"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Privacy Policy</Text>
+                <Image systemName="hand.raised" color="black" size={20} />
+                <Text color="black">Privacy Policy</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -218,17 +149,8 @@ export default function Settings() {
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
-                <Image
-                  systemName="bird"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#1da1f2"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Follow on Twitter</Text>
+                <Image systemName="bird" color="black" size={20} />
+                <Text color="black">Follow on Twitter</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
@@ -238,17 +160,8 @@ export default function Settings() {
           <Link href="/inbox" asChild>
             <Button>
               <HStack spacing={12}>
-                <Image
-                  systemName="star"
-                  color="white"
-                  size={20}
-                  modifiers={[
-                    frame({ width: 32, height: 32 }),
-                    background("#ffcc00"),
-                    clipShape("roundedRectangle"),
-                  ]}
-                />
-                <Text>Rate the App</Text>
+                <Image systemName="star" color="black" size={20} />
+                <Text color="black">Rate the App</Text>
                 <Spacer />
                 <Image systemName="chevron.right" size={14} color="secondary" />
               </HStack>
