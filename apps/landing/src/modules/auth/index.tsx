@@ -87,7 +87,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               </Button>
             </Box>
           )}
-          <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
+          <Text className="mb-6 pl-0.5" fontWeight="medium">
             Back to{" "}
             <button
               type="button"
