@@ -3,16 +3,17 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { StoriesLayout } from "@/components/ui";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useMediaQuery } from "@/hooks";
 import { Header } from "./components/header";
 import { ListMyWork } from "./components/list-my-work";
 import { MyWorkProvider } from "./components/provider";
 
 export const ListMyStories = () => {
   const searchParams = useSearchParams();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
     "my-stories:stories:layout",
-    "kanban",
+    isMobile ? "list" : "kanban",
   );
 
   useEffect(() => {
