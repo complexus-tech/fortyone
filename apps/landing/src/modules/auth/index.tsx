@@ -89,12 +89,15 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           )}
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
             Back to{" "}
-            <Link
+            <button
+              type="button"
               className="text-primary underline dark:text-white"
-              href="/login"
+              onClick={() => {
+                setIsSent(false);
+              }}
             >
               Login
-            </Link>
+            </button>
           </Text>
         </>
       ) : (
