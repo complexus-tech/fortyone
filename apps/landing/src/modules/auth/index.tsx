@@ -47,7 +47,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   };
 
   return (
-    <Box className="md:w-full md:max-w-md">
+    <Box className="max-w-md md:w-full">
       <Logo asIcon className="h-10" />
       {isSent ? (
         <>
