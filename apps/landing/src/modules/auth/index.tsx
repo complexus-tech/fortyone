@@ -62,7 +62,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           {!isManual ? (
             <Button
               align="center"
-              className="mb-3"
+              className="mb-4"
               color="tertiary"
               size="lg"
               fullWidth
@@ -75,7 +75,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               <OTPInput value={otp} onChange={setOtp} className="mb-4" />
               <Button
                 align="center"
-                className="mb-3"
+                className="mb-4"
                 color="invert"
                 fullWidth
                 loading={otpLoading}
@@ -87,6 +87,15 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               </Button>
             </Box>
           )}
+          <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
+            Back to{" "}
+            <Link
+              className="text-primary underline dark:text-white"
+              href="/login"
+            >
+              Login
+            </Link>
+          </Text>
         </>
       ) : (
         <>
