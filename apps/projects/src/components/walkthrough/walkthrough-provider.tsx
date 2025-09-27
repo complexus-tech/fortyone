@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
-import { useLocalStorage } from "@/hooks";
+import { useLocalStorage, useMediaQuery } from "@/hooks";
 
 export interface WalkthroughStep {
   id: string;
@@ -100,6 +100,7 @@ export const WalkthroughProvider = ({
   });
 
   const [steps, setSteps] = useState<WalkthroughStep[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const currentStepData = steps[state.currentStep] || null;
 
@@ -181,8 +182,8 @@ export const WalkthroughProvider = ({
 
   // Check if walkthrough should be shown based on close timestamp
   const shouldShowWalkthrough = useCallback(() => {
-    if (state.hasSeenWalkthrough) {
-      return false; // Already completed permanently
+    if (state.hasSeenWalkthrough || isMobile) {
+      return false; // Already completed permanently or on mobile
     }
 
     if (!walkthroughClosedAt) {
@@ -200,7 +201,7 @@ export const WalkthroughProvider = ({
       // If timestamp parsing fails, default to showing
       return true;
     }
-  }, [state.hasSeenWalkthrough, walkthroughClosedAt]);
+  }, [state.hasSeenWalkthrough, walkthroughClosedAt, isMobile]);
 
   // Calculate if should show - this will update when dependencies change
   const canShowWalkthrough = shouldShowWalkthrough();
