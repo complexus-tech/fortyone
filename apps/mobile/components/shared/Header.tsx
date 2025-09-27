@@ -32,7 +32,7 @@ export const Header = ({
             onPress={onSettingsPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.menuDots}>⋯</Text>
+            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
           </Pressable>
         </View>
       </View>
@@ -73,10 +73,5 @@ const styles = StyleSheet.create({
   },
   pressedButton: {
     backgroundColor: "#F2F2F7",
-  },
-  menuDots: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
   },
 });
