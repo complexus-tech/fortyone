@@ -1,14 +1,11 @@
 "use client";
 import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import { cn } from "lib";
 import { Container, GoogleIcon } from "@/components/ui";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
-  const { data: session } = useSession();
-
   return (
     <Box>
       <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
@@ -116,7 +113,7 @@ export const Hero = () => {
                 size="lg"
                 variant="naked"
               >
-                {session ? "Continue with Google" : "Sign up with Google"}
+                Continue with Google
               </Button>
             </motion.span>
           </Flex>
