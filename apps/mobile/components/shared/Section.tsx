@@ -21,10 +21,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: 15,
+    fontWeight: "500",
     color: "#8E8E93",
-    textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginHorizontal: 16,

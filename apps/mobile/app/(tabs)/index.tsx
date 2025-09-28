@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Header title="Home" onSettingsPress={handleMenuPress} />
+      <Header title="Hello, Joseph" onSettingsPress={handleMenuPress} />
 
       <ScrollView
         style={styles.scrollView}

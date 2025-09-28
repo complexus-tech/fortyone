@@ -22,8 +22,8 @@ export default function TabsLayout() {
         <Icon sf="person.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
-        <Label>Settings</Label>
-        <Icon sf="gear" />
+        <Label>AI Assistant</Label>
+        <Icon sf="apple.intelligence" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search" role="search">
         <Label>Search</Label>

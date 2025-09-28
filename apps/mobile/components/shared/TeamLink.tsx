@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
   },
   teamName: {
     fontSize: 16,
-    fontWeight: "400",
     color: "#000000",
   },
 });

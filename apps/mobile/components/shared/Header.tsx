@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Host, Button } from "@expo/ui/swift-ui";
 
 interface HeaderProps {
   title: string;
@@ -23,18 +24,15 @@ export const Header = ({
           <Text style={styles.title}>{title}</Text>
         </View>
 
-        <View style={styles.rightSection}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.menuButton,
-              pressed && styles.pressedButton,
-            ]}
-            onPress={onSettingsPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
-          </Pressable>
-        </View>
+        <Host matchContents>
+          <Button
+            onPress={() => {
+              alert("New Story");
+            }}
+            systemImage="plus"
+            variant="glass"
+          ></Button>
+        </Host>
       </View>
     </View>
   );
@@ -57,10 +55,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  rightSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+
   title: {
     fontSize: 24,
     fontWeight: "600",
