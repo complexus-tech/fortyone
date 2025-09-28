@@ -26,12 +26,20 @@ export default function Home() {
       >
         <Section title="Overview">
           <View style={styles.statsContainer}>
-            <StatsCard title="Stories Created" count={120} />
-            <StatsCard title="Stories Assigned" count={45} />
+            <StatsCard
+              title="Stories Created"
+              count={120}
+              onPress={() => console.log("Stories created pressed")}
+            />
+            <StatsCard
+              title="Stories closed"
+              count={166}
+              onPress={() => console.log("Stories closed pressed")}
+            />
           </View>
         </Section>
 
-        <Section title="Teams">
+        <Section title="YourTeams">
           <TeamLink
             name="Engineering"
             color="#FF9500"

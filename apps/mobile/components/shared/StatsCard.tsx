@@ -1,17 +1,25 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 interface StatsCardProps {
   title: string;
   count: number;
+  onPress?: () => void;
 }
 
-export const StatsCard = ({ title, count }: StatsCardProps) => {
+export const StatsCard = ({ title, count, onPress }: StatsCardProps) => {
   return (
-    <View style={styles.card}>
-      <Text style={styles.count}>{count}</Text>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+      onPress={onPress}
+    >
+      <View style={styles.header}>
+        <Text style={styles.count}>{count}</Text>
+        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+      </View>
       <Text style={styles.title}>{title}</Text>
-    </View>
+    </Pressable>
   );
 };
 
@@ -19,7 +27,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 16,
     marginHorizontal: 4,
     marginVertical: 4,
     shadowColor: "#000",
@@ -31,19 +40,25 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     flex: 1,
+  },
+  pressedCard: {
+    backgroundColor: "#F2F2F7",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    minHeight: 80,
+    width: "100%",
+    marginBottom: 8,
   },
   count: {
     fontSize: 24,
     fontWeight: "600",
     color: "#000000",
-    marginBottom: 8,
   },
   title: {
     fontSize: 12,
     color: "#666",
-    textAlign: "center",
     lineHeight: 16,
   },
 });
