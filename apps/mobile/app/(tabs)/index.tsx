@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import { Header } from "../../components/shared/Header";
 import { Section } from "../../components/shared/Section";
 import { TeamLink } from "../../components/shared/TeamLink";
@@ -20,13 +20,17 @@ export default function Home() {
   return (
     <Container>
       <Header title="Hello, Joseph" onSettingsPress={handleMenuPress} />
-
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <Section title="Overview">
-          <Text style={styles.statsText}>
+          <Text
+            fontSize="sm"
+            fontWeight="normal"
+            color="muted"
+            className="mb-0.5 mt-1"
+          >
             Here&apos;s what&apos;s happening with your stories.
           </Text>
-          <View style={styles.statsContainer}>
+          <View className="flex-row justify-between gap-1.5">
             <StatsCard
               title="Stories Created"
               count={120}
@@ -52,9 +56,7 @@ export default function Home() {
             onPress={() => handleTeamPress("Complexus")}
           />
         </Section>
-
         <Text>Edge-to-edge content</Text>
-
         <View className="bg-gray-50 py-4">
           <Text color="success">
             Container with background and vertical padding
@@ -64,18 +66,3 @@ export default function Home() {
     </Container>
   );
 }
-
-const styles = StyleSheet.create({
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  statsText: {
-    fontSize: 15,
-    fontWeight: "400",
-    color: "#666",
-    marginBottom: 2,
-    marginTop: 4,
-  },
-});
