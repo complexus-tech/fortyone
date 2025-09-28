@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView } from "react-native";
 import { Header } from "../../components/shared/Header";
 import { Section } from "../../components/shared/Section";
 import { TeamLink } from "../../components/shared/TeamLink";
+import { StatsCard } from "../../components/shared/StatsCard";
 
 export default function Home() {
   const handleMenuPress = () => {
@@ -23,6 +24,13 @@ export default function Home() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        <Section title="Overview">
+          <View style={styles.statsContainer}>
+            <StatsCard title="Stories Created" count={120} />
+            <StatsCard title="Stories Assigned" count={45} />
+          </View>
+        </Section>
+
         <Section title="Teams">
           <TeamLink
             name="Engineering"
@@ -47,5 +55,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
   },
 });
