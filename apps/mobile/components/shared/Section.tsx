@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
     letterSpacing: 0.5,
     marginBottom: 8,
-    marginHorizontal: 16,
   },
   sectionContent: {
     backgroundColor: "#FFFFFF",
