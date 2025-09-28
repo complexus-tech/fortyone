@@ -23,7 +23,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Label>AI Assistant</Label>
-        <Icon sf="apple.intelligence" />
+        <Icon sf="sparkles" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search" role="search">
         <Label>Search</Label>
