@@ -16,7 +16,7 @@ export const StatsCard = ({ title, count, onPress }: StatsCardProps) => {
     >
       <View style={styles.header}>
         <Text style={styles.count}>{count}</Text>
-        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+        <Ionicons name="chevron-forward" size={16} color="#333" />
       </View>
       <Text style={styles.title}>{title}</Text>
     </Pressable>
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   title: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#666",
     lineHeight: 16,
   },

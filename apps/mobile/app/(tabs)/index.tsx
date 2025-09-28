@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, Text } from "react-native";
 import { Header } from "../../components/shared/Header";
 import { Section } from "../../components/shared/Section";
 import { TeamLink } from "../../components/shared/TeamLink";
@@ -25,6 +25,9 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
       >
         <Section title="Overview">
+          <Text style={styles.statsText}>
+            Here&apos;s what&apos;s happening with your stories.
+          </Text>
           <View style={styles.statsContainer}>
             <StatsCard
               title="Stories Created"
@@ -70,5 +73,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
+  },
+  statsText: {
+    fontSize: 15,
+    fontWeight: "400",
+    color: "#666",
+    marginBottom: 2,
+    marginTop: 4,
+    marginHorizontal: 16,
   },
 });
