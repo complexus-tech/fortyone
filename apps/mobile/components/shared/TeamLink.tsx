@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Text } from "@/components/ui";
 
 interface TeamLinkProps {
   name: string;
@@ -11,46 +12,22 @@ interface TeamLinkProps {
 export const TeamLink = ({ name, color, onPress }: TeamLinkProps) => {
   return (
     <Pressable
-      style={({ pressed }) => [styles.teamLink, pressed && styles.pressedItem]}
+      className="bg-white"
+      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
       onPress={onPress}
     >
-      <View style={styles.itemContent}>
-        <View style={styles.leftContent}>
-          <View style={[styles.colorIndicator, { backgroundColor: color }]} />
-          <Text style={styles.teamName}>{name}</Text>
+      <View className="flex-row items-center justify-between py-3.5 min-h-[44px]">
+        <View className="flex-row items-center">
+          <View
+            className="w-3 h-3 rounded-full mr-2"
+            style={{ backgroundColor: color }}
+          />
+          <Text fontSize="md" color="black">
+            {name}
+          </Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
       </View>
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  teamLink: {
-    backgroundColor: "#FFFFFF",
-  },
-  pressedItem: {
-    backgroundColor: "#F2F2F7",
-  },
-  itemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    minHeight: 44,
-  },
-  leftContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  colorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  teamName: {
-    fontSize: 16,
-    color: "#000000",
-  },
-});

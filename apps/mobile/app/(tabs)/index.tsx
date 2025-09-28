@@ -22,15 +22,10 @@ export default function Home() {
       <Header title="Hello, Joseph" onSettingsPress={handleMenuPress} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <Section title="Overview">
-          <Text
-            fontSize="sm"
-            fontWeight="normal"
-            color="muted"
-            className="mb-0.5 mt-1"
-          >
+          <Text color="muted" className="mb-0.5 mt-1">
             Here&apos;s what&apos;s happening with your stories.
           </Text>
-          <View className="flex-row justify-between gap-1.5">
+          <View className="flex-row justify-between gap-2.5">
             <StatsCard
               title="Stories Created"
               count={120}
@@ -43,7 +38,6 @@ export default function Home() {
             />
           </View>
         </Section>
-
         <Section title="YourTeams">
           <TeamLink
             name="Engineering"

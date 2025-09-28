@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { Host, Button } from "@expo/ui/swift-ui";
+import { Text } from "@/components/ui";
 
 interface HeaderProps {
   title: string;
@@ -18,12 +18,13 @@ export const Header = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-      <View style={styles.headerContent}>
-        <View style={styles.leftSection}>
-          <Text style={styles.title}>{title}</Text>
+    <View className="bg-white mb-4" style={{ paddingTop: insets.top }}>
+      <View className="flex-row justify-between items-start py-2">
+        <View className="flex-row items-center">
+          <Text fontSize="2xl" fontWeight="semibold" color="black">
+            {title}
+          </Text>
         </View>
-
         <Host matchContents>
           <Button
             onPress={() => {
@@ -37,35 +38,3 @@ export const Header = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: "#FFFFFF",
-    marginBottom: 16,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  leftSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  menuButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  pressedButton: {
-    backgroundColor: "#F2F2F7",
-  },
-});

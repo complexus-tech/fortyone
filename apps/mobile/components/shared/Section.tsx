@@ -1,33 +1,19 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui";
 
 interface SectionProps {
   title: string;
   children: React.ReactNode;
-  style?: any;
 }
 
-export const Section = ({ title, children, style }: SectionProps) => {
+export const Section = ({ title, children }: SectionProps) => {
   return (
-    <View style={[styles.section, style]}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>{children}</View>
+    <View className="mb-6">
+      <Text fontWeight="medium" color="muted" className="mb-2">
+        {title}
+      </Text>
+      <View>{children}</View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#8E8E93",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  sectionContent: {
-    backgroundColor: "#FFFFFF",
-  },
-});
