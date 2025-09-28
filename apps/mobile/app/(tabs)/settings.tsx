@@ -1,15 +1,16 @@
 import React from "react";
-import { View, StyleSheet, Text, Pressable, ScrollView } from "react-native";
+import { View, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Text } from "@/components/ui";
 
 const SettingsHeader = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-      <View style={styles.headerContent}>
-        <Text style={styles.title} className="text-blue-500">
+    <View className="bg-white" style={{ paddingTop: insets.top }}>
+      <View className="px-4 pt-2 pb-4">
+        <Text fontSize="3xl" fontWeight="semibold" color="black">
           Settings
         </Text>
       </View>
@@ -32,18 +33,25 @@ const SettingsItem = ({
 }) => {
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.settingsItem,
-        pressed && styles.pressedItem,
-      ]}
+      className="bg-white"
+      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
       onPress={onPress}
     >
-      <View style={styles.itemContent}>
-        <Text style={[styles.itemTitle, destructive && styles.destructiveText]}>
+      <View className="flex-row items-center px-4 py-3.5 min-h-[44px]">
+        <Text color={destructive ? "danger" : "black"} className="flex-1">
           {title}
         </Text>
-        <View style={styles.rightContent}>
-          {value && <Text style={styles.itemValue}>{value}</Text>}
+        <View className="flex-row items-center">
+          {value && (
+            <Text
+              fontSize="md"
+              fontWeight="normal"
+              color="muted"
+              className="mr-2"
+            >
+              {value}
+            </Text>
+          )}
           {showChevron && (
             <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
           )}
@@ -61,21 +69,27 @@ const SettingsSection = ({
   children: React.ReactNode;
 }) => {
   return (
-    <View style={styles.section}>
-      {title && <Text style={styles.sectionTitle}>{title}</Text>}
-      <View style={styles.sectionContent}>{children}</View>
+    <View className="mb-7">
+      {title && (
+        <Text
+          fontSize="sm"
+          fontWeight="medium"
+          color="muted"
+          className="tracking-wide mb-2 mx-4"
+        >
+          {title}
+        </Text>
+      )}
+      <View className="bg-white">{children}</View>
     </View>
   );
 };
 
 export default function Settings() {
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-white">
       <SettingsHeader />
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <SettingsSection>
           <SettingsItem
             title="Account Details"
@@ -136,74 +150,3 @@ export default function Settings() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  headerContainer: {
-    backgroundColor: "#FFFFFF",
-  },
-  headerContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#8E8E93",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    marginHorizontal: 16,
-  },
-  sectionContent: {
-    backgroundColor: "#FFFFFF",
-  },
-  settingsItem: {
-    backgroundColor: "#FFFFFF",
-    // borderBottomWidth: 1,
-    // borderBottomColor: "#E5E5EA",
-  },
-  pressedItem: {
-    backgroundColor: "#F2F2F7",
-  },
-  itemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 44,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#000000",
-    flex: 1,
-  },
-  destructiveText: {
-    color: "#FF3B30",
-  },
-  rightContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  itemValue: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#8E8E93",
-    marginRight: 8,
-  },
-});
