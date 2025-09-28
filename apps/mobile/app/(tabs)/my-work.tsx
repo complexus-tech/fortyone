@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { Header } from "../../components/shared/Header";
-import { Section } from "../../components/shared/Section";
+import { Section } from "../../components/ui/Section";
 import { CycleItem } from "../../components/shared/CycleItem";
 
 export default function MyWork() {

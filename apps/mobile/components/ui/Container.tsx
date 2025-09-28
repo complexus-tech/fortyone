@@ -10,7 +10,7 @@ export const Container = ({
   ...props
 }: ContainerProps) => {
   return (
-    <View className={`px-4.5 ${className || ""}`} {...props}>
+    <View className={`px-4.5 flex-1 ${className || ""}`} {...props}>
       {children}
     </View>
   );
