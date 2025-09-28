@@ -30,7 +30,7 @@ export const Header = ({
             onPress={() => {
               alert("New Story");
             }}
-            systemImage="plus"
+            systemImage="gear"
             variant="glass"
           ></Button>
         </Host>
