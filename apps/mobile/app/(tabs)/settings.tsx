@@ -38,17 +38,12 @@ const SettingsItem = ({
       onPress={onPress}
     >
       <View className="flex-row items-center px-4 py-3.5 min-h-[44px]">
-        <Text color={destructive ? "danger" : "black"} className="flex-1">
+        <Text color={destructive ? "primary" : "black"} className="flex-1">
           {title}
         </Text>
         <View className="flex-row items-center">
           {value && (
-            <Text
-              fontSize="md"
-              fontWeight="normal"
-              color="muted"
-              className="mr-2"
-            >
+            <Text color="muted" className="mr-2">
               {value}
             </Text>
           )}
@@ -141,7 +136,7 @@ export default function Settings() {
           />
           <SettingsItem
             title="Log Out"
-            destructive={true}
+            destructive
             showChevron={false}
             onPress={() => console.log("Log Out")}
           />
