@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   NotificationHeader,
@@ -335,9 +335,9 @@ export const NotificationsPage = () => {
 
   if (isLoading && notifications.length === 0) {
     return (
-      <View style={styles.container}>
+      <View className="flex-1 bg-gray-50">
         <NotificationHeader unreadCount={unreadCount} />
-        <View style={styles.contentContainer}>
+        <View className="flex-1">
           <NotificationSkeleton />
         </View>
       </View>
@@ -345,7 +345,7 @@ export const NotificationsPage = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-50">
       <NotificationHeader
         unreadCount={unreadCount}
         onFilterPress={handleFilterPress}
@@ -353,7 +353,7 @@ export const NotificationsPage = () => {
         onDeleteAll={handleDeleteAll}
       />
 
-      <View style={styles.contentContainer}>
+      <View className="flex-1">
         {notifications.length === 0 ? (
           <EmptyState />
         ) : (
@@ -369,13 +369,3 @@ export const NotificationsPage = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  contentContainer: {
-    flex: 1,
-  },
-});

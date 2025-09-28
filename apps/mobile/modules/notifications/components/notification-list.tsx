@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, FlatList, RefreshControl } from "react-native";
+import { View, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationCard } from "./notification-card";
 
@@ -50,7 +50,7 @@ export const NotificationList = ({
   );
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-50">
       <FlatList
         data={notifications}
         renderItem={renderNotification}
@@ -65,24 +65,11 @@ export const NotificationList = ({
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
-          styles.listContent,
+          { paddingTop: 0 },
           { paddingBottom: insets.bottom + 20 },
         ]}
-        style={styles.flatList}
+        className="flex-1"
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  flatList: {
-    flex: 1,
-  },
-  listContent: {
-    paddingTop: 0,
-  },
-});

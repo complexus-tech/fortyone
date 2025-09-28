@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { View, Pressable } from "react-native";
+import { Text } from "@/components/ui";
 
 type NotificationCardProps = {
   notification: {
@@ -45,40 +46,55 @@ export const NotificationCard = ({
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.container,
-        isUnread && styles.unreadContainer,
-        pressed && styles.pressedContainer,
-      ]}
+      className={`px-4 py-3 border-b border-gray-100 ${
+        isUnread ? "bg-gray-50" : "bg-white"
+      }`}
+      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <View style={styles.content}>
-        <View style={styles.leftSection}>
-          <View style={styles.iconContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
+      <View className="flex-row">
+        <View className="mr-3 items-center">
+          <View className="items-center justify-center relative">
+            <View className="w-10 h-10 rounded-full bg-black justify-center items-center">
+              <Text fontSize="md" fontWeight="semibold" color="white">
                 {notification.actor.name.charAt(0).toUpperCase()}
               </Text>
             </View>
             <View
-              style={[styles.statusIcon, { backgroundColor: getStatusColor() }]}
+              className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full justify-center items-center"
+              style={{ backgroundColor: getStatusColor() }}
             >
-              <Text style={styles.statusIconText}>{getStatusIcon()}</Text>
+              <Text fontSize="xs" fontWeight="semibold" color="white">
+                {getStatusIcon()}
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.rightSection}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>
+        <View className="flex-1">
+          <View className="flex-row justify-between items-center mb-0.5">
+            <Text
+              fontSize="md"
+              fontWeight="semibold"
+              color="black"
+              className="flex-1 mr-2"
+              numberOfLines={1}
+            >
               {notification.title}
             </Text>
-            <Text style={styles.timestamp}>2mo ago</Text>
+            <Text fontSize="sm" color="muted">
+              2mo ago
+            </Text>
           </View>
 
           {notification.message && (
-            <Text style={styles.message} numberOfLines={1}>
+            <Text
+              fontSize="sm"
+              color="muted"
+              className="leading-5"
+              numberOfLines={1}
+            >
               {notification.message}
             </Text>
           )}
@@ -87,84 +103,3 @@ export const NotificationCard = ({
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F2F2F7",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  unreadContainer: {
-    backgroundColor: "#F8F9FA",
-  },
-  pressedContainer: {
-    backgroundColor: "#F2F2F7",
-  },
-  content: {
-    flexDirection: "row",
-  },
-  leftSection: {
-    marginRight: 12,
-    alignItems: "center",
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#000000",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  statusIcon: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statusIconText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  rightSection: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000000",
-    flex: 1,
-    marginRight: 8,
-  },
-  message: {
-    fontSize: 14,
-    color: "#6D6D70",
-    lineHeight: 20,
-  },
-  timestamp: {
-    fontSize: 14,
-    color: "#6D6D70",
-  },
-});

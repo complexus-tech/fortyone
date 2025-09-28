@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Text } from "@/components/ui";
 
 type NotificationHeaderProps = {
   unreadCount?: number;
@@ -18,22 +19,26 @@ export const NotificationHeader = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.blurContainer}>
-        <View style={styles.content}>
-          <View style={styles.leftSection}>
-            <Text style={styles.title}>Notifications</Text>
+    <View className="bg-transparent" style={{ paddingTop: insets.top }}>
+      <View className="bg-gray-50 border-b border-gray-200">
+        <View className="flex-row justify-between items-start px-4 pt-2 pb-2">
+          <View className="flex-row items-center">
+            <Text fontSize="2xl" fontWeight="semibold" color="black">
+              Notifications
+            </Text>
           </View>
 
-          <View style={styles.rightSection}>
+          <View className="flex-row items-center">
             <Pressable
+              className="px-2 py-2 rounded-md"
               style={({ pressed }) => [
-                styles.menuButton,
-                pressed && styles.pressedButton,
+                pressed && { backgroundColor: "#F2F2F7" },
               ]}
               onPress={onFilterPress}
             >
-              <Text style={styles.menuDots}>⋯</Text>
+              <Text fontSize="lg" fontWeight="semibold" color="black">
+                ⋯
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -41,48 +46,3 @@ export const NotificationHeader = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "transparent",
-  },
-  blurContainer: {
-    backgroundColor: "#F5F5F5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  content: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  leftSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  rightSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  menuButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  pressedButton: {
-    backgroundColor: "#F2F2F7",
-  },
-  menuDots: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
-  },
-});
