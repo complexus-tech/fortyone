@@ -10,7 +10,7 @@ const SettingsHeader = () => {
   return (
     <View className="bg-white" style={{ paddingTop: insets.top }}>
       <View className="px-4 pt-2 pb-4">
-        <Text fontSize="3xl" fontWeight="semibold" color="black">
+        <Text fontSize="2xl" fontWeight="semibold">
           Settings
         </Text>
       </View>

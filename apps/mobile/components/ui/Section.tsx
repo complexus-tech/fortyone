@@ -15,7 +15,7 @@ export const Section = ({ title, children }: SectionProps) => {
           {title}
         </Text>
       )}
-      <View>{children}</View>
+      <View className="pl-0.5">{children}</View>
     </View>
   );
 };
