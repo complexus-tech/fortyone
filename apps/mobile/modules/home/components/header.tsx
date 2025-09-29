@@ -1,19 +1,14 @@
 import React from "react";
 import { Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SymbolView } from "expo-symbols";
 import { Avatar, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
 
 export const Header = () => {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
-    <View
-      className="mb-5 flex-row justify-between items-center"
-      style={{ paddingTop: insets.top }}
-    >
+    <View className="mb-5 flex-row justify-between items-center">
       <View className="flex-row items-center py-2 gap-2">
         <Avatar
           name="John Doe"
