@@ -5,17 +5,7 @@ import { SymbolView } from "expo-symbols";
 import { Avatar, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
 
-interface HeaderProps {
-  title: string;
-  onSettingsPress?: () => void;
-  showSettingsIcon?: boolean;
-}
-
-export const Header = ({
-  title,
-  onSettingsPress,
-  showSettingsIcon = true,
-}: HeaderProps) => {
+export const Header = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -31,18 +21,16 @@ export const Header = ({
           src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s576-c-no"
         />
         <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
-          {title}
+          Hello, Joseph
         </Text>
       </View>
-      {showSettingsIcon && (
-        <Pressable
-          onPress={() => {
-            router.push("/settings");
-          }}
-        >
-          <SymbolView name="gear" size={28} tintColor="#444" />
-        </Pressable>
-      )}
+      <Pressable
+        onPress={() => {
+          router.push("/settings");
+        }}
+      >
+        <SymbolView name="gear" size={28} tintColor="#444" />
+      </Pressable>
     </View>
   );
 };

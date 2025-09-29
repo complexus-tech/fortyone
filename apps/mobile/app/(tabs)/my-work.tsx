@@ -1,15 +1,9 @@
 import React from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
-import { Header } from "../../components/shared/Header";
 import { Section } from "../../components/ui/Section";
 import { CycleItem } from "../../components/shared/CycleItem";
 
 export default function MyWork() {
-  const handleMenuPress = () => {
-    console.log("Menu pressed");
-    // Show menu options
-  };
-
   const handleCyclePress = (cycleTitle: string) => {
     console.log("Cycle pressed:", cycleTitle);
     // Navigate to cycle details
@@ -32,8 +26,6 @@ export default function MyWork() {
 
   return (
     <View style={styles.container}>
-      <Header title="My Work" onSettingsPress={handleMenuPress} />
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

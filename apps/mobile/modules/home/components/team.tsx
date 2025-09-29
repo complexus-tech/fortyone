@@ -3,16 +3,15 @@ import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui";
 
-interface TeamLinkProps {
+interface TeamProps {
   name: string;
   color: string;
   onPress?: () => void;
 }
 
-export const TeamLink = ({ name, color, onPress }: TeamLinkProps) => {
+export const Team = ({ name, color, onPress }: TeamProps) => {
   return (
     <Pressable
-      className="bg-white"
       style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
       onPress={onPress}
     >
