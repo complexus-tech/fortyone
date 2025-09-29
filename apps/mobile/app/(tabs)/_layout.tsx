@@ -16,14 +16,14 @@ export default function TabsLayout() {
         <Label>AI Assistant</Label>
         <Icon sf="sparkles" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="my-work">
+        <Label>My Work</Label>
+        <Icon sf="person.fill" />
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="inbox">
         <Label>Notifications</Label>
         <Icon sf="bell.fill" />
         <Badge>9+</Badge>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="my-work">
-        <Label>My Work</Label>
-        <Icon sf="person.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search" role="search">
         <Label>Search</Label>
