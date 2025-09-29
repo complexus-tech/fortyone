@@ -1,5 +1,6 @@
 import { Text as RNText, TextProps as RNTextProps } from "react-native";
 import { VariantProps, cva } from "cva";
+import { cn } from "@/lib/utils";
 
 const textVariants = cva("text-dark", {
   variants: {
@@ -92,7 +93,7 @@ export const Text = ({
   });
 
   return (
-    <RNText className={`${classes} ${className || ""}`} {...props}>
+    <RNText className={cn(classes, className)} {...props}>
       {children}
     </RNText>
   );

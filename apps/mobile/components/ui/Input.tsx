@@ -1,6 +1,7 @@
 import { TextInput, TextInputProps, View } from "react-native";
 import { VariantProps, cva } from "cva";
 import { Text } from "./Text";
+import { cn } from "@/lib/utils";
 
 const inputVariants = cva("border rounded-md bg-white px-4 py-3 text-base", {
   variants: {
@@ -73,13 +74,13 @@ export const Input = ({
   });
 
   return (
-    <View className={`${containerClassName || ""}`}>
+    <View className={cn(containerClassName)}>
       {label && (
         <Text
           color="black"
           fontSize="sm"
           fontWeight="medium"
-          className={`mb-2 ${labelClassName || ""}`}
+          className={cn("mb-2", labelClassName)}
         >
           {label}
           {required && <Text color="danger"> *</Text>}
@@ -94,7 +95,12 @@ export const Input = ({
         )}
 
         <TextInput
-          className={`${inputClasses} ${leftIcon ? "pl-10" : ""} ${rightIcon ? "pr-10" : ""} ${className || ""}`}
+          className={cn(
+            inputClasses,
+            leftIcon ? "pl-10" : "",
+            rightIcon ? "pr-10" : "",
+            className
+          )}
           editable={editable}
           placeholderTextColor="#6B665C"
           {...props}
@@ -111,7 +117,7 @@ export const Input = ({
         <Text
           color={hasError ? "danger" : "muted"}
           fontSize="xs"
-          className={`mt-1 ${helpTextClassName || ""}`}
+          className={cn("mt-1", helpTextClassName)}
         >
           {errorText || helpText}
         </Text>

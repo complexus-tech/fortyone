@@ -1,4 +1,5 @@
 import { View, ViewProps } from "react-native";
+import { cn } from "@/lib/utils";
 
 export interface ContainerProps extends ViewProps {
   children?: React.ReactNode;
@@ -10,7 +11,7 @@ export const Container = ({
   ...props
 }: ContainerProps) => {
   return (
-    <View className={`px-4.5 flex-1 ${className || ""}`} {...props}>
+    <View className={cn("px-4.5 flex-1", className)} {...props}>
       {children}
     </View>
   );
