@@ -1,6 +1,6 @@
 import React from "react";
-import { NotificationsPage } from "../../modules/notifications";
+import { Notifications } from "@/modules/notifications";
 
-export default function Inbox() {
-  return <NotificationsPage />;
+export default function InboxScreen() {
+  return <Notifications />;
 }

@@ -293,7 +293,7 @@ const mockNotifications = [
   },
 ];
 
-export const NotificationsPage = () => {
+export const Notifications = () => {
   const [notifications] = useState(mockNotifications);
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
