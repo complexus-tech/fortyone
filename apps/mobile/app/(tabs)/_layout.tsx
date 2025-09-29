@@ -13,7 +13,7 @@ export default function TabsLayout() {
         <Label>Home</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
-        <Label>AI Assistant</Label>
+        <Label>Maya</Label>
         <Icon sf="sparkles" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="my-work">

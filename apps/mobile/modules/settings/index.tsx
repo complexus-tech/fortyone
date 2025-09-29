@@ -6,7 +6,7 @@ import { SettingsItem } from "./components/settings-item";
 
 export const Settings = () => {
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1">
       <Header />
       <SettingsSection>
         <SettingsItem
