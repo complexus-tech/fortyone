@@ -212,9 +212,11 @@ func (r *repo) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]sp
 		FROM
 			sprints s
 		INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
+		INNER JOIN team_sprint_settings tss ON tss.team_id = s.team_id AND tss.workspace_id = s.workspace_id
 		LEFT JOIN story_stats ss ON s.sprint_id = ss.sprint_id
 		WHERE s.workspace_id = :workspace_id
-		AND s.start_date <= NOW() AND s.end_date >= NOW() 
+		AND s.start_date <= NOW() AND s.end_date >= NOW()
+		AND tss.auto_create_sprints = true
 		ORDER BY s.end_date DESC;
 	`
 
