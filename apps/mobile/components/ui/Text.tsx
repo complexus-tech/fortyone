@@ -57,7 +57,7 @@ const textVariants = cva("text-dark", {
     align: "left",
     color: "black",
     fontSize: "md",
-    fontWeight: "normal",
+    fontWeight: "medium",
     transform: "none",
     fontStyle: "normal",
     decoration: "none",

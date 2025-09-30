@@ -1,6 +1,9 @@
 import React from "react";
-import { View, Pressable } from "react-native";
-import { Text } from "@/components/ui";
+import { Pressable } from "react-native";
+import { Row, Col, Text, Avatar } from "@/components/ui";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "@/constants";
+import { StatusDot } from "@/components/story";
 
 type NotificationCardProps = {
   notification: {
@@ -15,9 +18,6 @@ type NotificationCardProps = {
     createdAt: string;
     readAt: string | null;
     entityId: string;
-    repository?: string;
-    issueNumber?: number;
-    status?: string;
   };
   index: number;
   onPress?: () => void;
@@ -31,75 +31,101 @@ export const NotificationCard = ({
 }: NotificationCardProps) => {
   const isUnread = !notification.readAt;
 
-  const getStatusIcon = () => {
-    if (notification.status === "closed") return "✕";
-    if (notification.status === "merged") return "✓";
-    if (notification.status === "urgent") return "!";
-    return "→";
+  const getTypeIcon = () => {
+    const message = notification.message.toLowerCase();
+
+    if (notification.type === "story_comment") {
+      return (
+        <Ionicons
+          name="chatbubble-outline"
+          size={16}
+          color={colors.gray.DEFAULT}
+        />
+      );
+    }
+
+    if (notification.type === "mention") {
+      return <Ionicons name="at" size={16} color={colors.gray.DEFAULT} />;
+    }
+
+    if (notification.type === "story_update") {
+      if (message.includes("deadline") || message.includes("due")) {
+        return (
+          <Ionicons
+            name="calendar-outline"
+            size={16}
+            color={colors.gray.DEFAULT}
+          />
+        );
+      }
+      if (message.includes("status")) {
+        return <Ionicons name="ellipse" size={12} color={colors.primary} />;
+      }
+      if (message.includes("priority")) {
+        return (
+          <Ionicons name="flag-outline" size={16} color={colors.gray.DEFAULT} />
+        );
+      }
+    }
+
+    return null;
   };
 
-  const getStatusColor = () => {
-    if (notification.status === "closed") return "#6D6D70";
-    if (notification.status === "urgent") return "#FF9500";
-    return "#6D6D70";
+  const formatTimeAgo = (timestamp: string) => {
+    // Static time for now - replace with actual formatting later
+    return "2m";
   };
 
   return (
     <Pressable
-      className={`px-4 py-3 border-b border-gray-100 ${
-        isUnread ? "bg-gray-50" : "bg-white"
-      }`}
-      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+      style={({ pressed }) => ({
+        backgroundColor: pressed ? colors.gray[50] : "white",
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.gray[100],
+        paddingVertical: 7,
+        paddingHorizontal: 16,
+      })}
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <View className="flex-row">
-        <View className="mr-3 items-center">
-          <View className="items-center justify-center relative">
-            <View className="w-10 h-10 rounded-full bg-black justify-center items-center">
-              <Text fontSize="md" fontWeight="semibold" color="white">
-                {notification.actor.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View
-              className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full justify-center items-center"
-              style={{ backgroundColor: getStatusColor() }}
-            >
-              <Text fontSize="xs" fontWeight="semibold" color="white">
-                {getStatusIcon()}
-              </Text>
-            </View>
-          </View>
-        </View>
+      <Col gap={2}>
+        {/* Top Row - Title and Time */}
+        <Row justify="between" align="center">
+          <Text
+            color={isUnread ? "black" : "muted"}
+            className="flex-1 mr-2"
+            fontWeight="semibold"
+            numberOfLines={1}
+          >
+            {isUnread && <StatusDot color="red" size={8} />}{" "}
+            {notification.title}
+          </Text>
+          <Text fontSize="sm" color="muted" className="shrink-0">
+            {formatTimeAgo(notification.createdAt)}
+          </Text>
+        </Row>
 
-        <View className="flex-1">
-          <View className="flex-row justify-between items-center mb-0.5">
-            <Text
-              fontSize="md"
-              fontWeight="semibold"
-              color="black"
-              className="flex-1 mr-2"
-              numberOfLines={1}
-            >
-              {notification.title}
-            </Text>
-            <Text fontSize="sm" color="muted">
-              2mo ago
-            </Text>
-          </View>
-
-          {notification.message && (
+        {/* Bottom Row - Avatar, Message, Icon */}
+        <Row align="center" justify="between" gap={2}>
+          <Row align="center" gap={2} className="flex-1">
+            <Avatar
+              size="sm"
+              name={notification.actor.name}
+              src={notification.actor.avatar}
+              className="shrink-0"
+            />
             <Text
               fontSize="sm"
-              color="muted"
-              className="leading-5"
+              color={isUnread ? "black" : "muted"}
+              className="flex-1"
               numberOfLines={1}
             >
               {notification.message}
             </Text>
-          )}
-        </View>
-      </View>
+          </Row>
+          {getTypeIcon()}
+        </Row>
+      </Col>
     </Pressable>
   );
 };
