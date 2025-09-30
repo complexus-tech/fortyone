@@ -1,6 +1,6 @@
 import { TextInput, TextInputProps, View } from "react-native";
 import { VariantProps, cva } from "cva";
-import { Text } from "./Text";
+import { Text } from "./text";
 import { cn } from "@/lib/utils";
 
 const inputVariants = cva("border rounded-md bg-white px-4 py-3 text-base", {

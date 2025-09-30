@@ -1,14 +1,14 @@
-export { Text } from "./Text";
-export { Input } from "./Input";
-export { Container } from "./Container";
-export { Section } from "./Section";
-export { Button } from "./Button";
-export { Avatar } from "./Avatar";
-export { Wrapper } from "./Wrapper";
+export { Text } from "./text";
+export { Input } from "./input";
+export { Container } from "./container";
+export { Section } from "./section";
+export { Button } from "./button";
+export { Avatar } from "./avatar";
+export { Wrapper } from "./wrapper";
 
-export type { TextProps } from "./Text";
-export type { InputProps } from "./Input";
-export type { ContainerProps } from "./Container";
-export type { ButtonProps } from "./Button";
-export type { AvatarProps } from "./Avatar";
-export type { WrapperProps } from "./Wrapper";
+export type { TextProps } from "./text";
+export type { InputProps } from "./input";
+export type { ContainerProps } from "./container";
+export type { ButtonProps } from "./button";
+export type { AvatarProps } from "./avatar";
+export type { WrapperProps } from "./wrapper";

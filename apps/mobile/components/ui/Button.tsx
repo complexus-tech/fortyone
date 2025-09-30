@@ -5,7 +5,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { VariantProps, cva } from "cva";
-import { Text } from "./Text";
+import { Text } from "./text";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
