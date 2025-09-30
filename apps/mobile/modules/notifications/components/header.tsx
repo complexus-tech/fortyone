@@ -17,9 +17,11 @@ export const Header = () => {
       </Text>
       <Pressable
         className="p-2 rounded-md"
-        style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+        style={({ pressed }) => [
+          pressed && { backgroundColor: colors.gray[50] },
+        ]}
       >
-        <SymbolView name="ellipsis" size={24} tintColor={colors.dark[50]} />
+        <SymbolView name="ellipsis" size={24} tintColor={colors.gray.DEFAULT} />
       </Pressable>
     </Row>
   );
