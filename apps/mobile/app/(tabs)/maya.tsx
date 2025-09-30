@@ -1,6 +1,7 @@
 import React from "react";
-import { Search } from "@/modules/search";
+
+import { Maya } from "@/modules/maya";
 
 export default function SearchScreen() {
-  return <Search />;
+  return <Maya />;
 }
