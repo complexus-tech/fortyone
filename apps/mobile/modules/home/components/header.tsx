@@ -1,15 +1,16 @@
 import React from "react";
-import { Pressable, View } from "react-native";
+import { Pressable } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Avatar, Text } from "@/components/ui";
+import { Avatar, Row, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
+import { colors } from "@/constants";
 
 export const Header = () => {
   const router = useRouter();
 
   return (
-    <View className="mb-5 flex-row justify-between items-center">
-      <View className="flex-row items-center py-2 gap-2">
+    <Row align="center" justify="between" className="mb-4">
+      <Row align="center" gap={2}>
         <Avatar
           name="John Doe"
           size="md"
@@ -18,14 +19,14 @@ export const Header = () => {
         <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
           Hello, Joseph
         </Text>
-      </View>
+      </Row>
       <Pressable
         onPress={() => {
           router.push("/settings");
         }}
       >
-        <SymbolView name="gear" size={28} tintColor="#444" />
+        <SymbolView name="gear" size={28} tintColor={colors.gray.DEFAULT} />
       </Pressable>
-    </View>
+    </Row>
   );
 };

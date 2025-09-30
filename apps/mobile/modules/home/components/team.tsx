@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Text } from "@/components/ui";
+import { Row, Text } from "@/components/ui";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 interface TeamProps {
   name: string;
@@ -12,21 +13,27 @@ interface TeamProps {
 export const Team = ({ name, color, onPress }: TeamProps) => {
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
       onPress={onPress}
     >
-      <View className="flex-row items-center justify-between py-3.5 min-h-[44px]">
-        <View className="flex-row items-center">
+      <Row
+        align="center"
+        justify="between"
+        className="py-3.5 pl-0.5 min-h-[44px]"
+      >
+        <Row align="center">
           <View
-            className="w-3 h-3 rounded-full mr-2"
+            className="size-3 rounded-full mr-2"
             style={{ backgroundColor: color }}
           />
-          <Text fontSize="md" color="black">
-            {name}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-      </View>
+          <Text>{name}</Text>
+        </Row>
+        <SymbolView
+          name="chevron.forward"
+          size={12}
+          tintColor={colors.gray.DEFAULT}
+        />
+      </Row>
     </Pressable>
   );
 };

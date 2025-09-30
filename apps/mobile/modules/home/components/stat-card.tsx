@@ -1,33 +1,31 @@
 import React from "react";
 import { Wrapper, Col, Text } from "@/components/ui";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/constants";
+import { SymbolView, SFSymbol } from "expo-symbols";
 
 type StatCardProps = {
   count: number;
   label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon: SFSymbol;
+  iconColor?: string;
 };
 
-export const StatCard = ({ count, label, icon }: StatCardProps) => {
+export const StatCard = ({ count, label, icon, iconColor }: StatCardProps) => {
   return (
-    <Wrapper className="p-4">
+    <Wrapper>
       <Col gap={2}>
         <Text fontSize="2xl" fontWeight="semibold">
           {count}
         </Text>
-        <Text color="muted" fontSize="sm" className="opacity-80">
+        <Text color="muted" fontSize="md" className="opacity-80">
           {label}
         </Text>
       </Col>
-      {icon && (
-        <Ionicons
-          name={icon}
-          size={20}
-          color={colors.gray.DEFAULT}
-          style={{ position: "absolute", top: 16, right: 16, opacity: 0.5 }}
-        />
-      )}
+      <SymbolView
+        name={icon}
+        size={20}
+        tintColor={iconColor}
+        style={{ position: "absolute", top: 14, right: 16 }}
+      />
     </Wrapper>
   );
 };

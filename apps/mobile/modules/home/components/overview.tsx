@@ -1,6 +1,9 @@
 import React from "react";
 import { View } from "react-native";
 import { StatCard } from "./stat-card";
+import type { SFSymbol } from "expo-symbols";
+import { colors } from "@/constants";
+import { Text } from "@/components/ui";
 
 type OverviewProps = {
   stats?: {
@@ -10,6 +13,13 @@ type OverviewProps = {
     created: number;
     assigned: number;
   };
+};
+
+type ItemsProps = {
+  count: number;
+  label: string;
+  icon: SFSymbol;
+  iconColor?: string;
 };
 
 export const Overview = ({ stats }: OverviewProps) => {
@@ -23,36 +33,45 @@ export const Overview = ({ stats }: OverviewProps) => {
 
   const data = stats || defaultStats;
 
-  const overviewItems = [
+  const overviewItems: ItemsProps[] = [
     {
       count: data.closed,
       label: "Stories closed",
-      icon: "checkmark-circle-outline" as const,
+      icon: "checkmark.circle.fill",
+      iconColor: colors.success,
     },
     {
       count: data.overdue,
       label: "Stories overdue",
-      icon: "alert-circle-outline" as const,
+      icon: "exclamationmark.circle.fill",
+      iconColor: colors.danger,
     },
     {
       count: data.inProgress,
       label: "In progress",
-      icon: "time-outline" as const,
+      icon: "clock.fill",
+      iconColor: colors.warning,
     },
     {
       count: data.assigned,
       label: "Assigned to you",
-      icon: "person-outline" as const,
+      icon: "person.circle.fill",
+      iconColor: colors.gray.DEFAULT,
     },
   ];
 
   return (
-    <View className="mb-4 flex-row flex-wrap gap-3">
-      {overviewItems.map((item) => (
-        <View key={item.label} className="w-[48%]">
-          <StatCard {...item} />
-        </View>
-      ))}
-    </View>
+    <>
+      <Text color="muted" className="mb-4">
+        Here&apos;s what&apos;s happening with your stories.
+      </Text>
+      <View className="mb-6 flex-row flex-wrap gap-3">
+        {overviewItems.map((item) => (
+          <View key={item.label} className="w-[48.5%]">
+            <StatCard {...item} />
+          </View>
+        ))}
+      </View>
+    </>
   );
 };

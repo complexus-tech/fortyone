@@ -2,7 +2,6 @@ import React from "react";
 import { ScrollView } from "react-native";
 import { SafeContainer, Section } from "@/components/ui";
 import { Header } from "./components/header";
-import { Greeting } from "./components/greeting";
 import { Overview } from "./components/overview";
 import { Team } from "./components/team";
 
@@ -18,8 +17,7 @@ export const Home = () => {
   return (
     <SafeContainer>
       <Header />
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <Greeting />
+      <ScrollView className="flex-1">
         <Overview stats={stats} />
         <Section title="Your Teams">
           <Team name="Engineering" color="#FF9500" />
