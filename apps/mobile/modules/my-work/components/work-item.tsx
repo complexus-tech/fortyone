@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { Row, Text, Avatar } from "@/components/ui";
-import { StatusDot, PriorityIcon } from "@/components/story";
+import { Dot, PriorityIcon } from "@/components/icons";
 import { colors } from "@/constants";
 
 type Priority = "Urgent" | "High" | "Medium" | "Low" | "No Priority";
@@ -47,7 +47,7 @@ export const WorkItem = ({ story, onPress }: WorkItemProps) => {
           </Text>
         </Row>
         <Row align="center" gap={3}>
-          <StatusDot color={story.status.color} size={14} />
+          <Dot color={story.status.color} size={12} />
           <Avatar
             size="sm"
             name={story.assignee?.name}

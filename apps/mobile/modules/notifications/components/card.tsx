@@ -3,7 +3,7 @@ import { Pressable } from "react-native";
 import { Row, Col, Text, Avatar } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
-import { StatusDot } from "@/components/story";
+import { Dot } from "@/components/icons";
 
 type NotificationCardProps = {
   notification: {
@@ -96,7 +96,7 @@ export const NotificationCard = ({
             fontWeight="semibold"
             numberOfLines={1}
           >
-            {isUnread && <StatusDot color={colors.primary} size={8} />}{" "}
+            {isUnread && <Dot color={colors.primary} size={8} />}{" "}
             {notification.title}
           </Text>
           <Text fontSize="sm" color="muted" className="shrink-0">
