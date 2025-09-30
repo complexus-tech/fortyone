@@ -22,7 +22,8 @@ export const WorkItemList = () => {
       assignee: {
         id: "user-1",
         name: "John Doe",
-        avatarUrl: undefined,
+        avatarUrl:
+          "https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no",
       },
     },
     {
@@ -37,7 +38,8 @@ export const WorkItemList = () => {
       assignee: {
         id: "user-2",
         name: "Jane Smith",
-        avatarUrl: undefined,
+        avatarUrl:
+          "https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no",
       },
     },
     {

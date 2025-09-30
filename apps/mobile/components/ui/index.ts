@@ -8,6 +8,7 @@ export { Wrapper } from "./wrapper";
 export { Row } from "./row";
 export { Col } from "./col";
 export { SafeContainer } from "./safe-container";
+export { Badge } from "./badge";
 
 export type { TextProps } from "./text";
 export type { InputProps } from "./input";
@@ -18,3 +19,4 @@ export type { WrapperProps } from "./wrapper";
 export type { RowProps } from "./row";
 export type { ColProps } from "./col";
 export type { ContainerProps as SafeContainerProps } from "./safe-container";
+export type { BadgeProps } from "./badge";

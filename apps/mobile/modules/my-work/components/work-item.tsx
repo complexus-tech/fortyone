@@ -31,23 +31,23 @@ export const WorkItem = ({ story, onPress }: WorkItemProps) => {
       style={({ pressed }) => [
         {
           backgroundColor: pressed ? colors.gray[50] : "transparent",
-          paddingVertical: 11,
+          paddingVertical: 12,
           paddingHorizontal: 16,
-          borderBottomWidth: 0.5,
-          borderBottomColor: colors.gray[100],
+          borderBottomWidth: 1,
+          borderBottomColor: colors.gray[50],
         },
       ]}
       onPress={() => onPress?.(story.id)}
     >
       <Row justify="between" align="center" gap={3}>
         <Row align="center" gap={2} className="flex-1">
+          <PriorityIcon priority={story.priority} size={16} />
           <Text className="flex-1" numberOfLines={1}>
             {story.title}
           </Text>
         </Row>
         <Row align="center" gap={3}>
-          <StatusDot color={story.status.color} size={12} />
-          <PriorityIcon priority={story.priority} size={16} />
+          <StatusDot color={story.status.color} size={14} />
           <Avatar
             size="sm"
             name={story.assignee?.name}
