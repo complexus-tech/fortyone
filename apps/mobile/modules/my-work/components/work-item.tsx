@@ -31,7 +31,7 @@ export const WorkItem = ({ story, onPress }: WorkItemProps) => {
       style={({ pressed }) => [
         {
           backgroundColor: pressed ? colors.gray[50] : "transparent",
-          paddingVertical: 10,
+          paddingVertical: 11,
           paddingHorizontal: 16,
           borderBottomWidth: 0.5,
           borderBottomColor: colors.gray[100],
