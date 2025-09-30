@@ -12,7 +12,7 @@ export default function TabsLayout() {
         <Icon sf="circle.grid.2x2.fill" />
         <Label>Home</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
+      <NativeTabs.Trigger name="maya">
         <Label>Maya</Label>
         <Icon sf="sparkles" />
       </NativeTabs.Trigger>
