@@ -326,22 +326,24 @@ export const Notifications = () => {
     );
   }
 
+  if (notifications.length === 0) {
+    return <EmptyState />;
+  }
+
   return (
     <SafeContainer isFull>
       <Header />
+
       <View className="flex-1">
-        {notifications.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <NotificationList
-            notifications={notifications}
-            isLoading={isLoading}
-            onRefresh={handleRefresh}
-            onNotificationPress={handleNotificationPress}
-            onNotificationLongPress={handleNotificationLongPress}
-          />
-        )}
+        <NotificationSkeleton />
       </View>
+      {/* <NotificationList
+        notifications={notifications}
+        isLoading={isLoading}
+        onRefresh={handleRefresh}
+        onNotificationPress={handleNotificationPress}
+        onNotificationLongPress={handleNotificationLongPress}
+      /> */}
     </SafeContainer>
   );
 };

@@ -1,27 +1,29 @@
 import React from "react";
-import { View } from "react-native";
-import { Text } from "@/components/ui";
+import { Col, Row, Text } from "@/components/ui";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 export const EmptyState = () => {
   return (
-    <View className="flex-1 justify-center items-center px-8 py-12">
-      <View className="w-16 h-16 rounded-full bg-gray-100 justify-center items-center mb-6">
-        <Text fontSize="3xl">🔔</Text>
-      </View>
-
-      <Text
-        fontSize="xl"
-        fontWeight="semibold"
-        color="black"
-        className="mb-3 text-center"
+    <Col justify="center" align="center" className="flex-1" asContainer>
+      <Row
+        align="center"
+        justify="center"
+        className="size-18 rounded-full bg-gray-50 mb-6"
       >
+        <SymbolView
+          name="bell.slash.fill"
+          size={36}
+          tintColor={colors.gray.DEFAULT}
+        />
+      </Row>
+      <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
         No notifications
       </Text>
-
-      <Text fontSize="md" color="muted" className="text-center leading-6">
+      <Text color="muted" className="text-center">
         You will receive notifications when you are assigned or mentioned in a
         story.
       </Text>
-    </View>
+    </Col>
   );
 };
