@@ -13,11 +13,13 @@ export const SafeContainer = ({
   children,
   isFull,
   style,
+  edges = ["top"],
   ...props
 }: ContainerProps) => {
   return (
     <SafeAreaView
       style={[styles.container, isFull && styles.full, style]}
+      edges={edges}
       {...props}
     >
       {children}

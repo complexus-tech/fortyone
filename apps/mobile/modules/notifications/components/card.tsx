@@ -88,7 +88,7 @@ export const NotificationCard = ({
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <Col className="gap-2 mb-1.5">
+      <Col className="gap-2 mb-0.5">
         <Row justify="between" align="center">
           <Text
             color={isUnread ? "black" : "muted"}
