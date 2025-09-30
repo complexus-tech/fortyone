@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Text } from "@/components/ui";
+import { Row, Text } from "@/components/ui";
+import { colors } from "@/constants";
 
 interface WorkItemProps {
   title: string;
@@ -33,10 +34,10 @@ export const WorkItem = ({
 
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
       onPress={onPress}
     >
-      <View className="flex-row items-center justify-between py-3.5 min-h-[44px]">
+      <Row justify="between" asContainer className="border-b border-gray-50">
         <View className="flex-row items-center flex-1">
           <View
             className="w-3 h-3 rounded-full mr-3"
@@ -54,7 +55,7 @@ export const WorkItem = ({
           </View>
         </View>
         <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-      </View>
+      </Row>
     </Pressable>
   );
 };
