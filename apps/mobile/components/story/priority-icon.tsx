@@ -19,7 +19,7 @@ export const PriorityIcon = ({
         width={size}
         height={size}
         viewBox="0 0 16 16"
-        fill={colors.gray.DEFAULT}
+        color={colors.gray.DEFAULT}
       >
         <Rect
           x="1"
@@ -81,7 +81,12 @@ export const PriorityIcon = ({
 
   if (priority === "High") {
     return (
-      <Svg width={size} height={size} viewBox="0 0 16 16" fill={colors.warning}>
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 16 16"
+        color={colors.warning}
+      >
         <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
         <Rect x="6" y="5" width="3" height="9" rx="1" fill="currentColor" />
         <Rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" />
@@ -91,7 +96,12 @@ export const PriorityIcon = ({
 
   if (priority === "Medium") {
     return (
-      <Svg width={size} height={size} viewBox="0 0 16 16" fill={colors.success}>
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 16 16"
+        color={colors.success}
+      >
         <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
         <Rect x="6" y="5" width="3" height="9" rx="1" fill="currentColor" />
         <Rect
@@ -109,7 +119,7 @@ export const PriorityIcon = ({
 
   if (priority === "Low") {
     return (
-      <Svg width={size} height={size} viewBox="0 0 16 16" fill={colors.info}>
+      <Svg width={size} height={size} viewBox="0 0 16 16" color={colors.info}>
         <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
         <Rect
           x="6"
