@@ -82,14 +82,13 @@ export const NotificationCard = ({
         backgroundColor: pressed ? colors.gray[50] : "white",
         borderBottomWidth: 0.5,
         borderBottomColor: colors.gray[100],
-        paddingVertical: 7,
+        paddingVertical: 8,
         paddingHorizontal: 16,
       })}
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <Col gap={2}>
-        {/* Top Row - Title and Time */}
+      <Col className="gap-1.5">
         <Row justify="between" align="center">
           <Text
             color={isUnread ? "black" : "muted"}
@@ -97,15 +96,13 @@ export const NotificationCard = ({
             fontWeight="semibold"
             numberOfLines={1}
           >
-            {isUnread && <StatusDot color="red" size={8} />}{" "}
+            {isUnread && <StatusDot color={colors.primary} size={8} />}{" "}
             {notification.title}
           </Text>
           <Text fontSize="sm" color="muted" className="shrink-0">
             {formatTimeAgo(notification.createdAt)}
           </Text>
         </Row>
-
-        {/* Bottom Row - Avatar, Message, Icon */}
         <Row align="center" justify="between" gap={2}>
           <Row align="center" gap={2} className="flex-1">
             <Avatar
