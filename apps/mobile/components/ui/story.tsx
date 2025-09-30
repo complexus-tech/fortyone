@@ -1,8 +1,10 @@
 import React from "react";
 import { Pressable } from "react-native";
-import { Row, Text, Avatar } from "@/components/ui";
 import { Dot, PriorityIcon } from "@/components/icons";
 import { colors } from "@/constants";
+import { Row } from "./row";
+import { Text } from "./text";
+import { Avatar } from "./avatar";
 
 type Priority = "Urgent" | "High" | "Medium" | "Low" | "No Priority";
 
