@@ -110,7 +110,7 @@ export const PriorityIcon = ({
           width="3"
           height="12"
           rx="1"
-          fillOpacity="0.4"
+          opacity={0.2}
           fill="currentColor"
         />
       </Svg>
@@ -127,7 +127,7 @@ export const PriorityIcon = ({
           width="3"
           height="9"
           rx="1"
-          fillOpacity="0.4"
+          opacity={0.2}
           fill="currentColor"
         />
         <Rect
@@ -136,7 +136,7 @@ export const PriorityIcon = ({
           width="3"
           height="12"
           rx="1"
-          fillOpacity="0.4"
+          opacity={0.2}
           fill="currentColor"
         />
       </Svg>

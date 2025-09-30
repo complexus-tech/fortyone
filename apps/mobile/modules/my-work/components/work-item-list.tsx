@@ -52,6 +52,26 @@ export const WorkItemList = () => {
       },
       priority: "Low" as const,
     },
+    {
+      id: "4",
+      title: "upgrade nextjs 15",
+      status: {
+        id: "todo",
+        name: "To Do",
+        color: "#6b7280", // gray
+      },
+      priority: "Urgent" as const,
+    },
+    {
+      id: "5",
+      title: "upgrade nextjs 16",
+      status: {
+        id: "todo",
+        name: "To Do",
+        color: "#6b7280", // gray
+      },
+      priority: "No Priority" as const,
+    },
   ];
 
   return (
