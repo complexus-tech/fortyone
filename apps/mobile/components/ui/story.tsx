@@ -33,7 +33,7 @@ export const Story = ({ story, onPress }: StoryProps) => {
       style={({ pressed }) => [
         {
           backgroundColor: pressed ? colors.gray[50] : "transparent",
-          paddingVertical: 13,
+          paddingVertical: 11,
           paddingHorizontal: 16,
         },
       ]}

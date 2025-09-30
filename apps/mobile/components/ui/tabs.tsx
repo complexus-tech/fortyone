@@ -79,7 +79,7 @@ const Tab = ({ children, value, leftIcon, rightIcon }: TabProps) => {
       style={({ pressed }) => ({
         flex: 1,
         alignItems: "center",
-        paddingVertical: 4.5,
+        paddingVertical: 6.5,
         paddingHorizontal: 8,
         borderRadius: 24,
         borderWidth: 1,
