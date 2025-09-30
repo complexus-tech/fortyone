@@ -1,60 +1,59 @@
 import React from "react";
-import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Row, Text } from "@/components/ui";
+import { Pressable } from "react-native";
+import { Row, Text, Avatar } from "@/components/ui";
+import { StatusDot, PriorityIcon } from "@/components/story";
 import { colors } from "@/constants";
 
+type Priority = "Urgent" | "High" | "Medium" | "Low" | "No Priority";
+
 interface WorkItemProps {
-  title: string;
-  status: "todo" | "in-progress" | "in-review" | "done";
-  assignee?: { name: string };
-  onPress?: () => void;
+  story: {
+    id: string;
+    title: string;
+    status: {
+      id: string;
+      name: string;
+      color: string;
+    };
+    priority: Priority;
+    assignee?: {
+      id: string;
+      name: string;
+      avatarUrl?: string;
+    };
+  };
+  onPress?: (storyId: string) => void;
 }
 
-export const WorkItem = ({
-  title,
-  status,
-  assignee,
-  onPress,
-}: WorkItemProps) => {
-  const getStatusColor = () => {
-    switch (status) {
-      case "todo":
-        return "#6b7280"; // gray
-      case "in-progress":
-        return "#f59e0b"; // warning
-      case "in-review":
-        return "#3b82f6"; // blue
-      case "done":
-        return "#22c55e"; // success
-      default:
-        return "#6b7280";
-    }
-  };
-
+export const WorkItem = ({ story, onPress }: WorkItemProps) => {
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
-      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          backgroundColor: pressed ? colors.gray[50] : "transparent",
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.gray[100],
+        },
+      ]}
+      onPress={() => onPress?.(story.id)}
     >
-      <Row justify="between" asContainer className="border-b border-gray-50">
-        <View className="flex-row items-center flex-1">
-          <View
-            className="w-3 h-3 rounded-full mr-3"
-            style={{ backgroundColor: getStatusColor() }}
+      <Row justify="between" align="center" gap={3}>
+        <Row align="center" gap={2} className="flex-1">
+          <StatusDot color={story.status.color} size={12} />
+          <Text className="flex-1" numberOfLines={1}>
+            {story.title}
+          </Text>
+        </Row>
+        <Row align="center" gap={3}>
+          <PriorityIcon priority={story.priority} size={16} />
+          <Avatar
+            size="sm"
+            name={story.assignee?.name}
+            src={story.assignee?.avatarUrl}
           />
-          <View className="flex-1">
-            <Text fontSize="md" color="black">
-              {title}
-            </Text>
-            {assignee && (
-              <Text fontSize="sm" color="muted" className="mt-1">
-                Assigned to {assignee.name}
-              </Text>
-            )}
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+        </Row>
       </Row>
     </Pressable>
   );

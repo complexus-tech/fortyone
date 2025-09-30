@@ -3,36 +3,59 @@ import { Section } from "@/components/ui";
 import { WorkItem } from "./work-item";
 
 export const WorkItemList = () => {
-  const handleCyclePress = (cycleTitle: string) => {
-    console.log("Cycle pressed:", cycleTitle);
-    // Navigate to cycle details
+  const handleStoryPress = (storyId: string) => {
+    console.log("Story pressed:", storyId);
+    // Navigate to story details
   };
 
-  // Mock data for work items
-  const workItems = [
+  // Mock data for stories
+  const stories = [
     {
+      id: "1",
       title: "hey",
-      status: "in-review" as const,
-      assignee: { name: "John Doe" },
+      status: {
+        id: "in-review",
+        name: "In Review",
+        color: "#3b82f6", // blue
+      },
+      priority: "High" as const,
+      assignee: {
+        id: "user-1",
+        name: "John Doe",
+        avatarUrl: undefined,
+      },
     },
     {
+      id: "2",
       title: "check again",
-      status: "in-progress" as const,
-      assignee: { name: "Jane Smith" },
+      status: {
+        id: "in-progress",
+        name: "In Progress",
+        color: "#eab308", // yellow
+      },
+      priority: "Medium" as const,
+      assignee: {
+        id: "user-2",
+        name: "Jane Smith",
+        avatarUrl: undefined,
+      },
     },
-    { title: "upgrade nextjs", status: "todo" as const },
+    {
+      id: "3",
+      title: "upgrade nextjs",
+      status: {
+        id: "todo",
+        name: "To Do",
+        color: "#6b7280", // gray
+      },
+      priority: "Low" as const,
+    },
   ];
 
   return (
     <Section title="Work Items">
-      {workItems.map((item, index) => (
-        <WorkItem
-          key={index}
-          title={item.title}
-          status={item.status}
-          assignee={item.assignee}
-          onPress={() => handleCyclePress(item.title)}
-        />
+      {stories.map((story) => (
+        <WorkItem key={story.id} story={story} onPress={handleStoryPress} />
       ))}
     </Section>
   );
