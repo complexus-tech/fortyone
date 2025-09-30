@@ -33,10 +33,8 @@ export const Story = ({ story, onPress }: StoryProps) => {
       style={({ pressed }) => [
         {
           backgroundColor: pressed ? colors.gray[50] : "transparent",
-          paddingVertical: 12,
+          paddingVertical: 13,
           paddingHorizontal: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.gray[50],
         },
       ]}
       onPress={() => onPress?.(story.id)}

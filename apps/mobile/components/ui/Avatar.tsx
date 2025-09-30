@@ -24,7 +24,7 @@ const avatarVariants = cva(
         naked: "bg-transparent",
       },
       size: {
-        sm: "size-6 text-xs",
+        sm: "size-7 text-xs",
         md: "size-9 text-sm",
         lg: "size-11 text-base",
         xl: "size-14 text-lg",
