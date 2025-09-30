@@ -22,10 +22,10 @@ const avatarVariants = cva(
         naked: "bg-transparent",
       },
       size: {
-        sm: "size-8 text-xs",
-        md: "size-10 text-sm",
-        lg: "size-12 text-base",
-        xl: "size-16 text-lg",
+        sm: "size-7 text-xs",
+        md: "size-9 text-sm",
+        lg: "size-11 text-base",
+        xl: "size-14 text-lg",
       },
     },
     defaultVariants: {

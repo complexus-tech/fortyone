@@ -1,5 +1,5 @@
 import React from "react";
-import { Section } from "@/components/ui";
+
 import { WorkItem } from "./work-item";
 
 export const WorkItemList = () => {
@@ -53,10 +53,10 @@ export const WorkItemList = () => {
   ];
 
   return (
-    <Section title="Work Items">
+    <>
       {stories.map((story) => (
         <WorkItem key={story.id} story={story} onPress={handleStoryPress} />
       ))}
-    </Section>
+    </>
   );
 };
