@@ -88,7 +88,7 @@ export const NotificationCard = ({
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <Col className="gap-1.5">
+      <Col className="gap-2 mb-1.5">
         <Row justify="between" align="center">
           <Text
             color={isUnread ? "black" : "muted"}
@@ -108,7 +108,7 @@ export const NotificationCard = ({
             <Avatar
               size="sm"
               name={notification.actor.name}
-              src={notification.actor.avatar}
+              src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no"
               className="shrink-0"
             />
             <Text

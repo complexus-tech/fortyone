@@ -333,17 +333,13 @@ export const Notifications = () => {
   return (
     <SafeContainer isFull>
       <Header />
-
-      <View className="flex-1">
-        <NotificationSkeleton />
-      </View>
-      {/* <NotificationList
+      <NotificationList
         notifications={notifications}
         isLoading={isLoading}
         onRefresh={handleRefresh}
         onNotificationPress={handleNotificationPress}
         onNotificationLongPress={handleNotificationLongPress}
-      /> */}
+      />
     </SafeContainer>
   );
 };

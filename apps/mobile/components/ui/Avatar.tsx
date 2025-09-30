@@ -3,6 +3,8 @@ import { View, Image, ViewProps } from "react-native";
 import { VariantProps, cva } from "cva";
 import { Text } from "./text";
 import { cn } from "@/lib/utils";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 const avatarVariants = cva(
   "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0",
@@ -22,7 +24,7 @@ const avatarVariants = cva(
         naked: "bg-transparent",
       },
       size: {
-        sm: "size-7 text-xs",
+        sm: "size-6 text-xs",
         md: "size-9 text-sm",
         lg: "size-11 text-base",
         xl: "size-14 text-lg",
@@ -120,9 +122,7 @@ export const Avatar = ({
         </Text>
       )}
       {asIcon && (
-        <Text color="muted" fontSize="sm">
-          👤
-        </Text>
+        <SymbolView name="person.circle.fill" tintColor={colors.gray.DEFAULT} />
       )}
     </View>
   );
