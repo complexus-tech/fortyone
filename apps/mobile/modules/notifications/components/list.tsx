@@ -1,7 +1,7 @@
 import React from "react";
 import { View, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NotificationCard } from "./notification-card";
+import { NotificationCard } from "./card";
 
 type Notification = {
   id: string;

@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  NotificationHeader,
   NotificationList,
   EmptyState,
   NotificationSkeleton,
 } from "./components";
+import { SafeContainer } from "@/components/ui";
+import { Header } from "./components/header";
 
 // Static data for now - FortyOne style
 const mockNotifications = [
@@ -296,9 +296,6 @@ const mockNotifications = [
 export const Notifications = () => {
   const [notifications] = useState(mockNotifications);
   const [isLoading, setIsLoading] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  const unreadCount = notifications.filter((n) => !n.readAt).length;
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -318,25 +315,10 @@ export const Notifications = () => {
     // Show context menu (mark as read/unread, delete)
   };
 
-  const handleFilterPress = () => {
-    console.log("Filter pressed");
-    // Show filter options
-  };
-
-  const handleMarkAllRead = () => {
-    console.log("Mark all read pressed");
-    // Mark all notifications as read
-  };
-
-  const handleDeleteAll = () => {
-    console.log("Delete all pressed");
-    // Delete all notifications
-  };
-
   if (isLoading && notifications.length === 0) {
     return (
-      <View className="flex-1 bg-gray-50">
-        <NotificationHeader unreadCount={unreadCount} />
+      <View className="flex-1 ">
+        <Header />
         <View className="flex-1">
           <NotificationSkeleton />
         </View>
@@ -345,14 +327,8 @@ export const Notifications = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <NotificationHeader
-        unreadCount={unreadCount}
-        onFilterPress={handleFilterPress}
-        onMarkAllRead={handleMarkAllRead}
-        onDeleteAll={handleDeleteAll}
-      />
-
+    <SafeContainer isFull>
+      <Header />
       <View className="flex-1">
         {notifications.length === 0 ? (
           <EmptyState />
@@ -366,6 +342,6 @@ export const Notifications = () => {
           />
         )}
       </View>
-    </View>
+    </SafeContainer>
   );
 };

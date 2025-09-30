@@ -36,6 +36,9 @@ const rowVariants = cva("flex-row", {
       true: "flex-wrap",
       false: "flex-nowrap",
     },
+    asContainer: {
+      true: "px-4.5",
+    },
   },
   defaultVariants: {
     align: "start",
@@ -54,11 +57,15 @@ export const Row = ({
   gap,
   wrap,
   children,
+  asContainer,
   ...props
 }: RowProps) => {
   return (
     <View
-      className={cn(rowVariants({ align, justify, gap, wrap }), className)}
+      className={cn(
+        rowVariants({ align, justify, gap, wrap, asContainer }),
+        className
+      )}
       {...props}
     >
       {children}

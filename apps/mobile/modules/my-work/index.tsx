@@ -1,13 +1,13 @@
 import React from "react";
-import { ScrollView } from "react-native";
 import { Header } from "./components/header";
 import { WorkItemList } from "./components/work-item-list";
+import { SafeContainer } from "@/components/ui";
 
 export const MyWork = () => {
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <SafeContainer isFull>
       <Header />
       <WorkItemList />
-    </ScrollView>
+    </SafeContainer>
   );
 };
