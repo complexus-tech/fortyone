@@ -6,7 +6,7 @@ import { colors } from "@/constants";
 
 type Priority = "Urgent" | "High" | "Medium" | "Low" | "No Priority";
 
-interface WorkItemProps {
+interface StoryProps {
   story: {
     id: string;
     title: string;
@@ -25,7 +25,7 @@ interface WorkItemProps {
   onPress?: (storyId: string) => void;
 }
 
-export const WorkItem = ({ story, onPress }: WorkItemProps) => {
+export const Story = ({ story, onPress }: StoryProps) => {
   return (
     <Pressable
       style={({ pressed }) => [

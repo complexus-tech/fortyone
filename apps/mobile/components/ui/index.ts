@@ -10,6 +10,7 @@ export { Col } from "./col";
 export { SafeContainer } from "./safe-container";
 export { Badge } from "./badge";
 export { Skeleton } from "./skeleton";
+export { Story } from "./story";
 
 export type { TextProps } from "./text";
 export type { InputProps } from "./input";

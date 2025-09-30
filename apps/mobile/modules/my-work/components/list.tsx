@@ -1,8 +1,8 @@
 import React from "react";
 
-import { WorkItem } from "./work-item";
+import { Story } from "@/components/ui";
 
-export const WorkItemList = () => {
+export const StoriesList = () => {
   const handleStoryPress = (storyId: string) => {
     console.log("Story pressed:", storyId);
     // Navigate to story details
@@ -77,7 +77,7 @@ export const WorkItemList = () => {
   return (
     <>
       {stories.map((story) => (
-        <WorkItem key={story.id} story={story} onPress={handleStoryPress} />
+        <Story key={story.id} story={story} onPress={handleStoryPress} />
       ))}
     </>
   );
