@@ -1,3 +1,4 @@
+import { colors } from "@/constants";
 import {
   NativeTabs,
   Icon,
@@ -7,7 +8,7 @@ import {
 
 export default function TabsLayout() {
   return (
-    <NativeTabs tintColor="#f43f5e" minimizeBehavior="onScrollDown">
+    <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
         <Icon sf="circle.grid.2x2.fill" />
         <Label>Home</Label>
