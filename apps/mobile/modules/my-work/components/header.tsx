@@ -1,13 +1,21 @@
 import React from "react";
-import { View } from "react-native";
-import { Text } from "@/components/ui";
+import { Row, Text } from "@/components/ui";
+import { SymbolView } from "expo-symbols";
+import { Pressable } from "react-native";
+import { colors } from "@/constants";
 
 export const Header = () => {
   return (
-    <View className="px-4 pb-4">
+    <Row className="pb-4" asContainer justify="between" align="center">
       <Text fontSize="2xl" fontWeight="semibold">
         My Work
       </Text>
-    </View>
+      <Pressable
+        className="p-2 rounded-md"
+        style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+      >
+        <SymbolView name="ellipsis" size={24} tintColor={colors.dark[50]} />
+      </Pressable>
+    </Row>
   );
 };

@@ -41,7 +41,7 @@ export const WorkItem = ({ story, onPress }: WorkItemProps) => {
     >
       <Row justify="between" align="center" gap={3}>
         <Row align="center" gap={2} className="flex-1">
-          <PriorityIcon priority={story.priority} size={16} />
+          <PriorityIcon priority={story.priority} size={18} />
           <Text className="flex-1" numberOfLines={1}>
             {story.title}
           </Text>
