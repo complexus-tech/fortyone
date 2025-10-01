@@ -6,12 +6,7 @@ import { colors } from "@/constants";
 
 export const Header = () => {
   return (
-    <Row
-      justify="between"
-      align="center"
-      asContainer
-      className="border-b-[0.5px] border-gray-100 pb-3"
-    >
+    <Row justify="between" align="center" asContainer className="pb-3">
       <Text fontSize="2xl" fontWeight="semibold" color="black">
         Notifications
       </Text>
@@ -21,7 +16,7 @@ export const Header = () => {
           pressed && { backgroundColor: colors.gray[50] },
         ]}
       >
-        <SymbolView name="ellipsis" size={24} tintColor={colors.gray.DEFAULT} />
+        <SymbolView name="ellipsis" size={20} tintColor={colors.gray.DEFAULT} />
       </Pressable>
     </Row>
   );

@@ -26,7 +26,7 @@ const avatarVariants = cva(
       size: {
         sm: "size-7 text-xs",
         md: "size-9 text-sm",
-        lg: "size-11 text-base",
+        lg: "size-10 text-base",
         xl: "size-14 text-lg",
       },
     },
@@ -122,7 +122,11 @@ export const Avatar = ({
         </Text>
       )}
       {asIcon && (
-        <SymbolView name="person.circle.fill" tintColor={colors.gray.DEFAULT} />
+        <SymbolView
+          name="person.circle.fill"
+          size={26}
+          tintColor={colors.gray.DEFAULT}
+        />
       )}
     </View>
   );

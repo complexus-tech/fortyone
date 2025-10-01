@@ -80,49 +80,53 @@ export const NotificationCard = ({
     <Pressable
       style={({ pressed }) => ({
         backgroundColor: pressed ? colors.gray[50] : "white",
-        borderBottomWidth: 0.5,
-        borderBottomColor: colors.gray[100],
-        paddingVertical: 8,
+        paddingVertical: 12,
         paddingHorizontal: 16,
       })}
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <Col className="gap-2 mb-0.5">
-        <Row justify="between" align="center">
-          <Text
-            color={isUnread ? "black" : "muted"}
-            className="flex-1 mr-2"
-            fontWeight="semibold"
-            numberOfLines={1}
-          >
-            {isUnread && <Dot color={colors.primary} size={8} />}{" "}
-            {notification.title}
-          </Text>
-          <Text fontSize="sm" color="muted" className="shrink-0">
-            {formatTimeAgo(notification.createdAt)}
-          </Text>
-        </Row>
-        <Row align="center" justify="between" gap={2}>
-          <Row align="center" gap={2} className="flex-1">
-            <Avatar
-              size="sm"
-              name={notification.actor.name}
-              src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no"
-              className="shrink-0"
-            />
+      <Row align="center" gap={2}>
+        <Avatar
+          size="lg"
+          name={notification.actor.name}
+          src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no"
+          className="shrink-0"
+        />
+        <Col flex={1} gap={1}>
+          <Row justify="between" align="center">
+            <Text
+              color={isUnread ? "black" : "muted"}
+              className="flex-1 mr-2"
+              fontWeight={isUnread ? "bold" : "medium"}
+              numberOfLines={1}
+            >
+              {notification.title}
+            </Text>
             <Text
               fontSize="sm"
               color={isUnread ? "black" : "muted"}
-              className="flex-1"
-              numberOfLines={1}
+              className="shrink-0"
             >
-              {notification.message}
+              {formatTimeAgo(notification.createdAt)}
             </Text>
           </Row>
-          {getTypeIcon()}
-        </Row>
-      </Col>
+          <Row align="center" justify="between" gap={2}>
+            <Row align="center" gap={2} className="flex-1">
+              <Text
+                fontSize="sm"
+                color={isUnread ? "black" : "muted"}
+                className="flex-1"
+                fontWeight={isUnread ? "semibold" : "medium"}
+                numberOfLines={1}
+              >
+                {notification.message}
+              </Text>
+            </Row>
+            {getTypeIcon()}
+          </Row>
+        </Col>
+      </Row>
     </Pressable>
   );
 };
