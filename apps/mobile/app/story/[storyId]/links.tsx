@@ -3,8 +3,8 @@ import { SafeContainer, Text, Row } from "@/components/ui";
 
 export default function Links() {
   return (
-    <SafeContainer>
-      <Row className="pb-2" asContainer justify="between" align="center">
+    <SafeContainer edges={[]}>
+      <Row className="pb-2" justify="between" align="center">
         <Text fontSize="2xl" fontWeight="semibold">
           Links
         </Text>

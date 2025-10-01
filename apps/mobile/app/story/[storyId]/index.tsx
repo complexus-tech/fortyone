@@ -6,7 +6,7 @@ export default function StoryOverview() {
   const { storyId } = useLocalSearchParams();
 
   return (
-    <SafeContainer edges={["bottom"]}>
+    <SafeContainer edges={[]}>
       <Row className="pb-2" justify="between" align="center">
         <Text fontSize="2xl" fontWeight="semibold">
           Overview
