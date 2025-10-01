@@ -55,7 +55,7 @@ export const Overview = ({ stats }: OverviewProps) => {
     {
       count: data.assigned,
       label: "Assigned to you",
-      icon: "person.circle.fill",
+      icon: "person.crop.circle.dashed",
       iconColor: colors.gray.DEFAULT,
     },
   ];

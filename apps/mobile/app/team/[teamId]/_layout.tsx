@@ -9,11 +9,11 @@ export default function TeamLayout() {
         <Label>Stories</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="backlog">
-        <Icon sf="list.bullet" />
+        <Icon sf="circle.dashed" />
         <Label>Backlog</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sprints">
-        <Icon sf="calendar" />
+        <Icon sf="play.circle" />
         <Label>Sprints</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="objectives">

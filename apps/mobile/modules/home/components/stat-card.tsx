@@ -24,6 +24,7 @@ export const StatCard = ({ count, label, icon, iconColor }: StatCardProps) => {
         name={icon}
         size={20}
         tintColor={iconColor}
+        weight="semibold"
         style={{ position: "absolute", top: 14, right: 16 }}
       />
     </Wrapper>
