@@ -6,9 +6,10 @@ import "react-native-svg";
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="team/[teamId]" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="team/[teamId]" />
+        <Stack.Screen name="story/[storyId]" />
       </Stack>
     </SafeAreaProvider>
   );
