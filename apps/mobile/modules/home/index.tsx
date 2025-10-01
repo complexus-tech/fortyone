@@ -17,7 +17,6 @@ export const Home = () => {
     assigned: 15,
   };
 
-  // Mock team IDs - replace with actual data later
   const handleTeamPress = (teamId: string) => {
     router.push(`/team/${teamId}/stories`);
   };
