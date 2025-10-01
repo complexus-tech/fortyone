@@ -8,6 +8,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="team/[teamId]" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );

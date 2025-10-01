@@ -1,0 +1,25 @@
+import { colors } from "@/constants";
+import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+
+export default function TeamLayout() {
+  return (
+    <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
+      <NativeTabs.Trigger name="stories">
+        <Icon sf="square.text.square" />
+        <Label>Stories</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="backlog">
+        <Icon sf="list.bullet" />
+        <Label>Backlog</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="sprints">
+        <Icon sf="calendar" />
+        <Label>Sprints</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="objectives">
+        <Icon sf="target" />
+        <Label>Objectives</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
+}
