@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { Dot, PriorityIcon } from "@/components/icons";
 import { colors } from "@/constants";
 import { Row } from "./row";
@@ -24,10 +25,15 @@ interface StoryProps {
       avatarUrl?: string;
     };
   };
-  onPress?: (storyId: string) => void;
 }
 
-export const Story = ({ story, onPress }: StoryProps) => {
+export const Story = ({ story }: StoryProps) => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push(`/story/${story.id}`);
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -37,7 +43,7 @@ export const Story = ({ story, onPress }: StoryProps) => {
           paddingHorizontal: 16,
         },
       ]}
-      onPress={() => onPress?.(story.id)}
+      onPress={handlePress}
     >
       <Row justify="between" align="center" gap={3}>
         <Row align="center" gap={2} className="flex-1">
