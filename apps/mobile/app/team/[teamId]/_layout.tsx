@@ -5,13 +5,13 @@ export default function TeamLayout() {
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="stories">
-        <Icon sf="square.text.square" />
+        <Icon sf="rectangle.fill.on.rectangle.angled.fill" />
         <Label>Stories</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="backlog">
+      {/* <NativeTabs.Trigger name="backlog">
         <Icon sf="circle.dashed" />
         <Label>Backlog</Label>
-      </NativeTabs.Trigger>
+      </NativeTabs.Trigger> */}
       <NativeTabs.Trigger name="sprints">
         <Icon sf="play.circle" />
         <Label>Sprints</Label>
@@ -20,6 +20,11 @@ export default function TeamLayout() {
         <Icon sf="target" />
         <Label>Objectives</Label>
       </NativeTabs.Trigger>
+      {/* add search tab */}
+      {/* <NativeTabs.Trigger name="objectives">
+        <Icon sf="magnifyingglass" />
+        <Label>Search</Label>
+      </NativeTabs.Trigger> */}
     </NativeTabs>
   );
 }
