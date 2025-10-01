@@ -1,10 +1,11 @@
 import React from "react";
-import { SafeContainer, Text, Row } from "@/components/ui";
+import { SafeContainer, Text, Row, Back } from "@/components/ui";
 
 export default function SubStories() {
   return (
-    <SafeContainer edges={[]}>
-      <Row className="pb-2" justify="between" align="center">
+    <SafeContainer>
+      <Row className="pb-2" gap={2} align="center">
+        <Back />
         <Text fontSize="2xl" fontWeight="semibold">
           Sub Stories
         </Text>

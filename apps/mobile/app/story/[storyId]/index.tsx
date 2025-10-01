@@ -1,15 +1,24 @@
 import React from "react";
-import { SafeContainer, Text, Row } from "@/components/ui";
+import { SafeContainer, Text, Row, Back } from "@/components/ui";
 import { useLocalSearchParams } from "expo-router";
 
 export default function StoryOverview() {
   const { storyId } = useLocalSearchParams();
 
   return (
-    <SafeContainer edges={[]}>
-      <Row className="pb-2" justify="between" align="center">
+    <SafeContainer>
+      <Row align="center" gap={2}>
+        <Back />
         <Text fontSize="2xl" fontWeight="semibold">
-          Overview
+          PRO-259 /{" "}
+          <Text
+            fontSize="2xl"
+            color="muted"
+            fontWeight="semibold"
+            className="opacity-80"
+          >
+            Overview
+          </Text>
         </Text>
       </Row>
 

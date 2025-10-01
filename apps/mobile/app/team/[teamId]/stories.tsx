@@ -11,9 +11,18 @@ const StoriesHeader = () => {
       <Row align="center" gap={2}>
         <Back />
         <Text fontSize="2xl" fontWeight="semibold">
-          Product
+          Product /{" "}
+          <Text
+            fontSize="2xl"
+            color="muted"
+            fontWeight="semibold"
+            className="opacity-80"
+          >
+            Stories
+          </Text>
         </Text>
       </Row>
+
       <Pressable
         className="p-2 rounded-md"
         style={({ pressed }) => [
