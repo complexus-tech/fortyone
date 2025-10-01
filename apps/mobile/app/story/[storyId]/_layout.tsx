@@ -17,10 +17,7 @@ export default function StoryLayout() {
         <Label>Links</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="attachments">
-        <Icon
-          sf="books.vertical.fill"
-          // sf="book.pages.fill"
-        />
+        <Icon sf="books.vertical.fill" />
         <Label>Attachments</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
