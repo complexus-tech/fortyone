@@ -124,7 +124,6 @@ export const Avatar = ({
       {asIcon && (
         <SymbolView
           name="person.crop.circle.dashed"
-          weight="semibold"
           size={25}
           tintColor={colors.gray.DEFAULT}
         />

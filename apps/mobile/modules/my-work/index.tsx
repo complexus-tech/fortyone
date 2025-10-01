@@ -94,7 +94,7 @@ export const MyWork = () => {
       <Header />
       <Tabs defaultValue="all">
         <Tabs.List>
-          <Tabs.Tab value="all">All</Tabs.Tab>
+          <Tabs.Tab value="all">All stories</Tabs.Tab>
           <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>

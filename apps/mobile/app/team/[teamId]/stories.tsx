@@ -4,13 +4,17 @@ import { SafeContainer, Tabs, Text, Row } from "@/components/ui";
 import { GroupedStoriesList } from "@/modules/my-work/components/grouped-list";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { Dot } from "@/components/icons";
 
 const StoriesHeader = () => {
   return (
     <Row className="pb-2" asContainer justify="between" align="center">
-      <Text fontSize="2xl" fontWeight="semibold">
-        Stories
-      </Text>
+      <Row align="center" gap={2}>
+        <Dot color={colors.primary} size={12} />
+        <Text fontSize="2xl" fontWeight="semibold">
+          Product
+        </Text>
+      </Row>
       <Pressable
         className="p-2 rounded-md"
         style={({ pressed }) => [
@@ -114,7 +118,7 @@ export default function TeamStories() {
 
       <Tabs defaultValue="all">
         <Tabs.List>
-          <Tabs.Tab value="all">All</Tabs.Tab>
+          <Tabs.Tab value="all">All stories</Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>
