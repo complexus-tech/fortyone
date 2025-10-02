@@ -13,3 +13,15 @@ export async function getAccessToken() {
 export async function clearAccessToken() {
   await SecureStore.deleteItemAsync("accessToken");
 }
+
+export async function saveWorkspace(workspace: string) {
+  await SecureStore.setItemAsync("workspace", workspace);
+}
+
+export async function getWorkspace() {
+  return await SecureStore.getItemAsync("workspace");
+}
+
+export async function clearWorkspace() {
+  await SecureStore.deleteItemAsync("workspace");
+}
