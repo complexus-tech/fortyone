@@ -34,3 +34,9 @@ export const storyKeys = {
   group: (groupKey: string, params: Record<string, any>) =>
     [...storyKeys.all, "group", groupKey, params] as const,
 };
+
+export const notificationKeys = {
+  all: ["notifications"] as const,
+  unread: () => [...notificationKeys.all, "unread"] as const,
+  preferences: () => [...notificationKeys.all, "preferences"] as const,
+};

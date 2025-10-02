@@ -1,5 +1,3 @@
-export { NotificationCard } from "./card";
-export { Header as NotificationHeader } from "./header";
-export { NotificationList } from "./list";
+export { NotificationCard } from "./notification-card";
+export { NotificationsSkeleton } from "./notifications-skeleton";
 export { EmptyState } from "./empty-state";
-export { NotificationSkeleton } from "./skeleton";
