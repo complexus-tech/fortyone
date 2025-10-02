@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Row, Section } from "@/components/ui";
+import { Row } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { Team } from "@/modules/home/components/team";
 import { TeamsSkeleton } from "./teams-skeleton";
