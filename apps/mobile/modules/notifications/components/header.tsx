@@ -16,7 +16,7 @@ export const Header = () => {
           pressed && { backgroundColor: colors.gray[50] },
         ]}
       >
-        <SymbolView name="ellipsis" size={20} tintColor={colors.gray.DEFAULT} />
+        <SymbolView name="ellipsis" tintColor={colors.dark[50]} />
       </Pressable>
     </Row>
   );
