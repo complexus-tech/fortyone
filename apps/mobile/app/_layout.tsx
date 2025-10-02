@@ -6,7 +6,13 @@ import { useAuthStore } from "@/store";
 import { useEffect } from "react";
 
 export default function RootLayout() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+      },
+    },
+  });
   const loadAuthData = useAuthStore((state) => state.loadAuthData);
 
   useEffect(() => {
