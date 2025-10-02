@@ -10,26 +10,25 @@ const StoriesHeader = () => {
     <Row className="pb-2" asContainer justify="between" align="center">
       <Row align="center" gap={2}>
         <Back />
-        <Text fontSize="2xl" fontWeight="semibold">
-          Product /{" "}
-          <Text
-            fontSize="2xl"
-            color="muted"
-            fontWeight="semibold"
-            className="opacity-80"
-          >
-            Stories
-          </Text>
-        </Text>
       </Row>
-
+      <Text fontSize="xl" fontWeight="semibold">
+        Product /{" "}
+        <Text
+          fontSize="xl"
+          color="muted"
+          fontWeight="semibold"
+          className="opacity-80"
+        >
+          Stories
+        </Text>
+      </Text>
       <Pressable
         className="p-2 rounded-md"
         style={({ pressed }) => [
           pressed && { backgroundColor: colors.gray[50] },
         ]}
       >
-        <SymbolView name="ellipsis" tintColor={colors.gray.DEFAULT} />
+        <SymbolView name="ellipsis" tintColor={colors.dark[50]} />
       </Pressable>
     </Row>
   );
