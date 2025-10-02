@@ -7,7 +7,7 @@ import { Teams } from "./components/teams";
 
 export const Home = () => {
   return (
-    <SafeContainer>
+    <SafeContainer isFull>
       <Header />
       <ScrollView className="flex-1">
         <Overview />

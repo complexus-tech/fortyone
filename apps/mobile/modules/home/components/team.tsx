@@ -10,23 +10,27 @@ export const Team = ({ id, name, color }: TeamType) => {
   const router = useRouter();
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
+      style={({ pressed }) => [
+        pressed && { backgroundColor: colors.gray[50] },
+        { borderRadius: 10 },
+      ]}
       onPress={() => router.push(`../teams/${id}/stories`)}
     >
       <Row
         align="center"
         justify="between"
-        className="py-3.5 pl-0.5 min-h-[44px]"
+        className="py-3.5 px-2 min-h-[44px]"
       >
         <Row align="center">
           <View
-            className="size-3 rounded-full mr-2"
+            className="size-3.5 rounded-full mr-2"
             style={{ backgroundColor: color }}
           />
           <Text>{name}</Text>
         </Row>
         <SymbolView
           name="chevron.forward"
+          weight="semibold"
           size={12}
           tintColor={colors.gray.DEFAULT}
         />

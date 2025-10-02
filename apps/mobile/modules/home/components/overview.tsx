@@ -4,7 +4,7 @@ import { StatCard } from "./stat-card";
 import { OverviewSkeleton } from "./overview-skeleton";
 import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
-import { Text } from "@/components/ui";
+import { Col, Text } from "@/components/ui";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 
 export const Overview = () => {
@@ -40,7 +40,7 @@ export const Overview = () => {
   ];
 
   return (
-    <>
+    <Col asContainer>
       <Text color="muted" className="mb-4">
         Here&apos;s what&apos;s happening with your stories.
       </Text>
@@ -56,6 +56,6 @@ export const Overview = () => {
           </View>
         ))}
       </View>
-    </>
+    </Col>
   );
 };

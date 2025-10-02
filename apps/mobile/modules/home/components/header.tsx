@@ -18,7 +18,7 @@ export const Header = () => {
   const { data: user } = useProfile();
 
   return (
-    <Row align="center" justify="between" className="mb-4">
+    <Row align="center" justify="between" className="mb-4" asContainer>
       <Row align="center" gap={2}>
         <Avatar
           name={user?.fullName || user?.username}
