@@ -3,18 +3,15 @@ import { View, Pressable } from "react-native";
 import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import type { Team as TeamType } from "@/modules/teams/types";
+import { useRouter } from "expo-router";
 
-interface TeamProps {
-  name: string;
-  color: string;
-  onPress?: () => void;
-}
-
-export const Team = ({ name, color, onPress }: TeamProps) => {
+export const Team = ({ id, name, color }: TeamType) => {
+  const router = useRouter();
   return (
     <Pressable
       style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
-      onPress={onPress}
+      onPress={() => router.push(`../teams/${id}/stories`)}
     >
       <Row
         align="center"
