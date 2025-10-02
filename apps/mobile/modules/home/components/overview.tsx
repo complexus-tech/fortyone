@@ -4,56 +4,30 @@ import { StatCard } from "./stat-card";
 import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
 import { Text } from "@/components/ui";
+import { StoriesSummary } from "../types";
 
-type OverviewProps = {
-  stats?: {
-    closed: number;
-    overdue: number;
-    inProgress: number;
-    created: number;
-    assigned: number;
-  };
-};
-
-type ItemsProps = {
-  count: number;
-  label: string;
-  icon: SFSymbol;
-  iconColor?: string;
-};
-
-export const Overview = ({ stats }: OverviewProps) => {
-  const defaultStats = {
-    closed: 0,
-    overdue: 0,
-    inProgress: 0,
-    created: 0,
-    assigned: 0,
-  };
-
-  const data = stats || defaultStats;
-
-  const overviewItems: ItemsProps[] = [
+export const Overview = ({ summary }: { summary?: StoriesSummary }) => {
+  const overviewItems = [
     {
-      count: data.closed,
+      count: summary?.closed,
       label: "Stories closed",
       icon: "checkmark.circle.fill",
       iconColor: colors.success,
     },
     {
-      count: data.overdue,
+      count: summary?.overdue,
       label: "Stories overdue",
       icon: "exclamationmark.circle.fill",
       iconColor: colors.danger,
     },
     {
-      count: data.inProgress,
+      count: summary?.inProgress,
       label: "In progress",
       icon: "clock.fill",
       iconColor: colors.warning,
     },
     {
-      count: data.assigned,
+      count: summary?.assigned,
       label: "Assigned to you",
       icon: "person.crop.circle.dashed",
       iconColor: colors.gray.DEFAULT,
@@ -68,7 +42,12 @@ export const Overview = ({ stats }: OverviewProps) => {
       <View className="mb-6 flex-row flex-wrap gap-3">
         {overviewItems.map((item) => (
           <View key={item.label} className="w-[48.5%]">
-            <StatCard {...item} />
+            <StatCard
+              count={item.count}
+              label={item.label}
+              icon={item.icon as SFSymbol}
+              iconColor={item.iconColor}
+            />
           </View>
         ))}
       </View>

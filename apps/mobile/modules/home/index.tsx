@@ -1,7 +1,7 @@
 import React from "react";
 import { ScrollView, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeContainer, Section, Text } from "@/components/ui";
+import { SafeContainer, Section } from "@/components/ui";
 import { Header } from "./components/header";
 import { Overview } from "./components/overview";
 import { Team } from "./components/team";
@@ -9,7 +9,7 @@ import { useOverviewStats } from "./hooks/use-overview-stats";
 
 export const Home = () => {
   const router = useRouter();
-  const { data: stats, isLoading: statsLoading } = useOverviewStats();
+  const { data: summary, isLoading: statsLoading } = useOverviewStats();
 
   const handleTeamPress = (teamId: string) => {
     router.push(`/team/${teamId}/stories`);
@@ -28,7 +28,7 @@ export const Home = () => {
     <SafeContainer>
       <Header />
       <ScrollView className="flex-1">
-        <Overview stats={stats} />
+        <Overview summary={summary} />
         <Section title="Your Teams">
           <Team
             name="Engineering"

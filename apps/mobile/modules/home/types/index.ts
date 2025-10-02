@@ -1,4 +1,4 @@
-export type OverviewStats = {
+export type StoriesSummary = {
   closed: number;
   overdue: number;
   inProgress: number;
