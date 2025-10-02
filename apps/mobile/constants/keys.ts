@@ -14,6 +14,14 @@ export const userKeys = {
   profile: () => [...userKeys.all, "profile"] as const,
 };
 
+export const memberKeys = {
+  all: ["members"] as const,
+  lists: () => [...memberKeys.all, "list"] as const,
+  details: () => [...memberKeys.all, "detail"] as const,
+  detail: (id: string) => [...memberKeys.details(), id] as const,
+  team: (teamId: string) => [...memberKeys.lists(), teamId] as const,
+};
+
 export const storyKeys = {
   all: ["stories"] as const,
   lists: () => [...storyKeys.all, "list"] as const,

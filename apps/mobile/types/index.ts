@@ -20,3 +20,15 @@ export type User = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Member = {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  fullName: string;
+  avatarUrl: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
