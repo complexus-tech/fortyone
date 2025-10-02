@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Pressable } from "react-native";
+import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Text } from "@/components/ui";
+import { Row, Text } from "@/components/ui";
 
 interface SettingsItemProps {
   title: string;
@@ -23,11 +23,11 @@ export const SettingsItem = ({
       style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
       onPress={onPress}
     >
-      <View className="flex-row items-center px-4 py-3.5 min-h-[44px]">
+      <Row align="center" className="px-4 py-3.5 min-h-[44px]">
         <Text color={destructive ? "primary" : "black"} className="flex-1">
           {title}
         </Text>
-        <View className="flex-row items-center">
+        <Row align="center">
           {value && (
             <Text color="muted" className="mr-2">
               {value}
@@ -36,8 +36,8 @@ export const SettingsItem = ({
           {showChevron && (
             <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
           )}
-        </View>
-      </View>
+        </Row>
+      </Row>
     </Pressable>
   );
 };

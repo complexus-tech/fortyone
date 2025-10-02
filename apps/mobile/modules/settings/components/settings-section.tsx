@@ -9,7 +9,7 @@ interface SettingsSectionProps {
 
 export const SettingsSection = ({ title, children }: SettingsSectionProps) => {
   return (
-    <View className="mb-7">
+    <View className="mb-6">
       {title && (
         <Text color="muted" className="mb-2 mx-4">
           {title}
