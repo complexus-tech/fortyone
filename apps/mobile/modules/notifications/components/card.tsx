@@ -3,33 +3,42 @@ import { Pressable } from "react-native";
 import { Row, Col, Text, Avatar } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
+import type { AppNotification } from "../types";
+import { useMembers } from "@/modules/members";
+import { renderTemplate } from "../utils/render-template";
 import { useRouter } from "expo-router";
 
-type NotificationCardProps = {
-  notification: {
-    id: string;
-    title: string;
-    message: string;
-    type: "story_update" | "story_comment" | "mention";
-    actor: {
-      name: string;
-      avatar?: string;
-    };
-    createdAt: string;
-    readAt: string | null;
-    entityId: string;
-  };
+type NotificationCardProps = AppNotification & {
   index: number;
 };
 
-export const NotificationCard = ({ notification }: NotificationCardProps) => {
+export const NotificationCard = ({
+  id,
+  title,
+  message,
+  type,
+  entityId,
+  entityType,
+  readAt,
+  createdAt,
+  actorId,
+  index,
+}: NotificationCardProps) => {
   const router = useRouter();
-  const isUnread = !notification.readAt;
+  const { data: members = [] } = useMembers();
+  const actor = members.find((member) => member.id === actorId);
+  const isUnread = !readAt;
+
+  const handlePress = () => {
+    router.push(`/story/${entityId}`);
+  };
+
+  const { text } = renderTemplate(message);
 
   const getTypeIcon = () => {
-    const message = notification.message.toLowerCase();
+    const messageText = text.toLowerCase();
 
-    if (notification.type === "story_comment") {
+    if (type === "story_comment") {
       return (
         <Ionicons
           name="chatbubble-outline"
@@ -39,12 +48,12 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
       );
     }
 
-    if (notification.type === "mention") {
+    if (type === "mention") {
       return <Ionicons name="at" size={16} color={colors.gray.DEFAULT} />;
     }
 
-    if (notification.type === "story_update") {
-      if (message.includes("deadline") || message.includes("due")) {
+    if (type === "story_update") {
+      if (messageText.includes("deadline") || messageText.includes("due")) {
         return (
           <Ionicons
             name="calendar-outline"
@@ -53,10 +62,10 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
           />
         );
       }
-      if (message.includes("status")) {
+      if (messageText.includes("status")) {
         return <Ionicons name="ellipse" size={12} color={colors.primary} />;
       }
-      if (message.includes("priority")) {
+      if (messageText.includes("priority")) {
         return (
           <Ionicons name="flag-outline" size={16} color={colors.gray.DEFAULT} />
         );
@@ -67,8 +76,16 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
   };
 
   const formatTimeAgo = (timestamp: string) => {
-    // Static time for now - replace with actual formatting later
-    return "2m";
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor(
+      (now.getTime() - time.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
+    return `${Math.floor(diffInMinutes / 1440)}d`;
   };
 
   return (
@@ -78,15 +95,13 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
         paddingVertical: 12,
         paddingHorizontal: 16,
       })}
-      onPress={() => {
-        router.push(`/story/${notification.entityId}`);
-      }}
+      onPress={handlePress}
     >
       <Row align="center" gap={2}>
         <Avatar
           size="lg"
-          name={notification.actor.name}
-          src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s288-c-no"
+          name={actor?.fullName || actor?.username || "Unknown"}
+          src={actor?.avatarUrl}
           className="shrink-0"
         />
         <Col flex={1} gap={1}>
@@ -97,14 +112,14 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
               fontWeight={isUnread ? "bold" : "medium"}
               numberOfLines={1}
             >
-              {notification.title}
+              {title}
             </Text>
             <Text
               fontSize="sm"
               color={isUnread ? "black" : "muted"}
               className="shrink-0"
             >
-              {formatTimeAgo(notification.createdAt)}
+              {formatTimeAgo(createdAt)}
             </Text>
           </Row>
           <Row align="center" justify="between" gap={2}>
@@ -116,7 +131,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
                 fontWeight={isUnread ? "semibold" : "medium"}
                 numberOfLines={1}
               >
-                {notification.message}
+                {text}
               </Text>
             </Row>
             {getTypeIcon()}

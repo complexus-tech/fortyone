@@ -1,15 +1,33 @@
 import type { AppNotification } from "../types";
 
-export const renderTemplate = (message: AppNotification["message"]) => {
-  let html = message.template;
-  let text = message.template;
+type TemplateResult = {
+  text: string;
+  html: string;
+};
 
-  // Replace variables in template
-  Object.entries(message.variables).forEach(([key, variable]) => {
-    const placeholder = `{{${key}}}`;
-    html = html.replace(new RegExp(placeholder, "g"), variable.value);
-    text = text.replace(new RegExp(placeholder, "g"), variable.value);
-  });
+export const renderTemplate = (
+  message: AppNotification["message"]
+): TemplateResult => {
+  const { template, variables } = message;
 
-  return { html, text };
+  // Helper function to replace variables in template
+  const replaceVariables = (template: string, wrapInSpan = false): string => {
+    return template.replace(/\{\w+\}/g, (match) => {
+      const key = match.slice(1, -1); // Remove { and }
+      const variable = variables[key as keyof typeof variables];
+
+      if (variable.value) {
+        if (wrapInSpan) {
+          return `<span class="font-semibold antialiased text-black/80 dark:text-gray-200/95">${variable.value}</span>`;
+        }
+        return variable.value;
+      }
+      return match;
+    });
+  };
+
+  const text = replaceVariables(template, false);
+  const html = replaceVariables(template, true);
+
+  return { text, html };
 };
