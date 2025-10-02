@@ -1,16 +1,23 @@
 import { create } from "zustand";
-import { getAccessToken, saveAccessToken, clearAccessToken } from "@/lib/auth";
+import {
+  getAccessToken,
+  saveAccessToken,
+  clearAccessToken,
+  saveWorkspace,
+  getWorkspace,
+  clearWorkspace,
+} from "@/lib/auth";
 
 interface AuthState {
   // State
   token: string | null;
-  workspaceId: string | null;
+  workspace: string | null;
   isAuthenticated: boolean;
 
   // Actions
   setToken: (token: string) => void;
-  setWorkspaceId: (workspaceId: string) => void;
-  setAuthData: (token: string, workspaceId?: string) => void;
+  setWorkspace: (workspace: string) => void;
+  setAuthData: (token: string, workspace?: string) => void;
   clearAuth: () => void;
   loadAuthData: () => Promise<void>;
 }
@@ -18,7 +25,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Initial state
   token: null,
-  workspaceId: null,
+  workspace: null,
   isAuthenticated: false,
 
   // Actions
@@ -27,25 +34,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     saveAccessToken(token);
   },
 
-  setWorkspaceId: (workspaceId: string) => {
-    set({ workspaceId });
-    // Also save to SecureStore if needed
+  setWorkspace: (workspace: string) => {
+    set({ workspace });
+    saveWorkspace(workspace);
   },
 
-  setAuthData: (token: string, workspaceId?: string) => {
+  setAuthData: (token: string, workspace?: string) => {
     set({
       token,
-      workspaceId: workspaceId || null,
+      workspace: workspace || null,
       isAuthenticated: true,
     });
     saveAccessToken(token);
-    // Save workspaceId to SecureStore if needed
+    if (workspace) {
+      saveWorkspace(workspace);
+    }
   },
 
   clearAuth: () => {
     set({
       token: null,
-      workspaceId: null,
+      workspace: null,
       isAuthenticated: false,
     });
     clearAccessToken();
