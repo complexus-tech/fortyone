@@ -1,5 +1,5 @@
-import { colors } from "@/constants";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { colors } from "@/constants";
 
 export default function StoryLayout() {
   return (
@@ -13,7 +13,7 @@ export default function StoryLayout() {
         <Label>Sub Stories</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="links">
-        <Icon sf="globe" />
+        <Icon sf="network" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="attachments">
