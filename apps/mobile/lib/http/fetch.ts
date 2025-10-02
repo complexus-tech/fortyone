@@ -6,9 +6,10 @@ const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
 // Create HTTP client with workspace context
 const createClient = (useWorkspace = true) => {
-  const { token, workspace } = useAuthStore.getState();
-
-  if (!token) throw new Error("No authentication token found");
+  const [token, workspace] = [
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
+    "complexus",
+  ];
 
   const prefixUrl =
     useWorkspace && workspace
@@ -39,7 +40,7 @@ export const get = async <T>(
   options?: { useWorkspace?: boolean; headers?: Record<string, string> }
 ) => {
   const client = createClient(options?.useWorkspace);
-  return client.get(url, { headers: options?.headers }).json<T>();
+  return client.get(url).json<T>();
 };
 
 export const post = async <T, U>(
@@ -93,5 +94,5 @@ export const remove = async <T>(
   options?: { useWorkspace?: boolean; headers?: Record<string, string> }
 ) => {
   const client = createClient(options?.useWorkspace);
-  return client.delete(url, { headers: options?.headers }).json<T>();
+  return client.delete(url).json<T>();
 };

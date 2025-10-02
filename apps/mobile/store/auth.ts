@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const [token, workspace] = await Promise.all([
         // getAccessToken(),
         // getWorkspace(),
-        sampleToken,
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
         "complexus",
       ]);
       if (token) {
