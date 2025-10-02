@@ -9,6 +9,11 @@ export const teamKeys = {
   detail: (id: string) => [...teamKeys.all, "detail", id] as const,
 };
 
+export const userKeys = {
+  all: ["users"] as const,
+  profile: () => [...userKeys.all, "profile"] as const,
+};
+
 export const storyKeys = {
   all: ["stories"] as const,
   lists: () => [...storyKeys.all, "list"] as const,

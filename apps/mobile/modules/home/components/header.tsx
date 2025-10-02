@@ -4,20 +4,34 @@ import { SymbolView } from "expo-symbols";
 import { Avatar, Row, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants";
+import { useProfile } from "@/modules/users/hooks/use-profile";
+import { HeaderSkeleton } from "./header-skeleton";
+
+const getTimeOfDay = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+};
 
 export const Header = () => {
   const router = useRouter();
+  const { data: user, isPending } = useProfile();
+
+  if (isPending) {
+    return <HeaderSkeleton />;
+  }
 
   return (
     <Row align="center" justify="between" className="mb-3">
       <Row align="center" gap={2}>
         <Avatar
-          name="John Doe"
+          name={user?.fullName || user?.username || ""}
           size="md"
-          src="https://lh3.googleusercontent.com/a/ACg8ocIUt7Dv7aHtGSeygW70yxWRryGSXgddIq5NaVrg7ofoXO8uM5jt=s576-c-no"
+          src={user?.avatarUrl || undefined}
         />
         <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
-          Hello, Joseph
+          Good {getTimeOfDay()}, {user?.fullName || user?.username}
         </Text>
       </Row>
       <Pressable
