@@ -10,7 +10,6 @@ export default function Attachments() {
           Attachments
         </Text>
       </Row>
-
       <Text color="muted" className="mt-4">
         This is the Attachments tab for the story details page.
       </Text>

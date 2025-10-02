@@ -9,10 +9,10 @@ const StoriesHeader = () => {
   return (
     <Row className="pb-2" asContainer justify="between" align="center">
       <Back />
-      <Text fontSize="xl" fontWeight="semibold">
-        Product /{" "}
+      <Text fontSize="2xl" fontWeight="semibold">
+        Product/
         <Text
-          fontSize="xl"
+          fontSize="2xl"
           color="muted"
           fontWeight="semibold"
           className="opacity-80"
