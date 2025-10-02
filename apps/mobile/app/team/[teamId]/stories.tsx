@@ -7,7 +7,7 @@ import { colors } from "@/constants";
 
 const StoriesHeader = () => {
   return (
-    <Row className="pb-2" asContainer justify="between" align="center">
+    <Row className="mb-3" asContainer justify="between" align="center">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
         Product /{" "}

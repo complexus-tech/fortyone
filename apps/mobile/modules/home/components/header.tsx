@@ -9,7 +9,7 @@ export const Header = () => {
   const router = useRouter();
 
   return (
-    <Row align="center" justify="between" className="mb-4">
+    <Row align="center" justify="between" className="mb-3">
       <Row align="center" gap={2}>
         <Avatar
           name="John Doe"

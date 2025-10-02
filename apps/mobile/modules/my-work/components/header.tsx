@@ -6,7 +6,7 @@ import { colors } from "@/constants";
 
 export const Header = () => {
   return (
-    <Row className="pb-2" asContainer justify="between" align="center">
+    <Row className="mb-3" asContainer justify="between" align="center">
       <Text fontSize="2xl" fontWeight="semibold">
         My Work
       </Text>
