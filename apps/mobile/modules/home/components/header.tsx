@@ -5,7 +5,6 @@ import { Avatar, Row, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { HeaderSkeleton } from "./header-skeleton";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -16,22 +15,18 @@ const getTimeOfDay = () => {
 
 export const Header = () => {
   const router = useRouter();
-  const { data: user, isPending } = useProfile();
-
-  if (isPending) {
-    return <HeaderSkeleton />;
-  }
+  const { data: user } = useProfile();
 
   return (
-    <Row align="center" justify="between" className="mb-3">
+    <Row align="center" justify="between" className="mb-4">
       <Row align="center" gap={2}>
         <Avatar
-          name={user?.fullName || user?.username || ""}
+          name={user?.fullName || user?.username}
           size="md"
-          src={user?.avatarUrl || undefined}
+          src={user?.avatarUrl}
         />
         <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
-          Good {getTimeOfDay()}, {user?.fullName || user?.username}
+          Good {getTimeOfDay()}!
         </Text>
       </Row>
       <Pressable
