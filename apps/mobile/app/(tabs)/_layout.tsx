@@ -1,4 +1,5 @@
 import { colors } from "@/constants";
+import { useUnreadNotifications } from "@/modules/notifications/hooks/use-unread-notifications";
 import {
   NativeTabs,
   Icon,
@@ -7,6 +8,15 @@ import {
 } from "expo-router/unstable-native-tabs";
 
 export default function TabsLayout() {
+  const { data: unreadNotifications = 0 } = useUnreadNotifications();
+  const getBadgeLabel = () => {
+    if (unreadNotifications > 9) {
+      return "9+";
+    } else if (unreadNotifications > 20) {
+      return "20+";
+    }
+    return unreadNotifications.toString();
+  };
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
@@ -24,7 +34,7 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="inbox">
         <Label>Notifications</Label>
         <Icon sf="bell.fill" />
-        <Badge>9+</Badge>
+        {unreadNotifications > 0 && <Badge>{getBadgeLabel()}</Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search" role="search">
         <Label>Search</Label>
