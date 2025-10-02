@@ -24,7 +24,7 @@ export const SettingsItem = ({
       style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
       onPress={onPress}
     >
-      <Row align="center" className="px-4 py-3.5 min-h-[44px]">
+      <Row align="center" className="px-4 py-3.5">
         <Text color={destructive ? "primary" : "black"} className="flex-1">
           {title}
         </Text>
