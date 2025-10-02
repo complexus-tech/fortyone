@@ -1,9 +1,17 @@
 import React from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, Linking } from "react-native";
 import { SafeContainer } from "@/components/ui";
 import { Header } from "./components/header";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
+import { externalLinks } from "./external-links";
+
+const handleExternalLink = async (url: string) => {
+  const canOpen = await Linking.canOpenURL(url);
+  if (canOpen) {
+    await Linking.openURL(url);
+  }
+};
 
 export const Settings = () => {
   return (
@@ -27,31 +35,13 @@ export const Settings = () => {
         </SettingsSection>
 
         <SettingsSection title="Support & Info">
-          <SettingsItem
-            title="Support"
-            onPress={() => console.log("Support")}
-          />
-          <SettingsItem
-            title="Send Feedback"
-            showChevron={false}
-            onPress={() => console.log("Send Feedback")}
-          />
-          <SettingsItem
-            title="Help Center"
-            onPress={() => console.log("Help Center")}
-          />
-          <SettingsItem
-            title="Privacy Policy"
-            onPress={() => console.log("Privacy Policy")}
-          />
-          <SettingsItem
-            title="Follow on Twitter"
-            onPress={() => console.log("Follow on Twitter")}
-          />
-          <SettingsItem
-            title="Rate the App"
-            onPress={() => console.log("Rate the App")}
-          />
+          {externalLinks.map((link) => (
+            <SettingsItem
+              title={link.title}
+              key={link.title}
+              onPress={() => handleExternalLink(link.url)}
+            />
+          ))}
         </SettingsSection>
 
         <SettingsSection title="Account">

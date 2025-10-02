@@ -11,12 +11,7 @@ export const SettingsSection = ({ title, children }: SettingsSectionProps) => {
   return (
     <View className="mb-7">
       {title && (
-        <Text
-          fontSize="sm"
-          fontWeight="medium"
-          color="muted"
-          className="tracking-wide mb-2 mx-4"
-        >
+        <Text color="muted" className="mb-2 mx-4">
           {title}
         </Text>
       )}
