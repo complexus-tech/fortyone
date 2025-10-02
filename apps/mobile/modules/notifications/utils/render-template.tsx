@@ -57,7 +57,7 @@ export const renderTemplateJSX = (
 
         if (variable.value) {
           return (
-            <Text key={index} fontWeight="semibold">
+            <Text key={index} fontSize="sm" fontWeight="semibold">
               {htmlToText(variable.value)}
             </Text>
           );
@@ -68,7 +68,7 @@ export const renderTemplateJSX = (
       // This is regular text
       if (part.trim()) {
         return (
-          <Text key={index} color="muted">
+          <Text key={index} color="muted" fontSize="sm">
             {htmlToText(part)}
           </Text>
         );

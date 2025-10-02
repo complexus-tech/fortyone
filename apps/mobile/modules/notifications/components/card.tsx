@@ -1,12 +1,12 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { Row, Col, Text, Avatar } from "@/components/ui";
-import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 import type { AppNotification } from "../types";
 import { useMembers } from "@/modules/members";
-import { renderTemplate, renderTemplateJSX } from "../utils/render-template";
+import { renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
+import { Dot } from "@/components/icons";
 
 type NotificationCardProps = AppNotification & {
   index: number;
@@ -31,48 +31,6 @@ export const NotificationCard = ({
 
   const handlePress = () => {
     router.push(`/story/${entityId}`);
-  };
-
-  const { text } = renderTemplate(message);
-
-  const getTypeIcon = () => {
-    const messageText = text.toLowerCase();
-
-    if (type === "story_comment") {
-      return (
-        <Ionicons
-          name="chatbubble-outline"
-          size={16}
-          color={colors.gray.DEFAULT}
-        />
-      );
-    }
-
-    if (type === "mention") {
-      return <Ionicons name="at" size={16} color={colors.gray.DEFAULT} />;
-    }
-
-    if (type === "story_update") {
-      if (messageText.includes("deadline") || messageText.includes("due")) {
-        return (
-          <Ionicons
-            name="calendar-outline"
-            size={16}
-            color={colors.gray.DEFAULT}
-          />
-        );
-      }
-      if (messageText.includes("status")) {
-        return <Ionicons name="ellipse" size={12} color={colors.primary} />;
-      }
-      if (messageText.includes("priority")) {
-        return (
-          <Ionicons name="flag-outline" size={16} color={colors.gray.DEFAULT} />
-        );
-      }
-    }
-
-    return null;
   };
 
   const formatTimeAgo = (timestamp: string) => {
@@ -104,12 +62,12 @@ export const NotificationCard = ({
           src={actor?.avatarUrl}
           className="shrink-0"
         />
-        <Col flex={1} gap={1}>
-          <Row justify="between" align="center">
+        <Col flex={1}>
+          <Row justify="between" align="center" gap={2}>
             <Text
               color={isUnread ? "black" : "muted"}
               className="flex-1 mr-2"
-              fontWeight={isUnread ? "bold" : "medium"}
+              fontWeight={isUnread ? "semibold" : "medium"}
               numberOfLines={1}
             >
               {title}
@@ -117,6 +75,7 @@ export const NotificationCard = ({
             <Text
               fontSize="sm"
               color={isUnread ? "black" : "muted"}
+              fontWeight={isUnread ? "semibold" : "medium"}
               className="shrink-0"
             >
               {formatTimeAgo(createdAt)}
@@ -126,7 +85,7 @@ export const NotificationCard = ({
             <Text numberOfLines={1} align="center" className="flex-1">
               {renderTemplateJSX(message)}
             </Text>
-            {getTypeIcon()}
+            {isUnread && <Dot color={colors.primary} size={10} />}
           </Row>
         </Col>
       </Row>
