@@ -13,11 +13,11 @@ export default function StoryLayout() {
         <Label>Sub Stories</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="links">
-        <Icon sf="network" />
+        <Icon sf="list.number" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="attachments">
-        <Icon sf="books.vertical.fill" />
+        <Icon sf="square.fill.text.grid.1x2" />
         <Label>Attachments</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
