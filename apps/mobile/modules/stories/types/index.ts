@@ -7,6 +7,37 @@ export type StoryPriority =
   | "Medium"
   | "Low";
 
+export type DetailedStory = {
+  id: string;
+  sequenceId: number;
+  title: string;
+  description: string;
+  descriptionHTML: string;
+  parentId: string;
+  teamId: string;
+  workspaceId: string;
+  objectiveId: string | null;
+  keyResultId: string | null;
+  statusId: string;
+  assigneeId: string | null;
+  blockedById: string | null;
+  blockingId: string | null;
+  relatedId: string | null;
+  reporterId: string;
+  priority: StoryPriority;
+  sprintId: string | null;
+  epicId: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  completedAt: string | null;
+  archivedAt: string | null;
+  subStories: Story[];
+  labels: string[] | null;
+};
+
 export type Story = {
   id: string;
   title: string;
