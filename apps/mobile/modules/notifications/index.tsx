@@ -305,16 +305,6 @@ export const Notifications = () => {
     }, 1000);
   };
 
-  const handleNotificationPress = (notification: any) => {
-    console.log("Notification pressed:", notification.id);
-    // Navigate to notification details or related story
-  };
-
-  const handleNotificationLongPress = (notification: any) => {
-    console.log("Notification long pressed:", notification.id);
-    // Show context menu (mark as read/unread, delete)
-  };
-
   if (isLoading && notifications.length === 0) {
     return (
       <View className="flex-1 ">
@@ -337,8 +327,6 @@ export const Notifications = () => {
         notifications={notifications}
         isLoading={isLoading}
         onRefresh={handleRefresh}
-        onNotificationPress={handleNotificationPress}
-        onNotificationLongPress={handleNotificationLongPress}
       />
     </SafeContainer>
   );

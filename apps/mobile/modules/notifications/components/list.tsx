@@ -21,16 +21,12 @@ type NotificationListProps = {
   notifications: Notification[];
   isLoading?: boolean;
   onRefresh?: () => void;
-  onNotificationPress?: (notification: Notification) => void;
-  onNotificationLongPress?: (notification: Notification) => void;
 };
 
 export const NotificationList = ({
   notifications,
   isLoading = false,
   onRefresh,
-  onNotificationPress,
-  onNotificationLongPress,
 }: NotificationListProps) => {
   const insets = useSafeAreaInsets();
 
@@ -40,14 +36,7 @@ export const NotificationList = ({
   }: {
     item: Notification;
     index: number;
-  }) => (
-    <NotificationCard
-      notification={item}
-      index={index}
-      onPress={() => onNotificationPress?.(item)}
-      onLongPress={() => onNotificationLongPress?.(item)}
-    />
-  );
+  }) => <NotificationCard notification={item} index={index} />;
 
   return (
     <View className="flex-1 bg-gray-50">

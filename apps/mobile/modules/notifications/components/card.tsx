@@ -3,7 +3,7 @@ import { Pressable } from "react-native";
 import { Row, Col, Text, Avatar } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
-import { Dot } from "@/components/icons";
+import { useRouter } from "expo-router";
 
 type NotificationCardProps = {
   notification: {
@@ -20,15 +20,10 @@ type NotificationCardProps = {
     entityId: string;
   };
   index: number;
-  onPress?: () => void;
-  onLongPress?: () => void;
 };
 
-export const NotificationCard = ({
-  notification,
-  onPress,
-  onLongPress,
-}: NotificationCardProps) => {
+export const NotificationCard = ({ notification }: NotificationCardProps) => {
+  const router = useRouter();
   const isUnread = !notification.readAt;
 
   const getTypeIcon = () => {
@@ -83,8 +78,9 @@ export const NotificationCard = ({
         paddingVertical: 12,
         paddingHorizontal: 16,
       })}
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={() => {
+        router.push(`/story/${notification.entityId}`);
+      }}
     >
       <Row align="center" gap={2}>
         <Avatar
