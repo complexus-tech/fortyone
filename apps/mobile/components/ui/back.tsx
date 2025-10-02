@@ -7,9 +7,17 @@ import { colors } from "@/constants";
 export const Back = () => {
   const router = useRouter();
   const canGoBack = router.canGoBack();
-  if (!canGoBack) return null;
+
   return (
-    <TouchableOpacity onPress={() => router.back()}>
+    <TouchableOpacity
+      onPress={() => {
+        if (canGoBack) {
+          router.back();
+        } else {
+          router.replace("/");
+        }
+      }}
+    >
       <SymbolView
         name="arrow.backward"
         weight="semibold"
