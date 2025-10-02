@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Row, Text } from "@/components/ui";
+import { colors } from "@/constants";
 
 interface SettingsItemProps {
   title: string;
@@ -20,7 +21,7 @@ export const SettingsItem = ({
 }: SettingsItemProps) => {
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: "#F2F2F7" }]}
+      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
       onPress={onPress}
     >
       <Row align="center" className="px-4 py-3.5 min-h-[44px]">
@@ -34,7 +35,11 @@ export const SettingsItem = ({
             </Text>
           )}
           {showChevron && (
-            <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.gray.DEFAULT}
+            />
           )}
         </Row>
       </Row>
