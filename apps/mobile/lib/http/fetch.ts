@@ -1,6 +1,6 @@
 import ky from "ky";
 import { ApiError } from "./error";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthStore } from "@/store/auth";
 
 const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
