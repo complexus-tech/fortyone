@@ -33,7 +33,6 @@ export const Settings = () => {
             onPress={() => console.log("Appearance")}
           />
         </SettingsSection>
-
         <SettingsSection title="Support & Info">
           {externalLinks.map((link) => (
             <SettingsItem
@@ -43,7 +42,6 @@ export const Settings = () => {
             />
           ))}
         </SettingsSection>
-
         <SettingsSection title="Account">
           <SettingsItem
             title="Manage Account"
