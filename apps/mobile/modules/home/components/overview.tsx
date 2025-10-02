@@ -4,9 +4,13 @@ import { StatCard } from "./stat-card";
 import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
 import { Text } from "@/components/ui";
-import { StoriesSummary } from "../types";
+import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 
-export const Overview = ({ summary }: { summary?: StoriesSummary }) => {
+export const Overview = () => {
+  const { data: summary, isPending } = useOverviewStats();
+  if (isPending) {
+    return <Text>Loading...</Text>;
+  }
   const overviewItems = [
     {
       count: summary?.closed,
