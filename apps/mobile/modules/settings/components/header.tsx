@@ -7,9 +7,7 @@ import { colors } from "@/constants";
 export const Header = () => {
   return (
     <Row className="pb-2" asContainer justify="between" align="center">
-      <Row align="center" gap={2}>
-        <Back />
-      </Row>
+      <Back />
       <Text fontSize="2xl" fontWeight="semibold">
         Settings
       </Text>
