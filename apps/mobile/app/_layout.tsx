@@ -10,6 +10,7 @@ export default function RootLayout() {
   useEffect(() => {
     loadAuthData();
   }, [loadAuthData]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
