@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 import type { AppNotification } from "../types";
 import { useMembers } from "@/modules/members";
-import { renderTemplate } from "../utils/render-template";
+import { renderTemplate, renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
 
 type NotificationCardProps = AppNotification & {
@@ -123,17 +123,9 @@ export const NotificationCard = ({
             </Text>
           </Row>
           <Row align="center" justify="between" gap={2}>
-            <Row align="center" gap={2} className="flex-1">
-              <Text
-                fontSize="sm"
-                color={isUnread ? "black" : "muted"}
-                className="flex-1"
-                fontWeight={isUnread ? "semibold" : "medium"}
-                numberOfLines={1}
-              >
-                {text}
-              </Text>
-            </Row>
+            <Text numberOfLines={1} align="center" className="flex-1">
+              {renderTemplateJSX(message)}
+            </Text>
             {getTypeIcon()}
           </Row>
         </Col>
