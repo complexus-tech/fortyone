@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { StatCard } from "./stat-card";
+import { OverviewSkeleton } from "./overview-skeleton";
 import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
 import { Text } from "@/components/ui";
@@ -9,7 +10,7 @@ import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 export const Overview = () => {
   const { data: summary, isPending } = useOverviewStats();
   if (isPending) {
-    return <Text>Loading...</Text>;
+    return <OverviewSkeleton />;
   }
   const overviewItems = [
     {
