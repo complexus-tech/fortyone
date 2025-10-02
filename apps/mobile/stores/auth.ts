@@ -22,7 +22,7 @@ interface AuthState {
   loadAuthData: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   // Initial state
   token: null,
   workspace: null,
@@ -58,19 +58,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: false,
     });
     clearAccessToken();
+    clearWorkspace();
   },
 
   loadAuthData: async () => {
     try {
-      const token = await getAccessToken();
+      const [token, workspace] = await Promise.all([
+        getAccessToken(),
+        getWorkspace(),
+      ]);
       if (token) {
         set({
           token,
+          workspace,
           isAuthenticated: true,
         });
       }
-    } catch (error) {
-      console.error("Failed to load auth data:", error);
+    } catch {
+      set({
+        token: null,
+        workspace: null,
+        isAuthenticated: false,
+      });
     }
   },
 }));
