@@ -9,7 +9,7 @@ const ObjectivesHeader = () => {
     <Row className="pb-2" asContainer justify="between" align="center">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        Product/
+        Product /{" "}
         <Text
           fontSize="2xl"
           color="muted"
