@@ -33,7 +33,7 @@ const ObjectivesHeader = () => {
 };
 
 export default function ObjectivesScreen() {
-  const past = useLocalSearchParams();
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   return (
     <SafeContainer isFull>
       <ObjectivesHeader />
@@ -41,7 +41,7 @@ export default function ObjectivesScreen() {
       <Text color="muted" className="mt-4">
         This is the Objectives tab for the team page.
       </Text>
-      <Text>{JSON.stringify(past)}</Text>
+      <Text>Team ID: {teamId}</Text>
     </SafeContainer>
   );
 }

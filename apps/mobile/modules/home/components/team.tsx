@@ -14,7 +14,7 @@ export const Team = ({ id, name, color }: TeamType) => {
         pressed && { backgroundColor: colors.gray[50] },
         { borderRadius: 10 },
       ]}
-      onPress={() => router.push(`../teams/${id}/stories`)}
+      onPress={() => router.push(`/teams/${id}/objectives`)}
     >
       <Row
         align="center"
