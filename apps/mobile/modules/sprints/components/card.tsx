@@ -38,15 +38,17 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
             name="play.circle"
             size={20}
             weight="bold"
-            tintColor={colors.dark[50]}
+            tintColor={colors.gray.DEFAULT}
           />
         </Row>
         <Col>
-          <Text numberOfLines={1}>{sprint.name}</Text>
+          <Text numberOfLines={1} fontWeight="semibold">
+            {sprint.name}
+          </Text>
           <Row align="center" gap={1}>
             <SymbolView
               name="calendar"
-              size={20}
+              size={19}
               tintColor={colors.gray.DEFAULT}
             />
             <Text fontSize="sm" numberOfLines={1}>
