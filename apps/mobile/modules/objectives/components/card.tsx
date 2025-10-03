@@ -29,12 +29,18 @@ export const Card = ({ objective }: { objective: Objective }) => {
   // Calculate objective status based on dates
   let objectiveStatus: ObjectiveHealth = null;
   if (startDateObj <= now && endDateObj >= now) {
-    objectiveStatus = objective.health || "On Track"; // Use health if available, default to "On Track"
+    objectiveStatus = objective.health || "On Track";
   } else if (startDateObj > now) {
-    objectiveStatus = "On Track"; // Upcoming objectives are "On Track"
+    objectiveStatus = "On Track";
   } else {
-    objectiveStatus = objective.health || "Off Track"; // Past objectives use health or default to "Off Track"
+    objectiveStatus = objective.health || "Off Track";
   }
+
+  const textColor = ["On Track", "At Risk", "Off Track"].includes(
+    objectiveStatus
+  )
+    ? "white"
+    : undefined;
 
   return (
     <Pressable
@@ -56,7 +62,8 @@ export const Card = ({ objective }: { objective: Objective }) => {
           </Row>
           <Col>
             <Text numberOfLines={1} fontWeight="semibold">
-              {objective.name}
+              {/* {objective.name} */}
+              Test
             </Text>
             <Row align="center" gap={1}>
               <SymbolView
@@ -71,11 +78,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
           </Col>
         </Row>
         <Badge color={getHealthColor(objectiveStatus)} rounded="md">
-          <Text
-            fontSize="sm"
-            className="capitalize"
-            color={objectiveStatus === "On Track" ? "white" : undefined}
-          >
+          <Text fontSize="sm" className="capitalize" color={textColor}>
             {objectiveStatus || "No Status"}
           </Text>
         </Badge>
