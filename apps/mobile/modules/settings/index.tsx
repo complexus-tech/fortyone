@@ -1,7 +1,6 @@
 import React from "react";
 import { ScrollView, Linking } from "react-native";
 import { SafeContainer } from "@/components/ui";
-import { Header } from "./components/header";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
@@ -16,9 +15,8 @@ const handleExternalLink = async (url: string) => {
 export const Settings = () => {
   return (
     <SafeContainer isFull>
-      <Header />
-      <ScrollView className="flex-1">
-        <SettingsSection>
+      <ScrollView style={{ paddingTop: 36, flex: 1, backgroundColor: "white" }}>
+        <SettingsSection title="General">
           <SettingsItem
             title="Account Details"
             onPress={() => console.log("Account Details")}

@@ -38,6 +38,20 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="teams/[teamId]" />
         <Stack.Screen name="story/[storyId]" />
+        <Stack.Screen
+          name="settings"
+          options={{
+            presentation: "formSheet",
+            gestureDirection: "vertical",
+            animation: "slide_from_bottom",
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 24,
+            sheetExpandsWhenScrolledToEdge: true,
+            sheetElevation: 24,
+            sheetInitialDetentIndex: 0,
+            sheetAllowedDetents: [0.95],
+          }}
+        />
       </Stack>
     </PersistQueryClientProvider>
   );
