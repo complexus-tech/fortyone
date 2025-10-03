@@ -3,7 +3,7 @@ import { SafeContainer, Text, Tabs } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
-import type { SearchQueryParams, SearchResponse } from "./types";
+import type { SearchQueryParams } from "./types";
 
 type SearchTab = "all" | "stories" | "objectives";
 
@@ -68,9 +68,12 @@ export const Search = () => {
   // Show results
   if (results) {
     return (
-      <SafeContainer>
+      <SafeContainer isFull>
         <Header onSearch={handleSearch} />
-        <Tabs defaultValue={activeTab} onValueChange={handleTabChange}>
+        <Tabs
+          defaultValue={activeTab}
+          onValueChange={(value) => handleTabChange(value as SearchTab)}
+        >
           <Tabs.List>
             <Tabs.Tab value="all">All</Tabs.Tab>
             <Tabs.Tab value="stories">Stories</Tabs.Tab>
