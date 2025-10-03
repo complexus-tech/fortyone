@@ -4,7 +4,7 @@ import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 export default function TeamLayout() {
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
-      <NativeTabs.Trigger name="stories">
+      <NativeTabs.Trigger name="index">
         <Icon sf="rectangle.fill.on.rectangle.angled.fill" />
         <Label>Stories</Label>
       </NativeTabs.Trigger>
