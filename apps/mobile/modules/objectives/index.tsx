@@ -4,7 +4,7 @@ import { Header } from "./components/header";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeamObjectives } from "./hooks";
 import { Card } from "./components/card";
-import { View } from "react-native";
+import { ScrollView } from "react-native";
 
 export const Objectives = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
@@ -12,11 +12,11 @@ export const Objectives = () => {
   return (
     <SafeContainer isFull>
       <Header />
-      <View>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {objectives.map((objective) => (
           <Card key={objective.id} objective={objective} />
         ))}
-      </View>
+      </ScrollView>
     </SafeContainer>
   );
 };

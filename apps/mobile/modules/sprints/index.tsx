@@ -4,6 +4,7 @@ import { Header } from "./components/header";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeamSprints } from "./hooks";
 import { Card } from "./components/card";
+import { ScrollView } from "react-native";
 
 export const Sprints = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
@@ -11,9 +12,11 @@ export const Sprints = () => {
   return (
     <SafeContainer isFull>
       <Header />
-      {sprints.map((sprint) => (
-        <Card key={sprint.id} sprint={sprint} />
-      ))}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {sprints.map((sprint) => (
+          <Card key={sprint.id} sprint={sprint} />
+        ))}
+      </ScrollView>
     </SafeContainer>
   );
 };
