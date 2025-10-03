@@ -1,9 +1,7 @@
 import { colors } from "@/constants";
-import { useLocalSearchParams } from "expo-router";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 
 export default function TeamLayout() {
-  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">

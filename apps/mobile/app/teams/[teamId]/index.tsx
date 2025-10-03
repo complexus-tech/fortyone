@@ -34,7 +34,6 @@ const StoriesHeader = () => {
 };
 
 export default function TeamStories() {
-  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const mockSections = [
     {
       title: "To Do",
@@ -122,7 +121,6 @@ export default function TeamStories() {
   return (
     <SafeContainer isFull>
       <StoriesHeader />
-      <Text>Team ID: {teamId}</Text>
       <Tabs defaultValue="all">
         <Tabs.List>
           <Tabs.Tab value="all">All stories</Tabs.Tab>

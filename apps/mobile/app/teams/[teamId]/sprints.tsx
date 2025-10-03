@@ -33,11 +33,9 @@ const SprintsHeader = () => {
 };
 
 export default function SprintsScreen() {
-  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   return (
     <SafeContainer isFull>
       <SprintsHeader />
-      <Text>Team ID: {teamId}</Text>
 
       <Text color="muted" className="mt-4">
         This is the Sprints tab for the team page.
