@@ -40,3 +40,27 @@ export const notificationKeys = {
   unread: () => [...notificationKeys.all, "unread"] as const,
   preferences: () => [...notificationKeys.all, "preferences"] as const,
 };
+
+export const sprintKeys = {
+  all: ["sprints"] as const,
+  lists: () => [...sprintKeys.all, "list"] as const,
+  details: () => [...sprintKeys.all, "detail"] as const,
+  detail: (id: string) => [...sprintKeys.details(), id] as const,
+  team: (teamId: string) => [...sprintKeys.lists(), "team", teamId] as const,
+  running: () => [...sprintKeys.all, "running"] as const,
+};
+
+export const objectiveKeys = {
+  all: ["objectives"] as const,
+  lists: () => [...objectiveKeys.all, "list"] as const,
+  details: () => [...objectiveKeys.all, "detail"] as const,
+  detail: (id: string) => [...objectiveKeys.details(), id] as const,
+  team: (teamId: string) => [...objectiveKeys.lists(), "team", teamId] as const,
+  statuses: () => [...objectiveKeys.all, "statuses"] as const,
+};
+
+export const statusKeys = {
+  all: ["statuses"] as const,
+  lists: () => [...statusKeys.all, "list"] as const,
+  team: (teamId: string) => [...statusKeys.lists(), "team", teamId] as const,
+};
