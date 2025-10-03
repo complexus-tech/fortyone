@@ -20,7 +20,9 @@ export const Teams = () => {
         </Text>
       </Row>
       <View className="px-3">
-        {teams?.map((team) => <Team key={team.id} {...team} />)}
+        {teams.map((team) => (
+          <Team key={team.id} {...team} />
+        ))}
       </View>
     </View>
   );
