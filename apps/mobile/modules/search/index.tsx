@@ -9,28 +9,16 @@ type SearchTab = "all" | "stories" | "objectives";
 
 export const Search = () => {
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
-  const [searchParams, setSearchParams] = useState<SearchQueryParams>({
-    query: "",
-    type: undefined,
-  });
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: results, isPending, error } = useSearch(searchParams);
+  const { data: results, isPending, error } = useSearch({ query: searchQuery });
 
   const handleSearch = (params: SearchQueryParams) => {
-    setSearchParams(params);
-  };
-
-  const handleTabChange = (tab: SearchTab) => {
-    setActiveTab(tab);
-    const newParams: SearchQueryParams = {
-      ...searchParams,
-      type: tab === "all" ? undefined : tab,
-    };
-    setSearchParams(newParams);
+    setSearchQuery(params.query || "");
   };
 
   // Show empty state when no search query
-  if (!searchParams.query) {
+  if (!searchQuery) {
     return (
       <SafeContainer>
         <Header onSearch={handleSearch} />
@@ -68,11 +56,11 @@ export const Search = () => {
   // Show results
   if (results) {
     return (
-      <SafeContainer isFull>
+      <SafeContainer>
         <Header onSearch={handleSearch} />
         <Tabs
           defaultValue={activeTab}
-          onValueChange={(value) => handleTabChange(value as SearchTab)}
+          onValueChange={(value) => setActiveTab(value as SearchTab)}
         >
           <Tabs.List>
             <Tabs.Tab value="all">All</Tabs.Tab>
