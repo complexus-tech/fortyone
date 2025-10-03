@@ -53,6 +53,8 @@ export const Search = () => {
     setSearchQuery(params.query || "");
   };
 
+  // remove the tabs
+
   return (
     <SafeContainer isFull>
       <Header onSearch={handleSearch} />
