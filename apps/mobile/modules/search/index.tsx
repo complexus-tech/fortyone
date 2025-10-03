@@ -3,12 +3,48 @@ import { SafeContainer, Text, Tabs } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
-import type { SearchQueryParams } from "./types";
+import type { SearchQueryParams, SearchResponse } from "./types";
 
-type SearchTab = "all" | "stories" | "objectives";
+type SearchTab = "stories" | "objectives";
+
+type TabContentProps = {
+  searchQuery: string;
+  isPending: boolean;
+  results: SearchResponse | null | undefined;
+  type: SearchTab;
+};
+
+const TabContent = ({
+  searchQuery,
+  isPending,
+  results,
+  type,
+}: TabContentProps) => {
+  if (!searchQuery) {
+    return (
+      <Text color="muted" className="mt-8 text-center">
+        Start typing to search for stories and objectives
+      </Text>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <Text color="muted" className="mt-4 text-center">
+        Searching...
+      </Text>
+    );
+  }
+
+  if (results) {
+    return <SearchResults results={results} type={type} />;
+  }
+
+  return null;
+};
 
 export const Search = () => {
-  const [activeTab, setActiveTab] = useState<SearchTab>("all");
+  const [activeTab, setActiveTab] = useState<SearchTab>("stories");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: results, isPending } = useSearch({ query: searchQuery });
@@ -18,59 +54,31 @@ export const Search = () => {
   };
 
   return (
-    <SafeContainer>
+    <SafeContainer isFull>
       <Header onSearch={handleSearch} />
-
       <Tabs
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as SearchTab)}
       >
         <Tabs.List>
-          <Tabs.Tab value="all">All</Tabs.Tab>
           <Tabs.Tab value="stories">Stories</Tabs.Tab>
           <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
         </Tabs.List>
-
-        <Tabs.Panel value="all">
-          {!searchQuery ? (
-            <Text color="muted" className="mt-8 text-center">
-              Start typing to search for stories and objectives
-            </Text>
-          ) : isPending ? (
-            <Text color="muted" className="mt-4 text-center">
-              Searching...
-            </Text>
-          ) : results ? (
-            <SearchResults results={results} type="all" />
-          ) : null}
-        </Tabs.Panel>
-
         <Tabs.Panel value="stories">
-          {!searchQuery ? (
-            <Text color="muted" className="mt-8 text-center">
-              Start typing to search for stories
-            </Text>
-          ) : isPending ? (
-            <Text color="muted" className="mt-4 text-center">
-              Searching...
-            </Text>
-          ) : results ? (
-            <SearchResults results={results} type="stories" />
-          ) : null}
+          <TabContent
+            searchQuery={searchQuery}
+            isPending={isPending}
+            results={results}
+            type="stories"
+          />
         </Tabs.Panel>
-
         <Tabs.Panel value="objectives">
-          {!searchQuery ? (
-            <Text color="muted" className="mt-8 text-center">
-              Start typing to search for objectives
-            </Text>
-          ) : isPending ? (
-            <Text color="muted" className="mt-4 text-center">
-              Searching...
-            </Text>
-          ) : results ? (
-            <SearchResults results={results} type="objectives" />
-          ) : null}
+          <TabContent
+            searchQuery={searchQuery}
+            isPending={isPending}
+            results={results}
+            type="objectives"
+          />
         </Tabs.Panel>
       </Tabs>
     </SafeContainer>
