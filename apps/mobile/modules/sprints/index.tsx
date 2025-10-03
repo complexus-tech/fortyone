@@ -1,8 +1,9 @@
 import React from "react";
-import { SafeContainer, Text } from "@/components/ui";
+import { SafeContainer } from "@/components/ui";
 import { Header } from "./components/header";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeamSprints } from "./hooks";
+import { Card } from "./components/card";
 
 export const Sprints = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
@@ -11,7 +12,7 @@ export const Sprints = () => {
     <SafeContainer isFull>
       <Header />
       {sprints.map((sprint) => (
-        <Text key={sprint.id}>{sprint.name}</Text>
+        <Card key={sprint.id} sprint={sprint} />
       ))}
     </SafeContainer>
   );
