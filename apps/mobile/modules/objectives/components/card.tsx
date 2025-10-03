@@ -10,8 +10,6 @@ type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
 
 const getHealthColor = (health: ObjectiveHealth) => {
   switch (health) {
-    case "On Track":
-      return "success";
     case "At Risk":
       return "warning";
     case "Off Track":
@@ -36,9 +34,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
     objectiveStatus = objective.health || "Off Track";
   }
 
-  const textColor = ["On Track", "At Risk", "Off Track"].includes(
-    objectiveStatus
-  )
+  const textColor = ["At Risk", "Off Track"].includes(objectiveStatus)
     ? "white"
     : undefined;
 
@@ -49,7 +45,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3 border-t-[0.5px] border-gray-100"
+        className="px-4 py-3.5 border-t-[0.5px] border-gray-100"
       >
         <Row align="center" gap={3} className="w-8/12">
           <Row className="bg-gray-100 rounded-lg p-1.5">
