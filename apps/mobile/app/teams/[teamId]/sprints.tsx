@@ -3,6 +3,7 @@ import { Pressable } from "react-native";
 import { SafeContainer, Text, Row, Back } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useLocalSearchParams } from "expo-router";
 
 const SprintsHeader = () => {
   return (
@@ -32,9 +33,11 @@ const SprintsHeader = () => {
 };
 
 export default function SprintsScreen() {
+  const { teamId } = useLocalSearchParams<{ teamId: string }>();
   return (
     <SafeContainer isFull>
       <SprintsHeader />
+      <Text>Team ID: {teamId}</Text>
 
       <Text color="muted" className="mt-4">
         This is the Sprints tab for the team page.
