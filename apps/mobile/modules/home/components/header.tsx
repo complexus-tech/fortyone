@@ -34,7 +34,7 @@ export const Header = () => {
           router.push("/settings");
         }}
       >
-        <SymbolView name="gear" size={28} tintColor={colors.gray.DEFAULT} />
+        <SymbolView name="gear" size={28} tintColor={colors.dark[50]} />
       </Pressable>
     </Row>
   );
