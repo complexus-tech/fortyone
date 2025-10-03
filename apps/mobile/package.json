@@ -39,6 +39,7 @@
     "expo-web-browser": "~15.0.7",
     "ky": "^1.5.0",
     "nativewind": "5.0.0-preview.1",
+    "qs": "^6.12.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.4",
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.7",
     "@tanstack/eslint-plugin-query": "^5.66.1",
+    "@types/qs": "^6.9.15",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",

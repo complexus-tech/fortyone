@@ -64,3 +64,8 @@ export const statusKeys = {
   lists: () => [...statusKeys.all, "list"] as const,
   team: (teamId: string) => [...statusKeys.lists(), "team", teamId] as const,
 };
+
+export const searchKeys = {
+  all: ["search"] as const,
+  query: (params: Record<string, any>) => [...searchKeys.all, params] as const,
+};
