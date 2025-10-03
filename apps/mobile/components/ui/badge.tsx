@@ -68,7 +68,7 @@ const badgeVariants = cva(
       },
     ],
     defaultVariants: {
-      size: "sm",
+      size: "md",
       variant: "solid",
       color: "primary",
       rounded: "lg",
