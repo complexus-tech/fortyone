@@ -9,12 +9,12 @@ import { useTeams } from "@/modules/teams/hooks/use-teams";
 export const Header = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
-  const { name } = teams.find((team) => team.id === teamId)!;
+  const team = teams.find((team) => team.id === teamId)!;
   return (
     <Row className="mb-3" asContainer justify="between" align="center">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        {name} /{" "}
+        {team?.name} /{" "}
         <Text
           fontSize="2xl"
           color="muted"
