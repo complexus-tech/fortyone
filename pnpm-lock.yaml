@@ -269,6 +269,9 @@ importers:
       cva:
         specifier: npm:class-variance-authority@^0.7.0
         version: class-variance-authority@0.7.1
+      date-fns:
+        specifier: ^2.30.0
+        version: 2.30.0
       expo:
         specifier: ~54.0.9
         version: 54.0.9(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.7)(graphql@16.8.1)(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.9)(react@19.1.0))(react@19.1.0)
