@@ -15,7 +15,7 @@ export const Teams = () => {
   return (
     <View>
       <Row asContainer>
-        <Text fontWeight="medium" color="muted" className="mb-1">
+        <Text color="muted" className="mb-1">
           Your Teams
         </Text>
       </Row>
