@@ -33,12 +33,14 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
       className="px-4 py-3 border-t-[0.5px] border-gray-100"
     >
       <Row align="center" gap={3}>
-        <SymbolView
-          name="play.circle"
-          size={20}
-          weight="bold"
-          tintColor={colors.gray.DEFAULT}
-        />
+        <Row className="bg-gray-100 rounded-lg p-1.5">
+          <SymbolView
+            name="play.circle"
+            size={20}
+            weight="bold"
+            tintColor={colors.dark[50]}
+          />
+        </Row>
         <Col>
           <Text numberOfLines={1}>{sprint.name}</Text>
           <Row align="center" gap={1}>
@@ -54,7 +56,11 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
         </Col>
       </Row>
       <Badge color={statusColors[sprintStatus]} rounded="md">
-        <Text fontSize="sm" className="capitalize">
+        <Text
+          fontSize="sm"
+          className="capitalize"
+          color={sprintStatus === "in progress" ? "white" : undefined}
+        >
           {sprintStatus}
         </Text>
       </Badge>
