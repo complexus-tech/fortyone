@@ -11,75 +11,68 @@ export const Search = () => {
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: results, isPending, error } = useSearch({ query: searchQuery });
+  const { data: results, isPending } = useSearch({ query: searchQuery });
 
   const handleSearch = (params: SearchQueryParams) => {
     setSearchQuery(params.query || "");
   };
 
-  // Show empty state when no search query
-  if (!searchQuery) {
-    return (
-      <SafeContainer>
-        <Header onSearch={handleSearch} />
-        <Text color="muted" className="mt-8 text-center">
-          Start typing to search for stories and objectives
-        </Text>
-      </SafeContainer>
-    );
-  }
+  return (
+    <SafeContainer>
+      <Header onSearch={handleSearch} />
 
-  // Show loading state
-  if (isPending) {
-    return (
-      <SafeContainer>
-        <Header onSearch={handleSearch} />
-        <Text color="muted" className="mt-4 text-center">
-          Searching...
-        </Text>
-      </SafeContainer>
-    );
-  }
+      <Tabs
+        defaultValue={activeTab}
+        onValueChange={(value) => setActiveTab(value as SearchTab)}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="all">All</Tabs.Tab>
+          <Tabs.Tab value="stories">Stories</Tabs.Tab>
+          <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
+        </Tabs.List>
 
-  // Show error state
-  if (error) {
-    return (
-      <SafeContainer>
-        <Header onSearch={handleSearch} />
-        <Text color="danger" className="mt-4 text-center">
-          Error searching. Please try again.
-        </Text>
-      </SafeContainer>
-    );
-  }
-
-  // Show results
-  if (results) {
-    return (
-      <SafeContainer>
-        <Header onSearch={handleSearch} />
-        <Tabs
-          defaultValue={activeTab}
-          onValueChange={(value) => setActiveTab(value as SearchTab)}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="all">All</Tabs.Tab>
-            <Tabs.Tab value="stories">Stories</Tabs.Tab>
-            <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
-          </Tabs.List>
-          <Tabs.Panel value="all">
+        <Tabs.Panel value="all">
+          {!searchQuery ? (
+            <Text color="muted" className="mt-8 text-center">
+              Start typing to search for stories and objectives
+            </Text>
+          ) : isPending ? (
+            <Text color="muted" className="mt-4 text-center">
+              Searching...
+            </Text>
+          ) : results ? (
             <SearchResults results={results} type="all" />
-          </Tabs.Panel>
-          <Tabs.Panel value="stories">
-            <SearchResults results={results} type="stories" />
-          </Tabs.Panel>
-          <Tabs.Panel value="objectives">
-            <SearchResults results={results} type="objectives" />
-          </Tabs.Panel>
-        </Tabs>
-      </SafeContainer>
-    );
-  }
+          ) : null}
+        </Tabs.Panel>
 
-  return null;
+        <Tabs.Panel value="stories">
+          {!searchQuery ? (
+            <Text color="muted" className="mt-8 text-center">
+              Start typing to search for stories
+            </Text>
+          ) : isPending ? (
+            <Text color="muted" className="mt-4 text-center">
+              Searching...
+            </Text>
+          ) : results ? (
+            <SearchResults results={results} type="stories" />
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel value="objectives">
+          {!searchQuery ? (
+            <Text color="muted" className="mt-8 text-center">
+              Start typing to search for objectives
+            </Text>
+          ) : isPending ? (
+            <Text color="muted" className="mt-4 text-center">
+              Searching...
+            </Text>
+          ) : results ? (
+            <SearchResults results={results} type="objectives" />
+          ) : null}
+        </Tabs.Panel>
+      </Tabs>
+    </SafeContainer>
+  );
 };
