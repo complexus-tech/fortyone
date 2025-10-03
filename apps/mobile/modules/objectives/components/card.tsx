@@ -51,7 +51,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
         justify="between"
         className="px-4 py-3 border-t-[0.5px] border-gray-100"
       >
-        <Row align="center" gap={3}>
+        <Row align="center" gap={3} className="w-8/12">
           <Row className="bg-gray-100 rounded-lg p-1.5">
             <SymbolView
               name="target"
@@ -62,8 +62,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
           </Row>
           <Col>
             <Text numberOfLines={1} fontWeight="semibold">
-              {/* {objective.name} */}
-              Test
+              {objective.name}
             </Text>
             <Row align="center" gap={1}>
               <SymbolView
