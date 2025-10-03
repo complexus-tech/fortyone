@@ -3,6 +3,7 @@ import { Pressable } from "react-native";
 import { SafeContainer, Text, Row, Back } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useLocalSearchParams } from "expo-router";
 
 const ObjectivesHeader = () => {
   return (
@@ -32,6 +33,7 @@ const ObjectivesHeader = () => {
 };
 
 export default function ObjectivesScreen() {
+  const past = useLocalSearchParams();
   return (
     <SafeContainer isFull>
       <ObjectivesHeader />
@@ -39,6 +41,7 @@ export default function ObjectivesScreen() {
       <Text color="muted" className="mt-4">
         This is the Objectives tab for the team page.
       </Text>
+      <Text>{JSON.stringify(past)}</Text>
     </SafeContainer>
   );
 }
