@@ -49,6 +49,11 @@ export const notificationKeys = {
   preferences: () => [...notificationKeys.all, "preferences"] as const,
 };
 
+export const workspaceKeys = {
+  all: ["workspace"] as const,
+  settings: () => [...workspaceKeys.all, "settings"] as const,
+};
+
 export const sprintKeys = {
   all: ["sprints"] as const,
   lists: () => [...sprintKeys.all, "list"] as const,

@@ -6,22 +6,28 @@ import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
 import { Col, Text } from "@/components/ui";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
+import { useTerminology } from "@/hooks";
 
 export const Overview = () => {
+  const { getTermDisplay } = useTerminology();
   const { data: summary, isPending } = useOverviewStats();
+  const storyTerm = getTermDisplay("storyTerm", {
+    variant: "plural",
+    capitalize: true,
+  });
   if (isPending) {
     return <OverviewSkeleton />;
   }
   const overviewItems = [
     {
       count: summary?.closed,
-      label: "Stories closed",
+      label: `${storyTerm} closed`,
       icon: "checkmark.circle.fill",
       iconColor: colors.success,
     },
     {
       count: summary?.overdue,
-      label: "Stories overdue",
+      label: `${storyTerm} overdue`,
       icon: "exclamationmark.circle.fill",
       iconColor: colors.danger,
     },
