@@ -4,17 +4,15 @@ import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useTeamStoriesGrouped } from "@/modules/stories/hooks";
 import { useTeamViewOptions } from "../hooks";
+import { useGlobalSearchParams } from "expo-router";
 import type { TeamStoriesTab } from "../types";
 
-type TeamStoriesProps = {
-  teamId: string;
-  teamName?: string;
-};
-
-export const TeamStories = ({ teamId, teamName }: TeamStoriesProps) => {
+export const TeamStories = () => {
+  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
-  const { viewOptions, isLoaded: viewOptionsLoaded } =
-    useTeamViewOptions(teamId);
+  const { viewOptions, isLoaded: viewOptionsLoaded } = useTeamViewOptions(
+    teamId!
+  );
 
   const queryOptions = useMemo(() => {
     const baseOptions = {
@@ -47,7 +45,7 @@ export const TeamStories = ({ teamId, teamName }: TeamStoriesProps) => {
   ]);
 
   const { data: groupedStories, isPending } = useTeamStoriesGrouped(
-    teamId,
+    teamId!,
     viewOptions.groupBy,
     queryOptions
   );
@@ -55,7 +53,7 @@ export const TeamStories = ({ teamId, teamName }: TeamStoriesProps) => {
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
-        <Header teamName={teamName} />
+        <Header />
         <StoriesListSkeleton />
       </SafeContainer>
     );
@@ -63,7 +61,7 @@ export const TeamStories = ({ teamId, teamName }: TeamStoriesProps) => {
 
   return (
     <SafeContainer isFull>
-      <Header teamName={teamName} />
+      <Header />
       <Tabs
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as TeamStoriesTab)}
