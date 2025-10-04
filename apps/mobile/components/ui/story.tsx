@@ -30,7 +30,7 @@ export const Story = ({
 
   return (
     <Pressable
-      className="active:bg-gray-50 py-3 px-4 dark:active:bg-dark-200"
+      className="active:bg-gray-50 py-3 px-4 dark:active:bg-dark-300"
       onPress={handlePress}
     >
       <Row justify="between" align="center" gap={3}>
