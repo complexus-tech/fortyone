@@ -31,6 +31,8 @@ export const storyKeys = {
   detail: (id: string) => [...storyKeys.details(), id] as const,
   grouped: (params: Record<string, any>) =>
     [...storyKeys.all, "grouped", params] as const,
+  mineGrouped: (params: Record<string, any>) =>
+    [...storyKeys.mine(), "grouped", params] as const,
   group: (groupKey: string, params: Record<string, any>) =>
     [...storyKeys.all, "group", groupKey, params] as const,
 };

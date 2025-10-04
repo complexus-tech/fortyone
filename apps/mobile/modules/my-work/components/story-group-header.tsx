@@ -1,14 +1,30 @@
 import React from "react";
-import { Text } from "@/components/ui";
+import { View } from "react-native";
+import { Text, Row } from "@/components/ui";
+import { Dot } from "@/components/icons";
+import { colors } from "@/constants";
 
 type StoryGroupHeaderProps = {
   title: string;
+  color?: string;
 };
 
-export const StoryGroupHeader = ({ title }: StoryGroupHeaderProps) => {
+export const StoryGroupHeader = ({ title, color }: StoryGroupHeaderProps) => {
   return (
-    <Text fontWeight="semibold" color="muted" className="pb-2 pt-3 px-4">
-      {title}
-    </Text>
+    <View
+      style={{
+        paddingBottom: 8,
+        paddingTop: 12,
+        paddingHorizontal: 16,
+        backgroundColor: colors.white,
+      }}
+    >
+      <Row align="center" gap={2}>
+        {color && <Dot color={color} size={12} />}
+        <Text fontWeight="semibold" color="muted">
+          {title}
+        </Text>
+      </Row>
+    </View>
   );
 };
