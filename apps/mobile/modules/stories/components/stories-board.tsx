@@ -103,7 +103,7 @@ export const StoriesBoard = ({
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 24 }}
+      contentContainerStyle={{ paddingBottom: 120 }}
     >
       {sections.map((section) => (
         <SectionWithLoadMore

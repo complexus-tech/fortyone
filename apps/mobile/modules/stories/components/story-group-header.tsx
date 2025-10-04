@@ -18,7 +18,7 @@ export const StoryGroupHeader = ({ title, color }: StoryGroupHeaderProps) => {
       }}
     >
       <Row align="center" gap={2}>
-        {color && <Dot color={color} size={12} />}
+        {/* {color && <Dot color={color} size={12} />} */}
         <Text fontWeight="semibold" color="muted">
           {title}
         </Text>
