@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Header } from "./components/header";
 import { GroupedStoriesList } from "./components/grouped-list";
-import { SafeContainer, Tabs } from "@/components/ui";
+import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
@@ -98,7 +98,12 @@ export const MyWork = () => {
   }, [groupedStories, viewOptions.groupBy, statuses, members]);
 
   if (!viewOptionsLoaded) {
-    return <SafeContainer isFull>{/* Loading skeleton */}</SafeContainer>;
+    return (
+      <SafeContainer isFull>
+        <Header />
+        <StoriesListSkeleton />
+      </SafeContainer>
+    );
   }
 
   return (

@@ -1,9 +1,8 @@
 import React from "react";
-import { SectionList, View, ActivityIndicator } from "react-native";
-import { Story, Text } from "@/components/ui";
+import { SectionList, View } from "react-native";
+import { Story, Text, StoriesListSkeleton } from "@/components/ui";
 import { StoryGroupHeader } from "./story-group-header";
 import type { MyWorkSection } from "../types";
-import { colors } from "@/constants";
 
 type GroupedStoriesListProps = {
   sections: MyWorkSection[];
@@ -15,18 +14,7 @@ export const GroupedStoriesList = ({
   isLoading = false,
 }: GroupedStoriesListProps) => {
   if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingTop: 48,
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.gray.DEFAULT} />
-      </View>
-    );
+    return <StoriesListSkeleton />;
   }
 
   if (sections.length === 0) {

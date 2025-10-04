@@ -141,3 +141,91 @@ import { Col, Text } from '@/components/ui';
   ))}
 </Col>
 ```
+
+## Skeleton Components
+
+Loading state components with smooth animations.
+
+### StorySkeleton
+
+Single story skeleton - matches the Story component structure.
+
+```tsx
+import { StorySkeleton } from "@/components/ui";
+
+// Basic usage
+<StorySkeleton />;
+```
+
+### StoriesSkeleton
+
+Multiple stories skeleton (without sections) - for simple story lists.
+
+```tsx
+import { StoriesSkeleton } from '@/components/ui';
+
+// Default (5 stories)
+<StoriesSkeleton />
+
+// Custom count
+<StoriesSkeleton count={10} />
+```
+
+**Props:**
+
+- `count`: number (default: 5) - Number of story skeletons to display
+
+### StoriesListSkeleton
+
+Stories grouped in sections skeleton - for stories organized by status, priority, or assignee.
+
+```tsx
+import { StoriesListSkeleton } from '@/components/ui';
+
+// Default (3 sections, 3 stories each)
+<StoriesListSkeleton />
+
+// Custom sections and stories
+<StoriesListSkeleton sectionsCount={5} storiesPerSection={4} />
+```
+
+**Props:**
+
+- `sectionsCount`: number (default: 3) - Number of section groups
+- `storiesPerSection`: number (default: 3) - Stories per section
+
+### Usage Examples
+
+#### Loading states in lists
+
+```tsx
+const MyStories = () => {
+  const { data: stories, isPending } = useStories();
+
+  if (isPending) {
+    return <StoriesSkeleton count={8} />;
+  }
+
+  return (
+    <ScrollView>
+      {stories.map((story) => (
+        <Story key={story.id} {...story} />
+      ))}
+    </ScrollView>
+  );
+};
+```
+
+#### Loading states in grouped lists
+
+```tsx
+const MyWork = () => {
+  const { data: groupedStories, isPending } = useMyStoriesGrouped();
+
+  if (isPending) {
+    return <StoriesListSkeleton />;
+  }
+
+  return <GroupedStoriesList sections={groupedStories} />;
+};
+```
