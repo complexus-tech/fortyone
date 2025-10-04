@@ -6,6 +6,7 @@ import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
 import { useColorScheme } from "nativewind";
+import { useGlobalSearchParams, router } from "expo-router";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -17,6 +18,7 @@ const statusColors = {
 
 export const Card = ({ sprint }: { sprint: Sprint }) => {
   const { colorScheme } = useColorScheme();
+  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const startDateObj = new Date(sprint.startDate);
   const endDateObj = new Date(sprint.endDate);
   const now = new Date();
@@ -29,8 +31,15 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
     sprintStatus = "upcoming";
   }
 
+  const handlePress = () => {
+    router.push(`/teams/${teamId}/sprints/${sprint.id}`);
+  };
+
   return (
-    <Pressable className="active:bg-gray-50 dark:active:bg-dark-300">
+    <Pressable
+      className="active:bg-gray-50 dark:active:bg-dark-300"
+      onPress={handlePress}
+    >
       <Row
         align="center"
         justify="between"
