@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { View } from "react-native";
-import { Story, StorySkeleton } from "@/components/ui";
-import { StoryGroupHeader } from "./story-group-header";
+import { Story, StorySkeleton, Text } from "@/components/ui";
 import { SectionFooter } from "./section-footer";
 import { useGroupStoriesInfinite } from "../hooks";
 import type { GroupStoryParams, Story as StoryType } from "../types";
@@ -57,7 +56,9 @@ export const SectionWithLoadMore = ({
 
   return (
     <View>
-      <StoryGroupHeader title={section.title} color={section.color} />
+      <Text fontWeight="semibold" color="muted">
+        {section.title}
+      </Text>
       {allStories.map((story) => (
         <Story key={story.id} {...story} />
       ))}
