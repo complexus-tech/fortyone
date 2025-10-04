@@ -3,6 +3,7 @@ import { View, Pressable, ViewProps } from "react-native";
 import { Text } from "./text";
 import { Row } from "./row";
 import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 type TabsContextValue = {
   activeTab: string;
@@ -70,6 +71,7 @@ type TabProps = {
 };
 
 const Tab = ({ children, value, leftIcon, rightIcon }: TabProps) => {
+  const { colorScheme } = useColorScheme();
   const { activeTab, onTabChange } = useTabsContext();
   const isActive = activeTab === value;
 
@@ -83,11 +85,16 @@ const Tab = ({ children, value, leftIcon, rightIcon }: TabProps) => {
         paddingHorizontal: 8,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: colors.gray[100],
+        borderColor:
+          colorScheme === "light" ? colors.gray[100] : colors.dark[100],
         backgroundColor: isActive
-          ? colors.gray[50]
-          : pressed
+          ? colorScheme === "light"
             ? colors.gray[50]
+            : colors.dark[200]
+          : pressed
+            ? colorScheme === "light"
+              ? colors.gray[50]
+              : colors.dark[200]
             : "transparent",
         flexDirection: "row",
         justifyContent: "center",

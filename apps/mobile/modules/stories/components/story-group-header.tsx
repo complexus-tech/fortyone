@@ -2,7 +2,6 @@ import React from "react";
 import { View } from "react-native";
 import { Text, Row } from "@/components/ui";
 import { Dot } from "@/components/icons";
-import { colors } from "@/constants";
 
 type StoryGroupHeaderProps = {
   title: string;
@@ -16,7 +15,6 @@ export const StoryGroupHeader = ({ title, color }: StoryGroupHeaderProps) => {
         paddingBottom: 8,
         paddingTop: 12,
         paddingHorizontal: 16,
-        backgroundColor: colors.white,
       }}
     >
       <Row align="center" gap={2}>

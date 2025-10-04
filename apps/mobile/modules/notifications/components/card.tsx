@@ -7,6 +7,7 @@ import { useMembers } from "@/modules/members";
 import { renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
 import { Dot } from "@/components/icons";
+import { useColorScheme } from "nativewind";
 
 type NotificationCardProps = AppNotification & {
   index: number;
@@ -24,6 +25,7 @@ export const NotificationCard = ({
   actorId,
   index,
 }: NotificationCardProps) => {
+  const { colorScheme } = useColorScheme();
   const router = useRouter();
   const { data: members = [] } = useMembers();
   const actor = members.find((member) => member.id === actorId);
@@ -49,7 +51,6 @@ export const NotificationCard = ({
   return (
     <Pressable
       style={({ pressed }) => ({
-        backgroundColor: pressed ? colors.gray[50] : "white",
         paddingVertical: 12,
         paddingHorizontal: 16,
       })}
