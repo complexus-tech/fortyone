@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { storyKeys } from "@/constants/keys";
-import { getMyStoriesGrouped } from "@/modules/my-work/queries/get-my-stories-grouped";
+import { getGroupedStories } from "../queries/get-grouped-stories";
 import type { GroupedStoryParams } from "../types";
 
 export const useTeamStoriesGrouped = (
@@ -18,7 +18,8 @@ export const useTeamStoriesGrouped = (
 
   return useQuery({
     queryKey,
-    queryFn: () => getMyStoriesGrouped(params),
+    queryFn: () => getGroupedStories(params),
     enabled: Boolean(teamId),
+    staleTime: 1000 * 60 * 2,
   });
 };
