@@ -41,12 +41,13 @@ export const renderTemplate = (
 };
 
 export const renderTemplateJSX = (
-  message: AppNotification["message"]
+  message: AppNotification["message"],
+  storyTerm: string
 ): React.ReactElement => {
   const { template, variables } = message;
 
   // Split template by variable placeholders and create JSX elements
-  const parts = template.split(/(\{\w+\})/g);
+  const parts = template.replace("story", storyTerm).split(/(\{\w+\})/g);
 
   const elements = parts
     .map((part, index) => {

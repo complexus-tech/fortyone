@@ -20,6 +20,7 @@ export default function RootLayout() {
         staleTime: 1000 * 60 * 5, // data considered fresh for 5 minutes
         retry: 1,
         refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
       },
     },
   });

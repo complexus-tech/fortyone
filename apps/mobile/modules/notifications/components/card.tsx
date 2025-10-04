@@ -7,6 +7,7 @@ import { useMembers } from "@/modules/members";
 import { renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
 import { Dot } from "@/components/icons";
+import { useTerminology } from "@/hooks";
 
 type NotificationCardProps = AppNotification & {
   index: number;
@@ -25,9 +26,11 @@ export const NotificationCard = ({
   index,
 }: NotificationCardProps) => {
   const router = useRouter();
+  const { getTermDisplay } = useTerminology();
   const { data: members = [] } = useMembers();
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
+  const storyTerm = getTermDisplay("storyTerm");
 
   const handlePress = () => {
     router.push(`/story/${entityId}`);
@@ -79,7 +82,7 @@ export const NotificationCard = ({
           </Row>
           <Row align="center" justify="between" gap={2}>
             <Text numberOfLines={1} align="center" className="flex-1">
-              {renderTemplateJSX(message)}
+              {renderTemplateJSX(message, storyTerm)}
             </Text>
             {isUnread && <Dot color={colors.primary} size={10} />}
           </Row>
