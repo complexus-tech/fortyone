@@ -32,7 +32,7 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
   }
 
   const handlePress = () => {
-    router.push(`/teams/${teamId}/sprints/${sprint.id}`);
+    router.push(`/team/${teamId}/sprints/${sprint.id}`);
   };
 
   return (
