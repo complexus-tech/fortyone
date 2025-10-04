@@ -23,7 +23,7 @@ export const Settings = () => {
           paddingTop: 36,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
+            colorScheme === "light" ? colors.white : colors.dark[300],
         }}
       >
         <SettingsSection title="General">

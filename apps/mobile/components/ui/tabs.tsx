@@ -57,7 +57,7 @@ type TabsListProps = ViewProps & {
 
 const TabsList = ({ children, ...props }: TabsListProps) => {
   return (
-    <Row gap={2} asContainer className="mb-1" {...props}>
+    <Row gap={2} asContainer className="mb-2" {...props}>
       {children}
     </Row>
   );

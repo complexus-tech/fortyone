@@ -30,7 +30,7 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
   }
 
   return (
-    <Pressable className="active:bg-gray-50 dark:active:bg-dark-200">
+    <Pressable className="active:bg-gray-50 dark:active:bg-dark-300">
       <Row
         align="center"
         justify="between"
