@@ -3,6 +3,7 @@ import { objectiveKeys } from "@/constants/keys";
 import {
   getObjective,
   getObjectives,
+  getObjectiveStatuses,
   getTeamObjectives,
 } from "../queries/get-objectives";
 
