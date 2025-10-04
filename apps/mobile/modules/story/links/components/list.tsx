@@ -7,9 +7,9 @@ import { Card } from "./card";
 
 export const List = ({ links }: { links: Link[] }) => {
   return (
-    <View>
+    <View className="flex-1">
       {links.length > 0 && (
-        <Row asContainer className="mb-1">
+        <Row asContainer className="mb-3">
           <Text color="muted">Links</Text>
         </Row>
       )}

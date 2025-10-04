@@ -1,24 +1,18 @@
 import React from "react";
 import { useGlobalSearchParams } from "expo-router";
-import { SafeContainer, StoriesSkeleton } from "@/components/ui";
+import { StoriesSkeleton } from "@/components/ui";
 import { useLinks } from "./hooks/use-links";
 import { List } from "./components";
 
 export const Links = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
-  const { data: links = [], isPending } = useLinks(storyId!);
+  const { data: links = [], isPending } = useLinks(
+    "ace1e8e1-34e3-440f-aead-db0885c30292"
+  );
 
   if (isPending) {
-    return (
-      <SafeContainer>
-        <StoriesSkeleton count={3} />
-      </SafeContainer>
-    );
+    return <StoriesSkeleton count={3} />;
   }
 
-  return (
-    <SafeContainer>
-      <List links={links} />
-    </SafeContainer>
-  );
+  return <List links={links} />;
 };

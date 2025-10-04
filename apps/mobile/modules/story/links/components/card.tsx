@@ -4,12 +4,14 @@ import { Link } from "@/types/link";
 import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 type CardProps = {
   link: Link;
 };
 
 export const Card = ({ link }: CardProps) => {
+  const { colorScheme } = useColorScheme();
   const handlePress = async () => {
     const canOpen = await Linking.canOpenURL(link.url);
     if (canOpen) {
@@ -28,16 +30,24 @@ export const Card = ({ link }: CardProps) => {
         className="px-4 py-3 border-t-[0.5px] border-gray-100 dark:border-dark-100"
         gap={3}
       >
-        <Row align="center" gap={3} className="flex-1">
-          <SymbolView name="link" size={20} tintColor={colors.primary} />
-          <Row className="flex-1" gap={2}>
+        <Row align="center" gap={2} className="flex-1">
+          <SymbolView
+            name="globe"
+            size={20}
+            tintColor={
+              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            }
+          />
+          <Row align="center" className="flex-1" gap={2}>
             <Text numberOfLines={1} className="flex-1">
               {link.title || link.url}
             </Text>
             <SymbolView
               name="arrow.up.right"
-              size={16}
-              tintColor={colors.gray.DEFAULT}
+              size={14}
+              tintColor={
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              }
             />
           </Row>
         </Row>
