@@ -4,6 +4,7 @@ import { Text } from "./text";
 import { Row } from "./row";
 import { colors } from "@/constants";
 import { useColorScheme } from "nativewind";
+import { cn } from "@/lib/utils";
 
 type TabsContextValue = {
   activeTab: string;
@@ -78,28 +79,12 @@ const Tab = ({ children, value, leftIcon, rightIcon }: TabProps) => {
   return (
     <Pressable
       onPress={() => onTabChange(value)}
-      style={({ pressed }) => ({
-        flex: 1,
-        alignItems: "center",
-        paddingVertical: 6.5,
-        paddingHorizontal: 8,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor:
-          colorScheme === "light" ? colors.gray[100] : colors.dark[100],
-        backgroundColor: isActive
-          ? colorScheme === "light"
-            ? colors.gray[50]
-            : colors.dark[200]
-          : pressed
-            ? colorScheme === "light"
-              ? colors.gray[50]
-              : colors.dark[200]
-            : "transparent",
-        flexDirection: "row",
-        justifyContent: "center",
-        gap: 4,
-      })}
+      className={cn(
+        "active:bg-gray-50 dark:active:bg-dark-300 p-2 rounded-full flex-1 flex-row justify-center gap-2 border dark:border-dark-50 border-gray-100",
+        {
+          "bg-gray-100/50 dark:bg-dark-200/70": isActive,
+        }
+      )}
     >
       {leftIcon}
       <Text>{children}</Text>
