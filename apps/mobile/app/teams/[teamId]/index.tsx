@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Pressable } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useGlobalSearchParams } from "expo-router";
 import {
   SafeContainer,
   Tabs,
@@ -44,7 +44,7 @@ const StoriesHeader = () => {
 };
 
 export default function TeamStories() {
-  const { teamId } = useLocalSearchParams<{ teamId: string }>();
+  const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
   const { viewOptions, isLoaded: viewOptionsLoaded } = useTeamViewOptions(
     teamId!
