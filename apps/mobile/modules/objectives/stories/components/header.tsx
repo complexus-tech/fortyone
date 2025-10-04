@@ -4,15 +4,14 @@ import { Row, Text, Back } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import { useGlobalSearchParams } from "expo-router";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useObjective } from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
   const { objectiveId } = useGlobalSearchParams<{
     objectiveId: string;
   }>();
-  const { data: objectives = [] } = useObjectives();
-  const objective = objectives.find((obj) => obj.id === objectiveId)!;
+  const { data: objective } = useObjective(objectiveId);
   const { getTermDisplay } = useTerminology();
 
   // truncate objective name to 16 characters and add ellipsis if needed

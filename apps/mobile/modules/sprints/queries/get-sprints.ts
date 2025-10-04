@@ -12,3 +12,8 @@ export const getTeamSprints = async (teamId: string) => {
   const response = await get<ApiResponse<Sprint[]>>(`sprints?teamId=${teamId}`);
   return response.data ?? [];
 };
+
+export const getSprint = async (sprintId: string) => {
+  const response = await get<ApiResponse<Sprint>>(`sprints/${sprintId}`);
+  return response.data;
+};

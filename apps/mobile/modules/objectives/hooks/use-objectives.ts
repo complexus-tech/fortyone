@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { objectiveKeys } from "@/constants/keys";
 import {
+  getObjective,
   getObjectives,
   getTeamObjectives,
-  getObjectiveStatuses,
 } from "../queries/get-objectives";
-import { objectiveKeys } from "@/constants/keys";
 
 export const useObjectives = () => {
   return useQuery({
@@ -18,6 +18,15 @@ export const useTeamObjectives = (teamId: string) => {
     queryKey: objectiveKeys.team(teamId),
     queryFn: () => getTeamObjectives(teamId),
     enabled: Boolean(teamId),
+  });
+};
+
+export const useObjective = (objectiveId: string) => {
+  return useQuery({
+    queryKey: objectiveKeys.detail(objectiveId),
+    queryFn: () => getObjective(objectiveId),
+    enabled: Boolean(objectiveId),
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };
 
