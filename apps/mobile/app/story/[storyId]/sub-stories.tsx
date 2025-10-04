@@ -1,15 +1,13 @@
 import React from "react";
-import { SafeContainer, Text } from "@/components/ui";
+import { SubStories } from "@/modules/story/sub-stories";
+import { SafeContainer } from "@/components/ui";
 import { Header } from "@/modules/story/components/header";
 
-export default function SubStories() {
+export default function SubStoriesPage() {
   return (
-    <SafeContainer>
+    <SafeContainer isFull>
       <Header />
-
-      <Text color="muted" className="mt-4">
-        This is the Sub Stories tab for the story details page.
-      </Text>
+      <SubStories />
     </SafeContainer>
   );
 }

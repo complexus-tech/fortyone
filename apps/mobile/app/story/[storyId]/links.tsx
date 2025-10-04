@@ -6,7 +6,6 @@ export default function Links() {
   return (
     <SafeContainer>
       <Header />
-
       <Text color="muted" className="mt-4">
         This is the Links tab for the story details page.
       </Text>
