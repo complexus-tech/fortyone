@@ -3,8 +3,10 @@ import { TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 export const Back = () => {
+  const { colorScheme } = useColorScheme();
   const router = useRouter();
   const canGoBack = router.canGoBack();
 
@@ -22,7 +24,7 @@ export const Back = () => {
         name="arrow.backward"
         weight="semibold"
         size={20}
-        tintColor={colors.dark[50]}
+        tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[300]}
       />
     </TouchableOpacity>
   );

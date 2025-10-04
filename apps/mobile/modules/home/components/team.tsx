@@ -12,13 +12,7 @@ export const Team = ({ id, name, color }: TeamType) => {
   const { colorScheme } = useColorScheme();
   return (
     <Pressable
-      style={({ pressed }) => [
-        pressed && {
-          backgroundColor:
-            colorScheme === "light" ? colors.gray[50] : colors.dark[200],
-        },
-        { borderRadius: 10 },
-      ]}
+      className="active:bg-gray-50 dark:active:bg-dark-200 rounded-xl"
       onPress={() => router.push(`/teams/${id}`)}
     >
       <Row

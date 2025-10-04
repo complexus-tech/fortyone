@@ -9,7 +9,6 @@ import { Avatar } from "./avatar";
 import { Story as StoryType } from "@/modules/stories/types";
 import { useTeamStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
-import { useColorScheme } from "nativewind";
 
 export const Story = ({
   id,
@@ -19,7 +18,6 @@ export const Story = ({
   assigneeId,
   teamId,
 }: StoryType) => {
-  const { colorScheme } = useColorScheme();
   const router = useRouter();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useMembers();
@@ -32,18 +30,7 @@ export const Story = ({
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        {
-          backgroundColor:
-            pressed && colorScheme === "light"
-              ? colors.gray[50]
-              : pressed && colorScheme === "dark"
-                ? colors.dark[200]
-                : "transparent",
-          paddingVertical: 11,
-          paddingHorizontal: 16,
-        },
-      ]}
+      className="active:bg-gray-50 py-3 px-4 dark:active:bg-dark-200"
       onPress={handlePress}
     >
       <Row justify="between" align="center" gap={3}>
