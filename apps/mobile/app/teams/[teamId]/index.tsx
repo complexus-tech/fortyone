@@ -1,10 +1,8 @@
 import React from "react";
-import { Pressable } from "react-native";
-import { SafeContainer, Tabs, Text, Row, Back } from "@/components/ui";
-import { GroupedStoriesList } from "@/modules/my-work/components/grouped-list";
+import { Pressable, ScrollView, View } from "react-native";
+import { SafeContainer, Tabs, Text, Row, Back, Story } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useLocalSearchParams } from "expo-router";
 
 const StoriesHeader = () => {
   return (
@@ -113,11 +111,6 @@ export default function TeamStories() {
     },
   ];
 
-  const handleStoryPress = (storyId: string) => {
-    console.log("Story pressed:", storyId);
-    // Navigate to story details
-  };
-
   return (
     <SafeContainer isFull>
       <StoriesHeader />
@@ -129,22 +122,37 @@ export default function TeamStories() {
         </Tabs.List>
 
         <Tabs.Panel value="all">
-          <GroupedStoriesList
-            sections={mockSections}
-            onStoryPress={handleStoryPress}
-          />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {mockSections.map((section) => (
+              <View key={section.title}>
+                {section.data.map((story) => (
+                  <Story key={story.id} {...story} />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
         </Tabs.Panel>
         <Tabs.Panel value="active">
-          <GroupedStoriesList
-            sections={mockSections}
-            onStoryPress={handleStoryPress}
-          />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {mockSections.map((section) => (
+              <View key={section.title}>
+                {section.data.map((story) => (
+                  <Story key={story.id} {...story} />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
         </Tabs.Panel>
         <Tabs.Panel value="backlog">
-          <GroupedStoriesList
-            sections={mockSections}
-            onStoryPress={handleStoryPress}
-          />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {mockSections.map((section) => (
+              <View key={section.title}>
+                {section.data.map((story) => (
+                  <Story key={story.id} {...story} />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
         </Tabs.Panel>
       </Tabs>
     </SafeContainer>

@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { Header } from "./components/header";
-import { GroupedStoriesList } from "./components/grouped-list";
 import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
+import { StoriesBoard } from "@/modules/stories/components";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
-import { useStatuses } from "@/modules/statuses";
-import { useMembers } from "@/modules/members";
-import type { MyWorkTab, MyWorkSection } from "./types";
+import type { MyWorkTab } from "./types";
 
 export const MyWork = () => {
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
@@ -44,64 +42,10 @@ export const MyWork = () => {
     viewOptions.orderDirection,
   ]);
 
-  const { data: groupedStories, isPending: isStoriesPending } =
-    useMyStoriesGrouped(viewOptions.groupBy, queryOptions);
-
-  const { data: statuses = [], isPending: isStatusesPending } = useStatuses();
-  const { data: members = [], isPending: isMembersPending } = useMembers();
-
-  // Determine if we're still loading based on what we're grouping by
-  const isPending = useMemo(() => {
-    if (isStoriesPending) return true;
-    if (viewOptions.groupBy === "status" && isStatusesPending) return true;
-    if (viewOptions.groupBy === "assignee" && isMembersPending) return true;
-    return false;
-  }, [
-    isStoriesPending,
-    isStatusesPending,
-    isMembersPending,
+  const { data: groupedStories, isPending } = useMyStoriesGrouped(
     viewOptions.groupBy,
-  ]);
-
-  // Transform grouped stories into sections for SectionList
-  const sections = useMemo<MyWorkSection[]>(() => {
-    if (!groupedStories?.groups) return [];
-
-    return groupedStories.groups
-      .map((group) => {
-        let title = "";
-        let color: string | undefined;
-
-        switch (viewOptions.groupBy) {
-          case "status": {
-            const status = statuses.find((s) => s.id === group.key);
-            title = status?.name || `Unknown (${group.key})`;
-            color = status?.color;
-            break;
-          }
-          case "priority": {
-            title = group.key;
-            break;
-          }
-          case "assignee": {
-            const member = members.find((m) => m.id === group.key);
-            title = member?.fullName || member?.username || "Unassigned";
-            break;
-          }
-        }
-
-        return {
-          title,
-          color,
-          data: group.stories,
-          key: group.key,
-          totalCount: group.totalCount,
-          loadedCount: group.loadedCount,
-          hasMore: group.hasMore,
-        };
-      })
-      .filter((section) => section.data.length > 0);
-  }, [groupedStories, viewOptions.groupBy, statuses, members]);
+    queryOptions
+  );
 
   if (!viewOptionsLoaded) {
     return (
@@ -125,22 +69,22 @@ export const MyWork = () => {
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
-          <GroupedStoriesList
-            sections={sections}
+          <StoriesBoard
+            groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
           />
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
-          <GroupedStoriesList
-            sections={sections}
+          <StoriesBoard
+            groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
-          <GroupedStoriesList
-            sections={sections}
+          <StoriesBoard
+            groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
           />

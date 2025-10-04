@@ -3,12 +3,21 @@ import { View } from "react-native";
 import { Story, StorySkeleton } from "@/components/ui";
 import { StoryGroupHeader } from "./story-group-header";
 import { SectionFooter } from "./section-footer";
-import { useGroupStoriesInfinite } from "@/modules/stories/hooks";
-import type { MyWorkSection } from "../types";
-import type { GroupStoryParams } from "@/modules/stories/types";
+import { useGroupStoriesInfinite } from "../hooks";
+import type { GroupStoryParams, Story as StoryType } from "../types";
+
+type StoriesSection = {
+  title: string;
+  color?: string;
+  data: StoryType[];
+  key: string;
+  totalCount: number;
+  loadedCount: number;
+  hasMore: boolean;
+};
 
 type SectionWithLoadMoreProps = {
-  section: MyWorkSection;
+  section: StoriesSection;
   groupFilters: Omit<GroupStoryParams, "groupKey">;
 };
 
