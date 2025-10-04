@@ -1,7 +1,13 @@
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { colors } from "@/constants";
+import { useTerminology } from "@/hooks";
 
 export default function StoryLayout() {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm", {
+    capitalize: true,
+    variant: "plural",
+  });
   return (
     <NativeTabs tintColor={colors.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
@@ -10,7 +16,7 @@ export default function StoryLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sub-stories">
         <Icon sf="checklist" />
-        <Label>Sub Stories</Label>
+        <Label>{`Sub ${storyTerm}`}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="links">
         <Icon sf="list.number" />
