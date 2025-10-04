@@ -6,9 +6,7 @@ import { List } from "./components";
 
 export const Links = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
-  const { data: links = [], isPending } = useLinks(
-    "ace1e8e1-34e3-440f-aead-db0885c30292"
-  );
+  const { data: links = [], isPending } = useLinks(storyId);
 
   if (isPending) {
     return <StoriesSkeleton count={3} />;
