@@ -26,7 +26,7 @@ export const GroupedStoriesList = ({
           paddingTop: 48,
         }}
       >
-        <ActivityIndicator size="large" color={colors.gray[400]} />
+        <ActivityIndicator size="large" color={colors.gray.DEFAULT} />
       </View>
     );
   }
