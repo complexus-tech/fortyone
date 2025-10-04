@@ -1,16 +1,19 @@
 import React from "react";
-import { SectionList, View } from "react-native";
-import { Story, Text, StoriesListSkeleton } from "@/components/ui";
-import { StoryGroupHeader } from "./story-group-header";
+import { ScrollView, View } from "react-native";
+import { Text, StoriesListSkeleton } from "@/components/ui";
+import { SectionWithLoadMore } from "./section-with-load-more";
 import type { MyWorkSection } from "../types";
+import type { GroupStoryParams } from "@/modules/stories/types";
 
 type GroupedStoriesListProps = {
   sections: MyWorkSection[];
+  groupFilters: Omit<GroupStoryParams, "groupKey">;
   isLoading?: boolean;
 };
 
 export const GroupedStoriesList = ({
   sections,
+  groupFilters,
   isLoading = false,
 }: GroupedStoriesListProps) => {
   if (isLoading) {
@@ -35,17 +38,17 @@ export const GroupedStoriesList = ({
   }
 
   return (
-    <SectionList
-      sections={sections}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <Story {...item} />}
-      renderSectionHeader={({ section }) => (
-        <StoryGroupHeader title={section.title} color={section.color} />
-      )}
-      stickySectionHeadersEnabled={true}
+    <ScrollView
       showsVerticalScrollIndicator={false}
-      ItemSeparatorComponent={() => <View />}
       contentContainerStyle={{ paddingBottom: 24 }}
-    />
+    >
+      {sections.map((section) => (
+        <SectionWithLoadMore
+          key={section.key}
+          section={section}
+          groupFilters={groupFilters}
+        />
+      ))}
+    </ScrollView>
   );
 };

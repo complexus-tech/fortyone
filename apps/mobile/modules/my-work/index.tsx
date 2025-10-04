@@ -14,6 +14,7 @@ export const MyWork = () => {
   // Fetch data based on active tab
   const queryOptions = useMemo(() => {
     const baseOptions = {
+      groupBy: viewOptions.groupBy,
       orderBy: viewOptions.orderBy,
       orderDirection: viewOptions.orderDirection,
     };
@@ -36,7 +37,12 @@ export const MyWork = () => {
           createdByMe: true,
         };
     }
-  }, [activeTab, viewOptions.orderBy, viewOptions.orderDirection]);
+  }, [
+    activeTab,
+    viewOptions.groupBy,
+    viewOptions.orderBy,
+    viewOptions.orderDirection,
+  ]);
 
   const { data: groupedStories, isPending: isStoriesPending } =
     useMyStoriesGrouped(viewOptions.groupBy, queryOptions);
@@ -119,13 +125,25 @@ export const MyWork = () => {
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
-          <GroupedStoriesList sections={sections} isLoading={isPending} />
+          <GroupedStoriesList
+            sections={sections}
+            groupFilters={queryOptions}
+            isLoading={isPending}
+          />
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
-          <GroupedStoriesList sections={sections} isLoading={isPending} />
+          <GroupedStoriesList
+            sections={sections}
+            groupFilters={queryOptions}
+            isLoading={isPending}
+          />
         </Tabs.Panel>
         <Tabs.Panel value="created">
-          <GroupedStoriesList sections={sections} isLoading={isPending} />
+          <GroupedStoriesList
+            sections={sections}
+            groupFilters={queryOptions}
+            isLoading={isPending}
+          />
         </Tabs.Panel>
       </Tabs>
     </SafeContainer>
