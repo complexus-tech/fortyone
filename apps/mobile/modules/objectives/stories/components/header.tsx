@@ -15,14 +15,17 @@ export const Header = () => {
   const objective = objectives.find((obj) => obj.id === objectiveId)!;
   const { getTermDisplay } = useTerminology();
 
-  // truncate objective name to 16 characters and add ellipsis
-  const truncatedObjectiveName = objective?.name.slice(0, 16) + "...";
+  // truncate objective name to 16 characters and add ellipsis if needed
+  const objectiveName =
+    objective?.name && objective.name.length > 16
+      ? objective.name.slice(0, 16) + "..."
+      : objective?.name;
 
   return (
     <Row className="mb-3" asContainer gap={2} justify="between" align="center">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        {truncatedObjectiveName} /{" "}
+        {objectiveName} /{" "}
         <Text
           fontSize="2xl"
           color="muted"
