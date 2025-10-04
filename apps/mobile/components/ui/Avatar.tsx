@@ -20,7 +20,7 @@ const avatarVariants = cva(
       color: {
         primary: "text-white bg-primary",
         secondary: "text-white bg-secondary",
-        tertiary: "bg-gray-100",
+        tertiary: "bg-gray-100 dark:bg-dark-200",
         naked: "bg-transparent",
       },
       size: {
