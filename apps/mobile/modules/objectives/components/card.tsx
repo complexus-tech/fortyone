@@ -6,6 +6,7 @@ import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
 import { useColorScheme } from "nativewind";
+import { router } from "expo-router";
 
 type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
 
@@ -40,8 +41,15 @@ export const Card = ({ objective }: { objective: Objective }) => {
     ? "white"
     : undefined;
 
+  const handlePress = () => {
+    router.push(`/team/${objective.teamId}/objectives/${objective.id}`);
+  };
+
   return (
-    <Pressable className="active:bg-gray-50 dark:active:bg-dark-300">
+    <Pressable
+      className="active:bg-gray-50 dark:active:bg-dark-300"
+      onPress={handlePress}
+    >
       <Row
         align="center"
         justify="between"

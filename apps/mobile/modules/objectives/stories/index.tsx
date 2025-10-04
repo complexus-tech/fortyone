@@ -1,0 +1,65 @@
+import React, { useMemo } from "react";
+
+import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
+import { StoriesBoard } from "@/modules/stories/components";
+import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks";
+
+import { useGlobalSearchParams } from "expo-router";
+import { useTerminology } from "@/hooks/use-terminology";
+import { useObjectiveViewOptions } from "./hooks";
+import { Header } from "./components";
+
+export const ObjectiveStories = () => {
+  const { objectiveId, teamId } = useGlobalSearchParams<{
+    objectiveId: string;
+    teamId: string;
+  }>();
+  const { viewOptions, isLoaded: viewOptionsLoaded } = useObjectiveViewOptions(
+    objectiveId!
+  );
+  const { getTermDisplay } = useTerminology();
+
+  const queryOptions = useMemo(() => {
+    return {
+      groupBy: viewOptions.groupBy,
+      orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
+      objectiveId: objectiveId!,
+      teamIds: [teamId!],
+    };
+  }, [
+    viewOptions.groupBy,
+    viewOptions.orderBy,
+    viewOptions.orderDirection,
+    objectiveId,
+    teamId,
+  ]);
+
+  const { data: groupedStories, isPending } = useObjectiveStoriesGrouped(
+    objectiveId!,
+    viewOptions.groupBy,
+    queryOptions
+  );
+
+  if (!viewOptionsLoaded) {
+    return (
+      <SafeContainer isFull>
+        <Header />
+        <StoriesListSkeleton />
+      </SafeContainer>
+    );
+  }
+
+  return (
+    <SafeContainer isFull>
+      <Header />
+      <StoriesBoard
+        groupedStories={groupedStories}
+        groupFilters={queryOptions}
+        isLoading={isPending}
+        emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found for this ${getTermDisplay("objectiveTerm", { variant: "singular" })}`}
+        emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} for this ${getTermDisplay("objectiveTerm", { variant: "singular" })} at the moment.`}
+      />
+    </SafeContainer>
+  );
+};
