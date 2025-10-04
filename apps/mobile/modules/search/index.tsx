@@ -3,6 +3,7 @@ import { SafeContainer, Text, Tabs } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
+import { useTerminology } from "@/hooks/use-terminology";
 import type { SearchQueryParams, SearchResponse } from "./types";
 
 type SearchTab = "stories" | "objectives";
@@ -46,6 +47,7 @@ const TabContent = ({
 export const Search = () => {
   const [activeTab, setActiveTab] = useState<SearchTab>("stories");
   const [searchQuery, setSearchQuery] = useState("");
+  const { getTermDisplay } = useTerminology();
 
   const { data: results, isPending } = useSearch({ query: searchQuery });
 
@@ -63,8 +65,18 @@ export const Search = () => {
         onValueChange={(value) => setActiveTab(value as SearchTab)}
       >
         <Tabs.List>
-          <Tabs.Tab value="stories">Stories</Tabs.Tab>
-          <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
+          <Tabs.Tab value="stories">
+            {getTermDisplay("storyTerm", {
+              variant: "plural",
+              capitalize: true,
+            })}
+          </Tabs.Tab>
+          <Tabs.Tab value="objectives">
+            {getTermDisplay("objectiveTerm", {
+              variant: "plural",
+              capitalize: true,
+            })}
+          </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="stories">
           <TabContent

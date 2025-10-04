@@ -2,16 +2,19 @@ import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useTerminology } from "@/hooks/use-terminology";
 
 type EmptyStateProps = {
   title?: string;
   message?: string;
 };
 
-export const EmptyState = ({
-  title = "No sprints found",
-  message = "There are no sprints to display at the moment.",
-}: EmptyStateProps) => {
+export const EmptyState = ({ title, message }: EmptyStateProps) => {
+  const { getTermDisplay } = useTerminology();
+
+  const defaultTitle = `No ${getTermDisplay("sprintTerm", { variant: "plural" })} found`;
+  const defaultMessage = `There are no ${getTermDisplay("sprintTerm", { variant: "plural" })} to display at the moment.`;
+
   return (
     <Col justify="center" align="center" className="flex-1" asContainer>
       <Row
@@ -22,10 +25,10 @@ export const EmptyState = ({
         <SymbolView name="memories" size={36} tintColor={colors.gray.DEFAULT} />
       </Row>
       <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
-        {title}
+        {title || defaultTitle}
       </Text>
       <Text color="muted" className="text-center">
-        {message}
+        {message || defaultMessage}
       </Text>
     </Col>
   );

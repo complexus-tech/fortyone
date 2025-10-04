@@ -5,11 +5,14 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
+import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === teamId)!;
+  const { getTermDisplay } = useTerminology();
+
   return (
     <Row className="mb-3" asContainer justify="between" align="center">
       <Back />
@@ -21,7 +24,10 @@ export const Header = () => {
           fontWeight="semibold"
           className="opacity-80"
         >
-          Sprints
+          {getTermDisplay("sprintTerm", {
+            variant: "plural",
+            capitalize: true,
+          })}
         </Text>
       </Text>
       <Pressable

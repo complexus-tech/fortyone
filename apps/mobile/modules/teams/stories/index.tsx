@@ -5,6 +5,7 @@ import { StoriesBoard } from "@/modules/stories/components";
 import { useTeamStoriesGrouped } from "@/modules/stories/hooks";
 import { useTeamViewOptions } from "../hooks";
 import { useGlobalSearchParams } from "expo-router";
+import { useTerminology } from "@/hooks/use-terminology";
 import type { TeamStoriesTab } from "../types";
 
 export const TeamStories = () => {
@@ -13,6 +14,7 @@ export const TeamStories = () => {
   const { viewOptions, isLoaded: viewOptionsLoaded } = useTeamViewOptions(
     teamId!
   );
+  const { getTermDisplay } = useTerminology();
 
   const queryOptions = useMemo(() => {
     const baseOptions = {
@@ -67,7 +69,9 @@ export const TeamStories = () => {
         onValueChange={(value) => setActiveTab(value as TeamStoriesTab)}
       >
         <Tabs.List>
-          <Tabs.Tab value="all">All stories</Tabs.Tab>
+          <Tabs.Tab value="all">
+            All {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Tabs.Tab>
           <Tabs.Tab value="active">Active</Tabs.Tab>
           <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
         </Tabs.List>

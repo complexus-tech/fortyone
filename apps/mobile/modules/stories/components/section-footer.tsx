@@ -2,6 +2,7 @@ import React from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { Text, Row } from "@/components/ui";
 import { colors } from "@/constants";
+import { useTerminology } from "@/hooks/use-terminology";
 
 type SectionFooterProps = {
   hasMore: boolean;
@@ -18,6 +19,11 @@ export const SectionFooter = ({
   isLoading = false,
   onLoadMore,
 }: SectionFooterProps) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm", {
+    variant: loadedCount === 1 ? "singular" : "plural",
+  });
+
   if (!hasMore) {
     return (
       <View
@@ -27,7 +33,7 @@ export const SectionFooter = ({
         }}
       >
         <Text fontSize="sm" color="muted">
-          Showing {loadedCount} {loadedCount === 1 ? "story" : "stories"}
+          Showing {loadedCount} {storyTerm}
         </Text>
       </View>
     );
@@ -63,7 +69,7 @@ export const SectionFooter = ({
           ) : (
             <>
               <Text fontSize="sm" fontWeight="medium" color="primary">
-                Load more stories
+                Load more {getTermDisplay("storyTerm", { variant: "plural" })}
               </Text>
               <Text fontSize="sm" color="muted">
                 {loadedCount} of {totalCount}

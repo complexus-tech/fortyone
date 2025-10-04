@@ -3,11 +3,13 @@ import { Header } from "./components/header";
 import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
+import { useTerminology } from "@/hooks/use-terminology";
 import type { MyWorkTab } from "./types";
 
 export const MyWork = () => {
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
   const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions();
+  const { getTermDisplay } = useTerminology();
 
   // Fetch data based on active tab
   const queryOptions = useMemo(() => {
@@ -64,7 +66,9 @@ export const MyWork = () => {
         onValueChange={(value) => setActiveTab(value as MyWorkTab)}
       >
         <Tabs.List>
-          <Tabs.Tab value="all">All stories</Tabs.Tab>
+          <Tabs.Tab value="all">
+            All {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Tabs.Tab>
           <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>

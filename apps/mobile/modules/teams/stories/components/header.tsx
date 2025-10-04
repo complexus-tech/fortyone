@@ -5,11 +5,13 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
+import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === teamId)!;
+  const { getTermDisplay } = useTerminology();
 
   return (
     <Row className="mb-3" asContainer justify="between" align="center">
@@ -22,7 +24,7 @@ export const Header = () => {
           fontWeight="semibold"
           className="opacity-80"
         >
-          Stories
+          {getTermDisplay("storyTerm", { variant: "plural", capitalize: true })}
         </Text>
       </Text>
       <Pressable

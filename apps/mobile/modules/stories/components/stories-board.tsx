@@ -4,6 +4,7 @@ import { StoriesListSkeleton } from "@/components/ui";
 import { SectionWithLoadMore, EmptyState } from "./";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
+import { useTerminology } from "@/hooks/use-terminology";
 import type { GroupedStoriesResponse, GroupStoryParams, Story } from "../types";
 
 type StoriesSection = {
@@ -28,11 +29,12 @@ export const StoriesBoard = ({
   groupedStories,
   groupFilters,
   isLoading = false,
-  emptyTitle = "No stories found",
-  emptyMessage = "There are no stories to display at the moment.",
+  emptyTitle,
+  emptyMessage,
 }: StoriesBoardProps) => {
   const { data: statuses = [], isPending: isStatusesPending } = useStatuses();
   const { data: members = [], isPending: isMembersPending } = useMembers();
+  const { getTermDisplay } = useTerminology();
 
   const groupBy = groupFilters.groupBy;
 
@@ -87,7 +89,15 @@ export const StoriesBoard = ({
   }
 
   if (sections.length === 0) {
-    return <EmptyState title={emptyTitle} message={emptyMessage} />;
+    const defaultTitle = `No ${getTermDisplay("storyTerm", { variant: "plural" })} found`;
+    const defaultMessage = `There are no ${getTermDisplay("storyTerm", { variant: "plural" })} to display at the moment.`;
+
+    return (
+      <EmptyState
+        title={emptyTitle || defaultTitle}
+        message={emptyMessage || defaultMessage}
+      />
+    );
   }
 
   return (
