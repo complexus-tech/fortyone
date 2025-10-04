@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable } from "react-native";
+import { useColorScheme } from "nativewind";
 import { Ionicons } from "@expo/vector-icons";
 import { Row, Text } from "@/components/ui";
 import { colors } from "@/constants";
@@ -19,9 +20,10 @@ export const SettingsItem = ({
   showChevron = true,
   destructive = false,
 }: SettingsItemProps) => {
+  const { colorScheme } = useColorScheme();
   return (
     <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
+      className="active:bg-gray-50 dark:active:bg-dark-200"
       onPress={onPress}
     >
       <Row align="center" className="px-4 py-3.5">
@@ -38,7 +40,9 @@ export const SettingsItem = ({
             <Ionicons
               name="chevron-forward"
               size={16}
-              color={colors.gray.DEFAULT}
+              color={
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              }
             />
           )}
         </Row>
