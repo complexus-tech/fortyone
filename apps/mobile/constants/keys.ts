@@ -35,6 +35,10 @@ export const storyKeys = {
     [...storyKeys.mine(), "grouped", params] as const,
   teamGrouped: (teamId: string, params: Record<string, any>) =>
     [...storyKeys.team(teamId), "grouped", params] as const,
+  sprintGrouped: (sprintId: string, params: Record<string, any>) =>
+    [...storyKeys.all, "sprint", sprintId, "grouped", params] as const,
+  objectiveGrouped: (objectiveId: string, params: Record<string, any>) =>
+    [...storyKeys.all, "objective", objectiveId, "grouped", params] as const,
   group: (groupKey: string, params: Record<string, any>) =>
     [...storyKeys.all, "group", groupKey, params] as const,
 };
