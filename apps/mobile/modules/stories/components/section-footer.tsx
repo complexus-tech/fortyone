@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Pressable, ActivityIndicator } from "react-native";
+import { Pressable, ActivityIndicator } from "react-native";
 import { Text, Row } from "@/components/ui";
 import { colors } from "@/constants";
 import { useTerminology } from "@/hooks/use-terminology";

@@ -56,7 +56,7 @@ export const SectionWithLoadMore = ({
 
   return (
     <View>
-      <Text fontWeight="semibold" color="muted">
+      <Text className="px-4 pt-2 pb-1" fontWeight="semibold" color="muted">
         {section.title}
       </Text>
       {allStories.map((story) => (
