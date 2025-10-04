@@ -7,8 +7,10 @@ import { colors } from "@/constants";
 import { Col, Text } from "@/components/ui";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 import { useTerminology } from "@/hooks";
+import { useColorScheme } from "nativewind";
 
 export const Overview = () => {
+  const { colorScheme } = useColorScheme();
   const { getTermDisplay } = useTerminology();
   const { data: summary, isPending } = useOverviewStats();
   const storyTerm = getTermDisplay("storyTerm", {
@@ -41,7 +43,8 @@ export const Overview = () => {
       count: summary?.assigned,
       label: "Assigned to you",
       icon: "person.crop.circle.dashed",
-      iconColor: colors.gray.DEFAULT,
+      iconColor:
+        colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300],
     },
   ];
 

@@ -5,13 +5,18 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "nativewind";
 
 export const Team = ({ id, name, color }: TeamType) => {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
   return (
     <Pressable
       style={({ pressed }) => [
-        pressed && { backgroundColor: colors.gray[50] },
+        pressed && {
+          backgroundColor:
+            colorScheme === "light" ? colors.gray[50] : colors.dark[200],
+        },
         { borderRadius: 10 },
       ]}
       onPress={() => router.push(`/teams/${id}`)}
@@ -19,7 +24,7 @@ export const Team = ({ id, name, color }: TeamType) => {
       <Row
         align="center"
         justify="between"
-        className="py-3.5 px-2 min-h-[44px]"
+        className="py-3.5 px-3 min-h-[44px]"
       >
         <Row align="center">
           <View
@@ -32,7 +37,9 @@ export const Team = ({ id, name, color }: TeamType) => {
           name="chevron.forward"
           weight="semibold"
           size={12}
-          tintColor={colors.gray.DEFAULT}
+          tintColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
         />
       </Row>
     </Pressable>

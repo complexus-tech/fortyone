@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { Avatar, Row, Text } from "@/components/ui";
 import { useRouter } from "expo-router";
@@ -14,6 +15,7 @@ const getTimeOfDay = () => {
 };
 
 export const Header = () => {
+  const { colorScheme } = useColorScheme();
   const router = useRouter();
   const { data: user } = useProfile();
 
@@ -34,7 +36,13 @@ export const Header = () => {
           router.push("/settings");
         }}
       >
-        <SymbolView name="gear" size={28} tintColor={colors.dark[50]} />
+        <SymbolView
+          name="gear"
+          size={28}
+          tintColor={
+            colorScheme === "light" ? colors.dark[50] : colors.gray[300]
+          }
+        />
       </Pressable>
     </Row>
   );

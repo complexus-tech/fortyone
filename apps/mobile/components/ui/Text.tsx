@@ -2,7 +2,7 @@ import { Text as RNText, TextProps as RNTextProps } from "react-native";
 import { VariantProps, cva } from "cva";
 import { cn } from "@/lib/utils";
 
-const textVariants = cva("text-dark", {
+const textVariants = cva("text-dark dark:text-white", {
   variants: {
     align: {
       left: "text-left",
@@ -12,7 +12,7 @@ const textVariants = cva("text-dark", {
     color: {
       primary: "text-primary",
       secondary: "text-secondary",
-      muted: "text-gray",
+      muted: "text-gray dark:text-gray-200/80",
       danger: "text-danger",
       warning: "text-warning",
       info: "text-info",
