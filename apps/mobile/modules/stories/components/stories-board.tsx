@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import { ScrollView, View } from "react-native";
-import { Text, StoriesListSkeleton } from "@/components/ui";
-import { SectionWithLoadMore } from "./section-with-load-more";
+import { ScrollView } from "react-native";
+import { StoriesListSkeleton } from "@/components/ui";
+import { SectionWithLoadMore, EmptyState } from "./";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
 import type { GroupedStoriesResponse, GroupStoryParams, Story } from "../types";
@@ -20,6 +20,7 @@ type StoriesBoardProps = {
   groupedStories?: GroupedStoriesResponse;
   groupFilters: Omit<GroupStoryParams, "groupKey">;
   isLoading?: boolean;
+  emptyTitle?: string;
   emptyMessage?: string;
 };
 
@@ -27,7 +28,8 @@ export const StoriesBoard = ({
   groupedStories,
   groupFilters,
   isLoading = false,
-  emptyMessage = "No stories found",
+  emptyTitle = "No stories found",
+  emptyMessage = "There are no stories to display at the moment.",
 }: StoriesBoardProps) => {
   const { data: statuses = [], isPending: isStatusesPending } = useStatuses();
   const { data: members = [], isPending: isMembersPending } = useMembers();
@@ -85,20 +87,7 @@ export const StoriesBoard = ({
   }
 
   if (sections.length === 0) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingTop: 48,
-        }}
-      >
-        <Text fontSize="lg" color="muted">
-          {emptyMessage}
-        </Text>
-      </View>
-    );
+    return <EmptyState title={emptyTitle} message={emptyMessage} />;
   }
 
   return (
