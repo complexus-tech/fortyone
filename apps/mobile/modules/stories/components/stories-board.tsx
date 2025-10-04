@@ -18,7 +18,7 @@ type StoriesSection = {
 };
 
 type StoriesBoardProps = {
-  groupedStories?: GroupedStoriesResponse;
+  groupedStories?: GroupedStoriesResponse | null;
   groupFilters: Omit<GroupStoryParams, "groupKey">;
   isLoading?: boolean;
   emptyTitle?: string;

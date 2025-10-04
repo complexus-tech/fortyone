@@ -22,12 +22,14 @@ export const SprintStories = () => {
       groupBy: viewOptions.groupBy,
       orderBy: viewOptions.orderBy,
       orderDirection: viewOptions.orderDirection,
+      sprintIds: [sprintId!],
       teamIds: [teamId!],
     };
   }, [
     viewOptions.groupBy,
     viewOptions.orderBy,
     viewOptions.orderDirection,
+    sprintId,
     teamId,
   ]);
 
