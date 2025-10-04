@@ -5,6 +5,7 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
+import { useColorScheme } from "nativewind";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -15,6 +16,7 @@ const statusColors = {
 } as const;
 
 export const Card = ({ sprint }: { sprint: Sprint }) => {
+  const { colorScheme } = useColorScheme();
   const startDateObj = new Date(sprint.startDate);
   const endDateObj = new Date(sprint.endDate);
   const now = new Date();
@@ -28,22 +30,22 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
   }
 
   return (
-    <Pressable
-      style={({ pressed }) => [pressed && { backgroundColor: colors.gray[50] }]}
-    >
+    <Pressable className="active:bg-gray-50 dark:active:bg-dark-200">
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3 border-t-[0.5px] border-gray-100"
+        className="px-4 py-3 border-t-[0.5px] border-gray-100 dark:border-dark-100"
         gap={3}
       >
         <Row align="center" gap={3} className="w-8/12">
-          <Row className="bg-gray-100 rounded-lg p-1.5">
+          <Row className="bg-gray-100 dark:bg-dark-200 rounded-lg p-1.5">
             <SymbolView
               name="play.circle"
               size={20}
               weight="bold"
-              tintColor={colors.gray.DEFAULT}
+              tintColor={
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              }
             />
           </Row>
           <Col>

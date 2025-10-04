@@ -25,7 +25,8 @@ const badgeVariants = cva(
         danger: "bg-danger border-danger",
         info: "bg-info border-info",
         warning: "bg-warning border-warning",
-        tertiary: "bg-gray-50 border-gray-100",
+        tertiary:
+          "bg-gray-50 border-gray-100 dark:bg-dark-200 dark:border-dark-100",
         secondary: "bg-secondary border-secondary",
         invert: "bg-black border-black",
       },
