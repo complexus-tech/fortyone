@@ -33,7 +33,10 @@ export const Notifications = () => {
   return (
     <SafeContainer isFull>
       <Header />
-      <ScrollView className="flex-1">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {notifications.map((notification, index) => (
           <NotificationCard
             key={notification.id}
