@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { useRouter } from "expo-router";
 import { Header } from "./components/header";
 import { GroupedStoriesList } from "./components/grouped-list";
 import { SafeContainer, Tabs } from "@/components/ui";
@@ -7,26 +6,8 @@ import { useMyStoriesGrouped, useViewOptions } from "./hooks";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
 import type { MyWorkTab, MyWorkSection } from "./types";
-import type { StoryPriority } from "@/modules/stories/types";
-
-const PRIORITY_ORDER: Record<StoryPriority, number> = {
-  "No Priority": 0,
-  Low: 1,
-  Medium: 2,
-  High: 3,
-  Urgent: 4,
-};
-
-const PRIORITY_LABELS: Record<StoryPriority, string> = {
-  "No Priority": "No Priority",
-  Low: "Low",
-  Medium: "Medium",
-  High: "High",
-  Urgent: "Urgent",
-};
 
 export const MyWork = () => {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
   const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions();
 
@@ -80,41 +61,24 @@ export const MyWork = () => {
   const sections = useMemo<MyWorkSection[]>(() => {
     if (!groupedStories?.groups) return [];
 
-    console.log("🔍 Transforming sections:", {
-      groupBy: viewOptions.groupBy,
-      groupsCount: groupedStories.groups.length,
-      statusesCount: statuses.length,
-      membersCount: members.length,
-    });
-
     return groupedStories.groups
       .map((group) => {
         let title = "";
         let color: string | undefined;
 
-        // Determine title and color based on groupBy type
         switch (viewOptions.groupBy) {
           case "status": {
             const status = statuses.find((s) => s.id === group.key);
-            console.log(`📊 Status lookup for key "${group.key}":`, {
-              found: !!status,
-              statusName: status?.name,
-              allStatusIds: statuses.map((s) => s.id),
-            });
             title = status?.name || `Unknown (${group.key})`;
             color = status?.color;
             break;
           }
           case "priority": {
-            title = PRIORITY_LABELS[group.key as StoryPriority] || group.key;
+            title = group.key;
             break;
           }
           case "assignee": {
             const member = members.find((m) => m.id === group.key);
-            console.log(`👤 Member lookup for key "${group.key}":`, {
-              found: !!member,
-              memberName: member?.fullName || member?.username,
-            });
             title = member?.fullName || member?.username || "Unassigned";
             break;
           }
@@ -130,14 +94,9 @@ export const MyWork = () => {
           hasMore: group.hasMore,
         };
       })
-      .filter((section) => section.data.length > 0); // Only show sections with items on mobile
+      .filter((section) => section.data.length > 0);
   }, [groupedStories, viewOptions.groupBy, statuses, members]);
 
-  const handleStoryPress = (storyId: string) => {
-    router.push(`/story/${storyId}`);
-  };
-
-  // Wait for view options to load from storage
   if (!viewOptionsLoaded) {
     return <SafeContainer isFull>{/* Loading skeleton */}</SafeContainer>;
   }
@@ -155,25 +114,13 @@ export const MyWork = () => {
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
-          <GroupedStoriesList
-            sections={sections}
-            onStoryPress={handleStoryPress}
-            isLoading={isPending}
-          />
+          <GroupedStoriesList sections={sections} isLoading={isPending} />
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
-          <GroupedStoriesList
-            sections={sections}
-            onStoryPress={handleStoryPress}
-            isLoading={isPending}
-          />
+          <GroupedStoriesList sections={sections} isLoading={isPending} />
         </Tabs.Panel>
         <Tabs.Panel value="created">
-          <GroupedStoriesList
-            sections={sections}
-            onStoryPress={handleStoryPress}
-            isLoading={isPending}
-          />
+          <GroupedStoriesList sections={sections} isLoading={isPending} />
         </Tabs.Panel>
       </Tabs>
     </SafeContainer>

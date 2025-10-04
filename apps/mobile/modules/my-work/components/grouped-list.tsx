@@ -7,13 +7,11 @@ import { colors } from "@/constants";
 
 type GroupedStoriesListProps = {
   sections: MyWorkSection[];
-  onStoryPress?: (storyId: string) => void;
   isLoading?: boolean;
 };
 
 export const GroupedStoriesList = ({
   sections,
-  onStoryPress,
   isLoading = false,
 }: GroupedStoriesListProps) => {
   if (isLoading) {
