@@ -48,7 +48,8 @@ export const Overview = () => {
   return (
     <Col asContainer>
       <Text color="muted" className="mb-4">
-        Here&apos;s what&apos;s happening with your stories.
+        Here&apos;s what&apos;s happening with your{" "}
+        {getTermDisplay("storyTerm", { variant: "plural" })}.
       </Text>
       <View className="mb-6 flex-row flex-wrap gap-3">
         {overviewItems.map((item) => (
