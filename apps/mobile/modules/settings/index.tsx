@@ -4,6 +4,8 @@ import { SafeContainer } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
+import { useColorScheme } from "nativewind";
+import { colors } from "@/constants";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -13,9 +15,17 @@ const handleExternalLink = async (url: string) => {
 };
 
 export const Settings = () => {
+  const { colorScheme } = useColorScheme();
   return (
     <SafeContainer isFull>
-      <ScrollView style={{ paddingTop: 36, flex: 1, backgroundColor: "white" }}>
+      <ScrollView
+        style={{
+          paddingTop: 36,
+          flex: 1,
+          backgroundColor:
+            colorScheme === "light" ? colors.white : colors.dark[300],
+        }}
+      >
         <SettingsSection title="General">
           <SettingsItem
             title="Account Details"
