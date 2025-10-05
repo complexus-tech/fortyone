@@ -41,6 +41,8 @@ export const storyKeys = {
     [...storyKeys.all, "objective", objectiveId, "grouped", params] as const,
   group: (groupKey: string, params: Record<string, any>) =>
     [...storyKeys.all, "group", groupKey, params] as const,
+  attachments: (storyId: string) =>
+    [...storyKeys.detail(storyId), "attachments"] as const,
 };
 
 export const notificationKeys = {
