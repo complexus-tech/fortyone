@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { ScrollView, Linking, useWindowDimensions } from "react-native";
-import { SafeContainer } from "@/components/ui";
+import { ScrollView, Linking, useWindowDimensions, View } from "react-native";
+import { Avatar, SafeContainer } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
@@ -14,22 +14,44 @@ import {
   HStack,
   Image,
   Picker,
+  Spacer,
   Text,
   VStack,
+  Switch,
 } from "@expo/ui/swift-ui";
 import {
   cornerRadius,
   frame,
   glassEffect,
   padding,
+  background,
+  clipShape,
 } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
+import { Image as ExpoUIImage } from "expo-image";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
   if (canOpen) {
     await Linking.openURL(url);
   }
+};
+
+const Workspace = ({ isActive }: { isActive?: boolean }) => {
+  return (
+    <HStack spacing={8}>
+      <HStack modifiers={[frame({ width: 32, height: 32 })]}>
+        <Avatar color="primary" name="John Doe" size="md" rounded="lg" />
+      </HStack>
+      <Text lineLimit={1}>Airplane Mode</Text>
+      {isActive && (
+        <>
+          <Spacer />
+          <Image systemName="checkmark.circle.fill" color="white" size={20} />
+        </>
+      )}
+    </HStack>
+  );
 };
 
 export const Settings = () => {
@@ -87,15 +109,31 @@ export const Settings = () => {
         </SettingsSection>
       </ScrollView>
 
-      <Host>
+      <Host matchContents style={{ position: "absolute" }}>
         <BottomSheet
           isOpened={isOpened}
           onIsOpenedChange={(e) => setIsOpened(e)}
+          presentationDragIndicator="visible"
         >
-          <VStack modifiers={[padding({ vertical: 20 })]} backgroundColor="red">
+          <VStack
+            spacing={20}
+            modifiers={[padding({ all: 24 })]}
+            alignment="leading"
+          >
             <HStack>
-              <Text>Switch Workspace</Text>
+              <Text
+                weight="semibold"
+                color={
+                  colorScheme === "light"
+                    ? colors.gray.DEFAULT
+                    : colors.gray[300]
+                }
+              >
+                Switch Workspace
+              </Text>
             </HStack>
+            <Workspace />
+            <Workspace isActive />
           </VStack>
         </BottomSheet>
       </Host>
