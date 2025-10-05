@@ -1,8 +1,9 @@
 import React from "react";
-import { Pressable, Linking } from "react-native";
+import { Pressable, Linking, Image } from "react-native";
 import { Row, Text, Col } from "@/components/ui";
-import { SymbolView } from "expo-symbols";
 import type { StoryAttachment } from "@/types/attachment";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 B";
@@ -12,11 +13,52 @@ const formatFileSize = (bytes: number): string => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 };
 
-const getFileIcon = (mimeType: string): string => {
-  if (mimeType.includes("image")) return "ellipsis";
-  if (mimeType.includes("video")) return "ellipsis";
-  if (mimeType.includes("pdf")) return "ellipsis";
-  return "ellipsis";
+const getMimeType = (mimeType: string) => {
+  if (mimeType.includes("image")) return "image";
+  if (mimeType.includes("video")) return "video";
+  if (mimeType.includes("pdf")) return "pdf";
+  return "doc";
+};
+
+const AttachmentPreview = ({ attachment }: { attachment: StoryAttachment }) => {
+  const mimeType = getMimeType(attachment.mimeType);
+  if (mimeType === "image") {
+    return (
+      <Image
+        source={{ uri: attachment.url }}
+        className="size-12 rounded-lg"
+        resizeMode="cover"
+      />
+    );
+  }
+  if (mimeType === "pdf") {
+    return (
+      <Row
+        align="center"
+        justify="center"
+        className="size-12 rounded-lg bg-gray-100 dark:bg-dark-200"
+      >
+        <SymbolView
+          size={28}
+          name="text.document.fill"
+          tintColor={colors.gray.DEFAULT}
+        />
+      </Row>
+    );
+  }
+  return (
+    <Row
+      align="center"
+      justify="center"
+      className="size-12 rounded-lg bg-gray-100 dark:bg-dark-200"
+    >
+      <SymbolView
+        size={28}
+        name="document.fill"
+        tintColor={colors.gray.DEFAULT}
+      />
+    </Row>
+  );
 };
 
 export const AttachmentCard = ({
@@ -24,8 +66,6 @@ export const AttachmentCard = ({
 }: {
   attachment: StoryAttachment;
 }) => {
-  const iconName = getFileIcon(attachment.mimeType);
-
   const handlePress = async () => {
     try {
       await Linking.openURL(attachment.url);
@@ -36,16 +76,16 @@ export const AttachmentCard = ({
 
   return (
     <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark-300 rounded-lg p-4 mb-3"
+      className="active:bg-gray-50 dark:active:bg-dark-300 px-4 py-3"
       onPress={handlePress}
     >
       <Row align="center" gap={3}>
-        <SymbolView name={iconName as any} size={24} />
+        <AttachmentPreview attachment={attachment} />
         <Col className="flex-1">
-          <Text fontSize="sm" fontWeight="medium" numberOfLines={1}>
+          <Text fontWeight="medium" numberOfLines={1}>
             {attachment.filename}
           </Text>
-          <Text fontSize="xs" color="muted">
+          <Text fontSize="sm" color="muted">
             {formatFileSize(attachment.size)}
           </Text>
         </Col>
