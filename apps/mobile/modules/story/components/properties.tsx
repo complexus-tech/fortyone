@@ -1,19 +1,16 @@
-import { useStory } from "@/modules/stories/hooks";
-import { useStatuses } from "@/modules/statuses/hooks/use-statuses";
+import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { useMembers } from "@/modules/members/hooks/use-members";
 import React from "react";
-import { useGlobalSearchParams } from "expo-router";
 import { Row, Badge, Text, Avatar } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
 import { Dot, PriorityIcon } from "@/components/icons";
+import { Story } from "@/modules/stories/types";
 
-export const Properties = () => {
-  const { storyId } = useGlobalSearchParams<{ storyId: string }>();
-  const { data: story } = useStory(storyId);
-  const { data: statuses = [] } = useStatuses();
+export const Properties = ({ story }: { story: Story }) => {
+  const { data: statuses = [] } = useTeamStatuses(story.teamId);
   const { data: members = [] } = useMembers();
-  const status = statuses.find((s) => s.id === story?.statusId);
-  const assignee = members.find((m) => m.id === story?.assigneeId);
+  const status = statuses.find((s) => s.id === story.statusId);
+  const assignee = members.find((m) => m.id === story.assigneeId);
 
   return (
     <Row wrap gap={2} asContainer className="my-4">
@@ -27,8 +24,8 @@ export const Properties = () => {
         <Text>{status?.name || "No Status"}</Text>
       </Badge>
       <Badge color="tertiary">
-        <PriorityIcon priority={story?.priority || "No Priority"} />
-        <Text>{story?.priority || "No Priority"}</Text>
+        <PriorityIcon priority={story.priority || "No Priority"} />
+        <Text>{story.priority || "No Priority"}</Text>
       </Badge>
       <Badge color="tertiary">
         <Avatar
