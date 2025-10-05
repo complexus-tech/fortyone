@@ -27,7 +27,7 @@ export const Properties = ({ story }: { story: Story }) => {
         <PriorityIcon priority={story.priority || "No Priority"} />
         <Text>{story.priority || "No Priority"}</Text>
       </Badge>
-      <Badge color="tertiary">
+      <Badge color="tertiary" className="pl-1.5">
         <Avatar
           size="xs"
           name={assignee?.fullName || assignee?.username}
