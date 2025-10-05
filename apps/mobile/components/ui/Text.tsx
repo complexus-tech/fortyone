@@ -53,6 +53,9 @@ const textVariants = cva("text-dark dark:text-white", {
       none: "no-underline",
     },
   },
+  defaultVariants: {
+    fontSize: "md",
+  },
 });
 
 export interface TextProps
