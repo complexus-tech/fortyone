@@ -31,9 +31,9 @@ const badgeVariants = cva(
         invert: "bg-black border-black",
       },
       size: {
-        sm: "px-1.5 text-sm py-1 gap-1",
-        md: "px-2 py-1 text-sm",
-        lg: "px-3.5 py-1",
+        sm: "px-1.5 text-sm h-7 gap-1",
+        md: "px-2 h-8 text-sm",
+        lg: "px-3.5 h-10",
       },
     },
     compoundVariants: [

@@ -24,6 +24,7 @@ const avatarVariants = cva(
         naked: "bg-transparent",
       },
       size: {
+        xs: "size-5 text-xs",
         sm: "size-7 text-xs",
         md: "size-9 text-sm",
         lg: "size-10 text-base",
@@ -107,15 +108,12 @@ export const Avatar = ({
           color={
             color === "primary" || color === "secondary" ? "white" : "black"
           }
-          fontSize={
-            size === "sm"
-              ? "xs"
-              : size === "md"
-                ? "sm"
-                : size === "lg"
-                  ? "md"
-                  : "lg"
-          }
+          className={cn({
+            "text-[0.6rem]": size === "xs",
+            "text-sm": size === "sm",
+            "text-md": size === "md",
+            "text-lg": size === "lg",
+          })}
           fontWeight="semibold"
         >
           {getInitials(name)}
@@ -124,7 +122,17 @@ export const Avatar = ({
       {asIcon && (
         <SymbolView
           name="person.crop.circle.dashed"
-          size={25}
+          size={
+            size === "xs"
+              ? 18
+              : size === "sm"
+                ? 20
+                : size === "md"
+                  ? 25
+                  : size === "lg"
+                    ? 30
+                    : 25
+          }
           tintColor={colors.gray.DEFAULT}
         />
       )}
