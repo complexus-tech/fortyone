@@ -58,7 +58,7 @@ export const renderTemplateJSX = (
 
         if (variable.value) {
           return (
-            <Text key={index} fontSize="sm" fontWeight="semibold">
+            <Text key={index} fontSize="sm" fontWeight="medium">
               {htmlToText(variable.value)}
             </Text>
           );

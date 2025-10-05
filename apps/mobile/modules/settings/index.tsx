@@ -1,11 +1,21 @@
 import React from "react";
-import { ScrollView, Linking } from "react-native";
-import { SafeContainer } from "@/components/ui";
+import { ScrollView, Linking, useWindowDimensions } from "react-native";
+import { Row, SafeContainer, Text } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
+import {
+  Button,
+  ContextMenu,
+  Host,
+  HStack,
+  Image,
+  Picker,
+  VStack,
+} from "@expo/ui/swift-ui";
+import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);

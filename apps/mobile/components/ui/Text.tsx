@@ -53,15 +53,6 @@ const textVariants = cva("text-dark dark:text-white", {
       none: "no-underline",
     },
   },
-  defaultVariants: {
-    align: "left",
-    color: "black",
-    fontSize: "md",
-    fontWeight: "medium",
-    transform: "none",
-    fontStyle: "normal",
-    decoration: "none",
-  },
 });
 
 export interface TextProps

@@ -2,7 +2,6 @@ import React from "react";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Dot, PriorityIcon } from "@/components/icons";
-import { colors } from "@/constants";
 import { Row } from "./row";
 import { Text } from "./text";
 import { Avatar } from "./avatar";

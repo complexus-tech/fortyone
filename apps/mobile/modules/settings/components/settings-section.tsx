@@ -15,7 +15,7 @@ export const SettingsSection = ({ title, children }: SettingsSectionProps) => {
           {title}
         </Text>
       )}
-      <View>{children}</View>
+      <View className="flex-1">{children}</View>
     </View>
   );
 };

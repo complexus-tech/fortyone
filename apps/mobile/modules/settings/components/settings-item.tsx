@@ -26,7 +26,7 @@ export const SettingsItem = ({
       className="active:bg-gray-50 dark:active:bg-dark-200"
       onPress={onPress}
     >
-      <Row align="center" className="px-4 py-3.5">
+      <Row asContainer align="center" className="py-3.5">
         <Text color={destructive ? "primary" : "black"} className="flex-1">
           {title}
         </Text>

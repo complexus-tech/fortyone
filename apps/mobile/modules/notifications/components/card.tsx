@@ -66,7 +66,7 @@ export const NotificationCard = ({
             <Text
               color={isUnread ? "black" : "muted"}
               className="flex-1 mr-2"
-              fontWeight={isUnread ? "semibold" : "medium"}
+              fontWeight={isUnread ? "medium" : undefined}
               numberOfLines={1}
             >
               {title}
@@ -74,7 +74,7 @@ export const NotificationCard = ({
             <Text
               fontSize="sm"
               color={isUnread ? "black" : "muted"}
-              fontWeight={isUnread ? "semibold" : "medium"}
+              fontWeight={isUnread ? "medium" : undefined}
               className="shrink-0"
             >
               {formatTimeAgo(createdAt)}
