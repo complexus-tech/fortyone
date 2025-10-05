@@ -2,13 +2,7 @@ import React from "react";
 import { Pressable, Linking } from "react-native";
 import { Row, Text, Col } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants/colors";
-import { useColorScheme } from "nativewind";
 import type { StoryAttachment } from "@/types/attachment";
-
-type AttachmentCardProps = {
-  attachment: StoryAttachment;
-};
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 B";
@@ -25,8 +19,11 @@ const getFileIcon = (mimeType: string): string => {
   return "ellipsis";
 };
 
-export const AttachmentCard = ({ attachment }: AttachmentCardProps) => {
-  const { colorScheme } = useColorScheme();
+export const AttachmentCard = ({
+  attachment,
+}: {
+  attachment: StoryAttachment;
+}) => {
   const iconName = getFileIcon(attachment.mimeType);
 
   const handlePress = async () => {
@@ -45,20 +42,13 @@ export const AttachmentCard = ({ attachment }: AttachmentCardProps) => {
       <Row align="center" gap={3}>
         <SymbolView name={iconName as any} size={24} />
         <Col className="flex-1">
-          <Text fontSize="sm" fontWeight="medium" numberOfLines={2}>
+          <Text fontSize="sm" fontWeight="medium" numberOfLines={1}>
             {attachment.filename}
           </Text>
           <Text fontSize="xs" color="muted">
             {formatFileSize(attachment.size)}
           </Text>
         </Col>
-        <SymbolView
-          name="arrow.up.right"
-          size={16}
-          tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
-        />
       </Row>
     </Pressable>
   );
