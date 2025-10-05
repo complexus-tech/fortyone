@@ -47,7 +47,7 @@ export default function RootLayout() {
             gestureDirection: "vertical",
             animation: "slide_from_bottom",
             sheetGrabberVisible: true,
-            sheetCornerRadius: 24,
+            sheetCornerRadius: 36,
             sheetExpandsWhenScrolledToEdge: true,
             sheetElevation: 24,
             sheetInitialDetentIndex: 0,

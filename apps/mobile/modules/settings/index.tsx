@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Linking, useWindowDimensions, View } from "react-native";
+import { ScrollView, Linking } from "react-native";
 import { Avatar, SafeContainer } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
@@ -8,29 +8,17 @@ import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import {
   BottomSheet,
-  Button,
-  ContextMenu,
   Host,
   HStack,
   Image,
-  Picker,
   Spacer,
   Text,
   VStack,
-  Switch,
 } from "@expo/ui/swift-ui";
-import {
-  cornerRadius,
-  frame,
-  glassEffect,
-  padding,
-  background,
-  clipShape,
-} from "@expo/ui/swift-ui/modifiers";
-import { useRouter } from "expo-router";
-import { Image as ExpoUIImage } from "expo-image";
+import { frame, padding } from "@expo/ui/swift-ui/modifiers";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import type { Workspace as WorkspaceType } from "@/types/workspace";
+import { SFSymbol } from "expo-symbols";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -67,22 +55,38 @@ const Workspace = ({
           {workspace.userRole}
         </Text>
       </VStack>
-
+      <Spacer />
       {isActive && (
-        <>
-          <Spacer />
-          <Image systemName="checkmark.circle.fill" color="white" size={20} />
-        </>
+        <Image systemName="checkmark.circle.fill" color="white" size={20} />
       )}
     </HStack>
   );
 };
 
 export const Settings = () => {
-  const { colorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const [isOpened, setIsOpened] = useState(false);
+  const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
+
+  const themes = [
+    {
+      label: "Light",
+      value: "light",
+      icon: "sun.max.fill",
+    },
+    {
+      label: "Dark",
+      value: "dark",
+      icon: "moon.fill",
+    },
+    {
+      label: "Automatic",
+      value: "system",
+      icon: "platter.filled.top.iphone",
+    },
+  ];
 
   return (
     <SafeContainer isFull>
@@ -106,8 +110,8 @@ export const Settings = () => {
           <SettingsItem
             title="Appearance"
             asOptions
-            value="System"
-            onPress={() => console.log("Appearance")}
+            value={colorScheme === "dark" ? "Dark" : "Light"}
+            onPress={() => setIsAppearanceOpened(true)}
           />
         </SettingsSection>
         <SettingsSection title="Support & Info">
@@ -156,6 +160,48 @@ export const Settings = () => {
                 isActive={wk.id === workspace?.id}
                 workspace={wk}
               />
+            ))}
+          </VStack>
+        </BottomSheet>
+      </Host>
+
+      <Host matchContents style={{ position: "absolute" }}>
+        <BottomSheet
+          isOpened={isAppearanceOpened}
+          onIsOpenedChange={(e) => setIsAppearanceOpened(e)}
+          presentationDragIndicator="visible"
+        >
+          <VStack
+            spacing={20}
+            modifiers={[padding({ all: 24 })]}
+            alignment="leading"
+          >
+            {themes.map((theme) => (
+              <HStack
+                spacing={8}
+                key={theme.value}
+                onPress={() => setColorScheme(theme.value as any)}
+              >
+                <Image
+                  systemName={theme.icon as SFSymbol}
+                  color={colorScheme === "light" ? "black" : "white"}
+                  size={20}
+                  modifiers={[frame({ width: 30, height: 30 })]}
+                />
+                <VStack alignment="leading">
+                  <Text lineLimit={1} size={16}>
+                    {theme.label}
+                  </Text>
+                </VStack>
+                <Spacer />
+                {theme.value === colorScheme && (
+                  <Image
+                    systemName="checkmark.circle.fill"
+                    color={colorScheme === "light" ? "black" : "white"}
+                    size={20}
+                  />
+                )}
+              </HStack>
             ))}
           </VStack>
         </BottomSheet>
