@@ -1,21 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, Linking, useWindowDimensions } from "react-native";
-import { Row, SafeContainer, Text } from "@/components/ui";
+import { SafeContainer } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import {
+  BottomSheet,
   Button,
   ContextMenu,
   Host,
   HStack,
   Image,
   Picker,
+  Text,
   VStack,
 } from "@expo/ui/swift-ui";
-import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import {
+  cornerRadius,
+  frame,
+  glassEffect,
+  padding,
+} from "@expo/ui/swift-ui/modifiers";
+import { useRouter } from "expo-router";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -26,6 +34,9 @@ const handleExternalLink = async (url: string) => {
 
 export const Settings = () => {
   const { colorScheme } = useColorScheme();
+  const { width } = useWindowDimensions();
+  const [isOpened, setIsOpened] = useState(false);
+
   return (
     <SafeContainer isFull>
       <ScrollView
@@ -43,7 +54,9 @@ export const Settings = () => {
           />
           <SettingsItem
             title="Switch Workspace"
-            onPress={() => console.log("Switch Workspace")}
+            onPress={() => {
+              setIsOpened(true);
+            }}
           />
           <SettingsItem
             title="Appearance"
@@ -73,6 +86,19 @@ export const Settings = () => {
           />
         </SettingsSection>
       </ScrollView>
+
+      <Host>
+        <BottomSheet
+          isOpened={isOpened}
+          onIsOpenedChange={(e) => setIsOpened(e)}
+        >
+          <VStack modifiers={[padding({ vertical: 20 })]} backgroundColor="red">
+            <HStack>
+              <Text>Switch Workspace</Text>
+            </HStack>
+          </VStack>
+        </BottomSheet>
+      </Host>
     </SafeContainer>
   );
 };

@@ -27,7 +27,7 @@ export const SettingsItem = ({
       onPress={onPress}
     >
       <Row asContainer align="center" className="py-3.5">
-        <Text color={destructive ? "primary" : "black"} className="flex-1">
+        <Text color={destructive ? "primary" : undefined} className="flex-1">
           {title}
         </Text>
         <Row align="center">
