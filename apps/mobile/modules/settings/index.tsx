@@ -29,6 +29,8 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 import { Image as ExpoUIImage } from "expo-image";
+import { useWorkspaces } from "@/lib/hooks/use-workspaces";
+import type { Workspace as WorkspaceType } from "@/types/workspace";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -37,13 +39,27 @@ const handleExternalLink = async (url: string) => {
   }
 };
 
-const Workspace = ({ isActive }: { isActive?: boolean }) => {
+const Workspace = ({
+  isActive,
+  workspace,
+}: {
+  isActive?: boolean;
+  workspace: WorkspaceType;
+}) => {
   return (
     <HStack spacing={8}>
-      <HStack modifiers={[frame({ width: 32, height: 32 })]}>
-        <Avatar color="primary" name="John Doe" size="md" rounded="lg" />
+      <HStack modifiers={[frame({ width: 30, height: 30 })]}>
+        <Avatar
+          style={{
+            backgroundColor: workspace.color,
+          }}
+          name={workspace.name}
+          size="md"
+          rounded="lg"
+          src={workspace.avatarUrl}
+        />
       </HStack>
-      <Text lineLimit={1}>Airplane Mode</Text>
+      <Text lineLimit={1}>{workspace.name}</Text>
       {isActive && (
         <>
           <Spacer />
@@ -56,7 +72,7 @@ const Workspace = ({ isActive }: { isActive?: boolean }) => {
 
 export const Settings = () => {
   const { colorScheme } = useColorScheme();
-  const { width } = useWindowDimensions();
+  const { data: workspaces = [] } = useWorkspaces();
   const [isOpened, setIsOpened] = useState(false);
 
   return (
@@ -132,8 +148,13 @@ export const Settings = () => {
                 Switch Workspace
               </Text>
             </HStack>
-            <Workspace />
-            <Workspace isActive />
+            {workspaces.map((workspace, index) => (
+              <Workspace
+                key={workspace.id}
+                isActive={index === 0}
+                workspace={workspace}
+              />
+            ))}
           </VStack>
         </BottomSheet>
       </Host>

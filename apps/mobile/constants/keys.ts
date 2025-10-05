@@ -53,6 +53,7 @@ export const notificationKeys = {
 
 export const workspaceKeys = {
   all: ["workspace"] as const,
+  lists: () => [...workspaceKeys.all, "list"] as const,
   settings: () => [...workspaceKeys.all, "settings"] as const,
 };
 
