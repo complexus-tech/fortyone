@@ -60,7 +60,9 @@ const Workspace = ({
         />
       </HStack>
       <VStack alignment="leading">
-        <Text lineLimit={1}>{workspace.name}</Text>
+        <Text lineLimit={1} size={16}>
+          {workspace.name}
+        </Text>
         <Text size={16} color={colors.gray.DEFAULT}>
           {workspace.userRole}
         </Text>
@@ -92,19 +94,18 @@ export const Settings = () => {
             colorScheme === "light" ? colors.white : colors.dark[300],
         }}
       >
-        <SettingsSection title="General">
-          <SettingsItem
-            title="Account Details"
-            onPress={() => console.log(workspace)}
-          />
+        <SettingsSection>
           <SettingsItem
             title="Switch Workspace"
+            asOptions
+            value={workspace?.name}
             onPress={() => {
               setIsOpened(true);
             }}
           />
           <SettingsItem
             title="Appearance"
+            asOptions
             value="System"
             onPress={() => console.log("Appearance")}
           />
@@ -114,6 +115,7 @@ export const Settings = () => {
             <SettingsItem
               title={link.title}
               key={link.title}
+              asLink
               onPress={() => handleExternalLink(link.url)}
             />
           ))}
@@ -144,7 +146,7 @@ export const Settings = () => {
             alignment="leading"
           >
             <HStack>
-              <Text weight="semibold" color={colors.gray.DEFAULT} size={16}>
+              <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
                 Switch Workspace
               </Text>
             </HStack>

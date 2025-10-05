@@ -23,6 +23,7 @@ export const Back = () => {
       <SymbolView
         name="arrow.backward"
         weight="semibold"
+        size={22}
         tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[300]}
       />
     </TouchableOpacity>

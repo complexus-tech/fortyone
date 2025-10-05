@@ -44,7 +44,7 @@ export const Header = () => {
             </Text>
           </Text>
         </Row>
-        <Host matchContents>
+        <Host matchContents style={{ width: 40, height: 40 }}>
           <ContextMenu>
             <ContextMenu.Items>
               <Button systemImage="pencil" onPress={() => {}}>

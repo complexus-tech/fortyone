@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { useColorScheme } from "nativewind";
-import { Ionicons } from "@expo/vector-icons";
+import { Octicons, Ionicons } from "@expo/vector-icons";
 import { Row, Text } from "@/components/ui";
 import { colors } from "@/constants";
 
@@ -11,6 +11,8 @@ interface SettingsItemProps {
   onPress?: () => void;
   showChevron?: boolean;
   destructive?: boolean;
+  asLink?: boolean;
+  asOptions?: boolean;
 }
 
 export const SettingsItem = ({
@@ -19,6 +21,8 @@ export const SettingsItem = ({
   onPress,
   showChevron = true,
   destructive = false,
+  asLink = false,
+  asOptions = false,
 }: SettingsItemProps) => {
   const { colorScheme } = useColorScheme();
   return (
@@ -26,7 +30,7 @@ export const SettingsItem = ({
       className="active:bg-gray-50 dark:active:bg-dark-200"
       onPress={onPress}
     >
-      <Row asContainer align="center" className="py-3.5">
+      <Row asContainer align="center" className="py-4">
         <Text color={destructive ? "primary" : undefined} className="flex-1">
           {title}
         </Text>
@@ -37,13 +41,29 @@ export const SettingsItem = ({
             </Text>
           )}
           {showChevron && (
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-              }
-            />
+            <>
+              {asOptions ? (
+                <Ionicons
+                  name="chevron-expand"
+                  size={16}
+                  color={
+                    colorScheme === "light"
+                      ? colors.gray.DEFAULT
+                      : colors.gray[300]
+                  }
+                />
+              ) : (
+                <Octicons
+                  name={asLink ? "arrow-up-right" : "chevron-right"}
+                  size={16}
+                  color={
+                    colorScheme === "light"
+                      ? colors.gray.DEFAULT
+                      : colors.gray[300]
+                  }
+                />
+              )}
+            </>
           )}
         </Row>
       </Row>

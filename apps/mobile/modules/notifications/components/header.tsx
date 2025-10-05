@@ -13,7 +13,7 @@ export const Header = () => {
         Notifications
       </Text>
 
-      <Host matchContents>
+      <Host matchContents style={{ width: 40, height: 40 }}>
         <ContextMenu>
           <ContextMenu.Items>
             <Button systemImage="gear" onPress={() => {}}>
