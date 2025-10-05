@@ -8,7 +8,7 @@ import { useColorScheme } from "nativewind";
 export const Header = () => {
   const { colorScheme } = useColorScheme();
   return (
-    <Row justify="between" align="center" asContainer className="mb-3">
+    <Row justify="between" align="center" asContainer className="mb-2">
       <Text fontSize="2xl" fontWeight="semibold" color="black">
         Notifications
       </Text>

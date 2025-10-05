@@ -19,18 +19,24 @@ export const Header = ({ onSearch }: HeaderProps) => {
   };
 
   return (
-    <Col className="mb-4" asContainer>
-      <Text fontSize="2xl" fontWeight="semibold" className="mb-4">
-        Search
-      </Text>
-      <Row className="bg-gray-50 rounded-xl px-2" align="center" gap={2}>
+    <Col className="mb-2" asContainer>
+      <Row justify="between" align="center">
+        <Text fontSize="2xl" fontWeight="semibold" className="mb-2 flex-1">
+          Search
+        </Text>
+      </Row>
+      <Row
+        className="bg-gray-50 dark:bg-dark-300 rounded-2xl px-2"
+        align="center"
+        gap={2}
+      >
         <SymbolView
           name="magnifyingglass"
-          size={18}
+          size={20}
           tintColor={colors.gray.DEFAULT}
         />
         <TextInput
-          className="flex-1 h-12"
+          className="flex-1 h-12 dark:text-white"
           placeholder="Search stories and objectives..."
           placeholderTextColor={colors.gray.DEFAULT}
           value={searchTerm}
@@ -49,7 +55,7 @@ export const Header = ({ onSearch }: HeaderProps) => {
           >
             <SymbolView
               name="xmark.circle.fill"
-              size={16}
+              size={20}
               tintColor={colors.gray.DEFAULT}
             />
           </Pressable>
