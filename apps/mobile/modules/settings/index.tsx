@@ -29,7 +29,7 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 import { Image as ExpoUIImage } from "expo-image";
-import { useWorkspaces } from "@/lib/hooks/use-workspaces";
+import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import type { Workspace as WorkspaceType } from "@/types/workspace";
 
 const handleExternalLink = async (url: string) => {
@@ -51,7 +51,7 @@ const Workspace = ({
       <HStack modifiers={[frame({ width: 30, height: 30 })]}>
         <Avatar
           style={{
-            backgroundColor: workspace.color,
+            backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
           }}
           name={workspace.name}
           size="md"
@@ -59,7 +59,13 @@ const Workspace = ({
           src={workspace.avatarUrl}
         />
       </HStack>
-      <Text lineLimit={1}>{workspace.name}</Text>
+      <VStack alignment="leading">
+        <Text lineLimit={1}>{workspace.name}</Text>
+        <Text size={16} color={colors.gray.DEFAULT}>
+          {workspace.userRole}
+        </Text>
+      </VStack>
+
       {isActive && (
         <>
           <Spacer />
@@ -73,6 +79,7 @@ const Workspace = ({
 export const Settings = () => {
   const { colorScheme } = useColorScheme();
   const { data: workspaces = [] } = useWorkspaces();
+  const { workspace } = useCurrentWorkspace();
   const [isOpened, setIsOpened] = useState(false);
 
   return (
@@ -88,7 +95,7 @@ export const Settings = () => {
         <SettingsSection title="General">
           <SettingsItem
             title="Account Details"
-            onPress={() => console.log("Account Details")}
+            onPress={() => console.log(workspace)}
           />
           <SettingsItem
             title="Switch Workspace"
@@ -137,22 +144,15 @@ export const Settings = () => {
             alignment="leading"
           >
             <HStack>
-              <Text
-                weight="semibold"
-                color={
-                  colorScheme === "light"
-                    ? colors.gray.DEFAULT
-                    : colors.gray[300]
-                }
-              >
+              <Text weight="semibold" color={colors.gray.DEFAULT} size={16}>
                 Switch Workspace
               </Text>
             </HStack>
-            {workspaces.map((workspace, index) => (
+            {workspaces.map((wk) => (
               <Workspace
-                key={workspace.id}
-                isActive={index === 0}
-                workspace={workspace}
+                key={wk.id}
+                isActive={wk.id === workspace?.id}
+                workspace={wk}
               />
             ))}
           </VStack>
