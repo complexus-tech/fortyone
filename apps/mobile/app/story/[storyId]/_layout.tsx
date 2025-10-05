@@ -22,10 +22,10 @@ export default function StoryLayout() {
         <Icon sf="list.number" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="attachments">
+      {/* <NativeTabs.Trigger name="attachments">
         <Icon sf="square.fill.text.grid.1x2" />
         <Label>Attachments</Label>
-      </NativeTabs.Trigger>
+      </NativeTabs.Trigger> */}
     </NativeTabs>
   );
 }
