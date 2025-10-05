@@ -79,7 +79,7 @@ const Tab = ({ children, value, leftIcon, rightIcon }: TabProps) => {
       className={cn(
         "active:bg-gray-50 dark:active:bg-dark-300 px-2 py-2.5 rounded-full flex-1 flex-row justify-center gap-2 border dark:border-dark-50 border-gray-100",
         {
-          "bg-gray-100/50 dark:bg-dark-200/70": isActive,
+          "bg-gray-100/70 dark:bg-dark-200/80": isActive,
         }
       )}
     >

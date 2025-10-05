@@ -42,7 +42,7 @@ export const Story = ({
       <Row justify="between" align="center" gap={3}>
         <Row align="center" gap={2} className="flex-1">
           <PriorityIcon priority={priority} size={18} />
-          <Text className="flex-1" numberOfLines={1}>
+          <Text className="flex-1" numberOfLines={1} fontWeight="medium">
             {title}
           </Text>
         </Row>
