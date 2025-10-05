@@ -1,21 +1,13 @@
 import React from "react";
-import { SafeContainer, Text } from "@/components/ui";
-import { useLocalSearchParams } from "expo-router";
+import { SafeContainer } from "@/components/ui";
 import { Header } from "@/modules/story/components/header";
+import { Story } from "@/modules/story";
 
 export default function StoryOverview() {
-  const { storyId } = useLocalSearchParams();
-
   return (
-    <SafeContainer>
+    <SafeContainer isFull>
       <Header />
-
-      <Text color="muted" className="mt-4">
-        Story ID: {storyId}
-      </Text>
-      <Text color="muted" className="mt-2">
-        This is the Overview tab for the story details page.
-      </Text>
+      <Story />
     </SafeContainer>
   );
 }
