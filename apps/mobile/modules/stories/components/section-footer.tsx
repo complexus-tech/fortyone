@@ -20,18 +20,9 @@ export const SectionFooter = ({
   onLoadMore,
 }: SectionFooterProps) => {
   const { getTermDisplay } = useTerminology();
-  const storyTerm = getTermDisplay("storyTerm", {
-    variant: loadedCount === 1 ? "singular" : "plural",
-  });
 
   if (!hasMore) {
-    return (
-      <Row className="px-4 py-3">
-        <Text fontSize="sm" color="muted">
-          Showing {loadedCount} {storyTerm}
-        </Text>
-      </Row>
-    );
+    return null;
   }
 
   return (

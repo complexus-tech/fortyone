@@ -5,11 +5,26 @@ import { SymbolView } from "expo-symbols";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
-import { BottomSheet, Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
+import {
+  BottomSheet,
+  Host,
+  Text as SwiftUIText,
+  ContextMenu,
+  HStack,
+  Button,
+  Image,
+} from "@expo/ui/swift-ui";
 import { useState } from "react";
-import { padding } from "@expo/ui/swift-ui/modifiers";
+import {
+  padding,
+  cornerRadius,
+  frame,
+  glassEffect,
+} from "@expo/ui/swift-ui/modifiers";
+import { useColorScheme } from "nativewind";
 
 export const Header = () => {
+  const { colorScheme } = useColorScheme();
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
@@ -20,19 +35,58 @@ export const Header = () => {
   return (
     <>
       <Row className="mb-2" justify="between" align="center" asContainer>
-        <Back />
-        <Text fontSize="2xl" fontWeight="semibold">
-          {team?.code}-{story?.sequenceId}
-        </Text>
-        <Pressable
-          className="p-2 rounded-md"
-          style={({ pressed }) => [
-            pressed && { backgroundColor: colors.gray[50] },
-          ]}
-          onPress={() => setIsOpened(true)}
-        >
-          <SymbolView name="ellipsis" tintColor={colors.dark[50]} />
-        </Pressable>
+        <Row align="center" gap={3}>
+          <Back />
+          <Text fontSize="2xl" fontWeight="semibold">
+            {team?.code}-
+            <Text fontSize="2xl" fontWeight="semibold" color="muted">
+              {story?.sequenceId}
+            </Text>
+          </Text>
+        </Row>
+        <Host matchContents>
+          <ContextMenu>
+            <ContextMenu.Items>
+              <Button systemImage="pencil" onPress={() => {}}>
+                Edit
+              </Button>
+              <Button systemImage="archivebox.fill" onPress={() => {}}>
+                Archive
+              </Button>
+              <Button systemImage="link" onPress={() => {}}>
+                Copy link
+              </Button>
+              <Button
+                color={colors.danger}
+                systemImage="trash.fill"
+                onPress={() => {}}
+              >
+                Delete forever
+              </Button>
+            </ContextMenu.Items>
+            <ContextMenu.Trigger>
+              <HStack
+                modifiers={[
+                  frame({ width: 40, height: 40 }),
+                  glassEffect({
+                    glass: {
+                      variant: "regular",
+                    },
+                  }),
+                  cornerRadius(18),
+                ]}
+              >
+                <Image
+                  systemName="ellipsis"
+                  size={20}
+                  color={
+                    colorScheme === "light" ? colors.dark[50] : colors.gray[300]
+                  }
+                />
+              </HStack>
+            </ContextMenu.Trigger>
+          </ContextMenu>
+        </Host>
       </Row>
       <Host style={{ position: "absolute", width }}>
         <BottomSheet

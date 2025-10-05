@@ -55,7 +55,7 @@ export const SectionWithLoadMore = ({
   const loadedCount = allStories.length;
 
   return (
-    <View>
+    <View className="mb-2">
       <Text className="px-4 pt-2 pb-1" fontWeight="semibold" color="muted">
         {section.title}
       </Text>
