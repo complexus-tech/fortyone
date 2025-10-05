@@ -54,7 +54,7 @@ const textVariants = cva("text-dark dark:text-white", {
     },
   },
   defaultVariants: {
-    fontSize: "md",
+    align: "left",
   },
 });
 
