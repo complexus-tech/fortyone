@@ -10,7 +10,10 @@ export const List = ({ sprints }: { sprints: Sprint[] }) => {
   return (
     <SafeContainer isFull>
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {sprints.length === 0 && <EmptyState />}
         {sprints.map((sprint) => (
           <Card key={sprint.id} sprint={sprint} />

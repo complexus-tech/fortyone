@@ -53,7 +53,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3.5 border-t-[0.5px] border-gray-100 dark:border-dark-100"
+        className="px-4 py-3.5 border-b-[0.5px] border-gray-100 dark:border-dark-100"
       >
         <Row align="center" gap={3} className="w-8/12">
           <Row className="bg-gray-100 dark:bg-dark-200 rounded-lg p-1.5">
@@ -66,24 +66,13 @@ export const Card = ({ objective }: { objective: Objective }) => {
               }
             />
           </Row>
-          <Col>
+          <Col gap={1}>
             <Text numberOfLines={1} fontWeight="semibold">
               {objective.name}
             </Text>
-            <Row align="center" gap={1}>
-              <SymbolView
-                name="calendar"
-                size={19}
-                tintColor={
-                  colorScheme === "light"
-                    ? colors.gray.DEFAULT
-                    : colors.gray[300]
-                }
-              />
-              <Text fontSize="sm" numberOfLines={1}>
-                {format(startDateObj, "MMM d")} → {format(endDateObj, "MMM d")}
-              </Text>
-            </Row>
+            <Text fontSize="sm" numberOfLines={1}>
+              {format(startDateObj, "MMM d")} → {format(endDateObj, "MMM d")}
+            </Text>
           </Col>
         </Row>
         <Badge color={getHealthColor(objectiveStatus)} rounded="md">

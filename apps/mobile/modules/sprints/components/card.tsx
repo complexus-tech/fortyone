@@ -43,7 +43,7 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3 border-t-[0.5px] border-gray-100 dark:border-dark-100"
+        className="px-4 py-3 border-b-[0.5px] border-gray-100 dark:border-dark-100"
         gap={3}
       >
         <Row align="center" gap={3} className="w-8/12">
@@ -57,20 +57,13 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
               }
             />
           </Row>
-          <Col>
+          <Col gap={1}>
             <Text numberOfLines={1} fontWeight="semibold">
               {sprint.name}
             </Text>
-            <Row align="center" gap={1}>
-              <SymbolView
-                name="calendar"
-                size={19}
-                tintColor={colors.gray.DEFAULT}
-              />
-              <Text fontSize="sm" numberOfLines={1}>
-                {format(startDateObj, "MMM d")} → {format(endDateObj, "MMM d")}
-              </Text>
-            </Row>
+            <Text fontSize="sm" numberOfLines={1}>
+              {format(startDateObj, "MMM d")} → {format(endDateObj, "MMM d")}
+            </Text>
           </Col>
         </Row>
         <Badge color={statusColors[sprintStatus]} rounded="md">
