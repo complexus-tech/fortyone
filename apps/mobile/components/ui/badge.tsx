@@ -31,8 +31,8 @@ const badgeVariants = cva(
         invert: "bg-black border-black",
       },
       size: {
-        sm: "px-1.5 text-sm py-0.5 gap-1",
-        md: "px-2 py-1",
+        sm: "px-1.5 text-sm py-1 gap-1",
+        md: "px-2 py-1 text-sm",
         lg: "px-3.5 py-1",
       },
     },
@@ -72,7 +72,7 @@ const badgeVariants = cva(
       size: "md",
       variant: "solid",
       color: "primary",
-      rounded: "lg",
+      rounded: "xl",
     },
   }
 );

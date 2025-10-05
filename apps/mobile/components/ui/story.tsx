@@ -9,6 +9,8 @@ import { Avatar } from "./avatar";
 import { Story as StoryType } from "@/modules/stories/types";
 import { useTeamStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
+import { Badge } from "@/components/ui";
+import { hexToRgba } from "@/lib/utils/colors";
 
 export const Story = ({
   id,
@@ -23,6 +25,11 @@ export const Story = ({
   const { data: members = [] } = useMembers();
   const status = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === assigneeId);
+  // display the first 10 characters of the status name and if it's longer than 10 characters, add an ellipsis
+  const statusName =
+    status?.name && status?.name.length > 8
+      ? status?.name.slice(0, 8) + "..."
+      : status?.name;
 
   const handlePress = () => {
     router.push(`/story/${id}`);
@@ -40,8 +47,20 @@ export const Story = ({
             {title}
           </Text>
         </Row>
-        <Row align="center" gap={3}>
-          <Dot color={status?.color || colors.gray.DEFAULT} size={12} />
+        <Row align="center" gap={2}>
+          <Badge
+            style={{
+              backgroundColor: hexToRgba(status?.color || "#6B665C", 0.1),
+              borderColor: hexToRgba(status?.color || "#6B665C", 0.2),
+              borderWidth: 1,
+            }}
+            className="px-2"
+          >
+            <Row align="center" gap={1}>
+              <Dot color={status?.color} size={10} />
+              <Text>{statusName || "No Status"}</Text>
+            </Row>
+          </Badge>
           <Avatar
             size="sm"
             name={assignee?.fullName || assignee?.username}
