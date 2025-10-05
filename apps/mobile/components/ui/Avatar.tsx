@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Image, ViewProps } from "react-native";
+import { View, ViewProps } from "react-native";
+import { Image } from "expo-image";
 import { VariantProps, cva } from "cva";
 import { Text } from "./text";
 import { cn } from "@/lib/utils";
@@ -93,14 +94,19 @@ export const Avatar = ({
     >
       {src && (
         <Image
-          source={{ uri: src }}
-          className={cn("w-full h-full aspect-square", {
+          source={src}
+          className={cn("aspect-square", {
             "rounded-full": rounded === "full",
             "rounded-sm": rounded === "sm",
             "rounded-md": rounded === "md",
             "rounded-lg": rounded === "lg",
           })}
-          resizeMode="cover"
+          contentFit="cover"
+          contentPosition="top center"
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
         />
       )}
       {!src && name && (
