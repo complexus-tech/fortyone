@@ -17,8 +17,8 @@ export const Properties = () => {
     <Row wrap gap={2} asContainer className="my-4">
       <Badge
         style={{
-          backgroundColor: hexToRgba(status?.color || "#6B665C", 0.1),
-          borderColor: hexToRgba(status?.color || "#6B665C", 0.2),
+          backgroundColor: hexToRgba(status?.color, 0.1),
+          borderColor: hexToRgba(status?.color, 0.2),
           borderWidth: 1,
         }}
       >
