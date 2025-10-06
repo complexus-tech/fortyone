@@ -65,6 +65,7 @@ export const SprintStories = () => {
       <StoriesBoard
         groupedStories={groupedStories}
         groupFilters={queryOptions}
+        visibleColumns={viewOptions.displayColumns}
         isLoading={isPending}
         emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found in this sprint`}
         emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} in this sprint at the moment.`}

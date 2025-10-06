@@ -68,6 +68,7 @@ export const ObjectiveStories = () => {
         groupedStories={groupedStories}
         groupFilters={queryOptions}
         isLoading={isPending}
+        visibleColumns={viewOptions.displayColumns}
         emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found for this ${getTermDisplay("objectiveTerm", { variant: "singular" })}`}
         emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} for this ${getTermDisplay("objectiveTerm", { variant: "singular" })} at the moment.`}
       />

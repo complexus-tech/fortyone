@@ -91,6 +91,7 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
         <Tabs.Panel value="active">
@@ -98,6 +99,7 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
         <Tabs.Panel value="backlog">
@@ -105,6 +107,7 @@ export const TeamStories = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
       </Tabs>
