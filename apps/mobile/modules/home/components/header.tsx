@@ -3,7 +3,7 @@ import { Avatar, Row, Text, ContextMenuButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { ProfileSheet } from "./profile-sheet";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -21,7 +21,14 @@ export const Header = () => {
     <>
       <Row align="center" justify="between" className="mb-4" asContainer>
         <Row align="center" gap={2}>
-          <Pressable onPress={() => setIsOpened(true)}>
+          <Pressable
+            onPress={() => {
+              setIsOpened(true);
+            }}
+            style={{
+              zIndex: 1,
+            }}
+          >
             <Avatar
               name={user?.fullName || user?.username}
               size="md"
