@@ -1,7 +1,7 @@
+import React from "react";
 import { BottomSheetModal } from "@/components/ui";
 import { colors } from "@/constants";
 import { HStack, Text } from "@expo/ui/swift-ui";
-import React from "react";
 
 export const Sheet = ({
   isOpened,
