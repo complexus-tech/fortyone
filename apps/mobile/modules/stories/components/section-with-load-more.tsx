@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View } from "react-native";
+import { FlatList, View } from "react-native";
 import { Story, StorySkeleton, Text } from "@/components/ui";
 import { SectionFooter } from "./section-footer";
 import { useGroupStoriesInfinite } from "../hooks";
@@ -54,14 +54,16 @@ export const SectionWithLoadMore = ({
 
   const loadedCount = allStories.length;
 
-  return (
-    <View className="mb-2">
-      <Text className="px-4 pt-2 pb-1" fontWeight="semibold" color="muted">
-        {section.title}
-      </Text>
-      {allStories.map((story) => (
-        <Story key={story.id} {...story} />
-      ))}
+  const renderItem = ({ item }: { item: StoryType }) => <Story {...item} />;
+
+  const renderHeader = () => (
+    <Text className="px-4 pt-2 pb-1" fontWeight="semibold" color="muted">
+      {section.title}
+    </Text>
+  );
+
+  const renderFooter = () => (
+    <>
       {isFetchingNextPage && (
         <>
           <StorySkeleton />
@@ -75,6 +77,24 @@ export const SectionWithLoadMore = ({
         totalCount={section.totalCount}
         isLoading={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
+      />
+    </>
+  );
+
+  return (
+    <View className="mb-2">
+      <FlatList
+        data={allStories}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        removeClippedSubviews={true}
       />
     </View>
   );
