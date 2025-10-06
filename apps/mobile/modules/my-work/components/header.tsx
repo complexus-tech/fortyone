@@ -12,31 +12,30 @@ type HeaderProps = {
   resetViewOptions: () => void;
 };
 
-export const Header = ({
+const StoryOptionsButton = ({
   viewOptions,
   setViewOptions,
   resetViewOptions,
-}: HeaderProps) => {
+}: {
+  viewOptions: StoriesViewOptions;
+  setViewOptions: (options: Partial<StoriesViewOptions>) => void;
+  resetViewOptions: () => void;
+}) => {
   const { colorScheme } = useColorScheme();
   const [isOpened, setIsOpened] = useState(false);
   return (
     <>
-      <Row className="mb-2" asContainer justify="between" align="center">
-        <Text fontSize="2xl" fontWeight="semibold">
-          My Work
-        </Text>
-        <Pressable
-          className="p-2 rounded-xl active:bg-gray-50 dark:active:bg-dark-300"
-          onPress={() => setIsOpened(true)}
-        >
-          <SymbolView
-            name="line.3.horizontal.decrease"
-            tintColor={
-              colorScheme === "light" ? colors.dark[50] : colors.gray[300]
-            }
-          />
-        </Pressable>
-      </Row>
+      <Pressable
+        className="p-2 rounded-xl active:bg-gray-50 dark:active:bg-dark-300"
+        onPress={() => setIsOpened(true)}
+      >
+        <SymbolView
+          name="line.3.horizontal.decrease"
+          tintColor={
+            colorScheme === "light" ? colors.dark[50] : colors.gray[300]
+          }
+        />
+      </Pressable>
       <StoriesOptionsSheet
         isOpened={isOpened}
         setIsOpened={setIsOpened}
@@ -45,5 +44,24 @@ export const Header = ({
         resetViewOptions={resetViewOptions}
       />
     </>
+  );
+};
+
+export const Header = ({
+  viewOptions,
+  setViewOptions,
+  resetViewOptions,
+}: HeaderProps) => {
+  return (
+    <Row className="mb-2" asContainer justify="between" align="center">
+      <Text fontSize="2xl" fontWeight="semibold">
+        My Work
+      </Text>
+      <StoryOptionsButton
+        viewOptions={viewOptions}
+        setViewOptions={setViewOptions}
+        resetViewOptions={resetViewOptions}
+      />
+    </Row>
   );
 };

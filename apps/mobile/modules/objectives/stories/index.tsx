@@ -14,9 +14,12 @@ export const ObjectiveStories = () => {
     objectiveId: string;
     teamId: string;
   }>();
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
-    `objective-${objectiveId}:view-options`
-  );
+  const {
+    viewOptions,
+    setViewOptions,
+    resetViewOptions,
+    isLoaded: viewOptionsLoaded,
+  } = useViewOptions(`objective-${objectiveId}:view-options`);
   const { getTermDisplay } = useTerminology();
 
   const queryOptions = useMemo(() => {
@@ -44,7 +47,11 @@ export const ObjectiveStories = () => {
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
-        <Header />
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
         <StoriesListSkeleton />
       </SafeContainer>
     );
@@ -52,7 +59,11 @@ export const ObjectiveStories = () => {
 
   return (
     <SafeContainer isFull>
-      <Header />
+      <Header
+        viewOptions={viewOptions}
+        setViewOptions={setViewOptions}
+        resetViewOptions={resetViewOptions}
+      />
       <StoriesBoard
         groupedStories={groupedStories}
         groupFilters={queryOptions}

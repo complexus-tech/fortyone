@@ -12,9 +12,12 @@ export const SprintStories = () => {
     sprintId: string;
     teamId: string;
   }>();
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
-    `sprint-${sprintId}:view-options`
-  );
+  const {
+    viewOptions,
+    setViewOptions,
+    resetViewOptions,
+    isLoaded: viewOptionsLoaded,
+  } = useViewOptions(`sprint-${sprintId}:view-options`);
   const { getTermDisplay } = useTerminology();
 
   const queryOptions = useMemo(() => {
@@ -42,7 +45,11 @@ export const SprintStories = () => {
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
-        <Header />
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
         <StoriesListSkeleton />
       </SafeContainer>
     );
@@ -50,7 +57,11 @@ export const SprintStories = () => {
 
   return (
     <SafeContainer isFull>
-      <Header />
+      <Header
+        viewOptions={viewOptions}
+        setViewOptions={setViewOptions}
+        resetViewOptions={resetViewOptions}
+      />
       <StoriesBoard
         groupedStories={groupedStories}
         groupFilters={queryOptions}

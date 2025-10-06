@@ -11,9 +11,12 @@ import type { TeamStoriesTab } from "../types";
 export const TeamStories = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
-    `team-${teamId}:view-options`
-  );
+  const {
+    viewOptions,
+    setViewOptions,
+    resetViewOptions,
+    isLoaded: viewOptionsLoaded,
+  } = useViewOptions(`team-${teamId}:view-options`);
   const { getTermDisplay } = useTerminology();
 
   const queryOptions = useMemo(() => {
@@ -55,7 +58,11 @@ export const TeamStories = () => {
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
-        <Header />
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
         <StoriesListSkeleton />
       </SafeContainer>
     );
@@ -63,7 +70,11 @@ export const TeamStories = () => {
 
   return (
     <SafeContainer isFull>
-      <Header />
+      <Header
+        viewOptions={viewOptions}
+        setViewOptions={setViewOptions}
+        resetViewOptions={resetViewOptions}
+      />
       <Tabs
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as TeamStoriesTab)}
