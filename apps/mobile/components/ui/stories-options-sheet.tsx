@@ -3,7 +3,10 @@ import { BottomSheetModal, ContextMenuButton } from "@/components/ui";
 import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
-import type { StoriesViewOptions } from "@/types/stories-view-options";
+import type {
+  DisplayColumn,
+  StoriesViewOptions,
+} from "@/types/stories-view-options";
 import { useColorScheme } from "nativewind";
 
 export const StoriesOptionsSheet = ({
@@ -20,6 +23,7 @@ export const StoriesOptionsSheet = ({
   resetViewOptions: () => void;
 }) => {
   const { colorScheme } = useColorScheme();
+  const displayColumns = viewOptions.displayColumns || [];
   const groupByOptions = [
     {
       label: "Status",
@@ -64,6 +68,15 @@ export const StoriesOptionsSheet = ({
       onPress: () => setViewOptions({ ...viewOptions, orderDirection: "asc" }),
     },
   ];
+
+  const toggleDisplayColumn = (column: DisplayColumn) => {
+    setViewOptions({
+      ...viewOptions,
+      displayColumns: displayColumns.includes(column)
+        ? displayColumns.filter((c) => c !== column)
+        : [...displayColumns, column],
+    });
+  };
 
   return (
     <BottomSheetModal
@@ -170,18 +183,20 @@ export const StoriesOptionsSheet = ({
         <Text modifiers={[opacity(0.75)]}>Display columns</Text>
         <HStack spacing={12}>
           <Button
-            variant="bordered"
+            variant={displayColumns.includes("ID") ? "bordered" : "plain"}
             color={
               colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
+            onPress={() => toggleDisplayColumn("ID")}
           >
             ID
           </Button>
           <Button
-            variant="bordered"
+            variant={displayColumns.includes("Status") ? "bordered" : "plain"}
             color={
               colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
+            onPress={() => toggleDisplayColumn("Status")}
           >
             Status
           </Button>
@@ -189,7 +204,8 @@ export const StoriesOptionsSheet = ({
             color={
               colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
-            variant="plain"
+            variant={displayColumns.includes("Assignee") ? "bordered" : "plain"}
+            onPress={() => toggleDisplayColumn("Assignee")}
           >
             Assignee
           </Button>
@@ -197,7 +213,8 @@ export const StoriesOptionsSheet = ({
             color={
               colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
-            variant="plain"
+            variant={displayColumns.includes("Priority") ? "bordered" : "plain"}
+            onPress={() => toggleDisplayColumn("Priority")}
           >
             Priority
           </Button>
