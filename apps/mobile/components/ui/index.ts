@@ -18,6 +18,7 @@ export { Tabs } from "./tabs";
 export { Back } from "./back";
 export { ContextMenuButton } from "./context-menu-button";
 export { BottomSheetModal } from "./bottom-sheet-modal";
+export { WorkspaceSwitcher } from "./workspace-switcher";
 
 export type { TextProps } from "./text";
 export type { InputProps } from "./input";
