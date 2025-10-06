@@ -4,6 +4,7 @@ import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { useColorScheme } from "nativewind";
 
 export const StoriesOptionsSheet = ({
   isOpened,
@@ -18,6 +19,7 @@ export const StoriesOptionsSheet = ({
   setViewOptions: (options: StoriesViewOptions) => void;
   resetViewOptions: () => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const groupByOptions = [
     {
       label: "Status",
@@ -75,7 +77,13 @@ export const StoriesOptionsSheet = ({
           <Spacer />
           <ContextMenuButton actions={groupByOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>
+              <Text
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
+              >
                 {viewOptions.groupBy === "status"
                   ? "Status"
                   : viewOptions.groupBy === "priority"
@@ -85,7 +93,11 @@ export const StoriesOptionsSheet = ({
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
-                color={colors.dark.DEFAULT}
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
                 size={14}
               />
             </HStack>
@@ -96,7 +108,13 @@ export const StoriesOptionsSheet = ({
           <Spacer />
           <ContextMenuButton actions={orderByOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>
+              <Text
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
+              >
                 {viewOptions.orderBy === "created"
                   ? "Created"
                   : viewOptions.orderBy === "updated"
@@ -108,7 +126,11 @@ export const StoriesOptionsSheet = ({
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
-                color={colors.dark.DEFAULT}
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
                 size={14}
               />
             </HStack>
@@ -119,7 +141,13 @@ export const StoriesOptionsSheet = ({
           <Spacer />
           <ContextMenuButton actions={orderDirectionOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>
+              <Text
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
+              >
                 {viewOptions.orderDirection === "desc"
                   ? "Descending"
                   : "Ascending"}
@@ -127,7 +155,11 @@ export const StoriesOptionsSheet = ({
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
-                color={colors.dark.DEFAULT}
+                color={
+                  colorScheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200]
+                }
                 size={14}
               />
             </HStack>
@@ -137,14 +169,38 @@ export const StoriesOptionsSheet = ({
       <VStack spacing={16} alignment="leading">
         <Text modifiers={[opacity(0.75)]}>Display columns</Text>
         <HStack spacing={12}>
-          <Button variant="bordered" color={colors.black}>
+          <Button
+            variant="bordered"
+            color={
+              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+            }
+          >
             ID
           </Button>
-          <Button variant="bordered" color={colors.black}>
+          <Button
+            variant="bordered"
+            color={
+              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+            }
+          >
             Status
           </Button>
-          <Button variant="plain">Assignee</Button>
-          <Button variant="plain">Priority</Button>
+          <Button
+            color={
+              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+            }
+            variant="plain"
+          >
+            Assignee
+          </Button>
+          <Button
+            color={
+              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+            }
+            variant="plain"
+          >
+            Priority
+          </Button>
         </HStack>
       </VStack>
     </BottomSheetModal>
