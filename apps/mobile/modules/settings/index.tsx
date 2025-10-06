@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Linking } from "react-native";
+import { ScrollView, Linking, Alert } from "react-native";
 import {
   SafeContainer,
   WorkspaceSwitcher,
@@ -24,6 +24,19 @@ export const Settings = () => {
   const { workspace } = useCurrentWorkspace();
   const [isOpened, setIsOpened] = useState(false);
   const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => {
+          console.log("Logout");
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeContainer isFull>
@@ -70,7 +83,7 @@ export const Settings = () => {
             title="Log Out"
             destructive
             showChevron={false}
-            onPress={() => console.log("Log Out")}
+            onPress={handleLogout}
           />
         </SettingsSection>
       </ScrollView>

@@ -65,7 +65,11 @@ export const WorkspaceSwitcher = ({
   const mutedTextColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
-    <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
+    <BottomSheetModal
+      isOpen={isOpened}
+      onClose={() => setIsOpened(false)}
+      spacing={16}
+    >
       <HStack>
         <Text weight="semibold" color={mutedTextColor} size={15}>
           Switch Workspace

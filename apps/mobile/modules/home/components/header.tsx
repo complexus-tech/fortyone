@@ -3,7 +3,7 @@ import { Avatar, Row, Text, ContextMenuButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { ProfileSheet } from "./profile-sheet";
-import { Pressable, View } from "react-native";
+import { Pressable, Alert } from "react-native";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -16,6 +16,19 @@ export const Header = () => {
   const router = useRouter();
   const { data: user } = useProfile();
   const [isOpened, setIsOpened] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => {
+          console.log("Logout");
+        },
+      },
+    ]);
+  };
 
   return (
     <>
@@ -54,7 +67,7 @@ export const Header = () => {
             {
               systemImage: "xmark.circle",
               label: "Logout",
-              onPress: () => {},
+              onPress: handleLogout,
             },
           ]}
         />

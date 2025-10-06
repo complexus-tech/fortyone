@@ -24,11 +24,7 @@ export const ProfileSheet = ({
 
   return (
     <>
-      <BottomSheetModal
-        isOpen={isOpened}
-        onClose={() => setIsOpened(false)}
-        spacing={16}
-      >
+      <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
         <HStack>
           <Text size={16} color={mutedTextColor}>
             {`${user?.email}`}
