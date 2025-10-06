@@ -1,14 +1,6 @@
 import React from "react";
 import { BottomSheetModal, ContextMenuButton } from "@/components/ui";
-import {
-  Text,
-  HStack,
-  Spacer,
-  ContextMenu,
-  Button,
-  Image,
-  VStack,
-} from "@expo/ui/swift-ui";
+import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
 
