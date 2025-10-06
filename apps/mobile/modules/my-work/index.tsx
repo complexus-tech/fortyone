@@ -1,11 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Header } from "./components/header";
-import {
-  SafeContainer,
-  Tabs,
-  StoriesListSkeleton,
-  Text,
-} from "@/components/ui";
+import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
 import { useTerminology } from "@/hooks/use-terminology";
@@ -13,7 +8,12 @@ import type { MyWorkTab } from "./types";
 
 export const MyWork = () => {
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions();
+  const {
+    viewOptions,
+    setViewOptions,
+    resetViewOptions,
+    isLoaded: viewOptionsLoaded,
+  } = useViewOptions();
   const { getTermDisplay } = useTerminology();
 
   // Fetch data based on active tab
@@ -57,7 +57,11 @@ export const MyWork = () => {
   if (!viewOptionsLoaded) {
     return (
       <SafeContainer isFull>
-        <Header />
+        <Header
+          viewOptions={viewOptions}
+          setViewOptions={setViewOptions}
+          resetViewOptions={resetViewOptions}
+        />
         <StoriesListSkeleton />
       </SafeContainer>
     );
@@ -65,7 +69,11 @@ export const MyWork = () => {
 
   return (
     <SafeContainer isFull>
-      <Header />
+      <Header
+        viewOptions={viewOptions}
+        setViewOptions={setViewOptions}
+        resetViewOptions={resetViewOptions}
+      />
       <Tabs
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as MyWorkTab)}
@@ -78,7 +86,6 @@ export const MyWork = () => {
           <Tabs.Tab value="created">Created</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
-          <Text>{JSON.stringify(viewOptions)}</Text>
           <StoriesBoard
             groupedStories={groupedStories}
             groupFilters={queryOptions}

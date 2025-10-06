@@ -4,12 +4,21 @@ import { SymbolView } from "expo-symbols";
 import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useColorScheme } from "nativewind";
-import { useViewOptions } from "../hooks";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
-export const Header = () => {
+type HeaderProps = {
+  viewOptions: StoriesViewOptions;
+  setViewOptions: (options: Partial<StoriesViewOptions>) => void;
+  resetViewOptions: () => void;
+};
+
+export const Header = ({
+  viewOptions,
+  setViewOptions,
+  resetViewOptions,
+}: HeaderProps) => {
   const { colorScheme } = useColorScheme();
   const [isOpened, setIsOpened] = useState(false);
-  const { viewOptions, setViewOptions, resetViewOptions } = useViewOptions();
   return (
     <>
       <Row className="mb-2" asContainer justify="between" align="center">
