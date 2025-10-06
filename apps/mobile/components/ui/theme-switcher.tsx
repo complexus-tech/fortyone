@@ -80,7 +80,13 @@ export const ThemeSwitcher = ({
   return (
     <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
       <HStack>
-        <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
+        <Text
+          weight="semibold"
+          color={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
+          size={15}
+        >
           Appearance
         </Text>
       </HStack>

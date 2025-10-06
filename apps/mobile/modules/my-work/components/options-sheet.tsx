@@ -1,6 +1,7 @@
 import React from "react";
 import { BottomSheetModal } from "@/components/ui";
-import { Text } from "@expo/ui/swift-ui";
+import { Text, HStack } from "@expo/ui/swift-ui";
+import { colors } from "@/constants";
 
 export const OptionsSheet = ({
   isOpened,
@@ -11,6 +12,11 @@ export const OptionsSheet = ({
 }) => {
   return (
     <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
+      <HStack>
+        <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
+          Appearance
+        </Text>
+      </HStack>
       <Text>Hello, world!</Text>
     </BottomSheetModal>
   );
