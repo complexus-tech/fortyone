@@ -4,6 +4,7 @@ import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
 import type { SearchQueryParams } from "./types";
+import { View } from "react-native";
 
 export const Search = () => {
   const [searchType, setSearchType] = useState<"stories" | "objectives">(
@@ -25,9 +26,11 @@ export const Search = () => {
         setSearchType={setSearchType}
       />
       {!searchQuery ? (
-        <Text color="muted" className="mt-8 text-center">
-          Start typing to search for stories and objectives
-        </Text>
+        <View className="flex-1 justify-center items-center">
+          <Text color="muted" className="mt-8 text-center">
+            Start typing to search for stories and objectives
+          </Text>
+        </View>
       ) : isPending ? (
         <Text color="muted" className="mt-4 text-center">
           Searching...
