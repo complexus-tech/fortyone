@@ -6,7 +6,7 @@ import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 import { SFSymbol } from "expo-symbols";
 
 type ContextMenuAction = {
-  systemImage: SFSymbol;
+  systemImage?: SFSymbol;
   label: string;
   onPress: () => void;
   color?: string;
@@ -14,27 +14,30 @@ type ContextMenuAction = {
 
 type ContextMenuButtonProps = {
   actions: ContextMenuAction[];
+  children?: React.ReactNode;
+  withNoHost?: boolean;
 };
 
-export const ContextMenuButton = ({ actions }: ContextMenuButtonProps) => {
+const Menu = ({ actions, children }: ContextMenuButtonProps) => {
   const { colorScheme } = useColorScheme();
-
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
-      <ContextMenu>
-        <ContextMenu.Items>
-          {actions.map((action, index) => (
-            <Button
-              key={index}
-              systemImage={action.systemImage}
-              color={action.color}
-              onPress={action.onPress}
-            >
-              {action.label}
-            </Button>
-          ))}
-        </ContextMenu.Items>
-        <ContextMenu.Trigger>
+    <ContextMenu>
+      <ContextMenu.Items>
+        {actions.map((action, index) => (
+          <Button
+            key={index}
+            systemImage={action.systemImage}
+            color={action.color}
+            onPress={action.onPress}
+          >
+            {action.label}
+          </Button>
+        ))}
+      </ContextMenu.Items>
+      <ContextMenu.Trigger>
+        {children ? (
+          children
+        ) : (
           <HStack
             modifiers={[
               frame({ width: 40, height: 40 }),
@@ -54,8 +57,29 @@ export const ContextMenuButton = ({ actions }: ContextMenuButtonProps) => {
               }
             />
           </HStack>
-        </ContextMenu.Trigger>
-      </ContextMenu>
+        )}
+      </ContextMenu.Trigger>
+    </ContextMenu>
+  );
+};
+
+export const ContextMenuButton = ({
+  actions,
+  children,
+  withNoHost,
+}: ContextMenuButtonProps) => {
+  if (withNoHost) {
+    return (
+      <Menu actions={actions} withNoHost={withNoHost}>
+        {children}
+      </Menu>
+    );
+  }
+  return (
+    <Host matchContents style={{ width: 40, height: 40 }}>
+      <Menu actions={actions} withNoHost={withNoHost}>
+        {children}
+      </Menu>
     </Host>
   );
 };
