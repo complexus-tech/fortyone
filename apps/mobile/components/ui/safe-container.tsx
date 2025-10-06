@@ -24,8 +24,7 @@ export const SafeContainer = ({
     styles.container,
     isFull && styles.full,
     {
-      backgroundColor:
-        colorScheme === "dark" ? colors.dark.DEFAULT : colors.white,
+      backgroundColor: colorScheme === "dark" ? colors.black : colors.white,
     },
     style,
   ];
