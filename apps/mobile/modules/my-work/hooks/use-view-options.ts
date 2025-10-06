@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { MyWorkViewOptions } from "../types";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
 const STORAGE_KEY = "my-work:view-options";
 
-const defaultViewOptions: MyWorkViewOptions = {
+const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
@@ -12,7 +12,7 @@ const defaultViewOptions: MyWorkViewOptions = {
 
 export const useViewOptions = () => {
   const [viewOptions, setViewOptionsState] =
-    useState<MyWorkViewOptions>(defaultViewOptions);
+    useState<StoriesViewOptions>(defaultViewOptions);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from AsyncStorage on mount
@@ -36,7 +36,7 @@ export const useViewOptions = () => {
 
   // Save to AsyncStorage whenever options change
   const setViewOptions = useCallback(
-    async (newOptions: Partial<MyWorkViewOptions>) => {
+    async (newOptions: Partial<StoriesViewOptions>) => {
       const updated = { ...viewOptions, ...newOptions };
       setViewOptionsState(updated);
 

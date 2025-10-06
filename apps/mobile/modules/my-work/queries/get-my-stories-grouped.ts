@@ -1,7 +1,10 @@
 import { stringify } from "qs";
 import { get } from "@/lib/http";
 import type { ApiResponse } from "@/types";
-import type { GroupedStoriesResponse, GroupedStoryParams } from "../types";
+import type {
+  GroupedStoriesResponse,
+  GroupedStoryParams,
+} from "@/modules/stories/types";
 
 const buildGroupedStoriesQuery = (params: GroupedStoryParams): string => {
   return stringify(params, {

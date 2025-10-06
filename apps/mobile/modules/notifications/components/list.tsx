@@ -2,23 +2,10 @@ import React from "react";
 import { View, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationCard } from "./card";
-
-type Notification = {
-  id: string;
-  title: string;
-  message: string;
-  type: "story_update" | "story_comment" | "mention";
-  actor: {
-    name: string;
-    avatar?: string;
-  };
-  createdAt: string;
-  readAt: string | null;
-  entityId: string;
-};
+import type { AppNotification } from "../types";
 
 type NotificationListProps = {
-  notifications: Notification[];
+  notifications: AppNotification[];
   isLoading?: boolean;
   onRefresh?: () => void;
 };
@@ -34,12 +21,12 @@ export const NotificationList = ({
     item,
     index,
   }: {
-    item: Notification;
+    item: AppNotification;
     index: number;
-  }) => <NotificationCard notification={item} index={index} />;
+  }) => <NotificationCard {...item} index={index} />;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1">
       <FlatList
         data={notifications}
         renderItem={renderNotification}

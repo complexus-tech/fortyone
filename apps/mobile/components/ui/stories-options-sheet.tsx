@@ -3,73 +3,63 @@ import { BottomSheetModal, ContextMenuButton } from "@/components/ui";
 import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
 export const StoriesOptionsSheet = ({
   isOpened,
   setIsOpened,
+  viewOptions,
+  setViewOptions,
+  resetViewOptions,
 }: {
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
+  viewOptions: StoriesViewOptions;
+  setViewOptions: (options: StoriesViewOptions) => void;
+  resetViewOptions: () => void;
 }) => {
-  const statuses = [
+  const groupByOptions = [
     {
       label: "Status",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, groupBy: "status" }),
     },
     {
       label: "Priority",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, groupBy: "priority" }),
     },
     {
       label: "Assignee",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, groupBy: "assignee" }),
     },
   ];
-  const ordering = [
+
+  const orderByOptions = [
     {
       label: "Created",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderBy: "created" }),
     },
-
     {
       label: "Updated",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderBy: "updated" }),
     },
     {
       label: "Deadline",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderBy: "deadline" }),
     },
     {
       label: "Priority",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderBy: "priority" }),
     },
   ];
-  const orderingDirection = [
+
+  const orderDirectionOptions = [
     {
       label: "Descending",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderDirection: "desc" }),
     },
     {
       label: "Ascending",
-      onPress: () => {},
-    },
-  ];
-  const displayColumns = [
-    {
-      label: "ID",
-      onPress: () => {},
-    },
-    {
-      label: "Status",
-      onPress: () => {},
-    },
-    {
-      label: "Assignee",
-      onPress: () => {},
-    },
-    {
-      label: "Priority",
-      onPress: () => {},
+      onPress: () => setViewOptions({ ...viewOptions, orderDirection: "asc" }),
     },
   ];
 
@@ -83,9 +73,15 @@ export const StoriesOptionsSheet = ({
         <HStack>
           <Text>Grouping</Text>
           <Spacer />
-          <ContextMenuButton actions={statuses} withNoHost>
+          <ContextMenuButton actions={groupByOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>Status</Text>
+              <Text color={colors.dark.DEFAULT}>
+                {viewOptions.groupBy === "status"
+                  ? "Status"
+                  : viewOptions.groupBy === "priority"
+                    ? "Priority"
+                    : "Assignee"}
+              </Text>
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
@@ -98,9 +94,17 @@ export const StoriesOptionsSheet = ({
         <HStack>
           <Text>Ordering</Text>
           <Spacer />
-          <ContextMenuButton actions={ordering} withNoHost>
+          <ContextMenuButton actions={orderByOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>Created</Text>
+              <Text color={colors.dark.DEFAULT}>
+                {viewOptions.orderBy === "created"
+                  ? "Created"
+                  : viewOptions.orderBy === "updated"
+                    ? "Updated"
+                    : viewOptions.orderBy === "deadline"
+                      ? "Deadline"
+                      : "Priority"}
+              </Text>
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
@@ -113,9 +117,13 @@ export const StoriesOptionsSheet = ({
         <HStack>
           <Text>Order direction</Text>
           <Spacer />
-          <ContextMenuButton actions={orderingDirection} withNoHost>
+          <ContextMenuButton actions={orderDirectionOptions} withNoHost>
             <HStack spacing={3}>
-              <Text color={colors.dark.DEFAULT}>Descending</Text>
+              <Text color={colors.dark.DEFAULT}>
+                {viewOptions.orderDirection === "desc"
+                  ? "Descending"
+                  : "Ascending"}
+              </Text>
               <Image
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}

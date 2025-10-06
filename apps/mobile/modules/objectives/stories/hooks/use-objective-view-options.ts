@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
-export type ObjectiveViewOptions = {
-  groupBy: "status" | "priority" | "assignee";
-  orderBy: "created" | "updated" | "deadline" | "priority";
-  orderDirection: "asc" | "desc";
-};
-
-const defaultViewOptions: ObjectiveViewOptions = {
+const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
@@ -16,7 +11,7 @@ const defaultViewOptions: ObjectiveViewOptions = {
 export const useObjectiveViewOptions = (objectiveId: string) => {
   const STORAGE_KEY = `objective-${objectiveId}:view-options`;
   const [viewOptions, setViewOptionsState] =
-    useState<ObjectiveViewOptions>(defaultViewOptions);
+    useState<StoriesViewOptions>(defaultViewOptions);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -39,7 +34,7 @@ export const useObjectiveViewOptions = (objectiveId: string) => {
     loadViewOptions();
   }, [STORAGE_KEY]);
 
-  const setViewOptions = async (newOptions: ObjectiveViewOptions) => {
+  const setViewOptions = async (newOptions: StoriesViewOptions) => {
     try {
       setViewOptionsState(newOptions);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newOptions));

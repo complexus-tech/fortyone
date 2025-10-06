@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { TeamViewOptions } from "../types";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
-const defaultViewOptions: TeamViewOptions = {
+const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
@@ -12,7 +12,7 @@ export const useTeamViewOptions = (teamId: string) => {
   const STORAGE_KEY = `team-${teamId}:view-options`;
 
   const [viewOptions, setViewOptionsState] =
-    useState<TeamViewOptions>(defaultViewOptions);
+    useState<StoriesViewOptions>(defaultViewOptions);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export const useTeamViewOptions = (teamId: string) => {
   }, [STORAGE_KEY]);
 
   const setViewOptions = useCallback(
-    async (newOptions: Partial<TeamViewOptions>) => {
+    async (newOptions: Partial<StoriesViewOptions>) => {
       const updated = { ...viewOptions, ...newOptions };
       setViewOptionsState(updated);
 

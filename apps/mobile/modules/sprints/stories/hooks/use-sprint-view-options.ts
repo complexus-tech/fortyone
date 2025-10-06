@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { SprintViewOptions } from "../types";
+import type { StoriesViewOptions } from "@/types/stories-view-options";
 
-const defaultViewOptions: SprintViewOptions = {
+const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
@@ -11,7 +11,7 @@ const defaultViewOptions: SprintViewOptions = {
 export const useSprintViewOptions = (sprintId: string) => {
   const STORAGE_KEY = `sprint-${sprintId}:view-options`;
   const [viewOptions, setViewOptionsState] =
-    useState<SprintViewOptions>(defaultViewOptions);
+    useState<StoriesViewOptions>(defaultViewOptions);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export const useSprintViewOptions = (sprintId: string) => {
     loadViewOptions();
   }, [STORAGE_KEY]);
 
-  const setViewOptions = async (newOptions: SprintViewOptions) => {
+  const setViewOptions = async (newOptions: StoriesViewOptions) => {
     try {
       setViewOptionsState(newOptions);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newOptions));
