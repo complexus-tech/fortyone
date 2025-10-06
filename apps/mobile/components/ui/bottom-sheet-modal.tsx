@@ -7,6 +7,7 @@ type BottomSheetModalProps = {
   onClose: () => void;
   children: React.ReactNode;
   showDragIndicator?: boolean;
+  spacing?: number;
 };
 
 export const BottomSheetModal = ({
@@ -14,6 +15,7 @@ export const BottomSheetModal = ({
   onClose,
   children,
   showDragIndicator = true,
+  spacing = 20,
 }: BottomSheetModalProps) => {
   return (
     <Host matchContents style={{ position: "absolute" }}>
@@ -23,7 +25,7 @@ export const BottomSheetModal = ({
         presentationDragIndicator={showDragIndicator ? "visible" : "hidden"}
       >
         <VStack
-          spacing={20}
+          spacing={spacing}
           modifiers={[padding({ all: 24 })]}
           alignment="leading"
         >

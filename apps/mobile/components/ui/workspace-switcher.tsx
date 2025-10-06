@@ -5,6 +5,7 @@ import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
+import { useColorScheme } from "nativewind";
 
 const WorkspaceItem = ({
   isActive,
@@ -13,16 +14,19 @@ const WorkspaceItem = ({
   isActive?: boolean;
   workspace: Workspace;
 }) => {
+  const { colorScheme } = useColorScheme();
+  const mutedTextColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <HStack spacing={8}>
-      <HStack modifiers={[frame({ width: 30, height: 30 })]}>
+      <HStack modifiers={[frame({ width: 36, height: 36 })]}>
         <Avatar
           style={{
             backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
           }}
           name={workspace.name}
-          size="md"
-          rounded="lg"
+          className="size-[36px]"
+          rounded="xl"
           src={workspace.avatarUrl}
         />
       </HStack>
@@ -30,13 +34,19 @@ const WorkspaceItem = ({
         <Text lineLimit={1} size={16}>
           {workspace.name}
         </Text>
-        <Text size={16} color={colors.gray.DEFAULT}>
+        <Text size={16} color={mutedTextColor}>
           {workspace.userRole}
         </Text>
       </VStack>
       <Spacer />
       {isActive && (
-        <Image systemName="checkmark.circle.fill" color="white" size={20} />
+        <Image
+          systemName="checkmark.circle.fill"
+          color={
+            colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+          }
+          size={20}
+        />
       )}
     </HStack>
   );
@@ -49,12 +59,15 @@ export const WorkspaceSwitcher = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
+  const mutedTextColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
       <HStack>
-        <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
+        <Text weight="semibold" color={mutedTextColor} size={15}>
           Switch Workspace
         </Text>
       </HStack>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Avatar, Row, Text, ContextMenuButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { Sheet } from "./sheet";
+import { ProfileSheet } from "./profile-sheet";
 import { Pressable } from "react-native";
 
 const getTimeOfDay = () => {
@@ -47,7 +47,7 @@ export const Header = () => {
           ]}
         />
       </Row>
-      <Sheet isOpened={isOpened} setIsOpened={setIsOpened} />
+      <ProfileSheet isOpened={isOpened} setIsOpened={setIsOpened} />
     </>
   );
 };
