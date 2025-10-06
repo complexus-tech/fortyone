@@ -52,7 +52,7 @@ export const Header = ({ onSearch }: HeaderProps) => {
             >
               <HStack spacing={4}>
                 <SwiftUIText
-                  size={16}
+                  size={15}
                   color={
                     colorScheme === "light"
                       ? colors.dark.DEFAULT
