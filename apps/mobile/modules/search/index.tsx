@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { SafeContainer, Text } from "@/components/ui";
+import { SafeContainer, Text, StoriesSkeleton } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
 import type { SearchQueryParams } from "./types";
 import { View } from "react-native";
+import { ObjectivesSkeleton } from "@/modules/objectives/components";
 
 export const Search = () => {
   const [searchType, setSearchType] = useState<"stories" | "objectives">(
@@ -32,9 +33,11 @@ export const Search = () => {
           </Text>
         </View>
       ) : isPending ? (
-        <Text color="muted" className="mt-4 text-center">
-          Searching...
-        </Text>
+        searchType === "stories" ? (
+          <StoriesSkeleton count={8} />
+        ) : (
+          <ObjectivesSkeleton count={8} />
+        )
       ) : results ? (
         <SearchResults results={results} type={searchType} />
       ) : null}
