@@ -51,6 +51,11 @@ export const Header = () => {
               label: "Help Center",
               onPress: () => {},
             },
+            {
+              systemImage: "xmark.circle",
+              label: "Logout",
+              onPress: () => {},
+            },
           ]}
         />
       </Row>
