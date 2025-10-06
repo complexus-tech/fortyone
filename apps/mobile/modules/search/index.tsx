@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { SafeContainer, Text, StoriesSkeleton, Row } from "@/components/ui";
+import { SafeContainer, Text, StoriesSkeleton, Col } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
 import type { SearchQueryParams } from "./types";
-import { View } from "react-native";
+
 import { ObjectivesSkeleton } from "@/modules/objectives/components";
 
 export const Search = () => {
@@ -12,7 +12,6 @@ export const Search = () => {
     "stories"
   );
   const [searchQuery, setSearchQuery] = useState("");
-
   const { data: results, isPending } = useSearch({ query: searchQuery });
 
   const handleSearch = (params: SearchQueryParams) => {
@@ -27,11 +26,11 @@ export const Search = () => {
         setSearchType={setSearchType}
       />
       {!searchQuery ? (
-        <Row align="center" justify="center" className="flex-1" asContainer>
+        <Col align="center" justify="center" className="flex-1" asContainer>
           <Text color="muted" className="mt-8 text-center">
             Start typing to search for stories and objectives
           </Text>
-        </Row>
+        </Col>
       ) : isPending ? (
         searchType === "stories" ? (
           <StoriesSkeleton count={8} />

@@ -97,7 +97,7 @@ export const Header = ({
         </Host>
       </Row>
       <Row
-        className="bg-gray-50 dark:bg-dark-300 rounded-2xl px-2"
+        className="bg-gray-50 dark:bg-dark-200 rounded-full px-3 mt-2"
         align="center"
         gap={2}
       >
@@ -108,7 +108,11 @@ export const Header = ({
         />
         <TextInput
           className="flex-1 h-12 dark:text-white"
-          placeholder="Search stories and objectives..."
+          placeholder={`Search ${getTermDisplay("storyTerm", {
+            variant: "plural",
+          })} and ${getTermDisplay("objectiveTerm", {
+            variant: "plural",
+          })}...`}
           placeholderTextColor={colors.gray.DEFAULT}
           value={searchTerm}
           onChangeText={setSearchTerm}
