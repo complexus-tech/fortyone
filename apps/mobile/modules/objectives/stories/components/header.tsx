@@ -1,8 +1,6 @@
-import React, { useState } from "react";
-import { Pressable } from "react-native";
-import { Row, Text, Back, StoriesOptionsSheet } from "@/components/ui";
-import { SymbolView } from "expo-symbols";
-import { colors } from "@/constants/colors";
+import React from "react";
+import { Row, Text, Back } from "@/components/ui";
+import { StoryOptionsButton } from "@/modules/stories/components";
 import { useGlobalSearchParams } from "expo-router";
 import { useObjective } from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks/use-terminology";
@@ -24,7 +22,6 @@ export const Header = ({
   }>();
   const { data: objective } = useObjective(objectiveId);
   const { getTermDisplay } = useTerminology();
-  const [isOpened, setIsOpened] = useState(false);
 
   // truncate objective name to 16 characters and add ellipsis if needed
   const objectiveName =
@@ -46,21 +43,7 @@ export const Header = ({
           {getTermDisplay("storyTerm", { variant: "plural", capitalize: true })}
         </Text>
       </Text>
-      <Pressable
-        className="p-2 rounded-md"
-        style={({ pressed }) => [
-          pressed && { backgroundColor: colors.gray[50] },
-        ]}
-        onPress={() => setIsOpened(true)}
-      >
-        <SymbolView
-          name="line.3.horizontal.decrease"
-          tintColor={colors.dark[50]}
-        />
-      </Pressable>
-      <StoriesOptionsSheet
-        isOpened={isOpened}
-        setIsOpened={setIsOpened}
+      <StoryOptionsButton
         viewOptions={viewOptions}
         setViewOptions={setViewOptions}
         resetViewOptions={resetViewOptions}
