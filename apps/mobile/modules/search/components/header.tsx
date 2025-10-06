@@ -104,7 +104,9 @@ export const Header = ({
         <SymbolView
           name="magnifyingglass"
           size={20}
-          tintColor={colors.gray.DEFAULT}
+          tintColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
         />
         <TextInput
           className="flex-1 h-12 dark:text-white"
@@ -113,7 +115,9 @@ export const Header = ({
           })} and ${getTermDisplay("objectiveTerm", {
             variant: "plural",
           })}...`}
-          placeholderTextColor={colors.gray.DEFAULT}
+          placeholderTextColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
           value={searchTerm}
           onChangeText={setSearchTerm}
           onSubmitEditing={handleSubmit}
@@ -131,7 +135,9 @@ export const Header = ({
             <SymbolView
               name="xmark.circle.fill"
               size={20}
-              tintColor={colors.gray.DEFAULT}
+              tintColor={
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              }
             />
           </Pressable>
         )}
