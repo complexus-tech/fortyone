@@ -1,30 +1,14 @@
-import { Text, Row, Back } from "@/components/ui";
-import { Pressable, useWindowDimensions, View } from "react-native";
+import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
+import { useWindowDimensions, View } from "react-native";
 import { colors } from "@/constants";
-import { SymbolView } from "expo-symbols";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
-import {
-  BottomSheet,
-  Host,
-  Text as SwiftUIText,
-  ContextMenu,
-  HStack,
-  Button,
-  Image,
-} from "@expo/ui/swift-ui";
+import { BottomSheet, Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
 import { useState } from "react";
-import {
-  padding,
-  cornerRadius,
-  frame,
-  glassEffect,
-} from "@expo/ui/swift-ui/modifiers";
-import { useColorScheme } from "nativewind";
+import { padding } from "@expo/ui/swift-ui/modifiers";
 
 export const Header = () => {
-  const { colorScheme } = useColorScheme();
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
@@ -44,49 +28,31 @@ export const Header = () => {
             </Text>
           </Text>
         </Row>
-        <Host matchContents style={{ width: 40, height: 40 }}>
-          <ContextMenu>
-            <ContextMenu.Items>
-              <Button systemImage="pencil" onPress={() => {}}>
-                Edit
-              </Button>
-              <Button systemImage="archivebox.fill" onPress={() => {}}>
-                Archive
-              </Button>
-              <Button systemImage="link" onPress={() => {}}>
-                Copy link
-              </Button>
-              <Button
-                color={colors.danger}
-                systemImage="trash.fill"
-                onPress={() => {}}
-              >
-                Delete forever
-              </Button>
-            </ContextMenu.Items>
-            <ContextMenu.Trigger>
-              <HStack
-                modifiers={[
-                  frame({ width: 40, height: 40 }),
-                  glassEffect({
-                    glass: {
-                      variant: "regular",
-                    },
-                  }),
-                  cornerRadius(18),
-                ]}
-              >
-                <Image
-                  systemName="ellipsis"
-                  size={20}
-                  color={
-                    colorScheme === "light" ? colors.dark[50] : colors.gray[300]
-                  }
-                />
-              </HStack>
-            </ContextMenu.Trigger>
-          </ContextMenu>
-        </Host>
+        <ContextMenuButton
+          actions={[
+            {
+              systemImage: "pencil",
+              label: "Edit",
+              onPress: () => {},
+            },
+            {
+              systemImage: "archivebox.fill",
+              label: "Archive",
+              onPress: () => {},
+            },
+            {
+              systemImage: "link",
+              label: "Copy link",
+              onPress: () => {},
+            },
+            {
+              systemImage: "trash.fill",
+              label: "Delete forever",
+              color: colors.danger,
+              onPress: () => {},
+            },
+          ]}
+        />
       </Row>
       <Host style={{ position: "absolute", width }}>
         <BottomSheet
