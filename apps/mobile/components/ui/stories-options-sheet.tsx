@@ -19,7 +19,7 @@ export const StoriesOptionsSheet = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
   viewOptions: StoriesViewOptions;
-  setViewOptions: (options: StoriesViewOptions) => void;
+  setViewOptions: (options: Partial<StoriesViewOptions>) => void;
   resetViewOptions: () => void;
 }) => {
   const { colorScheme } = useColorScheme();
@@ -27,51 +27,50 @@ export const StoriesOptionsSheet = ({
   const groupByOptions = [
     {
       label: "Status",
-      onPress: () => setViewOptions({ ...viewOptions, groupBy: "status" }),
+      onPress: () => setViewOptions({ groupBy: "status" }),
     },
     {
       label: "Priority",
-      onPress: () => setViewOptions({ ...viewOptions, groupBy: "priority" }),
+      onPress: () => setViewOptions({ groupBy: "priority" }),
     },
     {
       label: "Assignee",
-      onPress: () => setViewOptions({ ...viewOptions, groupBy: "assignee" }),
+      onPress: () => setViewOptions({ groupBy: "assignee" }),
     },
   ];
 
   const orderByOptions = [
     {
       label: "Created",
-      onPress: () => setViewOptions({ ...viewOptions, orderBy: "created" }),
+      onPress: () => setViewOptions({ orderBy: "created" }),
     },
     {
       label: "Updated",
-      onPress: () => setViewOptions({ ...viewOptions, orderBy: "updated" }),
+      onPress: () => setViewOptions({ orderBy: "updated" }),
     },
     {
       label: "Deadline",
-      onPress: () => setViewOptions({ ...viewOptions, orderBy: "deadline" }),
+      onPress: () => setViewOptions({ orderBy: "deadline" }),
     },
     {
       label: "Priority",
-      onPress: () => setViewOptions({ ...viewOptions, orderBy: "priority" }),
+      onPress: () => setViewOptions({ orderBy: "priority" }),
     },
   ];
 
   const orderDirectionOptions = [
     {
       label: "Descending",
-      onPress: () => setViewOptions({ ...viewOptions, orderDirection: "desc" }),
+      onPress: () => setViewOptions({ orderDirection: "desc" }),
     },
     {
       label: "Ascending",
-      onPress: () => setViewOptions({ ...viewOptions, orderDirection: "asc" }),
+      onPress: () => setViewOptions({ orderDirection: "asc" }),
     },
   ];
 
   const toggleDisplayColumn = (column: DisplayColumn) => {
     setViewOptions({
-      ...viewOptions,
       displayColumns: displayColumns.includes(column)
         ? displayColumns.filter((c) => c !== column)
         : [...displayColumns, column],
