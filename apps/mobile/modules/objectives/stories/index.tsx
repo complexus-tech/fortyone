@@ -6,7 +6,7 @@ import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks";
 
 import { useGlobalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
-import { useObjectiveViewOptions } from "./hooks";
+import { useViewOptions } from "@/hooks/use-view-options";
 import { Header } from "./components";
 
 export const ObjectiveStories = () => {
@@ -14,8 +14,8 @@ export const ObjectiveStories = () => {
     objectiveId: string;
     teamId: string;
   }>();
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useObjectiveViewOptions(
-    objectiveId!
+  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
+    `objective-${objectiveId}:view-options`
   );
   const { getTermDisplay } = useTerminology();
 

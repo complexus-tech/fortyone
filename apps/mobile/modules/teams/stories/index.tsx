@@ -3,7 +3,7 @@ import { Header } from "./components";
 import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useTeamStoriesGrouped } from "@/modules/stories/hooks";
-import { useTeamViewOptions } from "../hooks";
+import { useViewOptions } from "@/hooks/use-view-options";
 import { useGlobalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { TeamStoriesTab } from "../types";
@@ -11,8 +11,8 @@ import type { TeamStoriesTab } from "../types";
 export const TeamStories = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useTeamViewOptions(
-    teamId!
+  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
+    `team-${teamId}:view-options`
   );
   const { getTermDisplay } = useTerminology();
 

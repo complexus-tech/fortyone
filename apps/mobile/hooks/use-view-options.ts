@@ -8,9 +8,7 @@ const defaultViewOptions: StoriesViewOptions = {
   orderDirection: "desc",
 };
 
-export const useTeamViewOptions = (teamId: string) => {
-  const STORAGE_KEY = `team-${teamId}:view-options`;
-
+export const useViewOptions = (storageKey: string) => {
   const [viewOptions, setViewOptionsState] =
     useState<StoriesViewOptions>(defaultViewOptions);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -18,20 +16,20 @@ export const useTeamViewOptions = (teamId: string) => {
   useEffect(() => {
     const loadViewOptions = async () => {
       try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        const stored = await AsyncStorage.getItem(storageKey);
         if (stored) {
           const parsed = JSON.parse(stored);
           setViewOptionsState(parsed);
         }
       } catch (error) {
-        console.error("Failed to load team view options:", error);
+        console.error(`Failed to load view options for ${storageKey}:`, error);
       } finally {
         setIsLoaded(true);
       }
     };
 
     loadViewOptions();
-  }, [STORAGE_KEY]);
+  }, [storageKey]);
 
   const setViewOptions = useCallback(
     async (newOptions: Partial<StoriesViewOptions>) => {
@@ -39,22 +37,22 @@ export const useTeamViewOptions = (teamId: string) => {
       setViewOptionsState(updated);
 
       try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.error("Failed to save team view options:", error);
+        console.error(`Failed to save view options for ${storageKey}:`, error);
       }
     },
-    [viewOptions, STORAGE_KEY]
+    [viewOptions, storageKey]
   );
 
   const resetViewOptions = useCallback(async () => {
     setViewOptionsState(defaultViewOptions);
     try {
-      await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(storageKey);
     } catch (error) {
-      console.error("Failed to reset team view options:", error);
+      console.error(`Failed to reset view options for ${storageKey}:`, error);
     }
-  }, [STORAGE_KEY]);
+  }, [storageKey]);
 
   return {
     viewOptions,

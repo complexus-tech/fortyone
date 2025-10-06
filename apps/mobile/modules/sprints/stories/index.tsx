@@ -3,7 +3,7 @@ import { Header } from "./components";
 import { SafeContainer, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useSprintStoriesGrouped } from "@/modules/stories/hooks";
-import { useSprintViewOptions } from "./hooks";
+import { useViewOptions } from "@/hooks/use-view-options";
 import { useGlobalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 
@@ -12,8 +12,8 @@ export const SprintStories = () => {
     sprintId: string;
     teamId: string;
   }>();
-  const { viewOptions, isLoaded: viewOptionsLoaded } = useSprintViewOptions(
-    sprintId!
+  const { viewOptions, isLoaded: viewOptionsLoaded } = useViewOptions(
+    `sprint-${sprintId}:view-options`
   );
   const { getTermDisplay } = useTerminology();
 
