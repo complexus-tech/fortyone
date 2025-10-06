@@ -12,7 +12,7 @@ const textVariants = cva("text-dark dark:text-white", {
     color: {
       primary: "text-primary dark:text-primary",
       secondary: "text-secondary dark:text-secondary",
-      muted: "text-gray dark:text-gray-300/70",
+      muted: "text-gray dark:text-gray-300/80",
       danger: "text-danger dark:text-danger",
       warning: "text-warning dark:text-warning",
       info: "text-info dark:text-info",
