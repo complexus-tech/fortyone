@@ -4,7 +4,7 @@ import { StatCard } from "./stat-card";
 import { OverviewSkeleton } from "./overview-skeleton";
 import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
-import { Col, Text } from "@/components/ui";
+import { Col, Row, Text } from "@/components/ui";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
 import { useTerminology } from "@/hooks";
 import { useColorScheme } from "nativewind";
@@ -54,7 +54,7 @@ export const Overview = () => {
         Here&apos;s what&apos;s happening with your{" "}
         {getTermDisplay("storyTerm", { variant: "plural" })}.
       </Text>
-      <View className="mb-6 flex-row flex-wrap gap-3">
+      <Row gap={3} wrap className="mb-6">
         {overviewItems.map((item) => (
           <View key={item.label} className="w-[48.5%]">
             <StatCard
@@ -65,7 +65,7 @@ export const Overview = () => {
             />
           </View>
         ))}
-      </View>
+      </Row>
     </Col>
   );
 };

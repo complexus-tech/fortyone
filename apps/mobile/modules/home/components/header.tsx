@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Avatar, Row, Text, ContextMenuButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
+import { Sheet } from "./sheet";
+import { Pressable } from "react-native";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -13,33 +15,39 @@ const getTimeOfDay = () => {
 export const Header = () => {
   const router = useRouter();
   const { data: user } = useProfile();
+  const [isOpened, setIsOpened] = useState(false);
 
   return (
-    <Row align="center" justify="between" className="mb-4" asContainer>
-      <Row align="center" gap={2}>
-        <Avatar
-          name={user?.fullName || user?.username}
-          size="md"
-          src={user?.avatarUrl}
+    <>
+      <Row align="center" justify="between" className="mb-4" asContainer>
+        <Row align="center" gap={2}>
+          <Pressable onPress={() => setIsOpened(true)}>
+            <Avatar
+              name={user?.fullName || user?.username}
+              size="md"
+              src={user?.avatarUrl}
+            />
+          </Pressable>
+          <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
+            Good {getTimeOfDay()}!
+          </Text>
+        </Row>
+        <ContextMenuButton
+          actions={[
+            {
+              systemImage: "gear",
+              label: "Settings",
+              onPress: () => router.push("/settings"),
+            },
+            {
+              systemImage: "questionmark.circle",
+              label: "Help Center",
+              onPress: () => {},
+            },
+          ]}
         />
-        <Text fontSize="2xl" fontWeight="semibold" numberOfLines={1}>
-          Good {getTimeOfDay()}!
-        </Text>
       </Row>
-      <ContextMenuButton
-        actions={[
-          {
-            systemImage: "gear",
-            label: "Settings",
-            onPress: () => router.push("/settings"),
-          },
-          {
-            systemImage: "questionmark.circle",
-            label: "Help Center",
-            onPress: () => {},
-          },
-        ]}
-      />
-    </Row>
+      <Sheet isOpened={isOpened} setIsOpened={setIsOpened} />
+    </>
   );
 };

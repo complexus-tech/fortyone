@@ -16,7 +16,7 @@ export const externalLinks = [
     url: "https://fortyone.app/privacy",
   },
   {
-    title: "Follow on Twitter",
+    title: "Follow us on X (Formerly Twitter)",
     url: "https://x.com/fortyoneapp",
   },
   {

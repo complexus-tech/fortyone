@@ -19,6 +19,7 @@ export { Back } from "./back";
 export { ContextMenuButton } from "./context-menu-button";
 export { BottomSheetModal } from "./bottom-sheet-modal";
 export { WorkspaceSwitcher } from "./workspace-switcher";
+export { ThemeSwitcher } from "./theme-switcher";
 
 export type { TextProps } from "./text";
 export type { InputProps } from "./input";
