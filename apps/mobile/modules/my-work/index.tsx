@@ -90,6 +90,7 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
@@ -97,6 +98,7 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
@@ -104,6 +106,7 @@ export const MyWork = () => {
             groupedStories={groupedStories}
             groupFilters={queryOptions}
             isLoading={isPending}
+            visibleColumns={viewOptions.displayColumns}
           />
         </Tabs.Panel>
       </Tabs>

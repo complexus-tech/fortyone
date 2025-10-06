@@ -4,6 +4,7 @@ import { Story, StorySkeleton, Text } from "@/components/ui";
 import { SectionFooter } from "./section-footer";
 import { useGroupStoriesInfinite } from "../hooks";
 import type { GroupStoryParams, Story as StoryType } from "../types";
+import { DisplayColumn } from "@/types/stories-view-options";
 
 type StoriesSection = {
   title: string;
@@ -18,11 +19,13 @@ type StoriesSection = {
 type SectionWithLoadMoreProps = {
   section: StoriesSection;
   groupFilters: Omit<GroupStoryParams, "groupKey">;
+  visibleColumns: DisplayColumn[];
 };
 
 export const SectionWithLoadMore = ({
   section,
   groupFilters,
+  visibleColumns,
 }: SectionWithLoadMoreProps) => {
   const params: GroupStoryParams = {
     groupKey: section.key,
@@ -54,7 +57,9 @@ export const SectionWithLoadMore = ({
 
   const loadedCount = allStories.length;
 
-  const renderItem = ({ item }: { item: StoryType }) => <Story {...item} />;
+  const renderItem = ({ item }: { item: StoryType }) => (
+    <Story story={item} visibleColumns={visibleColumns} />
+  );
 
   const renderHeader = () => (
     <Text className="px-4 pt-2 pb-1" fontWeight="semibold" color="muted">

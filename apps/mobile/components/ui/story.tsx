@@ -11,16 +11,15 @@ import { useMembers } from "@/modules/members";
 import { Badge } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
+import { DisplayColumn } from "@/types/stories-view-options";
 
 export const Story = ({
-  id,
-  title,
-  statusId,
-  priority,
-  assigneeId,
-  teamId,
-  sequenceId,
-}: StoryType) => {
+  story: { id, title, statusId, priority, assigneeId, teamId, sequenceId },
+  visibleColumns = ["Status", "Assignee", "Priority"],
+}: {
+  story: StoryType;
+  visibleColumns?: DisplayColumn[];
+}) => {
   const router = useRouter();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useMembers();
@@ -45,33 +44,41 @@ export const Story = ({
     >
       <Row justify="between" align="center" gap={3}>
         <Row align="center" className="flex-1 gap-1.5">
-          <PriorityIcon priority={priority} size={18} />
-          <Text color="muted" numberOfLines={1} fontWeight="medium">
-            {team?.code}-{sequenceId}
-          </Text>
+          {visibleColumns.includes("Priority") && (
+            <PriorityIcon priority={priority} size={18} />
+          )}
+          {visibleColumns.includes("ID") && (
+            <Text color="muted" numberOfLines={1} fontWeight="medium">
+              {team?.code}-{sequenceId}
+            </Text>
+          )}
           <Text className="flex-1" numberOfLines={1} fontWeight="medium">
             {title}
           </Text>
         </Row>
         <Row align="center" className="gap-1.5">
-          <Badge
-            style={{
-              backgroundColor: hexToRgba(status?.color || "#6B665C", 0.1),
-              borderColor: hexToRgba(status?.color || "#6B665C", 0.2),
-              borderWidth: 1,
-            }}
-            className="px-2"
-          >
-            <Row align="center" gap={1}>
-              <Dot color={status?.color} size={10} />
-              <Text>{statusName || "No Status"}</Text>
-            </Row>
-          </Badge>
-          <Avatar
-            size="sm"
-            name={assignee?.fullName || assignee?.username}
-            src={assignee?.avatarUrl}
-          />
+          {visibleColumns.includes("Status") && (
+            <Badge
+              style={{
+                backgroundColor: hexToRgba(status?.color || "#6B665C", 0.1),
+                borderColor: hexToRgba(status?.color || "#6B665C", 0.2),
+                borderWidth: 1,
+              }}
+              className="px-2"
+            >
+              <Row align="center" gap={1}>
+                <Dot color={status?.color} size={10} />
+                <Text>{statusName || "No Status"}</Text>
+              </Row>
+            </Badge>
+          )}
+          {visibleColumns.includes("Assignee") && (
+            <Avatar
+              size="sm"
+              name={assignee?.fullName || assignee?.username}
+              src={assignee?.avatarUrl}
+            />
+          )}
         </Row>
       </Row>
     </Pressable>

@@ -6,6 +6,7 @@ import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { GroupedStoriesResponse, GroupStoryParams, Story } from "../types";
+import { DisplayColumn } from "@/types/stories-view-options";
 
 type StoriesSection = {
   title: string;
@@ -23,6 +24,7 @@ type StoriesBoardProps = {
   isLoading?: boolean;
   emptyTitle?: string;
   emptyMessage?: string;
+  visibleColumns: DisplayColumn[];
 };
 
 export const StoriesBoard = ({
@@ -31,6 +33,7 @@ export const StoriesBoard = ({
   isLoading = false,
   emptyTitle,
   emptyMessage,
+  visibleColumns,
 }: StoriesBoardProps) => {
   const { data: statuses = [], isPending: isStatusesPending } = useStatuses();
   const { data: members = [], isPending: isMembersPending } = useMembers();
@@ -110,6 +113,7 @@ export const StoriesBoard = ({
           key={section.key}
           section={section}
           groupFilters={groupFilters}
+          visibleColumns={visibleColumns}
         />
       ))}
     </ScrollView>
