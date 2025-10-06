@@ -13,14 +13,22 @@ import {
 } from "@expo/ui/swift-ui";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
 import { useColorScheme } from "nativewind";
+import { useTerminology } from "@/hooks/use-terminology";
 
 type HeaderProps = {
   onSearch: (params: SearchQueryParams) => void;
+  searchType: "stories" | "objectives";
+  setSearchType: (type: "stories" | "objectives") => void;
 };
 
-export const Header = ({ onSearch }: HeaderProps) => {
+export const Header = ({
+  onSearch,
+  searchType,
+  setSearchType,
+}: HeaderProps) => {
   const { colorScheme } = useColorScheme();
   const [searchTerm, setSearchTerm] = useState("");
+  const { getTermDisplay } = useTerminology();
 
   const handleSubmit = () => {
     if (searchTerm.trim()) {
@@ -41,12 +49,18 @@ export const Header = ({ onSearch }: HeaderProps) => {
               withNoHost
               actions={[
                 {
-                  label: "Stories",
-                  onPress: () => {},
+                  label: getTermDisplay("storyTerm", {
+                    variant: "plural",
+                    capitalize: true,
+                  }),
+                  onPress: () => setSearchType("stories"),
                 },
                 {
-                  label: "Objectives",
-                  onPress: () => {},
+                  label: getTermDisplay("objectiveTerm", {
+                    variant: "plural",
+                    capitalize: true,
+                  }),
+                  onPress: () => setSearchType("objectives"),
                 },
               ]}
             >
@@ -59,7 +73,13 @@ export const Header = ({ onSearch }: HeaderProps) => {
                       : colors.gray[200]
                   }
                 >
-                  Stories
+                  {getTermDisplay(
+                    searchType === "stories" ? "storyTerm" : "objectiveTerm",
+                    {
+                      variant: "plural",
+                      capitalize: true,
+                    }
+                  )}
                 </SwiftUIText>
                 <Image
                   systemName="chevron.up.chevron.down"
