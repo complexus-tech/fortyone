@@ -3,7 +3,7 @@ import { Avatar, Row, Text, ContextMenuButton } from "@/components/ui";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { ProfileSheet } from "./profile-sheet";
-import { Pressable, Alert } from "react-native";
+import { Pressable, Alert, Linking } from "react-native";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -28,6 +28,13 @@ export const Header = () => {
         },
       },
     ]);
+  };
+
+  const handleHelpCenter = async () => {
+    const canOpen = await Linking.canOpenURL("https://docs.fortyone.app");
+    if (canOpen) {
+      await Linking.openURL("https://docs.fortyone.app");
+    }
   };
 
   return (
@@ -62,7 +69,7 @@ export const Header = () => {
             {
               systemImage: "questionmark.circle",
               label: "Help Center",
-              onPress: () => {},
+              onPress: handleHelpCenter,
             },
             {
               systemImage: "xmark.circle",
