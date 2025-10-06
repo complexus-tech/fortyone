@@ -219,6 +219,12 @@ export const StoriesOptionsSheet = ({
           </Button>
         </HStack>
       </VStack>
+      <HStack>
+        <Spacer />
+        <Button variant="glass" color="primary" onPress={resetViewOptions}>
+          Reset default
+        </Button>
+      </HStack>
     </BottomSheetModal>
   );
 };
