@@ -17,7 +17,6 @@ export default function RootLayout() {
     defaultOptions: {
       queries: {
         gcTime: 1000 * 60 * 60 * 24, // keep unused query data for 24 hours
-        staleTime: 1000 * 60 * 5, // data considered fresh for 5 minutes
         retry: 1,
         refetchOnReconnect: true,
         refetchOnWindowFocus: true,

@@ -1,15 +1,25 @@
 import React, { useState } from "react";
 import { TextInput, Pressable } from "react-native";
-import { Col, Row, Text } from "@/components/ui";
+import { Col, ContextMenuButton, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import type { SearchQueryParams } from "../types";
+import {
+  Host,
+  HStack,
+  Spacer,
+  Image,
+  Text as SwiftUIText,
+} from "@expo/ui/swift-ui";
+import { opacity } from "@expo/ui/swift-ui/modifiers";
+import { useColorScheme } from "nativewind";
 
 type HeaderProps = {
   onSearch: (params: SearchQueryParams) => void;
 };
 
 export const Header = ({ onSearch }: HeaderProps) => {
+  const { colorScheme } = useColorScheme();
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleSubmit = () => {
@@ -21,9 +31,50 @@ export const Header = ({ onSearch }: HeaderProps) => {
   return (
     <Col className="mb-2" asContainer>
       <Row justify="between" align="center">
-        <Text fontSize="2xl" fontWeight="semibold" className="mb-2 flex-1">
+        <Text fontSize="2xl" fontWeight="semibold" className="flex-1">
           Search
         </Text>
+        <Host matchContents style={{ width: 300, height: 40 }}>
+          <HStack>
+            <Spacer />
+            <ContextMenuButton
+              withNoHost
+              actions={[
+                {
+                  label: "Stories",
+                  onPress: () => {},
+                },
+                {
+                  label: "Objectives",
+                  onPress: () => {},
+                },
+              ]}
+            >
+              <HStack spacing={4}>
+                <SwiftUIText
+                  size={16}
+                  color={
+                    colorScheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200]
+                  }
+                >
+                  Stories
+                </SwiftUIText>
+                <Image
+                  systemName="chevron.up.chevron.down"
+                  modifiers={[opacity(0.6)]}
+                  color={
+                    colorScheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200]
+                  }
+                  size={12}
+                />
+              </HStack>
+            </ContextMenuButton>
+          </HStack>
+        </Host>
       </Row>
       <Row
         className="bg-gray-50 dark:bg-dark-300 rounded-2xl px-2"

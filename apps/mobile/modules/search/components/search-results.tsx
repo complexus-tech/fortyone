@@ -31,7 +31,7 @@ export const SearchResults = ({ results, type }: SearchResultsProps) => {
       {showStories && results.stories.length > 0 && (
         <>
           {results.stories.map((story) => (
-            <Story key={story.id} {...story} />
+            <Story key={story.id} story={story} />
           ))}
         </>
       )}
