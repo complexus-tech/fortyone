@@ -16,6 +16,7 @@ export { StoriesSkeleton } from "./stories-skeleton";
 export { Story } from "./story";
 export { Tabs } from "./tabs";
 export { Back } from "./back";
+export { ContextMenuButton } from "./context-menu-button";
 
 export type { TextProps } from "./text";
 export type { InputProps } from "./input";
