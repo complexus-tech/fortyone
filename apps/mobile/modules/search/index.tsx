@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SafeContainer, Text, StoriesSkeleton } from "@/components/ui";
+import { SafeContainer, Text, StoriesSkeleton, Row } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
@@ -27,11 +27,11 @@ export const Search = () => {
         setSearchType={setSearchType}
       />
       {!searchQuery ? (
-        <View className="flex-1 justify-center items-center">
+        <Row align="center" justify="center" className="flex-1" asContainer>
           <Text color="muted" className="mt-8 text-center">
             Start typing to search for stories and objectives
           </Text>
-        </View>
+        </Row>
       ) : isPending ? (
         searchType === "stories" ? (
           <StoriesSkeleton count={8} />
