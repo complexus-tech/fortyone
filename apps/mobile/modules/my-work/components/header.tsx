@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { BottomSheetModal, Row, Text as RNText } from "@/components/ui";
+import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useColorScheme } from "nativewind";
-import { Text } from "@expo/ui/swift-ui";
+import { OptionsSheet } from "./options-sheet";
 
 export const Header = () => {
   const { colorScheme } = useColorScheme();
@@ -12,9 +12,9 @@ export const Header = () => {
   return (
     <>
       <Row className="mb-2" asContainer justify="between" align="center">
-        <RNText fontSize="2xl" fontWeight="semibold">
+        <Text fontSize="2xl" fontWeight="semibold">
           My Work
-        </RNText>
+        </Text>
         <Pressable
           className="p-2 rounded-xl active:bg-gray-50 dark:active:bg-dark-300"
           onPress={() => setIsOpened(true)}
@@ -28,10 +28,7 @@ export const Header = () => {
           />
         </Pressable>
       </Row>
-
-      <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
-        <Text>Hello, world!</Text>
-      </BottomSheetModal>
+      <OptionsSheet isOpened={isOpened} setIsOpened={setIsOpened} />
     </>
   );
 };
