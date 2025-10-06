@@ -22,7 +22,6 @@ export const Header = () => {
         >
           <SymbolView
             name="line.3.horizontal.decrease"
-            size={26}
             tintColor={
               colorScheme === "light" ? colors.dark[50] : colors.gray[300]
             }
