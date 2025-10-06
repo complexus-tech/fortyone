@@ -4,7 +4,7 @@ import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
 import { colors } from "@/constants";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
 
-export const OptionsSheet = ({
+export const StoriesOptionsSheet = ({
   isOpened,
   setIsOpened,
 }: {

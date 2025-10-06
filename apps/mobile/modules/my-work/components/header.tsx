@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { Row, Text } from "@/components/ui";
+import { Row, Text, StoriesOptionsSheet } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useColorScheme } from "nativewind";
-import { OptionsSheet } from "./options-sheet";
 
 export const Header = () => {
   const { colorScheme } = useColorScheme();
@@ -28,7 +27,7 @@ export const Header = () => {
           />
         </Pressable>
       </Row>
-      <OptionsSheet isOpened={isOpened} setIsOpened={setIsOpened} />
+      <StoriesOptionsSheet isOpened={isOpened} setIsOpened={setIsOpened} />
     </>
   );
 };
