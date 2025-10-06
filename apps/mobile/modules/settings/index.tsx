@@ -1,21 +1,13 @@
 import React, { useState } from "react";
 import { ScrollView, Linking } from "react-native";
-import { Avatar, SafeContainer } from "@/components/ui";
+import { Avatar, SafeContainer, BottomSheetModal } from "@/components/ui";
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
-import {
-  BottomSheet,
-  Host,
-  HStack,
-  Image,
-  Spacer,
-  Text,
-  VStack,
-} from "@expo/ui/swift-ui";
-import { frame, padding } from "@expo/ui/swift-ui/modifiers";
+import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
+import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import type { Workspace as WorkspaceType } from "@/types/workspace";
 import { SFSymbol } from "expo-symbols";
@@ -138,74 +130,58 @@ export const Settings = () => {
         </SettingsSection>
       </ScrollView>
 
-      <Host matchContents style={{ position: "absolute" }}>
-        <BottomSheet
-          isOpened={isOpened}
-          onIsOpenedChange={(e) => setIsOpened(e)}
-          presentationDragIndicator="visible"
-        >
-          <VStack
-            spacing={20}
-            modifiers={[padding({ all: 24 })]}
-            alignment="leading"
-          >
-            <HStack>
-              <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
-                Switch Workspace
-              </Text>
-            </HStack>
-            {workspaces.map((wk) => (
-              <Workspace
-                key={wk.id}
-                isActive={wk.id === workspace?.id}
-                workspace={wk}
-              />
-            ))}
-          </VStack>
-        </BottomSheet>
-      </Host>
+      <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
+        <HStack>
+          <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
+            Switch Workspace
+          </Text>
+        </HStack>
+        {workspaces.map((wk) => (
+          <Workspace
+            key={wk.id}
+            isActive={wk.id === workspace?.id}
+            workspace={wk}
+          />
+        ))}
+      </BottomSheetModal>
 
-      <Host matchContents style={{ position: "absolute" }}>
-        <BottomSheet
-          isOpened={isAppearanceOpened}
-          onIsOpenedChange={(e) => setIsAppearanceOpened(e)}
-          presentationDragIndicator="visible"
-        >
-          <VStack
-            spacing={20}
-            modifiers={[padding({ all: 24 })]}
-            alignment="leading"
+      <BottomSheetModal
+        isOpen={isAppearanceOpened}
+        onClose={() => setIsAppearanceOpened(false)}
+      >
+        <HStack>
+          <Text weight="semibold" color={colors.gray.DEFAULT} size={15}>
+            Appearance
+          </Text>
+        </HStack>
+        {themes.map((theme) => (
+          <HStack
+            spacing={8}
+            key={theme.value}
+            onPress={() => setColorScheme(theme.value as any)}
           >
-            {themes.map((theme) => (
-              <HStack
-                spacing={8}
-                key={theme.value}
-                onPress={() => setColorScheme(theme.value as any)}
-              >
-                <Image
-                  systemName={theme.icon as SFSymbol}
-                  color={colorScheme === "light" ? "black" : "white"}
-                  size={20}
-                  modifiers={[frame({ width: 30, height: 30 })]}
-                />
-                <VStack alignment="leading">
-                  <Text lineLimit={1} size={16}>
-                    {theme.label}
-                  </Text>
-                </VStack>
-                <Spacer />
-                {theme.value === colorScheme && (
-                  <Image
-                    systemName="checkmark.circle.fill"
-                    color={colorScheme === "light" ? "black" : "white"}
-                    size={20}
-                  />
-                )}
-              </HStack>
-            ))}
-          </VStack>
-        </BottomSheet>
-      </Host>
+            <Image
+              systemName={theme.icon as SFSymbol}
+              color={colorScheme === "light" ? "black" : "white"}
+              size={20}
+              modifiers={[frame({ width: 30, height: 30 })]}
+            />
+            <VStack alignment="leading">
+              <Text lineLimit={1} size={16}>
+                {theme.label}
+              </Text>
+            </VStack>
+            <Spacer />
+            {theme.value === colorScheme && (
+              <Image
+                systemName="checkmark.circle.fill"
+                color={colorScheme === "light" ? "black" : "white"}
+                size={20}
+              />
+            )}
+          </HStack>
+        ))}
+      </BottomSheetModal>
     </SafeContainer>
   );
 };
