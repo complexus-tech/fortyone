@@ -6,6 +6,7 @@ const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
   orderDirection: "desc",
+  displayColumns: ["Status", "Assignee", "Priority"],
 };
 
 export const useViewOptions = (storageKey: string) => {
