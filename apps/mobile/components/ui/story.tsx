@@ -10,6 +10,7 @@ import { useTeamStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
 import { Badge } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
+import { useTeams } from "@/modules/teams/hooks/use-teams";
 
 export const Story = ({
   id,
@@ -18,10 +19,13 @@ export const Story = ({
   priority,
   assigneeId,
   teamId,
+  sequenceId,
 }: StoryType) => {
   const router = useRouter();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useMembers();
+  const { data: teams = [] } = useTeams();
+  const team = teams.find((team) => team.id === teamId);
   const status = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === assigneeId);
   // display the first 10 characters of the status name and if it's longer than 10 characters, add an ellipsis
@@ -40,13 +44,16 @@ export const Story = ({
       onPress={handlePress}
     >
       <Row justify="between" align="center" gap={3}>
-        <Row align="center" gap={2} className="flex-1">
+        <Row align="center" className="flex-1 gap-1.5">
           <PriorityIcon priority={priority} size={18} />
+          <Text color="muted" numberOfLines={1} fontWeight="medium">
+            {team?.code}-{sequenceId}
+          </Text>
           <Text className="flex-1" numberOfLines={1} fontWeight="medium">
             {title}
           </Text>
         </Row>
-        <Row align="center" gap={2}>
+        <Row align="center" className="gap-1.5">
           <Badge
             style={{
               backgroundColor: hexToRgba(status?.color || "#6B665C", 0.1),
