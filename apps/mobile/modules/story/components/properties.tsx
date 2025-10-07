@@ -3,7 +3,7 @@ import { useMembers } from "@/modules/members/hooks/use-members";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks";
 import React from "react";
-import { Row, Badge, Text, Avatar } from "@/components/ui";
+import { Row, Badge, Text, Avatar, Col } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
 import { truncateText } from "@/lib/utils/text";
 import { Dot, PriorityIcon } from "@/components/icons";
@@ -28,71 +28,70 @@ export const Properties = ({ story }: { story: Story }) => {
 
   return (
     <Row asContainer>
-      <Row
-        wrap
-        gap={2}
-        className="my-4 dark:bg-dark-300/80 border bg-gray-50/60 border-gray-100/70 dark:border-dark-200 p-3 rounded-3xl"
-      >
-        <Badge
-          style={{
-            backgroundColor: hexToRgba(status?.color, 0.1),
-            borderColor: hexToRgba(status?.color, 0.2),
-          }}
-        >
-          <Dot color={status?.color} size={12} />
-          <Text>{status?.name || "No Status"}</Text>
-        </Badge>
-        <Badge color="tertiary">
-          <PriorityIcon priority={story.priority || "No Priority"} />
-          <Text>{story.priority || "No Priority"}</Text>
-        </Badge>
-        <Badge color="tertiary" className="pl-1.5">
-          <Avatar
-            size="xs"
-            name={assignee?.fullName || assignee?.username}
-            src={assignee?.avatarUrl}
-          />
-          <Text>{assignee?.username || "No Assignee"}</Text>
-        </Badge>
-        <Badge color="tertiary">
-          <SymbolView name="calendar" size={16} tintColor={iconColor} />
-          <Text color={story.startDate ? undefined : "muted"}>
-            {story.startDate
-              ? format(new Date(story.startDate), "MMM d")
-              : "Add start date"}
-          </Text>
-        </Badge>
-        <Badge color="tertiary">
-          <SymbolView name="calendar" size={16} tintColor={iconColor} />
-          <Text color={story.endDate ? undefined : "muted"}>
-            {story.endDate
-              ? format(new Date(story.endDate), "MMM d")
-              : "Add deadline"}
-          </Text>
-        </Badge>
-        <Badge color="tertiary">
-          <SymbolView name="target" size={16} tintColor={iconColor} />
-          <Text color={story.objectiveId ? undefined : "muted"}>
-            {objective?.name
-              ? truncateText(objective.name, 8)
-              : "Add objective"}
-          </Text>
-        </Badge>
-        <Badge color="tertiary">
-          <SymbolView name="play.circle" size={16} tintColor={iconColor} />
-          <Text color={story.sprintId ? undefined : "muted"}>
-            {sprint?.name || "Add sprint"}
-          </Text>
-        </Badge>
-        <Badge color="tertiary">
-          <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
-          <Text color={story.labels?.length ? undefined : "muted"}>
-            {story.labels?.length
-              ? `${story.labels.length} labels`
-              : "Add labels"}
-          </Text>
-        </Badge>
-      </Row>
+      <Col className="my-4 dark:bg-dark-300/80 border bg-gray-50/60 border-gray-100/70 dark:border-dark-200 p-4 rounded-3xl">
+        <Text className="mb-2.5">Properties</Text>
+        <Row wrap gap={2}>
+          <Badge
+            style={{
+              backgroundColor: hexToRgba(status?.color, 0.1),
+              borderColor: hexToRgba(status?.color, 0.2),
+            }}
+          >
+            <Dot color={status?.color} size={12} />
+            <Text>{status?.name || "No Status"}</Text>
+          </Badge>
+          <Badge color="tertiary">
+            <PriorityIcon priority={story.priority || "No Priority"} />
+            <Text>{story.priority || "No Priority"}</Text>
+          </Badge>
+          <Badge color="tertiary" className="pl-1.5">
+            <Avatar
+              size="xs"
+              name={assignee?.fullName || assignee?.username}
+              src={assignee?.avatarUrl}
+            />
+            <Text>{assignee?.username || "No Assignee"}</Text>
+          </Badge>
+          <Badge color="tertiary">
+            <SymbolView name="calendar" size={16} tintColor={iconColor} />
+            <Text color={story.startDate ? undefined : "muted"}>
+              {story.startDate
+                ? format(new Date(story.startDate), "MMM d")
+                : "Add start date"}
+            </Text>
+          </Badge>
+          <Badge color="tertiary">
+            <SymbolView name="calendar" size={16} tintColor={iconColor} />
+            <Text color={story.endDate ? undefined : "muted"}>
+              {story.endDate
+                ? format(new Date(story.endDate), "MMM d")
+                : "Add deadline"}
+            </Text>
+          </Badge>
+          <Badge color="tertiary">
+            <SymbolView name="target" size={16} tintColor={iconColor} />
+            <Text color={story.objectiveId ? undefined : "muted"}>
+              {objective?.name
+                ? truncateText(objective.name, 8)
+                : "Add objective"}
+            </Text>
+          </Badge>
+          <Badge color="tertiary">
+            <SymbolView name="play.circle" size={16} tintColor={iconColor} />
+            <Text color={story.sprintId ? undefined : "muted"}>
+              {sprint?.name || "Add sprint"}
+            </Text>
+          </Badge>
+          <Badge color="tertiary">
+            <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
+            <Text color={story.labels?.length ? undefined : "muted"}>
+              {story.labels?.length
+                ? `${story.labels.length} labels`
+                : "Add labels"}
+            </Text>
+          </Badge>
+        </Row>
+      </Col>
     </Row>
   );
 };
