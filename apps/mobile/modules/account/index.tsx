@@ -22,13 +22,13 @@ export const Account = () => {
         <Header />
         <TextInput
           placeholder="Enter name"
-          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 mb-4 dark:border-dark-50 dark:bg-dark-300"
+          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 mb-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
         />
         <TextInput
           placeholder="Enter username"
-          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 dark:border-dark-50 dark:bg-dark-300"
+          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
         />
-        <Button className="mt-6 mx-4">Save changes</Button>
+        <Button className="mt-5 mx-4">Save changes</Button>
 
         {/* <ProfileForm /> */}
       </ScrollView>
