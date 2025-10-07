@@ -85,3 +85,7 @@ export const searchKeys = {
   all: ["search"] as const,
   query: (params: Record<string, any>) => [...searchKeys.all, params] as const,
 };
+
+export const subscriptionKeys = {
+  details: ["subscriptions"] as const,
+};

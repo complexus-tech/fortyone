@@ -6,6 +6,7 @@ import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useColorScheme } from "nativewind";
+import { useSubscription } from "@/hooks/use-subscription";
 
 export const ProfileSheet = ({
   isOpened,
@@ -18,6 +19,7 @@ export const ProfileSheet = ({
     useState(false);
   const { colorScheme } = useColorScheme();
   const { data: user } = useProfile();
+  const { data: subscription } = useSubscription();
   const { workspace } = useCurrentWorkspace();
   const mutedTextColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
@@ -48,8 +50,8 @@ export const ProfileSheet = ({
             >
               {`${user?.fullName || user?.username}`}
             </Text>
-            <Text size={16} color={mutedTextColor}>
-              {`Free Plan`}
+            <Text size={16} color={mutedTextColor} modifiers={[]}>
+              {`${subscription?.tier} Plan`}
             </Text>
           </VStack>
           <Spacer />

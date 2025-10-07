@@ -32,3 +32,24 @@ export type Member = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Subscription = {
+  workspaceId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  status:
+    | "active"
+    | "incomplete"
+    | "incomplete_expired"
+    | "trialing"
+    | "past_due"
+    | "unpaid"
+    | "canceled"
+    | "paused";
+  tier: "free" | "pro" | "business" | "enterprise";
+  seatCount: number;
+  billingInterval: "month" | "year" | "week" | "day";
+  billingEndsAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
