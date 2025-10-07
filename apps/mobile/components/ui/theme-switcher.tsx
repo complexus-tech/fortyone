@@ -1,5 +1,5 @@
 import React from "react";
-import { BottomSheetModal } from "@/components/ui";
+import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";

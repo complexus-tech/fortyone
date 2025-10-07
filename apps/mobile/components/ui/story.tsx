@@ -8,7 +8,7 @@ import { Avatar } from "./avatar";
 import { Story as StoryType } from "@/modules/stories/types";
 import { useTeamStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
-import { Badge } from "@/components/ui";
+import { Badge } from "./badge";
 import { hexToRgba } from "@/lib/utils/colors";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { DisplayColumn } from "@/types/stories-view-options";
