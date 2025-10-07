@@ -38,7 +38,6 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="teams/[teamId]" />
         <Stack.Screen name="story/[storyId]" />
-        <Stack.Screen name="team/[teamId]" />
         <Stack.Screen
           name="settings"
           options={{
