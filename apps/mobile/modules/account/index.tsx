@@ -1,11 +1,23 @@
-import { Text } from "@/components/ui";
 import React from "react";
-import { View } from "react-native";
+import { SafeContainer, Text } from "@/components/ui";
+import { ScrollView } from "react-native";
+import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 export const Account = () => {
+  const { colorScheme } = useColorScheme();
   return (
-    <View>
-      <Text>Account</Text>
-    </View>
+    <SafeContainer>
+      <ScrollView
+        style={{
+          paddingTop: 36,
+          flex: 1,
+          backgroundColor:
+            colorScheme === "light" ? colors.white : colors.dark[300],
+        }}
+      >
+        <Text>Account</Text>
+      </ScrollView>
+    </SafeContainer>
   );
 };

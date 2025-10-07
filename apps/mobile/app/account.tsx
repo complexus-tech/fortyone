@@ -1,6 +1,6 @@
 import React from "react";
-import { Settings } from "@/modules/settings";
+import { Account } from "@/modules/account";
 
 export default function SettingsScreen() {
-  return <Settings />;
+  return <Account />;
 }
