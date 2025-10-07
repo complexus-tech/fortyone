@@ -1,6 +1,6 @@
 import React from "react";
-import { Avatar, Col, Row, SafeContainer, Text, Button } from "@/components/ui";
-import { ScrollView, TextInput } from "react-native";
+import { SafeContainer } from "@/components/ui";
+import { ScrollView } from "react-native";
 import { colors } from "@/constants";
 import { useColorScheme } from "nativewind";
 import { ProfileForm } from "./components/profile-form";
