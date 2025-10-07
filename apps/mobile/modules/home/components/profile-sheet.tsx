@@ -7,6 +7,7 @@ import { useCurrentWorkspace } from "@/lib/hooks";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useColorScheme } from "nativewind";
 import { useSubscription } from "@/hooks/use-subscription";
+import { toTitleCase } from "@/lib/utils";
 
 export const ProfileSheet = ({
   isOpened,
@@ -27,11 +28,9 @@ export const ProfileSheet = ({
   return (
     <>
       <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
-        <HStack>
-          <Text size={16} color={mutedTextColor}>
-            {`${user?.email}`}
-          </Text>
-        </HStack>
+        <Text size={16} color={mutedTextColor}>
+          {`${user?.email}`}
+        </Text>
         <HStack spacing={8}>
           <HStack modifiers={[frame({ width: 48, height: 48 })]}>
             <Avatar
@@ -50,8 +49,8 @@ export const ProfileSheet = ({
             >
               {`${user?.fullName || user?.username}`}
             </Text>
-            <Text size={16} color={mutedTextColor} modifiers={[]}>
-              {`${subscription?.tier} Plan`}
+            <Text size={16} color={mutedTextColor}>
+              {`${workspace?.userRole}`}
             </Text>
           </VStack>
           <Spacer />
@@ -81,8 +80,8 @@ export const ProfileSheet = ({
             <Text size={16} weight="semibold" lineLimit={1}>
               Switch workspace
             </Text>
-            <Text size={16} color={mutedTextColor}>
-              {`${workspace?.name} • ${workspace?.userRole}`}
+            <Text size={16} color={mutedTextColor} lineLimit={1}>
+              {`${workspace?.name} • ${toTitleCase(subscription?.tier)} Plan`}
             </Text>
           </VStack>
           <Spacer />
