@@ -11,6 +11,7 @@ import { externalLinks } from "./external-links";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import { useCurrentWorkspace } from "@/lib/hooks";
+import { useRouter } from "expo-router";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -20,6 +21,7 @@ const handleExternalLink = async (url: string) => {
 };
 
 export const Settings = () => {
+  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const { workspace } = useCurrentWorkspace();
   const [isOpened, setIsOpened] = useState(false);
@@ -77,7 +79,9 @@ export const Settings = () => {
         <SettingsSection title="Account">
           <SettingsItem
             title="Manage Account"
-            onPress={() => console.log("Manage Account")}
+            onPress={() => {
+              router.push("/account");
+            }}
           />
           <SettingsItem
             title="Log Out"

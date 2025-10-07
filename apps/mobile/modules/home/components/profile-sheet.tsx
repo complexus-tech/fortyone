@@ -8,6 +8,7 @@ import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useColorScheme } from "nativewind";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toTitleCase } from "@/lib/utils";
+import { useRouter } from "expo-router";
 
 export const ProfileSheet = ({
   isOpened,
@@ -19,6 +20,7 @@ export const ProfileSheet = ({
   const [isWorkspaceSwitcherOpened, setIsWorkspaceSwitcherOpened] =
     useState(false);
   const { colorScheme } = useColorScheme();
+  const router = useRouter();
   const { data: user } = useProfile();
   const { data: subscription } = useSubscription();
   const { workspace } = useCurrentWorkspace();
@@ -31,7 +33,7 @@ export const ProfileSheet = ({
         <Text size={16} color={mutedTextColor}>
           {`${user?.email}`}
         </Text>
-        <HStack spacing={8}>
+        <HStack spacing={8} onPress={() => router.push("/account")}>
           <HStack modifiers={[frame({ width: 48, height: 48 })]}>
             <Avatar
               name={user?.fullName || user?.username}

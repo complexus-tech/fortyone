@@ -78,6 +78,20 @@ const RenderApp = () => {
           sheetAllowedDetents: [0.95],
         }}
       />
+      <Stack.Screen
+        name="account"
+        options={{
+          presentation: "formSheet",
+          gestureDirection: "vertical",
+          animation: "slide_from_bottom",
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 36,
+          sheetExpandsWhenScrolledToEdge: true,
+          sheetElevation: 24,
+          sheetInitialDetentIndex: 0,
+          sheetAllowedDetents: [0.95],
+        }}
+      />
     </Stack>
   );
 };
