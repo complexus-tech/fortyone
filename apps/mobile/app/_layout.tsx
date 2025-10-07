@@ -89,7 +89,7 @@ const RenderApp = () => {
           sheetExpandsWhenScrolledToEdge: true,
           sheetElevation: 24,
           sheetInitialDetentIndex: 0,
-          sheetAllowedDetents: [0.9],
+          sheetAllowedDetents: [0.91],
         }}
       />
     </Stack>
