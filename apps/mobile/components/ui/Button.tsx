@@ -26,7 +26,7 @@ export const buttonVariants = cva(
         full: "rounded-full",
       },
       color: {
-        primary: "border-primary bg-primary",
+        primary: "border-primary bg-primary text-white",
         danger: "text-danger border-danger bg-danger",
         info: "text-info border-info bg-info",
         warning: "text-warning border-warning bg-warning",
@@ -227,7 +227,6 @@ export const Button = ({
             <Text
               color={getTextColor() as any}
               fontSize="sm"
-              fontWeight="medium"
               className={leftIcon ? "ml-2" : rightIcon ? "mr-2" : ""}
             >
               {children}
