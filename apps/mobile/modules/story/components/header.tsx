@@ -1,6 +1,5 @@
 import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
 import { useWindowDimensions, View } from "react-native";
-import { colors } from "@/constants";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
@@ -47,8 +46,7 @@ export const Header = () => {
             },
             {
               systemImage: "trash.fill",
-              label: "Delete forever",
-              color: colors.danger,
+              label: "Delete",
               onPress: () => {},
             },
           ]}
