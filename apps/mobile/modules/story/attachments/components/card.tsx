@@ -4,6 +4,7 @@ import { Row, Text, Col } from "@/components/ui";
 import type { StoryAttachment } from "@/types/attachment";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 B";
@@ -21,6 +22,7 @@ const getMimeType = (mimeType: string) => {
 };
 
 const AttachmentPreview = ({ attachment }: { attachment: StoryAttachment }) => {
+  const { colorScheme } = useColorScheme();
   const mimeType = getMimeType(attachment.mimeType);
   if (mimeType === "image") {
     return (
@@ -41,7 +43,9 @@ const AttachmentPreview = ({ attachment }: { attachment: StoryAttachment }) => {
         <SymbolView
           size={28}
           name="text.document.fill"
-          tintColor={colors.gray.DEFAULT}
+          tintColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
         />
       </Row>
     );
@@ -55,7 +59,9 @@ const AttachmentPreview = ({ attachment }: { attachment: StoryAttachment }) => {
       <SymbolView
         size={28}
         name="document.fill"
-        tintColor={colors.gray.DEFAULT}
+        tintColor={
+          colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+        }
       />
     </Row>
   );
