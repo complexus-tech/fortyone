@@ -1,6 +1,7 @@
 import ky from "ky";
 import { ApiError } from "./error";
 import { useAuthStore } from "@/store/auth";
+import { ApiResponse } from "@/types";
 
 const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -19,15 +20,14 @@ const createClient = (useWorkspace = true) => {
   return ky.create({
     prefixUrl,
     headers: { Authorization: `Bearer ${token}` },
+    retry: 0,
     hooks: {
       beforeError: [
         async (error) => {
           const { response } = error;
-          if (response.body) {
-            const data = await response.json();
-            throw new ApiError(error.message, response.status, data);
-          }
-          throw error;
+          const data = await response.json<ApiResponse<null>>();
+          const errorMessage = data?.error?.message || "An error occurred";
+          throw new Error(errorMessage);
         },
       ],
     },
