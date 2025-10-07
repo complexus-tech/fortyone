@@ -1,10 +1,16 @@
 import React from "react";
 import { Alert } from "react-native";
 import { Row, Text, ContextMenuButton } from "@/components/ui";
-import { useReadAllNotificationsMutation } from "../hooks";
+import {
+  useDeleteAllMutation,
+  useDeleteReadMutation,
+  useReadAllNotificationsMutation,
+} from "../hooks";
 
 export const Header = () => {
   const readAllMutation = useReadAllNotificationsMutation();
+  const { mutate: deleteRead } = useDeleteReadMutation();
+  const { mutate: deleteAll } = useDeleteAllMutation();
 
   const handleMarkAllAsRead = () => {
     readAllMutation.mutate();
@@ -20,7 +26,7 @@ export const Header = () => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            console.log("Delete read");
+            deleteRead();
           },
         },
       ]
@@ -37,7 +43,7 @@ export const Header = () => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            console.log("Delete all");
+            deleteAll();
           },
         },
       ]

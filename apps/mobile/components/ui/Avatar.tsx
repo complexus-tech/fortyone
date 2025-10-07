@@ -88,7 +88,7 @@ export const Avatar = ({
       className={cn(
         classes,
         {
-          "bg-transparent": asIcon,
+          "bg-transparent dark:bg-transparent": asIcon,
         },
         className
       )}
@@ -134,7 +134,7 @@ export const Avatar = ({
             size === "xs"
               ? 18
               : size === "sm"
-                ? 20
+                ? 24
                 : size === "md"
                   ? 25
                   : size === "lg"
