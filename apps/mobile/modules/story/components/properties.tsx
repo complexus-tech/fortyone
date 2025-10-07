@@ -5,12 +5,19 @@ import { Row, Badge, Text, Avatar } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
 import { Dot, PriorityIcon } from "@/components/icons";
 import { Story } from "@/modules/stories/types";
+import { format } from "date-fns";
+import { SymbolView } from "expo-symbols";
+import { useColorScheme } from "nativewind";
+import { colors } from "@/constants";
 
 export const Properties = ({ story }: { story: Story }) => {
+  const { colorScheme } = useColorScheme();
   const { data: statuses = [] } = useTeamStatuses(story.teamId);
   const { data: members = [] } = useMembers();
   const status = statuses.find((s) => s.id === story.statusId);
   const assignee = members.find((m) => m.id === story.assigneeId);
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   return (
     <Row wrap gap={2} asContainer className="my-4">
@@ -34,6 +41,14 @@ export const Properties = ({ story }: { story: Story }) => {
           src={assignee?.avatarUrl}
         />
         <Text>{assignee?.username || "No Assignee"}</Text>
+      </Badge>
+      <Badge color="tertiary">
+        <SymbolView name="calendar" size={16} tintColor={iconColor} />
+        <Text color={story.startDate ? undefined : "muted"}>
+          {story.startDate
+            ? format(new Date(story.startDate), "MMM d")
+            : "Add start date"}
+        </Text>
       </Badge>
     </Row>
   );
