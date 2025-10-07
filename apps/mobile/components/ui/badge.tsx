@@ -26,7 +26,7 @@ const badgeVariants = cva(
         info: "bg-info border-info",
         warning: "bg-warning border-warning",
         tertiary:
-          "bg-gray-50 border-gray-100 dark:bg-dark-200 dark:border-dark-100",
+          "bg-gray-50 border-gray-200/50 dark:bg-dark-200 dark:border-dark-100",
         secondary: "bg-secondary border-secondary",
         invert: "bg-black border-black",
       },
