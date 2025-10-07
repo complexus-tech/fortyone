@@ -19,7 +19,7 @@ export default function StoryLayout() {
         <Label>{`Sub ${storyTerm}`}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="links">
-        <Icon sf="link" />
+        <Icon sf="list.bullet" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="attachments">
