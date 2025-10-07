@@ -1,10 +1,10 @@
 import React from "react";
 import { View } from "react-native";
-import { Row, Skeleton, Wrapper } from "@/components/ui";
+import { Col, Row, Skeleton, Wrapper } from "@/components/ui";
 
 export const OverviewSkeleton = () => {
   return (
-    <View className="mb-6">
+    <Col asContainer className="mb-6">
       <Skeleton className="h-4 w-64 mb-4" />
       <Row wrap gap={3}>
         {Array.from({ length: 4 }).map((_, index) => (
@@ -22,6 +22,6 @@ export const OverviewSkeleton = () => {
           </View>
         ))}
       </Row>
-    </View>
+    </Col>
   );
 };

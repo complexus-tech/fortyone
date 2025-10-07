@@ -1,10 +1,10 @@
 import React from "react";
 import { View } from "react-native";
-import { Skeleton } from "@/components/ui";
+import { Col, Skeleton } from "@/components/ui";
 
 export const TeamsSkeleton = () => {
   return (
-    <View>
+    <Col asContainer>
       <Skeleton className="h-5 w-24 mb-4" />
       {Array.from({ length: 3 }).map((_, index) => (
         <View key={index} className="py-3.5 pl-0.5 min-h-[44px]">
@@ -17,6 +17,6 @@ export const TeamsSkeleton = () => {
           </View>
         </View>
       ))}
-    </View>
+    </Col>
   );
 };
