@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View } from "react-native";
-import { Input, Button, Text, Col } from "@/components/ui";
+import { TextInput } from "react-native";
+import { Button } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useUpdateProfileMutation } from "@/modules/users/hooks/use-update-profile-mutation";
 
@@ -45,27 +45,28 @@ export const ProfileForm = () => {
   }
 
   return (
-    <Col asContainer>
-      <Input
-        label="Full name"
-        placeholder="Enter your full name"
+    <>
+      <TextInput
+        placeholder="Full name"
+        autoComplete="name"
         value={form.fullName}
         onChangeText={(text) => setForm({ ...form, fullName: text })}
+        className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 mb-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
       />
-      <Input
-        label="Username"
-        placeholder="Enter your username"
+      <TextInput
+        placeholder="Username"
+        autoComplete="username"
         value={form.username}
         onChangeText={(text) => setForm({ ...form, username: text })}
+        className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
       />
-
       <Button
         onPress={handleUpdateProfile}
         disabled={updateMutation.isPending}
-        className="mt-6"
+        className="mt-5 mx-4"
       >
         {updateMutation.isPending ? "Saving..." : "Save changes"}
       </Button>
-    </Col>
+    </>
   );
 };
