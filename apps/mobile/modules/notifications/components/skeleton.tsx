@@ -21,7 +21,7 @@ export const NotificationsSkeleton = ({
         >
           <Row align="center" gap={2}>
             <Skeleton className="size-10 rounded-full shrink-0" />
-            <Col flex={1} gap={1}>
+            <Col flex={1} gap={2}>
               <Row justify="between" align="center">
                 <Skeleton className="h-4 flex-1 mr-2" />
                 <Skeleton className="h-4 w-10 shrink-0" />
