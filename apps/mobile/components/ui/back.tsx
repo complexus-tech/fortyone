@@ -24,7 +24,7 @@ export const Back = () => {
         name="arrow.backward"
         weight="semibold"
         size={22}
-        tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[300]}
+        tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[200]}
       />
     </TouchableOpacity>
   );
