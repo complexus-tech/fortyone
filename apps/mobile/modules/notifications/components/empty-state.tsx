@@ -17,7 +17,7 @@ export const EmptyState = () => {
           name="bell.slash.fill"
           size={36}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
       </Row>
