@@ -12,8 +12,11 @@ export const Header = () => {
         textClassName="text-xl"
         src={user?.avatarUrl}
       />
-      <Text fontSize="xl" fontWeight="semibold" className="mb-6 mt-2">
+      <Text fontSize="xl" fontWeight="semibold" className="mt-2 mb-1">
         {user?.fullName || user?.username}
+      </Text>
+      <Text className="mb-4" color="muted">
+        {user?.email}
       </Text>
     </Col>
   );
