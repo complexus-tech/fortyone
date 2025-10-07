@@ -5,6 +5,7 @@ import { useTeamSprints } from "@/modules/sprints/hooks";
 import React from "react";
 import { Row, Badge, Text, Avatar } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
+import { truncateText } from "@/lib/utils/text";
 import { Dot, PriorityIcon } from "@/components/icons";
 import { Story } from "@/modules/stories/types";
 import { format } from "date-fns";
@@ -72,7 +73,9 @@ export const Properties = ({ story }: { story: Story }) => {
         <Badge color="tertiary">
           <SymbolView name="target" size={16} tintColor={iconColor} />
           <Text color={story.objectiveId ? undefined : "muted"}>
-            {objective?.name || "Add objective"}
+            {objective?.name
+              ? truncateText(objective.name, 8)
+              : "Add objective"}
           </Text>
         </Badge>
         <Badge color="tertiary">
