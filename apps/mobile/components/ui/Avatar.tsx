@@ -47,6 +47,7 @@ export interface AvatarProps
     VariantProps<typeof avatarVariants> {
   src?: string | null;
   name?: string;
+  textClassName?: string;
 }
 
 const getInitials = (name: string) => {
@@ -78,6 +79,7 @@ export const Avatar = ({
   color,
   size,
   rounded,
+  textClassName,
   ...props
 }: AvatarProps) => {
   const classes = avatarVariants({ rounded, color, size });
@@ -116,12 +118,15 @@ export const Avatar = ({
           color={
             color === "primary" || color === "secondary" ? "white" : "black"
           }
-          className={cn({
-            "text-[0.6rem]": size === "xs",
-            "text-sm": size === "sm",
-            "text-md": size === "md",
-            "text-lg": size === "lg",
-          })}
+          className={cn(
+            {
+              "text-[0.6rem]": size === "xs",
+              "text-sm": size === "sm",
+              "text-md": size === "md",
+              "text-lg": size === "lg",
+            },
+            textClassName
+          )}
           fontWeight="semibold"
         >
           {getInitials(name)}
