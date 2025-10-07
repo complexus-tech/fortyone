@@ -8,6 +8,7 @@ import { renderTemplateJSX } from "../utils/render-template";
 import { useRouter } from "expo-router";
 import { Dot } from "@/components/icons";
 import { useTerminology } from "@/hooks";
+import { useReadNotificationMutation } from "../hooks";
 
 type NotificationCardProps = AppNotification & {
   index: number;
@@ -28,11 +29,14 @@ export const NotificationCard = ({
   const router = useRouter();
   const { getTermDisplay } = useTerminology();
   const { data: members = [] } = useMembers();
+  // mark as read on press
+  const { mutate: readNotification } = useReadNotificationMutation();
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
   const storyTerm = getTermDisplay("storyTerm");
 
   const handlePress = () => {
+    readNotification(id);
     router.push(`/story/${entityId}`);
   };
 
