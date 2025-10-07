@@ -12,7 +12,7 @@ export const Account = () => {
     <SafeContainer isFull>
       <ScrollView
         style={{
-          paddingTop: 36,
+          paddingTop: 44,
           flex: 1,
           backgroundColor:
             colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
