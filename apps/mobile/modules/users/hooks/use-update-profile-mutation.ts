@@ -45,10 +45,6 @@ export const useUpdateProfileMutation = () => {
       );
     },
 
-    onSuccess: () => {
-      Alert.alert("Success", "Your profile has been updated");
-    },
-
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.profile() });
     },
