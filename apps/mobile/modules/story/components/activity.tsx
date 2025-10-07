@@ -1,9 +1,25 @@
-import { Tabs, Text } from "@/components/ui";
+import { Col, Tabs, Text } from "@/components/ui";
 import { DetailedStory } from "@/modules/stories/types";
 import React, { useState } from "react";
+import { useStoryActivitiesInfinite } from "../hooks/use-story-activities";
+import { ActivityItem } from "./activity-item";
 
 export const Activity = ({ story }: { story: DetailedStory }) => {
   const [activeTab, setActiveTab] = useState("updates");
+  const {
+    data: infiniteData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useStoryActivitiesInfinite(story.id);
+
+  const allActivities =
+    infiniteData?.pages.flatMap((page) => page.activities) ?? [];
+
+  const handleLoadMore = () => {
+    fetchNextPage();
+  };
+
   return (
     <Tabs
       defaultValue={activeTab}
@@ -21,7 +37,29 @@ export const Activity = ({ story }: { story: DetailedStory }) => {
         <Text>Comments</Text>
       </Tabs.Panel>
       <Tabs.Panel value="updates">
-        <Text>Updates</Text>
+        {allActivities.length === 0 ? (
+          <Text>No updates available</Text>
+        ) : (
+          <Col asContainer>
+            {allActivities.map((activity, index) => (
+              <ActivityItem
+                key={activity.id}
+                {...activity}
+                teamId={story.teamId}
+                isTimeShown={index === allActivities.length - 1 || index === 0}
+              />
+            ))}
+            {hasNextPage && (
+              <Text
+                onPress={handleLoadMore}
+                className="mt-4 pl-7"
+                fontSize="sm"
+              >
+                {isFetchingNextPage ? "Loading..." : "Load more updates"}
+              </Text>
+            )}
+          </Col>
+        )}
       </Tabs.Panel>
     </Tabs>
   );

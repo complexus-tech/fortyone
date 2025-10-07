@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { ScrollView } from "react-native";
 import { Title } from "./components/title";
 import { Properties } from "./components/properties";
 import { useGlobalSearchParams } from "expo-router";
@@ -14,10 +14,13 @@ export const Story = () => {
     return <Text>Loading...</Text>;
   }
   return (
-    <View className="flex-1">
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ paddingBottom: 100 }}
+    >
       <Title title={story?.title} />
       <Properties story={story!} />
       <Activity story={story!} />
-    </View>
+    </ScrollView>
   );
 };
