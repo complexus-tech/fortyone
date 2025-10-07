@@ -1,7 +1,8 @@
 import React, { useMemo } from "react";
 import { ScrollView } from "react-native";
 import { StoriesListSkeleton } from "@/components/ui";
-import { SectionWithLoadMore, EmptyState } from "./";
+import { SectionWithLoadMore } from "./section-with-load-more";
+import { EmptyState } from "./empty-state";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
 import { useTerminology } from "@/hooks/use-terminology";
