@@ -20,18 +20,17 @@ export const Account = () => {
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <Header />
-
         <TextInput
-          placeholder="Search"
-          className="border rounded-xl px-4 h-14 mx-4 mb-4"
+          placeholder="Enter name"
+          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 mb-4 dark:border-dark-50 dark:bg-dark-300"
         />
         <TextInput
-          placeholder="Search"
-          className="border rounded-xl px-4 h-14 mx-4"
+          placeholder="Enter username"
+          className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-14 mx-4 dark:border-dark-50 dark:bg-dark-300"
         />
         <Button className="mt-6 mx-4">Save changes</Button>
 
-        <ProfileForm />
+        {/* <ProfileForm /> */}
       </ScrollView>
     </SafeContainer>
   );
