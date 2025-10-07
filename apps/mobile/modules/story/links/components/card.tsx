@@ -24,16 +24,12 @@ export const Card = ({ link }: CardProps) => {
       className="active:bg-gray-50 dark:active:bg-dark-300"
       onPress={handlePress}
     >
-      <Row
-        align="center"
-        justify="between"
-        className="px-4 py-3 border-t-[0.5px] border-gray-100 dark:border-dark-100"
-        gap={3}
-      >
+      <Row align="center" justify="between" className="px-4 py-3" gap={3}>
         <Row align="center" gap={2} className="flex-1">
           <SymbolView
-            name="globe"
+            name="link"
             size={20}
+            weight="semibold"
             tintColor={
               colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
             }
