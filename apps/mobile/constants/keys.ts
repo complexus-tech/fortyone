@@ -43,6 +43,8 @@ export const storyKeys = {
     [...storyKeys.all, "group", groupKey, params] as const,
   attachments: (storyId: string) =>
     [...storyKeys.detail(storyId), "attachments"] as const,
+  activitiesInfinite: (storyId: string) =>
+    [...storyKeys.detail(storyId), "activities", "infinite"] as const,
 };
 
 export const notificationKeys = {
