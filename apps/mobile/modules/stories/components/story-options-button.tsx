@@ -29,7 +29,7 @@ export const StoryOptionsButton = ({
         <SymbolView
           name="line.3.horizontal.decrease"
           tintColor={
-            colorScheme === "light" ? colors.dark[50] : colors.gray[300]
+            colorScheme === "light" ? colors.dark[50] : colors.gray[200]
           }
         />
       </Pressable>
