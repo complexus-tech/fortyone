@@ -19,13 +19,13 @@ export default function StoryLayout() {
         <Label>{`Sub ${storyTerm}`}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="links">
-        <Icon sf="list.number" />
+        <Icon sf="link" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
-      {/* <NativeTabs.Trigger name="attachments">
-        <Icon sf="square.fill.text.grid.1x2" />
+      <NativeTabs.Trigger name="attachments">
+        <Icon sf="text.document.fill" />
         <Label>Attachments</Label>
-      </NativeTabs.Trigger> */}
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
