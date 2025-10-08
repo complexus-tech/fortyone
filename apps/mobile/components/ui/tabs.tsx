@@ -78,7 +78,7 @@ const Tab = ({ children, value, leftIcon, rightIcon, className }: TabProps) => {
     <Pressable
       onPress={() => onTabChange(value)}
       className={cn(
-        "active:bg-gray-50 px-6 dark:active:bg-dark-300 py-2 rounded-full flex-row justify-center gap-2 border dark:border-dark-50 border-gray-100",
+        "active:bg-gray-50 px-8 dark:active:bg-dark-300 py-2 rounded-full flex-row justify-center gap-2 border dark:border-dark-50 border-gray-100",
         {
           "bg-gray-100/60 dark:bg-dark-200": isActive,
         },
