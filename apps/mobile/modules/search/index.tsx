@@ -6,7 +6,6 @@ import { useSearch } from "./hooks";
 import type { SearchQueryParams } from "./types";
 
 import { ObjectivesSkeleton } from "@/modules/objectives/components";
-import { KeyboardAvoidingView, Platform } from "react-native";
 import {
   KeyboardAwareScrollView,
   KeyboardToolbar,
@@ -47,6 +46,7 @@ export const Search = () => {
           <SearchResults results={results} type={searchType} />
         ) : null}
       </KeyboardAwareScrollView>
+      <KeyboardToolbar />
     </SafeContainer>
   );
 };
