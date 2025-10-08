@@ -18,35 +18,44 @@ export const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: results, isPending } = useSearch({ query: searchQuery });
 
+  if (isPending && searchQuery) {
+    return (
+      <SafeContainer isFull>
+        <Header
+          onSearch={() => {}}
+          searchType={searchType}
+          setSearchType={setSearchType}
+        />
+        {searchType === "stories" ? (
+          <StoriesSkeleton count={8} />
+        ) : (
+          <ObjectivesSkeleton count={8} />
+        )}
+      </SafeContainer>
+    );
+  }
+
   const handleSearch = (params: SearchQueryParams) => {
     setSearchQuery(params.query || "");
   };
 
   return (
     <SafeContainer isFull>
-      <KeyboardAwareScrollView bottomOffset={60} style={{ flex: 1 }}>
-        <Header
-          onSearch={handleSearch}
-          searchType={searchType}
-          setSearchType={setSearchType}
-        />
-        {!searchQuery ? (
-          <Col align="center" justify="center" className="flex-1" asContainer>
-            <Text color="muted" className="mt-16 text-center">
-              Start typing to search for stories and objectives
-            </Text>
-          </Col>
-        ) : isPending ? (
-          searchType === "stories" ? (
-            <StoriesSkeleton count={8} />
-          ) : (
-            <ObjectivesSkeleton count={8} />
-          )
-        ) : results ? (
-          <SearchResults results={results} type={searchType} />
-        ) : null}
+      <Header
+        onSearch={handleSearch}
+        searchType={searchType}
+        setSearchType={setSearchType}
+      />
+      <KeyboardAwareScrollView
+        contentContainerStyle={{
+          paddingBottom: 80,
+        }}
+        bottomOffset={62}
+        style={{ flex: 1 }}
+      >
+        {results ? <SearchResults results={results} type={searchType} /> : null}
       </KeyboardAwareScrollView>
-      <KeyboardToolbar />
+      <KeyboardToolbar doneText="Close" />
     </SafeContainer>
   );
 };
