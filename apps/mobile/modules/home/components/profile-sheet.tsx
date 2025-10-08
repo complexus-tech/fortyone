@@ -34,11 +34,11 @@ export const ProfileSheet = ({
           {`${user?.email}`}
         </Text>
         <HStack spacing={8} onPress={() => router.push("/account")}>
-          <HStack modifiers={[frame({ width: 48, height: 48 })]}>
+          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
             <Avatar
               name={user?.fullName || user?.username}
               src={user?.avatarUrl}
-              className="size-[48px]"
+              className="size-[44px]"
               rounded="2xl"
             />
           </HStack>
@@ -61,15 +61,15 @@ export const ProfileSheet = ({
             color={
               colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
             }
-            size={18}
+            size={16}
           />
         </HStack>
         <HStack spacing={8} onPress={() => setIsWorkspaceSwitcherOpened(true)}>
-          <HStack modifiers={[frame({ width: 48, height: 48 })]}>
+          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
             <Avatar
               name={workspace?.name}
               src={workspace?.avatarUrl}
-              className="size-[48px]"
+              className="size-[44px]"
               rounded="2xl"
               style={{
                 backgroundColor: workspace?.avatarUrl
@@ -97,7 +97,7 @@ export const ProfileSheet = ({
             color={
               colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
             }
-            size={16}
+            size={14}
           />
         </HStack>
       </BottomSheetModal>
