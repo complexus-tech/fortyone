@@ -70,11 +70,20 @@ export const ActivityItem = ({
   const formatActivityText = () => {
     if (type === "create") {
       return (
-        <Text
-          numberOfLines={1}
-          className="text-sm"
-          color="muted"
-        >{`${member?.username || "Unknown"} created the ${getTermDisplay("storyTerm")}`}</Text>
+        <Row align="center">
+          <Avatar
+            name={member?.fullName || member?.username}
+            src={member?.avatarUrl}
+            size="xs"
+            className="mr-2"
+          />
+          <Text fontSize="sm" className="opacity-90" fontWeight="medium">
+            {member?.username || "Unknown"}
+          </Text>
+          <Text fontSize="sm" color="muted" numberOfLines={1}>
+            {` created the ${getTermDisplay("storyTerm")}`}
+          </Text>
+        </Row>
       );
     }
     const fieldLabel = getFieldLabel(field);
