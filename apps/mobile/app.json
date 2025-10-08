@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile",
+      "bundleIdentifier": "com.fortyone.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

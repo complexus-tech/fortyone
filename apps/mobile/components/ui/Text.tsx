@@ -22,13 +22,13 @@ const textVariants = cva("text-dark dark:text-white", {
     },
     fontSize: {
       xs: "text-sm",
-      sm: "text-[0.95rem]",
-      md: "text-base",
-      lg: "text-lg",
-      xl: "text-xl",
-      "2xl": "text-2xl",
-      "3xl": "text-3xl",
-      "4xl": "text-4xl",
+      sm: "text-[15px]",
+      md: "text-[16px]",
+      lg: "text-[18px]",
+      xl: "text-[20px]",
+      "2xl": "text-[24px]",
+      "3xl": "text-[30px]",
+      "4xl": "text-[36px]",
     },
     fontWeight: {
       light: "font-light",
@@ -55,6 +55,8 @@ const textVariants = cva("text-dark dark:text-white", {
   },
   defaultVariants: {
     align: "left",
+    fontSize: "md",
+    fontWeight: "medium",
   },
 });
 
