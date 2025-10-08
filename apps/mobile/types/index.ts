@@ -33,6 +33,17 @@ export type Member = {
   updatedAt: string;
 };
 
+export type Comment = {
+  id: string;
+  storyId: string;
+  parentId: string | null;
+  userId: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  subComments: Comment[];
+};
+
 export type Subscription = {
   workspaceId: string;
   stripeCustomerId: string;

@@ -3,6 +3,7 @@ import { DetailedStory } from "@/modules/stories/types";
 import React, { useState } from "react";
 import { useStoryActivitiesInfinite } from "../hooks/use-story-activities";
 import { ActivityItem } from "./activity-item";
+import { Comments } from "./comments";
 
 export const Activity = ({ story }: { story: DetailedStory }) => {
   const [activeTab, setActiveTab] = useState("updates");
@@ -34,7 +35,7 @@ export const Activity = ({ story }: { story: DetailedStory }) => {
         </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="comments">
-        <Text>Comments</Text>
+        <Comments storyId={story.id} />
       </Tabs.Panel>
       <Tabs.Panel value="updates">
         {allActivities.length === 0 ? (

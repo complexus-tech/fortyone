@@ -45,6 +45,8 @@ export const storyKeys = {
     [...storyKeys.detail(storyId), "attachments"] as const,
   activitiesInfinite: (storyId: string) =>
     [...storyKeys.detail(storyId), "activities", "infinite"] as const,
+  commentsInfinite: (storyId: string) =>
+    [...storyKeys.detail(storyId), "comments", "infinite"] as const,
 };
 
 export const notificationKeys = {
