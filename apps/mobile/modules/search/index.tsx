@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SafeContainer, Text, StoriesSkeleton, Col } from "@/components/ui";
+import { SafeContainer, StoriesSkeleton } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
 import { useSearch } from "./hooks";
