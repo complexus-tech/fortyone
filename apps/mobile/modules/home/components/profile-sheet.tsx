@@ -30,7 +30,7 @@ export const ProfileSheet = ({
   return (
     <>
       <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
-        <Text size={15} weight="medium" color={mutedTextColor}>
+        <Text size={14} weight="medium" color={mutedTextColor}>
           {`${user?.email}`}
         </Text>
         <HStack spacing={8} onPress={() => router.push("/account")}>
@@ -44,14 +44,14 @@ export const ProfileSheet = ({
           </HStack>
           <VStack alignment="leading" spacing={2}>
             <Text
-              size={15}
+              size={14}
               weight="semibold"
               lineLimit={1}
               color={mutedTextColor}
             >
               {`${user?.fullName || user?.username}`}
             </Text>
-            <Text size={14} weight="medium" color={mutedTextColor}>
+            <Text size={13.5} weight="medium" color={mutedTextColor}>
               {`${workspace?.userRole}`}
             </Text>
           </VStack>
@@ -79,11 +79,11 @@ export const ProfileSheet = ({
             />
           </HStack>
           <VStack alignment="leading" spacing={2}>
-            <Text size={15} weight="semibold" lineLimit={1}>
+            <Text size={14} weight="semibold" lineLimit={1}>
               Switch workspace
             </Text>
             <Text
-              size={14}
+              size={13.5}
               weight="medium"
               color={mutedTextColor}
               lineLimit={1}

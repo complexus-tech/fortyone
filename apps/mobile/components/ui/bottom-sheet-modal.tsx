@@ -26,7 +26,9 @@ export const BottomSheetModal = ({
       >
         <VStack
           spacing={spacing}
-          modifiers={[padding({ all: 24 })]}
+          modifiers={[
+            padding({ leading: 24, trailing: 24, top: 32, bottom: 5 }),
+          ]}
           alignment="leading"
         >
           {children}

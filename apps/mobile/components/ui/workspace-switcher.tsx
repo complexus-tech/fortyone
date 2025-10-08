@@ -32,10 +32,10 @@ const WorkspaceItem = ({
         />
       </HStack>
       <VStack alignment="leading">
-        <Text lineLimit={1} size={15} weight="medium">
+        <Text lineLimit={1} size={14} weight="medium">
           {workspace.name}
         </Text>
-        <Text size={14} weight="medium" color={mutedTextColor}>
+        <Text size={13.5} weight="medium" color={mutedTextColor}>
           {workspace.userRole}
         </Text>
       </VStack>
@@ -72,7 +72,7 @@ export const WorkspaceSwitcher = ({
       spacing={18}
     >
       <HStack>
-        <Text weight="semibold" color={mutedTextColor} size={14}>
+        <Text weight="semibold" color={mutedTextColor} size={13.5}>
           Switch Workspace
         </Text>
       </HStack>
