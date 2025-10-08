@@ -32,10 +32,10 @@ const WorkspaceItem = ({
         />
       </HStack>
       <VStack alignment="leading">
-        <Text lineLimit={1} size={16}>
+        <Text lineLimit={1} size={15} weight="medium">
           {workspace.name}
         </Text>
-        <Text size={16} color={mutedTextColor}>
+        <Text size={14} weight="medium" color={mutedTextColor}>
           {workspace.userRole}
         </Text>
       </VStack>
@@ -69,10 +69,10 @@ export const WorkspaceSwitcher = ({
     <BottomSheetModal
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
-      spacing={16}
+      spacing={18}
     >
       <HStack>
-        <Text weight="semibold" color={mutedTextColor} size={15}>
+        <Text weight="semibold" color={mutedTextColor} size={14}>
           Switch Workspace
         </Text>
       </HStack>

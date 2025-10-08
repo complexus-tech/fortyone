@@ -39,10 +39,15 @@ export const Header = ({
   return (
     <Col className="mb-2" asContainer>
       <Row justify="between" align="center">
-        <Text fontSize="2xl" fontWeight="semibold" className="flex-1">
-          Search
-        </Text>
-        <Host matchContents style={{ width: 300, height: 40 }}>
+        <Row className="flex-1">
+          <Text fontSize="2xl" fontWeight="semibold">
+            Search
+          </Text>
+        </Row>
+        <Host
+          matchContents
+          style={{ width: 230, height: 40, position: "absolute", right: 0 }}
+        >
           <HStack>
             <Spacer />
             <ContextMenuButton
@@ -72,6 +77,7 @@ export const Header = ({
                       ? colors.dark.DEFAULT
                       : colors.gray[200]
                   }
+                  weight="medium"
                 >
                   {getTermDisplay(
                     searchType === "stories" ? "storyTerm" : "objectiveTerm",
@@ -109,7 +115,7 @@ export const Header = ({
           }
         />
         <TextInput
-          className="flex-1 h-12 dark:text-white"
+          className="flex-1 h-12 font-medium text-[16px] dark:text-white"
           placeholder={`Search ${getTermDisplay("storyTerm", {
             variant: "plural",
           })} and ${getTermDisplay("objectiveTerm", {

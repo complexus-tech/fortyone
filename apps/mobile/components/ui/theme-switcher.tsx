@@ -30,7 +30,7 @@ const ThemeItem = ({
         modifiers={[frame({ width: 30, height: 30 })]}
       />
       <VStack alignment="leading">
-        <Text lineLimit={1} size={16}>
+        <Text lineLimit={1} size={15} weight="medium">
           {theme.label}
         </Text>
       </VStack>
@@ -39,7 +39,7 @@ const ThemeItem = ({
         <Image
           systemName="checkmark.circle.fill"
           color={colorScheme === "light" ? "black" : "white"}
-          size={20}
+          size={18}
         />
       )}
     </HStack>
@@ -81,11 +81,11 @@ export const ThemeSwitcher = ({
     <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
       <HStack>
         <Text
-          weight="semibold"
+          weight="medium"
           color={
             colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
-          size={15}
+          size={14}
         >
           Appearance
         </Text>

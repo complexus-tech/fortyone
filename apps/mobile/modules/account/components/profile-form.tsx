@@ -51,14 +51,14 @@ export const ProfileForm = () => {
         autoComplete="name"
         value={form.fullName}
         onChangeText={(text) => setForm({ ...form, fullName: text })}
-        className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-13 mx-4.5 mb-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
+        className="border rounded-[0.7rem] text-[16px] border-gray-100 bg-gray-50 px-4 h-12 font-medium mx-4.5 mb-4 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
       />
       <TextInput
         placeholder="Username"
         autoComplete="username"
         value={form.username}
         onChangeText={(text) => setForm({ ...form, username: text })}
-        className="border rounded-[0.7rem] border-gray-100 bg-gray-50 px-4 h-13 mx-4.5 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
+        className="border rounded-[0.7rem] text-[16px] border-gray-100 bg-gray-50 px-4 h-12 font-medium mx-4.5 dark:border-dark-50 dark:bg-dark-300 dark:text-white"
       />
       <Button
         onPress={handleUpdateProfile}
