@@ -7,6 +7,10 @@ import type { SearchQueryParams } from "./types";
 
 import { ObjectivesSkeleton } from "@/modules/objectives/components";
 import { KeyboardAvoidingView, Platform } from "react-native";
+import {
+  KeyboardAwareScrollView,
+  KeyboardToolbar,
+} from "react-native-keyboard-controller";
 
 export const Search = () => {
   const [searchType, setSearchType] = useState<"stories" | "objectives">(
@@ -21,18 +25,15 @@ export const Search = () => {
 
   return (
     <SafeContainer isFull>
-      <Header
-        onSearch={handleSearch}
-        searchType={searchType}
-        setSearchType={setSearchType}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAwareScrollView bottomOffset={60} style={{ flex: 1 }}>
+        <Header
+          onSearch={handleSearch}
+          searchType={searchType}
+          setSearchType={setSearchType}
+        />
         {!searchQuery ? (
           <Col align="center" justify="center" className="flex-1" asContainer>
-            <Text color="muted" className="mt-8 text-center">
+            <Text color="muted" className="mt-16 text-center">
               Start typing to search for stories and objectives
             </Text>
           </Col>
@@ -45,7 +46,7 @@ export const Search = () => {
         ) : results ? (
           <SearchResults results={results} type={searchType} />
         ) : null}
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeContainer>
   );
 };

@@ -27,6 +27,7 @@ import { getSubscription } from "@/lib/queries/get-subscription";
 import { getObjectiveStatuses } from "@/modules/objectives/queries/get-objectives";
 import { getStatuses } from "@/modules/statuses/queries/get-statuses";
 import { getMembers } from "@/modules/members/queries/get-members";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
@@ -119,7 +120,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RenderApp />
+      <KeyboardProvider>
+        <RenderApp />
+      </KeyboardProvider>
     </QueryClientProvider>
   );
 }
