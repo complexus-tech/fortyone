@@ -5,7 +5,7 @@ import { ActivitySkeleton } from "./activity-skeleton";
 export const ActivitiesSkeleton = () => {
   return (
     <Col asContainer>
-      {Array.from({ length: 3 }).map((_, index) => (
+      {Array.from({ length: 7 }).map((_, index) => (
         <ActivitySkeleton key={index} />
       ))}
     </Col>
