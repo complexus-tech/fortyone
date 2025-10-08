@@ -1,8 +1,12 @@
 import { Stack } from "expo-router";
-import { QueryClient, useQueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from "@tanstack/react-query";
+// import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+// import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
@@ -24,9 +28,9 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/get-objective
 import { getStatuses } from "@/modules/statuses/queries/get-statuses";
 import { getMembers } from "@/modules/members/queries/get-members";
 
-const persister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-});
+// const persister = createAsyncStoragePersister({
+//   storage: AsyncStorage,
+// });
 
 const RenderApp = () => {
   const queryClient = useQueryClient();
@@ -114,11 +118,8 @@ export default function RootLayout() {
   }, [loadAuthData]);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister }}
-    >
+    <QueryClientProvider client={queryClient}>
       <RenderApp />
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 }
