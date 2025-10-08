@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useStoryActivitiesInfinite } from "../hooks/use-story-activities";
 import { ActivityItem } from "./activity-item";
 import { Comments } from "./comments";
+import { ActivitiesSkeleton } from "./activities-skeleton";
 
 export const Activity = ({ story }: { story: DetailedStory }) => {
   const [activeTab, setActiveTab] = useState("updates");
@@ -12,7 +13,12 @@ export const Activity = ({ story }: { story: DetailedStory }) => {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isPending,
   } = useStoryActivitiesInfinite(story.id);
+
+  if (isPending) {
+    return <ActivitiesSkeleton />;
+  }
 
   const allActivities =
     infiniteData?.pages.flatMap((page) => page.activities) ?? [];
