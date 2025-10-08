@@ -81,7 +81,8 @@ export const ActivityItem = ({
             {member?.username || "Unknown"}
           </Text>
           <Text fontSize="sm" color="muted" numberOfLines={1}>
-            {` created the ${getTermDisplay("storyTerm")}`}
+            {" "}
+            created the {getTermDisplay("storyTerm")}
           </Text>
         </Row>
       );
