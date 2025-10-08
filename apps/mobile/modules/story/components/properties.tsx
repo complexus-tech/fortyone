@@ -28,7 +28,7 @@ export const Properties = ({ story }: { story: Story }) => {
 
   return (
     <Row asContainer>
-      <Col className="my-4 dark:bg-dark-300/80 border bg-gray-50/60 border-gray-100/70 dark:border-dark-200 p-4 rounded-3xl">
+      <Col className="my-4 ">
         <Text className="mb-2.5">Properties</Text>
         <Row wrap gap={2}>
           <Badge
