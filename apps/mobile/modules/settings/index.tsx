@@ -44,10 +44,10 @@ export const Settings = () => {
     <SafeContainer isFull>
       <ScrollView
         style={{
-          paddingTop: 36,
+          paddingTop: 48,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
+            colorScheme === "light" ? colors.white : colors.dark[200],
         }}
       >
         <SettingsSection>
