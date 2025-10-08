@@ -51,7 +51,7 @@ export const Header = () => {
           >
             <Avatar
               name={user?.fullName || user?.username}
-              size="md"
+              size="lg"
               src={user?.avatarUrl}
             />
           </Pressable>

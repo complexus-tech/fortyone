@@ -15,7 +15,7 @@ export const Account = () => {
           paddingTop: 44,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
+            colorScheme === "light" ? colors.white : colors.dark[200],
         }}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
