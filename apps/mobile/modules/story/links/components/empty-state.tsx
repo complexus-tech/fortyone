@@ -13,7 +13,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const defaultMessage = "This story doesn't have any links yet.";
 
   return (
-    <Col justify="center" align="center" className="flex-1 py-16" asContainer>
+    <Col justify="center" align="center" className="flex-1 mt-52" asContainer>
       <Row
         align="center"
         justify="center"

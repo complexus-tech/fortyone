@@ -16,7 +16,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const defaultMessage = `This ${getTermDisplay("storyTerm", { variant: "singular" })} doesn't have any sub ${getTermDisplay("storyTerm", { variant: "plural" })} yet.`;
 
   return (
-    <Col justify="center" align="center" className="flex-1 py-16" asContainer>
+    <Col justify="center" align="center" className="flex-1 mt-52" asContainer>
       <Row
         align="center"
         justify="center"

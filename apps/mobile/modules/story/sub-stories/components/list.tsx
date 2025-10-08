@@ -14,7 +14,7 @@ export const List = ({ stories }: { stories: Story[] }) => {
       )}
       <FlatList
         data={stories}
-        renderItem={({ item }) => <StoryComponent {...item} />}
+        renderItem={({ item }) => <StoryComponent story={item} />}
         ListEmptyComponent={<EmptyState />}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}

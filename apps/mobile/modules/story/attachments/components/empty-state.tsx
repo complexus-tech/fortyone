@@ -16,7 +16,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const defaultMessage = "There are no attachments to display at the moment.";
 
   return (
-    <Col justify="center" align="center" className="flex-1" asContainer>
+    <Col justify="center" align="center" className="flex-1 mt-52" asContainer>
       <Row
         align="center"
         justify="center"
