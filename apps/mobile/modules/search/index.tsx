@@ -6,6 +6,7 @@ import { useSearch } from "./hooks";
 import type { SearchQueryParams } from "./types";
 
 import { ObjectivesSkeleton } from "@/modules/objectives/components";
+import { KeyboardAvoidingView, Platform } from "react-native";
 
 export const Search = () => {
   const [searchType, setSearchType] = useState<"stories" | "objectives">(
@@ -25,21 +26,26 @@ export const Search = () => {
         searchType={searchType}
         setSearchType={setSearchType}
       />
-      {!searchQuery ? (
-        <Col align="center" justify="center" className="flex-1" asContainer>
-          <Text color="muted" className="mt-8 text-center">
-            Start typing to search for stories and objectives
-          </Text>
-        </Col>
-      ) : isPending ? (
-        searchType === "stories" ? (
-          <StoriesSkeleton count={8} />
-        ) : (
-          <ObjectivesSkeleton count={8} />
-        )
-      ) : results ? (
-        <SearchResults results={results} type={searchType} />
-      ) : null}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        {!searchQuery ? (
+          <Col align="center" justify="center" className="flex-1" asContainer>
+            <Text color="muted" className="mt-8 text-center">
+              Start typing to search for stories and objectives
+            </Text>
+          </Col>
+        ) : isPending ? (
+          searchType === "stories" ? (
+            <StoriesSkeleton count={8} />
+          ) : (
+            <ObjectivesSkeleton count={8} />
+          )
+        ) : results ? (
+          <SearchResults results={results} type={searchType} />
+        ) : null}
+      </KeyboardAvoidingView>
     </SafeContainer>
   );
 };
