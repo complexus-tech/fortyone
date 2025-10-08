@@ -71,15 +71,13 @@ export const Properties = ({ story }: { story: Story }) => {
           <Badge color="tertiary">
             <SymbolView name="target" size={16} tintColor={iconColor} />
             <Text color={story.objectiveId ? undefined : "muted"}>
-              {objective?.name
-                ? truncateText(objective.name, 8)
-                : "Add objective"}
+              {truncateText(objective?.name || "Add objective", 12)}
             </Text>
           </Badge>
           <Badge color="tertiary">
             <SymbolView name="play.circle" size={16} tintColor={iconColor} />
             <Text color={story.sprintId ? undefined : "muted"}>
-              {sprint?.name || "Add sprint"}
+              {truncateText(sprint?.name || "Add sprint", 10)}
             </Text>
           </Badge>
           <Badge color="tertiary">
