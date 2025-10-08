@@ -83,7 +83,7 @@ export const ProfileSheet = ({
               Switch workspace
             </Text>
             <Text size={16} color={mutedTextColor} lineLimit={1}>
-              {`${workspace?.name} • ${toTitleCase(subscription?.tier)} Plan`}
+              {`${workspace?.name} • ${toTitleCase(subscription?.tier || "free")} Plan`}
             </Text>
           </VStack>
           <Spacer />
