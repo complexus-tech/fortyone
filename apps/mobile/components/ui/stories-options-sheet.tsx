@@ -82,11 +82,13 @@ export const StoriesOptionsSheet = ({
     <BottomSheetModal
       isOpen={isOpened}
       onClose={() => setIsOpened(false)}
-      spacing={28}
+      spacing={40}
     >
       <VStack spacing={20}>
         <HStack>
-          <Text>Grouping</Text>
+          <Text size={15} weight="medium">
+            Grouping
+          </Text>
           <Spacer />
           <ContextMenuButton actions={groupByOptions} withNoHost>
             <HStack spacing={3}>
@@ -96,6 +98,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
+                size={15}
               >
                 {viewOptions.groupBy === "status"
                   ? "Status"
@@ -111,13 +114,15 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={14}
+                size={12}
               />
             </HStack>
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text>Ordering</Text>
+          <Text size={15} weight="medium">
+            Ordering
+          </Text>
           <Spacer />
           <ContextMenuButton actions={orderByOptions} withNoHost>
             <HStack spacing={3}>
@@ -127,6 +132,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
+                size={15}
               >
                 {viewOptions.orderBy === "created"
                   ? "Created"
@@ -144,13 +150,15 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={14}
+                size={12}
               />
             </HStack>
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text>Order direction</Text>
+          <Text size={15} weight="medium">
+            Order direction
+          </Text>
           <Spacer />
           <ContextMenuButton actions={orderDirectionOptions} withNoHost>
             <HStack spacing={3}>
@@ -160,6 +168,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
+                size={15}
               >
                 {viewOptions.orderDirection === "desc"
                   ? "Descending"
@@ -173,14 +182,16 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={14}
+                size={12}
               />
             </HStack>
           </ContextMenuButton>
         </HStack>
       </VStack>
       <VStack spacing={16} alignment="leading">
-        <Text modifiers={[opacity(0.75)]}>Display columns</Text>
+        <Text modifiers={[opacity(0.75)]} size={15} weight="medium">
+          Display columns
+        </Text>
         <HStack spacing={12}>
           <Button
             variant={displayColumns.includes("ID") ? "bordered" : "plain"}
