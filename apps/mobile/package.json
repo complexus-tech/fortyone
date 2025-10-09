@@ -6,7 +6,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios --device \"iPhone 16 Pro\"",
-    "ios26": "expo run:ios --device \"iPhone 17 Pro\"",
+    "ios26": "expo run:ios --device \"iPhone Air\"",
     "web": "expo start --web",
     "lint": "expo lint"
   },

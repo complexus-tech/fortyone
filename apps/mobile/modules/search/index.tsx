@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeContainer, StoriesSkeleton } from "@/components/ui";
 import { Header } from "./components/header";
 import { SearchResults } from "./components/search-results";
@@ -9,6 +9,7 @@ import { ObjectivesSkeleton } from "@/modules/objectives/components";
 import {
   KeyboardAwareScrollView,
   KeyboardToolbar,
+  KeyboardController,
 } from "react-native-keyboard-controller";
 
 export const Search = () => {
@@ -17,6 +18,10 @@ export const Search = () => {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const { data: results, isPending } = useSearch({ query: searchQuery });
+
+  useEffect(() => {
+    KeyboardController.preload(); // warms up keyboard before it opens
+  }, []);
 
   if (isPending && searchQuery) {
     return (
@@ -55,7 +60,7 @@ export const Search = () => {
       >
         {results ? <SearchResults results={results} type={searchType} /> : null}
       </KeyboardAwareScrollView>
-      <KeyboardToolbar doneText="Close" />
+      <KeyboardToolbar doneText="Close" showArrows={false} />
     </SafeContainer>
   );
 };
