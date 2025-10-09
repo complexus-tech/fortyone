@@ -12,15 +12,13 @@ export const Header = () => {
   return (
     <>
       <Row className="mb-2" justify="between" align="center" asContainer>
-        <Row align="center" gap={3}>
-          <Back />
-          <Text fontSize="2xl" fontWeight="semibold">
-            {team?.code}-
-            <Text fontSize="2xl" fontWeight="semibold" color="muted">
-              {story?.sequenceId}
-            </Text>
+        <Back />
+        <Text fontSize="2xl" fontWeight="semibold">
+          {team?.code}-
+          <Text fontSize="2xl" fontWeight="semibold" color="muted">
+            {story?.sequenceId}
           </Text>
-        </Row>
+        </Text>
         <ContextMenuButton
           actions={[
             {

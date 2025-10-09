@@ -24,23 +24,21 @@ export const Header = ({
 
   return (
     <Row className="mb-3" asContainer align="center" justify="between">
-      <Row align="center" gap={3}>
-        <Back />
-        <Text fontSize="2xl" fontWeight="semibold">
-          {team?.name} /{" "}
-          <Text
-            fontSize="2xl"
-            color="muted"
-            fontWeight="semibold"
-            className="opacity-80"
-          >
-            {getTermDisplay("storyTerm", {
-              variant: "plural",
-              capitalize: true,
-            })}
-          </Text>
+      <Back />
+      <Text fontSize="2xl" fontWeight="semibold">
+        {team?.name} /{" "}
+        <Text
+          fontSize="2xl"
+          color="muted"
+          fontWeight="semibold"
+          className="opacity-80"
+        >
+          {getTermDisplay("storyTerm", {
+            variant: "plural",
+            capitalize: true,
+          })}
         </Text>
-      </Row>
+      </Text>
       <StoryOptionsButton
         viewOptions={viewOptions}
         setViewOptions={setViewOptions}
