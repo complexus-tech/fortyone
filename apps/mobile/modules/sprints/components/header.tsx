@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, Row, Back } from "@/components/ui";
+import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { useTerminology } from "@/hooks/use-terminology";
@@ -11,7 +11,7 @@ export const Header = () => {
   const { getTermDisplay } = useTerminology();
 
   return (
-    <Row className="mb-3" asContainer align="center" gap={3}>
+    <Row className="mb-3" asContainer align="center" gap={3} justify="between">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
         {team?.name} /{" "}
@@ -27,6 +27,15 @@ export const Header = () => {
           })}
         </Text>
       </Text>
+      <ContextMenuButton
+        actions={[
+          {
+            systemImage: "link",
+            label: "Copy link",
+            onPress: () => {},
+          },
+        ]}
+      />
     </Row>
   );
 };
