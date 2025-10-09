@@ -103,7 +103,7 @@ export const Header = ({
         </Host>
       </Row>
       <Row
-        className="bg-gray-50 border-gray-100 dark:bg-dark-100/60 rounded-2xl dark:border-dark-100 border pl-3 pr-2.5 mt-3"
+        className="bg-gray-50/50 border-gray-100 dark:bg-dark-100/20 rounded-[0.85rem] dark:border-dark-50 border pl-3 pr-2.5 mt-3"
         align="center"
         gap={2}
       >
