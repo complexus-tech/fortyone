@@ -4,8 +4,9 @@ module.exports = {
   // productionBrowserSourceMaps: true,
   transpilePackages: ["ui", "icons"],
   devIndicators: false,
+  reactCompiler: true,
   experimental: {
-    reactCompiler: true,
+    turbopackFileSystemCacheForDev: true,
     staleTimes: {
       dynamic: 30,
       static: 180,
