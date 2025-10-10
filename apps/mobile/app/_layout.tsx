@@ -3,6 +3,8 @@ import {
   QueryClient,
   QueryClientProvider,
   useQueryClient,
+  focusManager,
+  onlineManager,
 } from "@tanstack/react-query";
 // import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 // import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
@@ -28,11 +30,29 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/get-objective
 import { getStatuses } from "@/modules/statuses/queries/get-statuses";
 import { getMembers } from "@/modules/members/queries/get-members";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { AppState } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
 // });
 
+function useReactQueryAppLifecycle() {
+  useEffect(() => {
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      onlineManager.setOnline(!!state.isConnected);
+    });
+
+    const subscription = AppState.addEventListener("change", (status) => {
+      focusManager.setFocused(status === "active");
+    });
+
+    return () => {
+      unsubscribeNetInfo();
+      subscription.remove();
+    };
+  }, []);
+}
 const RenderApp = () => {
   const queryClient = useQueryClient();
   queryClient.prefetchQuery({
@@ -105,14 +125,15 @@ export default function RootLayout() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        gcTime: 1000 * 60 * 60 * 24, // keep unused query data for 24 hours
         retry: 1,
+        refetchOnMount: true,
         refetchOnReconnect: true,
         refetchOnWindowFocus: true,
       },
     },
   });
   const loadAuthData = useAuthStore((state) => state.loadAuthData);
+  useReactQueryAppLifecycle();
 
   useEffect(() => {
     loadAuthData();
