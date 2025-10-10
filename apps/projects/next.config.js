@@ -12,7 +12,7 @@ module.exports = {
       static: 180,
     },
     serverActions: {
-      bodySizeLimit: "10mb",
+      bodySizeLimit: "25mb",
     },
   },
   compiler: {
