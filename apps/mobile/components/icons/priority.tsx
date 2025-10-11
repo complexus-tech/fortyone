@@ -21,32 +21,24 @@ export const PriorityIcon = ({
         viewBox="0 0 16 16"
         color={colors.gray.DEFAULT}
       >
-        <Rect
-          x="1"
-          y="7.25"
-          width="3"
-          height="1.5"
-          rx="0.5"
-          opacity="0.9"
-          fill="currentColor"
-        />
+        <Rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
         <Rect
           x="6"
-          y="7.25"
+          y="5"
           width="3"
-          height="1.5"
-          rx="0.5"
-          opacity="0.9"
+          height="9"
+          rx="1"
           fill="currentColor"
+          opacity={0.2}
         />
         <Rect
           x="11"
-          y="7.25"
+          y="2"
           width="3"
-          height="1.5"
-          rx="0.5"
-          opacity="0.9"
+          height="12"
+          rx="1"
           fill="currentColor"
+          opacity={0.2}
         />
       </Svg>
     );
