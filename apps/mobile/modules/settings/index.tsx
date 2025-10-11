@@ -12,6 +12,7 @@ import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "@/store";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -24,6 +25,7 @@ export const Settings = () => {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
   const { workspace } = useCurrentWorkspace();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isOpened, setIsOpened] = useState(false);
   const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
 
@@ -34,7 +36,7 @@ export const Settings = () => {
         text: "Logout",
         style: "destructive",
         onPress: () => {
-          console.log("Logout");
+          clearAuth();
         },
       },
     ]);

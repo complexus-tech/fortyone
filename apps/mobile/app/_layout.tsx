@@ -40,41 +40,48 @@ function useReactQueryAppLifecycle() {
 }
 const RenderApp = () => {
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   fetchGlobalQueries(queryClient);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="teams/[teamId]" />
-      <Stack.Screen name="story/[storyId]" />
-      <Stack.Screen
-        name="settings"
-        options={{
-          presentation: "formSheet",
-          gestureDirection: "vertical",
-          animation: "slide_from_bottom",
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 28,
-          sheetExpandsWhenScrolledToEdge: true,
-          sheetElevation: 24,
-          sheetInitialDetentIndex: 0,
-          sheetAllowedDetents: [0.95],
-        }}
-      />
-      <Stack.Screen
-        name="account"
-        options={{
-          presentation: "formSheet",
-          gestureDirection: "vertical",
-          animation: "slide_from_bottom",
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 28,
-          sheetExpandsWhenScrolledToEdge: true,
-          sheetElevation: 24,
-          sheetInitialDetentIndex: 0,
-          sheetAllowedDetents: [0.91],
-        }}
-      />
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="teams/[teamId]" />
+        <Stack.Screen name="story/[storyId]" />
+        <Stack.Screen
+          name="settings"
+          options={{
+            presentation: "formSheet",
+            gestureDirection: "vertical",
+            animation: "slide_from_bottom",
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 28,
+            sheetExpandsWhenScrolledToEdge: true,
+            sheetElevation: 24,
+            sheetInitialDetentIndex: 0,
+            sheetAllowedDetents: [0.95],
+          }}
+        />
+        <Stack.Screen
+          name="account"
+          options={{
+            presentation: "formSheet",
+            gestureDirection: "vertical",
+            animation: "slide_from_bottom",
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 28,
+            sheetExpandsWhenScrolledToEdge: true,
+            sheetElevation: 24,
+            sheetInitialDetentIndex: 0,
+            sheetAllowedDetents: [0.91],
+          }}
+        />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="login" />
+      </Stack.Protected>
     </Stack>
   );
 };

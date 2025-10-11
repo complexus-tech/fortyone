@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { ProfileSheet } from "./profile-sheet";
 import { Pressable, Alert, Linking } from "react-native";
+import { useAuthStore } from "@/store";
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -15,6 +16,7 @@ const getTimeOfDay = () => {
 export const Header = () => {
   const router = useRouter();
   const { data: user } = useProfile();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isOpened, setIsOpened] = useState(false);
 
   const handleLogout = () => {
@@ -24,7 +26,7 @@ export const Header = () => {
         text: "Logout",
         style: "destructive",
         onPress: () => {
-          console.log("Logout");
+          clearAuth();
         },
       },
     ]);
