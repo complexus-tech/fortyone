@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useAuthStore } from "@/store";
+import { SafeContainer } from "@/components/ui";
 
 export default function Login() {
   const setAuthData = useAuthStore((state) => state.setAuthData);
@@ -15,7 +16,7 @@ export default function Login() {
   };
 
   return (
-    <View className="flex-1 justify-center items-center px-6">
+    <SafeContainer className="flex-1 justify-center items-center px-6">
       <View className="w-full max-w-sm">
         <Text fontSize="3xl" fontWeight="bold" align="center" className="mb-8">
           Welcome to Complexus
@@ -29,6 +30,6 @@ export default function Login() {
           Login
         </Button>
       </View>
-    </View>
+    </SafeContainer>
   );
 }
