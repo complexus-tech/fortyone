@@ -17,7 +17,7 @@ interface AuthState {
   // Actions
   setToken: (token: string) => void;
   setWorkspace: (workspace: string) => void;
-  setAuthData: (token: string, workspace?: string) => void;
+  setAuthData: (token: string, workspace: string) => void;
   clearAuth: () => void;
   loadAuthData: () => Promise<void>;
 }
@@ -39,16 +39,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     saveWorkspace(workspace);
   },
 
-  setAuthData: (token: string, workspace?: string) => {
+  setAuthData: (token: string, workspace: string) => {
     set({
       token,
-      workspace: workspace || null,
+      workspace,
       isAuthenticated: true,
     });
     saveAccessToken(token);
-    if (workspace) {
-      saveWorkspace(workspace);
-    }
+    saveWorkspace(workspace);
   },
 
   clearAuth: () => {
