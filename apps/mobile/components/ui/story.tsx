@@ -68,7 +68,7 @@ export const Story = ({
             >
               <Row align="center" gap={1}>
                 <Dot color={status?.color} size={10} />
-                <Text>{statusName || "No Status"}</Text>
+                <Text className="text-[15px]">{statusName || "No Status"}</Text>
               </Row>
             </Badge>
           )}
