@@ -1,9 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 export async function saveAccessToken(token: string) {
-  await SecureStore.setItemAsync("accessToken", token, {
-    keychainService: "fortyone.auth",
-  });
+  await SecureStore.setItemAsync("accessToken", token);
 }
 
 export async function getAccessToken() {

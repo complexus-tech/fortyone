@@ -6,11 +6,7 @@ const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
 // Create HTTP client with workspace context
 const createClient = (useWorkspace = true) => {
-  const [token, workspace] = [
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
-    "complexus",
-  ];
-
+  const { token, workspace } = useAuthStore.getState();
   const prefixUrl =
     useWorkspace && workspace
       ? `${apiURL}/workspaces/${workspace}/`

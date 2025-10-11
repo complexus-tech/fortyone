@@ -22,8 +22,6 @@ interface AuthState {
   loadAuthData: () => Promise<void>;
 }
 
-const sampleToken = process.env.EXPO_PUBLIC_TOKEN ?? "";
-
 export const useAuthStore = create<AuthState>((set) => ({
   // Initial state
   token: null,
@@ -66,10 +64,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadAuthData: async () => {
     try {
       const [token, workspace] = await Promise.all([
-        // getAccessToken(),
-        // getWorkspace(),
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
-        "complexus",
+        getAccessToken(),
+        getWorkspace(),
       ]);
       if (token) {
         set({
