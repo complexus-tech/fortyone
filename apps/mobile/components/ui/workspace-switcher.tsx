@@ -7,19 +7,29 @@ import { frame } from "@expo/ui/swift-ui/modifiers";
 import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useColorScheme } from "nativewind";
+import { useAuthStore } from "@/store/auth";
 
 const WorkspaceItem = ({
   isActive,
   workspace,
+  setIsOpened,
 }: {
   isActive?: boolean;
   workspace: Workspace;
+  setIsOpened: (isOpened: boolean) => void;
 }) => {
+  const setWorkspace = useAuthStore((state) => state.setWorkspace);
+
+  const handleSwitchWorkspace = () => {
+    setWorkspace(workspace.slug);
+    setIsOpened(false);
+  };
+
   const { colorScheme } = useColorScheme();
   const mutedTextColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
-    <HStack spacing={8}>
+    <HStack spacing={8} onPress={handleSwitchWorkspace}>
       <HStack modifiers={[frame({ width: 36, height: 36 })]}>
         <Avatar
           style={{
@@ -81,6 +91,7 @@ export const WorkspaceSwitcher = ({
           key={wk.id}
           isActive={wk.id === workspace?.id}
           workspace={wk}
+          setIsOpened={setIsOpened}
         />
       ))}
     </BottomSheetModal>
