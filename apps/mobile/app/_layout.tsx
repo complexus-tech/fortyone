@@ -13,25 +13,10 @@ import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
 import { useEffect } from "react";
-import { getProfile } from "@/modules/users/queries/get-profile";
-import {
-  memberKeys,
-  objectiveKeys,
-  statusKeys,
-  subscriptionKeys,
-  teamKeys,
-  userKeys,
-  workspaceKeys,
-} from "@/constants/keys";
-import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { getTeams } from "@/modules/teams/queries/get-teams";
-import { getSubscription } from "@/lib/queries/get-subscription";
-import { getObjectiveStatuses } from "@/modules/objectives/queries/get-objectives";
-import { getStatuses } from "@/modules/statuses/queries/get-statuses";
-import { getMembers } from "@/modules/members/queries/get-members";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+import { fetchGlobalQueries } from "@/lib/utils";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
@@ -55,34 +40,7 @@ function useReactQueryAppLifecycle() {
 }
 const RenderApp = () => {
   const queryClient = useQueryClient();
-  queryClient.prefetchQuery({
-    queryKey: userKeys.profile(),
-    queryFn: getProfile,
-  });
-  queryClient.prefetchQuery({
-    queryKey: workspaceKeys.lists(),
-    queryFn: getWorkspaces,
-  });
-  queryClient.prefetchQuery({
-    queryKey: teamKeys.lists(),
-    queryFn: getTeams,
-  });
-  queryClient.prefetchQuery({
-    queryKey: subscriptionKeys.details,
-    queryFn: getSubscription,
-  });
-  queryClient.prefetchQuery({
-    queryKey: memberKeys.lists(),
-    queryFn: getMembers,
-  });
-  queryClient.prefetchQuery({
-    queryKey: objectiveKeys.statuses(),
-    queryFn: getObjectiveStatuses,
-  });
-  queryClient.prefetchQuery({
-    queryKey: statusKeys.lists(),
-    queryFn: getStatuses,
-  });
+  fetchGlobalQueries(queryClient);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

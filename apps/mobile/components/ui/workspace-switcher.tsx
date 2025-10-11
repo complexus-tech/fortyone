@@ -1,5 +1,6 @@
 import React from "react";
 import { Avatar } from "./avatar";
+import * as Updates from "expo-updates";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
@@ -8,6 +9,7 @@ import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useColorScheme } from "nativewind";
 import { useAuthStore } from "@/store/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const WorkspaceItem = ({
   isActive,
@@ -18,11 +20,14 @@ const WorkspaceItem = ({
   workspace: Workspace;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
+  const queryClient = useQueryClient();
   const setWorkspace = useAuthStore((state) => state.setWorkspace);
 
-  const handleSwitchWorkspace = () => {
+  const handleSwitchWorkspace = async () => {
+    queryClient.clear();
     setWorkspace(workspace.slug);
     setIsOpened(false);
+    await Updates.reloadAsync();
   };
 
   const { colorScheme } = useColorScheme();
