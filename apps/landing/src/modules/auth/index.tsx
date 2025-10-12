@@ -39,12 +39,16 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   };
 
   const handleOTPSubmit = async () => {
+    let url = `/verify/${email}/${otp}`;
+    if (isMobile) {
+      url += "?mobile=true";
+    }
     if (otp.length !== 6) {
       toast.error("Please enter a valid 6-digit code");
       return;
     }
     setOtpLoading(true);
-    router.push(`/verify/${email}/${otp}`);
+    router.push(url);
   };
 
   return (
