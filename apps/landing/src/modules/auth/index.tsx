@@ -35,6 +35,9 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       setLoading(false);
     } else {
       setIsSent(true);
+      if (isMobile) {
+        setIsManual(true);
+      }
     }
   };
 
