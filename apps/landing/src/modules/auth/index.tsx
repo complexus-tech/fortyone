@@ -27,7 +27,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    const result = await requestMagicEmail(email);
+    const result = await requestMagicEmail(email, isMobile);
     if (result?.error?.message) {
       toast.error("Failed to send magic link", {
         description: result.error.message,
