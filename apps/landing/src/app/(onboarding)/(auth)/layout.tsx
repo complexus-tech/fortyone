@@ -5,7 +5,20 @@ import { getRedirectUrl } from "@/utils";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 
-export default async function Layout({ children }: { children: ReactNode }) {
+export default async function Layout({
+  children,
+  searchParams,
+}: {
+  children: ReactNode;
+  searchParams: Promise<{ mobile?: string }>;
+}) {
+  const params = await searchParams;
+  const isMobile = params?.mobile === "true";
+  if (isMobile) {
+    const callbackUrl = new URL("fortyone://auth-callback");
+    callbackUrl.searchParams.set("code", "test");
+    redirect(callbackUrl.toString());
+  }
   const session = await auth();
 
   if (session) {
