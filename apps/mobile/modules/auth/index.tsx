@@ -14,19 +14,19 @@ export const Auth = () => {
       // Open the landing app login page in an in-app browser
       const result = await WebBrowser.openAuthSessionAsync(
         "https://www.fortyone.app/login?mobile=true",
-        "fortyone://auth-callback"
+        "fortyone://login"
       );
 
       if (result.type === "success" && result.url) {
-        console.log(result);
+        const url = new URL(result.url);
+        const code = url.searchParams.get("code");
+        console.log(code);
 
         // setAuthData(
         //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
         //   "complexus"
         // );
-        // // Extract code from URL
-        // const url = new URL(result.url);
-        // const code = url.searchParams.get("code");
+
         // if (code) {
         //   // Exchange code for token
         //   const tokenData = await exchangeCodeForToken(code);
