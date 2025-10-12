@@ -15,7 +15,7 @@ export const buttonVariants = cva(
       size: {
         sm: "px-2 h-[40px]",
         md: "px-3 h-[44px]",
-        lg: "px-5 py-[0.56rem]",
+        lg: "px-5 h-13",
       },
       rounded: {
         none: "rounded-none",
