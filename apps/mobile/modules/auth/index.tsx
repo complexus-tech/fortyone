@@ -16,7 +16,7 @@ export const Auth = () => {
 
       // Open the landing app login page in an in-app browser
       const result = await WebBrowser.openAuthSessionAsync(
-        `${landingUrl}/login?mobile=true`,
+        "https://www.fortyone.app/login?mobile=true",
         "fortyone://auth-callback"
       );
 
