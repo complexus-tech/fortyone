@@ -2,7 +2,7 @@
 
 import { Flex, Text } from "ui";
 import { useEffect } from "react";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 import nProgress from "nprogress";
 import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
@@ -21,11 +21,16 @@ export const ClientPage = ({
   workspaces: Workspace[];
   profile: User;
 }) => {
+  const searchParams = useSearchParams();
+  const isMobile = searchParams?.get("mobile") === "true";
   const { analytics } = useAnalytics();
 
   useEffect(() => {
     nProgress.done();
     if (session) {
+      if (isMobile) {
+        redirect("fortyone://login?code=test");
+      }
       analytics.identify(session.user!.email!, {
         email: session.user!.email!,
         name: session.user!.name!,
@@ -34,7 +39,7 @@ export const ClientPage = ({
         getRedirectUrl(workspaces, invitations, profile.lastUsedWorkspaceId),
       );
     }
-  }, [analytics, session, invitations, workspaces, profile]);
+  }, [analytics, session, invitations, workspaces, profile, isMobile]);
 
   return (
     <Flex

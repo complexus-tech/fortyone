@@ -1,7 +1,7 @@
 "use client";
 
 import { Text, Flex } from "ui";
-import { redirect, useParams } from "next/navigation";
+import { redirect, useParams, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { Logo } from "@/components/ui";
 import { getRedirectUrl } from "@/utils";
@@ -13,6 +13,8 @@ import { logIn, getSession } from "./actions";
 
 export const EmailVerificationCallback = () => {
   const params = useParams<{ email: string; token: string }>();
+  const searchParams = useSearchParams();
+  const isMobile = searchParams?.get("mobile") === "true";
   const validatedEmail = decodeURIComponent(params?.email || "");
   const validatedToken = decodeURIComponent(params?.token || "");
   const { analytics } = useAnalytics();
@@ -29,6 +31,9 @@ export const EmailVerificationCallback = () => {
           getProfile(session!),
         ]);
         if (session) {
+          if (isMobile) {
+            redirect("fortyone://login?code=test");
+          }
           analytics.identify(session.user!.email!, {
             email: session.user!.email!,
             name: session.user!.name!,
@@ -46,7 +51,7 @@ export const EmailVerificationCallback = () => {
     };
 
     void validate();
-  }, [validatedEmail, validatedToken, analytics]);
+  }, [validatedEmail, validatedToken, analytics, isMobile]);
 
   return (
     <Flex
