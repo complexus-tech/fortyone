@@ -496,9 +496,14 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 		"OTP":              payload.Token,
 	}
 
+	var templateID int64 = brevo.TemplateLogin
+	if payload.IsMobile {
+		templateID = brevo.TemplateLoginMobile
+	}
+
 	// Send templated email via Brevo service
 	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateLogin,
+		TemplateID: templateID,
 		To: []brevo.EmailRecipient{
 			{
 				Email: payload.Email,

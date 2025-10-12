@@ -4,6 +4,7 @@ var (
 	TemplateNotification                           = int64(13)
 	TemplateInvitation                             = int64(14)
 	TemplateLogin                                  = int64(16)
+	TemplateLoginMobile                            = int64(42)
 	TemplateInvitationAccepted                     = int64(15)
 	TemplateOverdueStories                         = int64(20)
 	TemplateWorkspaceDeletionScheduledNotification = int64(21)
