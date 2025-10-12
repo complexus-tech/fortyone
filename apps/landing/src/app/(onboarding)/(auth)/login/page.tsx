@@ -10,10 +10,17 @@ export const metadata: Metadata = {
   title: "Login - FortyOne",
 };
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ mobile?: string }>;
+}) {
+  const params = await searchParams;
+  const isMobile = params?.mobile === "true";
+
   const session = await auth();
 
-  if (session) {
+  if (session && !isMobile) {
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(session?.token || ""),
       getProfile(session),
