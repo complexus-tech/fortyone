@@ -492,6 +492,7 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 	brevoParams := map[string]any{
 		"VERIFICATION_URL": verificationURL,
 		"EXPIRES_IN":       "10 minutes",
+		"IS_MOBILE":        payload.IsMobile,
 		"OTP":              payload.Token,
 	}
 
