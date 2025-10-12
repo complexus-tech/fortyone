@@ -21,6 +21,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const searchParams = useSearchParams();
   const error = searchParams?.get("error");
+  const isMobile = searchParams?.get("mobile") === "true";
   const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -169,7 +170,9 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               fullWidth
               leftIcon={<GoogleIcon />}
               onClick={async () => {
-                await signInWithGoogle();
+                await signInWithGoogle(
+                  isMobile ? "/auth-callback?mobile=true" : "/auth-callback",
+                );
               }}
               type="button"
               size="lg"
