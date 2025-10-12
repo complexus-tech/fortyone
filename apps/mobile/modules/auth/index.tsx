@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { Button, Col, SafeContainer, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
+import { colors } from "@/constants";
 
 export const Auth = () => {
   const setAuthData = useAuthStore((state) => state.setAuthData);
@@ -43,7 +44,7 @@ export const Auth = () => {
           paddingBottom: 40,
         }}
       >
-        <Logo height={30} />
+        <Logo height={30} color={colors.dark.DEFAULT} />
         <Col>
           <Text
             className="mb-6 uppercase text-[14px] tracking-wider"
@@ -58,7 +59,12 @@ export const Auth = () => {
           </Text>
         </Col>
         <Col>
-          <Button size="lg" rounded="lg" className="w-full bg-dark border-dark">
+          <Button
+            size="lg"
+            rounded="lg"
+            className="w-full bg-dark border-dark"
+            onPress={handleOTPSubmit}
+          >
             Get Started
           </Button>
           <Text
