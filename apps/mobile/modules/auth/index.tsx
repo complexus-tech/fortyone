@@ -42,7 +42,7 @@ export const Auth = () => {
           paddingBottom: 40,
         }}
       >
-        <View className="size-14 bg-primary rounded-lg mb-8" />
+        <View className="size-14 mt-3 bg-primary rounded-lg mb-8" />
         <Col>
           <Text
             className="mb-6 uppercase text-[14px] tracking-wider"
@@ -66,10 +66,10 @@ export const Auth = () => {
             Get Started
           </Button>
           <Text
-            fontSize="sm"
             align="center"
-            className="mt-4 opacity-80"
+            className="mt-4 opacity-80 text-[14px]"
             color="black"
+            onPress={handleOTPSubmit}
           >
             © {new Date().getFullYear()} • Product of Complexus LLC • All
             Rights Reserved.
