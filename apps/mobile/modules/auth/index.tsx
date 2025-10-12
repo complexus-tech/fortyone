@@ -4,16 +4,42 @@ import { Button, Col, SafeContainer, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
 import { colors } from "@/constants";
+import * as WebBrowser from "expo-web-browser";
 
 export const Auth = () => {
   const setAuthData = useAuthStore((state) => state.setAuthData);
 
-  const handleOTPSubmit = () => {
-    // Mock OTP verification
-    setAuthData(
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
-      "complexus"
-    );
+  const handleGetStarted = async () => {
+    try {
+      // Get landing URL from environment
+      const landingUrl = "https://www.fortyone.app";
+
+      // Open the landing app login page in an in-app browser
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${landingUrl}/login?mobile=true`,
+        "fortyone://auth-callback"
+      );
+
+      if (result.type === "success" && result.url) {
+        setAuthData(
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
+          "complexus"
+        );
+
+        // // Extract code from URL
+        // const url = new URL(result.url);
+        // const code = url.searchParams.get("code");
+
+        // if (code) {
+        //   // Exchange code for token
+        //   const tokenData = await exchangeCodeForToken(code);
+        //   setAuthData(tokenData.token, tokenData.workspace);
+        // }
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      // TODO: Show error message to user
+    }
   };
 
   return (
@@ -64,7 +90,7 @@ export const Auth = () => {
             size="lg"
             rounded="lg"
             className="w-full bg-dark border-dark"
-            onPress={handleOTPSubmit}
+            onPress={handleGetStarted}
           >
             Get Started
           </Button>
@@ -72,7 +98,6 @@ export const Auth = () => {
             align="center"
             className="mt-4 opacity-80 text-[15px]"
             color="black"
-            onPress={handleOTPSubmit}
           >
             © {new Date().getFullYear()} • Product of Complexus LLC • All
             Rights Reserved.
