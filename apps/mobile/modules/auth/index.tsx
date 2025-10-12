@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Image } from "expo-image";
 import { Button, Col, SafeContainer, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
+import { Logo } from "@/components/icons";
 
 export const Auth = () => {
   const setAuthData = useAuthStore((state) => state.setAuthData);
@@ -42,7 +43,7 @@ export const Auth = () => {
           paddingBottom: 40,
         }}
       >
-        <View className="size-14 mt-3 bg-primary rounded-lg mb-8" />
+        <Logo height={30} />
         <Col>
           <Text
             className="mb-6 uppercase text-[14px] tracking-wider"
@@ -51,12 +52,7 @@ export const Auth = () => {
           >
             [Built for builders]
           </Text>
-          <Text
-            fontSize="4xl"
-            fontWeight="semibold"
-            className="mb-4"
-            color="black"
-          >
+          <Text fontSize="4xl" fontWeight="semibold" color="black">
             Plan, track, deliver with the project management tool your team will
             love.
           </Text>
