@@ -65,7 +65,7 @@ export const Auth = () => {
           justifyContent: "space-between",
           flex: 1,
           paddingBottom: 50,
-          paddingTop: 20,
+          paddingTop: 5,
         }}
       >
         <Logo height={30} color={colors.dark.DEFAULT} />
