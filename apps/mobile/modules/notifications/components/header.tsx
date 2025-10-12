@@ -52,7 +52,7 @@ export const Header = () => {
 
   return (
     <Row justify="between" align="center" asContainer className="mb-2">
-      <Text fontSize="2xl" fontWeight="semibold" color="black">
+      <Text fontSize="2xl" fontWeight="semibold">
         Notifications
       </Text>
       <ContextMenuButton

@@ -41,7 +41,8 @@ export const Auth = () => {
           backgroundColor: "transparent",
           justifyContent: "space-between",
           flex: 1,
-          paddingBottom: 40,
+          paddingBottom: 50,
+          paddingTop: 20,
         }}
       >
         <Logo height={30} color={colors.dark.DEFAULT} />
@@ -69,7 +70,7 @@ export const Auth = () => {
           </Button>
           <Text
             align="center"
-            className="mt-4 opacity-80 text-[14px]"
+            className="mt-4 opacity-80 text-[15px]"
             color="black"
             onPress={handleOTPSubmit}
           >
