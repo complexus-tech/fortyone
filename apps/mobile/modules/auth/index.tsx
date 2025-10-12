@@ -1,23 +1,9 @@
-import { useState } from "react";
-import { View, TouchableOpacity, TextInput, ScrollView } from "react-native";
-import { Button } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
-import { Input } from "@/components/ui/Input";
+import { View, ScrollView } from "react-native";
+import { Button, Col, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
-import { Col, Row, SafeContainer } from "@/components/ui";
 
 export const Auth = () => {
   const setAuthData = useAuthStore((state) => state.setAuthData);
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleEmailSubmit = () => {
-    // Mock magic link sending
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  };
 
   const handleOTPSubmit = () => {
     // Mock OTP verification
@@ -50,12 +36,7 @@ export const Auth = () => {
         </Text>
       </Col>
       <Col>
-        <Button
-          size="lg"
-          rounded="lg"
-          className="w-full"
-          onPress={handleEmailSubmit}
-        >
+        <Button size="lg" rounded="lg" className="w-full">
           Get Started
         </Button>
         <Text fontSize="sm" align="center" className="mt-4">
