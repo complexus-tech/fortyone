@@ -17,8 +17,8 @@ const textVariants = cva("text-dark dark:text-white", {
       warning: "text-warning dark:text-warning",
       info: "text-info dark:text-info",
       success: "text-success dark:text-success",
-      black: "text-black",
-      white: "text-white",
+      black: "text-black dark:text-black",
+      white: "text-white dark:text-white",
     },
     fontSize: {
       xs: "text-sm",
