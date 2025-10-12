@@ -39,7 +39,7 @@ export const Auth = () => {
         <Button size="lg" rounded="lg" className="w-full">
           Get Started
         </Button>
-        <Text fontSize="sm" align="center" className="mt-4">
+        <Text fontSize="sm" align="center" className="mt-2">
           © {new Date().getFullYear()} • Product of Complexus LLC • All Rights
           Reserved.
         </Text>
