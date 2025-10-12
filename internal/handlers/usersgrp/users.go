@@ -260,6 +260,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		Type: events.EmailVerification,
 		Payload: events.EmailVerificationPayload{
 			Email:     req.Email,
+			IsMobile:  req.IsMobile,
 			Token:     token.Token,
 			TokenType: string(tokenType),
 		},

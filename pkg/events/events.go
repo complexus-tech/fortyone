@@ -70,6 +70,7 @@ type KeyResultUpdatedPayload struct {
 // EmailVerificationPayload contains data for email verification events
 type EmailVerificationPayload struct {
 	Email     string `json:"email"`
+	IsMobile  bool   `json:"is_mobile"`
 	Token     string `json:"token"`
 	TokenType string `json:"token_type"`
 }
