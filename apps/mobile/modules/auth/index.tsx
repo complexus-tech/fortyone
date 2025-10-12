@@ -11,9 +11,6 @@ export const Auth = () => {
 
   const handleGetStarted = async () => {
     try {
-      // Get landing URL from environment
-      const landingUrl = "https://www.fortyone.app";
-
       // Open the landing app login page in an in-app browser
       const result = await WebBrowser.openAuthSessionAsync(
         "https://www.fortyone.app/login?mobile=true",
