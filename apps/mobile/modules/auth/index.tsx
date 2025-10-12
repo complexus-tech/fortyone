@@ -1,4 +1,4 @@
-import { View, ScrollView } from "react-native";
+import { View } from "react-native";
 import { Button, Col, Text } from "@/components/ui";
 import { useAuthStore } from "@/store";
 
@@ -14,8 +14,8 @@ export const Auth = () => {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={{
+    <View
+      style={{
         justifyContent: "space-between",
         flex: 1,
         paddingBottom: 60,
@@ -44,6 +44,6 @@ export const Auth = () => {
           Reserved.
         </Text>
       </Col>
-    </ScrollView>
+    </View>
   );
 };
