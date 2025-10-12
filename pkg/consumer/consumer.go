@@ -481,12 +481,16 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
+	var verificationURL = fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token)
+	if payload.IsMobile {
+		verificationURL += "?mobile=true"
+	}
 
 	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email)
 
 	// Prepare Brevo template parameters
 	brevoParams := map[string]any{
-		"VERIFICATION_URL": fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token),
+		"VERIFICATION_URL": verificationURL,
 		"EXPIRES_IN":       "10 minutes",
 		"OTP":              payload.Token,
 	}
