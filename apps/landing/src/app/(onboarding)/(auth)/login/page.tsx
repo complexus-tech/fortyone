@@ -22,7 +22,7 @@ export default async function Page({
 
   if (session) {
     if (isMobile) {
-      redirect("fortyone://auth-callback?code=test");
+      redirect("fortyone://login?code=test");
     }
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(session?.token || ""),

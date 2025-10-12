@@ -19,7 +19,10 @@ export default async function Page({
   const isMobile = params?.mobile === "true";
   const session = await auth();
 
-  if (session && !isMobile) {
+  if (session) {
+    if (isMobile) {
+      redirect("fortyone://login?code=test");
+    }
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(session?.token || ""),
       getProfile(session),
