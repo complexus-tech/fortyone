@@ -5,6 +5,7 @@ import { useGlobalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { truncateText } from "@/lib/utils";
 
 type HeaderProps = {
   viewOptions: StoriesViewOptions;
@@ -26,7 +27,7 @@ export const Header = ({
     <Row className="mb-3" asContainer align="center" justify="between">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        {team?.name} /{" "}
+        {truncateText(team?.name ?? "", 12)} /{" "}
         <Text
           fontSize="2xl"
           color="muted"

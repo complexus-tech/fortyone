@@ -3,6 +3,7 @@ import { Row, Text, Back, ContextMenuButton } from "@/components/ui";
 import { useGlobalSearchParams } from "expo-router";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 import { useTerminology } from "@/hooks/use-terminology";
+import { truncateText } from "@/lib/utils";
 
 export const Header = () => {
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
@@ -14,7 +15,7 @@ export const Header = () => {
     <Row className="mb-3" asContainer align="center" gap={3} justify="between">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        {team?.name} /{" "}
+        {truncateText(team?.name ?? "", 12)} /{" "}
         <Text
           fontSize="2xl"
           color="muted"
