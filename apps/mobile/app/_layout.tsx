@@ -119,6 +119,12 @@ export default function RootLayout() {
           <Toaster
             theme={colorScheme}
             closeButton
+            toastOptions={{
+              style: {
+                backgroundColor:
+                  colorScheme === "dark" ? colors.dark[100] : colors.white,
+              },
+            }}
             icons={{
               success: (
                 <SymbolView
