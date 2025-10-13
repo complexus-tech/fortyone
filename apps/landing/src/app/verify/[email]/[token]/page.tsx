@@ -6,9 +6,15 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { EmailVerificationCallback } from "./client";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ mobile?: string }>;
+}) {
+  const params = await searchParams;
+  const isMobile = params?.mobile === "true";
   const session = await auth();
-  if (session) {
+  if (session && !isMobile) {
     const [invitations, workspaces, profile] = await Promise.all([
       getMyInvitations(),
       getWorkspaces(session?.token || ""),
