@@ -45,7 +45,7 @@ export const Activity = ({ story }: { story: DetailedStory }) => {
       </Tabs.Panel>
       <Tabs.Panel value="updates">
         {allActivities.length === 0 ? (
-          <Text>No updates available</Text>
+          <Text className="pl-4.5">No updates available</Text>
         ) : (
           <Col asContainer>
             {allActivities.map((activity, index) => (
