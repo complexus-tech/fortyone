@@ -12,9 +12,13 @@ import { format } from "date-fns";
 import { SymbolView } from "expo-symbols";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
+import { useFeatures, useSprintsEnabled, useTerminology } from "@/hooks";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { colorScheme } = useColorScheme();
+  const { getTermDisplay } = useTerminology();
+  const sprintsEnabled = useSprintsEnabled(story.teamId);
+  const { objectiveEnabled } = useFeatures();
   const { data: statuses = [] } = useTeamStatuses(story.teamId);
   const { data: members = [] } = useMembers();
   const { data: objectives = [] } = useTeamObjectives(story.teamId);
@@ -68,18 +72,28 @@ export const Properties = ({ story }: { story: Story }) => {
                 : "Add deadline"}
             </Text>
           </Badge>
-          <Badge color="tertiary">
-            <SymbolView name="target" size={16} tintColor={iconColor} />
-            <Text color={story.objectiveId ? undefined : "muted"}>
-              {truncateText(objective?.name || "Add objective", 12)}
-            </Text>
-          </Badge>
-          <Badge color="tertiary">
-            <SymbolView name="play.circle" size={16} tintColor={iconColor} />
-            <Text color={story.sprintId ? undefined : "muted"}>
-              {truncateText(sprint?.name || "Add sprint", 10)}
-            </Text>
-          </Badge>
+          {objectiveEnabled && (
+            <Badge color="tertiary">
+              <SymbolView name="target" size={16} tintColor={iconColor} />
+              <Text color={story.objectiveId ? undefined : "muted"}>
+                {truncateText(
+                  objective?.name || `Add ${getTermDisplay("objectiveTerm")}`,
+                  12
+                )}
+              </Text>
+            </Badge>
+          )}
+          {sprintsEnabled && (
+            <Badge color="tertiary">
+              <SymbolView name="play.circle" size={16} tintColor={iconColor} />
+              <Text color={story.sprintId ? undefined : "muted"}>
+                {truncateText(
+                  sprint?.name || `Add ${getTermDisplay("sprintTerm")}`,
+                  10
+                )}
+              </Text>
+            </Badge>
+          )}
           <Badge color="tertiary">
             <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
             <Text color={story.labels?.length ? undefined : "muted"}>
