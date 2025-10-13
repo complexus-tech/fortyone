@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
 
 // const persister = createAsyncStoragePersister({
@@ -108,6 +109,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <KeyboardProvider>
         <RenderApp />
+        <Toaster />
       </KeyboardProvider>
     </QueryClientProvider>
   );
