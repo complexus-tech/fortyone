@@ -11,9 +11,11 @@ import {
   useRestoreStoryMutation,
   useDuplicateStoryMutation,
 } from "@/modules/stories/hooks/story-mutations";
+import { useCurrentWorkspace } from "@/lib/hooks";
 
 export const Header = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
+  const { workspace } = useCurrentWorkspace();
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === story?.teamId);
@@ -101,7 +103,7 @@ export const Header = () => {
 
   const handleCopyLink = async () => {
     try {
-      const storyUrl = `${process.env.EXPO_PUBLIC_WEB_URL}/story/${storyId}`;
+      const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
       await Clipboard.setStringAsync(storyUrl);
       Alert.alert("Success", "Story link copied to clipboard");
     } catch {
