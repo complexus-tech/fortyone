@@ -79,7 +79,6 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
-      toast.success("Notification marked as read");
     },
   });
 
