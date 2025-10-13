@@ -95,7 +95,7 @@ export const Header = ({
                       ? colors.dark.DEFAULT
                       : colors.gray[200]
                   }
-                  size={12}
+                  size={11}
                 />
               </HStack>
             </ContextMenuButton>
@@ -103,7 +103,7 @@ export const Header = ({
         </Host>
       </Row>
       <Row
-        className="bg-gray-100/60 dark:bg-dark-200 rounded-full pl-3 pr-2.5 mt-3"
+        className="bg-gray-100/60 dark:bg-dark-200 rounded-2xl pl-3 pr-2.5 mt-3"
         align="center"
         gap={2}
       >
