@@ -20,6 +20,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
 import { useColorScheme } from "nativewind";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
@@ -116,10 +118,34 @@ export default function RootLayout() {
           <Toaster
             theme={colorScheme}
             icons={{
-              success: null,
-              error: null,
-              warning: null,
-              info: null,
+              success: (
+                <SymbolView
+                  name="checkmark.circle.fill"
+                  size={20}
+                  tintColor={colors.success}
+                />
+              ),
+              error: (
+                <SymbolView
+                  name="xmark.circle.fill"
+                  size={20}
+                  tintColor={colors.danger}
+                />
+              ),
+              warning: (
+                <SymbolView
+                  name="exclamationmark.triangle.fill"
+                  size={20}
+                  tintColor={colors.warning}
+                />
+              ),
+              info: (
+                <SymbolView
+                  name="info.circle.fill"
+                  size={20}
+                  tintColor={colors.info}
+                />
+              ),
             }}
           />
         </GestureHandlerRootView>
