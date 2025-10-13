@@ -11,6 +11,7 @@ import {
   useRestoreStoryMutation,
 } from "@/modules/stories/hooks/story-mutations";
 import { useCurrentWorkspace } from "@/lib/hooks";
+import { toast } from "sonner-native";
 
 export const Header = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
@@ -92,7 +93,8 @@ export const Header = () => {
     try {
       const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
       await Clipboard.setStringAsync(storyUrl);
-      Alert.alert("Success", "Story link copied to clipboard");
+      toast.info("Link copied to clipboard");
+      // Alert.alert("Success", "Story link copied to clipboard");
     } catch {
       Alert.alert("Error", "Failed to copy link");
     }

@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
 
@@ -108,8 +109,10 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <KeyboardProvider>
-        <RenderApp />
-        <Toaster />
+        <GestureHandlerRootView>
+          <RenderApp />
+          <Toaster />
+        </GestureHandlerRootView>
       </KeyboardProvider>
     </QueryClientProvider>
   );
