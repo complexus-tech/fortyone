@@ -10,6 +10,7 @@ import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useColorScheme } from "nativewind";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
+import { switchWorkspace } from "@/lib/actions/auth";
 
 const WorkspaceItem = ({
   isActive,
@@ -25,6 +26,7 @@ const WorkspaceItem = ({
 
   const handleSwitchWorkspace = async () => {
     queryClient.clear();
+    await switchWorkspace(workspace.id);
     setWorkspace(workspace.slug);
     setIsOpened(false);
     await Updates.reloadAsync();
