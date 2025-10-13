@@ -113,7 +113,15 @@ export default function RootLayout() {
       <KeyboardProvider>
         <GestureHandlerRootView>
           <RenderApp />
-          <Toaster theme={colorScheme} />
+          <Toaster
+            theme={colorScheme}
+            icons={{
+              success: null,
+              error: null,
+              warning: null,
+              info: null,
+            }}
+          />
         </GestureHandlerRootView>
       </KeyboardProvider>
     </QueryClientProvider>
