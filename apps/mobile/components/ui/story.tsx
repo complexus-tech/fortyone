@@ -64,7 +64,8 @@ export const Story = ({
                 borderColor: hexToRgba(status?.color || "#6B665C", 0.2),
                 borderWidth: 1,
               }}
-              className="px-2"
+              rounded="xl"
+              className="pr-2"
             >
               <Row align="center" gap={1}>
                 <Dot color={status?.color} size={10} />
