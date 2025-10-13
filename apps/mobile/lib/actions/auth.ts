@@ -1,5 +1,5 @@
 import { post } from "@/lib/http";
-import { ApiResponse } from "@/types";
+import { ApiResponse, User } from "@/types";
 import { Workspace } from "@/types/workspace";
 import ky from "ky";
 
@@ -56,4 +56,16 @@ export const authenticateWithToken = async (email: string, token: string) => {
     token: response.data?.token ?? "",
     workspace: activeWorkspace.slug,
   };
+};
+
+export const switchWorkspace = async (workspaceId: string) => {
+  const response = await post<{ workspaceId: string }, ApiResponse<User>>(
+    "workspaces/switch",
+    { workspaceId },
+    {
+      useWorkspace: false,
+    }
+  );
+
+  return response.data?.lastUsedWorkspaceId;
 };
