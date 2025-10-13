@@ -10,6 +10,7 @@ import { useAnalytics } from "@/hooks";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { logIn, getSession } from "./actions";
+import { getAuthCode } from "@/lib/queries/get-auth-code";
 
 export const EmailVerificationCallback = () => {
   const params = useParams<{ email: string; token: string }>();
@@ -32,7 +33,14 @@ export const EmailVerificationCallback = () => {
         ]);
         if (session) {
           if (isMobile) {
-            redirect("fortyone://login?code=test");
+            const authCodeResponse = await getAuthCode(session);
+            if (authCodeResponse.error || !authCodeResponse.data) {
+              redirect("/login?mobile=true&error=Failed to generate auth code");
+            } else {
+              redirect(
+                `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
+              );
+            }
           }
           analytics.identify(session.user!.email!, {
             email: session.user!.email!,

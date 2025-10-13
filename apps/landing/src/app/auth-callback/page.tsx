@@ -4,6 +4,7 @@ import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { ClientPage } from "./client";
+import { getAuthCode } from "@/lib/queries/get-auth-code";
 
 export default async function AuthCallback({
   searchParams,
@@ -17,7 +18,14 @@ export default async function AuthCallback({
     redirect("/login");
   }
   if (isMobile) {
-    redirect("fortyone://login?code=test");
+    const authCodeResponse = await getAuthCode(session);
+    if (authCodeResponse.error || !authCodeResponse.data) {
+      redirect("/login?mobile=true&error=Failed to generate auth code");
+    } else {
+      redirect(
+        `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
+      );
+    }
   }
   const [invitations, workspaces, profile] = await Promise.all([
     getMyInvitations(),

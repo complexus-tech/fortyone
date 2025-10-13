@@ -5,6 +5,7 @@ import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { redirect } from "next/navigation";
 import { getRedirectUrl } from "@/utils";
+import { getAuthCode } from "@/lib/queries/get-auth-code";
 
 export const metadata: Metadata = {
   title: "Login - FortyOne",
@@ -22,7 +23,14 @@ export default async function Page({
 
   if (session) {
     if (isMobile) {
-      redirect("fortyone://login?code=test");
+      const authCodeResponse = await getAuthCode(session);
+      if (authCodeResponse.error || !authCodeResponse.data) {
+        redirect("/login?mobile=true&error=Failed to generate auth code");
+      } else {
+        redirect(
+          `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
+        );
+      }
     }
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(session?.token || ""),
