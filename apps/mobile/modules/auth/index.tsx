@@ -27,18 +27,10 @@ export const Auth = () => {
         setLoading(true);
         const res = await authenticateWithToken(email, code);
         setLoading(false);
-
-        console.log(res);
         setAuthData(res.token, res.workspace);
-
-        // setAuthData(
-        //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
-        //   "complexus"
-        // );
       }
     } catch (error) {
       console.error("Authentication error:", error);
-      // TODO: Show error message to user
     }
   };
 
