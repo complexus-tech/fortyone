@@ -10,40 +10,38 @@ export const Header = () => {
   const team = teams.find((team) => team.id === story?.teamId);
 
   return (
-    <>
-      <Row className="mb-2" justify="between" align="center" asContainer>
-        <Back />
-        <Text fontSize="2xl" fontWeight="semibold">
-          {team?.code}-
-          <Text fontSize="2xl" fontWeight="semibold" color="muted">
-            {story?.sequenceId}
-          </Text>
+    <Row className="mb-3" justify="between" align="center" asContainer>
+      <Back />
+      <Text fontSize="2xl" fontWeight="semibold">
+        {team?.code}-
+        <Text fontSize="2xl" fontWeight="semibold" color="muted">
+          {story?.sequenceId}
         </Text>
-        <ContextMenuButton
-          actions={[
-            {
-              systemImage: "pencil",
-              label: "Edit",
-              onPress: () => {},
-            },
-            {
-              systemImage: "archivebox.fill",
-              label: "Archive",
-              onPress: () => {},
-            },
-            {
-              systemImage: "link",
-              label: "Copy link",
-              onPress: () => {},
-            },
-            {
-              systemImage: "trash.fill",
-              label: "Delete",
-              onPress: () => {},
-            },
-          ]}
-        />
-      </Row>
-    </>
+      </Text>
+      <ContextMenuButton
+        actions={[
+          {
+            systemImage: "pencil",
+            label: "Edit",
+            onPress: () => {},
+          },
+          {
+            systemImage: "archivebox.fill",
+            label: "Archive",
+            onPress: () => {},
+          },
+          {
+            systemImage: "link",
+            label: "Copy link",
+            onPress: () => {},
+          },
+          {
+            systemImage: "trash.fill",
+            label: "Delete",
+            onPress: () => {},
+          },
+        ]}
+      />
+    </Row>
   );
 };
