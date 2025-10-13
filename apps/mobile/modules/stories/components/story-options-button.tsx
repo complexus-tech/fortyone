@@ -28,6 +28,7 @@ export const StoryOptionsButton = ({
       >
         <SymbolView
           name="slider.horizontal.3"
+          weight="medium"
           tintColor={
             colorScheme === "light" ? colors.dark[50] : colors.gray[200]
           }

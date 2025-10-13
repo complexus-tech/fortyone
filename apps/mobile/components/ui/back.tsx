@@ -21,8 +21,8 @@ export const Back = () => {
   return (
     <TouchableOpacity onPress={handleBack}>
       <SymbolView
-        name="arrow.backward"
-        weight="semibold"
+        name="chevron.backward"
+        weight="medium"
         size={22}
         tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[200]}
       />
