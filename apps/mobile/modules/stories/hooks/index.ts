@@ -3,3 +3,10 @@ export { useTeamStoriesGrouped } from "./use-team-stories-grouped";
 export { useSprintStoriesGrouped } from "./use-sprint-stories-grouped";
 export { useObjectiveStoriesGrouped } from "./use-objective-stories-grouped";
 export { useStory } from "./use-story";
+export {
+  useArchiveStoryMutation,
+  useUnarchiveStoryMutation,
+  useDeleteStoryMutation,
+  useRestoreStoryMutation,
+  useDuplicateStoryMutation,
+} from "./story-mutations";
