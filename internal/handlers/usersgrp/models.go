@@ -62,6 +62,12 @@ type VerifyEmailRequest struct {
 	Email string `json:"email"`
 }
 
+// GenerateSessionCodeResponse represents the response with session code
+type GenerateSessionCodeResponse struct {
+	Code  string `json:"code"`
+	Email string `json:"email"`
+}
+
 // AppAutomationPreferences represents the user's automation preferences
 type AppAutomationPreferences struct {
 	UserID                     uuid.UUID `json:"userId"`

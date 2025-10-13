@@ -53,6 +53,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)
 
 	// Protected endpoints
+	app.Get("/users/session/code", h.GenerateSessionCode, auth)
 	app.Get("/workspaces/{workspaceSlug}/members", h.List, auth, workspace, gzip)
 	app.Get("/users/profile", h.GetProfile, auth)
 	app.Put("/users/profile", h.UpdateProfile, auth)

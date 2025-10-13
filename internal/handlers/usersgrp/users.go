@@ -452,3 +452,38 @@ func (h *Handlers) DeleteProfileImage(ctx context.Context, w http.ResponseWriter
 
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
+func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	// Get user details
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	// Check rate limiting (5-minute lookback for mobile codes)
+	count, err := h.users.GetValidTokenCount(ctx, user.Email, 5*time.Minute)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	if count >= 3 {
+		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
+	}
+
+	// Create verification token with 5-minute expiry
+	token, err := h.users.CreateVerificationToken(ctx, user.Email, users.TokenTypeLogin, time.Now().Add(5*time.Minute))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	response := GenerateSessionCodeResponse{
+		Code:  token.Token,
+		Email: user.Email,
+	}
+
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
