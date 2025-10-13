@@ -65,6 +65,11 @@ export const useArchiveStoryMutation = () => {
         return;
       }
 
+      // Invalidate specific story detail queries
+      storyIds.forEach((storyId) => {
+        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
+      });
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story archived successfully");
     },
@@ -125,6 +130,11 @@ export const useUnarchiveStoryMutation = () => {
         Alert.alert("Error", res.error.message);
         return;
       }
+
+      // Invalidate specific story detail queries
+      storyIds.forEach((storyId) => {
+        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
+      });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story unarchived successfully");
@@ -193,6 +203,11 @@ export const useDeleteStoryMutation = () => {
         return;
       }
 
+      // Invalidate specific story detail queries
+      storyIds.forEach((storyId) => {
+        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
+      });
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story deleted successfully");
     },
@@ -243,6 +258,9 @@ export const useRestoreStoryMutation = () => {
         return;
       }
 
+      // Invalidate specific story detail query
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story restored successfully");
     },
@@ -268,6 +286,9 @@ export const useDuplicateStoryMutation = () => {
         Alert.alert("Error", res.error.message);
         return;
       }
+
+      // Invalidate specific story detail query
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story duplicated successfully");
