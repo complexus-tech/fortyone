@@ -1,4 +1,4 @@
-import { post } from "@/lib/http";
+import { post, remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 
 type BulkPayload = {
@@ -22,6 +22,11 @@ export const restoreStory = async (storyId: string) => {
   return response;
 };
 
+export const deleteStory = async (storyId: string) => {
+  const response = await remove<ApiResponse<null>>(`stories/${storyId}`);
+  return response;
+};
+
 // Bulk endpoints (used for single stories too)
 export const archiveStory = async (storyIds: string[]) => {
   const response = await post<BulkPayload, ApiResponse<BulkPayload>>(
@@ -36,13 +41,5 @@ export const unarchiveStory = async (storyIds: string[]) => {
     "stories/unarchive",
     { storyIds }
   );
-  return response;
-};
-
-export const deleteStory = async (storyIds: string[], hardDelete = false) => {
-  const response = await post<
-    BulkPayload & { hardDelete?: boolean },
-    ApiResponse<BulkPayload>
-  >("stories/delete", { storyIds, hardDelete });
   return response;
 };

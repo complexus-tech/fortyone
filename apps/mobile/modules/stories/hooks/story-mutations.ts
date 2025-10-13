@@ -149,47 +149,32 @@ export const useDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({
-      storyIds,
-      hardDelete,
-    }: {
-      storyIds: string[];
-      hardDelete?: boolean;
-    }) => deleteStory(storyIds, hardDelete),
+    mutationFn: deleteStory,
 
-    onMutate: async ({ storyIds }) => {
+    onMutate: async (storyId) => {
       await queryClient.cancelQueries({ queryKey: storyKeys.all });
 
-      // Store previous stories for rollback
-      const previousStories: Record<string, DetailedStory> = {};
+      // Store previous story for rollback
+      const previousStory = queryClient.getQueryData<DetailedStory>(
+        storyKeys.detail(storyId)
+      );
 
-      storyIds.forEach((storyId) => {
-        const previousStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(storyId)
-        );
+      if (previousStory) {
+        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+          ...previousStory,
+          deletedAt: new Date().toISOString(),
+        });
+      }
 
-        if (previousStory) {
-          previousStories[storyId] = previousStory;
-          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-            ...previousStory,
-            deletedAt: new Date().toISOString(),
-          });
-        }
-      });
-
-      return { previousStories };
+      return { previousStory };
     },
 
-    onError: (error, { storyIds }, context) => {
-      // Rollback optimistic updates
-      if (context?.previousStories) {
-        Object.entries(context.previousStories).forEach(
-          ([storyId, previousStory]) => {
-            queryClient.setQueryData<DetailedStory>(
-              storyKeys.detail(storyId),
-              previousStory
-            );
-          }
+    onError: (error, storyId, context) => {
+      // Rollback optimistic update
+      if (context?.previousStory) {
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(storyId),
+          context.previousStory
         );
       }
 
@@ -197,16 +182,14 @@ export const useDeleteStoryMutation = () => {
       Alert.alert("Error", "Failed to delete story");
     },
 
-    onSuccess: (res, { storyIds }) => {
+    onSuccess: (res, storyId) => {
       if (res.error?.message) {
         Alert.alert("Error", res.error.message);
         return;
       }
 
-      // Invalidate specific story detail queries
-      storyIds.forEach((storyId) => {
-        queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
-      });
+      // Refetch specific story detail query immediately
+      queryClient.refetchQueries({ queryKey: storyKeys.detail(storyId) });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story deleted successfully");

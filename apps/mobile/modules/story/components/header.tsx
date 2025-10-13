@@ -9,7 +9,6 @@ import {
   useUnarchiveStoryMutation,
   useDeleteStoryMutation,
   useRestoreStoryMutation,
-  useDuplicateStoryMutation,
 } from "@/modules/stories/hooks/story-mutations";
 import { useCurrentWorkspace } from "@/lib/hooks";
 
@@ -24,7 +23,6 @@ export const Header = () => {
   const unarchiveMutation = useUnarchiveStoryMutation();
   const deleteMutation = useDeleteStoryMutation();
   const restoreMutation = useRestoreStoryMutation();
-  const duplicateMutation = useDuplicateStoryMutation();
 
   const isArchived = story?.archivedAt;
   const isDeleted = story?.deletedAt;
@@ -70,11 +68,7 @@ export const Header = () => {
         {
           text: isHardDelete ? "Delete Forever" : "Delete",
           style: "destructive",
-          onPress: () =>
-            deleteMutation.mutate({
-              storyIds: [storyId],
-              hardDelete: isHardDelete,
-            }),
+          onPress: () => deleteMutation.mutate(storyId),
         },
       ]
     );
@@ -92,16 +86,6 @@ export const Header = () => {
         },
       ]
     );
-  };
-
-  const handleDuplicate = () => {
-    Alert.alert("Duplicate Story", "This will create a copy of this story.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Duplicate",
-        onPress: () => duplicateMutation.mutate(storyId),
-      },
-    ]);
   };
 
   const handleCopyLink = async () => {
@@ -168,11 +152,6 @@ export const Header = () => {
 
     return [
       ...baseActions,
-      {
-        systemImage: "doc.on.doc" as const,
-        label: "Duplicate",
-        onPress: handleDuplicate,
-      },
       {
         systemImage: "archivebox.fill" as const,
         label: "Archive",
