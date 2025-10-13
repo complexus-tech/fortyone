@@ -118,6 +118,7 @@ export default function RootLayout() {
           <RenderApp />
           <Toaster
             theme={colorScheme}
+            closeButton
             icons={{
               success: (
                 <SymbolView
