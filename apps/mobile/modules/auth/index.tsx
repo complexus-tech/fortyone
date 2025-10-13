@@ -5,8 +5,11 @@ import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
 import { colors } from "@/constants";
 import * as WebBrowser from "expo-web-browser";
+import { authenticateWithToken } from "@/lib/actions/auth";
+import { useState } from "react";
 
 export const Auth = () => {
+  const [loading, setLoading] = useState(false);
   const setAuthData = useAuthStore((state) => state.setAuthData);
 
   const handleGetStarted = async () => {
@@ -19,19 +22,19 @@ export const Auth = () => {
 
       if (result.type === "success" && result.url) {
         const url = new URL(result.url);
-        const code = url.searchParams.get("code");
-        console.log(code);
+        const code = url.searchParams.get("code") ?? "";
+        const email = url.searchParams.get("email") ?? "";
+        setLoading(true);
+        const res = await authenticateWithToken(email, code);
+        setLoading(false);
+
+        console.log(res);
+        setAuthData(res.token, res.workspace);
 
         // setAuthData(
         //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTc5ODExMi05MGZlLTQ5NWUtOWYxYy1mMzY2NTVlM2Q4YWIiLCJleHAiOjE3NjI4ODMyMDMsIm5iZiI6MTc1OTQyNzIwMywiaWF0IjoxNzU5NDI3MjAzfQ.K05W85tEEWQ5dFqu7bgXjjowkk_zYowwKSJ_VMXR7_o",
         //   "complexus"
         // );
-
-        // if (code) {
-        //   // Exchange code for token
-        //   const tokenData = await exchangeCodeForToken(code);
-        //   setAuthData(tokenData.token, tokenData.workspace);
-        // }
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -88,6 +91,7 @@ export const Auth = () => {
             rounded="lg"
             className="w-full bg-dark border-dark"
             onPress={handleGetStarted}
+            loading={loading}
           >
             Get Started
           </Button>

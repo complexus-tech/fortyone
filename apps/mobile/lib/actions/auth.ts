@@ -47,13 +47,13 @@ export const authenticateWithToken = async (email: string, token: string) => {
       useWorkspace: false,
     }
   );
-  const workspaces = await getWorkspaces(token);
+  const workspaces = await getWorkspaces(response.data?.token ?? "");
   const activeWorkspace = getActiveWorkspace(
     workspaces,
     response.data?.lastUsedWorkspaceId ?? ""
   );
   return {
     token: response.data?.token ?? "",
-    workspace: activeWorkspace.id,
+    workspace: activeWorkspace.slug,
   };
 };

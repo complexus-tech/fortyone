@@ -45,14 +45,12 @@ export interface ButtonProps
   extends Omit<TouchableOpacityProps, "disabled">,
     VariantProps<typeof buttonVariants> {
   href?: string;
-  loadingText?: string;
 }
 
 export const Button = ({
   rounded,
   size,
   loading,
-  loadingText,
   href,
   className,
   disabled,
@@ -79,14 +77,7 @@ export const Button = ({
       {...rest}
     >
       {loading ? (
-        <>
-          <ActivityIndicator size="small" color="white" />
-          {loadingText && (
-            <Text color="white" fontWeight="medium" className="ml-2">
-              {loadingText}
-            </Text>
-          )}
-        </>
+        <ActivityIndicator size="small" color="white" />
       ) : (
         <Text color="white">{children}</Text>
       )}
