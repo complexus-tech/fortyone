@@ -5,6 +5,7 @@ import { useGlobalSearchParams } from "expo-router";
 import { useSprint } from "@/modules/sprints/hooks/use-sprints";
 import { useTerminology } from "@/hooks/use-terminology";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { truncateText } from "@/lib/utils";
 
 type HeaderProps = {
   viewOptions: StoriesViewOptions;
@@ -20,17 +21,12 @@ export const Header = ({
   const { sprintId } = useGlobalSearchParams<{ sprintId: string }>();
   const { data: sprint } = useSprint(sprintId);
   const { getTermDisplay } = useTerminology();
-  // truncate sprint name to 16 characters and add ellipsis if needed
-  const sprintName =
-    sprint?.name && sprint.name.length > 16
-      ? sprint.name.slice(0, 16) + "..."
-      : sprint?.name;
 
   return (
     <Row className="mb-3" asContainer justify="between" align="center">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
-        {sprintName} /{" "}
+        {truncateText(sprint?.name ?? "", 12)} /{" "}
         <Text
           fontSize="2xl"
           color="muted"
