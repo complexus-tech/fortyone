@@ -55,17 +55,16 @@ export const NotificationCard = ({
 
   return (
     <Pressable
-      className="py-3 px-4 active:bg-gray-50 dark:active:bg-dark-200"
+      className="py-3.5 px-4 active:bg-gray-50 dark:active:bg-dark-200"
       onPress={handlePress}
     >
       <Row align="center" gap={2}>
         <Avatar
-          size="lg"
           name={actor?.fullName || actor?.username || "Unknown"}
           src={actor?.avatarUrl}
           className="shrink-0"
         />
-        <Col flex={1} className=" gap-0.5">
+        <Col flex={1} gap={1}>
           <Row justify="between" align="center" gap={2}>
             <Text
               color={isUnread ? "black" : "muted"}
