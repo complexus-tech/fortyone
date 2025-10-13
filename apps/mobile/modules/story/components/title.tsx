@@ -17,7 +17,7 @@ export const Title = ({ story }: { story: DetailedStory }) => {
   return (
     <Col asContainer>
       {isDeleted && (
-        <Badge color="tertiary">
+        <Badge color="tertiary" className="mb-3">
           <Text>{getDaysLeft()} days left in bin</Text>
         </Badge>
       )}
