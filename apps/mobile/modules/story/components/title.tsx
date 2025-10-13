@@ -1,13 +1,16 @@
 import React from "react";
 import { Text, Badge, Col } from "@/components/ui";
 import { DetailedStory } from "@/modules/stories/types";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, addDays } from "date-fns";
 
 export const Title = ({ story }: { story: DetailedStory }) => {
   const isDeleted = story.deletedAt !== null;
   const getDaysLeft = () => {
     if (!story.deletedAt) return 0;
-    const daysLeft = differenceInDays(new Date(story.deletedAt), new Date());
+    const daysLeft = differenceInDays(
+      addDays(new Date(story.deletedAt!), 30),
+      new Date(story.deletedAt)
+    );
     return daysLeft;
   };
 
