@@ -93,8 +93,7 @@ export const Header = () => {
     try {
       const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
       await Clipboard.setStringAsync(storyUrl);
-      toast.info("Link copied to clipboard");
-      // Alert.alert("Success", "Story link copied to clipboard");
+      toast.success("Link copied to clipboard");
     } catch {
       Alert.alert("Error", "Failed to copy link");
     }

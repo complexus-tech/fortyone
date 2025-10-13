@@ -19,6 +19,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
+import { useColorScheme } from "nativewind";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
@@ -89,6 +90,7 @@ const RenderApp = () => {
 };
 
 export default function RootLayout() {
+  const { colorScheme } = useColorScheme();
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -111,7 +113,7 @@ export default function RootLayout() {
       <KeyboardProvider>
         <GestureHandlerRootView>
           <RenderApp />
-          <Toaster />
+          <Toaster theme={colorScheme} />
         </GestureHandlerRootView>
       </KeyboardProvider>
     </QueryClientProvider>
