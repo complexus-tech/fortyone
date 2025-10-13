@@ -14,7 +14,7 @@ export const Description = ({ story }: { story: DetailedStory }) => {
   }
   return (
     <Row asContainer className="mb-5 mt-2">
-      <Text color="muted" className="pl-0.5" fontWeight="medium">
+      <Text className="pl-0.5 opacity-80 leading-6" fontWeight="medium">
         {story.description}
       </Text>
     </Row>
