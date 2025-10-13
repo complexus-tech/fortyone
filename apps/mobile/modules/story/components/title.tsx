@@ -5,6 +5,8 @@ import { differenceInDays, addDays } from "date-fns";
 
 export const Title = ({ story }: { story: DetailedStory }) => {
   const isDeleted = story.deletedAt !== null;
+  const isArchived = story.archivedAt !== null;
+
   const getDaysLeft = () => {
     if (!story.deletedAt) return 0;
     const daysLeft = differenceInDays(
@@ -19,6 +21,11 @@ export const Title = ({ story }: { story: DetailedStory }) => {
       {isDeleted && (
         <Badge color="tertiary" className="mb-3">
           <Text>{getDaysLeft()} days left in bin</Text>
+        </Badge>
+      )}
+      {isArchived && !isDeleted && (
+        <Badge color="tertiary" className="mb-3">
+          <Text>Archived</Text>
         </Badge>
       )}
       <Text fontSize="2xl" fontWeight="semibold">

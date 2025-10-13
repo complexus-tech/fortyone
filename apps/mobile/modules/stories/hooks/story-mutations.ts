@@ -17,29 +17,41 @@ export const useArchiveStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: archiveStory,
 
-    onMutate: async (storyId) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
+    onMutate: async (storyIds) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: storyKeys.all });
 
-      const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId)
-      );
+      // Store previous stories for rollback
+      const previousStories: Record<string, DetailedStory> = {};
 
-      // Optimistically update the story
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          archivedAt: new Date().toISOString(),
-        });
-      }
+      // Update each story optimistically
+      storyIds.forEach((storyId) => {
+        const previousStory = queryClient.getQueryData<DetailedStory>(
+          storyKeys.detail(storyId)
+        );
 
-      return { previousStory };
+        if (previousStory) {
+          previousStories[storyId] = previousStory;
+          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+            ...previousStory,
+            archivedAt: new Date().toISOString(),
+          });
+        }
+      });
+
+      return { previousStories };
     },
 
-    onError: (error, storyId, context) => {
-      if (context?.previousStory) {
-        queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
-          context.previousStory
+    onError: (error, storyIds, context) => {
+      // Rollback optimistic updates
+      if (context?.previousStories) {
+        Object.entries(context.previousStories).forEach(
+          ([storyId, previousStory]) => {
+            queryClient.setQueryData<DetailedStory>(
+              storyKeys.detail(storyId),
+              previousStory
+            );
+          }
         );
       }
 
@@ -47,7 +59,12 @@ export const useArchiveStoryMutation = () => {
       Alert.alert("Error", "Failed to archive story");
     },
 
-    onSuccess: () => {
+    onSuccess: (res, storyIds) => {
+      if (res.error?.message) {
+        Alert.alert("Error", res.error.message);
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story archived successfully");
     },
@@ -63,29 +80,39 @@ export const useUnarchiveStoryMutation = () => {
   const mutation = useMutation({
     mutationFn: unarchiveStory,
 
-    onMutate: async (storyId) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
+    onMutate: async (storyIds) => {
+      await queryClient.cancelQueries({ queryKey: storyKeys.all });
 
-      const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId)
-      );
+      // Store previous stories for rollback
+      const previousStories: Record<string, DetailedStory> = {};
 
-      // Optimistically update the story
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          archivedAt: null,
-        });
-      }
+      storyIds.forEach((storyId) => {
+        const previousStory = queryClient.getQueryData<DetailedStory>(
+          storyKeys.detail(storyId)
+        );
 
-      return { previousStory };
+        if (previousStory) {
+          previousStories[storyId] = previousStory;
+          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+            ...previousStory,
+            archivedAt: null,
+          });
+        }
+      });
+
+      return { previousStories };
     },
 
-    onError: (error, storyId, context) => {
-      if (context?.previousStory) {
-        queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
-          context.previousStory
+    onError: (error, storyIds, context) => {
+      // Rollback optimistic updates
+      if (context?.previousStories) {
+        Object.entries(context.previousStories).forEach(
+          ([storyId, previousStory]) => {
+            queryClient.setQueryData<DetailedStory>(
+              storyKeys.detail(storyId),
+              previousStory
+            );
+          }
         );
       }
 
@@ -93,7 +120,12 @@ export const useUnarchiveStoryMutation = () => {
       Alert.alert("Error", "Failed to unarchive story");
     },
 
-    onSuccess: () => {
+    onSuccess: (res, storyIds) => {
+      if (res.error?.message) {
+        Alert.alert("Error", res.error.message);
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story unarchived successfully");
     },
@@ -108,36 +140,46 @@ export const useDeleteStoryMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({
-      storyId,
+      storyIds,
       hardDelete,
     }: {
-      storyId: string;
+      storyIds: string[];
       hardDelete?: boolean;
-    }) => deleteStory(storyId, hardDelete),
+    }) => deleteStory(storyIds, hardDelete),
 
-    onMutate: async ({ storyId }) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
+    onMutate: async ({ storyIds }) => {
+      await queryClient.cancelQueries({ queryKey: storyKeys.all });
 
-      const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId)
-      );
+      // Store previous stories for rollback
+      const previousStories: Record<string, DetailedStory> = {};
 
-      // Optimistically update the story
-      if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          deletedAt: new Date().toISOString(),
-        });
-      }
+      storyIds.forEach((storyId) => {
+        const previousStory = queryClient.getQueryData<DetailedStory>(
+          storyKeys.detail(storyId)
+        );
 
-      return { previousStory };
+        if (previousStory) {
+          previousStories[storyId] = previousStory;
+          queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
+            ...previousStory,
+            deletedAt: new Date().toISOString(),
+          });
+        }
+      });
+
+      return { previousStories };
     },
 
-    onError: (error, { storyId }, context) => {
-      if (context?.previousStory) {
-        queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
-          context.previousStory
+    onError: (error, { storyIds }, context) => {
+      // Rollback optimistic updates
+      if (context?.previousStories) {
+        Object.entries(context.previousStories).forEach(
+          ([storyId, previousStory]) => {
+            queryClient.setQueryData<DetailedStory>(
+              storyKeys.detail(storyId),
+              previousStory
+            );
+          }
         );
       }
 
@@ -145,7 +187,12 @@ export const useDeleteStoryMutation = () => {
       Alert.alert("Error", "Failed to delete story");
     },
 
-    onSuccess: () => {
+    onSuccess: (res, { storyIds }) => {
+      if (res.error?.message) {
+        Alert.alert("Error", res.error.message);
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story deleted successfully");
     },
@@ -162,13 +209,12 @@ export const useRestoreStoryMutation = () => {
     mutationFn: restoreStory,
 
     onMutate: async (storyId) => {
-      await queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
+      await queryClient.cancelQueries({ queryKey: storyKeys.all });
 
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(storyId)
       );
 
-      // Optimistically update the story
       if (previousStory) {
         queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
           ...previousStory,
@@ -191,7 +237,12 @@ export const useRestoreStoryMutation = () => {
       Alert.alert("Error", "Failed to restore story");
     },
 
-    onSuccess: () => {
+    onSuccess: (res, storyId) => {
+      if (res.error?.message) {
+        Alert.alert("Error", res.error.message);
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story restored successfully");
     },
@@ -212,7 +263,12 @@ export const useDuplicateStoryMutation = () => {
       Alert.alert("Error", "Failed to duplicate story");
     },
 
-    onSuccess: (data) => {
+    onSuccess: (res, storyId) => {
+      if (res.error?.message) {
+        Alert.alert("Error", res.error.message);
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       Alert.alert("Success", "Story duplicated successfully");
     },

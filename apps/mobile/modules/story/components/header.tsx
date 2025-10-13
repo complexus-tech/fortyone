@@ -38,7 +38,7 @@ export const Header = () => {
         {
           text: "Archive",
           style: "destructive",
-          onPress: () => archiveMutation.mutate(storyId),
+          onPress: () => archiveMutation.mutate([storyId]),
         },
       ]
     );
@@ -52,7 +52,7 @@ export const Header = () => {
         { text: "Cancel", style: "cancel" },
         {
           text: "Unarchive",
-          onPress: () => unarchiveMutation.mutate(storyId),
+          onPress: () => unarchiveMutation.mutate([storyId]),
         },
       ]
     );
@@ -71,7 +71,10 @@ export const Header = () => {
           text: isHardDelete ? "Delete Forever" : "Delete",
           style: "destructive",
           onPress: () =>
-            deleteMutation.mutate({ storyId, hardDelete: isHardDelete }),
+            deleteMutation.mutate({
+              storyIds: [storyId],
+              hardDelete: isHardDelete,
+            }),
         },
       ]
     );
