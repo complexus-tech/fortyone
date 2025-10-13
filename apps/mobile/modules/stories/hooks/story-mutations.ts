@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert } from "react-native";
+import { toast } from "sonner-native";
 import { storyKeys } from "@/constants/keys";
 import {
   archiveStory,
@@ -56,12 +56,12 @@ export const useArchiveStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Error", "Failed to archive story");
+      toast.error("Failed to archive story");
     },
 
     onSuccess: (res, storyIds) => {
       if (res.error?.message) {
-        Alert.alert("Error", res.error.message);
+        toast.error(res.error.message);
         return;
       }
 
@@ -71,7 +71,7 @@ export const useArchiveStoryMutation = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Success", "Story archived successfully");
+      toast.success("Story archived successfully");
     },
   });
 
@@ -122,12 +122,12 @@ export const useUnarchiveStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Error", "Failed to unarchive story");
+      toast.error("Failed to unarchive story");
     },
 
     onSuccess: (res, storyIds) => {
       if (res.error?.message) {
-        Alert.alert("Error", res.error.message);
+        toast.error(res.error.message);
         return;
       }
 
@@ -137,7 +137,7 @@ export const useUnarchiveStoryMutation = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Success", "Story unarchived successfully");
+      toast.success("Story unarchived successfully");
     },
   });
 
@@ -179,12 +179,12 @@ export const useDeleteStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Error", "Failed to delete story");
+      toast.error("Failed to delete story");
     },
 
     onSuccess: (res, storyId) => {
       if (res.error?.message) {
-        Alert.alert("Error", res.error.message);
+        toast.error(res.error.message);
         return;
       }
 
@@ -192,7 +192,7 @@ export const useDeleteStoryMutation = () => {
       queryClient.refetchQueries({ queryKey: storyKeys.detail(storyId) });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Success", "Story deleted successfully");
+      toast.success("Story deleted successfully");
     },
   });
 
@@ -232,12 +232,12 @@ export const useRestoreStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Error", "Failed to restore story");
+      toast.error("Failed to restore story");
     },
 
     onSuccess: (res, storyId) => {
       if (res.error?.message) {
-        Alert.alert("Error", res.error.message);
+        toast.error(res.error.message);
         return;
       }
 
@@ -245,7 +245,7 @@ export const useRestoreStoryMutation = () => {
       queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Success", "Story restored successfully");
+      toast.success("Story restored successfully");
     },
   });
 
@@ -261,12 +261,12 @@ export const useDuplicateStoryMutation = () => {
 
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Error", "Failed to duplicate story");
+      toast.error("Failed to duplicate story");
     },
 
     onSuccess: (res, storyId) => {
       if (res.error?.message) {
-        Alert.alert("Error", res.error.message);
+        toast.error(res.error.message);
         return;
       }
 
@@ -274,7 +274,7 @@ export const useDuplicateStoryMutation = () => {
       queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-      Alert.alert("Success", "Story duplicated successfully");
+      toast.success("Story duplicated successfully");
     },
   });
 

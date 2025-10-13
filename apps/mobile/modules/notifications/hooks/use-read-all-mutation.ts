@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert } from "react-native";
+import { toast } from "sonner-native";
 import { notificationKeys } from "@/constants/keys";
 import { readAllNotifications } from "../actions/read-all";
 import type { AppNotification } from "../types";
@@ -57,28 +57,21 @@ export const useReadAllNotificationsMutation = () => {
         );
       }
 
-      Alert.alert(
-        "Failed to mark all notifications as read",
-        error.message || "Please try again",
-        [
-          {
-            text: "Retry",
-            onPress: () => {
-              mutation.mutate();
-            },
+      toast.error("Failed to mark all notifications as read", {
+        description: error.message || "Please try again",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate();
           },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
+        },
+      });
     },
 
-    onSettled: () => {
-      // Invalidate relevant queries
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
+      toast.success("All notifications marked as read");
     },
   });
 

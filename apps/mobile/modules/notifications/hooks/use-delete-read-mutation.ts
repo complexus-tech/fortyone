@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert } from "react-native";
+import { toast } from "sonner-native";
 import { notificationKeys } from "@/constants/keys";
 import { deleteReadNotifications } from "../actions/delete-read";
 import type { AppNotification } from "../types";
@@ -40,22 +40,19 @@ export const useDeleteReadMutation = () => {
         );
       }
 
-      Alert.alert(
-        "Failed to delete read notifications",
-        error.message || "Please try again",
-        [
-          {
-            text: "Retry",
-            onPress: () => mutation.mutate(),
-          },
-          { text: "Cancel", style: "cancel" },
-        ]
-      );
+      toast.error("Failed to delete read notifications", {
+        description: error.message || "Please try again",
+        action: {
+          label: "Retry",
+          onClick: () => mutation.mutate(),
+        },
+      });
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
+      toast.success("Read notifications deleted");
     },
   });
 

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert } from "react-native";
+import { toast } from "sonner-native";
 import { userKeys } from "@/constants/keys";
 import { updateProfile } from "../actions/update-profile";
 import type { User } from "@/types";
@@ -26,23 +26,23 @@ export const useUpdateProfileMutation = () => {
 
       return { previousProfile };
     },
+    onSuccess: () => {
+      toast.success("Profile updated");
+      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+    },
 
     onError: (error, variables, context) => {
       if (context?.previousProfile) {
         queryClient.setQueryData(userKeys.profile(), context.previousProfile);
       }
 
-      Alert.alert(
-        "Failed to update profile",
-        error.message || "Your changes were not saved",
-        [
-          {
-            text: "Retry",
-            onPress: () => mutation.mutate(variables),
-          },
-          { text: "Cancel", style: "cancel" },
-        ]
-      );
+      toast.error("Failed to update profile", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => mutation.mutate(variables),
+        },
+      });
     },
 
     onSettled: () => {

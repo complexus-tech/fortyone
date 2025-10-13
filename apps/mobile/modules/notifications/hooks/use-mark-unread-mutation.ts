@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert } from "react-native";
+import { toast } from "sonner-native";
 import { notificationKeys } from "@/constants/keys";
 import { markUnread } from "../actions/mark-unread";
 import type { AppNotification } from "../types";
@@ -58,22 +58,19 @@ export const useMarkUnreadMutation = () => {
         );
       }
 
-      Alert.alert(
-        "Failed to mark notification as unread",
-        error.message || "Please try again",
-        [
-          {
-            text: "Retry",
-            onPress: () => mutation.mutate(notificationId),
-          },
-          { text: "Cancel", style: "cancel" },
-        ]
-      );
+      toast.error("Failed to mark notification as unread", {
+        description: error.message || "Please try again",
+        action: {
+          label: "Retry",
+          onClick: () => mutation.mutate(notificationId),
+        },
+      });
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
+      toast.success("Notification marked as unread");
     },
   });
 

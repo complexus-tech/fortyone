@@ -95,7 +95,7 @@ export const Header = () => {
       await Clipboard.setStringAsync(storyUrl);
       toast.success("Link copied to clipboard");
     } catch {
-      Alert.alert("Error", "Failed to copy link");
+      toast.error("Failed to copy link");
     }
   };
 
