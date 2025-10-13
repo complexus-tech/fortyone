@@ -50,7 +50,7 @@ type Repository interface {
 	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
 	Create(ctx context.Context, user CoreUser) (CoreUser, error)
 	// Verification token methods
-	CreateVerificationToken(ctx context.Context, email, tokenType string) (CoreVerificationToken, error)
+	CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (CoreVerificationToken, error)
 	GetVerificationToken(ctx context.Context, token string) (CoreVerificationToken, error)
 	MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error
 	InvalidateTokens(ctx context.Context, email string) error
@@ -257,14 +257,14 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.
 }
 
 // CreateVerificationToken creates a new verification token.
-func (s *Service) CreateVerificationToken(ctx context.Context, email, tokenType string) (CoreVerificationToken, error) {
+func (s *Service) CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (CoreVerificationToken, error) {
 	s.log.Info(ctx, "business.core.users.CreateVerificationToken")
 	ctx, span := web.AddSpan(ctx, "business.core.users.CreateVerificationToken")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.email", email))
 
-	token, err := s.repo.CreateVerificationToken(ctx, email, tokenType)
+	token, err := s.repo.CreateVerificationToken(ctx, email, tokenType, expiresAt)
 	if err != nil {
 		span.RecordError(err)
 		return CoreVerificationToken{}, err

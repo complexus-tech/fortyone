@@ -481,7 +481,7 @@ func isUniqueConstraintViolation(err error) bool {
 }
 
 // CreateVerificationToken creates a new verification token in the database
-func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType string) (users.CoreVerificationToken, error) {
+func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (users.CoreVerificationToken, error) {
 	r.log.Info(ctx, "repository.users.CreateVerificationToken")
 	ctx, span := web.AddSpan(ctx, "repository.users.CreateVerificationToken")
 	defer span.End()
@@ -552,7 +552,7 @@ func (r *repo) CreateVerificationToken(ctx context.Context, email, tokenType str
 		createParams := map[string]any{
 			"token":      token,
 			"email":      email,
-			"expires_at": now.Add(10 * time.Minute),
+			"expires_at": expiresAt,
 			"token_type": tokenType,
 			"created_at": now,
 			"updated_at": now,

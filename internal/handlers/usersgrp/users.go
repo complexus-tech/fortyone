@@ -251,7 +251,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType)
+	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType, time.Now().Add(10*time.Minute))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
