@@ -1,6 +1,6 @@
 import ky from "ky";
 import type { Session } from "next-auth";
-import type { ApiResponse, User } from "@/types";
+import type { ApiResponse } from "@/types";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
