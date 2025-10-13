@@ -21,6 +21,7 @@ import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 
 // const persister = createAsyncStoragePersister({
@@ -123,6 +124,13 @@ export default function RootLayout() {
                   name="checkmark.circle.fill"
                   size={20}
                   tintColor={colors.success}
+                  fallback={
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={colors.success}
+                    />
+                  }
                 />
               ),
               error: (
@@ -130,6 +138,13 @@ export default function RootLayout() {
                   name="xmark.circle.fill"
                   size={20}
                   tintColor={colors.danger}
+                  fallback={
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
+                      color={colors.danger}
+                    />
+                  }
                 />
               ),
               warning: (
@@ -137,6 +152,9 @@ export default function RootLayout() {
                   name="exclamationmark.triangle.fill"
                   size={20}
                   tintColor={colors.warning}
+                  fallback={
+                    <Ionicons name="warning" size={20} color={colors.warning} />
+                  }
                 />
               ),
               info: (
@@ -144,6 +162,13 @@ export default function RootLayout() {
                   name="info.circle.fill"
                   size={20}
                   tintColor={colors.info}
+                  fallback={
+                    <Ionicons
+                      name="information-circle"
+                      size={20}
+                      color={colors.info}
+                    />
+                  }
                 />
               ),
             }}
