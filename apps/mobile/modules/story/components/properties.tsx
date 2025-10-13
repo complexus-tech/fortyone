@@ -78,7 +78,7 @@ export const Properties = ({ story }: { story: Story }) => {
               <Text color={story.objectiveId ? undefined : "muted"}>
                 {truncateText(
                   objective?.name || `Add ${getTermDisplay("objectiveTerm")}`,
-                  12
+                  13
                 )}
               </Text>
             </Badge>
