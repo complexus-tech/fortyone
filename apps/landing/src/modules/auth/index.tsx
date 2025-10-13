@@ -32,13 +32,13 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       toast.error("Failed to send magic link", {
         description: result.error.message,
       });
-      setLoading(false);
     } else {
       setIsSent(true);
       if (isMobile) {
         setIsManual(true);
       }
     }
+    setLoading(false);
   };
 
   const handleOTPSubmit = async () => {
