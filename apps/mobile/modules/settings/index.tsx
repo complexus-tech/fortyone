@@ -52,7 +52,7 @@ export const Settings = () => {
             colorScheme === "light" ? colors.white : colors.dark[200],
         }}
       >
-        <SettingsSection>
+        <SettingsSection title="Workspace">
           <SettingsItem
             title="Switch Workspace"
             asOptions

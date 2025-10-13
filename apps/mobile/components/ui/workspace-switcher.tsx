@@ -25,6 +25,11 @@ const WorkspaceItem = ({
   const setWorkspace = useAuthStore((state) => state.setWorkspace);
 
   const handleSwitchWorkspace = async () => {
+    if (isActive) {
+      setIsOpened(false);
+      return;
+    }
+
     queryClient.clear();
     await switchWorkspace(workspace.id);
     setWorkspace(workspace.slug);
