@@ -1,12 +1,12 @@
 import React from "react";
 import { ScrollView } from "react-native";
-import { Title } from "./components/title";
 import { Properties } from "./components/properties";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "../stories/hooks/use-story";
 import { Text } from "@/components/ui";
 import { Activity } from "./components/activity";
 import { Description } from "./components/descrition";
+import { Title } from "./components/title";
 
 export const Story = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
@@ -19,7 +19,7 @@ export const Story = () => {
       className="flex-1"
       contentContainerStyle={{ paddingBottom: 100 }}
     >
-      <Title title={story?.title} />
+      <Title story={story!} />
       <Properties story={story!} />
       <Description story={story!} />
       <Activity story={story!} />
