@@ -80,11 +80,15 @@ export const TeamStories = () => {
         onValueChange={(value) => setActiveTab(value as TeamStoriesTab)}
       >
         <Tabs.List>
-          <Tabs.Tab value="all">
+          <Tabs.Tab value="all" className="px-5">
             All {getTermDisplay("storyTerm", { variant: "plural" })}
           </Tabs.Tab>
-          <Tabs.Tab value="active">Active</Tabs.Tab>
-          <Tabs.Tab value="backlog">Backlog</Tabs.Tab>
+          <Tabs.Tab value="active" className="px-5">
+            Active {getTermDisplay("storyTerm", { variant: "plural" })}
+          </Tabs.Tab>
+          <Tabs.Tab value="backlog" className="px-5">
+            Backlog
+          </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="all">
           <StoriesBoard
