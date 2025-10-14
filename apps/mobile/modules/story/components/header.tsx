@@ -156,7 +156,7 @@ export const Header = () => {
   };
 
   return (
-    <Row className="mb-3" justify="between" align="center" asContainer>
+    <Row className="mb-4" justify="between" align="center" asContainer>
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
         {team?.code}-
