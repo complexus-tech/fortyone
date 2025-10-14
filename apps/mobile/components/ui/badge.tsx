@@ -26,13 +26,13 @@ const badgeVariants = cva(
         info: "bg-info border-info",
         warning: "bg-warning border-warning",
         tertiary:
-          "bg-gray-50 border-gray-200/70 dark:bg-dark-200 dark:border-dark-50",
+          "bg-gray-50 border-gray-200/70 dark:bg-dark-300 dark:border-dark-50",
         secondary: "bg-secondary border-secondary",
         invert: "bg-black border-black",
       },
       size: {
-        sm: "px-1.5 text-sm h-7 gap-1",
-        md: "px-1.5 h-[26px] text-sm",
+        sm: "px-1.5 h-7 gap-1",
+        md: "px-1.5 h-[27px]",
         lg: "px-3.5 h-10",
       },
     },
