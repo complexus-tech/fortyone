@@ -102,17 +102,6 @@ export const Header = () => {
   const getActions = () => {
     const baseActions = [
       {
-        systemImage: "pencil" as const,
-        label: "Edit",
-        onPress: () => {
-          // TODO: Navigate to edit screen
-          Alert.alert(
-            "Coming Soon",
-            "Edit functionality will be available soon"
-          );
-        },
-      },
-      {
         systemImage: "link" as const,
         label: "Copy link",
         onPress: handleCopyLink,
