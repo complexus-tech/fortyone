@@ -74,7 +74,6 @@ export const PriorityBadge = ({
 
   return (
     <PropertyBottomSheet
-      title="Priority"
       trigger={
         <Badge color="tertiary">
           <PriorityIcon priority={priority || "No Priority"} />
@@ -83,6 +82,7 @@ export const PriorityBadge = ({
       }
       snapPoints={["25%", "50%"]}
     >
+      <Text className="font-semibold mb-2 text-center">Priority</Text>
       {priorities.map((p, idx) => (
         <Item
           key={p}
