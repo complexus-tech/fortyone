@@ -3,6 +3,7 @@ import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { useTerminology } from "@/hooks/use-terminology";
+import { useColorScheme } from "nativewind";
 
 type EmptyStateProps = {
   title?: string;
@@ -10,7 +11,10 @@ type EmptyStateProps = {
 };
 
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
+  const { colorScheme } = useColorScheme();
   const { getTermDisplay } = useTerminology();
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const defaultTitle = `No sub ${getTermDisplay("storyTerm", { variant: "plural" })} found`;
   const defaultMessage = `This ${getTermDisplay("storyTerm", { variant: "singular" })} doesn't have any sub ${getTermDisplay("storyTerm", { variant: "plural" })} yet.`;
@@ -25,7 +29,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
         <SymbolView
           name="checklist.unchecked"
           size={36}
-          tintColor={colors.gray.DEFAULT}
+          tintColor={iconColor}
         />
       </Row>
       <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">

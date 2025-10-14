@@ -11,6 +11,8 @@ type EmptyStateProps = {
 
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
   const { colorScheme } = useColorScheme();
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const defaultTitle = "No attachments found";
   const defaultMessage = "There are no attachments to display at the moment.";
@@ -22,13 +24,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
         justify="center"
         className="size-18 rounded-full bg-gray-50 dark:bg-dark-200 mb-6"
       >
-        <SymbolView
-          name="paperclip"
-          size={36}
-          tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
-        />
+        <SymbolView name="paperclip" size={36} tintColor={iconColor} />
       </Row>
       <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
         {title || defaultTitle}
