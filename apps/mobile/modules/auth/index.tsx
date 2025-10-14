@@ -7,14 +7,17 @@ import { colors } from "@/constants";
 import * as WebBrowser from "expo-web-browser";
 import { authenticateWithToken } from "@/lib/actions/auth";
 import { useState } from "react";
+import { useColorScheme } from "nativewind";
+const lightMesh = require("@/assets/images/mesh.webp");
+const darkMesh = require("@/assets/images/mesh-dark.webp");
 
 export const Auth = () => {
+  const { colorScheme } = useColorScheme();
   const [loading, setLoading] = useState(false);
   const setAuthData = useAuthStore((state) => state.setAuthData);
 
   const handleGetStarted = async () => {
     try {
-      // Open the landing app login page in an in-app browser
       const result = await WebBrowser.openAuthSessionAsync(
         "https://www.fortyone.app/login?mobile=true",
         "fortyone://login"
@@ -41,7 +44,7 @@ export const Auth = () => {
       }}
     >
       <Image
-        source={require("@/assets/images/mesh.webp")}
+        source={colorScheme === "dark" ? darkMesh : lightMesh}
         style={{
           position: "absolute",
           top: 0,
@@ -63,16 +66,18 @@ export const Auth = () => {
           paddingTop: 5,
         }}
       >
-        <Logo height={30} color={colors.dark.DEFAULT} />
+        <Logo
+          height={30}
+          color={colorScheme === "dark" ? colors.white : colors.black}
+        />
         <Col>
           <Text
             className="mb-6 uppercase text-[14px] tracking-wider"
             fontSize="sm"
-            color="black"
           >
             [Built for builders]
           </Text>
-          <Text fontSize="4xl" fontWeight="semibold" color="black">
+          <Text fontSize="4xl" fontWeight="semibold">
             Plan, track, deliver with the project management tool your team will
             love.
           </Text>
@@ -81,7 +86,8 @@ export const Auth = () => {
           <Button
             size="lg"
             rounded="lg"
-            className="w-full bg-dark border-dark"
+            className="w-full"
+            color="invert"
             onPress={handleGetStarted}
             loading={loading}
           >
@@ -89,8 +95,7 @@ export const Auth = () => {
           </Button>
           <Text
             align="center"
-            className="mt-4 opacity-80 text-[15px]"
-            color="black"
+            className="mt-4 opacity-80 text-[15px] dark:opacity-100"
           >
             © {new Date().getFullYear()} • Product of Complexus LLC • All
             Rights Reserved.

@@ -9,13 +9,17 @@ import { Text } from "./text";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "flex items-center justify-center border border-primary bg-primary transition duration-200 ease-linear",
+  "flex items-center justify-center transition duration-200 ease-linear",
   {
     variants: {
       size: {
         sm: "px-2 h-[40px]",
         md: "px-3 h-[44px]",
         lg: "px-5 h-14",
+      },
+      color: {
+        primary: "bg-primary",
+        invert: "bg-dark dark:bg-white",
       },
       rounded: {
         none: "rounded-none",
@@ -37,6 +41,7 @@ export const buttonVariants = cva(
     defaultVariants: {
       size: "md",
       rounded: "md",
+      color: "primary",
     },
   }
 );
@@ -55,6 +60,7 @@ export const Button = ({
   className,
   disabled,
   children,
+  color,
   ...rest
 }: ButtonProps) => {
   const isDisabled = disabled || loading;
@@ -65,6 +71,7 @@ export const Button = ({
       disabled: isDisabled,
       loading,
       rounded,
+      color,
     }),
     className
   );
@@ -79,7 +86,14 @@ export const Button = ({
       {loading ? (
         <ActivityIndicator size="small" color="white" />
       ) : (
-        <Text color="white">{children}</Text>
+        <Text
+          className={cn({
+            "text-white": color === "primary",
+            "text-white dark:text-dark": color === "invert",
+          })}
+        >
+          {children}
+        </Text>
       )}
     </TouchableOpacity>
   );
