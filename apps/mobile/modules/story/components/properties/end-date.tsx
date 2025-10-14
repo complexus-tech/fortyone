@@ -52,7 +52,7 @@ export const EndDateBadge = ({
       <Pressable onPress={handlePress}>
         <Badge color="tertiary">
           <SymbolView name="calendar" size={16} tintColor={iconColor} />
-          <Text color={story.endDate ? undefined : "muted"}>
+          <Text>
             {story.endDate
               ? format(new Date(story.endDate), "MMM d")
               : "Add deadline"}

@@ -91,9 +91,7 @@ export const AssigneeBadge = ({
             name={currentAssignee?.fullName || currentAssignee?.username}
             src={currentAssignee?.avatarUrl}
           />
-          <Text className="text-[15px]">
-            {currentAssignee?.username || "No Assignee"}
-          </Text>
+          <Text>{currentAssignee?.username || "No Assignee"}</Text>
         </Badge>
       }
       snapPoints={["25%", "70%"]}

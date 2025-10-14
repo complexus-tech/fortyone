@@ -52,7 +52,7 @@ export const StartDateBadge = ({
       <Pressable onPress={handlePress}>
         <Badge color="tertiary">
           <SymbolView name="calendar" size={16} tintColor={iconColor} />
-          <Text color={story.startDate ? undefined : "muted"}>
+          <Text>
             {story.startDate
               ? format(new Date(story.startDate), "MMM d")
               : "Add start date"}

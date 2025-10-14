@@ -75,9 +75,7 @@ export const StatusBadge = ({
           }}
         >
           <Dot color={currentStatus?.color} size={12} />
-          <Text className="text-[15px]">
-            {currentStatus?.name || "No Status"}
-          </Text>
+          <Text>{currentStatus?.name || "No Status"}</Text>
         </Badge>
       }
       snapPoints={["25%", "60%"]}

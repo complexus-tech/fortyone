@@ -75,9 +75,12 @@ export const SprintBadge = ({
   story: Story;
   onSprintChange: (sprintId: string | null) => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const { data: sprints = [] } = useTeamSprints(story.teamId);
   const [searchQuery, setSearchQuery] = useState("");
   const currentSprint = sprints.find((s) => s.id === story.sprintId);
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const filteredSprints = useMemo(() => {
     if (!searchQuery.trim()) return sprints;
@@ -90,17 +93,8 @@ export const SprintBadge = ({
     <PropertyBottomSheet
       trigger={
         <Badge color="tertiary">
-          <SymbolView
-            name="play.circle"
-            size={16}
-            tintColor={colors.gray.DEFAULT}
-          />
-          <Text
-            className="text-[15px]"
-            color={currentSprint ? undefined : "muted"}
-          >
-            {currentSprint?.name || "Add Sprint"}
-          </Text>
+          <SymbolView name="play.circle" size={16} tintColor={iconColor} />
+          <Text>{currentSprint?.name || "Add Sprint"}</Text>
         </Badge>
       }
       snapPoints={["25%", "70%"]}

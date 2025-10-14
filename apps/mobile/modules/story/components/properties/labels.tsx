@@ -65,6 +65,8 @@ export const LabelsBadge = ({
   const { colorScheme } = useColorScheme();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: labels = [] } = useLabels();
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   // Filter labels based on search query
   const filteredLabels = useMemo(() => {
@@ -99,12 +101,8 @@ export const LabelsBadge = ({
     <PropertyBottomSheet
       trigger={
         <Badge color="tertiary">
-          <SymbolView
-            name="tag.fill"
-            size={16}
-            tintColor={colors.gray.DEFAULT}
-          />
-          <Text color={story.labels?.length ? undefined : "muted"}>
+          <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
+          <Text>
             {story.labels?.length
               ? `${story.labels.length} labels`
               : "Add labels"}

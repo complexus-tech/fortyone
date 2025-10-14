@@ -73,7 +73,7 @@ export const PriorityBadge = ({
       trigger={
         <Badge color="tertiary">
           <PriorityIcon priority={priority || "No Priority"} />
-          <Text className="text-[15px]">{priority || "No Priority"}</Text>
+          <Text>{priority || "No Priority"}</Text>
         </Badge>
       }
       snapPoints={["25%", "50%"]}

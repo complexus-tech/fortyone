@@ -41,7 +41,7 @@ export const Properties = ({ story }: { story: Story }) => {
   return (
     <Row asContainer>
       <Col className="my-4 ">
-        <Text className="mb-2.5">Properties</Text>
+        <Text className="mb-2.5 opacity-80">Properties</Text>
         <Row wrap gap={2}>
           <StatusBadge
             story={story}

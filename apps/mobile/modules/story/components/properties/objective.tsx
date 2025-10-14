@@ -75,9 +75,12 @@ export const ObjectiveBadge = ({
   story: Story;
   onObjectiveChange: (objectiveId: string | null) => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const { data: objectives = [] } = useTeamObjectives(story.teamId);
   const [searchQuery, setSearchQuery] = useState("");
   const currentObjective = objectives.find((o) => o.id === story.objectiveId);
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const filteredObjectives = useMemo(() => {
     if (!searchQuery.trim()) return objectives;
@@ -90,13 +93,8 @@ export const ObjectiveBadge = ({
     <PropertyBottomSheet
       trigger={
         <Badge color="tertiary">
-          <SymbolView name="target" size={16} tintColor={colors.gray.DEFAULT} />
-          <Text
-            className="text-[15px]"
-            color={currentObjective ? undefined : "muted"}
-          >
-            {currentObjective?.name || "Add Objective"}
-          </Text>
+          <SymbolView name="target" size={16} tintColor={iconColor} />
+          <Text>{currentObjective?.name || "Add Objective"}</Text>
         </Badge>
       }
       snapPoints={["25%", "70%"]}
