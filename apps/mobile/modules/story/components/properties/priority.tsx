@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useMemo } from "react";
 import { Badge, Text } from "@/components/ui";
 import { PriorityIcon } from "@/components/icons";
 import { StoryPriority } from "@/modules/stories/types";
-import { Pressable, StyleSheet, TouchableOpacity } from "react-native";
+import { Pressable, TouchableOpacity } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
@@ -44,9 +44,6 @@ export const PriorityBadge = ({
     [onPriorityChange]
   );
 
-  const textColor = colorScheme === "light" ? "#000" : "#fff";
-  const borderColor = colorScheme === "light" ? "#f0f0f0" : "#333";
-
   return (
     <>
       <Pressable onPress={handlePresentModalPress}>
@@ -68,18 +65,18 @@ export const PriorityBadge = ({
           backgroundColor: colorScheme === "light" ? "#ccc" : "#555",
         }}
       >
-        <BottomSheetView style={styles.contentContainer}>
-          <Text style={[styles.title, { color: textColor }]}>
+        <BottomSheetView className="p-5 pb-24">
+          <Text className="text-lg font-semibold mb-5 text-center text-gray-900 dark:text-gray-100">
             Change Priority
           </Text>
           {priorities.map((priorityOption) => (
             <TouchableOpacity
               key={priorityOption}
               onPress={() => handlePrioritySelect(priorityOption)}
-              style={[styles.priorityItem, { borderBottomColor: borderColor }]}
+              className="flex-row items-center p-4 border-b border-gray-200 dark:border-gray-700"
             >
               <PriorityIcon priority={priorityOption} />
-              <Text style={[styles.priorityText, { color: textColor }]}>
+              <Text className="ml-3 text-base flex-1 text-gray-900 dark:text-gray-100">
                 {priorityOption}
               </Text>
               {priorityOption === priority && (
@@ -96,27 +93,3 @@ export const PriorityBadge = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  priorityItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  priorityText: {
-    marginLeft: 12,
-    fontSize: 16,
-    flex: 1,
-  },
-});
