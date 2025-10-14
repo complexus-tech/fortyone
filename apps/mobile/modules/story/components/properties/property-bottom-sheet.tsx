@@ -46,8 +46,8 @@ export const PropertyBottomSheet = ({
               {
                 backgroundColor:
                   colorScheme === "light"
-                    ? "rgba(0, 0, 0, 0.5)"
-                    : "rgba(0, 0, 0, 0.7)",
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "rgba(0, 0, 0, 0.3)",
               },
             ]}
             onPress={() => bottomSheetModalRef.current?.dismiss()}
