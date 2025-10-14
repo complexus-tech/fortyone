@@ -6,6 +6,8 @@ import { Pressable, TouchableOpacity } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
+import { SymbolView } from "expo-symbols";
+import { colors } from "@/constants";
 
 export const PriorityBadge = ({
   priority,
@@ -59,31 +61,54 @@ export const PriorityBadge = ({
         snapPoints={snapPoints}
         index={1}
         backgroundStyle={{
-          backgroundColor: colorScheme === "light" ? "#fff" : "#1a1a1a",
+          backgroundColor:
+            colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
         }}
         handleIndicatorStyle={{
-          backgroundColor: colorScheme === "light" ? "#ccc" : "#555",
+          backgroundColor:
+            colorScheme === "light" ? colors.gray[200] : colors.gray[250],
         }}
       >
         <BottomSheetView className="p-5 pb-24">
-          <Text className="text-lg font-semibold mb-5 text-center text-gray-900 dark:text-gray-100">
+          <Text
+            className="text-lg font-semibold mb-5 text-center"
+            style={{
+              color: colorScheme === "light" ? colors.black : colors.white,
+            }}
+          >
             Change Priority
           </Text>
           {priorities.map((priorityOption) => (
             <TouchableOpacity
               key={priorityOption}
               onPress={() => handlePrioritySelect(priorityOption)}
-              className="flex-row items-center p-4 border-b border-gray-200 dark:border-gray-700"
+              className="flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100"
             >
               <PriorityIcon priority={priorityOption} />
-              <Text className="ml-3 text-base flex-1 text-gray-900 dark:text-gray-100">
+              <Text
+                className="ml-3 text-base flex-1"
+                style={{
+                  color: colorScheme === "light" ? colors.black : colors.white,
+                }}
+              >
                 {priorityOption}
               </Text>
               {priorityOption === priority && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color={colorScheme === "light" ? "#007AFF" : "#0A84FF"}
+                <SymbolView
+                  name="checkmark.circle.fill"
+                  size={18}
+                  tintColor={
+                    colorScheme === "light" ? colors.black : colors.white
+                  }
+                  fallback={
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={
+                        colorScheme === "light" ? colors.black : colors.white
+                      }
+                    />
+                  }
                 />
               )}
             </TouchableOpacity>
