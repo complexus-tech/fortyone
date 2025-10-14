@@ -23,6 +23,7 @@ import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 // const persister = createAsyncStoragePersister({
 //   storage: AsyncStorage,
@@ -115,7 +116,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <KeyboardProvider>
         <GestureHandlerRootView>
-          <RenderApp />
+          <BottomSheetModalProvider>
+            <RenderApp />
+          </BottomSheetModalProvider>
           <Toaster
             theme={colorScheme}
             closeButton
