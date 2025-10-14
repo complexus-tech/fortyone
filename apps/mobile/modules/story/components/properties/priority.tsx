@@ -61,8 +61,8 @@ export const PriorityBadge = ({
         onChange={handleSheetChanges}
         snapPoints={snapPoints}
         index={1}
-        enablePanDownToClose={true}
-        enableDismissOnClose={true}
+        enablePanDownToClose
+        enableDismissOnClose
         backdropComponent={({ style }) => (
           <Pressable
             style={[
