@@ -84,7 +84,13 @@ export const Button = ({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator size="small" color="white" />
+        <ActivityIndicator
+          size="small"
+          className={cn({
+            "text-white": color === "primary",
+            "text-white dark:text-dark": color === "invert",
+          })}
+        />
       ) : (
         <Text
           className={cn({
