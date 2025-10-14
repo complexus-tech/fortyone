@@ -11,6 +11,7 @@ import { StatusBadge } from "./properties/status";
 import { AssigneeBadge } from "./properties/assignee";
 import { ObjectiveBadge } from "./properties/objective";
 import { SprintBadge } from "./properties/sprint";
+import { LabelsBadge } from "./properties/labels";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { colorScheme } = useColorScheme();
@@ -37,6 +38,10 @@ export const Properties = ({ story }: { story: Story }) => {
 
   const onSprintChange = (sprintId: string | null) => {
     console.log("sprint", sprintId);
+  };
+
+  const onLabelsChange = (labelIds: string[]) => {
+    console.log("labels", labelIds);
   };
 
   return (
@@ -75,14 +80,7 @@ export const Properties = ({ story }: { story: Story }) => {
           {sprintsEnabled && (
             <SprintBadge story={story} onSprintChange={onSprintChange} />
           )}
-          <Badge color="tertiary">
-            <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
-            <Text color={story.labels?.length ? undefined : "muted"}>
-              {story.labels?.length
-                ? `${story.labels.length} labels`
-                : "Add labels"}
-            </Text>
-          </Badge>
+          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
         </Row>
       </Col>
     </Row>
