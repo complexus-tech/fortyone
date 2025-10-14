@@ -14,8 +14,10 @@ import { SprintBadge } from "./properties/sprint";
 import { LabelsBadge } from "./properties/labels";
 import { useUpdateStoryMutation } from "../hooks/use-update-story-mutation";
 import { useUpdateLabelsMutation } from "../hooks/use-update-labels-mutation";
+import { useBottomSheetModal } from "@gorhom/bottom-sheet";
 
 export const Properties = ({ story }: { story: Story }) => {
+  const { dismiss } = useBottomSheetModal();
   const { colorScheme } = useColorScheme();
   const sprintsEnabled = useSprintsEnabled(story.teamId);
   const { objectiveEnabled } = useFeatures();
@@ -30,6 +32,7 @@ export const Properties = ({ story }: { story: Story }) => {
       storyId: story.id,
       payload: data,
     });
+    dismiss();
   };
 
   const onLabelsChange = (labelIds: string[]) => {
