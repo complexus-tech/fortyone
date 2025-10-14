@@ -40,6 +40,7 @@ export const Properties = ({ story }: { story: Story }) => {
       storyId: story.id,
       labels: labelIds,
     });
+    dismiss();
   };
 
   return (
