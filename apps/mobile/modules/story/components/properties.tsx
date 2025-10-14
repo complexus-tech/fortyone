@@ -2,19 +2,17 @@ import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { useMembers } from "@/modules/members/hooks/use-members";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks";
-import React, { useCallback, useRef } from "react";
-import { Row, Badge, Text, Avatar, Col, Button } from "@/components/ui";
+import React from "react";
+import { Row, Badge, Text, Avatar, Col } from "@/components/ui";
 import { hexToRgba } from "@/lib/utils/colors";
 import { truncateText } from "@/lib/utils/text";
-import { Dot, PriorityIcon } from "@/components/icons";
-import { Story } from "@/modules/stories/types";
+import { Dot } from "@/components/icons";
+import { Story, StoryPriority } from "@/modules/stories/types";
 import { format } from "date-fns";
 import { SymbolView } from "expo-symbols";
 import { useColorScheme } from "nativewind";
-import { StyleSheet } from "react-native";
 import { colors } from "@/constants";
 import { useFeatures, useSprintsEnabled, useTerminology } from "@/hooks";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import { PriorityBadge } from "./properties/priority";
 
 export const Properties = ({ story }: { story: Story }) => {
@@ -33,15 +31,9 @@ export const Properties = ({ story }: { story: Story }) => {
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-
-  // callbacks
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
-  }, []);
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log("handleSheetChanges", index);
-  }, []);
+  const onPriorityChange = (priority: StoryPriority) => {
+    console.log("priority", priority);
+  };
 
   return (
     <Row asContainer>
@@ -57,11 +49,10 @@ export const Properties = ({ story }: { story: Story }) => {
             <Dot color={status?.color} size={12} />
             <Text>{status?.name || "No Status"}</Text>
           </Badge>
-          <Badge color="tertiary">
-            <PriorityIcon priority={story.priority || "No Priority"} />
-            <Text>{story.priority || "No Priority"}</Text>
-          </Badge>
-          <PriorityBadge priority={story.priority || "No Priority"} />
+          <PriorityBadge
+            priority={story.priority || "No Priority"}
+            onPriorityChange={onPriorityChange}
+          />
           <Badge color="tertiary" className="pl-1.5">
             <Avatar
               size="xs"
