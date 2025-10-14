@@ -1,34 +1,21 @@
-import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
-import { useMembers } from "@/modules/members/hooks/use-members";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useTeamSprints } from "@/modules/sprints/hooks";
 import React from "react";
-import { Row, Badge, Text, Avatar, Col } from "@/components/ui";
-import { hexToRgba } from "@/lib/utils/colors";
-import { truncateText } from "@/lib/utils/text";
-import { Dot } from "@/components/icons";
+import { Row, Badge, Text, Col } from "@/components/ui";
 import { Story, StoryPriority } from "@/modules/stories/types";
 import { format } from "date-fns";
 import { SymbolView } from "expo-symbols";
 import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
-import { useFeatures, useSprintsEnabled, useTerminology } from "@/hooks";
+import { useFeatures, useSprintsEnabled } from "@/hooks";
 import { PriorityBadge } from "./properties/priority";
 import { StatusBadge } from "./properties/status";
+import { AssigneeBadge } from "./properties/assignee";
+import { ObjectiveBadge } from "./properties/objective";
+import { SprintBadge } from "./properties/sprint";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { colorScheme } = useColorScheme();
-  const { getTermDisplay } = useTerminology();
   const sprintsEnabled = useSprintsEnabled(story.teamId);
   const { objectiveEnabled } = useFeatures();
-  const { data: statuses = [] } = useTeamStatuses(story.teamId);
-  const { data: members = [] } = useMembers();
-  const { data: objectives = [] } = useTeamObjectives(story.teamId);
-  const { data: sprints = [] } = useTeamSprints(story.teamId);
-  const status = statuses.find((s) => s.id === story.statusId);
-  const assignee = members.find((m) => m.id === story.assigneeId);
-  const objective = objectives.find((o) => o.id === story.objectiveId);
-  const sprint = sprints.find((s) => s.id === story.sprintId);
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
@@ -38,6 +25,18 @@ export const Properties = ({ story }: { story: Story }) => {
 
   const onStatusChange = (statusId: string) => {
     console.log("status", statusId);
+  };
+
+  const onAssigneeChange = (assigneeId: string | null) => {
+    console.log("assignee", assigneeId);
+  };
+
+  const onObjectiveChange = (objectiveId: string | null) => {
+    console.log("objective", objectiveId);
+  };
+
+  const onSprintChange = (sprintId: string | null) => {
+    console.log("sprint", sprintId);
   };
 
   return (
@@ -50,14 +49,7 @@ export const Properties = ({ story }: { story: Story }) => {
             priority={story.priority || "No Priority"}
             onPriorityChange={onPriorityChange}
           />
-          <Badge color="tertiary" className="pl-1.5">
-            <Avatar
-              size="xs"
-              name={assignee?.fullName || assignee?.username}
-              src={assignee?.avatarUrl}
-            />
-            <Text>{assignee?.username || "No Assignee"}</Text>
-          </Badge>
+          <AssigneeBadge story={story} onAssigneeChange={onAssigneeChange} />
           <Badge color="tertiary">
             <SymbolView name="calendar" size={16} tintColor={iconColor} />
             <Text color={story.startDate ? undefined : "muted"}>
@@ -75,26 +67,13 @@ export const Properties = ({ story }: { story: Story }) => {
             </Text>
           </Badge>
           {objectiveEnabled && (
-            <Badge color="tertiary">
-              <SymbolView name="target" size={16} tintColor={iconColor} />
-              <Text color={story.objectiveId ? undefined : "muted"}>
-                {truncateText(
-                  objective?.name || `Add ${getTermDisplay("objectiveTerm")}`,
-                  13
-                )}
-              </Text>
-            </Badge>
+            <ObjectiveBadge
+              story={story}
+              onObjectiveChange={onObjectiveChange}
+            />
           )}
           {sprintsEnabled && (
-            <Badge color="tertiary">
-              <SymbolView name="play.circle" size={16} tintColor={iconColor} />
-              <Text color={story.sprintId ? undefined : "muted"}>
-                {truncateText(
-                  sprint?.name || `Add ${getTermDisplay("sprintTerm")}`,
-                  10
-                )}
-              </Text>
-            </Badge>
+            <SprintBadge story={story} onSprintChange={onSprintChange} />
           )}
           <Badge color="tertiary">
             <SymbolView name="tag.fill" size={16} tintColor={iconColor} />
