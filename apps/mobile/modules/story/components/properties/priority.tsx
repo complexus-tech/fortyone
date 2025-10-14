@@ -60,6 +60,22 @@ export const PriorityBadge = ({
         onChange={handleSheetChanges}
         snapPoints={snapPoints}
         index={1}
+        enablePanDownToClose={true}
+        enableDismissOnClose={true}
+        backdropComponent={({ style }) => (
+          <Pressable
+            style={[
+              style,
+              {
+                backgroundColor:
+                  colorScheme === "light"
+                    ? "rgba(0, 0, 0, 0.5)"
+                    : "rgba(0, 0, 0, 0.7)",
+              },
+            ]}
+            onPress={() => bottomSheetModalRef.current?.dismiss()}
+          />
+        )}
         backgroundStyle={{
           backgroundColor:
             colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
