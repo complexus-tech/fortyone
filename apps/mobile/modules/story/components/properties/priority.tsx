@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { cn } from "@/lib/utils";
 
 export const PriorityBadge = ({
   priority,
@@ -78,31 +79,31 @@ export const PriorityBadge = ({
         )}
         backgroundStyle={{
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark.DEFAULT,
+            colorScheme === "light" ? colors.white : colors.dark[200],
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
         }}
         handleIndicatorStyle={{
           backgroundColor:
-            colorScheme === "light" ? colors.gray[200] : colors.gray[250],
+            colorScheme === "light" ? colors.gray[300] : colors.gray[300],
         }}
       >
-        <BottomSheetView className="p-5 pb-24">
-          <Text
-            className="text-lg font-semibold mb-5 text-center"
-            style={{
-              color: colorScheme === "light" ? colors.black : colors.white,
-            }}
-          >
-            Change Priority
-          </Text>
-          {priorities.map((priorityOption) => (
-            <TouchableOpacity
+        <BottomSheetView className="pb-6">
+          <Text className="font-semibold mb-2 text-center">Priority</Text>
+          {priorities.map((priorityOption, idx) => (
+            <Pressable
               key={priorityOption}
               onPress={() => handlePrioritySelect(priorityOption)}
-              className="flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100"
+              className={cn(
+                "flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100 gap-2",
+                {
+                  "border-b-0": idx === priorities.length - 1,
+                }
+              )}
             >
-              <PriorityIcon priority={priorityOption} />
+              <PriorityIcon size={20} priority={priorityOption} />
               <Text
-                className="ml-3 text-base flex-1"
+                className="flex-1"
                 style={{
                   color: colorScheme === "light" ? colors.black : colors.white,
                 }}
@@ -112,14 +113,14 @@ export const PriorityBadge = ({
               {priorityOption === priority && (
                 <SymbolView
                   name="checkmark.circle.fill"
-                  size={18}
+                  size={20}
                   tintColor={
                     colorScheme === "light" ? colors.black : colors.white
                   }
                   fallback={
                     <Ionicons
                       name="checkmark-circle"
-                      size={18}
+                      size={20}
                       color={
                         colorScheme === "light" ? colors.black : colors.white
                       }
@@ -127,7 +128,7 @@ export const PriorityBadge = ({
                   }
                 />
               )}
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </BottomSheetView>
       </BottomSheetModal>
