@@ -1,6 +1,6 @@
 import React from "react";
 import { Row, Badge, Text, Col } from "@/components/ui";
-import { Story, StoryPriority } from "@/modules/stories/types";
+import { DetailedStory, Story } from "@/modules/stories/types";
 import { format } from "date-fns";
 import { SymbolView } from "expo-symbols";
 import { useColorScheme } from "nativewind";
@@ -20,28 +20,12 @@ export const Properties = ({ story }: { story: Story }) => {
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const onPriorityChange = (priority: StoryPriority) => {
-    console.log("priority", priority);
-  };
-
-  const onStatusChange = (statusId: string) => {
-    console.log("status", statusId);
-  };
-
-  const onAssigneeChange = (assigneeId: string | null) => {
-    console.log("assignee", assigneeId);
-  };
-
-  const onObjectiveChange = (objectiveId: string | null) => {
-    console.log("objective", objectiveId);
-  };
-
-  const onSprintChange = (sprintId: string | null) => {
-    console.log("sprint", sprintId);
-  };
-
   const onLabelsChange = (labelIds: string[]) => {
     console.log("labels", labelIds);
+  };
+
+  const handleUpdate = (data: Partial<DetailedStory>) => {
+    console.log("data", data);
   };
 
   return (
@@ -49,12 +33,18 @@ export const Properties = ({ story }: { story: Story }) => {
       <Col className="my-4 ">
         <Text className="mb-2.5">Properties</Text>
         <Row wrap gap={2}>
-          <StatusBadge story={story} onStatusChange={onStatusChange} />
+          <StatusBadge
+            story={story}
+            onStatusChange={(statusId) => handleUpdate({ statusId })}
+          />
           <PriorityBadge
             priority={story.priority || "No Priority"}
-            onPriorityChange={onPriorityChange}
+            onPriorityChange={(priority) => handleUpdate({ priority })}
           />
-          <AssigneeBadge story={story} onAssigneeChange={onAssigneeChange} />
+          <AssigneeBadge
+            story={story}
+            onAssigneeChange={(assigneeId) => handleUpdate({ assigneeId })}
+          />
           <Badge color="tertiary">
             <SymbolView name="calendar" size={16} tintColor={iconColor} />
             <Text color={story.startDate ? undefined : "muted"}>
@@ -74,11 +64,14 @@ export const Properties = ({ story }: { story: Story }) => {
           {objectiveEnabled && (
             <ObjectiveBadge
               story={story}
-              onObjectiveChange={onObjectiveChange}
+              onObjectiveChange={(objectiveId) => handleUpdate({ objectiveId })}
             />
           )}
           {sprintsEnabled && (
-            <SprintBadge story={story} onSprintChange={onSprintChange} />
+            <SprintBadge
+              story={story}
+              onSprintChange={(sprintId) => handleUpdate({ sprintId })}
+            />
           )}
           <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
         </Row>
