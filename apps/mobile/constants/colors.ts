@@ -5,7 +5,7 @@
 export const colors = {
   primary: "#f43f5e",
   secondary: "#002f61",
-  black: "#08090a",
+  black: "#000000",
   white: "#ffffff",
   transparent: "transparent",
   current: "currentColor",
