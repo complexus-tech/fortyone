@@ -12,6 +12,8 @@ import { AssigneeBadge } from "./properties/assignee";
 import { ObjectiveBadge } from "./properties/objective";
 import { SprintBadge } from "./properties/sprint";
 import { LabelsBadge } from "./properties/labels";
+import { useUpdateStoryMutation } from "../hooks/use-update-story-mutation";
+import { useUpdateLabelsMutation } from "../hooks/use-update-labels-mutation";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { colorScheme } = useColorScheme();
@@ -20,12 +22,21 @@ export const Properties = ({ story }: { story: Story }) => {
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const onLabelsChange = (labelIds: string[]) => {
-    console.log("labels", labelIds);
-  };
+  const updateStoryMutation = useUpdateStoryMutation();
+  const updateLabelsMutation = useUpdateLabelsMutation();
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
-    console.log("data", data);
+    updateStoryMutation.mutate({
+      storyId: story.id,
+      payload: data,
+    });
+  };
+
+  const onLabelsChange = (labelIds: string[]) => {
+    updateLabelsMutation.mutate({
+      storyId: story.id,
+      labels: labelIds,
+    });
   };
 
   return (
