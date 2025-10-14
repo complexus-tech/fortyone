@@ -14,6 +14,7 @@ import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import { useFeatures, useSprintsEnabled, useTerminology } from "@/hooks";
 import { PriorityBadge } from "./properties/priority";
+import { StatusBadge } from "./properties/status";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { colorScheme } = useColorScheme();
@@ -35,20 +36,16 @@ export const Properties = ({ story }: { story: Story }) => {
     console.log("priority", priority);
   };
 
+  const onStatusChange = (statusId: string) => {
+    console.log("status", statusId);
+  };
+
   return (
     <Row asContainer>
       <Col className="my-4 ">
         <Text className="mb-2.5">Properties</Text>
         <Row wrap gap={2}>
-          <Badge
-            style={{
-              backgroundColor: hexToRgba(status?.color, 0.1),
-              borderColor: hexToRgba(status?.color, 0.2),
-            }}
-          >
-            <Dot color={status?.color} size={12} />
-            <Text>{status?.name || "No Status"}</Text>
-          </Badge>
+          <StatusBadge story={story} onStatusChange={onStatusChange} />
           <PriorityBadge
             priority={story.priority || "No Priority"}
             onPriorityChange={onPriorityChange}
