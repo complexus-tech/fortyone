@@ -13,6 +13,7 @@ import { EndDateBadge } from "./properties/end-date";
 import { useUpdateStoryMutation } from "../hooks/use-update-story-mutation";
 import { useUpdateLabelsMutation } from "../hooks/use-update-labels-mutation";
 import { useBottomSheetModal } from "@gorhom/bottom-sheet";
+import { formatISO } from "date-fns";
 
 export const Properties = ({ story }: { story: Story }) => {
   const { dismiss } = useBottomSheetModal();
@@ -56,11 +57,23 @@ export const Properties = ({ story }: { story: Story }) => {
           />
           <StartDateBadge
             story={story}
-            onStartDateChange={(startDate) => handleUpdate({ startDate })}
+            onStartDateChange={(startDate) =>
+              handleUpdate({
+                startDate: startDate
+                  ? formatISO(startDate, { representation: "date" })
+                  : null,
+              })
+            }
           />
           <EndDateBadge
             story={story}
-            onEndDateChange={(endDate) => handleUpdate({ endDate })}
+            onEndDateChange={(endDate) =>
+              handleUpdate({
+                endDate: endDate
+                  ? formatISO(endDate, { representation: "date" })
+                  : null,
+              })
+            }
           />
           {objectiveEnabled && (
             <ObjectiveBadge

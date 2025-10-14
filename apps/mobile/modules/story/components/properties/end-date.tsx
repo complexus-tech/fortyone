@@ -13,25 +13,33 @@ export const EndDateBadge = ({
   onEndDateChange,
 }: {
   story: Story;
-  onEndDateChange: (endDate: string | null) => void;
+  onEndDateChange: (endDate: Date | null) => void;
 }) => {
   const { colorScheme } = useColorScheme();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     story.endDate ? new Date(story.endDate) : new Date()
   );
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const handleDateSelected = (date: Date) => {
     setSelectedDate(date);
-    console.log(date);
-    // onEndDateChange(date.toISOString());
-    // setIsOpen(false);
+
+    // Only call the callback if user has actually interacted
+    if (hasUserInteracted) {
+      onEndDateChange(date);
+      setIsOpen(false);
+    } else {
+      // First time opening, just mark as interacted
+      setHasUserInteracted(true);
+    }
   };
 
   const handlePress = () => {
+    setHasUserInteracted(false); // Reset interaction flag when opening
     setIsOpen(true);
   };
 
