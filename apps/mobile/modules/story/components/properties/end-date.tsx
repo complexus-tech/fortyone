@@ -26,8 +26,9 @@ export const EndDateBadge = ({
 
   const handleDateSelected = (date: Date) => {
     setSelectedDate(date);
-    onEndDateChange(date.toISOString());
-    setIsOpen(false);
+    console.log(date);
+    // onEndDateChange(date.toISOString());
+    // setIsOpen(false);
   };
 
   const handlePress = () => {
@@ -53,7 +54,7 @@ export const EndDateBadge = ({
 
       <BottomSheetModal isOpen={isOpen} spacing={10} onClose={handleClose}>
         <DateTimePicker
-          // onDateSelected={handleDateSelected}
+          onDateSelected={handleDateSelected}
           displayedComponents="date"
           initialDate={selectedDate.toISOString()}
           variant="graphical"
