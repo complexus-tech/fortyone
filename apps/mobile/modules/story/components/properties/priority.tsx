@@ -58,7 +58,7 @@ export const PriorityBadge = ({
   onPriorityChange,
 }: {
   priority: StoryPriority;
-  onPriorityChange?: (priority: StoryPriority) => void;
+  onPriorityChange: (priority: StoryPriority) => void;
 }) => {
   const priorities: StoryPriority[] = [
     "No Priority",
@@ -67,10 +67,6 @@ export const PriorityBadge = ({
     "High",
     "Urgent",
   ];
-
-  const handlePrioritySelect = (priority: StoryPriority) => {
-    onPriorityChange?.(priority);
-  };
 
   return (
     <PropertyBottomSheet
@@ -87,7 +83,7 @@ export const PriorityBadge = ({
         <Item
           key={p}
           priority={p}
-          onPress={() => handlePrioritySelect(p)}
+          onPress={() => onPriorityChange(p)}
           isSelected={priority === p}
           isLast={idx === priorities.length - 1}
         />

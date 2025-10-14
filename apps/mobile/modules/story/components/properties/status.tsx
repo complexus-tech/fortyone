@@ -60,18 +60,10 @@ export const StatusBadge = ({
   onStatusChange,
 }: {
   story: Story;
-  onStatusChange?: (statusId: string) => void;
+  onStatusChange: (statusId: string) => void;
 }) => {
   const { data: statuses = [] } = useTeamStatuses(story.teamId);
   const currentStatus = statuses.find((s) => s.id === story.statusId);
-
-  const handleStatusSelect = (status: {
-    id: string;
-    name: string;
-    color: string;
-  }) => {
-    onStatusChange?.(status.id);
-  };
 
   return (
     <PropertyBottomSheet
@@ -95,7 +87,7 @@ export const StatusBadge = ({
         <Item
           key={status.id}
           status={status}
-          onPress={() => handleStatusSelect(status)}
+          onPress={() => onStatusChange(status.id)}
           isSelected={story.statusId === status.id}
           isLast={idx === statuses.length - 1}
         />
