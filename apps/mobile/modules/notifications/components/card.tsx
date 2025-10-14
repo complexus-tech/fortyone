@@ -67,7 +67,7 @@ export const NotificationCard = ({
         <Col flex={1} gap={1}>
           <Row justify="between" align="center" gap={2}>
             <Text
-              color={isUnread ? "black" : "muted"}
+              color={isUnread ? undefined : "muted"}
               className="flex-1 mr-2"
               fontWeight={isUnread ? "medium" : undefined}
               numberOfLines={1}
@@ -76,7 +76,7 @@ export const NotificationCard = ({
             </Text>
             <Text
               fontSize="sm"
-              color={isUnread ? "black" : "muted"}
+              color={isUnread ? undefined : "muted"}
               fontWeight={isUnread ? "medium" : undefined}
               className="shrink-0"
             >
