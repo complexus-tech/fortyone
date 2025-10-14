@@ -41,7 +41,7 @@ const Item = ({
         }
         fallback={
           <Ionicons
-            name="target"
+            name="flag"
             size={20}
             color={
               colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
