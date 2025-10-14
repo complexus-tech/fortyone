@@ -85,6 +85,14 @@ export const statusKeys = {
   team: (teamId: string) => [...statusKeys.lists(), "team", teamId] as const,
 };
 
+export const labelKeys = {
+  all: ["labels"] as const,
+  lists: () => [...labelKeys.all, "list"] as const,
+  details: () => [...labelKeys.all, "detail"] as const,
+  detail: (id: string) => [...labelKeys.details(), id] as const,
+  team: (teamId: string) => [...labelKeys.all, teamId] as const,
+};
+
 export const searchKeys = {
   all: ["search"] as const,
   query: (params: Record<string, any>) => [...searchKeys.all, params] as const,

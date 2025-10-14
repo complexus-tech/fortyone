@@ -9,15 +9,8 @@ import { colors } from "@/constants";
 import { cn } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { Dot } from "@/components/icons";
-
-// Mock data - replace with actual hooks when available
-const mockLabels = [
-  { id: "1", name: "Bug", color: "#ef4444" },
-  { id: "2", name: "Feature", color: "#10b981" },
-  { id: "3", name: "Enhancement", color: "#3b82f6" },
-  { id: "4", name: "Documentation", color: "#8b5cf6" },
-  { id: "5", name: "Design", color: "#f59e0b" },
-];
+import { useLabels } from "@/modules/labels/hooks/use-labels";
+import type { Label } from "@/types";
 
 const Item = ({
   label,
@@ -25,7 +18,7 @@ const Item = ({
   isSelected,
   isLast,
 }: {
-  label: { id: string; name: string; color: string };
+  label: Label;
   onPress: () => void;
   isSelected: boolean;
   isLast: boolean;
@@ -71,22 +64,18 @@ export const LabelsBadge = ({
 }) => {
   const { colorScheme } = useColorScheme();
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: labels = [] } = useLabels();
 
   // Filter labels based on search query
   const filteredLabels = useMemo(() => {
     if (!searchQuery) {
-      return mockLabels;
+      return labels as Label[];
     }
     const lowerCaseQuery = searchQuery.toLowerCase();
-    return mockLabels.filter((label) =>
+    return (labels as Label[]).filter((label: Label) =>
       label.name.toLowerCase().includes(lowerCaseQuery)
     );
-  }, [searchQuery]);
-
-  // Get current labels
-  const currentLabels = mockLabels.filter((label) =>
-    story.labels?.includes(label.id)
-  );
+  }, [labels, searchQuery]);
 
   const handleLabelToggle = (labelId: string) => {
     const currentLabelIds = story.labels || [];
@@ -144,11 +133,13 @@ export const LabelsBadge = ({
             size={20}
             tintColor={colors.gray.DEFAULT}
           />
-          <Text className="flex-1">Create new label: "{searchQuery}"</Text>
+          <Text className="flex-1">
+            Create new label: &ldquo;{searchQuery}&rdquo;
+          </Text>
         </Pressable>
       )}
 
-      {filteredLabels.map((label, idx) => (
+      {filteredLabels.map((label: Label, idx: number) => (
         <Item
           key={label.id}
           label={label}
