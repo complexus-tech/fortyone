@@ -66,7 +66,7 @@ export const EndDateBadge = ({
           displayedComponents="date"
           initialDate={selectedDate.toISOString()}
           variant="graphical"
-          color={colors.primary}
+          color={colorScheme === "dark" ? colors.white : colors.black}
         />
       </BottomSheetModal>
     </>
