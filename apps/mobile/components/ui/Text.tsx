@@ -22,7 +22,7 @@ const textVariants = cva("text-dark dark:text-white", {
     },
     fontSize: {
       xs: "text-sm",
-      sm: "text-[15px]",
+      sm: "text-[15.5px]",
       md: "text-[16px]",
       lg: "text-[18px]",
       xl: "text-[20px]",
