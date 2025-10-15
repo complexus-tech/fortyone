@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateLabelsAction } from "../actions/update-labels";
 import { storyKeys, labelKeys } from "@/constants/keys";
 import type { DetailedStory } from "@/modules/stories/types";
+import { toast } from "sonner-native";
 
 export const useUpdateLabelsMutation = () => {
   const queryClient = useQueryClient();
@@ -53,21 +54,27 @@ export const useUpdateLabelsMutation = () => {
 
       // Invalidate all story queries
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-
-      // TODO: Add toast error notification
-      console.error("Failed to update labels:", error);
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.detail(variables.storyId),
+      });
+      toast.error("Failed to update labels", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
 
     onSuccess: (res) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-
       // Invalidate story and label queries
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
       queryClient.invalidateQueries({ queryKey: labelKeys.lists() });
-
-      console.log("Labels updated successfully");
     },
   });
 
