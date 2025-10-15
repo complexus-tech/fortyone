@@ -95,6 +95,8 @@ const RenderApp = () => {
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -133,12 +135,12 @@ export default function RootLayout() {
                 <SymbolView
                   name="checkmark.circle.fill"
                   size={20}
-                  tintColor={colors.success}
+                  tintColor={iconColor}
                   fallback={
                     <Ionicons
                       name="checkmark-circle"
                       size={20}
-                      color={colors.success}
+                      color={iconColor}
                     />
                   }
                 />
@@ -147,13 +149,9 @@ export default function RootLayout() {
                 <SymbolView
                   name="xmark.circle.fill"
                   size={20}
-                  tintColor={colors.danger}
+                  tintColor={iconColor}
                   fallback={
-                    <Ionicons
-                      name="close-circle"
-                      size={20}
-                      color={colors.danger}
-                    />
+                    <Ionicons name="close-circle" size={20} color={iconColor} />
                   }
                 />
               ),
@@ -161,9 +159,9 @@ export default function RootLayout() {
                 <SymbolView
                   name="exclamationmark.triangle.fill"
                   size={20}
-                  tintColor={colors.warning}
+                  tintColor={iconColor}
                   fallback={
-                    <Ionicons name="warning" size={20} color={colors.warning} />
+                    <Ionicons name="warning" size={20} color={iconColor} />
                   }
                 />
               ),
@@ -171,12 +169,12 @@ export default function RootLayout() {
                 <SymbolView
                   name="info.circle.fill"
                   size={20}
-                  tintColor={colors.info}
+                  tintColor={iconColor}
                   fallback={
                     <Ionicons
                       name="information-circle"
                       size={20}
-                      color={colors.info}
+                      color={iconColor}
                     />
                   }
                 />
