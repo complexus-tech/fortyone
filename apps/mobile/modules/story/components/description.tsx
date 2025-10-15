@@ -26,13 +26,13 @@ export const Description = ({ story }: { story: DetailedStory }) => {
     <Row asContainer className="mb-5">
       <RenderHtml
         baseStyle={{
-          fontSize: 16,
+          fontSize: 16.5,
           fontWeight: 500,
           lineHeight: 23,
           opacity: 0.8,
           color: colorScheme === "dark" ? colors.white : colors.black,
         }}
-        contentWidth={width}
+        contentWidth={width - 24}
         source={source}
       />
     </Row>
