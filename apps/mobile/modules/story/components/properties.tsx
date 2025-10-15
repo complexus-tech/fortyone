@@ -55,6 +55,19 @@ export const Properties = ({ story }: { story: Story }) => {
             story={story}
             onAssigneeChange={(assigneeId) => handleUpdate({ assigneeId })}
           />
+          {sprintsEnabled && (
+            <SprintBadge
+              story={story}
+              onSprintChange={(sprintId) => handleUpdate({ sprintId })}
+            />
+          )}
+          {objectiveEnabled && (
+            <ObjectiveBadge
+              story={story}
+              onObjectiveChange={(objectiveId) => handleUpdate({ objectiveId })}
+            />
+          )}
+          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
           <StartDateBadge
             story={story}
             onStartDateChange={(startDate) =>
@@ -75,19 +88,6 @@ export const Properties = ({ story }: { story: Story }) => {
               })
             }
           />
-          {objectiveEnabled && (
-            <ObjectiveBadge
-              story={story}
-              onObjectiveChange={(objectiveId) => handleUpdate({ objectiveId })}
-            />
-          )}
-          {sprintsEnabled && (
-            <SprintBadge
-              story={story}
-              onSprintChange={(sprintId) => handleUpdate({ sprintId })}
-            />
-          )}
-          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
         </Row>
       </Col>
     </Row>
