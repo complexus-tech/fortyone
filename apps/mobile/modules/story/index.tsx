@@ -4,7 +4,7 @@ import { Properties } from "./components/properties";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "../stories/hooks/use-story";
 import { Activity } from "./components/activity";
-import { Description } from "./components/descrition";
+import { Description } from "./components/description";
 import { Title } from "./components/title";
 import { StorySkeleton } from "./components/story-skeleton";
 
