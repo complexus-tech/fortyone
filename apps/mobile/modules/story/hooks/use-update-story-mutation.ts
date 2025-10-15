@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateStoryAction } from "../actions/update-story";
 import { storyKeys } from "@/constants/keys";
 import type { DetailedStory } from "@/modules/stories/types";
+import { toast } from "sonner-native";
 
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
@@ -61,23 +62,27 @@ export const useUpdateStoryMutation = () => {
           context.previousStory
         );
       }
-
       // Invalidate all story queries
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
-
-      // TODO: Add toast error notification
-      console.error("Failed to update story:", error);
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.detail(variables.storyId),
+      });
+      toast.error("Failed to update story", {
+        description: error.message || "Your changes were not saved",
+        action: {
+          label: "Retry",
+          onClick: () => {
+            mutation.mutate(variables);
+          },
+        },
+      });
     },
 
-    onSuccess: (res, { storyId, payload }) => {
+    onSuccess: (res, { storyId }) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-
-      // TODO: Add analytics tracking
-      console.log("Story updated successfully:", { storyId, payload });
-
-      // Invalidate all story queries to ensure consistency
+      queryClient.invalidateQueries({ queryKey: storyKeys.detail(storyId) });
       queryClient.invalidateQueries({ queryKey: storyKeys.all });
     },
   });

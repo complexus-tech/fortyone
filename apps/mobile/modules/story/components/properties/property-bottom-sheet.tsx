@@ -24,17 +24,12 @@ export const PropertyBottomSheet = ({
     bottomSheetModalRef.current?.present();
   }, []);
 
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log("handleSheetChanges", index);
-  }, []);
-
   return (
     <>
       <Pressable onPress={handlePresentModalPress}>{trigger}</Pressable>
 
       <BottomSheetModal
         ref={bottomSheetModalRef}
-        onChange={handleSheetChanges}
         snapPoints={memoizedSnapPoints}
         index={1}
         enablePanDownToClose
