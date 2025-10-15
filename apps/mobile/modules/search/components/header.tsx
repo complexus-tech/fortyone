@@ -103,7 +103,7 @@ export const Header = ({
         </Host>
       </Row>
       <Row
-        className="bg-gray-100/60 dark:bg-dark-200 rounded-2xl pl-3 pr-2.5 mt-3"
+        className="bg-gray-100/60 dark:bg-dark-200 rounded-full pl-3 pr-2.5 mt-3"
         align="center"
         gap={2}
       >
@@ -115,7 +115,7 @@ export const Header = ({
           }
         />
         <TextInput
-          className="flex-1 h-13 font-medium text-[16px] dark:text-white"
+          className="flex-1 h-12 font-medium text-[16px] dark:text-white"
           placeholder={`Search ${getTermDisplay("storyTerm", {
             variant: "plural",
           })} and ${getTermDisplay("objectiveTerm", {
