@@ -125,7 +125,7 @@ export default function RootLayout() {
             toastOptions={{
               style: {
                 backgroundColor:
-                  colorScheme === "dark" ? colors.dark[100] : colors.white,
+                  colorScheme === "dark" ? colors.dark[200] : colors.white,
               },
             }}
             icons={{
