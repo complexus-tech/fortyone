@@ -32,7 +32,7 @@ export const EmailVerificationCallback = () => {
           getProfile(session!),
         ]);
         if (session) {
-          if (isMobile) {
+          if (isMobile && workspaces.length > 0) {
             const authCodeResponse = await getAuthCode(session);
             if (authCodeResponse.error || !authCodeResponse.data) {
               redirect("/login?mobile=true&error=Failed to generate auth code");

@@ -17,7 +17,14 @@ export default async function AuthCallback({
   if (!session) {
     redirect("/login");
   }
-  if (isMobile) {
+
+  const [invitations, workspaces, profile] = await Promise.all([
+    getMyInvitations(),
+    getWorkspaces(session.token),
+    getProfile(session),
+  ]);
+
+  if (isMobile && workspaces.length > 0) {
     const authCodeResponse = await getAuthCode(session);
     if (authCodeResponse.error || !authCodeResponse.data) {
       redirect("/login?mobile=true&error=Failed to generate auth code");
@@ -27,11 +34,6 @@ export default async function AuthCallback({
       );
     }
   }
-  const [invitations, workspaces, profile] = await Promise.all([
-    getMyInvitations(),
-    getWorkspaces(session.token),
-    getProfile(session),
-  ]);
   return (
     <ClientPage
       invitations={invitations.data || []}
