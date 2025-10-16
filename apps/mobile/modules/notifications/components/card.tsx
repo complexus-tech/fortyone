@@ -62,9 +62,10 @@ export const NotificationCard = ({
         <Avatar
           name={actor?.fullName || actor?.username || "Unknown"}
           src={actor?.avatarUrl}
-          className="shrink-0"
+          className="shrink-0 relative top-0.5"
+          size="lg"
         />
-        <Col flex={1} gap={1}>
+        <Col flex={1} className="gap-1">
           <Row justify="between" align="center" gap={2}>
             <Text
               color={isUnread ? undefined : "muted"}
