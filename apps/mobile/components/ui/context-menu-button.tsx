@@ -2,7 +2,7 @@ import React from "react";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 import { ContextMenu, Host, HStack, Button, Image } from "@expo/ui/swift-ui";
-import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 import { SFSymbol } from "expo-symbols";
 
 type ContextMenuAction = {
