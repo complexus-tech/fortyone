@@ -94,6 +94,20 @@ const RenderApp = () => {
             sheetAllowedDetents: [0.95],
           }}
         />
+        <Stack.Screen
+          name="new"
+          options={{
+            presentation: "modal",
+            gestureDirection: "vertical",
+            animation: "slide_from_bottom",
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 28,
+            sheetExpandsWhenScrolledToEdge: true,
+            sheetElevation: 24,
+            sheetInitialDetentIndex: 0,
+            sheetAllowedDetents: [0.95],
+          }}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>
