@@ -8,6 +8,7 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useMembers } from "@/modules/members/hooks/use-members";
+import { truncateText } from "@/lib/utils";
 
 const Item = ({
   member,
@@ -36,7 +37,9 @@ const Item = ({
         name={member.fullName || member.username}
         src={member.avatarUrl}
       />
-      <Text className="flex-1">{member.fullName || member.username}</Text>
+      <Text className="flex-1">
+        {truncateText(member.fullName || member.username, 16)}
+      </Text>
       {isSelected && (
         <SymbolView
           name="checkmark.circle.fill"

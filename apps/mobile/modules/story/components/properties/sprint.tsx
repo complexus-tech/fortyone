@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { cn } from "@/lib/utils";
+import { cn, truncateText } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamSprints } from "@/modules/sprints/hooks";
 
@@ -99,7 +99,7 @@ export const SprintBadge = ({
             tintColor={iconColor}
             weight="semibold"
           />
-          <Text>{currentSprint?.name || "Add Sprint"}</Text>
+          <Text>{truncateText(currentSprint?.name || "Add Sprint", 16)}</Text>
         </Badge>
       }
       snapPoints={["25%", "70%"]}

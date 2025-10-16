@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { cn } from "@/lib/utils";
+import { cn, truncateText } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 
@@ -99,7 +99,9 @@ export const ObjectiveBadge = ({
             tintColor={iconColor}
             fallback={<Ionicons name="grid" size={15} color={iconColor} />}
           />
-          <Text>{currentObjective?.name || "Add Objective"}</Text>
+          <Text>
+            {truncateText(currentObjective?.name || "Add Objective", 16)}
+          </Text>
         </Badge>
       }
       snapPoints={["25%", "70%"]}

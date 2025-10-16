@@ -10,6 +10,7 @@ import { colors } from "@/constants";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { hexToRgba } from "@/lib/utils/colors";
+import { truncateText } from "@/lib/utils";
 
 const Item = ({
   status,
@@ -67,7 +68,7 @@ export const StatusBadge = ({
           }}
         >
           <Dot color={currentStatus?.color} size={12} />
-          <Text>{currentStatus?.name || "No Status"}</Text>
+          <Text>{truncateText(currentStatus?.name || "No Status", 16)}</Text>
         </Badge>
       }
       snapPoints={["90%"]}

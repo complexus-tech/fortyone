@@ -31,9 +31,9 @@
   --color-gray-300: #a19b94;
 
   /* Dark Scale */
-  --color-dark: #0c0d0e;
-  --color-dark-50: #25282b;
-  --color-dark-100: #1d1f22;
-  --color-dark-200: #16181a;
+  --color-dark: #09090b;
+  --color-dark-50: #3f3f46;
+  --color-dark-100: #262626;
+  --color-dark-200: #171717;
   --color-dark-300: #101214;
 }
