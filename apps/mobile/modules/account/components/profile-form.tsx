@@ -64,6 +64,7 @@ export const ProfileForm = () => {
         onPress={handleUpdateProfile}
         disabled={updateMutation.isPending || !hasChanged}
         className="mt-5 mx-4.5"
+        color="invert"
       >
         {updateMutation.isPending ? "Saving..." : "Save changes"}
       </Button>
