@@ -22,10 +22,6 @@ export default function StoryLayout() {
         <Icon sf="grid" />
         <Label>Links</Label>
       </NativeTabs.Trigger>
-      {/* <NativeTabs.Trigger name="attachments">
-        <Icon sf="text.document.fill" />
-        <Label>Attachments</Label>
-      </NativeTabs.Trigger> */}
     </NativeTabs>
   );
 }
