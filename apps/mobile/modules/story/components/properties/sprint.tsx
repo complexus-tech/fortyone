@@ -93,7 +93,12 @@ export const SprintBadge = ({
     <PropertyBottomSheet
       trigger={
         <Badge color="tertiary">
-          <SymbolView name="play.circle" size={16} tintColor={iconColor} />
+          <SymbolView
+            name="play.circle"
+            size={16}
+            tintColor={iconColor}
+            weight="semibold"
+          />
           <Text>{currentSprint?.name || "Add Sprint"}</Text>
         </Badge>
       }
