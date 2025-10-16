@@ -71,7 +71,7 @@ export const StatusBadge = ({
           <Text>{truncateText(currentStatus?.name || "No Status", 16)}</Text>
         </Badge>
       }
-      snapPoints={["90%"]}
+      snapPoints={["35%", "70%", "90%"]}
     >
       <Text className="font-semibold mb-3 text-center">Status</Text>
       {statuses.map((status) => (
