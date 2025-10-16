@@ -4,11 +4,12 @@ import { colors } from "@/constants";
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useCurrentWorkspace } from "@/lib/hooks";
-import { frame } from "@expo/ui/swift-ui/modifiers";
+import { background, cornerRadius, frame } from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "@/hooks";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toTitleCase } from "@/lib/utils";
 import { useRouter } from "expo-router";
+import { hexToRgba } from "@/lib/utils/colors";
 
 export const ProfileSheet = ({
   isOpened,
@@ -26,6 +27,10 @@ export const ProfileSheet = ({
   const { workspace } = useCurrentWorkspace();
   const mutedTextColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+  const backgroundColor =
+    resolvedTheme === "light"
+      ? hexToRgba(colors.gray[200], 0.6)
+      : hexToRgba(colors.dark[50], 0.6);
 
   return (
     <>
@@ -96,6 +101,41 @@ export const ProfileSheet = ({
             systemName="chevron.up.chevron.down"
             color={
               resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            }
+            size={14}
+          />
+        </HStack>
+        <HStack spacing={8} onPress={() => router.push("/settings")}>
+          <Image
+            systemName="gear"
+            color={
+              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            }
+            modifiers={[
+              frame({ width: 44, height: 44 }),
+              background(backgroundColor),
+              cornerRadius(12),
+            ]}
+            size={24}
+          />
+          <VStack alignment="leading" spacing={2}>
+            <Text size={14} weight="semibold" lineLimit={1}>
+              Settings
+            </Text>
+            <Text
+              size={13.5}
+              weight="medium"
+              color={mutedTextColor}
+              lineLimit={1}
+            >
+              Manage your account settings
+            </Text>
+          </VStack>
+          <Spacer />
+          <Image
+            systemName="chevron.right"
+            color={
+              resolvedTheme === "light" ? colors.gray[300] : colors.gray[100]
             }
             size={14}
           />

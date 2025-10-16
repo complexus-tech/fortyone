@@ -32,7 +32,7 @@ export default function TabsLayout() {
         <Icon sf="person.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="inbox">
-        <Label>Notifications</Label>
+        <Label>Inbox</Label>
         <Icon sf="bell.fill" />
         {unreadNotifications > 0 && <Badge>{getBadgeLabel()}</Badge>}
       </NativeTabs.Trigger>

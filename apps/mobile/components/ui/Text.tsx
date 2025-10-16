@@ -27,7 +27,7 @@ const textVariants = cva("text-dark dark:text-white", {
       lg: "text-[18px]",
       xl: "text-[20px]",
       "2xl": "text-[28px]",
-      "3xl": "text-[32px]",
+      "3xl": "text-[40px]",
       "4xl": "text-[36px]",
     },
     fontWeight: {

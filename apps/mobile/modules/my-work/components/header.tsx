@@ -16,7 +16,7 @@ export const Header = ({
 }: HeaderProps) => {
   return (
     <Row className="mb-3" asContainer justify="between" align="center">
-      <Text fontSize="2xl" fontWeight="semibold">
+      <Text fontSize="3xl" fontWeight="semibold">
         My Work
       </Text>
       <StoryOptionsButton
