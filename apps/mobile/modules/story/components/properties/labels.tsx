@@ -97,7 +97,7 @@ export const LabelsBadge = ({
       if (response.data) {
         // Auto-select the new label
         onLabelsChange([...(story.labels || []), response.data.id]);
-        setSearchQuery(""); // Clear search
+        // Don't clear search - keep the input so user can see the created label
       }
     });
   };
