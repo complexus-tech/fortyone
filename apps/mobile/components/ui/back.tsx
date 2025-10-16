@@ -1,9 +1,9 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
+import { Host, HStack, Image } from "@expo/ui/swift-ui";
+import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 export const Back = () => {
   const { resolvedTheme } = useTheme();
@@ -19,15 +19,25 @@ export const Back = () => {
   };
 
   return (
-    <TouchableOpacity onPress={handleBack}>
-      <SymbolView
-        name="chevron.backward"
-        weight="medium"
-        size={22}
-        tintColor={
-          resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
-        }
-      />
-    </TouchableOpacity>
+    <Host matchContents style={{ width: 40, height: 40 }}>
+      <HStack
+        modifiers={[
+          frame({ width: 40, height: 40 }),
+          glassEffect({
+            glass: {
+              interactive: true,
+              variant: "regular",
+            },
+          }),
+        ]}
+        onPress={handleBack}
+      >
+        <Image
+          systemName="chevron.backward"
+          size={20}
+          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
+        />
+      </HStack>
+    </Host>
   );
 };

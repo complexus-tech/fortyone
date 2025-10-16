@@ -1,7 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 
 export const NewStoryButton = () => {
@@ -29,7 +29,6 @@ export const NewStoryButton = () => {
         <HStack
           modifiers={[
             frame({ width: 60, height: 60 }),
-            cornerRadius(25),
             glassEffect({
               glass: {
                 interactive: true,
