@@ -28,7 +28,7 @@ const Item = ({
     <Pressable
       key={member.id}
       onPress={onPress}
-      className="flex-row items-center px-4 py-3.5 gap-2"
+      className="flex-row items-center px-4.5 py-3.5 gap-2"
     >
       <Avatar
         size="sm"
@@ -89,7 +89,7 @@ export const AssigneeBadge = ({
           <Text>{currentAssignee?.username || "No Assignee"}</Text>
         </Badge>
       }
-      snapPoints={["90%"]}
+      snapPoints={["93%"]}
     >
       <Text className="font-semibold mb-3 text-center">Assignee</Text>
       <Row

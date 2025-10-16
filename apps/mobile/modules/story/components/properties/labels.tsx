@@ -103,7 +103,7 @@ export const LabelsBadge = ({
           </Text>
         </Badge>
       }
-      snapPoints={["90%"]}
+      snapPoints={["93%"]}
     >
       <Text className="font-semibold mb-3 text-center">Labels</Text>
       <Row
