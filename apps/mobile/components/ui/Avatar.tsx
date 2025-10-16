@@ -6,6 +6,7 @@ import { Text } from "./text";
 import { cn } from "@/lib/utils";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
+import { useColorScheme } from "nativewind";
 
 const avatarVariants = cva(
   "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0",
@@ -82,6 +83,9 @@ export const Avatar = ({
   textClassName,
   ...props
 }: AvatarProps) => {
+  const { colorScheme } = useColorScheme();
+  const iconColor =
+    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   const classes = avatarVariants({ rounded, color, size });
   const asIcon = !src && !name;
 
@@ -146,7 +150,7 @@ export const Avatar = ({
                     ? 30
                     : 25
           }
-          tintColor={colors.gray.DEFAULT}
+          tintColor={iconColor}
         />
       )}
     </View>
