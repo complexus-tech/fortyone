@@ -9,6 +9,7 @@ import { colors } from "@/constants";
 import { truncateText } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useTerminology } from "@/hooks";
 
 const Item = ({
   objective,
@@ -24,7 +25,7 @@ const Item = ({
     <Pressable
       key={objective.id}
       onPress={onPress}
-      className="flex-row items-center px-4.5 py-4 gap-2"
+      className="flex-row items-center px-4.5 py-3.5 gap-2"
     >
       <SymbolView
         name="square.grid.2x2.fill"
@@ -68,6 +69,7 @@ export const ObjectiveBadge = ({
   story: Story;
   onObjectiveChange: (objectiveId: string | null) => void;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const { colorScheme } = useColorScheme();
   const { data: objectives = [] } = useTeamObjectives(story.teamId);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,14 +148,25 @@ export const ObjectiveBadge = ({
         )}
       </Row>
 
-      {filteredObjectives.map((objective) => (
-        <Item
-          key={objective.id}
-          objective={objective}
-          onPress={() => onObjectiveChange(objective.id)}
-          isSelected={story.objectiveId === objective.id}
-        />
-      ))}
+      {filteredObjectives.length > 0 ? (
+        filteredObjectives.map((objective) => (
+          <Item
+            key={objective.id}
+            objective={objective}
+            onPress={() => onObjectiveChange(objective.id)}
+            isSelected={story.objectiveId === objective.id}
+          />
+        ))
+      ) : objectives.length === 0 ? (
+        <Text className="text-center py-8 px-4" color="muted">
+          No {getTermDisplay("objectiveTerm", { variant: "plural" })} available
+        </Text>
+      ) : (
+        <Text className="text-center py-8 px-4" color="muted">
+          No {getTermDisplay("objectiveTerm", { variant: "plural" })} found
+          matching &quot;{searchQuery}&quot;
+        </Text>
+      )}
     </PropertyBottomSheet>
   );
 };

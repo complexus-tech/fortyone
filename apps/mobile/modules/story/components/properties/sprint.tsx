@@ -9,6 +9,7 @@ import { colors } from "@/constants";
 import { truncateText } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamSprints } from "@/modules/sprints/hooks";
+import { useTerminology } from "@/hooks";
 
 const Item = ({
   sprint,
@@ -24,7 +25,7 @@ const Item = ({
     <Pressable
       key={sprint.id}
       onPress={onPress}
-      className="flex-row items-center px-4.5 py-4 gap-2"
+      className="flex-row items-center px-4.5 py-3.5 gap-2"
     >
       <SymbolView
         name="play.circle"
@@ -68,6 +69,7 @@ export const SprintBadge = ({
   story: Story;
   onSprintChange: (sprintId: string | null) => void;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const { colorScheme } = useColorScheme();
   const { data: sprints = [] } = useTeamSprints(story.teamId);
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,14 +146,25 @@ export const SprintBadge = ({
         )}
       </Row>
 
-      {filteredSprints.map((sprint) => (
-        <Item
-          key={sprint.id}
-          sprint={sprint}
-          onPress={() => onSprintChange(sprint.id)}
-          isSelected={story.sprintId === sprint.id}
-        />
-      ))}
+      {filteredSprints.length > 0 ? (
+        filteredSprints.map((sprint) => (
+          <Item
+            key={sprint.id}
+            sprint={sprint}
+            onPress={() => onSprintChange(sprint.id)}
+            isSelected={story.sprintId === sprint.id}
+          />
+        ))
+      ) : sprints.length === 0 ? (
+        <Text className="text-center py-8 px-4" color="muted">
+          No {getTermDisplay("sprintTerm", { variant: "plural" })} available
+        </Text>
+      ) : (
+        <Text className="text-center py-8 px-4" color="muted">
+          No {getTermDisplay("sprintTerm", { variant: "plural" })} found
+          matching &quot;{searchQuery}&quot;
+        </Text>
+      )}
     </PropertyBottomSheet>
   );
 };
