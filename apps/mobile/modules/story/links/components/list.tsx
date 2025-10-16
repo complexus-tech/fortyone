@@ -9,9 +9,9 @@ export const List = ({ links }: { links: Link[] }) => {
   return (
     <View className="flex-1">
       {links.length > 0 && (
-        <Row asContainer className="mb-3">
-          <Text color="muted">
-            {links.length} external link{links.length !== 1 ? "s" : ""}
+        <Row asContainer className="mb-1">
+          <Text color="muted" className="pl-0.5">
+            Links
           </Text>
         </Row>
       )}

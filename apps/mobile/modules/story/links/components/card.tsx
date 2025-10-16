@@ -21,23 +21,21 @@ export const Card = ({ link }: CardProps) => {
 
   return (
     <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark"
+      className="active:bg-gray-50 dark:active:bg-dark py-3.5"
       onPress={handlePress}
     >
-      <Row align="center" justify="between" className="p-4" gap={3}>
-        <Row align="center" className="flex-1 gap-1.5">
-          <SymbolView
-            name="globe"
-            size={20}
-            weight="semibold"
-            tintColor={
-              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-            }
-          />
-          <Text numberOfLines={1} className="flex-1">
-            {link.title || link.url}
-          </Text>
-        </Row>
+      <Row asContainer align="center" className="flex-1 gap-1.5">
+        <SymbolView
+          name="globe"
+          size={20}
+          weight="semibold"
+          tintColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
+        />
+        <Text numberOfLines={1} className="flex-1">
+          {link.title || link.url}
+        </Text>
       </Row>
     </Pressable>
   );
