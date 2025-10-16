@@ -33,10 +33,10 @@ export const Activity = ({ story }: { story: DetailedStory }) => {
       onValueChange={(value) => setActiveTab(value)}
     >
       <Tabs.List className="mb-2">
-        <Tabs.Tab value="updates" className="py-1.5 px-4 rounded-[10px]">
+        <Tabs.Tab value="updates" className="py-2 px-4 rounded-[10px]">
           Updates
         </Tabs.Tab>
-        <Tabs.Tab value="comments" className="py-1.5 px-4 rounded-[10px]">
+        <Tabs.Tab value="comments" className="py-2 px-4 rounded-[10px]">
           Comments
         </Tabs.Tab>
       </Tabs.List>

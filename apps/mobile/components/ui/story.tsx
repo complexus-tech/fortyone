@@ -65,7 +65,7 @@ export const Story = ({
                 borderWidth: 1,
               }}
               rounded="xl"
-              className="pr-2"
+              className="pr-2 h-[28px]"
             >
               <Row align="center" gap={1}>
                 <Dot color={status?.color} size={10} />
