@@ -3,9 +3,7 @@ import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
-import { useColorScheme } from "nativewind";
 import { SFSymbol } from "expo-symbols";
-import { Appearance } from "react-native";
 import { useTheme } from "@/hooks";
 
 const ThemeItem = ({
@@ -21,13 +19,12 @@ const ThemeItem = ({
   };
   onPress: () => void;
 }) => {
-  const { colorScheme } = useColorScheme();
-
+  const { resolvedTheme } = useTheme();
   return (
     <HStack spacing={8} onPress={onPress}>
       <Image
         systemName={theme.icon}
-        color={colorScheme === "light" ? "black" : "white"}
+        color={resolvedTheme === "light" ? "black" : "white"}
         size={20}
         modifiers={[frame({ width: 30, height: 30 })]}
       />
@@ -40,7 +37,7 @@ const ThemeItem = ({
       {isActive && (
         <Image
           systemName="checkmark.circle.fill"
-          color={colorScheme === "light" ? "black" : "white"}
+          color={resolvedTheme === "light" ? "black" : "white"}
           size={18}
         />
       )}
@@ -55,9 +52,7 @@ export const ThemeSwitcher = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
-  const { colorScheme, setColorScheme } = useColorScheme();
-
-  const { theme: currentTheme, setTheme } = useTheme();
+  const { theme: currentTheme, resolvedTheme, setTheme } = useTheme();
 
   const themes: {
     label: string;
@@ -87,11 +82,11 @@ export const ThemeSwitcher = ({
         <Text
           weight="medium"
           color={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
           size={14}
         >
-          {`Appearance: ${currentTheme}`}
+          Appearance
         </Text>
       </HStack>
       {themes.map((theme) => (
