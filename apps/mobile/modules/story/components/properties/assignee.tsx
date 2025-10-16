@@ -146,6 +146,10 @@ export const AssigneeBadge = ({
               isSelected={story.assigneeId === member.id}
             />
           ))
+      ) : eleigibleMembers.length === 0 ? (
+        <Text className="text-center py-8 px-4" color="muted">
+          No members available
+        </Text>
       ) : (
         <Text className="text-center py-8 px-4" color="muted">
           No members found matching &quot;{searchQuery}&quot;
