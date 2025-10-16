@@ -6,9 +6,12 @@ import { useTeamStoriesGrouped } from "@/modules/stories/hooks";
 import { useViewOptions } from "@/hooks/use-view-options";
 import { useGlobalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
+import { useQueryClient } from "@tanstack/react-query";
+import { storyKeys } from "@/constants/keys";
 import type { TeamStoriesTab } from "../types";
 
 export const TeamStories = () => {
+  const queryClient = useQueryClient();
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const [activeTab, setActiveTab] = useState<TeamStoriesTab>("all");
   const {
@@ -49,11 +52,12 @@ export const TeamStories = () => {
     teamId,
   ]);
 
-  const { data: groupedStories, isPending } = useTeamStoriesGrouped(
-    teamId!,
-    viewOptions.groupBy,
-    queryOptions
-  );
+  const {
+    data: groupedStories,
+    isPending,
+    refetch,
+    isRefetching,
+  } = useTeamStoriesGrouped(teamId!, viewOptions.groupBy, queryOptions);
 
   if (!viewOptionsLoaded) {
     return (
@@ -96,6 +100,11 @@ export const TeamStories = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
         <Tabs.Panel value="active">
@@ -104,6 +113,11 @@ export const TeamStories = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
         <Tabs.Panel value="backlog">
@@ -112,6 +126,11 @@ export const TeamStories = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
       </Tabs>

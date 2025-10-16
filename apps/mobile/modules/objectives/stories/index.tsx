@@ -7,9 +7,12 @@ import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks";
 import { useGlobalSearchParams } from "expo-router";
 import { useTerminology } from "@/hooks/use-terminology";
 import { useViewOptions } from "@/hooks/use-view-options";
+import { useQueryClient } from "@tanstack/react-query";
+import { storyKeys } from "@/constants/keys";
 import { Header } from "./components";
 
 export const ObjectiveStories = () => {
+  const queryClient = useQueryClient();
   const { objectiveId, teamId } = useGlobalSearchParams<{
     objectiveId: string;
     teamId: string;
@@ -38,7 +41,12 @@ export const ObjectiveStories = () => {
     teamId,
   ]);
 
-  const { data: groupedStories, isPending } = useObjectiveStoriesGrouped(
+  const {
+    data: groupedStories,
+    isPending,
+    refetch,
+    isRefetching,
+  } = useObjectiveStoriesGrouped(
     objectiveId!,
     viewOptions.groupBy,
     queryOptions
@@ -71,6 +79,11 @@ export const ObjectiveStories = () => {
         visibleColumns={viewOptions.displayColumns}
         emptyTitle={`No ${getTermDisplay("storyTerm", { variant: "plural" })} found for this ${getTermDisplay("objectiveTerm", { variant: "singular" })}`}
         emptyMessage={`There are no ${getTermDisplay("storyTerm", { variant: "plural" })} for this ${getTermDisplay("objectiveTerm", { variant: "singular" })} at the moment.`}
+        onRefresh={() => {
+          refetch();
+          queryClient.invalidateQueries({ queryKey: storyKeys.all });
+        }}
+        isRefreshing={isRefetching}
       />
     </SafeContainer>
   );

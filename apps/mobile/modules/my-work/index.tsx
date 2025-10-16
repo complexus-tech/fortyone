@@ -4,9 +4,12 @@ import { SafeContainer, Tabs, StoriesListSkeleton } from "@/components/ui";
 import { StoriesBoard } from "@/modules/stories/components";
 import { useMyStoriesGrouped, useViewOptions } from "./hooks";
 import { useTerminology } from "@/hooks/use-terminology";
+import { useQueryClient } from "@tanstack/react-query";
+import { storyKeys } from "@/constants/keys";
 import type { MyWorkTab } from "./types";
 
 export const MyWork = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<MyWorkTab>("all");
   const {
     viewOptions,
@@ -49,10 +52,12 @@ export const MyWork = () => {
     viewOptions.orderDirection,
   ]);
 
-  const { data: groupedStories, isPending } = useMyStoriesGrouped(
-    viewOptions.groupBy,
-    queryOptions
-  );
+  const {
+    data: groupedStories,
+    isPending,
+    refetch,
+    isRefetching,
+  } = useMyStoriesGrouped(viewOptions.groupBy, queryOptions);
 
   if (!viewOptionsLoaded) {
     return (
@@ -91,6 +96,11 @@ export const MyWork = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
@@ -99,6 +109,11 @@ export const MyWork = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
@@ -107,6 +122,11 @@ export const MyWork = () => {
             groupFilters={queryOptions}
             isLoading={isPending}
             visibleColumns={viewOptions.displayColumns}
+            onRefresh={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: storyKeys.all });
+            }}
+            isRefreshing={isRefetching}
           />
         </Tabs.Panel>
       </Tabs>

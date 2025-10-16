@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import { ScrollView } from "react-native";
 import { StoriesListSkeleton } from "@/components/ui";
 import { SectionWithLoadMore } from "./section-with-load-more";
+import { StoriesList } from "./stories-list";
 import { EmptyState } from "./empty-state";
 import { useStatuses } from "@/modules/statuses";
 import { useMembers } from "@/modules/members";
@@ -26,6 +26,8 @@ type StoriesBoardProps = {
   emptyTitle?: string;
   emptyMessage?: string;
   visibleColumns: DisplayColumn[];
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 };
 
 export const StoriesBoard = ({
@@ -35,6 +37,8 @@ export const StoriesBoard = ({
   emptyTitle,
   emptyMessage,
   visibleColumns,
+  onRefresh,
+  isRefreshing = false,
 }: StoriesBoardProps) => {
   const { data: statuses = [], isPending: isStatusesPending } = useStatuses();
   const { data: members = [], isPending: isMembersPending } = useMembers();
@@ -105,10 +109,7 @@ export const StoriesBoard = ({
   }
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 120 }}
-    >
+    <StoriesList onRefresh={onRefresh} isRefreshing={isRefreshing}>
       {sections.map((section) => (
         <SectionWithLoadMore
           key={section.key}
@@ -117,6 +118,6 @@ export const StoriesBoard = ({
           visibleColumns={visibleColumns}
         />
       ))}
-    </ScrollView>
+    </StoriesList>
   );
 };
