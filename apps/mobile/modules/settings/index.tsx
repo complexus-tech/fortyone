@@ -49,7 +49,7 @@ export const Settings = () => {
           paddingTop: 48,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark[200],
+            colorScheme === "light" ? colors.white : colors.dark[300],
         }}
       >
         <SettingsSection title="Workspace">
