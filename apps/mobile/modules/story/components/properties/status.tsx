@@ -7,7 +7,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { cn } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamStatuses } from "@/modules/statuses/hooks/use-statuses";
 import { hexToRgba } from "@/lib/utils/colors";
@@ -16,24 +15,17 @@ const Item = ({
   status,
   onPress,
   isSelected,
-  isLast,
 }: {
   status: { id: string; name: string; color: string };
   onPress: () => void;
   isSelected: boolean;
-  isLast: boolean;
 }) => {
   const { colorScheme } = useColorScheme();
   return (
     <Pressable
       key={status.id}
       onPress={onPress}
-      className={cn(
-        "flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100 gap-2",
-        {
-          "border-b-0": isLast,
-        }
-      )}
+      className="flex-row items-center px-4.5 py-4 gap-2"
     >
       <Dot color={status.color} size={12} />
       <Text className="flex-1">{status.name}</Text>
@@ -78,16 +70,15 @@ export const StatusBadge = ({
           <Text>{currentStatus?.name || "No Status"}</Text>
         </Badge>
       }
-      snapPoints={["25%", "60%"]}
+      snapPoints={["90%"]}
     >
-      <Text className="font-semibold mb-2 text-center">Status</Text>
-      {statuses.map((status, idx) => (
+      <Text className="font-semibold mb-3 text-center">Status</Text>
+      {statuses.map((status) => (
         <Item
           key={status.id}
           status={status}
           onPress={() => onStatusChange(status.id)}
           isSelected={story.statusId === status.id}
-          isLast={idx === statuses.length - 1}
         />
       ))}
     </PropertyBottomSheet>
