@@ -94,7 +94,10 @@ export const ThemeSwitcher = ({
           key={theme.value}
           isActive={theme.value === currentTheme}
           theme={theme}
-          onPress={() => setTheme(theme.value)}
+          onPress={() => {
+            setTheme(theme.value);
+            setIsOpened(false);
+          }}
         />
       ))}
     </BottomSheetModal>
