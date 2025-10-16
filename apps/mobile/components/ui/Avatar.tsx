@@ -24,7 +24,7 @@ const avatarVariants = cva(
       color: {
         primary: "text-white bg-primary",
         secondary: "text-white bg-secondary",
-        tertiary: "bg-gray-100 dark:bg-dark-200",
+        tertiary: "bg-gray-100 dark:bg-dark-50",
         naked: "bg-transparent",
       },
       size: {
@@ -119,9 +119,6 @@ export const Avatar = ({
       )}
       {!src && name && (
         <Text
-          color={
-            color === "primary" || color === "secondary" ? "white" : "black"
-          }
           className={cn(
             {
               "text-[0.6rem]": size === "xs",

@@ -6,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { cn } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useMembers } from "@/modules/members/hooks/use-members";
 
@@ -14,7 +13,6 @@ const Item = ({
   member,
   onPress,
   isSelected,
-  isLast,
 }: {
   member: {
     id: string;
@@ -24,22 +22,17 @@ const Item = ({
   };
   onPress: () => void;
   isSelected: boolean;
-  isLast: boolean;
 }) => {
   const { colorScheme } = useColorScheme();
   return (
     <Pressable
       key={member.id}
       onPress={onPress}
-      className={cn(
-        "flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100 gap-2",
-        {
-          "border-b-0": isLast,
-        }
-      )}
+      className="flex-row items-center p-4 gap-2"
     >
       <Avatar
         size="sm"
+        color="primary"
         name={member.fullName || member.username}
         src={member.avatarUrl}
       />
@@ -70,17 +63,18 @@ export const AssigneeBadge = ({
   onAssigneeChange: (assigneeId: string | null) => void;
 }) => {
   const { data: members = [] } = useMembers();
+  const eleigibleMembers = members.filter((m) => m.role !== "system");
   const [searchQuery, setSearchQuery] = useState("");
   const currentAssignee = members.find((m) => m.id === story.assigneeId);
 
   const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return members;
-    return members.filter((member) =>
+    if (!searchQuery.trim()) return eleigibleMembers;
+    return eleigibleMembers.filter((member) =>
       (member.fullName || member.username)
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
     );
-  }, [members, searchQuery]);
+  }, [eleigibleMembers, searchQuery]);
 
   return (
     <PropertyBottomSheet
@@ -94,7 +88,7 @@ export const AssigneeBadge = ({
           <Text>{currentAssignee?.username || "No Assignee"}</Text>
         </Badge>
       }
-      snapPoints={["25%", "70%"]}
+      snapPoints={["80%"]}
     >
       <Text className="font-semibold mb-2 text-center">Assignee</Text>
       {/* Search Input */}
@@ -111,13 +105,12 @@ export const AssigneeBadge = ({
         />
       </Pressable>
 
-      {filteredMembers.map((member, idx) => (
+      {filteredMembers.slice(0, 8).map((member) => (
         <Item
           key={member.id}
           member={member}
           onPress={() => onAssigneeChange(member.id)}
           isSelected={story.assigneeId === member.id}
-          isLast={idx === filteredMembers.length - 1}
         />
       ))}
     </PropertyBottomSheet>
