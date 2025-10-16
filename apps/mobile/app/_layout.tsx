@@ -97,7 +97,7 @@ const RenderApp = () => {
         <Stack.Screen
           name="new"
           options={{
-            presentation: "modal",
+            presentation: "formSheet",
             gestureDirection: "vertical",
             animation: "slide_from_bottom",
             sheetGrabberVisible: true,
