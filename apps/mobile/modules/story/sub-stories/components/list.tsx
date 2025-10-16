@@ -6,7 +6,7 @@ import { EmptyState } from "./empty-state";
 
 export const List = ({ stories }: { stories: Story[] }) => {
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {stories.length > 0 && (
         <Row asContainer className="mb-1">
           <Text color="muted">Sub Stories</Text>

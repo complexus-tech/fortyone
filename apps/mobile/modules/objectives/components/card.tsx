@@ -53,7 +53,7 @@ export const Card = ({ objective }: { objective: Objective }) => {
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3.5 border-b-[0.5px] border-gray-100 dark:border-dark-100"
+        className="p-4 border-b border-gray-50 dark:border-dark"
       >
         <Row align="center" gap={3} className="w-8/12">
           <Row className="bg-gray-100 dark:bg-dark-200 rounded-lg p-1.5">

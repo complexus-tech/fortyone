@@ -21,13 +21,13 @@ export const Card = ({ link }: CardProps) => {
 
   return (
     <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark-300"
+      className="active:bg-gray-50 dark:active:bg-dark-300 border-t border-gray-50 dark:border-dark"
       onPress={handlePress}
     >
-      <Row align="center" justify="between" className="px-4 py-3" gap={3}>
+      <Row align="center" justify="between" className="p-4" gap={3}>
         <Row align="center" gap={2} className="flex-1">
           <SymbolView
-            name="link"
+            name="globe"
             size={20}
             weight="semibold"
             tintColor={
@@ -40,7 +40,8 @@ export const Card = ({ link }: CardProps) => {
             </Text>
             <SymbolView
               name="arrow.up.right"
-              size={14}
+              size={12}
+              weight="semibold"
               tintColor={
                 colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
               }

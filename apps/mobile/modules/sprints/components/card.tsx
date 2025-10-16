@@ -43,7 +43,7 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
       <Row
         align="center"
         justify="between"
-        className="px-4 py-3 border-b-[0.5px] border-gray-100 dark:border-dark-100"
+        className="p-4 border-b border-gray-50 dark:border-dark"
         gap={3}
       >
         <Row align="center" gap={3} className="w-8/12">
