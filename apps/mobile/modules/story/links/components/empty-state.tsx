@@ -2,7 +2,7 @@ import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 type EmptyStateProps = {
   title?: string;
@@ -10,9 +10,9 @@ type EmptyStateProps = {
 };
 
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const iconColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   const defaultTitle = "No links found";
   const defaultMessage = "This story doesn't have any links yet.";
 

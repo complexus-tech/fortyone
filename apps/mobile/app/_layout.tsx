@@ -19,7 +19,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Toaster } from "sonner-native";
 import { fetchGlobalQueries } from "@/lib/utils";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
@@ -94,9 +94,9 @@ const RenderApp = () => {
 };
 
 export default function RootLayout() {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const iconColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -122,12 +122,12 @@ export default function RootLayout() {
             <RenderApp />
           </BottomSheetModalProvider>
           <Toaster
-            theme={colorScheme}
+            theme={resolvedTheme}
             closeButton
             toastOptions={{
               style: {
                 backgroundColor:
-                  colorScheme === "dark" ? colors.dark[200] : colors.white,
+                  resolvedTheme === "dark" ? colors.dark[200] : colors.white,
               },
             }}
             icons={{

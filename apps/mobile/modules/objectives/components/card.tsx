@@ -5,7 +5,7 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { router } from "expo-router";
 
 type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
@@ -22,7 +22,7 @@ const getHealthColor = (health: ObjectiveHealth) => {
 };
 
 export const Card = ({ objective }: { objective: Objective }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const startDateObj = new Date(objective.startDate);
   const endDateObj = new Date(objective.endDate);
   const now = new Date();
@@ -62,7 +62,9 @@ export const Card = ({ objective }: { objective: Objective }) => {
               size={20}
               weight="bold"
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[300]
               }
             />
           </Row>

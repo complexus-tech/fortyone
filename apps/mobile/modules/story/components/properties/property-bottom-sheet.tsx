@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useMemo } from "react";
 import { Pressable } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 
 interface PropertyBottomSheetProps {
@@ -16,7 +16,7 @@ export const PropertyBottomSheet = ({
   snapPoints = ["25%", "50%"],
 }: PropertyBottomSheetProps) => {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
 
   const memoizedSnapPoints = useMemo(() => snapPoints, [snapPoints]);
 
@@ -40,7 +40,7 @@ export const PropertyBottomSheet = ({
               style,
               {
                 backgroundColor:
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? "rgba(0, 0, 0, 0.2)"
                     : "rgba(0, 0, 0, 0.3)",
               },
@@ -50,13 +50,13 @@ export const PropertyBottomSheet = ({
         )}
         backgroundStyle={{
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark[200],
+            resolvedTheme === "light" ? colors.white : colors.dark[200],
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
         }}
         handleIndicatorStyle={{
           backgroundColor:
-            colorScheme === "light" ? colors.gray[300] : colors.gray[300],
+            resolvedTheme === "light" ? colors.gray[300] : colors.gray[300],
         }}
       >
         <BottomSheetView className="pb-6">{children}</BottomSheetView>

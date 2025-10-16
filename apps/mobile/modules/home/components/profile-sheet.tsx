@@ -5,7 +5,7 @@ import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { frame } from "@expo/ui/swift-ui/modifiers";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toTitleCase } from "@/lib/utils";
 import { useRouter } from "expo-router";
@@ -19,13 +19,13 @@ export const ProfileSheet = ({
 }) => {
   const [isWorkspaceSwitcherOpened, setIsWorkspaceSwitcherOpened] =
     useState(false);
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const { data: user } = useProfile();
   const { data: subscription } = useSubscription();
   const { workspace } = useCurrentWorkspace();
   const mutedTextColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   return (
     <>
@@ -59,7 +59,7 @@ export const ProfileSheet = ({
           <Image
             systemName="checkmark"
             color={
-              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
             }
             size={16}
           />
@@ -95,7 +95,7 @@ export const ProfileSheet = ({
           <Image
             systemName="chevron.up.chevron.down"
             color={
-              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
             }
             size={14}
           />

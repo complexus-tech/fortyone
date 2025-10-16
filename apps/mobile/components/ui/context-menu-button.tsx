@@ -1,5 +1,5 @@
 import React from "react";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 import { ContextMenu, Host, HStack, Button, Image } from "@expo/ui/swift-ui";
 import { cornerRadius, frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
@@ -19,7 +19,7 @@ type ContextMenuButtonProps = {
 };
 
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <ContextMenu>
       <ContextMenu.Items>
@@ -53,7 +53,7 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
               systemName="ellipsis"
               size={20}
               color={
-                colorScheme === "light" ? colors.dark[50] : colors.gray[300]
+                resolvedTheme === "light" ? colors.dark[50] : colors.gray[300]
               }
             />
           </HStack>

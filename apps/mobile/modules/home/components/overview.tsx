@@ -6,11 +6,10 @@ import type { SFSymbol } from "expo-symbols";
 import { colors } from "@/constants";
 import { Col, Row, Text } from "@/components/ui";
 import { useOverviewStats } from "@/modules/home/hooks/use-overview-stats";
-import { useTerminology } from "@/hooks";
-import { useColorScheme } from "nativewind";
+import { useTerminology, useTheme } from "@/hooks";
 
 export const Overview = () => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const { getTermDisplay } = useTerminology();
   const { data: summary, isPending } = useOverviewStats();
   const storyTerm = getTermDisplay("storyTerm", {
@@ -44,7 +43,7 @@ export const Overview = () => {
       label: "Assigned to you",
       icon: "person.crop.circle.dashed",
       iconColor:
-        colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300],
+        resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300],
     },
   ];
 

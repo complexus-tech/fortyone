@@ -7,12 +7,12 @@ import { colors } from "@/constants";
 import * as WebBrowser from "expo-web-browser";
 import { authenticateWithToken } from "@/lib/actions/auth";
 import { useState } from "react";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 const lightMesh = require("@/assets/images/mesh.webp");
 const darkMesh = require("@/assets/images/mesh-dark.webp");
 
 export const Auth = () => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const setAuthData = useAuthStore((state) => state.setAuthData);
 
@@ -44,7 +44,7 @@ export const Auth = () => {
       }}
     >
       <Image
-        source={colorScheme === "dark" ? darkMesh : lightMesh}
+        source={resolvedTheme === "dark" ? darkMesh : lightMesh}
         style={{
           position: "absolute",
           top: 0,
@@ -68,7 +68,7 @@ export const Auth = () => {
       >
         <Logo
           height={30}
-          color={colorScheme === "dark" ? colors.white : colors.black}
+          color={resolvedTheme === "dark" ? colors.white : colors.black}
         />
         <Col>
           <Text

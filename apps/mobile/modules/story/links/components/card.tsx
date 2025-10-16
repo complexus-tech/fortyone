@@ -4,14 +4,14 @@ import { Link } from "@/types/link";
 import { Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 type CardProps = {
   link: Link;
 };
 
 export const Card = ({ link }: CardProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const handlePress = async () => {
     const canOpen = await Linking.canOpenURL(link.url);
     if (canOpen) {
@@ -30,7 +30,7 @@ export const Card = ({ link }: CardProps) => {
           size={20}
           weight="semibold"
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
         <Text numberOfLines={1} className="flex-1">

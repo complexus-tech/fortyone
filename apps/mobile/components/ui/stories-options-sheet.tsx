@@ -8,7 +8,7 @@ import type {
   DisplayColumn,
   StoriesViewOptions,
 } from "@/types/stories-view-options";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 export const StoriesOptionsSheet = ({
   isOpened,
@@ -23,7 +23,7 @@ export const StoriesOptionsSheet = ({
   setViewOptions: (options: Partial<StoriesViewOptions>) => void;
   resetViewOptions: () => void;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const displayColumns = viewOptions.displayColumns || [];
   const groupByOptions = [
     {
@@ -94,7 +94,7 @@ export const StoriesOptionsSheet = ({
             <HStack spacing={3}>
               <Text
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -110,7 +110,7 @@ export const StoriesOptionsSheet = ({
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -128,7 +128,7 @@ export const StoriesOptionsSheet = ({
             <HStack spacing={3}>
               <Text
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -146,7 +146,7 @@ export const StoriesOptionsSheet = ({
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -164,7 +164,7 @@ export const StoriesOptionsSheet = ({
             <HStack spacing={3}>
               <Text
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -178,7 +178,7 @@ export const StoriesOptionsSheet = ({
                 systemName="chevron.up.chevron.down"
                 modifiers={[opacity(0.6)]}
                 color={
-                  colorScheme === "light"
+                  resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
@@ -196,7 +196,7 @@ export const StoriesOptionsSheet = ({
           <Button
             variant={displayColumns.includes("ID") ? "bordered" : "plain"}
             color={
-              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
             onPress={() => toggleDisplayColumn("ID")}
           >
@@ -205,7 +205,7 @@ export const StoriesOptionsSheet = ({
           <Button
             variant={displayColumns.includes("Status") ? "bordered" : "plain"}
             color={
-              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
             onPress={() => toggleDisplayColumn("Status")}
           >
@@ -213,7 +213,7 @@ export const StoriesOptionsSheet = ({
           </Button>
           <Button
             color={
-              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
             variant={displayColumns.includes("Assignee") ? "bordered" : "plain"}
             onPress={() => toggleDisplayColumn("Assignee")}
@@ -222,7 +222,7 @@ export const StoriesOptionsSheet = ({
           </Button>
           <Button
             color={
-              colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
             }
             variant={displayColumns.includes("Priority") ? "bordered" : "plain"}
             onPress={() => toggleDisplayColumn("Priority")}

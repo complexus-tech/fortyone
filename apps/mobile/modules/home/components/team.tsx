@@ -5,11 +5,11 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 export const Team = ({ id, name, color }: TeamType) => {
   const router = useRouter();
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Pressable
       className="active:bg-gray-50 dark:active:bg-dark-300 rounded-xl"
@@ -32,7 +32,7 @@ export const Team = ({ id, name, color }: TeamType) => {
           weight="semibold"
           size={12}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
         />
       </Row>

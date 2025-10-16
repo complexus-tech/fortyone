@@ -5,7 +5,7 @@ import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import { format } from "date-fns";
 import { Pressable } from "react-native";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { useGlobalSearchParams, router } from "expo-router";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
@@ -17,7 +17,7 @@ const statusColors = {
 } as const;
 
 export const Card = ({ sprint }: { sprint: Sprint }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const { teamId } = useGlobalSearchParams<{ teamId: string }>();
   const startDateObj = new Date(sprint.startDate);
   const endDateObj = new Date(sprint.endDate);
@@ -53,7 +53,9 @@ export const Card = ({ sprint }: { sprint: Sprint }) => {
               size={20}
               weight="bold"
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[300]
               }
             />
           </Row>

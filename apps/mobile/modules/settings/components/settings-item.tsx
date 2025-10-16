@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable } from "react-native";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { Octicons, Ionicons } from "@expo/vector-icons";
 import { Row, Text } from "@/components/ui";
 import { colors } from "@/constants";
@@ -24,7 +24,7 @@ export const SettingsItem = ({
   asLink = false,
   asOptions = false,
 }: SettingsItemProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Pressable
       className="active:bg-gray-50 dark:active:bg-dark-200"
@@ -47,7 +47,7 @@ export const SettingsItem = ({
                   name="chevron-expand"
                   size={16}
                   color={
-                    colorScheme === "light"
+                    resolvedTheme === "light"
                       ? colors.gray.DEFAULT
                       : colors.gray[300]
                   }
@@ -57,7 +57,7 @@ export const SettingsItem = ({
                   name={asLink ? "arrow-up-right" : "chevron-right"}
                   size={16}
                   color={
-                    colorScheme === "light"
+                    resolvedTheme === "light"
                       ? colors.gray.DEFAULT
                       : colors.gray[300]
                   }

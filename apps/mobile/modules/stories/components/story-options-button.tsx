@@ -3,7 +3,7 @@ import { Pressable } from "react-native";
 import { StoriesOptionsSheet } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
 
 type StoryOptionsButtonProps = {
@@ -17,7 +17,7 @@ export const StoryOptionsButton = ({
   setViewOptions,
   resetViewOptions,
 }: StoryOptionsButtonProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const [isOpened, setIsOpened] = useState(false);
 
   return (
@@ -31,7 +31,7 @@ export const StoryOptionsButton = ({
           size={25}
           weight="semibold"
           tintColor={
-            colorScheme === "light" ? colors.dark[50] : colors.gray[200]
+            resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
           }
         />
       </Pressable>

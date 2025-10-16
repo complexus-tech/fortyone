@@ -3,7 +3,7 @@ import { Badge, Text, BottomSheetModal } from "@/components/ui";
 import { Story } from "@/modules/stories/types";
 import { Pressable } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 import { format } from "date-fns";
 import { DateTimePicker } from "@expo/ui/swift-ui";
@@ -15,7 +15,7 @@ export const StartDateBadge = ({
   story: Story;
   onStartDateChange: (startDate: Date | null) => void;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     story.startDate ? new Date(story.startDate) : new Date()
@@ -23,7 +23,7 @@ export const StartDateBadge = ({
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const iconColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const handleDateSelected = (date: Date) => {
     setSelectedDate(date);
@@ -66,7 +66,7 @@ export const StartDateBadge = ({
           displayedComponents="date"
           initialDate={selectedDate.toISOString()}
           variant="graphical"
-          color={colorScheme === "dark" ? colors.white : colors.black}
+          color={resolvedTheme === "dark" ? colors.white : colors.black}
         />
       </BottomSheetModal>
     </>

@@ -3,7 +3,7 @@ import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { useTerminology } from "@/hooks/use-terminology";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 type EmptyStateProps = {
   title?: string;
@@ -11,7 +11,7 @@ type EmptyStateProps = {
 };
 
 export const EmptyState = ({ title, message }: EmptyStateProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const { getTermDisplay } = useTerminology();
 
   const defaultTitle = `No ${getTermDisplay("objectiveTerm", { variant: "plural" })} found`;
@@ -28,7 +28,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
           name="square.grid.2x2.fill"
           size={36}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
       </Row>

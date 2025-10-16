@@ -2,12 +2,12 @@ import React from "react";
 import { SafeContainer } from "@/components/ui";
 import { ScrollView } from "react-native";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { ProfileForm } from "./components/profile-form";
 import { Header } from "./components/header";
 
 export const Account = () => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <SafeContainer isFull>
       <ScrollView
@@ -15,7 +15,7 @@ export const Account = () => {
           paddingTop: 44,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark[200],
+            resolvedTheme === "light" ? colors.white : colors.dark[200],
         }}
         contentContainerStyle={{ paddingBottom: 120 }}
       >

@@ -12,7 +12,7 @@ import {
   Text as SwiftUIText,
 } from "@expo/ui/swift-ui";
 import { opacity } from "@expo/ui/swift-ui/modifiers";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { useTerminology } from "@/hooks/use-terminology";
 
 type HeaderProps = {
@@ -26,7 +26,7 @@ export const Header = ({
   searchType,
   setSearchType,
 }: HeaderProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const { getTermDisplay } = useTerminology();
 
@@ -73,7 +73,7 @@ export const Header = ({
                 <SwiftUIText
                   size={15}
                   color={
-                    colorScheme === "light"
+                    resolvedTheme === "light"
                       ? colors.dark.DEFAULT
                       : colors.gray[200]
                   }
@@ -91,7 +91,7 @@ export const Header = ({
                   systemName="chevron.up.chevron.down"
                   modifiers={[opacity(0.6)]}
                   color={
-                    colorScheme === "light"
+                    resolvedTheme === "light"
                       ? colors.dark.DEFAULT
                       : colors.gray[200]
                   }
@@ -111,7 +111,7 @@ export const Header = ({
           name="magnifyingglass"
           size={20}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
         />
         <TextInput
@@ -122,7 +122,7 @@ export const Header = ({
             variant: "plural",
           })}...`}
           placeholderTextColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
           value={searchTerm}
           onChangeText={setSearchTerm}
@@ -142,7 +142,9 @@ export const Header = ({
               name="xmark.circle.fill"
               size={20}
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[300]
               }
             />
           </Pressable>

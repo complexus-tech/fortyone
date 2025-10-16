@@ -2,10 +2,10 @@ import React from "react";
 import { Col, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 export const EmptyState = () => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Col justify="center" align="center" className="flex-1" asContainer>
       <Row
@@ -17,7 +17,7 @@ export const EmptyState = () => {
           name="bell.slash.fill"
           size={36}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
       </Row>
