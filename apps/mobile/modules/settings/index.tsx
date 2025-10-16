@@ -8,11 +8,12 @@ import {
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
-import { useColorScheme } from "nativewind";
 import { colors } from "@/constants";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/store";
+import { useTheme } from "@/hooks";
+import { toTitleCase } from "@/lib/utils";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -23,11 +24,13 @@ const handleExternalLink = async (url: string) => {
 
 export const Settings = () => {
   const router = useRouter();
-  const { colorScheme } = useColorScheme();
+  const { theme, resolvedTheme } = useTheme();
   const { workspace } = useCurrentWorkspace();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isOpened, setIsOpened] = useState(false);
   const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
+
+  console.log(theme);
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -49,7 +52,7 @@ export const Settings = () => {
           paddingTop: 48,
           flex: 1,
           backgroundColor:
-            colorScheme === "light" ? colors.white : colors.dark[200],
+            resolvedTheme === "light" ? colors.white : colors.dark[200],
         }}
       >
         <SettingsSection title="Workspace">
@@ -64,7 +67,7 @@ export const Settings = () => {
           <SettingsItem
             title="Appearance"
             asOptions
-            value={colorScheme === "dark" ? "Dark" : "Light"}
+            value={toTitleCase(theme)}
             onPress={() => setIsAppearanceOpened(true)}
           />
         </SettingsSection>
@@ -72,7 +75,7 @@ export const Settings = () => {
           <SettingsItem
             title="Appearance"
             asOptions
-            value={colorScheme === "dark" ? "Dark" : "Light"}
+            value={toTitleCase(theme)}
             onPress={() => setIsAppearanceOpened(true)}
           />
           {externalLinks.map((link) => (
