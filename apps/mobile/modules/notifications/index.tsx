@@ -7,14 +7,12 @@ import {
   NotificationsSkeleton,
   EmptyState,
 } from "./components";
+import { useQueryClient } from "@tanstack/react-query";
+import { notificationKeys } from "@/constants/keys";
 
 export const Notifications = () => {
-  const {
-    data: notifications = [],
-    isPending,
-    refetch,
-    isRefetching,
-  } = useNotifications();
+  const queryClient = useQueryClient();
+  const { data: notifications = [], isPending, refetch } = useNotifications();
 
   if (isPending) {
     return (
@@ -39,8 +37,12 @@ export const Notifications = () => {
       <Header />
       <NotificationList
         notifications={notifications}
-        isLoading={isRefetching}
-        onRefresh={() => refetch()}
+        onRefresh={() => {
+          refetch();
+          queryClient.invalidateQueries({
+            queryKey: notificationKeys.all,
+          });
+        }}
       />
     </SafeContainer>
   );
