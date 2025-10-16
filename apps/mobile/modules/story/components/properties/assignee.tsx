@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Badge, Text, Avatar } from "@/components/ui";
+import { Badge, Text, Avatar, Row } from "@/components/ui";
 import { Story } from "@/modules/stories/types";
 import { Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,7 +28,7 @@ const Item = ({
     <Pressable
       key={member.id}
       onPress={onPress}
-      className="flex-row items-center p-4 gap-2"
+      className="flex-row items-center px-4 py-3.5 gap-2"
     >
       <Avatar
         size="sm"
@@ -62,6 +62,7 @@ export const AssigneeBadge = ({
   story: Story;
   onAssigneeChange: (assigneeId: string | null) => void;
 }) => {
+  const { colorScheme } = useColorScheme();
   const { data: members = [] } = useMembers();
   const eleigibleMembers = members.filter((m) => m.role !== "system");
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,22 +89,49 @@ export const AssigneeBadge = ({
           <Text>{currentAssignee?.username || "No Assignee"}</Text>
         </Badge>
       }
-      snapPoints={["80%"]}
+      snapPoints={["90%"]}
     >
-      <Text className="font-semibold mb-2 text-center">Assignee</Text>
-      {/* Search Input */}
-      <Pressable className="mx-4 mb-4 p-3 bg-gray-50 dark:bg-dark-100 rounded-lg">
+      <Text className="font-semibold mb-3 text-center">Assignee</Text>
+      <Row
+        className="bg-gray-100/60 dark:bg-dark-200 rounded-xl pl-3 pr-2.5 mx-3.5"
+        align="center"
+        gap={2}
+      >
+        <SymbolView
+          name="magnifyingglass"
+          size={20}
+          tintColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
+        />
         <TextInput
+          className="flex-1 h-11 font-medium text-[16px] dark:text-white"
+          placeholder="Search members..."
+          placeholderTextColor={
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          }
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search members..."
-          placeholderTextColor={colors.gray[300]}
-          className="text-base"
-          style={{
-            color: colors.black,
-          }}
+          returnKeyType="search"
+          autoFocus
         />
-      </Pressable>
+        {searchQuery.length > 0 && (
+          <Pressable
+            onPress={() => {
+              setSearchQuery("");
+            }}
+            className="p-1"
+          >
+            <SymbolView
+              name="xmark.circle.fill"
+              size={20}
+              tintColor={
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              }
+            />
+          </Pressable>
+        )}
+      </Row>
 
       {filteredMembers.slice(0, 8).map((member) => (
         <Item

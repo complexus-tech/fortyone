@@ -51,8 +51,8 @@ export const PropertyBottomSheet = ({
         backgroundStyle={{
           backgroundColor:
             colorScheme === "light" ? colors.white : colors.dark[200],
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
         }}
         handleIndicatorStyle={{
           backgroundColor:
