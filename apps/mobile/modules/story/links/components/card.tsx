@@ -21,7 +21,7 @@ export const Card = ({ link }: CardProps) => {
 
   return (
     <Pressable
-      className="active:bg-gray-50 dark:active:bg-dark py-3.5"
+      className="active:bg-gray-50 dark:active:bg-dark py-4"
       onPress={handlePress}
     >
       <Row asContainer align="center" className="flex-1 gap-1.5">
