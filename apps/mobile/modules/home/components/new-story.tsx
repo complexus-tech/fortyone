@@ -13,7 +13,7 @@ export const NewStoryButton = () => {
     <View
       style={{
         position: "absolute",
-        bottom: 95,
+        bottom: 100,
         right: 24,
         width: 60,
         height: 60,

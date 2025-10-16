@@ -10,7 +10,7 @@ export const Wrapper = ({ children, className, ...rest }: WrapperProps) => {
   return (
     <View
       className={cn(
-        "rounded-2xl border bg-gray-50/10 border-gray-100/70 py-3 px-4 shadow-lg shadow-gray-50 dark:border-dark-100/80 dark:bg-dark-200/50 dark:shadow-none",
+        "rounded-2xl border bg-gray-50/10 border-gray-100/70 py-3 px-4 shadow-lg shadow-gray-50 dark:border-dark-100/70 dark:bg-dark-200/60 dark:shadow-none",
         className
       )}
       {...rest}
