@@ -1,14 +1,13 @@
 import { Stack } from "expo-router";
 import {
   QueryClient,
-  QueryClientProvider,
   useQueryClient,
   focusManager,
   onlineManager,
 } from "@tanstack/react-query";
-// import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-// import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { MMKV } from "react-native-mmkv";
 import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
@@ -25,9 +24,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
-// const persister = createAsyncStoragePersister({
-//   storage: AsyncStorage,
-// });
+const storage = new MMKV();
+
+const clientStorage = {
+  setItem: (key: string, value: string) => {
+    storage.set(key, value);
+  },
+  getItem: (key: string) => {
+    const value = storage.getString(key);
+    return value === undefined ? null : value;
+  },
+  removeItem: (key: string) => {
+    storage.delete(key);
+  },
+};
 
 function useReactQueryAppLifecycle() {
   useEffect(() => {
@@ -97,6 +107,7 @@ export default function RootLayout() {
   const { resolvedTheme } = useTheme();
   const iconColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -107,6 +118,10 @@ export default function RootLayout() {
       },
     },
   });
+
+  const persister = createAsyncStoragePersister({
+    storage: clientStorage,
+  });
   const loadAuthData = useAuthStore((state) => state.loadAuthData);
   useReactQueryAppLifecycle();
 
@@ -115,7 +130,10 @@ export default function RootLayout() {
   }, [loadAuthData]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      persistOptions={{ persister }}
+      client={queryClient}
+    >
       <KeyboardProvider>
         <GestureHandlerRootView>
           <BottomSheetModalProvider>
@@ -183,6 +201,6 @@ export default function RootLayout() {
           />
         </GestureHandlerRootView>
       </KeyboardProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
