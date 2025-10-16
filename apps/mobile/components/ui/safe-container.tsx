@@ -4,7 +4,7 @@ import {
 } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native";
 import { colors } from "@/constants/colors";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 export interface ContainerProps extends SafeAreaViewProps {
   children?: React.ReactNode;
@@ -18,13 +18,13 @@ export const SafeContainer = ({
   edges = ["top"],
   ...props
 }: ContainerProps) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
 
   const containerStyle = [
     styles.container,
     isFull && styles.full,
     {
-      backgroundColor: colorScheme === "dark" ? colors.black : colors.white,
+      backgroundColor: resolvedTheme === "dark" ? colors.black : colors.white,
     },
     style,
   ];

@@ -7,7 +7,7 @@ import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { switchWorkspace } from "@/lib/actions/auth";
@@ -37,9 +37,9 @@ const WorkspaceItem = ({
     await Updates.reloadAsync();
   };
 
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const mutedTextColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <HStack spacing={8} onPress={handleSwitchWorkspace}>
       <HStack modifiers={[frame({ width: 36, height: 36 })]}>
@@ -66,7 +66,7 @@ const WorkspaceItem = ({
         <Image
           systemName="checkmark.circle.fill"
           color={
-            colorScheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
           }
           size={20}
         />
@@ -82,11 +82,11 @@ export const WorkspaceSwitcher = ({
   isOpened: boolean;
   setIsOpened: (isOpened: boolean) => void;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const mutedTextColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <BottomSheetModal
       isOpen={isOpened}

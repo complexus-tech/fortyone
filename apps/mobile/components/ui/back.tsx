@@ -3,10 +3,10 @@ import { TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { useColorScheme } from "nativewind";
+import { useTheme } from "@/hooks";
 
 export const Back = () => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const canGoBack = router.canGoBack();
 
@@ -24,7 +24,9 @@ export const Back = () => {
         name="chevron.backward"
         weight="medium"
         size={22}
-        tintColor={colorScheme === "light" ? colors.dark[50] : colors.gray[200]}
+        tintColor={
+          resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
+        }
       />
     </TouchableOpacity>
   );
