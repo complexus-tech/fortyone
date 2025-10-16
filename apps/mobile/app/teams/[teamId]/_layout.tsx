@@ -31,7 +31,7 @@ export default function TeamLayout() {
         <Label>{sprintsTerm}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="objectives" hidden={!objectiveEnabled}>
-        <Icon sf="target" />
+        <Icon sf="square.grid.2x2.fill" />
         <Label>{objectivesTerm}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>

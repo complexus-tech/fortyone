@@ -9,7 +9,6 @@ import { colors } from "@/constants";
 import { cn } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import Octicons from "@expo/vector-icons/Octicons";
 
 const Item = ({
   objective,
@@ -35,14 +34,14 @@ const Item = ({
       )}
     >
       <SymbolView
-        name="target"
+        name="square.grid.2x2.fill"
         size={20}
         tintColor={
           colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
         }
         fallback={
           <Ionicons
-            name="flag"
+            name="grid"
             size={20}
             color={
               colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
@@ -94,7 +93,12 @@ export const ObjectiveBadge = ({
     <PropertyBottomSheet
       trigger={
         <Badge color="tertiary">
-          <Octicons name="goal" size={15} color={iconColor} />
+          <SymbolView
+            name="square.grid.2x2.fill"
+            size={15}
+            tintColor={iconColor}
+            fallback={<Ionicons name="grid" size={15} color={iconColor} />}
+          />
           <Text>{currentObjective?.name || "Add Objective"}</Text>
         </Badge>
       }
