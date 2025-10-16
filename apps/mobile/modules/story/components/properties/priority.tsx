@@ -4,10 +4,10 @@ import { PriorityIcon } from "@/components/icons";
 import { StoryPriority } from "@/modules/stories/types";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
+import { useTheme } from "@/hooks";
 
 const Item = ({
   priority,
@@ -18,7 +18,7 @@ const Item = ({
   onPress: () => void;
   isSelected: boolean;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Pressable
       key={priority}
@@ -31,12 +31,12 @@ const Item = ({
         <SymbolView
           name="checkmark.circle.fill"
           size={20}
-          tintColor={colorScheme === "light" ? colors.black : colors.white}
+          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
           fallback={
             <Ionicons
               name="checkmark-circle"
               size={20}
-              color={colorScheme === "light" ? colors.black : colors.white}
+              color={resolvedTheme === "light" ? colors.black : colors.white}
             />
           }
         />

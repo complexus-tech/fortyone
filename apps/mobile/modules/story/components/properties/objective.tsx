@@ -3,13 +3,12 @@ import { Badge, Text, Row } from "@/components/ui";
 import { Story } from "@/modules/stories/types";
 import { Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { truncateText } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useTheme } from "@/hooks";
 
 const Item = ({
   objective,
@@ -20,7 +19,7 @@ const Item = ({
   onPress: () => void;
   isSelected: boolean;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Pressable
       key={objective.id}
@@ -31,14 +30,14 @@ const Item = ({
         name="square.grid.2x2.fill"
         size={20}
         tintColor={
-          colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+          resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
         }
         fallback={
           <Ionicons
             name="grid"
             size={20}
             color={
-              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
             }
           />
         }
@@ -48,12 +47,12 @@ const Item = ({
         <SymbolView
           name="checkmark.circle.fill"
           size={20}
-          tintColor={colorScheme === "light" ? colors.black : colors.white}
+          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
           fallback={
             <Ionicons
               name="checkmark-circle"
               size={20}
-              color={colorScheme === "light" ? colors.black : colors.white}
+              color={resolvedTheme === "light" ? colors.black : colors.white}
             />
           }
         />
@@ -70,12 +69,12 @@ export const ObjectiveBadge = ({
   onObjectiveChange: (objectiveId: string | null) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const { data: objectives = [] } = useTeamObjectives(story.teamId);
   const [searchQuery, setSearchQuery] = useState("");
   const currentObjective = objectives.find((o) => o.id === story.objectiveId);
   const iconColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const filteredObjectives = useMemo(() => {
     let filtered = objectives;
@@ -117,14 +116,14 @@ export const ObjectiveBadge = ({
           name="magnifyingglass"
           size={20}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
         <TextInput
           className="flex-1 h-11 font-medium text-[16px] dark:text-white"
           placeholder="Search objectives..."
           placeholderTextColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -141,7 +140,9 @@ export const ObjectiveBadge = ({
               name="xmark.circle.fill"
               size={20}
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[200]
               }
             />
           </Pressable>

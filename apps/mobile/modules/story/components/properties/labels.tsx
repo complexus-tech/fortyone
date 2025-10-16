@@ -3,7 +3,6 @@ import { Badge, Text, Row } from "@/components/ui";
 import { Story } from "@/modules/stories/types";
 import { Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
@@ -11,6 +10,7 @@ import { Dot } from "@/components/icons";
 import { useLabels } from "@/modules/labels/hooks/use-labels";
 import { useCreateLabelMutation } from "@/modules/labels/hooks/use-create-label-mutation";
 import { generateRandomColor } from "@/lib/utils/colors";
+import { useTheme } from "@/hooks";
 import type { Label } from "@/types";
 
 const Item = ({
@@ -22,7 +22,7 @@ const Item = ({
   onPress: () => void;
   isSelected: boolean;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Pressable
       key={label.id}
@@ -35,12 +35,12 @@ const Item = ({
         <SymbolView
           name="checkmark.circle.fill"
           size={20}
-          tintColor={colorScheme === "light" ? colors.black : colors.white}
+          tintColor={resolvedTheme === "light" ? colors.black : colors.white}
           fallback={
             <Ionicons
               name="checkmark-circle"
               size={20}
-              color={colorScheme === "light" ? colors.black : colors.white}
+              color={resolvedTheme === "light" ? colors.black : colors.white}
             />
           }
         />
@@ -56,12 +56,12 @@ export const LabelsBadge = ({
   story: Story;
   onLabelsChange: (labelIds: string[]) => void;
 }) => {
-  const { colorScheme } = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: labels = [] } = useLabels();
   const { mutateAsync: createLabel, isPending } = useCreateLabelMutation();
   const iconColor =
-    colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   // Filter labels based on search query and limit to 8
   const filteredLabels = useMemo(() => {
@@ -130,14 +130,14 @@ export const LabelsBadge = ({
           name="magnifyingglass"
           size={20}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
         <TextInput
           className="flex-1 h-11 font-medium text-[16px] dark:text-white"
           placeholder="Search labels..."
           placeholderTextColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -154,7 +154,9 @@ export const LabelsBadge = ({
               name="xmark.circle.fill"
               size={20}
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[200]
               }
             />
           </Pressable>
