@@ -59,7 +59,11 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       <Logo asIcon className="h-10" />
       {isSent ? (
         <>
-          <Text as="h1" className="mb-2 mt-10 text-4xl" fontWeight="semibold">
+          <Text
+            as="h1"
+            className="mb-2 mt-10 text-3xl md:text-4xl"
+            fontWeight="semibold"
+          >
             Check your email
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
@@ -111,7 +115,11 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
         </>
       ) : (
         <>
-          <Text as="h1" className="mb-4 mt-10 text-4xl" fontWeight="semibold">
+          <Text
+            as="h1"
+            className="mb-4 mt-10 text-3xl md:text-4xl"
+            fontWeight="semibold"
+          >
             {page === "login"
               ? "Sign into your account"
               : "Create your account"}
