@@ -27,8 +27,9 @@ export const StoryOptionsButton = ({
         onPress={() => setIsOpened(true)}
       >
         <SymbolView
-          name="slider.horizontal.3"
-          weight="medium"
+          name="line.3.horizontal.decrease"
+          size={25}
+          weight="semibold"
           tintColor={
             colorScheme === "light" ? colors.dark[50] : colors.gray[200]
           }
