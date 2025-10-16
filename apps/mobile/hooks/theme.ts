@@ -1,9 +1,10 @@
 import { useColorScheme } from "nativewind";
 import { useState, useEffect, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MMKV } from "react-native-mmkv";
 
 type Theme = "light" | "dark" | "system";
 
+const storage = new MMKV();
 const THEME_STORAGE_KEY = "app-theme";
 
 export function useTheme() {
@@ -12,8 +13,8 @@ export function useTheme() {
 
   // Load theme from storage on mount
   useEffect(() => {
-    const loadTheme = async () => {
-      const storedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+    const loadTheme = () => {
+      const storedTheme = storage.getString(THEME_STORAGE_KEY);
       if (storedTheme && ["light", "dark", "system"].includes(storedTheme)) {
         const savedTheme = storedTheme as Theme;
         setTheme(savedTheme);
@@ -32,14 +33,10 @@ export function useTheme() {
   }, [theme, setColorScheme]);
 
   const changeTheme = useCallback(
-    async (newTheme: Theme) => {
+    (newTheme: Theme) => {
       setTheme(newTheme);
       setColorScheme(newTheme);
-      try {
-        await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
-      } catch (error) {
-        console.error("Failed to save theme:", error);
-      }
+      storage.set(THEME_STORAGE_KEY, newTheme);
     },
     [setColorScheme]
   );
