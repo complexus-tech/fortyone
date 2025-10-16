@@ -4,6 +4,7 @@ import { SafeContainer } from "@/components/ui";
 import { Header } from "./components/header";
 import { Overview } from "./components/overview";
 import { Teams } from "./components/teams";
+import { NewStoryButton } from "./components/new-story";
 
 export const Home = () => {
   return (
@@ -13,6 +14,7 @@ export const Home = () => {
         <Overview />
         <Teams />
       </ScrollView>
+      <NewStoryButton />
     </SafeContainer>
   );
 };
