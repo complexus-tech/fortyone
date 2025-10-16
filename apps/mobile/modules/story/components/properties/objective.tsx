@@ -109,7 +109,7 @@ export const ObjectiveBadge = ({
     >
       <Text className="font-semibold mb-3 text-center">Objective</Text>
       <Row
-        className="bg-gray-100/60 dark:bg-dark-100 rounded-xl pl-3 pr-2.5 mx-3.5"
+        className="bg-gray-100/60 dark:bg-dark-100 rounded-xl pl-3 pr-2.5 mx-3.5 mb-1"
         align="center"
         gap={2}
       >

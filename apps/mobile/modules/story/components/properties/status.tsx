@@ -73,7 +73,7 @@ export const StatusBadge = ({
       }
       snapPoints={["35%", "70%", "90%"]}
     >
-      <Text className="font-semibold mb-3 text-center">Status</Text>
+      <Text className="font-semibold mb-1 text-center">Status</Text>
       {statuses.map((status) => (
         <Item
           key={status.id}
