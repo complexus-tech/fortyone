@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Pressable } from "react-native";
 import { StoriesOptionsSheet } from "@/components/ui";
-import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
+import { Host, HStack, Image } from "@expo/ui/swift-ui";
+import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 type StoryOptionsButtonProps = {
   viewOptions: StoriesViewOptions;
@@ -22,19 +22,28 @@ export const StoryOptionsButton = ({
 
   return (
     <>
-      <Pressable
-        className="p-2 rounded-xl active:bg-gray-50 dark:active:bg-dark-300"
-        onPress={() => setIsOpened(true)}
-      >
-        <SymbolView
-          name="line.3.horizontal.decrease"
-          size={25}
-          weight="semibold"
-          tintColor={
-            resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
-          }
-        />
-      </Pressable>
+      <Host matchContents style={{ width: 40, height: 40 }}>
+        <HStack
+          modifiers={[
+            frame({ width: 40, height: 40 }),
+            glassEffect({
+              glass: {
+                interactive: true,
+                variant: "regular",
+              },
+            }),
+          ]}
+          onPress={() => setIsOpened(true)}
+        >
+          <Image
+            systemName="line.3.horizontal.decrease"
+            size={20}
+            color={
+              resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
+            }
+          />
+        </HStack>
+      </Host>
       <StoriesOptionsSheet
         isOpened={isOpened}
         setIsOpened={setIsOpened}
