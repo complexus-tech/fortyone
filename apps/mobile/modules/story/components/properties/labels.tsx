@@ -10,6 +10,7 @@ import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { Dot } from "@/components/icons";
 import { useLabels } from "@/modules/labels/hooks/use-labels";
 import { useCreateLabelMutation } from "@/modules/labels/hooks/use-create-label-mutation";
+import { generateRandomColor } from "@/lib/utils/colors";
 import type { Label } from "@/types";
 
 const Item = ({
@@ -89,9 +90,12 @@ export const LabelsBadge = ({
   };
 
   const handleCreateLabel = () => {
+    const usedColors = (labels as Label[]).map((label: Label) => label.color);
+    const color = generateRandomColor({ exclude: usedColors });
+
     createLabel({
       name: searchQuery,
-      color: "red",
+      color,
       teamId: story.teamId,
     }).then((response) => {
       if (response.data) {
