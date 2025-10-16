@@ -112,7 +112,6 @@ export const AssigneeBadge = ({
           }
           value={searchQuery}
           onChangeText={setSearchQuery}
-          returnKeyType="search"
           autoFocus
         />
         {searchQuery.length > 0 && (
