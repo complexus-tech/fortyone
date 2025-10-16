@@ -5,6 +5,8 @@ import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useColorScheme } from "nativewind";
 import { SFSymbol } from "expo-symbols";
+import { Appearance } from "react-native";
+import { useTheme } from "@/hooks";
 
 const ThemeItem = ({
   isActive,
@@ -55,6 +57,8 @@ export const ThemeSwitcher = ({
 }) => {
   const { colorScheme, setColorScheme } = useColorScheme();
 
+  const { theme: currentTheme, setTheme } = useTheme();
+
   const themes: {
     label: string;
     value: "light" | "dark" | "system";
@@ -87,15 +91,15 @@ export const ThemeSwitcher = ({
           }
           size={14}
         >
-          Appearance
+          {`Appearance: ${currentTheme}`}
         </Text>
       </HStack>
       {themes.map((theme) => (
         <ThemeItem
           key={theme.value}
-          isActive={theme.value === colorScheme}
+          isActive={theme.value === currentTheme}
           theme={theme}
-          onPress={() => setColorScheme(theme.value)}
+          onPress={() => setTheme(theme.value)}
         />
       ))}
     </BottomSheetModal>
