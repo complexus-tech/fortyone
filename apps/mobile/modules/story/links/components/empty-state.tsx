@@ -23,7 +23,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
         justify="center"
         className="size-18 rounded-full bg-gray-50 dark:bg-dark-200 mb-6"
       >
-        <SymbolView name="link" size={36} tintColor={iconColor} />
+        <SymbolView name="grid" size={36} tintColor={iconColor} />
       </Row>
       <Text fontSize="xl" fontWeight="semibold" className="mb-4 text-center">
         {title || defaultTitle}

@@ -97,7 +97,6 @@ export const AssigneeBadge = ({
       snapPoints={["25%", "70%"]}
     >
       <Text className="font-semibold mb-2 text-center">Assignee</Text>
-
       {/* Search Input */}
       <Pressable className="mx-4 mb-4 p-3 bg-gray-50 dark:bg-dark-100 rounded-lg">
         <TextInput
