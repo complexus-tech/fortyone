@@ -40,7 +40,7 @@ export const Header = ({
     <Col className="mb-2" asContainer>
       <Row justify="between" align="center">
         <Row className="flex-1">
-          <Text fontSize="2xl" fontWeight="semibold">
+          <Text fontSize="3xl" fontWeight="semibold">
             Search
           </Text>
         </Row>
@@ -71,7 +71,6 @@ export const Header = ({
             >
               <HStack spacing={4}>
                 <SwiftUIText
-                  size={15}
                   color={
                     resolvedTheme === "light"
                       ? colors.dark.DEFAULT
@@ -115,7 +114,7 @@ export const Header = ({
           }
         />
         <TextInput
-          className="flex-1 h-12 font-medium text-[16px] dark:text-white"
+          className="flex-1 h-12 font-medium text-[17px] dark:text-white"
           placeholder={`Search ${getTermDisplay("storyTerm", {
             variant: "plural",
           })} and ${getTermDisplay("objectiveTerm", {

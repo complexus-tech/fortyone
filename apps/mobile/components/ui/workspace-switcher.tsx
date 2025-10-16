@@ -42,22 +42,22 @@ const WorkspaceItem = ({
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
     <HStack spacing={8} onPress={handleSwitchWorkspace}>
-      <HStack modifiers={[frame({ width: 36, height: 36 })]}>
+      <HStack modifiers={[frame({ width: 38, height: 38 })]}>
         <Avatar
           style={{
             backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
           }}
           name={workspace.name}
-          className="size-[36px]"
+          className="size-[38px]"
           rounded="xl"
           src={workspace.avatarUrl}
         />
       </HStack>
       <VStack alignment="leading">
-        <Text lineLimit={1} size={14} weight="medium">
+        <Text lineLimit={1} size={16} weight="medium">
           {workspace.name}
         </Text>
-        <Text size={13.5} weight="medium" color={mutedTextColor}>
+        <Text size={14} weight="medium" color={mutedTextColor}>
           {workspace.userRole}
         </Text>
       </VStack>
@@ -94,7 +94,7 @@ export const WorkspaceSwitcher = ({
       spacing={18}
     >
       <HStack>
-        <Text weight="semibold" color={mutedTextColor} size={13.5}>
+        <Text weight="semibold" color={mutedTextColor} size={14}>
           Switch Workspace
         </Text>
       </HStack>

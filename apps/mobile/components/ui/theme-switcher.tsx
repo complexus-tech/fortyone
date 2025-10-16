@@ -29,7 +29,7 @@ const ThemeItem = ({
         modifiers={[frame({ width: 30, height: 30 })]}
       />
       <VStack alignment="leading">
-        <Text lineLimit={1} size={15} weight="medium">
+        <Text lineLimit={1} size={16}>
           {theme.label}
         </Text>
       </VStack>

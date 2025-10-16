@@ -26,7 +26,7 @@ export const Description = ({ story }: { story: DetailedStory }) => {
     <Row asContainer className="mb-5">
       <RenderHtml
         baseStyle={{
-          fontSize: 16,
+          fontSize: 16.5,
           fontWeight: 500,
           lineHeight: 24,
           opacity: 0.7,

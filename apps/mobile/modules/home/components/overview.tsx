@@ -49,7 +49,7 @@ export const Overview = () => {
 
   return (
     <Col asContainer>
-      <Text color="muted" className="mb-4">
+      <Text color="muted" fontSize="lg" className="mb-4">
         Here&apos;s what&apos;s happening with your{" "}
         {getTermDisplay("storyTerm", { variant: "plural" })}.
       </Text>
