@@ -1,16 +1,20 @@
 import React from "react";
-import { ScrollView } from "react-native";
 import { SafeContainer } from "@/components/ui";
 import { Header } from "./components/header";
 import { useNotifications } from "./hooks/use-notifications";
 import {
-  NotificationCard,
+  NotificationList,
   NotificationsSkeleton,
   EmptyState,
 } from "./components";
 
 export const Notifications = () => {
-  const { data: notifications = [], isPending } = useNotifications();
+  const {
+    data: notifications = [],
+    isPending,
+    refetch,
+    isRefetching,
+  } = useNotifications();
 
   if (isPending) {
     return (
@@ -33,18 +37,11 @@ export const Notifications = () => {
   return (
     <SafeContainer isFull>
       <Header />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      >
-        {notifications.map((notification, index) => (
-          <NotificationCard
-            key={notification.id}
-            {...notification}
-            index={index}
-          />
-        ))}
-      </ScrollView>
+      <NotificationList
+        notifications={notifications}
+        isLoading={isRefetching}
+        onRefresh={() => refetch()}
+      />
     </SafeContainer>
   );
 };

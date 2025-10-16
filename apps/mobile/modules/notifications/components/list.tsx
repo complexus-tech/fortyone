@@ -3,6 +3,8 @@ import { View, FlatList, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationCard } from "./card";
 import type { AppNotification } from "../types";
+import { useColorScheme } from "nativewind";
+import { colors } from "@/constants/colors";
 
 type NotificationListProps = {
   notifications: AppNotification[];
@@ -16,7 +18,7 @@ export const NotificationList = ({
   onRefresh,
 }: NotificationListProps) => {
   const insets = useSafeAreaInsets();
-
+  const { colorScheme } = useColorScheme();
   const renderNotification = ({
     item,
     index,
@@ -35,8 +37,10 @@ export const NotificationList = ({
           <RefreshControl
             refreshing={isLoading}
             onRefresh={onRefresh}
-            tintColor="#007AFF"
-            colors={["#007AFF"]}
+            tintColor={
+              colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            }
+            size={20}
           />
         }
         showsVerticalScrollIndicator={false}
