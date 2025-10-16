@@ -9,6 +9,7 @@ import { colors } from "@/constants";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 import { Dot } from "@/components/icons";
 import { useLabels } from "@/modules/labels/hooks/use-labels";
+import { useCreateLabelMutation } from "@/modules/labels/hooks/use-create-label-mutation";
 import type { Label } from "@/types";
 
 const Item = ({
@@ -57,6 +58,7 @@ export const LabelsBadge = ({
   const { colorScheme } = useColorScheme();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: labels = [] } = useLabels();
+  const { mutateAsync: createLabel, isPending } = useCreateLabelMutation();
   const iconColor =
     colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
@@ -87,8 +89,17 @@ export const LabelsBadge = ({
   };
 
   const handleCreateLabel = () => {
-    // TODO: Implement create label functionality
-    console.log("Create label:", searchQuery);
+    createLabel({
+      name: searchQuery,
+      color: "red",
+      teamId: story.teamId,
+    }).then((response) => {
+      if (response.data) {
+        // Auto-select the new label
+        onLabelsChange([...(story.labels || []), response.data.id]);
+        setSearchQuery(""); // Clear search
+      }
+    });
   };
 
   return (
@@ -149,15 +160,16 @@ export const LabelsBadge = ({
       {filteredLabels.length === 0 && searchQuery && (
         <Pressable
           onPress={handleCreateLabel}
+          disabled={isPending}
           className="flex-row items-center p-4 gap-2"
         >
           <SymbolView
             name="plus.circle.fill"
             size={20}
-            tintColor={colors.gray.DEFAULT}
+            tintColor={isPending ? colors.gray[300] : colors.gray.DEFAULT}
           />
           <Text className="flex-1">
-            Create new label: &ldquo;{searchQuery}&rdquo;
+            {isPending ? "Creating..." : `Create new label: "${searchQuery}"`}
           </Text>
         </Pressable>
       )}
