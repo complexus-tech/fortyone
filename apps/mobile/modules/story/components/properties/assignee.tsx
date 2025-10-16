@@ -135,14 +135,22 @@ export const AssigneeBadge = ({
         )}
       </Row>
 
-      {filteredMembers.slice(0, 8).map((member) => (
-        <Item
-          key={member.id}
-          member={member}
-          onPress={() => onAssigneeChange(member.id)}
-          isSelected={story.assigneeId === member.id}
-        />
-      ))}
+      {filteredMembers.slice(0, 8).length > 0 ? (
+        filteredMembers
+          .slice(0, 8)
+          .map((member) => (
+            <Item
+              key={member.id}
+              member={member}
+              onPress={() => onAssigneeChange(member.id)}
+              isSelected={story.assigneeId === member.id}
+            />
+          ))
+      ) : (
+        <Text className="text-center py-8 px-4" color="muted">
+          No members found matching &quot;{searchQuery}&quot;
+        </Text>
+      )}
     </PropertyBottomSheet>
   );
 };
