@@ -30,8 +30,6 @@ export const Settings = () => {
   const [isOpened, setIsOpened] = useState(false);
   const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
 
-  console.log(theme);
-
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
