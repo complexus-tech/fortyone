@@ -93,7 +93,7 @@ export const AssigneeBadge = ({
     >
       <Text className="font-semibold mb-3 text-center">Assignee</Text>
       <Row
-        className="bg-gray-100/60 dark:bg-dark-200 rounded-xl pl-3 pr-2.5 mx-3.5"
+        className="bg-gray-100/60 dark:bg-dark-50 rounded-xl pl-3 pr-2.5 mx-3.5"
         align="center"
         gap={2}
       >
@@ -101,14 +101,14 @@ export const AssigneeBadge = ({
           name="magnifyingglass"
           size={20}
           tintColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
         />
         <TextInput
           className="flex-1 h-11 font-medium text-[16px] dark:text-white"
           placeholder="Search members..."
           placeholderTextColor={
-            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+            colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
           }
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -126,7 +126,7 @@ export const AssigneeBadge = ({
               name="xmark.circle.fill"
               size={20}
               tintColor={
-                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
+                colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
               }
             />
           </Pressable>
