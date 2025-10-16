@@ -68,6 +68,12 @@ export const Settings = () => {
             value={toTitleCase(theme)}
             onPress={() => setIsAppearanceOpened(true)}
           />
+          <SettingsItem
+            title="Manage Account"
+            onPress={() => {
+              router.push("/account");
+            }}
+          />
         </SettingsSection>
         <SettingsSection title="Support & Info">
           {externalLinks.map((link) => (
@@ -80,12 +86,6 @@ export const Settings = () => {
           ))}
         </SettingsSection>
         <SettingsSection title="Account">
-          <SettingsItem
-            title="Manage Account"
-            onPress={() => {
-              router.push("/account");
-            }}
-          />
           <SettingsItem
             title="Log Out"
             destructive
