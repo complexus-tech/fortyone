@@ -7,31 +7,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants";
-import { cn } from "@/lib/utils";
 import { PropertyBottomSheet } from "./property-bottom-sheet";
 
 const Item = ({
   priority,
   onPress,
   isSelected,
-  isLast,
 }: {
   priority: StoryPriority;
   onPress: () => void;
   isSelected: boolean;
-  isLast: boolean;
 }) => {
   const { colorScheme } = useColorScheme();
   return (
     <Pressable
       key={priority}
       onPress={onPress}
-      className={cn(
-        "flex-row items-center p-4 border-b border-gray-100 dark:border-dark-100 gap-2",
-        {
-          "border-b-0": isLast,
-        }
-      )}
+      className="flex-row items-center px-4.5 py-4 gap-2"
     >
       <PriorityIcon size={20} priority={priority} />
       <Text className="flex-1">{priority}</Text>
@@ -76,16 +68,15 @@ export const PriorityBadge = ({
           <Text>{priority || "No Priority"}</Text>
         </Badge>
       }
-      snapPoints={["25%", "50%"]}
+      snapPoints={["35%"]}
     >
-      <Text className="font-semibold mb-2 text-center">Priority</Text>
-      {priorities.map((p, idx) => (
+      <Text className="font-semibold text-center">Priority</Text>
+      {priorities.map((p) => (
         <Item
           key={p}
           priority={p}
           onPress={() => onPriorityChange(p)}
           isSelected={priority === p}
-          isLast={idx === priorities.length - 1}
         />
       ))}
     </PropertyBottomSheet>
