@@ -25,7 +25,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
         className="size-18 rounded-full bg-gray-50 mb-6 dark:bg-dark-300"
       >
         <SymbolView
-          name="trash"
+          name="square.grid.2x2.fill"
           size={36}
           tintColor={
             colorScheme === "light" ? colors.gray.DEFAULT : colors.gray[200]

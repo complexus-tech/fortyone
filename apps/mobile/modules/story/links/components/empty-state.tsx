@@ -21,7 +21,7 @@ export const EmptyState = ({ title, message }: EmptyStateProps) => {
       <Row
         align="center"
         justify="center"
-        className="size-18 rounded-full bg-gray-50 dark:bg-dark-200 mb-6"
+        className="size-18 rounded-full bg-gray-50 dark:bg-dark-300 mb-6"
       >
         <SymbolView name="grid" size={36} tintColor={iconColor} />
       </Row>
