@@ -84,10 +84,8 @@ export const LabelsBadge = ({
     const isSelected = currentLabelIds.includes(labelId);
 
     if (isSelected) {
-      // Remove label
       onLabelsChange(currentLabelIds.filter((id) => id !== labelId));
     } else {
-      // Add label
       onLabelsChange([...currentLabelIds, labelId]);
     }
   };
