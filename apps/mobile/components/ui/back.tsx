@@ -19,10 +19,10 @@ export const Back = () => {
   };
 
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
+    <Host matchContents style={{ width: 45, height: 45 }}>
       <HStack
         modifiers={[
-          frame({ width: 40, height: 40 }),
+          frame({ width: 45, height: 45 }),
           glassEffect({
             glass: {
               interactive: true,

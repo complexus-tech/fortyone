@@ -40,20 +40,19 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
         ) : (
           <HStack
             modifiers={[
-              frame({ width: 40, height: 40 }),
+              frame({ width: 45, height: 45 }),
               glassEffect({
                 glass: {
                   variant: "regular",
                 },
               }),
-              cornerRadius(18),
             ]}
           >
             <Image
               systemName="ellipsis"
               size={20}
               color={
-                resolvedTheme === "light" ? colors.dark[50] : colors.gray[300]
+                resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
               }
             />
           </HStack>
