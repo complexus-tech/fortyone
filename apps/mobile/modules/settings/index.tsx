@@ -69,6 +69,12 @@ export const Settings = () => {
           />
         </SettingsSection>
         <SettingsSection title="Support & Info">
+          <SettingsItem
+            title="Appearance"
+            asOptions
+            value={colorScheme === "dark" ? "Dark" : "Light"}
+            onPress={() => setIsAppearanceOpened(true)}
+          />
           {externalLinks.map((link) => (
             <SettingsItem
               title={link.title}

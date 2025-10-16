@@ -1,32 +1,23 @@
 import { useColorScheme } from "nativewind";
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 type Theme = "light" | "dark" | "system";
 
 export function useTheme() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const [theme, setTheme] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(
-    colorScheme || "light"
+
+  const changeTheme = useCallback(
+    (newTheme: Theme) => {
+      setTheme(newTheme);
+      setColorScheme(newTheme);
+    },
+    [setColorScheme]
   );
-
-  useEffect(() => {
-    if (theme === "system") {
-      setResolvedTheme(colorScheme);
-      setColorScheme("system");
-    } else {
-      setColorScheme(theme);
-      setResolvedTheme(theme);
-    }
-  }, [theme, colorScheme, setColorScheme]);
-
-  const changeTheme = useCallback((newTheme: Theme) => {
-    setTheme(newTheme);
-  }, []);
 
   return {
     theme,
-    resolvedTheme,
+    resolvedTheme: colorScheme,
     setTheme: changeTheme,
   };
 }
