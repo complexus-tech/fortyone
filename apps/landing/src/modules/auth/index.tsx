@@ -125,15 +125,23 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               : "Create your account"}
           </Text>
           {page === "login" ? (
-            <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
-              Don&apos;t have an account?{" "}
-              <Link
-                className="text-primary underline dark:text-white"
-                href="/signup"
-              >
-                Create one
-              </Link>
-            </Text>
+            <>
+              {isMobile ? (
+                <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
+                  Welcome back! sign in to your account to continue.
+                </Text>
+              ) : (
+                <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    className="text-primary underline dark:text-white"
+                    href="/signup"
+                  >
+                    Create one
+                  </Link>
+                </Text>
+              )}
+            </>
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
