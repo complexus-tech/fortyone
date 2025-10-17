@@ -63,7 +63,7 @@ export const SectionWithLoadMore = ({
 
   const renderHeader = () => (
     <Text
-      className="px-4 pt-2 pb-1"
+      className="px-4.5 pt-2 pb-1"
       fontSize="sm"
       fontWeight="semibold"
       color="muted"

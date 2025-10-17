@@ -94,7 +94,7 @@ const RenderApp = () => {
             sheetAllowedDetents: [0.95],
           }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="new"
           options={{
             presentation: "formSheet",
@@ -107,7 +107,7 @@ const RenderApp = () => {
             sheetInitialDetentIndex: 0,
             sheetAllowedDetents: [0.95],
           }}
-        />
+        /> */}
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>

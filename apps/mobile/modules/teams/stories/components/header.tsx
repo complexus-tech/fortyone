@@ -24,7 +24,7 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
 
   return (
-    <Row className="mb-3" asContainer align="center" justify="between">
+    <Row className="mb-4" asContainer align="center" justify="between">
       <Back />
       <Text fontSize="2xl" fontWeight="semibold">
         {truncateText(team?.name ?? "", 12)} /{" "}
