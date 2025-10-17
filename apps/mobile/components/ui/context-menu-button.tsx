@@ -40,7 +40,7 @@ const Menu = ({ actions, children }: ContextMenuButtonProps) => {
         ) : (
           <HStack
             modifiers={[
-              frame({ width: 45, height: 45 }),
+              frame({ width: 40, height: 40 }),
               glassEffect({
                 glass: {
                   variant: "regular",

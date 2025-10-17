@@ -20,7 +20,7 @@ export const StatCard = ({ count, label, icon, iconColor }: StatCardProps) => {
           <Text fontSize="2xl" fontWeight="semibold">
             {count || 0}
           </Text>
-          <Text color="muted" fontSize="md" className="opacity-80">
+          <Text color="muted" className="opacity-80">
             {label}
           </Text>
         </Col>

@@ -77,6 +77,7 @@ export const Header = ({
                       : colors.gray[200]
                   }
                   weight="medium"
+                  size={16}
                 >
                   {getTermDisplay(
                     searchType === "stories" ? "storyTerm" : "objectiveTerm",

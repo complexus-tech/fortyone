@@ -12,7 +12,7 @@ const textVariants = cva("text-dark dark:text-white", {
     color: {
       primary: "text-primary dark:text-primary",
       secondary: "text-secondary dark:text-secondary",
-      muted: "text-gray dark:text-gray-200/80",
+      muted: "text-gray dark:text-gray-200/70",
       danger: "text-danger dark:text-danger",
       warning: "text-warning dark:text-warning",
       info: "text-info dark:text-info",
@@ -22,12 +22,12 @@ const textVariants = cva("text-dark dark:text-white", {
     },
     fontSize: {
       xs: "text-sm",
-      sm: "text-[16px]",
+      sm: "text-[15px]",
       md: "text-[17px]",
       lg: "text-[18px]",
       xl: "text-[20px]",
-      "2xl": "text-[28px]",
-      "3xl": "text-[40px]",
+      "2xl": "text-[26px]",
+      "3xl": "text-[38px]",
       "4xl": "text-[36px]",
     },
     fontWeight: {

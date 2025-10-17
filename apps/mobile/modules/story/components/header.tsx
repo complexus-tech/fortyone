@@ -158,9 +158,9 @@ export const Header = () => {
   return (
     <Row className="mb-4" justify="between" align="center" asContainer>
       <Back />
-      <Text fontSize="2xl" fontWeight="semibold">
+      <Text fontSize="md" fontWeight="semibold">
         {team?.code}-
-        <Text fontSize="2xl" fontWeight="semibold" color="muted">
+        <Text fontSize="md" fontWeight="semibold" color="muted">
           {story?.sequenceId}
         </Text>
       </Text>

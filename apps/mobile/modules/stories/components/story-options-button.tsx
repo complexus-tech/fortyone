@@ -22,10 +22,10 @@ export const StoryOptionsButton = ({
 
   return (
     <>
-      <Host matchContents style={{ width: 45, height: 45 }}>
+      <Host matchContents style={{ width: 40, height: 40 }}>
         <HStack
           modifiers={[
-            frame({ width: 45, height: 45 }),
+            frame({ width: 40, height: 40 }),
             glassEffect({
               glass: {
                 interactive: true,

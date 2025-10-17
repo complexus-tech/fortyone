@@ -51,7 +51,7 @@ export const Header = () => {
   };
 
   return (
-    <Row justify="between" align="center" asContainer className="mb-2">
+    <Row justify="between" align="center" asContainer className="mb-3">
       <Text fontSize="3xl" fontWeight="semibold">
         Inbox
       </Text>

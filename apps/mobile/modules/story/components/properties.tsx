@@ -55,6 +55,7 @@ export const Properties = ({ story }: { story: Story }) => {
             story={story}
             onAssigneeChange={(assigneeId) => handleUpdate({ assigneeId })}
           />
+          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
           {sprintsEnabled && (
             <SprintBadge
               story={story}
@@ -67,7 +68,6 @@ export const Properties = ({ story }: { story: Story }) => {
               onObjectiveChange={(objectiveId) => handleUpdate({ objectiveId })}
             />
           )}
-          <LabelsBadge story={story} onLabelsChange={onLabelsChange} />
           <StartDateBadge
             story={story}
             onStartDateChange={(startDate) =>

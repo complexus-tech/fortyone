@@ -24,7 +24,7 @@ export const Header = () => {
         >
           <Avatar
             name={user?.fullName || user?.username}
-            className="size-[42px]"
+            className="size-[40px]"
             color="primary"
             src={user?.avatarUrl}
           />
