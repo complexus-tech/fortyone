@@ -1,7 +1,6 @@
 import React from "react";
-import { View } from "react-native";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 export const NewStoryButton = () => {
@@ -19,28 +18,27 @@ export const NewStoryButton = () => {
         height: 60,
       }}
     >
-      <Host
-        matchContents
+      <Pressable
+        onPress={handleNewStory}
         style={{
-          width: 50,
-          height: 50,
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 4,
+          },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          elevation: 6,
         }}
       >
-        <HStack
-          modifiers={[
-            frame({ width: 60, height: 60 }),
-            glassEffect({
-              glass: {
-                interactive: true,
-                variant: "regular",
-              },
-            }),
-          ]}
-          onPress={handleNewStory}
-        >
-          <Image systemName="plus" size={23} />
-        </HStack>
-      </Host>
+        <Ionicons name="add" size={23} color="black" />
+      </Pressable>
     </View>
   );
 };

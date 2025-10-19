@@ -1,8 +1,8 @@
 import { Back, Badge, Row, Text } from "@/components/ui";
 import React from "react";
 import { colors } from "@/constants";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export const Header = () => {
   return (
@@ -13,22 +13,26 @@ export const Header = () => {
         <Text>Mobile</Text>
       </Badge>
 
-      <Host matchContents style={{ width: 40, height: 40 }}>
-        <HStack
-          modifiers={[
-            frame({ width: 40, height: 40 }),
-            glassEffect({
-              glass: {
-                interactive: true,
-                variant: "regular",
-                tint: colors.primary,
-              },
-            }),
-          ]}
-        >
-          <Image systemName="checkmark" size={18} />
-        </HStack>
-      </Host>
+      <Pressable
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}
+      >
+        <Ionicons name="checkmark" size={18} color={colors.primary} />
+      </Pressable>
     </Row>
   );
 };

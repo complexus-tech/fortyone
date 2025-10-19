@@ -3,8 +3,8 @@ import { StoriesOptionsSheet } from "@/components/ui";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
 import type { StoriesViewOptions } from "@/types/stories-view-options";
-import { Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Host, HStack, Image } from "@expo/ui/swift-ui";
+import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 type StoryOptionsButtonProps = {
   viewOptions: StoriesViewOptions;
@@ -22,34 +22,28 @@ export const StoryOptionsButton = ({
 
   return (
     <>
-      <Pressable
-        onPress={() => setIsOpened(true)}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor:
-            resolvedTheme === "light"
-              ? "rgba(255, 255, 255, 0.8)"
-              : "rgba(0, 0, 0, 0.8)",
-          justifyContent: "center",
-          alignItems: "center",
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}
-      >
-        <Ionicons
-          name="filter"
-          size={20}
-          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
-        />
-      </Pressable>
+      <Host matchContents style={{ width: 40, height: 40 }}>
+        <HStack
+          modifiers={[
+            frame({ width: 40, height: 40 }),
+            glassEffect({
+              glass: {
+                interactive: true,
+                variant: "regular",
+              },
+            }),
+          ]}
+          onPress={() => setIsOpened(true)}
+        >
+          <Image
+            systemName="line.3.horizontal.decrease"
+            size={20}
+            color={
+              resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
+            }
+          />
+        </HStack>
+      </Host>
       <StoriesOptionsSheet
         isOpened={isOpened}
         setIsOpened={setIsOpened}

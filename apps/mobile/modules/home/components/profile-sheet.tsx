@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import { Avatar, BottomSheetModal, WorkspaceSwitcher } from "@/components/ui";
 import { colors } from "@/constants";
-import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
+import { Pressable, View, Text as RNText, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useCurrentWorkspace } from "@/lib/hooks";
-import { background, cornerRadius, frame } from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "@/hooks";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toTitleCase } from "@/lib/utils";
 import { useRouter } from "expo-router";
 import { hexToRgba } from "@/lib/utils/colors";
 import { useAuthStore } from "@/store";
-import { Alert } from "react-native";
 
 export const ProfileSheet = ({
   isOpened,
@@ -51,38 +50,77 @@ export const ProfileSheet = ({
   return (
     <>
       <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
-        <Text size={14} weight="medium" color={mutedTextColor}>
+        <RNText
+          style={{
+            fontSize: 14,
+            fontWeight: "500",
+            color: mutedTextColor,
+          }}
+        >
           {`${user?.email}`}
-        </Text>
-        <HStack spacing={8} onPress={() => router.push("/settings")}>
-          <Image
-            systemName="gear"
-            color={
-              resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
-            }
-            modifiers={[
-              frame({ width: 44, height: 44 }),
-              background(backgroundColor),
-              cornerRadius(12),
-            ]}
-            size={24}
-          />
-          <VStack alignment="leading" spacing={2}>
-            <Text size={14} weight="semibold" lineLimit={1}>
+        </RNText>
+        <Pressable
+          onPress={() => router.push("/settings")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            gap: 8,
+          }}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              backgroundColor: backgroundColor,
+              borderRadius: 12,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name="settings"
+              size={24}
+              color={
+                resolvedTheme === "light"
+                  ? colors.gray.DEFAULT
+                  : colors.gray[200]
+              }
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <RNText
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: resolvedTheme === "light" ? "black" : "white",
+              }}
+            >
               Settings
-            </Text>
-            <Text
-              size={13.5}
-              weight="medium"
-              color={mutedTextColor}
-              lineLimit={1}
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 13.5,
+                fontWeight: "500",
+                color: mutedTextColor,
+              }}
             >
               Manage your account settings
-            </Text>
-          </VStack>
-        </HStack>
-        <HStack spacing={8} onPress={() => setIsWorkspaceSwitcherOpened(true)}>
-          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
+            </RNText>
+          </View>
+        </Pressable>
+        <Pressable
+          onPress={() => setIsWorkspaceSwitcherOpened(true)}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            gap: 8,
+          }}
+        >
+          <View style={{ width: 44, height: 44 }}>
             <Avatar
               name={workspace?.name}
               src={workspace?.avatarUrl}
@@ -94,31 +132,46 @@ export const ProfileSheet = ({
                   : workspace?.color,
               }}
             />
-          </HStack>
-          <VStack alignment="leading" spacing={2}>
-            <Text size={14} weight="semibold" lineLimit={1}>
+          </View>
+          <View style={{ flex: 1 }}>
+            <RNText
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: resolvedTheme === "light" ? "black" : "white",
+              }}
+            >
               Switch workspace
-            </Text>
-            <Text
-              size={13.5}
-              weight="medium"
-              color={mutedTextColor}
-              lineLimit={1}
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 13.5,
+                fontWeight: "500",
+                color: mutedTextColor,
+              }}
             >
               {`${workspace?.name} • ${toTitleCase(subscription?.tier || "free")} Plan`}
-            </Text>
-          </VStack>
-          <Spacer />
-          <Image
-            systemName="chevron.up.chevron.down"
+            </RNText>
+          </View>
+          <Ionicons
+            name="chevron-collapse"
+            size={14}
             color={
               resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
             }
-            size={14}
           />
-        </HStack>
-        <HStack spacing={8} onPress={handleLogout}>
-          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
+        </Pressable>
+        <Pressable
+          onPress={handleLogout}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            gap: 8,
+          }}
+        >
+          <View style={{ width: 44, height: 44 }}>
             <Avatar
               name={user?.fullName || user?.username}
               src={user?.avatarUrl}
@@ -126,26 +179,28 @@ export const ProfileSheet = ({
               className="size-[44px]"
               rounded="2xl"
             />
-          </HStack>
-          <VStack alignment="leading" spacing={2}>
-            <Text
-              size={14}
-              weight="semibold"
-              lineLimit={1}
-              color={colors.danger}
+          </View>
+          <View style={{ flex: 1 }}>
+            <RNText
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: colors.danger,
+              }}
             >
               Logout
-            </Text>
-            <Text
-              size={13.5}
-              weight="medium"
-              color={mutedTextColor}
-              lineLimit={1}
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 13.5,
+                fontWeight: "500",
+                color: mutedTextColor,
+              }}
             >
               Log out of your account
-            </Text>
-          </VStack>
-        </HStack>
+            </RNText>
+          </View>
+        </Pressable>
       </BottomSheetModal>
       <WorkspaceSwitcher
         isOpened={isWorkspaceSwitcherOpened}

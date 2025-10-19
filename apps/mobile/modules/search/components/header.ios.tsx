@@ -1,10 +1,17 @@
 import React, { useState } from "react";
-import { TextInput, Pressable, View } from "react-native";
+import { TextInput, Pressable } from "react-native";
 import { Col, ContextMenuButton, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
 import type { SearchQueryParams } from "../types";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Host,
+  HStack,
+  Spacer,
+  Image,
+  Text as SwiftUIText,
+} from "@expo/ui/swift-ui";
+import { opacity } from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "@/hooks";
 import { useTerminology } from "@/hooks/use-terminology";
 
@@ -37,69 +44,63 @@ export const Header = ({
             Search
           </Text>
         </Row>
-        <View
-          style={{
-            width: 230,
-            height: 40,
-            position: "absolute",
-            right: 0,
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
+        <Host
+          matchContents
+          style={{ width: 230, height: 40, position: "absolute", right: 0 }}
         >
-          <ContextMenuButton
-            withNoHost
-            actions={[
-              {
-                label: getTermDisplay("storyTerm", {
-                  variant: "plural",
-                  capitalize: true,
-                }),
-                onPress: () => setSearchType("stories"),
-              },
-              {
-                label: getTermDisplay("objectiveTerm", {
-                  variant: "plural",
-                  capitalize: true,
-                }),
-                onPress: () => setSearchType("objectives"),
-              },
-            ]}
-          >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-            >
-              <Text
-                style={{
-                  color:
-                    resolvedTheme === "light"
-                      ? colors.dark.DEFAULT
-                      : colors.gray[200],
-                  fontWeight: "500",
-                  fontSize: 16,
-                }}
-              >
-                {getTermDisplay(
-                  searchType === "stories" ? "storyTerm" : "objectiveTerm",
-                  {
+          <HStack>
+            <Spacer />
+            <ContextMenuButton
+              withNoHost
+              actions={[
+                {
+                  label: getTermDisplay("storyTerm", {
                     variant: "plural",
                     capitalize: true,
+                  }),
+                  onPress: () => setSearchType("stories"),
+                },
+                {
+                  label: getTermDisplay("objectiveTerm", {
+                    variant: "plural",
+                    capitalize: true,
+                  }),
+                  onPress: () => setSearchType("objectives"),
+                },
+              ]}
+            >
+              <HStack spacing={4}>
+                <SwiftUIText
+                  color={
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200]
                   }
-                )}
-              </Text>
-              <Ionicons
-                name="chevron-collapse"
-                size={11}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                style={{ opacity: 0.6 }}
-              />
-            </View>
-          </ContextMenuButton>
-        </View>
+                  weight="medium"
+                  size={16}
+                >
+                  {getTermDisplay(
+                    searchType === "stories" ? "storyTerm" : "objectiveTerm",
+                    {
+                      variant: "plural",
+                      capitalize: true,
+                    }
+                  )}
+                </SwiftUIText>
+                <Image
+                  systemName="chevron.up.chevron.down"
+                  modifiers={[opacity(0.6)]}
+                  color={
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200]
+                  }
+                  size={11}
+                />
+              </HStack>
+            </ContextMenuButton>
+          </HStack>
+        </Host>
       </Row>
       <Row
         className="bg-gray-100/60 dark:bg-dark-200 rounded-full pl-3 pr-2.5 mt-3"

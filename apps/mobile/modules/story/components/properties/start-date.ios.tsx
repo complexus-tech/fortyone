@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Badge, Text, BottomSheetModal } from "@/components/ui";
 import { Story } from "@/modules/stories/types";
-import { Pressable, View, Text as RNText } from "react-native";
+import { Pressable } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 import { format } from "date-fns";
-// import DateTimePicker from "@react-native-community/datetimepicker";
+import { DateTimePicker } from "@expo/ui/swift-ui";
 
 export const StartDateBadge = ({
   story,
@@ -25,18 +25,16 @@ export const StartDateBadge = ({
   const iconColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const handleDateSelected = (event: any, date?: Date) => {
-    if (date) {
-      setSelectedDate(date);
+  const handleDateSelected = (date: Date) => {
+    setSelectedDate(date);
 
-      // Only call the callback if user has actually interacted
-      if (hasUserInteracted) {
-        onStartDateChange(date);
-        setIsOpen(false);
-      } else {
-        // First time opening, just mark as interacted
-        setHasUserInteracted(true);
-      }
+    // Only call the callback if user has actually interacted
+    if (hasUserInteracted) {
+      onStartDateChange(date);
+      setIsOpen(false);
+    } else {
+      // First time opening, just mark as interacted
+      setHasUserInteracted(true);
     }
   };
 
@@ -63,26 +61,13 @@ export const StartDateBadge = ({
       </Pressable>
 
       <BottomSheetModal isOpen={isOpen} spacing={10} onClose={handleClose}>
-        <View style={{ padding: 16 }}>
-          <RNText
-            style={{
-              fontSize: 18,
-              fontWeight: "600",
-              marginBottom: 16,
-              color: resolvedTheme === "light" ? colors.black : colors.white,
-            }}
-          >
-            Select Start Date
-          </RNText>
-          {/* <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDateSelected}
-            textColor={resolvedTheme === "light" ? colors.black : colors.white}
-            themeVariant={resolvedTheme}
-          /> */}
-        </View>
+        <DateTimePicker
+          onDateSelected={handleDateSelected}
+          displayedComponents="date"
+          initialDate={selectedDate.toISOString()}
+          variant="graphical"
+          color={resolvedTheme === "dark" ? colors.white : colors.black}
+        />
       </BottomSheetModal>
     </>
   );
