@@ -3,8 +3,8 @@ import { Avatar } from "./avatar";
 import * as Updates from "expo-updates";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
-import { Pressable, View, Text as RNText } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
+import { frame } from "@expo/ui/swift-ui/modifiers";
 import { Workspace } from "@/types/workspace";
 import { useWorkspaces, useCurrentWorkspace } from "@/lib/hooks";
 import { useTheme } from "@/hooks";
@@ -41,17 +41,8 @@ const WorkspaceItem = ({
   const mutedTextColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
   return (
-    <Pressable
-      onPress={handleSwitchWorkspace}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        gap: 8,
-      }}
-    >
-      <View style={{ width: 38, height: 38 }}>
+    <HStack spacing={8} onPress={handleSwitchWorkspace}>
+      <HStack modifiers={[frame({ width: 38, height: 38 })]}>
         <Avatar
           style={{
             backgroundColor: workspace.avatarUrl ? undefined : workspace.color,
@@ -61,37 +52,26 @@ const WorkspaceItem = ({
           rounded="xl"
           src={workspace.avatarUrl}
         />
-      </View>
-      <View style={{ flex: 1 }}>
-        <RNText
-          style={{
-            fontSize: 16,
-            fontWeight: "500",
-            color: resolvedTheme === "light" ? "black" : "white",
-          }}
-        >
+      </HStack>
+      <VStack alignment="leading">
+        <Text lineLimit={1} size={16} weight="medium">
           {workspace.name}
-        </RNText>
-        <RNText
-          style={{
-            fontSize: 14,
-            fontWeight: "500",
-            color: mutedTextColor,
-          }}
-        >
+        </Text>
+        <Text size={14} weight="medium" color={mutedTextColor}>
           {workspace.userRole}
-        </RNText>
-      </View>
+        </Text>
+      </VStack>
+      <Spacer />
       {isActive && (
-        <Ionicons
-          name="checkmark-circle"
-          size={20}
+        <Image
+          systemName="checkmark.circle.fill"
           color={
             resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
           }
+          size={20}
         />
       )}
-    </Pressable>
+    </HStack>
   );
 };
 
@@ -113,26 +93,19 @@ export const WorkspaceSwitcher = ({
       onClose={() => setIsOpened(false)}
       spacing={18}
     >
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <RNText
-          style={{
-            fontWeight: "600",
-            color: mutedTextColor,
-            fontSize: 14,
-            marginBottom: 8,
-          }}
-        >
+      <HStack>
+        <Text weight="semibold" color={mutedTextColor} size={14}>
           Switch Workspace
-        </RNText>
-        {workspaces.map((wk) => (
-          <WorkspaceItem
-            key={wk.id}
-            isActive={wk.id === workspace?.id}
-            workspace={wk}
-            setIsOpened={setIsOpened}
-          />
-        ))}
-      </View>
+        </Text>
+      </HStack>
+      {workspaces.map((wk) => (
+        <WorkspaceItem
+          key={wk.id}
+          isActive={wk.id === workspace?.id}
+          workspace={wk}
+          setIsOpened={setIsOpened}
+        />
+      ))}
     </BottomSheetModal>
   );
 };

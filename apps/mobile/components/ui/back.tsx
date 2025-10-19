@@ -1,9 +1,9 @@
 import React from "react";
 import { useRouter } from "expo-router";
+import { Pressable } from "react-native";
 import { colors } from "@/constants";
 import { useTheme } from "@/hooks";
-import { Host, HStack, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
+import { Ionicons } from "@expo/vector-icons";
 
 export const Back = () => {
   const { resolvedTheme } = useTheme();
@@ -19,25 +19,33 @@ export const Back = () => {
   };
 
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
-      <HStack
-        modifiers={[
-          frame({ width: 40, height: 40 }),
-          glassEffect({
-            glass: {
-              interactive: true,
-              variant: "regular",
-            },
-          }),
-        ]}
-        onPress={handleBack}
-      >
-        <Image
-          systemName="chevron.backward"
-          size={20}
-          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
-        />
-      </HStack>
-    </Host>
+    <Pressable
+      onPress={handleBack}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor:
+          resolvedTheme === "light"
+            ? "rgba(255, 255, 255, 0.8)"
+            : "rgba(0, 0, 0, 0.8)",
+        justifyContent: "center",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      }}
+    >
+      <Ionicons
+        name="chevron-back"
+        size={20}
+        color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
+      />
+    </Pressable>
   );
 };

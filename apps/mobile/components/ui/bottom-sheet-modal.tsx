@@ -1,6 +1,6 @@
 import React from "react";
-import { Host, BottomSheet, VStack } from "@expo/ui/swift-ui";
-import { padding } from "@expo/ui/swift-ui/modifiers";
+import { View, Modal, Pressable } from "react-native";
+import { BottomSheetModal as GorhomBottomSheetModal } from "@gorhom/bottom-sheet";
 
 type BottomSheetModalProps = {
   isOpen: boolean;
@@ -18,22 +18,31 @@ export const BottomSheetModal = ({
   spacing = 20,
 }: BottomSheetModalProps) => {
   return (
-    <Host matchContents style={{ position: "absolute" }}>
-      <BottomSheet
-        isOpened={isOpen}
-        onIsOpenedChange={onClose}
-        presentationDragIndicator={showDragIndicator ? "visible" : "hidden"}
-      >
-        <VStack
-          spacing={spacing}
-          modifiers={[
-            padding({ leading: 24, trailing: 24, top: 32, bottom: 5 }),
-          ]}
-          alignment="leading"
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+          onPress={onClose}
+        />
+        <View
+          style={{
+            backgroundColor: "white",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingTop: 32,
+            paddingHorizontal: 24,
+            paddingBottom: 5,
+            gap: spacing,
+          }}
         >
           {children}
-        </VStack>
-      </BottomSheet>
-    </Host>
+        </View>
+      </View>
+    </Modal>
   );
 };

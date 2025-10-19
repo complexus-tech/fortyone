@@ -1,9 +1,8 @@
 import React from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
-import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
-import { frame } from "@expo/ui/swift-ui/modifiers";
-import { SFSymbol } from "expo-symbols";
+import { Pressable, View, Text as RNText } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks";
 
 const ThemeItem = ({
@@ -15,33 +14,54 @@ const ThemeItem = ({
   theme: {
     label: string;
     value: string;
-    icon: SFSymbol;
+    icon: string;
   };
   onPress: () => void;
 }) => {
   const { resolvedTheme } = useTheme();
   return (
-    <HStack spacing={8} onPress={onPress}>
-      <Image
-        systemName={theme.icon}
-        color={resolvedTheme === "light" ? "black" : "white"}
-        size={20}
-        modifiers={[frame({ width: 30, height: 30 })]}
-      />
-      <VStack alignment="leading">
-        <Text lineLimit={1} size={16}>
-          {theme.label}
-        </Text>
-      </VStack>
-      <Spacer />
-      {isActive && (
-        <Image
-          systemName="checkmark.circle.fill"
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        gap: 8,
+      }}
+    >
+      <View
+        style={{
+          width: 30,
+          height: 30,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Ionicons
+          name={theme.icon}
+          size={20}
           color={resolvedTheme === "light" ? "black" : "white"}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <RNText
+          style={{
+            fontSize: 16,
+            color: resolvedTheme === "light" ? "black" : "white",
+          }}
+        >
+          {theme.label}
+        </RNText>
+      </View>
+      {isActive && (
+        <Ionicons
+          name="checkmark-circle"
           size={18}
+          color={resolvedTheme === "light" ? "black" : "white"}
         />
       )}
-    </HStack>
+    </Pressable>
   );
 };
 
@@ -57,49 +77,53 @@ export const ThemeSwitcher = ({
   const themes: {
     label: string;
     value: "light" | "dark" | "system";
-    icon: SFSymbol;
+    icon: string;
   }[] = [
     {
       label: "Light",
       value: "light",
-      icon: "sun.max.fill",
+      icon: "sunny",
     },
     {
       label: "Dark",
       value: "dark",
-      icon: "moon.fill",
+      icon: "moon",
     },
     {
       label: "Automatic",
       value: "system",
-      icon: "platter.filled.top.iphone",
+      icon: "phone-portrait",
     },
   ];
 
   return (
     <BottomSheetModal isOpen={isOpened} onClose={() => setIsOpened(false)}>
-      <HStack>
-        <Text
-          weight="medium"
-          color={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
-          }
-          size={14}
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+        <RNText
+          style={{
+            fontWeight: "500",
+            color:
+              resolvedTheme === "light"
+                ? colors.gray.DEFAULT
+                : colors.gray[300],
+            fontSize: 14,
+            marginBottom: 8,
+          }}
         >
           Appearance
-        </Text>
-      </HStack>
-      {themes.map((theme) => (
-        <ThemeItem
-          key={theme.value}
-          isActive={theme.value === currentTheme}
-          theme={theme}
-          onPress={() => {
-            setTheme(theme.value);
-            setIsOpened(false);
-          }}
-        />
-      ))}
+        </RNText>
+        {themes.map((theme) => (
+          <ThemeItem
+            key={theme.value}
+            isActive={theme.value === currentTheme}
+            theme={theme}
+            onPress={() => {
+              setTheme(theme.value);
+              setIsOpened(false);
+            }}
+          />
+        ))}
+      </View>
     </BottomSheetModal>
   );
 };

@@ -1,9 +1,9 @@
 import React from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { ContextMenuButton } from "./context-menu-button";
-import { Text, HStack, Spacer, Button, Image, VStack } from "@expo/ui/swift-ui";
+import { View, Text as RNText, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
-import { opacity } from "@expo/ui/swift-ui/modifiers";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -84,55 +84,67 @@ export const StoriesOptionsSheet = ({
       onClose={() => setIsOpened(false)}
       spacing={40}
     >
-      <VStack spacing={20}>
-        <HStack>
-          <Text size={16} weight="medium">
-            Grouping
-          </Text>
-          <Spacer />
+      <View style={{ gap: 20 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <RNText style={{ fontSize: 16, fontWeight: "500" }}>Grouping</RNText>
           <ContextMenuButton actions={groupByOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
-                size={16}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+            >
+              <RNText
+                style={{
+                  color:
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  fontSize: 16,
+                }}
               >
                 {viewOptions.groupBy === "status"
                   ? "Status"
                   : viewOptions.groupBy === "priority"
                     ? "Priority"
                     : "Assignee"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
+              </RNText>
+              <Ionicons
+                name="chevron-up-down"
                 size={11}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </HStack>
-        <HStack>
-          <Text size={16} weight="medium">
-            Ordering
-          </Text>
-          <Spacer />
-          <ContextMenuButton actions={orderByOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
                 color={
                   resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={16}
+                style={{ opacity: 0.6 }}
+              />
+            </View>
+          </ContextMenuButton>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <RNText style={{ fontSize: 16, fontWeight: "500" }}>Ordering</RNText>
+          <ContextMenuButton actions={orderByOptions} withNoHost>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+            >
+              <RNText
+                style={{
+                  color:
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  fontSize: 16,
+                }}
               >
                 {viewOptions.orderBy === "created"
                   ? "Created"
@@ -141,102 +153,195 @@ export const StoriesOptionsSheet = ({
                     : viewOptions.orderBy === "deadline"
                       ? "Deadline"
                       : "Priority"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
-                color={
-                  resolvedTheme === "light"
-                    ? colors.dark.DEFAULT
-                    : colors.gray[200]
-                }
+              </RNText>
+              <Ionicons
+                name="chevron-up-down"
                 size={11}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </HStack>
-        <HStack>
-          <Text size={16} weight="medium">
-            Order direction
-          </Text>
-          <Spacer />
-          <ContextMenuButton actions={orderDirectionOptions} withNoHost>
-            <HStack spacing={3}>
-              <Text
                 color={
                   resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={16}
+                style={{ opacity: 0.6 }}
+              />
+            </View>
+          </ContextMenuButton>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <RNText style={{ fontSize: 16, fontWeight: "500" }}>
+            Order direction
+          </RNText>
+          <ContextMenuButton actions={orderDirectionOptions} withNoHost>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+            >
+              <RNText
+                style={{
+                  color:
+                    resolvedTheme === "light"
+                      ? colors.dark.DEFAULT
+                      : colors.gray[200],
+                  fontSize: 16,
+                }}
               >
                 {viewOptions.orderDirection === "desc"
                   ? "Descending"
                   : "Ascending"}
-              </Text>
-              <Image
-                systemName="chevron.up.chevron.down"
-                modifiers={[opacity(0.6)]}
+              </RNText>
+              <Ionicons
+                name="chevron-up-down"
+                size={11}
                 color={
                   resolvedTheme === "light"
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={11}
+                style={{ opacity: 0.6 }}
               />
-            </HStack>
+            </View>
           </ContextMenuButton>
-        </HStack>
-      </VStack>
-      <VStack spacing={16} alignment="leading">
-        <Text modifiers={[opacity(0.65)]} size={15} weight="medium">
+        </View>
+      </View>
+      <View style={{ gap: 16, alignItems: "flex-start" }}>
+        <RNText style={{ opacity: 0.65, fontSize: 15, fontWeight: "500" }}>
           Display columns
-        </Text>
-        <HStack spacing={12}>
-          <Button
-            variant={displayColumns.includes("ID") ? "bordered" : "plain"}
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
+        </RNText>
+        <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+          <Pressable
             onPress={() => toggleDisplayColumn("ID")}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              borderWidth: displayColumns.includes("ID") ? 1 : 0,
+              borderColor:
+                resolvedTheme === "light"
+                  ? colors.dark.DEFAULT
+                  : colors.gray[200],
+              backgroundColor: displayColumns.includes("ID")
+                ? "transparent"
+                : "transparent",
+            }}
           >
-            ID
-          </Button>
-          <Button
-            variant={displayColumns.includes("Status") ? "bordered" : "plain"}
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
+            <RNText
+              style={{
+                color:
+                  resolvedTheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200],
+                fontSize: 14,
+              }}
+            >
+              ID
+            </RNText>
+          </Pressable>
+          <Pressable
             onPress={() => toggleDisplayColumn("Status")}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              borderWidth: displayColumns.includes("Status") ? 1 : 0,
+              borderColor:
+                resolvedTheme === "light"
+                  ? colors.dark.DEFAULT
+                  : colors.gray[200],
+              backgroundColor: displayColumns.includes("Status")
+                ? "transparent"
+                : "transparent",
+            }}
           >
-            Status
-          </Button>
-          <Button
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            variant={displayColumns.includes("Assignee") ? "bordered" : "plain"}
+            <RNText
+              style={{
+                color:
+                  resolvedTheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200],
+                fontSize: 14,
+              }}
+            >
+              Status
+            </RNText>
+          </Pressable>
+          <Pressable
             onPress={() => toggleDisplayColumn("Assignee")}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              borderWidth: displayColumns.includes("Assignee") ? 1 : 0,
+              borderColor:
+                resolvedTheme === "light"
+                  ? colors.dark.DEFAULT
+                  : colors.gray[200],
+              backgroundColor: displayColumns.includes("Assignee")
+                ? "transparent"
+                : "transparent",
+            }}
           >
-            Assignee
-          </Button>
-          <Button
-            color={
-              resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
-            }
-            variant={displayColumns.includes("Priority") ? "bordered" : "plain"}
+            <RNText
+              style={{
+                color:
+                  resolvedTheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200],
+                fontSize: 14,
+              }}
+            >
+              Assignee
+            </RNText>
+          </Pressable>
+          <Pressable
             onPress={() => toggleDisplayColumn("Priority")}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              borderWidth: displayColumns.includes("Priority") ? 1 : 0,
+              borderColor:
+                resolvedTheme === "light"
+                  ? colors.dark.DEFAULT
+                  : colors.gray[200],
+              backgroundColor: displayColumns.includes("Priority")
+                ? "transparent"
+                : "transparent",
+            }}
           >
-            Priority
-          </Button>
-        </HStack>
-      </VStack>
-      <HStack>
-        <Spacer />
-        <Button variant="glass" color="primary" onPress={resetViewOptions}>
-          Reset default
-        </Button>
-      </HStack>
+            <RNText
+              style={{
+                color:
+                  resolvedTheme === "light"
+                    ? colors.dark.DEFAULT
+                    : colors.gray[200],
+                fontSize: 14,
+              }}
+            >
+              Priority
+            </RNText>
+          </Pressable>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+        <Pressable
+          onPress={resetViewOptions}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 8,
+            backgroundColor: "rgba(0,0,0,0.1)",
+          }}
+        >
+          <RNText style={{ color: colors.primary, fontSize: 14 }}>
+            Reset default
+          </RNText>
+        </Pressable>
+      </View>
     </BottomSheetModal>
   );
 };

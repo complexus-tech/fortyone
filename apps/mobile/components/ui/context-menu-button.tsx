@@ -1,12 +1,11 @@
 import React from "react";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { ContextMenu, Host, HStack, Button, Image } from "@expo/ui/swift-ui";
-import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
-import { SFSymbol } from "expo-symbols";
+import { Pressable, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 type ContextMenuAction = {
-  systemImage?: SFSymbol;
+  systemImage?: string;
   label: string;
   onPress: () => void;
   color?: string;
@@ -20,45 +19,48 @@ type ContextMenuButtonProps = {
 
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
   const { resolvedTheme } = useTheme();
+
+  // For Android, we'll use a simple pressable with basic styling
+  // In a real implementation, you might want to use a proper menu library
   return (
-    <ContextMenu>
-      <ContextMenu.Items>
-        {actions.map((action, index) => (
-          <Button
-            key={index}
-            systemImage={action.systemImage}
-            color={action.color}
-            onPress={action.onPress}
-          >
-            {action.label}
-          </Button>
-        ))}
-      </ContextMenu.Items>
-      <ContextMenu.Trigger>
-        {children ? (
-          children
-        ) : (
-          <HStack
-            modifiers={[
-              frame({ width: 40, height: 40 }),
-              glassEffect({
-                glass: {
-                  variant: "regular",
-                },
-              }),
-            ]}
-          >
-            <Image
-              systemName="ellipsis"
-              size={20}
-              color={
-                resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
-              }
-            />
-          </HStack>
-        )}
-      </ContextMenu.Trigger>
-    </ContextMenu>
+    <Pressable
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor:
+          resolvedTheme === "light"
+            ? "rgba(255, 255, 255, 0.8)"
+            : "rgba(0, 0, 0, 0.8)",
+        justifyContent: "center",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      }}
+      onPress={() => {
+        // For Android, we'll trigger the first action for now
+        // In a real implementation, you'd show a proper menu
+        if (actions.length > 0) {
+          actions[0].onPress();
+        }
+      }}
+    >
+      {children ? (
+        children
+      ) : (
+        <Ionicons
+          name="ellipsis-horizontal"
+          size={20}
+          color={resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]}
+        />
+      )}
+    </Pressable>
   );
 };
 
@@ -75,10 +77,10 @@ export const ContextMenuButton = ({
     );
   }
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
+    <View style={{ width: 40, height: 40 }}>
       <Menu actions={actions} withNoHost={withNoHost}>
         {children}
       </Menu>
-    </Host>
+    </View>
   );
 };
