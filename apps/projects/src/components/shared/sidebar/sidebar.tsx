@@ -35,7 +35,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark-200/80">
+    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-white to-gray-50 pb-6 dark:bg-gradient-to-tl dark:from-[#000000] dark:to-dark-200">
       <Box className="relative z-[1] px-4">
         <Header />
         <Navigation />
