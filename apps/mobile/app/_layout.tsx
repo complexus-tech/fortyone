@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { MMKV } from "react-native-mmkv";
+import { createMMKV } from "react-native-mmkv";
 import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
@@ -24,7 +24,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
-const storage = new MMKV();
+const storage = createMMKV();
 
 const clientStorage = {
   setItem: (key: string, value: string) => {
@@ -35,7 +35,7 @@ const clientStorage = {
     return value === undefined ? null : value;
   },
   removeItem: (key: string) => {
-    storage.delete(key);
+    storage.remove(key);
   },
 };
 
