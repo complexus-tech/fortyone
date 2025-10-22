@@ -11,11 +11,11 @@ export const SettingsSection = ({ title, children }: SettingsSectionProps) => {
   return (
     <View className="mb-6">
       {title && (
-        <Text color="muted" className="mb-2 mx-4">
+        <Text color="muted" className="mb-2 mx-4.5">
           {title}
         </Text>
       )}
-      <View className="flex-1">{children}</View>
+      <View className="flex-1 pl-0.5">{children}</View>
     </View>
   );
 };
