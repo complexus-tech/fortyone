@@ -54,7 +54,7 @@ const WorkspaceItem = ({
         />
       </HStack>
       <VStack alignment="leading">
-        <Text lineLimit={1} size={16} weight="medium">
+        <Text lineLimit={1} size={15} weight="medium">
           {workspace.name}
         </Text>
         <Text size={14} weight="medium" color={mutedTextColor}>
