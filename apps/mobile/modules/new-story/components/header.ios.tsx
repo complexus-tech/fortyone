@@ -1,6 +1,5 @@
 import { Back, Badge, Row, Text } from "@/components/ui";
 import React from "react";
-import { colors } from "@/constants";
 import { Host, HStack, Image } from "@expo/ui/swift-ui";
 import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
@@ -21,7 +20,6 @@ export const Header = () => {
               glass: {
                 interactive: true,
                 variant: "regular",
-                tint: colors.primary,
               },
             }),
           ]}
