@@ -128,12 +128,7 @@ export const ProfileSheet = ({
             />
           </HStack>
           <VStack alignment="leading" spacing={2}>
-            <Text
-              size={14}
-              weight="semibold"
-              lineLimit={1}
-              color={colors.danger}
-            >
+            <Text size={14} weight="semibold" lineLimit={1}>
               Logout
             </Text>
             <Text

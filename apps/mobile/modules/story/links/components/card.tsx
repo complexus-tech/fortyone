@@ -30,7 +30,7 @@ export const Card = ({ link }: CardProps) => {
           size={20}
           weight="semibold"
           tintColor={
-            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200]
+            resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300]
           }
         />
         <Text numberOfLines={1} className="flex-1">
