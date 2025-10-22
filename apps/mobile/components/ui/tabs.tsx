@@ -87,9 +87,7 @@ const Tab = ({ children, value, leftIcon, rightIcon, className }: TabProps) => {
       )}
     >
       {leftIcon}
-      <Text fontSize="sm" color={isActive ? undefined : "muted"}>
-        {children}
-      </Text>
+      <Text color={isActive ? undefined : "muted"}>{children}</Text>
       {rightIcon}
     </Pressable>
   );
