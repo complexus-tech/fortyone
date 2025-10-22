@@ -86,7 +86,7 @@ export const StoriesOptionsSheet = ({
     >
       <VStack spacing={20}>
         <HStack>
-          <Text size={16} weight="medium">
+          <Text size={15} weight="medium">
             Grouping
           </Text>
           <Spacer />
@@ -98,7 +98,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={16}
+                size={15}
               >
                 {viewOptions.groupBy === "status"
                   ? "Status"
@@ -120,7 +120,7 @@ export const StoriesOptionsSheet = ({
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text size={16} weight="medium">
+          <Text size={15} weight="medium">
             Ordering
           </Text>
           <Spacer />
@@ -132,7 +132,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={16}
+                size={15}
               >
                 {viewOptions.orderBy === "created"
                   ? "Created"
@@ -156,7 +156,7 @@ export const StoriesOptionsSheet = ({
           </ContextMenuButton>
         </HStack>
         <HStack>
-          <Text size={16} weight="medium">
+          <Text size={15} weight="medium">
             Order direction
           </Text>
           <Spacer />
@@ -168,7 +168,7 @@ export const StoriesOptionsSheet = ({
                     ? colors.dark.DEFAULT
                     : colors.gray[200]
                 }
-                size={16}
+                size={15}
               >
                 {viewOptions.orderDirection === "desc"
                   ? "Descending"

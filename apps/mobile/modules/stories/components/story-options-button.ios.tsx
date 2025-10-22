@@ -41,6 +41,7 @@ export const StoryOptionsButton = ({
             color={
               resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
             }
+            modifiers={[]}
           />
         </HStack>
       </Host>
