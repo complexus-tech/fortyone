@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useAuthStore } from "@/store";
 import { useTheme } from "@/hooks";
 import { toTitleCase } from "@/lib/utils";
+import { Header } from "./components/header";
 
 const handleExternalLink = async (url: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -45,14 +46,8 @@ export const Settings = () => {
 
   return (
     <SafeContainer isFull>
-      <ScrollView
-        style={{
-          paddingTop: 48,
-          flex: 1,
-          backgroundColor:
-            resolvedTheme === "light" ? colors.white : colors.dark[200],
-        }}
-      >
+      <Header />
+      <ScrollView style={{ paddingTop: 16 }}>
         <SettingsSection title="Workspace">
           <SettingsItem
             title="Switch Workspace"

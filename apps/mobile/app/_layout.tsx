@@ -66,7 +66,7 @@ const RenderApp = () => {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="teams/[teamId]" />
         <Stack.Screen name="story/[storyId]" />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="settings"
           options={{
             presentation: "formSheet",
@@ -79,7 +79,7 @@ const RenderApp = () => {
             sheetInitialDetentIndex: 0,
             sheetAllowedDetents: [0.95],
           }}
-        />
+        /> */}
         <Stack.Screen
           name="account"
           options={{

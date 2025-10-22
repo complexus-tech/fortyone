@@ -25,11 +25,11 @@ const ThemeItem = ({
       <Image
         systemName={theme.icon}
         color={resolvedTheme === "light" ? "black" : "white"}
-        size={20}
-        modifiers={[frame({ width: 30, height: 30 })]}
+        size={18}
+        modifiers={[frame({ width: 28, height: 28 })]}
       />
       <VStack alignment="leading">
-        <Text lineLimit={1} size={16}>
+        <Text lineLimit={1} size={15}>
           {theme.label}
         </Text>
       </VStack>

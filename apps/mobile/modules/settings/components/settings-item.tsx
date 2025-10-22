@@ -45,7 +45,7 @@ export const SettingsItem = ({
               {asOptions ? (
                 <Ionicons
                   name="chevron-expand"
-                  size={16}
+                  size={15}
                   color={
                     resolvedTheme === "light"
                       ? colors.gray.DEFAULT
@@ -55,7 +55,7 @@ export const SettingsItem = ({
               ) : (
                 <Octicons
                   name={asLink ? "arrow-up-right" : "chevron-right"}
-                  size={16}
+                  size={15}
                   color={
                     resolvedTheme === "light"
                       ? colors.gray.DEFAULT
