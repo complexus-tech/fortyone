@@ -83,7 +83,7 @@ export const TeamStories = () => {
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as TeamStoriesTab)}
       >
-        <Tabs.List>
+        <Tabs.List className="mb-3">
           <Tabs.Tab value="all" className="px-5">
             All {getTermDisplay("storyTerm", { variant: "plural" })}
           </Tabs.Tab>

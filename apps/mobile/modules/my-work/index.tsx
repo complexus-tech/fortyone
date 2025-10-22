@@ -83,7 +83,7 @@ export const MyWork = () => {
         defaultValue={activeTab}
         onValueChange={(value) => setActiveTab(value as MyWorkTab)}
       >
-        <Tabs.List>
+        <Tabs.List className="mb-3">
           <Tabs.Tab value="all">
             All {getTermDisplay("storyTerm", { variant: "plural" })}
           </Tabs.Tab>

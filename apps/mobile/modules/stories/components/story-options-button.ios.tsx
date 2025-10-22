@@ -37,7 +37,7 @@ export const StoryOptionsButton = ({
         >
           <Image
             systemName="line.3.horizontal.decrease"
-            size={20}
+            size={21}
             color={
               resolvedTheme === "light" ? colors.dark[50] : colors.gray[200]
             }

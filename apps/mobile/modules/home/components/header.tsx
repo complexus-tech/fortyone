@@ -10,8 +10,8 @@ export const Header = () => {
 
   return (
     <>
-      <Row align="center" justify="between" className="mb-4" asContainer>
-        <Text fontSize="3xl" fontWeight="semibold" numberOfLines={1}>
+      <Row align="end" justify="between" className="mb-4 " asContainer>
+        <Text fontSize="3xl" fontWeight="semibold">
           Home
         </Text>
         <Pressable
@@ -24,7 +24,7 @@ export const Header = () => {
         >
           <Avatar
             name={user?.fullName || user?.username}
-            className="size-[40px]"
+            className="size-[36px]"
             color="primary"
             src={user?.avatarUrl}
           />
