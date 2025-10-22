@@ -68,7 +68,7 @@ const WorkspaceItem = ({
           color={
             resolvedTheme === "light" ? colors.dark.DEFAULT : colors.gray[200]
           }
-          size={20}
+          size={18}
         />
       )}
     </HStack>
