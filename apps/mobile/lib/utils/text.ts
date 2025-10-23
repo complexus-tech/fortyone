@@ -15,7 +15,7 @@ export const toTitleCase = (text: string) => {
  * @param maxLength - Maximum number of characters to display
  * @returns Truncated text with ellipsis if needed
  */
-export const truncateText = (text: string, maxLength: number) => {
+export const truncateText = (text: string = "", maxLength: number) => {
   if (!text) return "";
   if (text.length <= maxLength) {
     return text;
