@@ -25,7 +25,7 @@ export const Header = () => {
           <Row align="center" gap={1}>
             <Avatar
               name={workspace?.name}
-              className="size-[32px] mr-0.5"
+              className="size-[34px] mr-0.5"
               rounded="xl"
               style={{
                 backgroundColor: workspace?.color,
@@ -43,7 +43,6 @@ export const Header = () => {
             />
           </Row>
         </Pressable>
-
         <Pressable
           onPress={() => {
             setIsOpened(true);
@@ -54,7 +53,7 @@ export const Header = () => {
         >
           <Avatar
             name={user?.fullName || user?.username}
-            className="size-[32px]"
+            className="size-[34px]"
             color={user?.avatarUrl ? "tertiary" : "primary"}
             src={user?.avatarUrl}
           />
