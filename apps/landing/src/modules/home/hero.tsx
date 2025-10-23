@@ -47,7 +47,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-6xl md:text-[4.15rem] md:leading-[1.1]",
+                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.15rem] md:leading-[1.1]",
               )}
             >
               The AI-Powered Project Management Platform for OKRs & Teams
