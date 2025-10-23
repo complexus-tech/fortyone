@@ -39,12 +39,12 @@ export const ProfileSheet = ({
           {`${user?.email}`}
         </Text>
         <HStack spacing={8} onPress={handleManageAccount}>
-          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
+          <HStack modifiers={[frame({ width: 40, height: 40 })]}>
             <Avatar
               name={user?.fullName || user?.username}
               src={user?.avatarUrl}
               color="primary"
-              className="size-[44px]"
+              className="size-[40px]"
               rounded="2xl"
             />
           </HStack>
@@ -71,12 +71,12 @@ export const ProfileSheet = ({
           />
         </HStack>
         <HStack spacing={8} onPress={() => setIsWorkspaceSwitcherOpened(true)}>
-          <HStack modifiers={[frame({ width: 44, height: 44 })]}>
+          <HStack modifiers={[frame({ width: 40, height: 40 })]}>
             <Avatar
               name={workspace?.name}
               src={workspace?.avatarUrl}
-              className="size-[44px]"
-              rounded="2xl"
+              className="size-[40px]"
+              rounded="xl"
               style={{
                 backgroundColor: workspace?.avatarUrl
                   ? undefined
