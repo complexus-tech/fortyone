@@ -18,6 +18,7 @@ export const Header = () => {
     useState(false);
   const iconColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+
   return (
     <>
       <Row align="end" justify="between" className="mb-5" asContainer>

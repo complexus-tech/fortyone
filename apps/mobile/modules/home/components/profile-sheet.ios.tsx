@@ -3,12 +3,11 @@ import { Avatar, BottomSheetModal, WorkspaceSwitcher } from "@/components/ui";
 import { colors } from "@/constants";
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { useCurrentWorkspace } from "@/lib/hooks";
 import { background, clipShape, frame } from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "@/hooks";
-import { useSubscription } from "@/hooks/use-subscription";
-import { toTitleCase } from "@/lib/utils";
 import { useRouter } from "expo-router";
+import { Alert } from "react-native";
+import { useAuthStore } from "@/store/auth";
 
 export const ProfileSheet = ({
   isOpened,
@@ -22,14 +21,26 @@ export const ProfileSheet = ({
   const { resolvedTheme } = useTheme();
   const router = useRouter();
   const { data: user } = useProfile();
-  const { data: subscription } = useSubscription();
-  const { workspace } = useCurrentWorkspace();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const mutedTextColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const handleManageAccount = () => {
     setIsOpened(false);
     router.push("/account");
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => {
+          clearAuth();
+        },
+      },
+    ]);
   };
 
   return (
@@ -70,7 +81,7 @@ export const ProfileSheet = ({
             size={14}
           />
         </HStack>
-        <HStack spacing={8} onPress={() => setIsWorkspaceSwitcherOpened(true)}>
+        <HStack spacing={8} onPress={handleLogout}>
           <Image
             systemName="xmark.circle.fill"
             size={18}
