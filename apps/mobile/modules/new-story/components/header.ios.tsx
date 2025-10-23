@@ -5,7 +5,7 @@ import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 export const Header = () => {
   return (
-    <Row justify="between" align="center" className="mb-6">
+    <Row justify="between" align="center" className="mb-4">
       <Back />
 
       <Badge color="tertiary" className="px-3">
