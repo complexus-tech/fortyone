@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextInput, Pressable } from "react-native";
+import { TextInput, Pressable, useWindowDimensions } from "react-native";
 import { Col, ContextMenuButton, Row, Text } from "@/components/ui";
 import { SymbolView } from "expo-symbols";
 import { colors } from "@/constants/colors";
@@ -10,8 +10,16 @@ import {
   Spacer,
   Image,
   Text as SwiftUIText,
+  TextField,
+  VStack,
 } from "@expo/ui/swift-ui";
-import { opacity } from "@expo/ui/swift-ui/modifiers";
+import {
+  border,
+  frame,
+  glassEffect,
+  opacity,
+  padding,
+} from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "@/hooks";
 import { useTerminology } from "@/hooks/use-terminology";
 
@@ -29,6 +37,7 @@ export const Header = ({
   const { resolvedTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const { getTermDisplay } = useTerminology();
+  const { width } = useWindowDimensions();
 
   const handleSubmit = () => {
     if (searchTerm.trim()) {
@@ -38,7 +47,7 @@ export const Header = ({
 
   return (
     <Col className="mb-2" asContainer>
-      <Row justify="between" align="center">
+      <Row justify="between" align="center" className="mb-2">
         <Row className="flex-1">
           <Text fontSize="3xl" fontWeight="semibold">
             Search
@@ -150,6 +159,41 @@ export const Header = ({
           </Pressable>
         )}
       </Row>
+      {/* <Host
+        matchContents
+        style={{
+          width: width - 32,
+        }}
+      >
+        <HStack
+          modifiers={[
+            glassEffect({
+              glass: {
+                interactive: true,
+                variant: "regular",
+              },
+            }),
+          ]}
+        >
+          <Image
+            systemName="magnifyingglass"
+            size={16}
+            modifiers={[padding({ leading: 12 }), opacity(0.4)]}
+          />
+          <VStack modifiers={[padding({ vertical: 12, horizontal: 6 })]}>
+            <TextField
+              autocorrection={false}
+              placeholder="Search..."
+              onChangeText={() => {}}
+            />
+          </VStack>
+          <Image
+            systemName="xmark.circle.fill"
+            size={16}
+            modifiers={[padding({ trailing: 12 }), opacity(0.4)]}
+          />
+        </HStack>
+      </Host> */}
     </Col>
   );
 };
