@@ -21,13 +21,6 @@ const config: Omit<Config, "content"> = {
       info: "#06b6d4",
       sidebar: "#FCF5E5",
       light: "#fffff0",
-
-      // --color-gray: #5f5f5f;
-      // --color-gray-50: #f7f7f7;
-      // --color-gray-100: #e8e8e8;
-      // --color-gray-200: #d1d1d1;
-      // --color-gray-300: #9e9e9e;
-      // --color-gray-400: #7d7d7d;
       gray: {
         DEFAULT: "#5f5f5f",
         50: "#f7f7f7",
