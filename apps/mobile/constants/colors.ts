@@ -2,6 +2,11 @@
  * Matches the Tailwind configuration
  */
 
+// --color-dark: #0a0a0a;
+// --color-dark-50: #3f3f3f;
+// --color-dark-100: #262626;
+// --color-dark-200: #171717;
+// --color-dark-300: #0f0f0f;
 export const colors = {
   primary: "#f43f5e",
   secondary: "#002f61",
@@ -24,10 +29,10 @@ export const colors = {
     400: "#7d7d7d",
   },
   dark: {
-    DEFAULT: "#09090b",
-    50: "#3f3f46",
+    DEFAULT: "#0a0a0a",
+    50: "#3f3f3f",
     100: "#262626",
     200: "#171717",
-    300: "#101214",
+    300: "#0f0f0f",
   },
 } as const;
