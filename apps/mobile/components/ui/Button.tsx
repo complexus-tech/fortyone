@@ -20,6 +20,7 @@ export const buttonVariants = cva(
       color: {
         primary: "bg-primary",
         invert: "bg-dark dark:bg-white",
+        tertiary: "bg-gray-100/70 dark:bg-dark-100/80",
       },
       rounded: {
         none: "rounded-none",
@@ -50,6 +51,7 @@ export interface ButtonProps
   extends Omit<TouchableOpacityProps, "disabled">,
     VariantProps<typeof buttonVariants> {
   href?: string;
+  isDestructive?: boolean;
 }
 
 export const Button = ({
@@ -61,6 +63,7 @@ export const Button = ({
   disabled,
   children,
   color,
+  isDestructive,
   ...rest
 }: ButtonProps) => {
   const isDisabled = disabled || loading;
@@ -96,6 +99,7 @@ export const Button = ({
           className={cn({
             "text-white": color === "primary",
             "text-white dark:text-dark": color === "invert",
+            "text-danger dark:text-danger": isDestructive,
           })}
         >
           {children}

@@ -1,76 +1,74 @@
-import React, { useEffect, useState } from "react";
-import { TextInput } from "react-native";
-import { Button } from "@/components/ui";
+import React from "react";
+import { Button, Row, Text, Wrapper } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { useUpdateProfileMutation } from "@/modules/users/hooks/use-update-profile-mutation";
-import { toast } from "sonner-native";
+
+import { SymbolView } from "expo-symbols";
+import { useTheme } from "@/hooks";
+import { colors } from "@/constants";
+import { Alert } from "react-native";
+import { useAuthStore } from "@/store";
 
 export const ProfileForm = () => {
+  const { resolvedTheme } = useTheme();
   const { data: profile } = useProfile();
-  const updateMutation = useUpdateProfileMutation();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const iconColor =
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200];
 
-  const [form, setForm] = useState({
-    fullName: "",
-    username: "",
-  });
-
-  const [hasChanged, setHasChanged] = useState(false);
-
-  useEffect(() => {
-    if (profile) {
-      setForm({
-        fullName: profile.fullName || "",
-        username: profile.username || "",
-      });
-    }
-  }, [profile]);
-
-  useEffect(() => {
-    const changed =
-      form.fullName !== (profile?.fullName || "") ||
-      form.username !== (profile?.username || "");
-    setHasChanged(changed);
-  }, [form, profile]);
-
-  const handleUpdateProfile = () => {
-    if (!hasChanged) {
-      toast.warning("No changes to save");
-      return;
-    }
-
-    updateMutation.mutate({
-      fullName: form.fullName,
-      username: form.username,
-    });
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: () => {
+          clearAuth();
+        },
+      },
+    ]);
   };
-
-  if (!profile) {
-    return null;
-  }
 
   return (
     <>
-      <TextInput
-        placeholder="Full name"
-        autoComplete="name"
-        value={form.fullName}
-        onChangeText={(text) => setForm({ ...form, fullName: text })}
-        className="rounded-[12px] text-[16px] bg-gray-100/70 px-4 h-12 font-medium mx-4.5 dark:bg-dark-100 dark:text-white mb-4"
-      />
-      <TextInput
-        placeholder="Username"
-        autoComplete="username"
-        value={form.username}
-        onChangeText={(text) => setForm({ ...form, username: text })}
-        className="rounded-[12px] text-[16px] bg-gray-100/70 px-4 h-12 font-medium mx-4.5 dark:bg-dark-100 dark:text-white"
-      />
+      <Wrapper className="border-0 dark:bg-dark-200 py-4 rounded-3xl bg-gray-100/80">
+        <Row
+          justify="between"
+          align="center"
+          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
+        >
+          <Row align="center" gap={2}>
+            <SymbolView name="person.fill" size={20} tintColor={iconColor} />
+            <Text>Name</Text>
+          </Row>
+          <Text color="muted">{profile?.fullName}</Text>
+        </Row>
+        <Row
+          justify="between"
+          align="center"
+          className="py-4 border-b border-gray-200/80 dark:border-dark-100"
+        >
+          <Row align="center" gap={2}>
+            <SymbolView name="envelope.fill" size={20} tintColor={iconColor} />
+            <Text>Email</Text>
+          </Row>
+          <Text color="muted">{profile?.email}</Text>
+        </Row>
+        <Row justify="between" align="center" className="pt-4">
+          <Row align="center" gap={2}>
+            <SymbolView name="at" size={20} tintColor={iconColor} />
+            <Text>Username</Text>
+          </Row>
+          <Text color="muted">{`@${profile?.username}`}</Text>
+        </Row>
+      </Wrapper>
       <Button
-        onPress={handleUpdateProfile}
-        disabled={updateMutation.isPending}
-        className="mt-5 mx-4.5 rounded-[12px]"
-        color="invert"
+        className="mt-5"
+        rounded="full"
+        color="tertiary"
+        isDestructive
+        onPress={handleSignOut}
       >
-        {updateMutation.isPending ? "Saving..." : "Save changes"}
+        Sign Out
       </Button>
     </>
   );

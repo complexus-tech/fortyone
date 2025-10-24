@@ -13,6 +13,7 @@ export const Account = () => {
       <ScrollView
         style={{
           paddingTop: 44,
+          paddingHorizontal: 16,
           flex: 1,
           backgroundColor:
             resolvedTheme === "light" ? colors.white : colors.black,
