@@ -8,7 +8,6 @@ import {
 import { SettingsSection } from "./components/settings-section";
 import { SettingsItem } from "./components/settings-item";
 import { externalLinks } from "./external-links";
-import { colors } from "@/constants";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/store";
@@ -25,17 +24,17 @@ const handleExternalLink = async (url: string) => {
 
 export const Settings = () => {
   const router = useRouter();
-  const { theme, resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   const { workspace } = useCurrentWorkspace();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isOpened, setIsOpened] = useState(false);
   const [isAppearanceOpened, setIsAppearanceOpened] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Logout",
+        text: "Sign Out",
         style: "destructive",
         onPress: () => {
           clearAuth();
@@ -82,10 +81,10 @@ export const Settings = () => {
         </SettingsSection>
         <SettingsSection title="Account">
           <SettingsItem
-            title="Log Out"
+            title="Sign Out"
             destructive
             showChevron={false}
-            onPress={handleLogout}
+            onPress={handleSignOut}
           />
         </SettingsSection>
       </ScrollView>

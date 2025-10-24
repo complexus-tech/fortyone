@@ -7,6 +7,7 @@ import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
 import { Alert } from "react-native";
 import { useAuthStore } from "@/store";
+import { truncateText } from "@/lib/utils";
 
 export const ProfileForm = () => {
   const { resolvedTheme } = useTheme();
@@ -40,7 +41,7 @@ export const ProfileForm = () => {
             <SymbolView name="person.fill" size={20} tintColor={iconColor} />
             <Text>Name</Text>
           </Row>
-          <Text color="muted">{profile?.fullName}</Text>
+          <Text color="muted">{truncateText(profile?.fullName, 28)}</Text>
         </Row>
         <Row
           justify="between"
@@ -51,14 +52,14 @@ export const ProfileForm = () => {
             <SymbolView name="envelope.fill" size={20} tintColor={iconColor} />
             <Text>Email</Text>
           </Row>
-          <Text color="muted">{profile?.email}</Text>
+          <Text color="muted">{truncateText(profile?.email, 32)}</Text>
         </Row>
         <Row justify="between" align="center" className="pt-4">
           <Row align="center" gap={2}>
             <SymbolView name="at" size={20} tintColor={iconColor} />
             <Text>Username</Text>
           </Row>
-          <Text color="muted">{`@${profile?.username}`}</Text>
+          <Text color="muted">{`@${truncateText(profile?.username, 24)}`}</Text>
         </Row>
       </Wrapper>
       <Button

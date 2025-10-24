@@ -30,11 +30,11 @@ export const ProfileSheet = ({
     router.push("/account");
   };
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Logout",
+        text: "Sign Out",
         style: "destructive",
         onPress: () => {
           clearAuth();
@@ -81,7 +81,7 @@ export const ProfileSheet = ({
             size={14}
           />
         </HStack>
-        <HStack spacing={8} onPress={handleLogout}>
+        <HStack spacing={8} onPress={handleSignOut}>
           <Image
             systemName="xmark.circle.fill"
             size={18}
@@ -94,7 +94,7 @@ export const ProfileSheet = ({
           />
           <VStack alignment="leading" spacing={2}>
             <Text size={14} weight="semibold" lineLimit={1}>
-              Logout
+              Sign Out
             </Text>
             <Text
               size={13.5}
@@ -102,7 +102,7 @@ export const ProfileSheet = ({
               color={mutedTextColor}
               lineLimit={1}
             >
-              Log out of your account
+              Sign out of your account
             </Text>
           </VStack>
           <Spacer />
