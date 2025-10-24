@@ -20,7 +20,7 @@ export const buttonVariants = cva(
       color: {
         primary: "bg-primary",
         invert: "bg-dark dark:bg-white",
-        tertiary: "bg-gray-100/70 dark:bg-dark-100/80",
+        tertiary: "bg-gray-100/70 dark:bg-dark-100/50",
       },
       rounded: {
         none: "rounded-none",
@@ -38,11 +38,16 @@ export const buttonVariants = cva(
         true: "opacity-80",
         false: "",
       },
+      fullWidth: {
+        true: "w-full",
+        false: "",
+      },
     },
     defaultVariants: {
       size: "md",
       rounded: "md",
       color: "primary",
+      fullWidth: true,
     },
   }
 );
@@ -64,6 +69,7 @@ export const Button = ({
   children,
   color,
   isDestructive,
+  fullWidth,
   ...rest
 }: ButtonProps) => {
   const isDisabled = disabled || loading;
@@ -75,6 +81,7 @@ export const Button = ({
       loading,
       rounded,
       color,
+      fullWidth,
     }),
     className
   );

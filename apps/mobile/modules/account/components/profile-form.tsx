@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Row, Text, Wrapper } from "@/components/ui";
+import { Button, Col, Row, Text, Wrapper } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 
 import { SymbolView } from "expo-symbols";
@@ -31,7 +31,7 @@ export const ProfileForm = () => {
 
   return (
     <>
-      <Wrapper className="border-0 dark:bg-dark-200 py-4 rounded-3xl bg-gray-100/80">
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80">
         <Row
           justify="between"
           align="center"
@@ -62,15 +62,22 @@ export const ProfileForm = () => {
           <Text color="muted">{`@${truncateText(profile?.username, 24)}`}</Text>
         </Row>
       </Wrapper>
-      <Button
-        className="mt-5"
-        rounded="full"
-        color="tertiary"
-        isDestructive
-        onPress={handleSignOut}
-      >
-        Sign Out
-      </Button>
+      <Col className="mt-5" gap={4}>
+        <Button rounded="full" color="tertiary">
+          Send Feedback
+        </Button>
+        <Button rounded="full" color="tertiary">
+          Rate App
+        </Button>
+        <Button
+          rounded="full"
+          color="tertiary"
+          isDestructive
+          onPress={handleSignOut}
+        >
+          Sign Out
+        </Button>
+      </Col>
     </>
   );
 };
