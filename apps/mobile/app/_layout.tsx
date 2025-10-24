@@ -66,22 +66,8 @@ const RenderApp = () => {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="teams/[teamId]" />
         <Stack.Screen name="story/[storyId]" />
-        {/* <Stack.Screen
-          name="settings"
-          options={{
-            presentation: "formSheet",
-            gestureDirection: "vertical",
-            animation: "slide_from_bottom",
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 28,
-            sheetExpandsWhenScrolledToEdge: true,
-            sheetElevation: 24,
-            sheetInitialDetentIndex: 0,
-            sheetAllowedDetents: [0.95],
-          }}
-        /> */}
         <Stack.Screen
-          name="account"
+          name="settings"
           options={{
             presentation: "formSheet",
             gestureDirection: "vertical",

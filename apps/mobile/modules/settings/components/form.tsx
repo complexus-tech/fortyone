@@ -19,7 +19,7 @@ import { toTitleCase, truncateText } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { useCurrentWorkspace } from "@/lib/hooks/use-workspaces";
 
-export const ProfileForm = () => {
+export const Form = () => {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const { resolvedTheme, theme } = useTheme();
