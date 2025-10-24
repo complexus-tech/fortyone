@@ -60,7 +60,17 @@ export const EndDateBadge = ({
         </Badge>
       </Pressable>
 
-      <BottomSheetModal isOpen={isOpen} spacing={10} onClose={handleClose}>
+      <BottomSheetModal
+        isOpen={isOpen}
+        spacing={10}
+        padding={{
+          leading: 16,
+          trailing: 16,
+          top: 16,
+          bottom: 0,
+        }}
+        onClose={handleClose}
+      >
         <DateTimePicker
           onDateSelected={handleDateSelected}
           displayedComponents="date"
