@@ -20,7 +20,7 @@ export const buttonVariants = cva(
       color: {
         primary: "bg-primary",
         invert: "bg-dark dark:bg-white",
-        tertiary: "bg-gray-100/70 dark:bg-dark-100/50",
+        tertiary: "bg-gray-100/60 dark:bg-dark-100/45",
       },
       rounded: {
         none: "rounded-none",

@@ -12,7 +12,7 @@ import { useTheme } from "@/hooks";
 import { colors } from "@/constants/colors";
 import { useCurrentWorkspace } from "@/lib/hooks/use-workspaces";
 import { truncateText } from "@/lib/utils";
-import { Host, HStack } from "@expo/ui/swift-ui";
+import { HStack } from "@expo/ui/swift-ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 import { useRouter } from "expo-router";
@@ -82,12 +82,12 @@ export const Header = () => {
               onPress: handleSignOut,
             },
           ]}
-          hostStyle={{ width: 34, height: 34 }}
+          hostStyle={{ width: 36, height: 36 }}
         >
-          <HStack modifiers={[frame({ width: 34, height: 34 })]}>
+          <HStack modifiers={[frame({ width: 36, height: 36 })]}>
             <Avatar
               name={profile?.fullName || profile?.username}
-              className="size-[34px]"
+              className="size-[36px]"
               color={profile?.avatarUrl ? "tertiary" : "primary"}
               src={profile?.avatarUrl}
             />

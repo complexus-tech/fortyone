@@ -49,7 +49,7 @@ export const Header = () => {
         >
           <Avatar
             name={user?.fullName || user?.username}
-            className="size-[34px]"
+            className="size-[36px]"
             color={user?.avatarUrl ? "tertiary" : "primary"}
             src={user?.avatarUrl}
           />

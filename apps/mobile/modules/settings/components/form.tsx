@@ -27,7 +27,7 @@ export const Form = () => {
   const { data: profile } = useProfile();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200];
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -51,11 +51,11 @@ export const Form = () => {
 
   return (
     <>
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/70 mb-4">
+      <Wrapper className="border-0 dark:bg-dark-100/45 py-4 rounded-3xl bg-gray-100/60 mb-4">
         <Row
           justify="between"
           align="center"
-          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
+          className="pb-4 border-b border-gray-200/50 dark:border-dark-100/60"
         >
           <Row align="center" gap={2}>
             <SymbolView
@@ -91,11 +91,11 @@ export const Form = () => {
           </Pressable>
         </Row>
       </Wrapper>
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/70">
+      <Wrapper className="border-0 dark:bg-dark-100/45 py-4 rounded-3xl bg-gray-100/60">
         <Row
           justify="between"
           align="center"
-          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
+          className="pb-4 border-b border-gray-200/50 dark:border-dark-100/60"
         >
           <Row align="center" gap={2}>
             <SymbolView name="person.fill" size={20} tintColor={iconColor} />
@@ -106,7 +106,7 @@ export const Form = () => {
         <Row
           justify="between"
           align="center"
-          className="py-4 border-b border-gray-200/80 dark:border-dark-100"
+          className="py-4 border-b border-gray-200/50 dark:border-dark-100/60"
         >
           <Row align="center" gap={2}>
             <SymbolView name="envelope.fill" size={20} tintColor={iconColor} />

@@ -8,14 +8,19 @@ export const Header = () => {
     <Col asContainer justify="center" align="center" className="mb-6">
       <Avatar
         name={user?.fullName || user?.username}
-        className="size-20"
+        className="size-24"
         textClassName="text-xl"
         src={user?.avatarUrl}
       />
-      <Text fontSize="xl" fontWeight="semibold" className="mt-4 mb-1">
+      <Text
+        fontSize="2xl"
+        fontWeight="semibold"
+        className="mt-4 mb-1"
+        numberOfLines={1}
+      >
         {user?.fullName || user?.username}
       </Text>
-      <Text color="muted">{`@${user?.username}`}</Text>
+      <Text color="muted" numberOfLines={1}>{`@${user?.username}`}</Text>
     </Col>
   );
 };
