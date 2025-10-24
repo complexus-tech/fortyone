@@ -28,7 +28,7 @@ const Item = ({
       {isSelected && (
         <Image
           systemName="checkmark.circle.fill"
-          size={18}
+          size={17}
           color={resolvedTheme === "light" ? colors.black : colors.white}
         />
       )}
