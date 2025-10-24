@@ -13,7 +13,7 @@ import { useProfile } from "@/modules/users/hooks/use-profile";
 import { SymbolView } from "expo-symbols";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { Alert, Pressable } from "react-native";
+import { Alert, Pressable, Linking } from "react-native";
 import { useAuthStore } from "@/store";
 import { toTitleCase, truncateText } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,9 +42,16 @@ export const ProfileForm = () => {
     ]);
   };
 
+  const handleExternalLink = async (url: string) => {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    }
+  };
+
   return (
     <>
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80 mb-4">
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/70 mb-4">
         <Row
           justify="between"
           align="center"
@@ -84,7 +91,7 @@ export const ProfileForm = () => {
           </Pressable>
         </Row>
       </Wrapper>
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80">
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/70">
         <Row
           justify="between"
           align="center"
@@ -117,7 +124,11 @@ export const ProfileForm = () => {
       </Wrapper>
 
       <Col className="mt-4" gap={4}>
-        <Button rounded="full" color="tertiary">
+        <Button
+          rounded="full"
+          color="tertiary"
+          onPress={() => handleExternalLink("https://fortyone.app/contact")}
+        >
           Send Feedback
         </Button>
         <Button rounded="full" color="tertiary">
