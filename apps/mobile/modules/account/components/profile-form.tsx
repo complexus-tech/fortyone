@@ -1,20 +1,33 @@
-import React from "react";
-import { Button, Col, Row, Text, Wrapper } from "@/components/ui";
+import React, { useState } from "react";
+import {
+  Button,
+  Col,
+  Row,
+  Text,
+  ThemeSwitcher,
+  WorkspaceSwitcher,
+  Wrapper,
+} from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
 
 import { SymbolView } from "expo-symbols";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { Alert } from "react-native";
+import { Alert, Pressable } from "react-native";
 import { useAuthStore } from "@/store";
-import { truncateText } from "@/lib/utils";
+import { toTitleCase, truncateText } from "@/lib/utils";
+import { Ionicons } from "@expo/vector-icons";
+import { useCurrentWorkspace } from "@/lib/hooks/use-workspaces";
 
 export const ProfileForm = () => {
-  const { resolvedTheme } = useTheme();
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const { resolvedTheme, theme } = useTheme();
+  const { workspace } = useCurrentWorkspace();
   const { data: profile } = useProfile();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -77,7 +90,13 @@ export const ProfileForm = () => {
             />
             <Text>Workspace</Text>
           </Row>
-          <Text color="muted">{truncateText(profile?.fullName, 28)}</Text>
+          <Pressable
+            onPress={() => setIsWorkspaceOpen(true)}
+            className="flex-row items-center gap-1"
+          >
+            <Text color="muted">{truncateText(workspace?.name, 20)}</Text>
+            <Ionicons name="chevron-expand" size={15} color={iconColor} />
+          </Pressable>
         </Row>
         <Row justify="between" align="center" className="pt-4">
           <Row align="center" gap={2}>
@@ -88,7 +107,13 @@ export const ProfileForm = () => {
             />
             <Text>Appearance</Text>
           </Row>
-          <Text color="muted">{truncateText(profile?.email, 32)}</Text>
+          <Pressable
+            onPress={() => setIsAppearanceOpen(true)}
+            className="flex-row items-center gap-1"
+          >
+            <Text color="muted">{toTitleCase(theme)}</Text>
+            <Ionicons name="chevron-expand" size={15} color={iconColor} />
+          </Pressable>
         </Row>
       </Wrapper>
       <Col className="mt-4" gap={4}>
@@ -107,6 +132,14 @@ export const ProfileForm = () => {
           Sign Out
         </Button>
       </Col>
+      <ThemeSwitcher
+        isOpened={isAppearanceOpen}
+        setIsOpened={setIsAppearanceOpen}
+      />
+      <WorkspaceSwitcher
+        isOpened={isWorkspaceOpen}
+        setIsOpened={setIsWorkspaceOpen}
+      />
     </>
   );
 };
