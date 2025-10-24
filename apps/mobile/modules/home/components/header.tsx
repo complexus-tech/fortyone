@@ -17,7 +17,7 @@ export const Header = () => {
   const [isWorkspaceSwitcherOpened, setIsWorkspaceSwitcherOpened] =
     useState(false);
   const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
+    resolvedTheme === "light" ? colors.dark.DEFAULT : colors.white;
 
   return (
     <>
@@ -39,7 +39,7 @@ export const Header = () => {
             <SymbolView
               name="chevron.down"
               weight="semibold"
-              size={14}
+              size={13}
               tintColor={iconColor}
             />
           </Row>
