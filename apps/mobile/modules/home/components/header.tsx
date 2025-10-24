@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Avatar, Row, Text, WorkspaceSwitcher } from "@/components/ui";
 import { useProfile } from "@/modules/users/hooks/use-profile";
-import { ProfileSheet } from "./profile-sheet";
 import { Pressable } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { useTheme } from "@/hooks";
@@ -13,7 +12,6 @@ export const Header = () => {
   const { data: user } = useProfile();
   const { workspace } = useCurrentWorkspace();
   const { resolvedTheme } = useTheme();
-  const [isOpened, setIsOpened] = useState(false);
   const [isWorkspaceSwitcherOpened, setIsWorkspaceSwitcherOpened] =
     useState(false);
   const iconColor =
@@ -45,9 +43,6 @@ export const Header = () => {
           </Row>
         </Pressable>
         <Pressable
-          onPress={() => {
-            setIsOpened(true);
-          }}
           style={{
             zIndex: 1,
           }}
@@ -60,7 +55,6 @@ export const Header = () => {
           />
         </Pressable>
       </Row>
-      <ProfileSheet isOpened={isOpened} setIsOpened={setIsOpened} />
       <WorkspaceSwitcher
         isOpened={isWorkspaceSwitcherOpened}
         setIsOpened={setIsWorkspaceSwitcherOpened}

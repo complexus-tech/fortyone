@@ -4,6 +4,7 @@ import { colors } from "@/constants";
 import { ContextMenu, Host, HStack, Button, Image } from "@expo/ui/swift-ui";
 import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
 import { SFSymbol } from "expo-symbols";
+import { StyleProp, ViewStyle } from "react-native";
 
 type ContextMenuAction = {
   systemImage?: SFSymbol;
@@ -16,6 +17,7 @@ type ContextMenuButtonProps = {
   actions: ContextMenuAction[];
   children?: React.ReactNode;
   withNoHost?: boolean;
+  hostStyle?: StyleProp<ViewStyle>;
 };
 
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
@@ -66,6 +68,10 @@ export const ContextMenuButton = ({
   actions,
   children,
   withNoHost,
+  hostStyle = {
+    width: 40,
+    height: 40,
+  },
 }: ContextMenuButtonProps) => {
   if (withNoHost) {
     return (
@@ -75,7 +81,7 @@ export const ContextMenuButton = ({
     );
   }
   return (
-    <Host matchContents style={{ width: 40, height: 40 }}>
+    <Host matchContents style={hostStyle}>
       <Menu actions={actions} withNoHost={withNoHost}>
         {children}
       </Menu>

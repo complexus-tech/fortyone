@@ -1,7 +1,7 @@
 import React from "react";
 import { useTheme } from "@/hooks";
 import { colors } from "@/constants";
-import { Pressable, View } from "react-native";
+import { Pressable, StyleProp, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 type ContextMenuAction = {
@@ -15,6 +15,7 @@ type ContextMenuButtonProps = {
   actions: ContextMenuAction[];
   children?: React.ReactNode;
   withNoHost?: boolean;
+  hostStyle?: StyleProp<ViewStyle>;
 };
 
 const Menu = ({ actions, children }: ContextMenuButtonProps) => {
@@ -68,6 +69,10 @@ export const ContextMenuButton = ({
   actions,
   children,
   withNoHost,
+  hostStyle = {
+    width: 40,
+    height: 40,
+  },
 }: ContextMenuButtonProps) => {
   if (withNoHost) {
     return (
@@ -77,7 +82,7 @@ export const ContextMenuButton = ({
     );
   }
   return (
-    <View style={{ width: 40, height: 40 }}>
+    <View style={hostStyle}>
       <Menu actions={actions} withNoHost={withNoHost}>
         {children}
       </Menu>

@@ -67,33 +67,32 @@ export const Header = () => {
             />
           </Row>
         </Pressable>
-        <Host matchContents style={{ width: 34, height: 34 }}>
-          <ContextMenuButton
-            actions={[
-              {
-                label: "Settings",
-                systemImage: "gear",
-                onPress: () => {
-                  router.push("/settings");
-                },
+        <ContextMenuButton
+          actions={[
+            {
+              label: "Settings",
+              systemImage: "gear",
+              onPress: () => {
+                router.push("/settings");
               },
-              {
-                label: "Sign Out",
-                systemImage: "rectangle.portrait.and.arrow.forward",
-                onPress: handleSignOut,
-              },
-            ]}
-          >
-            <HStack modifiers={[frame({ width: 34, height: 34 })]}>
-              <Avatar
-                name={profile?.fullName || profile?.username}
-                className="size-[34px]"
-                color={profile?.avatarUrl ? "tertiary" : "primary"}
-                src={profile?.avatarUrl}
-              />
-            </HStack>
-          </ContextMenuButton>
-        </Host>
+            },
+            {
+              label: "Sign Out",
+              systemImage: "rectangle.portrait.and.arrow.forward",
+              onPress: handleSignOut,
+            },
+          ]}
+          hostStyle={{ width: 34, height: 34 }}
+        >
+          <HStack modifiers={[frame({ width: 34, height: 34 })]}>
+            <Avatar
+              name={profile?.fullName || profile?.username}
+              className="size-[34px]"
+              color={profile?.avatarUrl ? "tertiary" : "primary"}
+              src={profile?.avatarUrl}
+            />
+          </HStack>
+        </ContextMenuButton>
       </Row>
       <WorkspaceSwitcher
         isOpened={isWorkspaceSwitcherOpened}
