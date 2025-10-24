@@ -32,7 +32,7 @@ export const Header = () => {
               src={workspace?.avatarUrl}
             />
             <Text fontSize="xl" fontWeight="semibold">
-              {truncateText(workspace?.name, 10)}
+              {truncateText(workspace?.name, 18)}
             </Text>
             <SymbolView
               name="chevron.down"
