@@ -62,7 +62,36 @@ export const ProfileForm = () => {
           <Text color="muted">{`@${truncateText(profile?.username, 24)}`}</Text>
         </Row>
       </Wrapper>
-      <Col className="mt-5" gap={4}>
+
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80 mt-4">
+        <Row
+          justify="between"
+          align="center"
+          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
+        >
+          <Row align="center" gap={2}>
+            <SymbolView
+              name="building.2.fill"
+              size={20}
+              tintColor={iconColor}
+            />
+            <Text>Workspace</Text>
+          </Row>
+          <Text color="muted">{truncateText(profile?.fullName, 28)}</Text>
+        </Row>
+        <Row justify="between" align="center" className="pt-4">
+          <Row align="center" gap={2}>
+            <SymbolView
+              name="paintpalette.fill"
+              size={20}
+              tintColor={iconColor}
+            />
+            <Text>Appearance</Text>
+          </Row>
+          <Text color="muted">{truncateText(profile?.email, 32)}</Text>
+        </Row>
+      </Wrapper>
+      <Col className="mt-4" gap={4}>
         <Button rounded="full" color="tertiary">
           Send Feedback
         </Button>
