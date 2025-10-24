@@ -125,7 +125,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 .tiptap .is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
-  @apply pointer-events-none float-left h-0 text-gray-250/80 dark:text-gray-200/60;
+  @apply pointer-events-none float-left h-0 text-gray-300/80 dark:text-gray-200/60;
 }
 
 .tiptap input[type="checkbox"] {

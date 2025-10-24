@@ -21,13 +21,20 @@ const config: Omit<Config, "content"> = {
       info: "#06b6d4",
       sidebar: "#FCF5E5",
       light: "#fffff0",
+
+      // --color-gray: #5f5f5f;
+      // --color-gray-50: #f7f7f7;
+      // --color-gray-100: #e8e8e8;
+      // --color-gray-200: #d1d1d1;
+      // --color-gray-300: #9e9e9e;
+      // --color-gray-400: #7d7d7d;
       gray: {
-        DEFAULT: "#6B665C",
-        50: "#F8F6F2",
-        100: "#ECE9E4",
-        200: "#DAD6D0",
-        250: "#5E5A52",
-        300: "#A19B94",
+        DEFAULT: "#5f5f5f",
+        50: "#f7f7f7",
+        100: "#e8e8e8",
+        200: "#d1d1d1",
+        300: "#9e9e9e",
+        400: "#7d7d7d",
       },
       dark: {
         DEFAULT: "#0c0d0e",
