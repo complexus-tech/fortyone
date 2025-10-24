@@ -16,12 +16,12 @@ export const colors = {
   sidebar: "#FCF5E5",
   light: "#fffff0",
   gray: {
-    DEFAULT: "#6B665C",
-    50: "#F8F6F2",
-    100: "#ECE9E4",
-    200: "#DAD6D0",
-    250: "#5E5A52",
-    300: "#A19B94",
+    DEFAULT: "#5f5f5f",
+    50: "#f7f7f7",
+    100: "#e8e8e8",
+    200: "#d1d1d1",
+    300: "#9e9e9e",
+    400: "#7d7d7d",
   },
   dark: {
     DEFAULT: "#09090b",

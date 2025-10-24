@@ -27,7 +27,7 @@ export const Form = () => {
   const { data: profile } = useProfile();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const iconColor =
-    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[200];
+    resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
