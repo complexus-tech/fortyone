@@ -2,7 +2,7 @@ import React from "react";
 import { Row, Text, Col } from "@/components/ui";
 import { DetailedStory, Story } from "@/modules/stories/types";
 import { useFeatures, useSprintsEnabled } from "@/hooks";
-import { PriorityBadge } from "./properties/priority";
+import { PriorityBadge } from "./properties/priority.ios";
 import { StatusBadge } from "./properties/status";
 import { AssigneeBadge } from "./properties/assignee";
 import { ObjectiveBadge } from "./properties/objective";

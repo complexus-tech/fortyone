@@ -8,6 +8,12 @@ type BottomSheetModalProps = {
   children: React.ReactNode;
   showDragIndicator?: boolean;
   spacing?: number;
+  padding?: {
+    leading?: number;
+    trailing?: number;
+    top?: number;
+    bottom?: number;
+  };
 };
 
 export const BottomSheetModal = ({
@@ -16,6 +22,12 @@ export const BottomSheetModal = ({
   children,
   showDragIndicator = true,
   spacing = 20,
+  padding = {
+    leading: 24,
+    trailing: 24,
+    top: 32,
+    bottom: 5,
+  },
 }: BottomSheetModalProps) => {
   return (
     <Modal
@@ -34,9 +46,9 @@ export const BottomSheetModal = ({
             backgroundColor: "white",
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-            paddingTop: 32,
-            paddingHorizontal: 24,
-            paddingBottom: 5,
+            paddingTop: padding.top,
+            paddingHorizontal: padding.leading,
+            paddingBottom: padding.bottom,
             gap: spacing,
           }}
         >

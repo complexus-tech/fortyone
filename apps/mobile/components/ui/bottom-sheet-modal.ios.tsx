@@ -1,6 +1,6 @@
 import React from "react";
 import { Host, BottomSheet, VStack } from "@expo/ui/swift-ui";
-import { padding } from "@expo/ui/swift-ui/modifiers";
+import { padding as paddingModifier } from "@expo/ui/swift-ui/modifiers";
 
 type BottomSheetModalProps = {
   isOpen: boolean;
@@ -8,6 +8,12 @@ type BottomSheetModalProps = {
   children: React.ReactNode;
   showDragIndicator?: boolean;
   spacing?: number;
+  padding?: {
+    leading?: number;
+    trailing?: number;
+    top?: number;
+    bottom?: number;
+  };
 };
 
 export const BottomSheetModal = ({
@@ -16,6 +22,12 @@ export const BottomSheetModal = ({
   children,
   showDragIndicator = true,
   spacing = 20,
+  padding = {
+    leading: 24,
+    trailing: 24,
+    top: 32,
+    bottom: 5,
+  },
 }: BottomSheetModalProps) => {
   return (
     <Host matchContents style={{ position: "absolute" }}>
@@ -27,7 +39,12 @@ export const BottomSheetModal = ({
         <VStack
           spacing={spacing}
           modifiers={[
-            padding({ leading: 24, trailing: 24, top: 32, bottom: 5 }),
+            paddingModifier({
+              leading: padding.leading,
+              trailing: padding.trailing,
+              top: padding.top,
+              bottom: padding.bottom,
+            }),
           ]}
           alignment="leading"
         >
