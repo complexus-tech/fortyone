@@ -44,39 +44,7 @@ export const ProfileForm = () => {
 
   return (
     <>
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80">
-        <Row
-          justify="between"
-          align="center"
-          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
-        >
-          <Row align="center" gap={2}>
-            <SymbolView name="person.fill" size={20} tintColor={iconColor} />
-            <Text>Name</Text>
-          </Row>
-          <Text color="muted">{truncateText(profile?.fullName, 28)}</Text>
-        </Row>
-        <Row
-          justify="between"
-          align="center"
-          className="py-4 border-b border-gray-200/80 dark:border-dark-100"
-        >
-          <Row align="center" gap={2}>
-            <SymbolView name="envelope.fill" size={20} tintColor={iconColor} />
-            <Text>Email</Text>
-          </Row>
-          <Text color="muted">{truncateText(profile?.email, 32)}</Text>
-        </Row>
-        <Row justify="between" align="center" className="pt-4">
-          <Row align="center" gap={2}>
-            <SymbolView name="at" size={20} tintColor={iconColor} />
-            <Text>Username</Text>
-          </Row>
-          <Text color="muted">{`@${truncateText(profile?.username, 24)}`}</Text>
-        </Row>
-      </Wrapper>
-
-      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80 mt-4">
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80 mb-4">
         <Row
           justify="between"
           align="center"
@@ -116,6 +84,38 @@ export const ProfileForm = () => {
           </Pressable>
         </Row>
       </Wrapper>
+      <Wrapper className="border-0 dark:bg-dark-100/50 py-4 rounded-3xl bg-gray-100/80">
+        <Row
+          justify="between"
+          align="center"
+          className="pb-4 border-b border-gray-200/80 dark:border-dark-100"
+        >
+          <Row align="center" gap={2}>
+            <SymbolView name="person.fill" size={20} tintColor={iconColor} />
+            <Text>Name</Text>
+          </Row>
+          <Text color="muted">{truncateText(profile?.fullName, 28)}</Text>
+        </Row>
+        <Row
+          justify="between"
+          align="center"
+          className="py-4 border-b border-gray-200/80 dark:border-dark-100"
+        >
+          <Row align="center" gap={2}>
+            <SymbolView name="envelope.fill" size={20} tintColor={iconColor} />
+            <Text>Email</Text>
+          </Row>
+          <Text color="muted">{truncateText(profile?.email, 32)}</Text>
+        </Row>
+        <Row justify="between" align="center" className="pt-4">
+          <Row align="center" gap={2}>
+            <SymbolView name="at" size={20} tintColor={iconColor} />
+            <Text>Username</Text>
+          </Row>
+          <Text color="muted">{`@${truncateText(profile?.username, 24)}`}</Text>
+        </Row>
+      </Wrapper>
+
       <Col className="mt-4" gap={4}>
         <Button rounded="full" color="tertiary">
           Send Feedback
