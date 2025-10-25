@@ -7,8 +7,6 @@ import { CalendarIcon, SprintsIcon } from "icons";
 import { useMembers } from "@/lib/hooks/members";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
-import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
@@ -70,8 +68,6 @@ export const Activity = ({
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
-  const { data: objectives = [] } = useObjectives();
-  const { data: sprints = [] } = useSprints();
   const member = members.find((m) => m.id === userId);
 
   if (field === "completed_at") {
