@@ -66,7 +66,7 @@ export const Activities = ({
             ) : (
               <>
                 {allActivities.map((activity) => (
-                  <Activity key={activity.id} {...activity} />
+                  <Activity key={activity.id} {...activity} teamId={teamId} />
                 ))}
                 {isFetchingNextPage ? (
                   <Box className="mt-4 space-y-3">

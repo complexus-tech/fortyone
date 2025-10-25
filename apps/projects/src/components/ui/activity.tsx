@@ -11,14 +11,43 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+
+const DisplaySprint = ({
+  sprintId,
+  teamId,
+  value,
+}: {
+  sprintId: string;
+  teamId: string;
+  value: string;
+}) => {
+  const { data: sprint } = useSprint(sprintId, teamId);
+  return (
+    <>
+      {!value || value.includes("nil") ? (
+        <span>No sprint</span>
+      ) : (
+        <Link
+          className="flex items-center gap-1"
+          href={`/teams/${teamId}/sprints/${sprintId}/stories`}
+        >
+          <SprintsIcon className="h-5" />
+          {sprint?.name}
+        </Link>
+      )}
+    </>
+  );
+};
 
 export const Activity = ({
+  teamId,
   userId,
   field,
   currentValue,
   type,
   createdAt,
-}: StoryActivity) => {
+}: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { data: objectives = [] } = useObjectives();
