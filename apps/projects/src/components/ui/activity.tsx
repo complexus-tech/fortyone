@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, ObjectiveIcon, SprintsIcon } from "icons";
+import { CalendarIcon, SprintsIcon } from "icons";
 import { useMembers } from "@/lib/hooks/members";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -12,6 +12,7 @@ import { useSprints } from "@/modules/sprints/hooks/sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
 
 const DisplaySprint = ({
   sprintId,
@@ -32,6 +33,27 @@ const DisplaySprint = ({
         >
           <SprintsIcon className="h-5" />
           {sprint?.name}
+        </Link>
+      )}
+    </>
+  );
+};
+
+const DisplayObjective = ({
+  objectiveId,
+  teamId,
+}: {
+  objectiveId: string;
+  teamId?: string;
+}) => {
+  const { data: objective } = useObjective(objectiveId, teamId);
+  return (
+    <>
+      {!objectiveId || objectiveId.includes("nil") ? (
+        <span>No objective</span>
+      ) : (
+        <Link href={`/teams/${objective?.teamId}/objectives/${objectiveId}`}>
+          {objective?.name}
         </Link>
       )}
     </>
@@ -141,19 +163,7 @@ export const Activity = ({
     objective_id: {
       label: "Objective",
       render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>No objective</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1"
-              href={`/teams/${objectives.find((objective) => objective.id === value)?.teamId}/objectives/${objectives.find((objective) => objective.id === value)?.id}`}
-            >
-              <ObjectiveIcon className="h-5" />
-              {objectives.find((objective) => objective.id === value)?.name}
-            </Link>
-          )}
-        </>
+        <DisplayObjective objectiveId={value} teamId={teamId} />
       ),
     },
     blocked_by_id: {
