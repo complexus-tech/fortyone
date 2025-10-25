@@ -10,6 +10,8 @@ export const useSubscription = () => {
     queryKey: subscriptionKeys.details,
     queryFn: () => getSubscription(session!),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
+    refetchInterval: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+    refetchIntervalInBackground: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
   });
