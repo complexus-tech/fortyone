@@ -31,9 +31,9 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
-import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { hexToRgba, slugify } from "@/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -68,20 +68,16 @@ export const StoryProperties = ({
   const { getTermDisplay } = useTerminology();
   const { isColumnVisible } = useBoard();
   const { data: statuses = [] } = useTeamStatuses(teamId);
-  const { data: sprints = [] } = useTeamSprints(teamId);
-  const { data: objectives = [] } = useTeamObjectives(teamId);
+  const { data: selectedSprint } = useSprint(sprintId, teamId);
+  const { data: selectedObjective } = useObjective(objectiveId, teamId);
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
 
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const selectedObjective = objectives.find(
-    (objective) => objective.id === objectiveId,
-  );
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
-  const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
