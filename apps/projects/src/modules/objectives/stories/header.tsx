@@ -1,5 +1,5 @@
 "use client";
-import { BreadCrumbs, Debug, Flex } from "ui";
+import { BreadCrumbs, Flex } from "ui";
 import { ObjectiveIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
@@ -14,10 +14,8 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import {
-  useObjectives,
-  useTeamObjectives,
-} from "@/modules/objectives/hooks/use-objectives";
+import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTerminology } from "@/hooks";
 import { useObjectiveOptions } from "./provider";
 
@@ -36,12 +34,10 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
   const { data: objectives = [] } = useTeamObjectives(teamId);
+  const { data: objective } = useObjective(objectiveId, teamId);
   const { name: teamName, color: teamColor } = teams.find(
     (team) => team.id === teamId,
   )!;
-  const objective = objectives.find(
-    (objective) => objective.id === objectiveId,
-  );
   const objectiveName = objective?.name || "";
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useObjectiveOptions();

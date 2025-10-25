@@ -43,6 +43,8 @@ import {
 } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -119,8 +121,8 @@ export const Options = ({
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
   const { data: objectives = [] } = useTeamObjectives(teamId);
-  const sprint = sprints.find((s) => s.id === sprintId);
-  const objective = objectives.find((o) => o.id === objectiveId);
+  const { data: sprint } = useSprint(sprintId, teamId);
+  const { data: objective } = useObjective(objectiveId, teamId);
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const name = status?.name;
