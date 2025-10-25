@@ -16,21 +16,19 @@ import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 const DisplaySprint = ({
   sprintId,
   teamId,
-  value,
 }: {
   sprintId: string;
-  teamId: string;
-  value: string;
+  teamId?: string;
 }) => {
   const { data: sprint } = useSprint(sprintId, teamId);
   return (
     <>
-      {!value || value.includes("nil") ? (
+      {!sprintId || sprintId.includes("nil") ? (
         <span>No sprint</span>
       ) : (
         <Link
           className="flex items-center gap-1"
-          href={`/teams/${teamId}/sprints/${sprintId}/stories`}
+          href={`/teams/${sprint?.teamId}/sprints/${sprintId}/stories`}
         >
           <SprintsIcon className="h-5" />
           {sprint?.name}
@@ -133,19 +131,7 @@ export const Activity = ({
     sprint_id: {
       label: "Sprint",
       render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>No sprint</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1"
-              href={`/teams/${sprints.find((sprint) => sprint.id === value)?.teamId}/sprints/${sprints.find((sprint) => sprint.id === value)?.id}/stories`}
-            >
-              <SprintsIcon className="h-5" />
-              {sprints.find((sprint) => sprint.id === value)?.name}
-            </Link>
-          )}
-        </>
+        <DisplaySprint sprintId={value} teamId={teamId} />
       ),
     },
     epic_id: {
