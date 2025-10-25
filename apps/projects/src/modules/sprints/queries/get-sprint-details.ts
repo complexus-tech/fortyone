@@ -3,7 +3,7 @@ import { get } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { SprintDetails } from "../types";
 
-export const getSprintDetails = async (sprintId: string, session: Session) => {
+export const getSprint = async (sprintId: string, session: Session) => {
   const sprint = await get<ApiResponse<SprintDetails>>(
     `sprints/${sprintId}`,
     session,

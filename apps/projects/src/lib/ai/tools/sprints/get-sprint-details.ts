@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getSprintDetails } from "@/modules/sprints/queries/get-sprint-details";
+import { getSprint } from "@/modules/sprints/queries/get-sprint-details";
 import { getSprintAnalytics } from "@/modules/sprints/queries/get-sprint-analytics";
 
 export const getSprintDetailsTool = tool({
@@ -23,7 +23,7 @@ export const getSprintDetailsTool = tool({
       }
 
       const [sprint, analytics] = await Promise.all([
-        getSprintDetails(sprintId, session),
+        getSprint(sprintId, session),
         getSprintAnalytics(sprintId, session),
       ]);
 

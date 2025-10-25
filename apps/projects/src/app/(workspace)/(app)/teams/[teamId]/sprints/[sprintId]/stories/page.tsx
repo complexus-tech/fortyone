@@ -5,7 +5,7 @@ import { ListSprintStories } from "@/modules/sprints/stories/list-stories";
 import { sprintKeys } from "@/constants/keys";
 import { getSprintAnalytics } from "@/modules/sprints/queries/get-sprint-analytics";
 import { auth } from "@/auth";
-import { getSprintDetails } from "@/modules/sprints/queries/get-sprint-details";
+import { getSprint } from "@/modules/sprints/queries/get-sprint-details";
 
 export async function generateMetadata({
   params,
@@ -17,7 +17,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { sprintId } = await params;
   const session = await auth();
-  const sprintData = await getSprintDetails(sprintId, session!);
+  const sprintData = await getSprint(sprintId, session!);
 
   return {
     title: `${sprintData?.name || "Sprint"} › Stories`,
