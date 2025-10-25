@@ -2,7 +2,7 @@ import { Text, Row, Back, ContextMenuButton } from "@/components/ui";
 import { useGlobalSearchParams } from "expo-router";
 import { useStory } from "@/modules/stories/hooks";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
-import { Alert } from "react-native";
+import { Alert, Share } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import {
   useArchiveStoryMutation,
@@ -12,13 +12,16 @@ import {
 } from "@/modules/stories/hooks/story-mutations";
 import { useCurrentWorkspace } from "@/lib/hooks";
 import { toast } from "sonner-native";
+import { useTerminology } from "@/hooks/use-terminology";
 
 export const Header = () => {
   const { storyId } = useGlobalSearchParams<{ storyId: string }>();
+  const { getTermDisplay } = useTerminology();
   const { workspace } = useCurrentWorkspace();
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === story?.teamId);
+  const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
 
   const archiveMutation = useArchiveStoryMutation();
   const unarchiveMutation = useUnarchiveStoryMutation();
@@ -89,9 +92,16 @@ export const Header = () => {
     );
   };
 
+  const handleShare = () => {
+    Share.share({
+      url: storyUrl,
+      message: `Check out this ${getTermDisplay("storyTerm", { capitalize: true })}: ${story?.title}`,
+      title: story?.title,
+    });
+  };
+
   const handleCopyLink = async () => {
     try {
-      const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
       await Clipboard.setStringAsync(storyUrl);
       toast.success("Link copied to clipboard");
     } catch {
@@ -105,6 +115,11 @@ export const Header = () => {
         systemImage: "link" as const,
         label: "Copy link",
         onPress: handleCopyLink,
+      },
+      {
+        systemImage: "square.and.arrow.up" as const,
+        label: "Share",
+        onPress: handleShare,
       },
     ];
 
