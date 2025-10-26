@@ -1,12 +1,11 @@
 "use client";
 import { Avatar, Box, Button, Flex, Tabs, Text, Tooltip, Wrapper } from "ui";
 import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
-import { useSession } from "next-auth/react";
-import { format, addDays } from "date-fns";
+import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
 import { cn } from "lib";
 import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
-import { useMyStories } from "@/modules/my-work/hooks/my-stories";
+import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
@@ -15,6 +14,7 @@ import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology } from "@/hooks";
 import { MyStoriesSkeleton } from "./my-stories-skeleton";
+import { useState } from "react";
 
 const StoryRow = ({
   id,
@@ -123,54 +123,59 @@ const List = ({ stories }: { stories: Story[] }) => {
 };
 
 export const MyStories = () => {
-  const { data: session } = useSession();
-  const { data: stories = [], isPending } = useMyStories();
-  const { data: statuses = [] } = useStatuses();
   const { getTermDisplay } = useTerminology();
+  const [activeTab, setActiveTab] = useState("inProgress");
+
+  const now = formatISO(new Date(), { representation: "date" });
+  const sevenDaysLater = formatISO(addDays(new Date(), 7), {
+    representation: "date",
+  });
+
+  const { data: inProgressGrouped, isPending: isInProgressPending } =
+    useMyStoriesGrouped("none", {
+      categories: ["started"],
+      assignedToMe: true,
+      storiesPerGroup: 9,
+    });
+
+  const { data: upcomingGrouped, isPending: isUpcomingPending } =
+    useMyStoriesGrouped("none", {
+      assignedToMe: true,
+      categories: ["backlog", "unstarted", "started"],
+      deadlineAfter: now,
+      deadlineBefore: sevenDaysLater,
+      storiesPerGroup: 9,
+    });
+
+  const { data: overdueGrouped, isPending: isOverduePending } =
+    useMyStoriesGrouped("none", {
+      assignedToMe: true,
+      categories: ["backlog", "unstarted", "started"],
+      deadlineBefore: now,
+      storiesPerGroup: 9,
+    });
+
+  // Extract stories from grouped data structure
+  const getStoriesFromGrouped = (
+    grouped: typeof inProgressGrouped,
+  ): Story[] => {
+    if (!grouped) return [];
+    return grouped.groups.flatMap((group) => group.stories);
+  };
+
+  const inProgressStories = getStoriesFromGrouped(inProgressGrouped);
+  const upcomingStories = getStoriesFromGrouped(upcomingGrouped);
+  const overdueStories = getStoriesFromGrouped(overdueGrouped);
+
+  // Determine loading state based on active tab
+  const isPending =
+    (activeTab === "inProgress" && isInProgressPending) ||
+    (activeTab === "upcoming" && isUpcomingPending) ||
+    (activeTab === "due" && isOverduePending);
 
   if (isPending) {
     return <MyStoriesSkeleton />;
   }
-
-  const inProgressStatuses = statuses
-    .filter((status) => {
-      return status.category === "started";
-    })
-    .map((status) => status.id);
-
-  const completedOrCancelledStatuses = statuses
-    .filter((status) => {
-      return (
-        status.category === "completed" ||
-        status.category === "cancelled" ||
-        status.category === "paused"
-      );
-    })
-    .map((status) => status.id);
-
-  const upcomingDueDates = stories.filter((story) => {
-    return (
-      story.endDate &&
-      new Date(story.endDate) > new Date() &&
-      story.assigneeId === session?.user?.id
-    );
-  });
-
-  const dueStories = stories.filter((story) => {
-    return (
-      story.endDate &&
-      new Date(story.endDate) < new Date() &&
-      story.assigneeId === session?.user?.id &&
-      !completedOrCancelledStatuses.includes(story.statusId)
-    );
-  });
-
-  const inProgressStories = stories.filter((story) => {
-    return (
-      inProgressStatuses.includes(story.statusId) &&
-      story.assigneeId === session?.user?.id
-    );
-  });
 
   return (
     <Wrapper className="min-h-[25rem] md:min-h-[30rem]">
@@ -187,7 +192,7 @@ export const MyStories = () => {
           More {getTermDisplay("storyTerm", { variant: "plural" })}
         </Button>
       </Flex>
-      <Tabs defaultValue="inProgress">
+      <Tabs onValueChange={setActiveTab} value={activeTab}>
         <Tabs.List className="mx-0 mb-2 md:mx-0 md:mb-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
@@ -214,7 +219,7 @@ export const MyStories = () => {
           )}
         </Tabs.Panel>
         <Tabs.Panel value="upcoming">
-          {upcomingDueDates.length === 0 ? (
+          {upcomingStories.length === 0 ? (
             <Flex
               align="center"
               className="h-[25rem]"
@@ -229,11 +234,11 @@ export const MyStories = () => {
               </Text>
             </Flex>
           ) : (
-            <List stories={upcomingDueDates} />
+            <List stories={upcomingStories} />
           )}
         </Tabs.Panel>
         <Tabs.Panel value="due">
-          {dueStories.length === 0 ? (
+          {overdueStories.length === 0 ? (
             <Flex
               align="center"
               className="h-[25rem]"
@@ -248,7 +253,7 @@ export const MyStories = () => {
               </Text>
             </Flex>
           ) : (
-            <List stories={dueStories} />
+            <List stories={overdueStories} />
           )}
         </Tabs.Panel>
       </Tabs>
