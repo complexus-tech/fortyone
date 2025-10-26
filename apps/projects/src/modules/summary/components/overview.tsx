@@ -3,33 +3,44 @@ import { Box, Flex, Text, Wrapper } from "ui";
 import { useSummary } from "@/lib/hooks/summary";
 import { useTerminology } from "@/hooks";
 import { OverviewSkeleton } from "./overview-skeleton";
+import Link from "next/link";
 
-const Card = ({ title, count }: { title: string; count?: number }) => (
-  <Wrapper className="px-3 py-3 md:px-5 md:py-4">
-    <Flex justify="between">
-      <Text className="mb-1.5 text-2xl antialiased" fontWeight="semibold">
-        {count}
+const Card = ({
+  title,
+  count,
+  link,
+}: {
+  title: string;
+  count?: number;
+  link: string;
+}) => (
+  <Link href={link}>
+    <Wrapper className="px-3 py-3 md:px-5 md:py-4">
+      <Flex justify="between">
+        <Text className="mb-1.5 text-2xl antialiased" fontWeight="semibold">
+          {count}
+        </Text>
+        <svg
+          className="h-5 w-auto"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M7 7h10v10" />
+          <path d="M7 17 17 7" />
+        </svg>
+      </Flex>
+      <Text className="opacity-80" color="muted">
+        {title}
       </Text>
-      <svg
-        className="h-5 w-auto"
-        fill="none"
-        height="24"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-        width="24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M7 7h10v10" />
-        <path d="M7 17 17 7" />
-      </svg>
-    </Flex>
-    <Text className="opacity-80" color="muted">
-      {title}
-    </Text>
-  </Wrapper>
+    </Wrapper>
+  </Link>
 );
 
 export const Overview = () => {
@@ -42,22 +53,27 @@ export const Overview = () => {
     {
       count: summary?.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
+      link: "/my-work?category=closed",
     },
     {
       count: summary?.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
+      link: "/my-work?category=overdue",
     },
     {
       count: summary?.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
+      link: "/my-work?category=started",
     },
     {
       count: summary?.created,
       title: "Created by you",
+      link: "/my-work?tab=created",
     },
     {
       count: summary?.assigned,
       title: "Assigned to you",
+      link: "/my-work?tab=assigned",
     },
   ];
 
