@@ -529,7 +529,7 @@ export const Options = ({
                       size="sm"
                       variant={isMobile ? "solid" : "naked"}
                     >
-                      <span className="inline-block max-w-[16ch] truncate">
+                      <span className="inline-block max-w-[12ch] truncate">
                         {objective?.name || "Add objective"}
                       </span>
                     </Button>
