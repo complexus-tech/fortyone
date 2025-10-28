@@ -115,7 +115,7 @@ export const Chat = ({
           <Dialog.Description className="sr-only">
             Maya is your AI assistant.
           </Dialog.Description>
-          <Dialog.Body className="h-[50rem] max-h-[80dvh] p-0">
+          <Dialog.Body className="h-[54rem] max-h-[80dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages
                 messages={messages}
