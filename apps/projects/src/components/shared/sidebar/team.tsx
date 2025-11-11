@@ -29,6 +29,7 @@ import {
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 
 export const Team = ({
   id,
@@ -50,9 +51,11 @@ export const Team = ({
     `teams:${id}:dropdown`,
     idx === 0,
   );
+  const { data: statuses } = useTeamStatuses(id);
   const pathname = usePathname();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
+  const hasBacklog = statuses?.some((status) => status.category === "backlog");
 
   const {
     attributes,
@@ -77,6 +80,7 @@ export const Team = ({
       name: "Backlog",
       icon: <BacklogIcon className="h-[1.15rem]" />,
       href: `/teams/${id}/backlog`,
+      disabled: !hasBacklog,
     },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
