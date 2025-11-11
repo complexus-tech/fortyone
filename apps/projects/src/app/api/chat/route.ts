@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const client =
     provider === "openai"
-      ? openaiClient("gpt-5-mini-2025-08-07")
+      ? openaiClient("gpt-4.1-mini")
       : googleClient("gemini-2.5-flash");
 
   const model = withTracing(client, phClient, {
