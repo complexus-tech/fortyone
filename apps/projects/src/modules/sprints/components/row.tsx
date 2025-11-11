@@ -11,6 +11,7 @@ import { StoryStatusIcon } from "@/components/ui";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { useTerminology } from "@/hooks";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -28,6 +29,8 @@ export const SprintRow = ({
   endDate,
   stats: { total, completed, started, unstarted, backlog },
 }: Sprint) => {
+  const { getTermDisplay } = useTerminology();
+  const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
   const { data: session } = useSession();
   const queryClient = new QueryClient();
   const startDateObj = new Date(startDate);
@@ -68,7 +71,7 @@ export const SprintRow = ({
             className="line-clamp-1 antialiased md:text-[1.05rem]"
             fontWeight="semibold"
           >
-            {name}
+            {name?.replace("Sprint", sprintTerm)}
           </Text>
           <Text className="flex items-center gap-1.5" color="muted">
             <CalendarIcon className="h-[1.1rem]" />

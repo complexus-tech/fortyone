@@ -58,7 +58,12 @@ export const Header = ({
   const team = teams.find((team) => team.id === teamId)!;
   const startDate = format(new Date(sprint.startDate), "MMM d");
   const endDate = format(new Date(sprint.endDate), "MMM d");
-  const sprintName = `${sprint.name}${isDesktop ? ` (${startDate} - ${endDate})` : ""}`;
+  const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
+  const sprintName =
+    `${sprint.name}${isDesktop ? ` (${startDate} - ${endDate})` : ""}`.replace(
+      "Sprint",
+      sprintTerm,
+    );
 
   return (
     <HeaderContainer className="justify-between gap-4">
