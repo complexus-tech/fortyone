@@ -80,6 +80,7 @@ export const TerminologyPreferences = () => {
           { label: "Sprint", value: "sprint" },
           { label: "Cycle", value: "cycle" },
           { label: "Iteration", value: "iteration" },
+          { label: "Phase", value: "phase" },
         ],
         disabled: false,
       },
@@ -94,6 +95,7 @@ export const TerminologyPreferences = () => {
         key: "objectiveTerm",
         options: [
           { label: "Objective", value: "objective" },
+          { label: "Project", value: "project" },
           { label: "Goal", value: "goal" },
           { label: "Aspiration", value: "aspiration" },
           { label: "Deliverable", value: "deliverable" },
