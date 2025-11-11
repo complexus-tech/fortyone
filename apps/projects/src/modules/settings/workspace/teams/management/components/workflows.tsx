@@ -83,7 +83,10 @@ export const WorkflowSettings = () => {
 
   const handleDeleteState = (state: State) => {
     const categoryStates = states.filter((s) => s.category === state.category);
-    if (categoryStates.length <= 1) {
+    if (
+      categoryStates.length <= 1 &&
+      ["unstarted", "started"].includes(state.category)
+    ) {
       toast.warning("Status cannot be removed", {
         description:
           "Create another status in this category before deleting this one. You can also update the status instead.",
