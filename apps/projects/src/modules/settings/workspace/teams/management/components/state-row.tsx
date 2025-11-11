@@ -18,6 +18,7 @@ import { cn } from "lib";
 import { StoryStatusIcon } from "@/components/ui";
 import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import type { State } from "@/types/states";
+import { useTerminology } from "@/hooks";
 
 type StateRowProps = {
   state: State;
@@ -36,6 +37,7 @@ export const StateRow = ({
   onCreate,
   storyCount,
 }: StateRowProps) => {
+  const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateStateMutation();
   const [isEditing, setIsEditing] = useState(isNew);
   const [form, setForm] = useState({ name: state.name, color: state.color });
@@ -155,7 +157,10 @@ export const StateRow = ({
           />
           {storyCount && !isEditing ? (
             <Text color="muted" fontSize="sm">
-              {storyCount} {storyCount === 1 ? "story" : "stories"}
+              {storyCount}{" "}
+              {getTermDisplay("storyTerm", {
+                variant: storyCount === 1 ? "singular" : "plural",
+              })}
             </Text>
           ) : null}
         </Box>
