@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
     webSearchEnabled = false,
-    provider = "google",
+    provider = "openai",
   } = await req.json();
   const modelMessages = convertToModelMessages(
     messagesFromRequest as UIMessage[],
