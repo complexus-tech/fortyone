@@ -64,6 +64,7 @@ export const TerminologyPreferences = () => {
           { label: "Story", value: "story" },
           { label: "Task", value: "task" },
           { label: "Issue", value: "issue" },
+          { label: "Ticket", value: "ticket" },
           { label: "Work Item", value: "work item" },
         ],
       },
