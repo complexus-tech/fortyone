@@ -93,11 +93,11 @@ export async function POST(req: NextRequest) {
         chunking: "word",
       }),
       providerOptions: {
-        openai: {
-          reasoningEffort: "low",
-          reasoningSummary: "auto",
-          textVerbosity: "low",
-        } satisfies OpenAIResponsesProviderOptions,
+        // openai: {
+        //   reasoningEffort: "low",
+        //   reasoningSummary: "auto",
+        //   textVerbosity: "low",
+        // } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
             thinkingBudget: -1,
