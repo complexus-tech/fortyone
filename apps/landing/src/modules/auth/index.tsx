@@ -16,7 +16,6 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const [email, setEmail] = useState("");
   const [isSent, setIsSent] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
-  const [isManual, setIsManual] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -34,9 +33,6 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
       });
     } else {
       setIsSent(true);
-      if (isMobile) {
-        setIsManual(true);
-      }
     }
     setLoading(false);
   };
@@ -67,39 +63,25 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             Check your email
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
-            A secure sign-in {isManual || isMobile ? "code" : "link"} has been
-            sent to{" "}
+            A secure sign-in {isMobile ? "code" : "link"} has been sent to{" "}
             <span className="font-semibold dark:text-white/70">{email}</span>.
             ✨ Please check your inbox to continue.
           </Text>
-          {!isManual ? (
+          <Box className="mb-4">
+            <OTPInput value={otp} onChange={setOtp} className="mb-4" />
             <Button
               align="center"
               className="mb-4"
-              color="tertiary"
-              size="lg"
+              color="invert"
               fullWidth
-              onClick={() => setIsManual(true)}
+              loading={otpLoading}
+              loadingText="Verifying..."
+              onClick={handleOTPSubmit}
+              disabled={otp.length !== 6}
             >
-              Enter Code Manually
+              Verify Code
             </Button>
-          ) : (
-            <Box className="mb-4">
-              <OTPInput value={otp} onChange={setOtp} className="mb-4" />
-              <Button
-                align="center"
-                className="mb-4"
-                color="invert"
-                fullWidth
-                loading={otpLoading}
-                loadingText="Verifying..."
-                onClick={handleOTPSubmit}
-                disabled={otp.length !== 6}
-              >
-                Verify Code
-              </Button>
-            </Box>
-          )}
+          </Box>
           <Text className="mb-6 pl-0.5" fontWeight="medium">
             Back to{" "}
             <button
