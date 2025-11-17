@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const client =
     provider === "openai"
-      ? openaiClient("gpt-5.1")
+      ? openaiClient("gpt-4.1-mini")
       : googleClient("gemini-2.5-flash");
 
   const model = withTracing(client, phClient, {
@@ -93,11 +93,11 @@ export async function POST(req: NextRequest) {
         chunking: "word",
       }),
       providerOptions: {
-        openai: {
-          reasoningEffort: "low",
-          reasoningSummary: "auto",
-          textVerbosity: "low",
-        } satisfies OpenAIResponsesProviderOptions,
+        // openai: {
+        //   reasoningEffort: "low",
+        //   reasoningSummary: "auto",
+        //   textVerbosity: "low",
+        // } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
             thinkingBudget: -1,
