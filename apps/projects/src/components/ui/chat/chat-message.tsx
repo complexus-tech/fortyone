@@ -49,7 +49,7 @@ const RenderMessage = ({
 
   return (
     <>
-      {(status === "submitted" || status === "streaming") &&
+      {status === "submitted" &&
       message.role === "assistant" &&
       isLast &&
       !hasReasoning ? (
