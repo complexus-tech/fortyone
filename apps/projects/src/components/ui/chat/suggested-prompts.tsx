@@ -60,8 +60,8 @@ export const SuggestedPrompts = ({
       icon: <SunIcon className="text-secondary dark:text-white/80" />,
       label:
         resolvedTheme === "dark"
-          ? "Switch to light mode"
-          : "Switch to dark mode",
+          ? "Switch system theme to light mode"
+          : "Switch system theme to dark mode",
       value: "Change the app's appearance to match your preference.",
       classes: "bg-secondary/10 dark:bg-secondary/10",
     },
