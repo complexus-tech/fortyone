@@ -14,7 +14,7 @@ import { withTracing } from "@posthog/ai";
 import { tools } from "@/lib/ai/tools";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
-import { systemPrompt } from "./system-xml";
+import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
 
