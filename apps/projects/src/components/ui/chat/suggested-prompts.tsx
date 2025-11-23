@@ -1,9 +1,9 @@
 import {
   NotificationsIcon,
   StoryIcon,
+  SunIcon,
   TeamIcon,
   HelpIcon,
-  DashboardIcon,
 } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
@@ -57,9 +57,12 @@ export const SuggestedPrompts = ({
       classes: "bg-danger/10 dark:bg-danger/10",
     },
     {
-      icon: <DashboardIcon className="text-secondary dark:text-white/80" />,
-      label: "Navigate to the summary page",
-      value: "Navigate to the summary page to see the overview of your work.",
+      icon: <SunIcon className="text-secondary dark:text-white/80" />,
+      label:
+        resolvedTheme === "dark"
+          ? "Switch to light mode"
+          : "Switch to dark mode",
+      value: "Change the app's appearance to match your preference.",
       classes: "bg-secondary/10 dark:bg-secondary/10",
     },
     {
