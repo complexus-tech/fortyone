@@ -115,9 +115,15 @@ func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int,
 		"offset_value": offset * batchSize,
 	}
 
-	var workspaces []InactiveWorkspace
-	err := db.SelectContext(ctx, &workspaces, query, params)
+	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("failed to prepare inactive workspaces query: %w", err)
+	}
+	defer stmt.Close()
+
+	var workspaces []InactiveWorkspace
+	if err := stmt.SelectContext(ctx, &workspaces, params); err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to query inactive workspaces batch: %w", err)
 	}

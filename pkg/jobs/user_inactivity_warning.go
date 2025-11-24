@@ -103,9 +103,15 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 		"offset_value": offset * batchSize,
 	}
 
-	var users []InactiveUser
-	err := db.SelectContext(ctx, &users, query, params)
+	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("failed to prepare inactive users query: %w", err)
+	}
+	defer stmt.Close()
+
+	var users []InactiveUser
+	if err := stmt.SelectContext(ctx, &users, params); err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to query inactive users batch: %w", err)
 	}
