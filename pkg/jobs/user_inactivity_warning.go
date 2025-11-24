@@ -92,6 +92,7 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 		FROM users u
 		WHERE u.last_login_at < NOW() - INTERVAL '8 months'
 		AND u.is_active = true
+		AND u.is_system = false
 		AND u.inactivity_warning_sent_at IS NULL
 		ORDER BY u.last_login_at ASC
 		LIMIT :batch_size OFFSET :offset_value
