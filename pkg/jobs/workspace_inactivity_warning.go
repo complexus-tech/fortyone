@@ -107,12 +107,12 @@ func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int,
 		AND w.deleted_at IS NULL
 		AND w.inactivity_warning_sent_at IS NULL
 		ORDER BY w.last_accessed_at ASC
-		LIMIT :batch_size OFFSET :offset
+		LIMIT :batch_size OFFSET :offset_value
 	`
 
 	params := map[string]any{
-		"batch_size": batchSize,
-		"offset":     offset * batchSize,
+		"batch_size":   batchSize,
+		"offset_value": offset * batchSize,
 	}
 
 	var workspaces []InactiveWorkspace

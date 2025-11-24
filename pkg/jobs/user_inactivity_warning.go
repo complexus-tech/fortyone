@@ -94,12 +94,12 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 		AND u.is_active = true
 		AND u.inactivity_warning_sent_at IS NULL
 		ORDER BY u.last_login_at ASC
-		LIMIT :batch_size OFFSET :offset
+		LIMIT :batch_size OFFSET :offset_value
 	`
 
 	params := map[string]any{
-		"batch_size": batchSize,
-		"offset":     offset * batchSize,
+		"batch_size":   batchSize,
+		"offset_value": offset * batchSize,
 	}
 
 	var users []InactiveUser
