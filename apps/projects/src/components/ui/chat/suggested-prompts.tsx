@@ -1,15 +1,7 @@
-import {
-  NotificationsIcon,
-  StoryIcon,
-  SunIcon,
-  TeamIcon,
-  HelpIcon,
-} from "icons";
+import { NotificationsIcon, StoryIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
-import { useTheme } from "next-themes";
 import { useProfile } from "@/lib/hooks/profile";
-import { useMediaQuery } from "@/hooks/media";
 import { PriorityIcon } from "../priority-icon";
 
 type SuggestedPromptsProps = {
@@ -21,8 +13,6 @@ export const SuggestedPrompts = ({
   onPromptSelect,
   isOnPage,
 }: SuggestedPromptsProps) => {
-  const { resolvedTheme } = useTheme();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
 
@@ -56,12 +46,12 @@ export const SuggestedPrompts = ({
       value: "Find your most urgent stories across teams to focus on.",
       classes: "bg-danger/10 dark:bg-danger/10",
     },
-    {
-      icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
-      label: "How can you help me?",
-      value: "Learn about what I can do and how to use the app effectively.",
-      classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
-    },
+    // {
+    //   icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
+    //   label: "How can you help me?",
+    //   value: "Learn about what I can do and how to use the app effectively.",
+    //   classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
+    // },
   ];
   return (
     <Box
@@ -81,52 +71,50 @@ export const SuggestedPrompts = ({
           "grid md:grid-cols-2 md:gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.slice(0, isOnPage && isDesktop ? 4 : 5).map(
-          (prompt, index) => (
-            <Wrapper
+        {SUGGESTED_PROMPTS.map((prompt, index) => (
+          <Wrapper
+            className={cn(
+              "flex cursor-pointer items-center gap-3 ring-primary transition hover:ring-2 md:px-4",
+              {
+                "gap-3 md:px-4 md:py-3": isOnPage,
+              },
+            )}
+            key={index}
+            onClick={() => {
+              onPromptSelect(prompt.label);
+            }}
+            tabIndex={0}
+          >
+            <Flex
+              align="center"
               className={cn(
-                "flex cursor-pointer items-center gap-3 ring-primary transition hover:ring-2 md:px-4",
-                {
-                  "gap-3 md:px-4 md:py-3": isOnPage,
-                },
+                "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
+                prompt.classes,
               )}
-              key={index}
-              onClick={() => {
-                onPromptSelect(prompt.label);
-              }}
-              tabIndex={0}
+              gap={2}
+              justify="center"
             >
-              <Flex
-                align="center"
-                className={cn(
-                  "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
-                  prompt.classes,
-                )}
-                gap={2}
-                justify="center"
+              {prompt.icon}
+            </Flex>
+            <Box>
+              <Text
+                className={cn({
+                  "md:text-lg": isOnPage,
+                })}
               >
-                {prompt.icon}
-              </Flex>
-              <Box>
-                <Text
-                  className={cn({
-                    "md:text-lg": isOnPage,
-                  })}
-                >
-                  {prompt.label}
-                </Text>
-                <Text
-                  className={cn("text-[0.95rem]", {
-                    "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
-                  })}
-                  color="muted"
-                >
-                  {prompt.value}
-                </Text>
-              </Box>
-            </Wrapper>
-          ),
-        )}
+                {prompt.label}
+              </Text>
+              <Text
+                className={cn("text-[0.95rem]", {
+                  "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
+                })}
+                color="muted"
+              >
+                {prompt.value}
+              </Text>
+            </Box>
+          </Wrapper>
+        ))}
       </Box>
     </Box>
   );
