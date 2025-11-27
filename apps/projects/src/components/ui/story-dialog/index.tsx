@@ -109,7 +109,7 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="max-w-[80rem] overflow-clip rounded-[1.25rem] bg-white dark:bg-dark-300 md:mb-auto md:mt-auto"
+        className="max-w-[80rem] overflow-clip rounded-[1.25rem] border bg-white dark:bg-dark-300 md:mb-auto md:mt-auto"
         hideClose
         overlayClassName="bg-black/10"
       >

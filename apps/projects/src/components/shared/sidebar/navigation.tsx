@@ -48,27 +48,29 @@ export const Navigation = () => {
 
   const links: MenuItem[] = [
     {
-      name: "Summary",
-      icon: <DashboardIcon />,
-      href: "/summary",
-    },
-    {
-      name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+      name: `My work`,
       icon: <UserIcon />,
       href: "/my-work",
     },
-    {
-      name: "AI Assistant",
-      icon: <AiIcon />,
-      href: "/maya",
-    },
-    ...(getSprintsItem() ? [getSprintsItem()!] : []),
     {
       name: "Roadmap",
       icon: <RoadmapIcon strokeWidth={2} />,
       href: "/roadmaps",
       disabled: !features.objectiveEnabled,
     },
+    {
+      name: "Summary",
+      icon: <DashboardIcon />,
+      href: "/summary",
+    },
+
+    {
+      name: "AI Assistant",
+      icon: <AiIcon />,
+      href: "/maya",
+    },
+    ...(getSprintsItem() ? [getSprintsItem()!] : []),
+
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
