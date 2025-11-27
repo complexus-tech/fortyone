@@ -57,15 +57,6 @@ export const SuggestedPrompts = ({
       classes: "bg-danger/10 dark:bg-danger/10",
     },
     {
-      icon: <SunIcon className="text-secondary dark:text-white/80" />,
-      label:
-        resolvedTheme === "dark"
-          ? "Switch system theme to light mode"
-          : "Switch system theme to dark mode",
-      value: "Change the app's appearance to match your preference.",
-      classes: "bg-secondary/10 dark:bg-secondary/10",
-    },
-    {
       icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
       label: "How can you help me?",
       value: "Learn about what I can do and how to use the app effectively.",
@@ -90,7 +81,7 @@ export const SuggestedPrompts = ({
           "grid md:grid-cols-2 md:gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.slice(0, isOnPage && isDesktop ? 6 : 5).map(
+        {SUGGESTED_PROMPTS.slice(0, isOnPage && isDesktop ? 4 : 5).map(
           (prompt, index) => (
             <Wrapper
               className={cn(
