@@ -8,7 +8,7 @@
 
 body,
 html {
-  @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white font-body text-[13.5px] font-medium text-dark antialiased dark:bg-dark dark:text-gray-200 2xl:text-[14px];
+  @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white font-body text-[13px] font-medium text-dark antialiased dark:bg-dark dark:text-gray-200 2xl:text-[13.5px];
 }
 
 @media not all and (min-resolution: 0.001dpcm) {
