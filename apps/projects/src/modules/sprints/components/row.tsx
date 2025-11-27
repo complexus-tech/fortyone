@@ -46,7 +46,7 @@ export const SprintRow = ({
   const progress = Math.round((completed / total) * 100) || 0;
 
   return (
-    <RowWrapper className="gap-3">
+    <RowWrapper className="gap-3 py-2">
       <Link
         className="flex flex-1 items-center gap-4"
         href={`/teams/${teamId}/sprints/${id}/stories`}
@@ -66,7 +66,7 @@ export const SprintRow = ({
         >
           <SprintsIcon />
         </Flex>
-        <Box className="space-y-1">
+        <Box>
           <Text
             className="line-clamp-1 antialiased md:text-[1.05rem]"
             fontWeight="semibold"

@@ -104,8 +104,8 @@ export const ObjectiveCard = ({
   return (
     <>
       <RowWrapper
-        className={cn("px-5 py-3 md:px-12", {
-          "gap-4 py-2 md:px-6": isInSearch,
+        className={cn("px-5 py-2 md:px-12", {
+          "gap-4 md:px-6": isInSearch,
         })}
       >
         <Box
