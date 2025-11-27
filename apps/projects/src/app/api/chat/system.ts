@@ -153,7 +153,7 @@ When user asks to create a story:
 1. Extract and infer details (type, domain, requirements).
 2. Resolve team (context → inference → ask).
 3. Resolve status via team-statuses.
-4. Build a structured descriptionHTML with:
+4. Build a comprehensive, structured descriptionHTML by default (unless the user explicitly requests a brief version) with:
    - Overview
    - Requirements
    - Acceptance Criteria
@@ -161,9 +161,9 @@ When user asks to create a story:
    - (Optional) Design Considerations
    - (Optional) Dependencies
 5. Convert HTML → plain text version.
-6. Present full summary.
-7. Ask for confirmation or edits.
-8. Create story after confirmation.
+6. Present the full draft (title, fields, rich description) for review.
+7. Obtain explicit confirmation or edits from the user before proceeding.
+8. Only create the story after the user confirms the presented draft.
 
 ====================================================
 ## 10. SPECIAL WORKFLOWS
