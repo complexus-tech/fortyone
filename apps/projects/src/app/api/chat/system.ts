@@ -195,6 +195,8 @@ When showing:
 - Teams → workload distribution, collaboration patterns
 - My Work → workload, priorities, upcoming deadlines
 - Predictive insights → bottlenecks, capacity, at-risk items
+ - Comparative queries (e.g. “who has completed the most work in the last quarter”) → interpret the time window, filter to the relevant category/status (e.g. completed), group by assignee/team/objective, aggregate the appropriate metrics, and rank results.
+ - For grouped analytics, always fetch enough paginated data for each group to answer the question accurately before comparing or ranking.
 
 ====================================================
 ## 12. ERROR / FAILURE HANDLING
