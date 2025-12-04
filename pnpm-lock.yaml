@@ -155,8 +155,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       posthog-js:
-        specifier: ^1.246.0
-        version: 1.246.0
+        specifier: ^1.301.1
+        version: 1.301.1
       react:
         specifier: 19.1.1
         version: 19.1.1
@@ -443,7 +443,7 @@ importers:
         version: 10.0.0(@dnd-kit/core@6.1.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)
       '@posthog/ai':
         specifier: ^6.6.0
-        version: 6.6.0(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(axios@1.13.2)(cheerio@1.1.2)(posthog-node@4.18.0)(ws@8.18.3)
+        version: 6.6.0(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(axios@1.13.2)(cheerio@1.1.2)(posthog-node@5.17.0)(ws@8.18.3)
       '@sentry/nextjs':
         specifier: ^10
         version: 10.12.0(@opentelemetry/context-async-hooks@2.1.0(@opentelemetry/api@1.9.0))(@opentelemetry/core@2.1.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(next@16.0.0-beta.0(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(webpack@5.101.3)
@@ -577,11 +577,11 @@ importers:
         specifier: ^0.1.7
         version: 0.1.7(react@19.2.0)
       posthog-js:
-        specifier: ^1.300.0
-        version: 1.300.0
+        specifier: ^1.301.1
+        version: 1.301.1
       posthog-node:
-        specifier: ^4.18.0
-        version: 4.18.0
+        specifier: ^5.17.0
+        version: 5.17.0
       qs:
         specifier: ^6.12.3
         version: 6.12.3
@@ -6313,9 +6313,6 @@ packages:
   core-js-compat@3.45.1:
     resolution: {integrity: sha512-tqTt5T4PzsMIZ430XGviK4vzYSoeNJ6CXODi6c/voxOT6IZqBht5/EKaSNnYiEjjRYxjVz7DQIsOsY0XNi8PIA==}
 
-  core-js@3.40.0:
-    resolution: {integrity: sha512-7vsMc/Lty6AGnn7uFpYT56QesI5D2Y/UkgKounk87OP9Z2H9Z8kj6jzcSGAxFmUtDOS0ntK6lbQz+Nsa0Jj6mQ==}
-
   core-js@3.47.0:
     resolution: {integrity: sha512-c3Q2VVkGAUyupsjRnaNX6u8Dq2vAdzm9iuPj5FW0fRxzlxgq9Q39MDq10IvmQSpLgHQNyQzQmOo6bgGHmH3NNg==}
 
@@ -10252,31 +10249,17 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  posthog-js@1.246.0:
-    resolution: {integrity: sha512-5lN/UMqDfxsLeSnT3LsY4P+eD1H+P9qxgN/iUk473LmhCM7IV8TAfdjJj23nnXk/euGNQtvyINYoD2DG+d4eEw==}
-    peerDependencies:
-      '@rrweb/types': 2.0.0-alpha.17
-      rrweb-snapshot: 2.0.0-alpha.17
-    peerDependenciesMeta:
-      '@rrweb/types':
-        optional: true
-      rrweb-snapshot:
-        optional: true
+  posthog-js@1.301.1:
+    resolution: {integrity: sha512-ikkW716dfO1RkLREq5nrVDmcfQTrQfk3sAcP0ExuvSJ9NWOsvA2hz75bgV3GcHqG9xYlSm7Qe6Fzbn5kzx6MiQ==}
 
-  posthog-js@1.300.0:
-    resolution: {integrity: sha512-FpeD4pkpg9i/3F5xpeX+CZeq3R3BaLyFDkzb4sOjpUIW1AAVuOEqPTxnWIess6C3pOw1u3mowq0WSeh1PmrqfA==}
-
-  posthog-node@4.18.0:
-    resolution: {integrity: sha512-XROs1h+DNatgKh/AlIlCtDxWzwrKdYDb2mOs58n4yN8BkGN9ewqeQwG5ApS4/IzwCb7HPttUkOVulkYatd2PIw==}
-    engines: {node: '>=15.0.0'}
+  posthog-node@5.17.0:
+    resolution: {integrity: sha512-M+ftj0kLJk6wVF1xW5cStSany0LBC6YDVO7RPma2poo+PrpeiTk+ovhqcIqWAySDdTcBHJfBV9aIFYWPl2y6kg==}
+    engines: {node: '>=20'}
 
   preact-render-to-string@6.5.11:
     resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
     peerDependencies:
       preact: '>=10'
-
-  preact@10.23.1:
-    resolution: {integrity: sha512-O5UdRsNh4vdZaTieWe3XOgSpdMAmkIYBCT3VhQDlKrzyCm8lUYsk0fmVEvoQQifoOjFRTaHZO69ylrzTW2BH+A==}
 
   preact@10.24.3:
     resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
@@ -15567,7 +15550,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@posthog/ai@6.6.0(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(axios@1.13.2)(cheerio@1.1.2)(posthog-node@4.18.0)(ws@8.18.3)':
+  '@posthog/ai@6.6.0(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(axios@1.13.2)(cheerio@1.1.2)(posthog-node@5.17.0)(ws@8.18.3)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@anthropic-ai/sdk': 0.63.1(zod@4.1.13)
@@ -15576,7 +15559,7 @@ snapshots:
       ai: 5.0.106(zod@4.1.13)
       langchain: 0.3.36(@langchain/core@0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(openai@5.23.2(ws@8.18.3)(zod@4.1.13)))(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(axios@1.13.2)(cheerio@1.1.2)(openai@5.23.2(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)
       openai: 5.23.2(ws@8.18.3)(zod@4.1.13)
-      posthog-node: 4.18.0
+      posthog-node: 5.17.0
       uuid: 11.1.0
       zod: 4.1.13
     transitivePeerDependencies:
@@ -18743,6 +18726,7 @@ snapshots:
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
+    optional: true
 
   axobject-query@3.2.1:
     dependencies:
@@ -19347,8 +19331,6 @@ snapshots:
   core-js-compat@3.45.1:
     dependencies:
       browserslist: 4.26.2
-
-  core-js@3.40.0: {}
 
   core-js@3.47.0: {}
 
@@ -21161,7 +21143,8 @@ snapshots:
 
   flow-enums-runtime@0.0.6: {}
 
-  follow-redirects@1.15.11: {}
+  follow-redirects@1.15.11:
+    optional: true
 
   fontfaceobserver@2.3.0: {}
 
@@ -21191,6 +21174,7 @@ snapshots:
       es-set-tostringtag: 2.1.0
       hasown: 2.0.2
       mime-types: 2.1.35
+    optional: true
 
   formdata-polyfill@4.0.10:
     dependencies:
@@ -24684,14 +24668,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  posthog-js@1.246.0:
-    dependencies:
-      core-js: 3.40.0
-      fflate: 0.4.8
-      preact: 10.23.1
-      web-vitals: 4.2.4
-
-  posthog-js@1.300.0:
+  posthog-js@1.301.1:
     dependencies:
       '@posthog/core': 1.7.0
       core-js: 3.47.0
@@ -24699,17 +24676,13 @@ snapshots:
       preact: 10.28.0
       web-vitals: 4.2.4
 
-  posthog-node@4.18.0:
+  posthog-node@5.17.0:
     dependencies:
-      axios: 1.13.2
-    transitivePeerDependencies:
-      - debug
+      '@posthog/core': 1.7.0
 
   preact-render-to-string@6.5.11(preact@10.24.3):
     dependencies:
       preact: 10.24.3
-
-  preact@10.23.1: {}
 
   preact@10.24.3: {}
 
