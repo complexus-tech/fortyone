@@ -24,6 +24,7 @@ export const OnlineStatusMonitor = () => {
         duration: Infinity,
         id: "offline-toast",
         dismissible: false,
+        closeButton: false,
       });
     } else {
       if (toastIdsRef.current.offline) {
