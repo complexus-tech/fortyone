@@ -8,6 +8,8 @@ import { getRedirectUrl } from "@/utils";
 
 export const metadata: Metadata = {
   title: "Signup - FortyOne",
+  description:
+    "Create your FortyOne account to launch projects quickly, invite teammates, and keep work organized with secure, collaborative tools built for modern teams.",
 };
 
 export default async function Page({

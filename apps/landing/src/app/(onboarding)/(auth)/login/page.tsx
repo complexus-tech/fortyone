@@ -8,6 +8,8 @@ import { getRedirectUrl } from "@/utils";
 
 export const metadata: Metadata = {
   title: "Login - FortyOne",
+  description:
+    "Access your FortyOne workspace securely to continue projects, collaborate with your team, and pick up where you left off—fast, private, reliable.",
 };
 
 export default async function Page({
