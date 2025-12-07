@@ -17,7 +17,11 @@ export const NavLink: FC<Props> = ({ children, className, active, href }) => {
     className
   );
   return (
-    <Link href={href} className={classes}>
+    <Link
+      href={href}
+      className={classes}
+      target={href.toString().startsWith("http") ? "_blank" : undefined}
+    >
       {children}
     </Link>
   );
