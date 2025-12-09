@@ -86,7 +86,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	if shouldNotify(*oldAssigneeID, actorID) {
 		template := "{actor} reassigned story to {assignee}"
 		if actorName == newAssigneeName {
-			template = "{actor} reassigned story to themselves"
+			template = "{actor} reassigned story to themself"
 		}
 
 		message := NotificationMessage{
