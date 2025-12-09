@@ -12,8 +12,8 @@
     "@calcom/embed-react": "^1.5.3",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
-    "@next/mdx": "15.5.2",
-    "@next/third-parties": "15.5.2",
+    "@next/mdx": "16.0.8",
+    "@next/third-parties": "16.0.8",
     "@tailwindcss/typography": "^0.5.12",
     "@tanstack/react-query": "^5.69.0",
     "@types/mdx": "^2.0.13",
@@ -25,14 +25,14 @@
     "ky": "^1.5.0",
     "lib": "workspace:*",
     "mouse-follower": "^1.1.2",
-    "next": "15.5.7",
+    "next": "16.0.8",
     "next-auth": "5.0.0-beta.28",
     "next-mdx-remote": "^5.0.0",
     "next-themes": "^0.4.6",
     "nprogress": "^0.2.0",
     "posthog-js": "^1.301.1",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
     "react-fast-marquee": "^1.6.4",
     "react-markdown": "^10.1.0",
     "schema-dts": "^1.1.2",
@@ -44,11 +44,11 @@
     "ui": "workspace:*"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "15.5.2",
+    "@next/eslint-plugin-next": "16.0.8",
     "@types/node": "^20.12.7",
     "@types/nprogress": "^0.2.3",
-    "@types/react": "19.1.12",
-    "@types/react-dom": "19.1.9",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
     "autoprefixer": "^10.4.19",
     "eslint-config-custom": "workspace:*",
     "postcss": "^8.4.38",
@@ -61,8 +61,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "19.1.12",
-      "@types/react-dom": "19.1.9"
+      "@types/react": "19.2.7",
+      "@types/react-dom": "19.2.3"
     }
   }
 }

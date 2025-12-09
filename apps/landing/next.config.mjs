@@ -5,9 +5,10 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["ui", "icons", "next-mdx-remote"],
   pageExtensions: ["tsx", "ts", "mdx"],
+  reactCompiler: true,
   experimental: {
+    turbopackFileSystemCacheForDev: true,
     mdxRs: true,
-    reactCompiler: true,
     staleTimes: {
       dynamic: 30,
       static: 180,
