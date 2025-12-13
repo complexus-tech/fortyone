@@ -78,7 +78,7 @@
     "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
-    "streamdown": "^1.6.9",
+    "streamdown": "^1.6.10",
     "tailwind-config": "workspace:*",
     "tippy.js": "^6.3.7",
     "ui": "workspace:*",
