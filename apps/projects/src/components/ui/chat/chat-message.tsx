@@ -28,6 +28,20 @@ type ChatMessageProps = {
   onPromptSelect: (prompt: string) => void;
 };
 
+const thinkingMessages = [
+  "Gathering information",
+  "Analyzing data",
+  "Generating response",
+  "Preparing response",
+  "Formulating response",
+  "Assembling response",
+  "Finalizing response",
+];
+
+const getRandomThinkingMessage = () => {
+  return thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
+};
+
 const RenderMessage = ({
   message,
   onPromptSelect,
@@ -40,9 +54,9 @@ const RenderMessage = ({
   onPromptSelect: (prompt: string) => void;
 }) => {
   const pathname = usePathname();
-  // check if the messages has reasoning and if status is streaming
+  // check if the messages has reasoning
   const hasReasoning = message.parts.some((p) => p.type === "reasoning");
-  const hasText = message.parts.some((p) => p.type === "text");
+  const startedStep = message.parts.some((p) => p.type === "step-start");
   const totalSources = message.parts.filter(
     (part) => part.type === "source-url",
   ).length;
@@ -55,6 +69,12 @@ const RenderMessage = ({
       !hasReasoning ? (
         <Thinking />
       ) : null}
+      {startedStep &&
+        status === "streaming" &&
+        isLast &&
+        message.role === "assistant" && (
+          <Thinking className="mb-2" message={getRandomThinkingMessage()} />
+        )}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           return (
@@ -82,7 +102,7 @@ const RenderMessage = ({
           //     {part.text}
           //   </Streamdown>
           // );
-        } else if (part.type === "reasoning" && !hasText) {
+        } else if (part.type === "reasoning") {
           return (
             <Reasoning
               className="mb-2"
