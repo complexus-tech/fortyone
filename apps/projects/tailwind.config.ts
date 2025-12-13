@@ -21,7 +21,7 @@ const config: Pick<
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "../../packages/ui/src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/streamdown/dist/**/*.js",
+    "./node_modules/streamdown/dist/*.js",
   ],
   presets: [sharedConfig],
   plugins: [require("@tailwindcss/typography")],

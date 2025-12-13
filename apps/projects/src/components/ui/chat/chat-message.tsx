@@ -7,7 +7,7 @@ import type { ChatStatus } from "ai";
 import { useState } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
-// import { Streamdown } from "streamdown";
+import { Streamdown } from "streamdown";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -77,31 +77,44 @@ const RenderMessage = ({
         )}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
-          return (
-            <Box
-              className={cn(
-                "chat-tables prose prose-stone leading-normal dark:prose-invert prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
-                {
-                  "text-gray-200 dark:text-dark": message.role === "user",
-                },
-              )}
-              key={index}
-            >
-              <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
-                {part.text}
-              </Markdown>
-            </Box>
-          );
           // return (
-          //   <Streamdown
-          //     className={cn("chat-tables", {
-          //       "text-white dark:text-dark": message.role === "user",
-          //     })}
+          //   <Box
+          //     className={cn(
+          //       "chat-tables prose prose-stone leading-normal dark:prose-invert prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
+          //       {
+          //         "text-gray-200 dark:text-dark": message.role === "user",
+          //       },
+          //     )}
           //     key={index}
           //   >
-          //     {part.text}
-          //   </Streamdown>
+          //     <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+          //       {part.text}
+          //     </Markdown>
+          //   </Box>
           // );
+          return (
+            <Streamdown
+              className={cn("chat-tables", {
+                "text-white dark:text-dark": message.role === "user",
+              })}
+              controls={{
+                table: true, // Show table download button
+                code: true, // Show code copy button
+                mermaid: {
+                  download: true, // Show mermaid download button
+                  copy: true, // Show mermaid copy button
+                  fullscreen: true, // Show mermaid fullscreen button
+                  panZoom: true, // Show mermaid pan/zoom controls
+                },
+              }}
+              isAnimating={
+                status === "streaming" && message.role === "assistant"
+              }
+              key={index}
+            >
+              {part.text}
+            </Streamdown>
+          );
         } else if (part.type === "reasoning") {
           return (
             <Reasoning
