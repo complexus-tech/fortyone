@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
     webSearchEnabled = false,
-    provider = "google",
+    provider = "openai",
   } = await req.json();
   const modelMessages = convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const client =
     provider === "openai"
-      ? openaiClient("gpt-4.1-mini")
+      ? openaiClient("gpt-5.2")
       : googleClient("gemini-2.5-flash");
 
   const model = withTracing(client, phClient, {
