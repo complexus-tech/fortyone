@@ -228,7 +228,7 @@ th {
 }
 
 .chat-tables th {
-  @apply border border-gray-100 bg-gray-50 p-3 text-left font-medium dark:border-dark-100 dark:bg-dark-100;
+  @apply border border-gray-100 bg-gray-50 p-3 text-left font-medium dark:border-dark-50 dark:bg-dark-200;
 }
 
 .chat-tables td {
