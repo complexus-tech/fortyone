@@ -8,15 +8,15 @@ export const Theming = () => {
   return (
     <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
       <SectionHeader
-        description="Customize the application theme."
-        title="Appearance"
+        description="Customize how the application looks and behaves."
+        title="Appearance & Behavior"
       />
 
       <Box className="p-6">
         <Flex direction="column" gap={6}>
           <Flex className="items-end gap-3 md:items-center" justify="between">
             <Box>
-              <Text className="font-medium">Theme</Text>
+              <Text className="font-medium">Appearance</Text>
               <Text className="line-clamp-1" color="muted">
                 Select your preferred theme
               </Text>
