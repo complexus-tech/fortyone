@@ -75,6 +75,7 @@ type AppAutomationPreferences struct {
 	AutoAssignSelf             bool      `json:"autoAssignSelf"`
 	AssignSelfOnBranchCopy     bool      `json:"assignSelfOnBranchCopy"`
 	MoveStoryToStartedOnBranch bool      `json:"moveStoryToStartedOnBranch"`
+	OpenStoryInDialog          bool      `json:"openStoryInDialog"`
 	CreatedAt                  time.Time `json:"createdAt"`
 	UpdatedAt                  time.Time `json:"updatedAt"`
 }
@@ -122,6 +123,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 		AutoAssignSelf:             prefs.AutoAssignSelf,
 		AssignSelfOnBranchCopy:     prefs.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: prefs.MoveStoryToStartedOnBranch,
+		OpenStoryInDialog:          prefs.OpenStoryInDialog,
 		CreatedAt:                  prefs.CreatedAt,
 		UpdatedAt:                  prefs.UpdatedAt,
 	}

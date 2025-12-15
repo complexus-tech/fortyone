@@ -61,6 +61,7 @@ type CoreAutomationPreferences struct {
 	AutoAssignSelf             bool
 	AssignSelfOnBranchCopy     bool
 	MoveStoryToStartedOnBranch bool
+	OpenStoryInDialog          bool
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
 }
