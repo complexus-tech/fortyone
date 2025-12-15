@@ -790,7 +790,7 @@ func (r *repo) GetAutomationPreferences(ctx context.Context, userID, workspaceID
 
 	query := `
 		SELECT user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
-			   move_story_to_started_on_branch, created_at, updated_at
+			   move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		FROM user_automation_preferences
 		WHERE user_id = :user_id AND workspace_id = :workspace_id;
 	`
@@ -871,12 +871,14 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 				auto_assign_self, 
 				assign_self_on_branch_copy, 
 				move_story_to_started_on_branch, 
+				open_story_in_dialog,
 				created_at, updated_at
 			) VALUES (
 				:user_id, :workspace_id, 
 				:auto_assign_self, 
 				:assign_self_on_branch_copy, 
 				:move_story_to_started_on_branch, 
+				:open_story_in_dialog,
 				CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 			);
 		`
@@ -895,6 +897,11 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 		params["move_story_to_started_on_branch"] = false
 		if updates.MoveStoryToStartedOnBranch != nil {
 			params["move_story_to_started_on_branch"] = *updates.MoveStoryToStartedOnBranch
+		}
+
+		params["open_story_in_dialog"] = true
+		if updates.OpenStoryInDialog != nil {
+			params["open_story_in_dialog"] = *updates.OpenStoryInDialog
 		}
 
 		insertStmt, err := r.db.PrepareNamedContext(ctx, insertQuery)
@@ -929,6 +936,11 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 		if updates.MoveStoryToStartedOnBranch != nil {
 			setClauses = append(setClauses, "move_story_to_started_on_branch = :move_story_to_started_on_branch")
 			params["move_story_to_started_on_branch"] = *updates.MoveStoryToStartedOnBranch
+		}
+
+		if updates.OpenStoryInDialog != nil {
+			setClauses = append(setClauses, "open_story_in_dialog = :open_story_in_dialog")
+			params["open_story_in_dialog"] = *updates.OpenStoryInDialog
 		}
 
 		// If no fields to update, just return
@@ -976,12 +988,12 @@ func (r *repo) createDefaultAutomationPreferences(ctx context.Context, userID, w
 	query := `
 		INSERT INTO user_automation_preferences (
 			user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
-			move_story_to_started_on_branch, created_at, updated_at
+			move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		) VALUES (
-			:user_id, :workspace_id, FALSE, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+			:user_id, :workspace_id, FALSE, FALSE, FALSE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 		)
 		RETURNING user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
-				 move_story_to_started_on_branch, created_at, updated_at;
+				 move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at;
 	`
 
 	params := map[string]any{

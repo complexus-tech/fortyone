@@ -43,6 +43,7 @@ type dbAutomationPreferences struct {
 	AutoAssignSelf             bool      `db:"auto_assign_self"`
 	AssignSelfOnBranchCopy     bool      `db:"assign_self_on_branch_copy"`
 	MoveStoryToStartedOnBranch bool      `db:"move_story_to_started_on_branch"`
+	OpenStoryInDialog          bool      `db:"open_story_in_dialog"`
 	CreatedAt                  time.Time `db:"created_at"`
 	UpdatedAt                  time.Time `db:"updated_at"`
 }

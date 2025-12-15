@@ -70,4 +70,5 @@ type CoreUpdateAutomationPreferences struct {
 	AutoAssignSelf             *bool
 	AssignSelfOnBranchCopy     *bool
 	MoveStoryToStartedOnBranch *bool
+	OpenStoryInDialog          *bool
 }

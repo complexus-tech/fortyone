@@ -84,6 +84,7 @@ type UpdateAutomationPreferencesRequest struct {
 	AutoAssignSelf             *bool `json:"autoAssignSelf,omitempty"`
 	AssignSelfOnBranchCopy     *bool `json:"assignSelfOnBranchCopy,omitempty"`
 	MoveStoryToStartedOnBranch *bool `json:"moveStoryToStartedOnBranch,omitempty"`
+	OpenStoryInDialog          *bool `json:"openStoryInDialog,omitempty"`
 }
 
 func toAppUser(user users.CoreUser) AppUser {
@@ -132,5 +133,6 @@ func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) u
 		AutoAssignSelf:             req.AutoAssignSelf,
 		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
+		OpenStoryInDialog:          req.OpenStoryInDialog,
 	}
 }
