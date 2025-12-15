@@ -18,7 +18,7 @@ import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
 
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   const {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       model,
       messages: modelMessages,
       maxOutputTokens: 4000,
-      stopWhen: [stepCountIs(15)],
+      stopWhen: [stepCountIs(25)],
       tools: {
         ...tools,
         ...(webSearchEnabled
