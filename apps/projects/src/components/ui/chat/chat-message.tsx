@@ -170,6 +170,7 @@ const RenderMessage = ({
                     {part.output.suggestions.map((suggestion, index) => (
                       <Button
                         color="tertiary"
+                        className="truncate"
                         key={index}
                         onClick={() => {
                           onPromptSelect(suggestion);
