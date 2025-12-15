@@ -96,6 +96,7 @@ func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomation
 		AutoAssignSelf:             p.AutoAssignSelf,
 		AssignSelfOnBranchCopy:     p.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: p.MoveStoryToStartedOnBranch,
+		OpenStoryInDialog:          p.OpenStoryInDialog,
 		CreatedAt:                  p.CreatedAt,
 		UpdatedAt:                  p.UpdatedAt,
 	}
