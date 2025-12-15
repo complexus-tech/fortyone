@@ -22,6 +22,7 @@ import { useBoard } from "../board-context";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryProperties } from "./properties";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 
 export const StoryCard = ({
   story,
@@ -36,6 +37,8 @@ export const StoryCard = ({
   const { data: session } = useSession();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
+  const { data: preferences } = useAutomationPreferences();
+  const openStoryInDialog = preferences?.openStoryInDialog;
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { userRole } = useUserRole();
   const queryClient = useQueryClient();
@@ -102,7 +105,7 @@ export const StoryCard = ({
               className="flex justify-between gap-2"
               href={`/story/${story.id}/${slugify(story.title)}`}
               onClick={(e) => {
-                if (isDesktop) {
+                if (isDesktop && openStoryInDialog) {
                   e.preventDefault();
                   if (!isDragging) {
                     handleStoryClick(story.id);
@@ -111,7 +114,7 @@ export const StoryCard = ({
               }}
             >
               <Text className="line-clamp-3 text-[1.1rem] leading-[1.4rem]">
-                {story.title}
+                {story.title} {openStoryInDialog ? " (Dialog)" : "No dialog"}
               </Text>
               {isColumnVisible("ID") && (
                 <Text

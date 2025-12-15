@@ -26,6 +26,7 @@ import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 
 export const StoryRow = ({
   story,
@@ -52,6 +53,8 @@ export const StoryRow = ({
     id: story.id,
   });
   const { selectedStories, setSelectedStories, isColumnVisible } = useBoard();
+  const { data: preferences } = useAutomationPreferences();
+  const openStoryInDialog = preferences?.openStoryInDialog;
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
 
@@ -165,7 +168,7 @@ export const StoryRow = ({
                 className="flex items-center gap-1.5"
                 href={`/story/${story.id}/${slugify(story.title)}`}
                 onClick={(e) => {
-                  if (isDesktop) {
+                  if (isDesktop && openStoryInDialog) {
                     e.preventDefault();
                     handleStoryClick(story.id);
                   }
