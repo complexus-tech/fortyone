@@ -114,6 +114,7 @@ export type AutomationPreferences = {
   autoAssignSelf: boolean;
   assignSelfOnBranchCopy: boolean;
   moveStoryToStartedOnBranch: boolean;
+  openStoryInDialog: boolean;
 };
 
 export type UpdateAutomationPreferences = Partial<
