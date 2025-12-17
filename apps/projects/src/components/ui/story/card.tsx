@@ -114,7 +114,7 @@ export const StoryCard = ({
               }}
             >
               <Text className="line-clamp-3 text-[1.1rem] leading-[1.4rem]">
-                {story.title} {openStoryInDialog ? " (Dialog)" : "No dialog"}
+                {story.title}
               </Text>
               {isColumnVisible("ID") && (
                 <Text
