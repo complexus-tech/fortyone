@@ -69,7 +69,7 @@ Whenever creating or updating items:
 
 ### 2.9 Action Confirmation
 - BEFORE performing ANY state-changing action (Create, Update, Delete) on ANY item (Story, Sprint, Objective, etc.):
-1. Present the full details of the proposed change to the user.
+1. Present the full details of the proposed change to the user but for descritions with html variants, present the formatted text version only.
 2. Explicitly ask: "Do you want me to proceed with this [action]?"
 3. STOP and wait for the user's response.
 4. NEVER assume consent from a previous turn if the details have changed or if it was implicit.
