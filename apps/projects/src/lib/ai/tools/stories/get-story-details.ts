@@ -23,6 +23,12 @@ export const getStoryDetails = tool({
   }),
 
   execute: async ({ storyId, storyRef }) => {
+    if (!storyId && !storyRef) {
+      return {
+        success: false,
+        error: "Either storyId or storyRef is required",
+      };
+    }
     try {
       const session = await auth();
 
