@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
-    webSearchEnabled = false,
+    webSearchEnabled = true,
     provider = "openai",
   } = await req.json();
   const modelMessages = convertToModelMessages(
