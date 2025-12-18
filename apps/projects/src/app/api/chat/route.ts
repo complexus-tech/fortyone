@@ -1,7 +1,7 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- ok */
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI, openai } from "@ai-sdk/openai";
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { Tool, UIMessage } from "ai";
 import {
   convertToModelMessages,
@@ -83,14 +83,14 @@ export async function POST(req: NextRequest) {
       stopWhen: [stepCountIs(25)],
       tools: {
         ...tools,
-        ...(webSearchEnabled
-          ? {
-              // google_search: google.tools.googleSearch({}) as Tool,
-              web_search: openai.tools.webSearch({
-                searchContextSize: "high",
-              }),
-            }
-          : {}),
+        // ...(webSearchEnabled
+        //   ? {
+        //       // google_search: google.tools.googleSearch({}) as Tool,
+        //       web_search: openai.tools.webSearch({
+        //         searchContextSize: "high",
+        //       }),
+        //     }
+        //   : {}),
       },
       system: systemPrompt + userContext,
       experimental_transform: smoothStream({
