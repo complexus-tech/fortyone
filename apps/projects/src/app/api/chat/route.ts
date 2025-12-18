@@ -1,6 +1,6 @@
 /* eslint-disable turbo/no-undeclared-env-vars -- ok */
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import type { Tool, UIMessage } from "ai";
 import {
@@ -84,7 +84,12 @@ export async function POST(req: NextRequest) {
       tools: {
         ...tools,
         ...(webSearchEnabled
-          ? { google_search: google.tools.googleSearch({}) as Tool }
+          ? {
+              // google_search: google.tools.googleSearch({}) as Tool,
+              web_search: openai.tools.webSearch({
+                searchContextSize: "high",
+              }),
+            }
           : {}),
       },
       system: systemPrompt + userContext,
