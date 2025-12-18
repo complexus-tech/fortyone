@@ -75,6 +75,26 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
+func (h *Handlers) QueryByRef(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.QueryByRef")
+	defer span.End()
+
+	storyRef := web.Params(r, "ref")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+	story, err := h.stories.QueryByRef(ctx, workspace.ID, storyRef)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	web.Respond(ctx, w, toAppStory(story), http.StatusOK)
+	return nil
+}
+
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.List")
 	defer span.End()
