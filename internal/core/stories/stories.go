@@ -53,6 +53,7 @@ type Repository interface {
 	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
 	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
 	GetStatusCategory(ctx context.Context, statusID string) (string, error)
+	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -773,4 +774,19 @@ func (s *Service) formatValue(value any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+// QueryByRef returns a story by team code and sequence ID.
+func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error) {
+	s.log.Info(ctx, "business.core.stories.QueryByRef")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.QueryByRef")
+	defer span.End()
+
+	story, err := s.repo.QueryByRef(ctx, workspaceId, teamCode, sequenceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
+
+	return story, nil
 }
