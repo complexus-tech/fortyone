@@ -777,10 +777,16 @@ func (s *Service) formatValue(value any) string {
 }
 
 // QueryByRef returns a story by team code and sequence ID.
-func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error) {
+func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, storyRef string) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.QueryByRef")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.QueryByRef")
 	defer span.End()
+
+	teamCode, sequenceID, err := s.parseStoryRef(storyRef)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	story, err := s.repo.QueryByRef(ctx, workspaceId, teamCode, sequenceID)
 	if err != nil {
@@ -789,4 +795,14 @@ func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 	}
 
 	return story, nil
+}
+
+// storyRef can be in an case and any format, examples
+// PRO-123, web-123, pro123, Web123, pro 123, web 123, pro - 123, web - 123
+
+// parseStoryRef parses a story reference into team code and sequence ID.
+func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
+	// Remove any whitespace and convert to uppercase
+	storyRef = strings.ToUpper(strings.ReplaceAll(storyRef, " ", ""))
+
 }
