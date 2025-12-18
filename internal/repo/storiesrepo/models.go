@@ -43,12 +43,14 @@ type dbStory struct {
 	CompletedAt     *time.Time       `db:"completed_at"`
 	SubStories      *json.RawMessage `db:"sub_stories"`
 	Labels          *json.RawMessage `db:"labels"`
+	Associations    *json.RawMessage `db:"associations"`
 }
 
 // toCoreStory converts a dbStory to a CoreSingleStory.
 func toCoreStory(i dbStory) stories.CoreSingleStory {
 	var subStories []stories.CoreStoryList
 	var labels []uuid.UUID
+	var associations []stories.CoreStoryAssociation
 
 	if i.Labels != nil {
 		err := json.Unmarshal(*i.Labels, &labels)
@@ -61,6 +63,13 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		err := json.Unmarshal(*i.SubStories, &subStories)
 		if err != nil {
 			log.Printf("Failed to unmarshal sub_stories: %s", err)
+		}
+	}
+
+	if i.Associations != nil {
+		err := json.Unmarshal(*i.Associations, &associations)
+		if err != nil {
+			log.Printf("Failed to unmarshal associations: %s", err)
 		}
 	}
 
@@ -92,6 +101,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		CompletedAt:     i.CompletedAt,
 		SubStories:      subStories,
 		Labels:          labels,
+		Associations:    associations,
 	}
 }
 

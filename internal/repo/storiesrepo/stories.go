@@ -3393,7 +3393,53 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 										INNER JOIN story_labels sl ON sl.label_id = l.label_id
 								WHERE
 										sl.story_id = s.id
-						), '[]') AS labels
+						), '[]') AS labels,
+					COALESCE(
+						(
+							SELECT
+								json_agg(
+									json_build_object(
+										'id', sa.id,
+										'fromStoryId', sa.from_story_id,
+										'toStoryId', sa.to_story_id,
+										'type', sa.association_type,
+										'story', (
+											SELECT json_build_object(
+												'id', other.id,
+												'sequence_id', other.sequence_id,
+												'title', other.title,
+												'priority', other.priority,
+												'status_id', other.status_id,
+                                                'parent_id', other.parent_id,
+												'start_date', other.start_date,
+												'end_date', other.end_date,
+												'sprint_id', other.sprint_id,
+												'team_id', other.team_id,
+												'objective_id', other.objective_id,
+												'workspace_id', other.workspace_id,
+												'assignee_id', other.assignee_id,
+												'reporter_id', other.reporter_id,
+												'created_at', other.created_at,
+												'updated_at', other.updated_at,
+												'completed_at', other.completed_at,
+												'deleted_at', other.deleted_at,
+												'archived_at', other.archived_at,
+												'labels', '[]'
+											)
+											FROM stories other
+											WHERE other.id = CASE 
+												WHEN sa.from_story_id = s.id THEN sa.to_story_id 
+												ELSE sa.from_story_id 
+											END
+										)
+									)
+								)
+							FROM
+								story_associations sa
+							WHERE
+								sa.from_story_id = s.id OR sa.to_story_id = s.id
+						), '[]'
+					) AS associations
 				FROM
 					stories s
 					INNER JOIN teams t ON s.team_id = t.team_id

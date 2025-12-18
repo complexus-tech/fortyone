@@ -74,6 +74,7 @@ type CoreSingleStory struct {
 	CompletedAt     *time.Time
 	SubStories      []CoreStoryList
 	Labels          []uuid.UUID
+	Associations    []CoreStoryAssociation
 }
 
 type CoreNewStory struct {
@@ -140,6 +141,15 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
+}
+
+// CoreStoryAssociation represents a relationship between two stories.
+type CoreStoryAssociation struct {
+	ID          uuid.UUID     `json:"id"`
+	FromStoryID uuid.UUID     `json:"fromStoryId"`
+	ToStoryID   uuid.UUID     `json:"toStoryId"`
+	Type        string        `json:"type"` // "blocking", "related", "duplicate"
+	Story       CoreStoryList `json:"story"`
 }
 
 // CoreActivity represents the core model for an activity.
