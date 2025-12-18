@@ -1,16 +1,28 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getStory } from "@/modules/story/queries/get-story";
+import { getStory, getStoryRef } from "@/modules/story/queries/get-story";
+import { DetailedStory } from "@/modules/story/types";
 
 export const getStoryDetails = tool({
   description:
     "Get detailed information about a specific story including its metadata, assignments, and relationships.",
   inputSchema: z.object({
-    storyId: z.string().describe("Story ID to get details for (required)"),
+    storyId: z
+      .string()
+      .optional()
+      .describe(
+        "Story ID to get details for (required if there is no storyRef).",
+      ),
+    storyRef: z
+      .string()
+      .optional()
+      .describe(
+        "Story reference to get details for (required if there is no storyId) format team code-sequence number. examples: WEB-123, WEB123, WEB 123. If storyId is provided, this field is ignored.",
+      ),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async ({ storyId, storyRef }) => {
     try {
       const session = await auth();
 
@@ -20,8 +32,12 @@ export const getStoryDetails = tool({
           error: "Authentication required to access story details",
         };
       }
-
-      const story = await getStory(storyId, session);
+      let story: DetailedStory | null | undefined = null;
+      if (storyId) {
+        story = await getStory(storyId, session);
+      } else if (storyRef) {
+        story = await getStoryRef(storyRef, session);
+      }
 
       if (!story) {
         return {

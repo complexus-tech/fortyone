@@ -14,3 +14,15 @@ export const getStory = async (id: string, session: Session) => {
     return null;
   }
 };
+
+export const getStoryRef = async (ref: string, session: Session) => {
+  try {
+    const story = await get<ApiResponse<DetailedStory>>(
+      `story-by-ref/${ref}`,
+      session,
+    );
+    return story.data;
+  } catch (error) {
+    return null;
+  }
+};
