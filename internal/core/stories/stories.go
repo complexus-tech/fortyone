@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -797,12 +798,29 @@ func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, storyRe
 	return story, nil
 }
 
-// storyRef can be in an case and any format, examples
-// PRO-123, web-123, pro123, Web123, pro 123, web 123, pro - 123, web - 123
-
 // parseStoryRef parses a story reference into team code and sequence ID.
 func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
-	// Remove any whitespace and convert to uppercase
 	storyRef = strings.ToUpper(strings.ReplaceAll(storyRef, " ", ""))
+	storyRef = strings.ReplaceAll(storyRef, "-", "")
 
+	// Split at the transition from letter to digit
+	var teamCode, seqStr string
+	for i, ch := range storyRef {
+		if ch >= '0' && ch <= '9' {
+			teamCode = storyRef[:i]
+			seqStr = storyRef[i:]
+			break
+		}
+	}
+
+	if teamCode == "" || seqStr == "" {
+		return "", 0, fmt.Errorf("invalid story reference format: %s", storyRef)
+	}
+
+	seqID, err := strconv.Atoi(seqStr)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid sequence number: %s", storyRef)
+	}
+
+	return teamCode, seqID, nil
 }
