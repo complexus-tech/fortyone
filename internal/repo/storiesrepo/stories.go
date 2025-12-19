@@ -3410,7 +3410,7 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 												'title', other.title,
 												'priority', other.priority,
 												'status_id', other.status_id,
-                                                'parent_id', other.parent_id,
+                        'parent_id', other.parent_id,
 												'start_date', other.start_date,
 												'end_date', other.end_date,
 												'sprint_id', other.sprint_id,

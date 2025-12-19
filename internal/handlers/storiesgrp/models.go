@@ -139,34 +139,43 @@ type AppLabel struct {
 
 // AppSingleStory represents a single story in the application.
 type AppSingleStory struct {
-	ID              uuid.UUID      `json:"id"`
-	SequenceID      int            `json:"sequenceId"`
-	Title           string         `json:"title"`
-	Description     *string        `json:"description"`
-	DescriptionHTML *string        `json:"descriptionHTML"`
-	Parent          *uuid.UUID     `json:"parentId"`
-	Status          *uuid.UUID     `json:"statusId"`
-	Assignee        *uuid.UUID     `json:"assigneeId"`
-	BlockedBy       *uuid.UUID     `json:"blockedById"`
-	Blocking        *uuid.UUID     `json:"blockingId"`
-	Related         *uuid.UUID     `json:"relatedId"`
-	Reporter        *uuid.UUID     `json:"reporterId"`
-	Priority        string         `json:"priority"`
-	Sprint          *uuid.UUID     `json:"sprintId"`
-	Epic            *uuid.UUID     `json:"epicId"`
-	Objective       *uuid.UUID     `json:"objectiveId"`
-	KeyResult       *uuid.UUID     `json:"keyResultId"`
-	Team            uuid.UUID      `json:"teamId"`
-	Workspace       uuid.UUID      `json:"workspaceId"`
-	StartDate       *time.Time     `json:"startDate"`
-	EndDate         *time.Time     `json:"endDate"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-	DeletedAt       *time.Time     `json:"deletedAt"`
-	ArchivedAt      *time.Time     `json:"archivedAt"`
-	CompletedAt     *time.Time     `json:"completedAt"`
-	SubStories      []AppStoryList `json:"subStories"`
-	Labels          []uuid.UUID    `json:"labels"`
+	ID              uuid.UUID             `json:"id"`
+	SequenceID      int                   `json:"sequenceId"`
+	Title           string                `json:"title"`
+	Description     *string               `json:"description"`
+	DescriptionHTML *string               `json:"descriptionHTML"`
+	Parent          *uuid.UUID            `json:"parentId"`
+	Status          *uuid.UUID            `json:"statusId"`
+	Assignee        *uuid.UUID            `json:"assigneeId"`
+	BlockedBy       *uuid.UUID            `json:"blockedById"`
+	Blocking        *uuid.UUID            `json:"blockingId"`
+	Related         *uuid.UUID            `json:"relatedId"`
+	Reporter        *uuid.UUID            `json:"reporterId"`
+	Priority        string                `json:"priority"`
+	Sprint          *uuid.UUID            `json:"sprintId"`
+	Epic            *uuid.UUID            `json:"epicId"`
+	Objective       *uuid.UUID            `json:"objectiveId"`
+	KeyResult       *uuid.UUID            `json:"keyResultId"`
+	Team            uuid.UUID             `json:"teamId"`
+	Workspace       uuid.UUID             `json:"workspaceId"`
+	StartDate       *time.Time            `json:"startDate"`
+	EndDate         *time.Time            `json:"endDate"`
+	CreatedAt       time.Time             `json:"createdAt"`
+	UpdatedAt       time.Time             `json:"updatedAt"`
+	DeletedAt       *time.Time            `json:"deletedAt"`
+	ArchivedAt      *time.Time            `json:"archivedAt"`
+	CompletedAt     *time.Time            `json:"completedAt"`
+	SubStories      []AppStoryList        `json:"subStories"`
+	Labels          []uuid.UUID           `json:"labels"`
+	Associations    []AppStoryAssociation `json:"associations"`
+}
+
+type AppStoryAssociation struct {
+	ID          uuid.UUID    `json:"id"`
+	FromStoryID uuid.UUID    `json:"fromStoryId"`
+	ToStoryID   uuid.UUID    `json:"toStoryId"`
+	Type        string       `json:"type"` // "blocking", "related", "duplicate"
+	Story       AppStoryList `json:"story"`
 }
 
 // AppStoryList represents a single story in the list of stories in the application.
@@ -224,7 +233,44 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Reporter:        i.Reporter,
 		SubStories:      toAppStories(i.SubStories),
 		Labels:          i.Labels,
+		Associations:    toAppStoryAssociations(i.Associations),
 	}
+}
+
+func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppStoryAssociation {
+	appAssociations := make([]AppStoryAssociation, len(associations))
+	for i, association := range associations {
+		appAssociations[i] = AppStoryAssociation{
+			ID:          association.ID,
+			FromStoryID: association.FromStoryID,
+			ToStoryID:   association.ToStoryID,
+			Type:        association.Type,
+			Story: AppStoryList{
+				ID:          association.Story.ID,
+				SequenceID:  association.Story.SequenceID,
+				Title:       association.Story.Title,
+				Objective:   association.Story.Objective,
+				Team:        association.Story.Team,
+				Workspace:   association.Story.Workspace,
+				Status:      association.Story.Status,
+				Assignee:    association.Story.Assignee,
+				Reporter:    association.Story.Reporter,
+				Priority:    association.Story.Priority,
+				Sprint:      association.Story.Sprint,
+				KeyResult:   association.Story.KeyResult,
+				StartDate:   association.Story.StartDate,
+				EndDate:     association.Story.EndDate,
+				CreatedAt:   association.Story.CreatedAt,
+				UpdatedAt:   association.Story.UpdatedAt,
+				CompletedAt: association.Story.CompletedAt,
+				DeletedAt:   association.Story.DeletedAt,
+				ArchivedAt:  association.Story.ArchivedAt,
+				Labels:      association.Story.Labels,
+				SubStories:  toAppStories(association.Story.SubStories),
+			},
+		}
+	}
+	return appAssociations
 }
 
 func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
