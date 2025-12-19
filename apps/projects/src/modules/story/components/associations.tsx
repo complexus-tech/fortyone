@@ -20,6 +20,51 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import Link from "next/link";
 import { slugify } from "@/utils";
 
+const AssociationBadge = ({
+  association,
+  storyId,
+}: {
+  association: StoryAssociation;
+  storyId: string;
+}) => {
+  const isOutgoing = association.fromStoryId === storyId;
+
+  const getDetails = (): {
+    label: string;
+    color: "warning" | "danger" | "tertiary";
+  } => {
+    switch (association.type) {
+      case "blocking":
+        return {
+          label: isOutgoing ? "Blocks" : "Blocked by",
+          color: isOutgoing ? "warning" : "danger",
+        };
+      case "duplicate":
+        return {
+          label: isOutgoing ? "Duplicate of" : "Duplicated by",
+          color: "tertiary",
+        };
+      default:
+        return {
+          label: "Related to",
+          color: "tertiary",
+        };
+    }
+  };
+
+  const { label, color } = getDetails();
+
+  return (
+    <Badge
+      className="px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+      color={color}
+      rounded="sm"
+    >
+      {label}
+    </Badge>
+  );
+};
+
 export const Associations = ({
   storyId,
   associations,
@@ -33,28 +78,6 @@ export const Associations = ({
 }) => {
   const { data: teams = [] } = useTeams();
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
-
-  const getAssociationDisplay = (assoc: StoryAssociation) => {
-    const isOutgoing = assoc.fromStoryId === storyId;
-
-    switch (assoc.type) {
-      case "blocking":
-        return {
-          label: isOutgoing ? "Blocks" : "Blocked by",
-          color: (isOutgoing ? "warning" : "danger") as any,
-        };
-      case "duplicate":
-        return {
-          label: isOutgoing ? "Duplicate of" : "Duplicated by",
-          color: "tertiary" as any,
-        };
-      default:
-        return {
-          label: "Related to",
-          color: "tertiary" as any,
-        };
-    }
-  };
 
   return (
     <Box className="mt-8">
@@ -95,18 +118,11 @@ export const Associations = ({
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,
             )?.code;
-            const { label, color } = getAssociationDisplay(assoc);
 
             return (
               <RowWrapper className="gap-8 px-1 py-2 md:px-1" key={assoc.id}>
                 <Flex align="center" className="flex-1 gap-2">
-                  <Badge
-                    className="px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
-                    color={color}
-                    rounded="sm"
-                  >
-                    {label}
-                  </Badge>
+                  <AssociationBadge association={assoc} storyId={storyId} />
                   <Link
                     href={`/story/${assoc.story.id}/${slugify(assoc.story.title)}`}
                   >
