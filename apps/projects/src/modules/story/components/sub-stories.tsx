@@ -133,9 +133,12 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              Sub {getTermDisplay("storyTerm", { variant: "plural" })}
+              Sub {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
+              {parent.subStories.length > 0
+                ? `(${parent.subStories.length})`
+                : ""}
             </Button>
-            <Badge className="px-1.5" color="tertiary" rounded="full">
+            <Badge className="px-1.5" color="tertiary">
               {completedStories}/{parent.subStories.length} Done
             </Badge>
           </Flex>

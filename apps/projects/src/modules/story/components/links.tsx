@@ -173,15 +173,16 @@ export const Links = ({
             }}
             rightIcon={
               isLinksOpen ? (
-                <ArrowDown2Icon className="h-4 w-auto" />
+                <ArrowDown2Icon className="h-4" />
               ) : (
-                <ArrowUp2Icon className="h-4 w-auto" />
+                <ArrowUp2Icon className="h-4" />
               )
             }
+            leftIcon={<NewTabIcon className="mr-0.5 h-4" />}
             size="sm"
             variant="naked"
           >
-            Links
+            External links {links.length > 0 ? `(${links.length})` : ""}
           </Button>
 
           {userRole !== "guest" && (
