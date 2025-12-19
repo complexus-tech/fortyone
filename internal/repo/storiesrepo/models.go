@@ -16,6 +16,7 @@ type dbStory struct {
 	ID              uuid.UUID        `db:"id"`
 	SequenceID      int              `db:"sequence_id"`
 	Title           string           `db:"title"`
+	TeamCode        string           `db:"team_code"`
 	Description     *string          `db:"description"`
 	DescriptionHTML *string          `db:"description_html"`
 	Parent          *uuid.UUID       `db:"parent_id"`
@@ -77,6 +78,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
 		Title:           i.Title,
+		TeamCode:        i.TeamCode,
 		Description:     i.Description,
 		Parent:          i.Parent,
 		Objective:       i.Objective,

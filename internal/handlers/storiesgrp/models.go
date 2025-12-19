@@ -142,6 +142,7 @@ type AppSingleStory struct {
 	ID              uuid.UUID             `json:"id"`
 	SequenceID      int                   `json:"sequenceId"`
 	Title           string                `json:"title"`
+	TeamCode        string                `json:"teamCode"`
 	Description     *string               `json:"description"`
 	DescriptionHTML *string               `json:"descriptionHTML"`
 	Parent          *uuid.UUID            `json:"parentId"`
@@ -207,6 +208,7 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 	return AppSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
+		TeamCode:        i.TeamCode,
 		Description:     i.Description,
 		DescriptionHTML: i.DescriptionHTML,
 		Parent:          i.Parent,

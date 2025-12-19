@@ -49,6 +49,7 @@ type CoreSingleStory struct {
 	ID              uuid.UUID
 	SequenceID      int
 	Title           string
+	TeamCode        string
 	Description     *string
 	DescriptionHTML *string
 	Parent          *uuid.UUID

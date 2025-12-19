@@ -395,6 +395,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
         SELECT
 					s.id,
 					s.title,
+					t.code AS team_code,
 					s.priority,
 					s.sequence_id,
 					s.status_id,
@@ -483,6 +484,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					) AS associations
 				FROM
 					stories s
+					INNER JOIN teams t ON s.team_id = t.team_id
 				WHERE
 					s.id =:id
 					AND s.workspace_id =:workspace_id;
@@ -3400,6 +3402,7 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
         SELECT
 					s.id,
 					s.title,
+					t.code AS team_code,
 					s.priority,
 					s.sequence_id,
 					s.status_id,
