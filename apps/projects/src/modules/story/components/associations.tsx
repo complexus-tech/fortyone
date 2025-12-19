@@ -31,7 +31,7 @@ export const Associations = ({
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
 
   return (
-    <Box className="mt-4">
+    <Box className="mt-8">
       {associations.length > 0 && (
         <Flex
           align="center"
@@ -56,6 +56,7 @@ export const Associations = ({
             }
             size="sm"
             variant="naked"
+            className="font-semibold"
           >
             Associations ({associations.length})
           </Button>

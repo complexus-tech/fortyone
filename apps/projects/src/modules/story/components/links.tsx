@@ -156,7 +156,7 @@ export const Links = ({
   const { userRole } = useUserRole();
 
   return (
-    <Box className="mt-4">
+    <Box className="mt-8">
       {links.length > 0 && (
         <Flex
           align="center"
@@ -181,6 +181,7 @@ export const Links = ({
             leftIcon={<NewTabIcon className="mr-0.5 h-4" />}
             size="sm"
             variant="naked"
+            className="font-semibold"
           >
             External links {links.length > 0 ? `(${links.length})` : ""}
           </Button>

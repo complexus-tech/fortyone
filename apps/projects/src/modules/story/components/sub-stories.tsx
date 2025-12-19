@@ -132,6 +132,7 @@ export const SubStories = ({
               }
               size="sm"
               variant="naked"
+              className="font-semibold"
             >
               Sub {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
               {parent.subStories.length > 0

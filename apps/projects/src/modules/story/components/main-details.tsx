@@ -173,6 +173,12 @@ export const MainDetails = ({
           parent={data!}
           setIsSubStoriesOpen={setIsSubStoriesOpen}
         />
+        <Associations
+          associations={associations}
+          isAssociationsOpen={isAssociationsOpen}
+          setIsAssociationsOpen={setIsAssociationsOpen}
+          storyId={storyId}
+        />
         {isLinksLoading ? (
           <LinksSkeleton />
         ) : (
@@ -183,12 +189,6 @@ export const MainDetails = ({
             storyId={storyId}
           />
         )}
-        <Associations
-          associations={associations}
-          isAssociationsOpen={isAssociationsOpen}
-          setIsAssociationsOpen={setIsAssociationsOpen}
-          storyId={storyId}
-        />
         <Box className="md:hidden">
           <Divider />
           <Options isNotifications={isNotifications} storyId={storyId} />
