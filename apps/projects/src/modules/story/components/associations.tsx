@@ -3,9 +3,13 @@ import { Flex, Button, Text, Box, Menu, Badge } from "ui";
 import {
   ArrowDown2Icon,
   ArrowUp2Icon,
+  CopyIcon,
   DeleteIcon,
+  DuplicateIcon,
+  ErrorIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  WarningIcon,
 } from "icons";
 import { cn } from "lib";
 import { toast } from "sonner";
@@ -106,7 +110,23 @@ export const Associations = ({
                         <MoreHorizontalIcon />
                       </Button>
                     </Menu.Button>
-                    <Menu.Items align="end" className="min-w-44">
+                    <Menu.Items align="end" className="min-w-72">
+                      <Menu.Group className="px-3 py-1">
+                        <Text color="muted" transform="uppercase" fontSize="sm" fontWeight="bold">Change association type</Text>
+                      </Menu.Group>
+                      <Menu.Separator />
+                      <Menu.Group>
+                        <Menu.Item onSelect={() => {}} active>
+                          <LinkIcon /> Related...</Menu.Item>
+                        <Menu.Item onSelect={() => {}}><WarningIcon />Blocks...</Menu.Item>
+                        <Menu.Item onSelect={() => {}}>
+                          <ErrorIcon />
+                          Blocked by...</Menu.Item>
+                        <Menu.Item onSelect={() => {}}>
+                          <DuplicateIcon /> Duplicate of...</Menu.Item>
+                        <Menu.Item onSelect={() => {}}><CopyIcon /> Duplicated by...</Menu.Item>
+                      </Menu.Group>
+                      <Menu.Separator />
                       <Menu.Group>
                         <Menu.Item
                           className="text-error tracking-wide"
@@ -122,7 +142,7 @@ export const Associations = ({
                           }}
                         >
                           <DeleteIcon />
-                          Remove association
+                          Remove association...
                         </Menu.Item>
                       </Menu.Group>
                     </Menu.Items>
