@@ -1,5 +1,15 @@
 import type { Story, StoryPriority } from "@/modules/stories/types";
 
+export type StoryAssociationType = "related" | "blocking" | "duplicate";
+
+export type StoryAssociation = {
+  id: string;
+  fromStoryId: string;
+  toStoryId: string;
+  type: StoryAssociationType;
+  story: Story;
+};
+
 export type DetailedStory = {
   id: string;
   sequenceId: number;
@@ -29,6 +39,7 @@ export type DetailedStory = {
   archivedAt: string | null;
   subStories: Story[];
   labels: string[] | null;
+  associations: StoryAssociation[];
 };
 
 export type NewStory = Partial<DetailedStory>;
