@@ -34,6 +34,28 @@ export const Associations = ({
   const { data: teams = [] } = useTeams();
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
 
+  const getAssociationDisplay = (assoc: StoryAssociation) => {
+    const isOutgoing = assoc.fromStoryId === storyId;
+
+    switch (assoc.type) {
+      case "blocking":
+        return {
+          label: isOutgoing ? "Blocks" : "Blocked by",
+          color: (isOutgoing ? "warning" : "danger") as any,
+        };
+      case "duplicate":
+        return {
+          label: isOutgoing ? "Duplicate of" : "Duplicated by",
+          color: "tertiary" as any,
+        };
+      default:
+        return {
+          label: "Related to",
+          color: "tertiary" as any,
+        };
+    }
+  };
+
   return (
     <Box className="mt-8">
       {associations.length > 0 && (
@@ -46,6 +68,7 @@ export const Associations = ({
           justify="between"
         >
           <Button
+            className="font-semibold"
             color="tertiary"
             leftIcon={<LinkIcon className="mr-0.5 h-5" />}
             onClick={() => {
@@ -60,7 +83,6 @@ export const Associations = ({
             }
             size="sm"
             variant="naked"
-            className="font-semibold"
           >
             Associations ({associations.length})
           </Button>
@@ -73,15 +95,17 @@ export const Associations = ({
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,
             )?.code;
+            const { label, color } = getAssociationDisplay(assoc);
+
             return (
               <RowWrapper className="gap-8 px-1 py-2 md:px-1" key={assoc.id}>
                 <Flex align="center" className="flex-1 gap-2">
                   <Badge
-                    className="font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+                    className="px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+                    color={color}
                     rounded="sm"
-                    color="tertiary"
                   >
-                    {assoc.type}
+                    {label}
                   </Badge>
                   <Link
                     href={`/story/${assoc.story.id}/${slugify(assoc.story.title)}`}
@@ -114,16 +138,16 @@ export const Associations = ({
                       <Menu.Group className="px-3 py-1">
                         <Text
                           color="muted"
-                          transform="uppercase"
                           fontSize="sm"
                           fontWeight="bold"
+                          transform="uppercase"
                         >
                           Change association type
                         </Text>
                       </Menu.Group>
                       <Menu.Separator />
                       <Menu.Group>
-                        <Menu.Item onSelect={() => {}} active>
+                        <Menu.Item active onSelect={() => {}}>
                           <LinkIcon /> Related...
                         </Menu.Item>
                         <Menu.Item onSelect={() => {}}>
