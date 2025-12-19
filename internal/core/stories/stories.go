@@ -55,6 +55,8 @@ type Repository interface {
 	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
 	GetStatusCategory(ctx context.Context, statusID string) (string, error)
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
+	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
+	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -823,4 +825,39 @@ func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
 	}
 
 	return teamCode, seqID, nil
+}
+
+// AddAssociation adds an association between two stories.
+func (s *Service) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
+	s.log.Info(ctx, "business.core.stories.AddAssociation")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.AddAssociation")
+	defer span.End()
+
+	// Validate inputs
+	if fromID == toID {
+		return CoreStoryAssociation{}, fmt.Errorf("cannot associate story with itself")
+	}
+
+	assoc, err := s.repo.AddAssociation(ctx, fromID, toID, associationType, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreStoryAssociation{}, err
+	}
+
+	return assoc, nil
+}
+
+// RemoveAssociation removes an association between two stories.
+func (s *Service) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "business.core.stories.RemoveAssociation")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.RemoveAssociation")
+	defer span.End()
+
+	err := s.repo.RemoveAssociation(ctx, associationID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	return nil
 }

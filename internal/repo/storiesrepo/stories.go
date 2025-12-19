@@ -3669,3 +3669,96 @@ func (r *repo) GetStatusCategory(ctx context.Context, statusID string) (string, 
 
 	return category, nil
 }
+
+// AddAssociation adds an association between two stories.
+func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
+	query := `
+		INSERT INTO story_associations (from_story_id, to_story_id, association_type, workspace_id)
+		VALUES (:from_story_id, :to_story_id, :association_type, :workspace_id)
+		RETURNING id
+	`
+
+	params := map[string]any{
+		"from_story_id":    fromID,
+		"to_story_id":      toID,
+		"association_type": associationType,
+		"workspace_id":     workspaceID,
+	}
+
+	var id uuid.UUID
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to prepare insert association: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &id, params); err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to insert association: %w", err)
+	}
+
+	// Fetch the 'to' story details to return complete object
+	// We use the full getStoryById to ensure we get a consistent view of the story including its own associations/substories if needed,
+	// limiting potential inconsistency.
+	toStory, err := r.getStoryById(ctx, toID, workspaceID)
+	if err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to fetch target story details: %w", err)
+	}
+
+	coreToStory := toCoreStory(toStory)
+
+	return stories.CoreStoryAssociation{
+		ID:          id,
+		FromStoryID: fromID,
+		ToStoryID:   toID,
+		Type:        associationType,
+		Story: stories.CoreStoryList{
+			ID:          coreToStory.ID,
+			SequenceID:  coreToStory.SequenceID,
+			Title:       coreToStory.Title,
+			Status:      coreToStory.Status,
+			Priority:    coreToStory.Priority,
+			Assignee:    coreToStory.Assignee,
+			Reporter:    coreToStory.Reporter,
+			Workspace:   coreToStory.Workspace,
+			Team:        coreToStory.Team,
+			CreatedAt:   coreToStory.CreatedAt,
+			UpdatedAt:   coreToStory.UpdatedAt,
+			CompletedAt: coreToStory.CompletedAt,
+			DeletedAt:   coreToStory.DeletedAt,
+			ArchivedAt:  coreToStory.ArchivedAt,
+			Labels:      coreToStory.Labels,
+			SubStories:  toCoreStoryList(coreToStory.SubStories),
+		},
+	}, nil
+}
+
+// RemoveAssociation removes an association between two stories.
+func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error {
+	query := `
+		DELETE FROM story_associations
+		WHERE id = :id AND workspace_id = :workspace_id
+	`
+
+	params := map[string]any{
+		"id":           associationID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare delete association: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		return fmt.Errorf("failed to delete association: %w", err)
+	}
+
+	return nil
+}
+
+// Helper to convert []CoreStoryList (from CoreSingleStory.SubStories) back to []CoreStoryList
+// This seems redundant but CoreSingleStory uses []CoreStoryList for SubStories.
+func toCoreStoryList(stories []stories.CoreStoryList) []stories.CoreStoryList {
+	return stories
+}

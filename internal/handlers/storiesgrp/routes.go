@@ -83,4 +83,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.UploadStoryAttachment, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.GetAttachmentsForStory, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/attachments/{attachmentId}", h.DeleteAttachment, auth, workspace)
+
+	// Associations
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/associations", h.AddAssociation, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/stories/associations/{associationId}", h.RemoveAssociation, auth, workspace)
 }

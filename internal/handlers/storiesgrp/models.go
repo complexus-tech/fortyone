@@ -277,31 +277,35 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 	appStories := make([]AppStoryList, len(stories))
 
 	for i, story := range stories {
-		appStories[i] = AppStoryList{
-			ID:          story.ID,
-			SequenceID:  story.SequenceID,
-			Title:       story.Title,
-			Objective:   story.Objective,
-			Team:        story.Team,
-			Workspace:   story.Workspace,
-			Status:      story.Status,
-			Assignee:    story.Assignee,
-			Reporter:    story.Reporter,
-			Priority:    story.Priority,
-			Sprint:      story.Sprint,
-			KeyResult:   story.KeyResult,
-			StartDate:   story.StartDate,
-			EndDate:     story.EndDate,
-			CreatedAt:   story.CreatedAt,
-			UpdatedAt:   story.UpdatedAt,
-			CompletedAt: story.CompletedAt,
-			DeletedAt:   story.DeletedAt,
-			ArchivedAt:  story.ArchivedAt,
-			Labels:      story.Labels,
-			SubStories:  toAppStories(story.SubStories),
-		}
+		appStories[i] = toAppStoryListItem(story)
 	}
 	return appStories
+}
+
+func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
+	return AppStoryList{
+		ID:          story.ID,
+		SequenceID:  story.SequenceID,
+		Title:       story.Title,
+		Objective:   story.Objective,
+		Team:        story.Team,
+		Workspace:   story.Workspace,
+		Status:      story.Status,
+		Assignee:    story.Assignee,
+		Reporter:    story.Reporter,
+		Priority:    story.Priority,
+		Sprint:      story.Sprint,
+		KeyResult:   story.KeyResult,
+		StartDate:   story.StartDate,
+		EndDate:     story.EndDate,
+		CreatedAt:   story.CreatedAt,
+		UpdatedAt:   story.UpdatedAt,
+		CompletedAt: story.CompletedAt,
+		DeletedAt:   story.DeletedAt,
+		ArchivedAt:  story.ArchivedAt,
+		Labels:      story.Labels,
+		SubStories:  toAppStories(story.SubStories),
+	}
 }
 
 // AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
@@ -351,6 +355,11 @@ type AppComment struct {
 	CreatedAt   time.Time    `json:"createdAt"`
 	UpdatedAt   time.Time    `json:"updatedAt"`
 	SubComments []AppComment `json:"subComments"`
+}
+
+type AppNewAssociation struct {
+	ToStoryID       uuid.UUID `json:"toStoryId" validate:"required"`
+	AssociationType string    `json:"type" validate:"required"`
 }
 
 // StoryFilters represents filtering options for stories at the handler level
