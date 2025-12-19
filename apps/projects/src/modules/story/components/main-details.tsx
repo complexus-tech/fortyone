@@ -25,6 +25,7 @@ import {
   OptionsHeader,
   Activities,
   Attachments,
+  Associations,
 } from "@/modules/story/components";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
@@ -57,6 +58,10 @@ export const MainDetails = ({
     true,
   );
   const [isLinksOpen, setIsLinksOpen] = useLocalStorage("isLinksOpen", true);
+  const [isAssociationsOpen, setIsAssociationsOpen] = useLocalStorage(
+    "isAssociationsOpen",
+    true,
+  );
   const {
     title,
     descriptionHTML,
@@ -65,6 +70,7 @@ export const MainDetails = ({
     deletedAt,
     subStories,
     reporterId,
+    associations = [],
   } = data!;
   const isDeleted = Boolean(deletedAt);
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
@@ -177,6 +183,12 @@ export const MainDetails = ({
             storyId={storyId}
           />
         )}
+        <Associations
+          associations={associations}
+          isAssociationsOpen={isAssociationsOpen}
+          setIsAssociationsOpen={setIsAssociationsOpen}
+          storyId={storyId}
+        />
         <Box className="md:hidden">
           <Divider />
           <Options isNotifications={isNotifications} storyId={storyId} />
