@@ -22,15 +22,11 @@ export const getSprintDetailsTool = tool({
         };
       }
 
-      const [sprint, analytics] = await Promise.all([
-        getSprint(sprintId, session),
-        getSprintAnalytics(sprintId, session),
-      ]);
+      const sprint = await getSprint(sprintId, session);
 
       return {
         success: true,
         sprint,
-        analyticsReport: analytics,
         message: `Retrieved details for sprint "${sprint?.name}".`,
       };
     } catch (error) {

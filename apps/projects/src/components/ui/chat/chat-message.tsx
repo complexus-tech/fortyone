@@ -128,6 +128,10 @@ const RenderMessage = ({
           if (part.state === "input-available") {
             return <Thinking key={index} message="Getting sprint details" />;
           }
+        } else if (part.type === "tool-getSprintAnalyticsTool") {
+          if (part.state === "input-available") {
+            return <Thinking key={index} message="Analyzing sprint data" />;
+          }
         } else if (part.type === "tool-listRunningSprints") {
           if (part.state === "input-available") {
             return <Thinking key={index} message="Getting active sprints" />;
@@ -139,7 +143,7 @@ const RenderMessage = ({
       {status === "ready" ? (
         <>
           {message.parts.map((part, index) => {
-            if (part.type === "tool-getSprintDetailsTool") {
+            if (part.type === "tool-getSprintAnalyticsTool") {
               if (part.state === "output-available") {
                 return (
                   <Box className="mb-3" key={index}>
