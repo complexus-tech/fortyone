@@ -10,3 +10,5 @@ export { assignStoriesToUser } from "./assign-stories-to-user";
 export { bulkCreateStories } from "./bulk-create-stories";
 export { duplicateStory } from "./duplicate-story";
 export { restoreStory } from "./restore-story";
+export { addStoryAssociation } from "./add-story-association";
+export { removeStoryAssociation } from "./remove-story-association";

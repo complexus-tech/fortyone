@@ -29,6 +29,8 @@ import {
   assignStoriesToUser,
   duplicateStory,
   restoreStory,
+  addStoryAssociation,
+  removeStoryAssociation,
 } from "@/lib/ai/tools/stories";
 import {
   listSprints,
@@ -107,6 +109,8 @@ export const tools = {
   assignStoriesToUser,
   duplicateStory,
   restoreStory,
+  addStoryAssociation,
+  removeStoryAssociation,
   statuses: statusesTool,
   // Sprints
   listSprints,
