@@ -18,6 +18,7 @@ export type DetailedStory = {
   descriptionHTML: string;
   parentId: string;
   teamId: string;
+  teamCode: string;
   workspaceId: string;
   objectiveId: string | null;
   keyResultId: string | null;
