@@ -23,9 +23,6 @@ export type DetailedStory = {
   keyResultId: string | null;
   statusId: string;
   assigneeId: string | null;
-  blockedById: string | null;
-  blockingId: string | null;
-  relatedId: string | null;
   reporterId: string;
   priority: StoryPriority;
   sprintId: string | null;
