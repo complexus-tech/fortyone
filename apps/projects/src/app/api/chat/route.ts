@@ -2,7 +2,7 @@
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { Tool, UIMessage } from "ai";
+import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   const client =
     provider === "openai"
       ? openaiClient("gpt-5.2")
-      : googleClient("gemini-2.5-flash");
+      : googleClient("gemini-flash-latest");
 
   const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
@@ -85,10 +85,7 @@ export async function POST(req: NextRequest) {
         ...tools,
         // ...(webSearchEnabled
         //   ? {
-        //       // google_search: google.tools.googleSearch({}) as Tool,
-        //       web_search: openai.tools.webSearch({
-        //         searchContextSize: "high",
-        //       }),
+        //       google_search: google.tools.googleSearch({}) as Tool,
         //     }
         //   : {}),
       },
