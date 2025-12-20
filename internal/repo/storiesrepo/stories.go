@@ -82,7 +82,7 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 	return currentSequence, commit, rollback, nil
 }
 
-// Create creates a new story.
+// Create creates a new story with automatic sequence recovery on conflicts.
 func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stories.CoreSingleStory, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
@@ -94,23 +94,108 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stor
 		}
 	}
 
-	lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
+	const maxRetries = 3
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
+		if err != nil {
+			return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
+		}
+		story.SequenceID = lastSequence + 1
+
+		cs, err := r.insertStory(ctx, story)
+		if err != nil {
+			rollback()
+
+			// Check if this is a duplicate sequence ID error
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") &&
+				strings.Contains(err.Error(), "unique_team_sequence") {
+				r.log.Info(ctx, "sequence out of sync, retrying with corrected sequence",
+					"attempt", attempt,
+					"team_id", story.Team,
+					"tried_sequence", story.SequenceID)
+
+				// Sync the sequence to the correct value
+				if syncErr := r.syncSequence(ctx, story.Team, story.Workspace); syncErr != nil {
+					r.log.Error(ctx, "failed to sync sequence", "error", syncErr)
+					return stories.CoreSingleStory{}, fmt.Errorf("failed to sync sequence: %w", syncErr)
+				}
+
+				lastErr = err
+				continue // Retry
+			}
+
+			// Different error, return immediately
+			return stories.CoreSingleStory{}, fmt.Errorf("failed to insert story: %w", err)
+		}
+
+		if err := commit(); err != nil {
+			return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+
+		return toCoreStory(cs), nil
+	}
+
+	// Exhausted retries
+	return stories.CoreSingleStory{}, fmt.Errorf("failed to create story after %d retries: %w", maxRetries, lastErr)
+}
+
+// syncSequence syncs the team_story_sequences table with the actual max sequence_id in the stories table.
+func (r *repo) syncSequence(ctx context.Context, teamID, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.syncSequence")
+	defer span.End()
+
+	// Get the actual max sequence_id from the stories table
+	maxSeqQuery := `
+		SELECT COALESCE(MAX(sequence_id), 0) 
+		FROM stories 
+		WHERE team_id = :team_id AND workspace_id = :workspace_id
+	`
+	params := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+	}
+
+	var maxSequence int
+	stmt, err := r.db.PrepareNamedContext(ctx, maxSeqQuery)
 	if err != nil {
-		return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
+		return fmt.Errorf("failed to prepare max sequence query: %w", err)
 	}
-	story.SequenceID = lastSequence + 1
+	defer stmt.Close()
 
-	cs, err := r.insertStory(ctx, story)
+	if err := stmt.GetContext(ctx, &maxSequence, params); err != nil {
+		return fmt.Errorf("failed to get max sequence: %w", err)
+	}
+
+	// Update the team_story_sequences table
+	updateQuery := `
+		UPDATE team_story_sequences 
+		SET current_sequence = :max_sequence 
+		WHERE team_id = :team_id AND workspace_id = :workspace_id
+	`
+	updateParams := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+		"max_sequence": maxSequence,
+	}
+
+	updateStmt, err := r.db.PrepareNamedContext(ctx, updateQuery)
 	if err != nil {
-		rollback()
-		return stories.CoreSingleStory{}, fmt.Errorf("failed to insert story: %w", err)
+		return fmt.Errorf("failed to prepare update sequence query: %w", err)
+	}
+	defer updateStmt.Close()
+
+	if _, err := updateStmt.ExecContext(ctx, updateParams); err != nil {
+		return fmt.Errorf("failed to update sequence: %w", err)
 	}
 
-	if err := commit(); err != nil {
-		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
-	}
+	r.log.Info(ctx, "sequence synced successfully",
+		"team_id", teamID,
+		"workspace_id", workspaceID,
+		"new_sequence", maxSequence)
 
-	return toCoreStory(cs), nil
+	return nil
 }
 
 func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error) {
