@@ -189,10 +189,6 @@ export const Associations = ({
                             removeAssociation({
                               associationId: assoc.id,
                               storyId,
-                            }).then(() => {
-                              toast.success("Success", {
-                                description: "Association removed",
-                              });
                             });
                           }}
                         >
