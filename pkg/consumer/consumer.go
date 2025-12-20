@@ -565,7 +565,7 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 				Email: payload.Email,
 			},
 		},
-		Subject: fmt.Sprintf("You're Invited to Join %s on FortyOne", payload.WorkspaceName),
+		Subject: fmt.Sprintf("%s invited you to work with them in FortyOne", payload.InviterName),
 		Params:  brevoParams,
 	}
 
@@ -612,7 +612,7 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Ev
 				Email: payload.InviterEmail,
 			},
 		},
-		Subject: fmt.Sprintf("Great news! %s has joined %s on FortyOne", payload.InviteeName, payload.WorkspaceName),
+		Subject: fmt.Sprintf("Great news! %s has joined %s.", payload.InviteeName, payload.WorkspaceName),
 		Params:  brevoParams,
 	}
 
