@@ -11,11 +11,7 @@ export const Hero = () => {
       <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
-        <Flex
-          align="center"
-          className="mb-8 mt-12 text-center md:mt-20"
-          direction="column"
-        >
+        <Flex className="mb-8 mt-12 md:mt-16" direction="column">
           <motion.span
             initial={{ y: -10, opacity: 0 }}
             transition={{
@@ -26,10 +22,10 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="border-0 bg-[#dddddd]/30 px-5 text-sm backdrop-blur-xl dark:bg-dark-100/40 md:text-[0.95rem]"
+              className="border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl dark:bg-dark-100/70 md:text-[0.95rem]"
               color="tertiary"
               href="/signup"
-              rounded="full"
+              rounded="md"
               size="sm"
             >
               Free forever. No credit card required.
@@ -47,10 +43,10 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-5xl md:text-[4.15rem] md:leading-[1.1]",
+                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4.15rem] md:leading-[1.1]",
               )}
             >
-              The AI-Powered Project Management Platform for OKRs & Teams
+              The Agentic Project Management Platform That Works For You
             </Text>
           </motion.span>
 
@@ -64,14 +60,15 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Plan sprints, manage stories, and connect OKRs to daily work with
-              built-in AI for summaries, updates, and automation.
+              Maya, your AI project manager, drafts stories, plans sprints,
+              tracks OKRs, and surfaces risks so your team can focus on
+              building, not managing.
             </Text>
           </motion.span>
 
           <Flex
             align="center"
-            className="relative mt-6 justify-center gap-2 md:mt-8 md:gap-4"
+            className="relative mt-6 gap-2 md:mt-8 md:gap-4"
             wrap
           >
             <motion.span
