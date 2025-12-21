@@ -2,18 +2,11 @@
 import React from "react";
 import { Container } from "@/components/ui";
 import { Flex, Text } from "ui";
-
-const Brand = ({ logo }: { logo: string }) => {
-  return (
-    <img
-      alt="brand logo"
-      className="3xl:h-20 mr-8 block h-8 w-auto grayscale dark:invert md:mr-16 md:h-9 md:justify-self-center"
-      key={logo}
-      loading="lazy"
-      src={logo}
-    />
-  );
-};
+import digitankLogo from "../../../public/images/brands/digitank.png";
+import miningoLogo from "../../../public/images/brands/miningo.svg";
+import zimboriginalLogo from "../../../public/images/brands/zimboriginal.png";
+import mdsLogo from "../../../public/images/brands/wastemate.png";
+import Image from "next/image";
 
 export const SampleClients = () => {
   const brands = [
@@ -25,28 +18,35 @@ export const SampleClients = () => {
   ];
 
   return (
-    <Container className="relative z-10 mt-16">
-      <Flex className="gap-10">
-        <Text color="muted" fontSize="sm">
+    <Container className="relative z-10 mt-12 hidden md:block">
+      <Flex className="gap-10" align="center">
+        <Text color="muted" fontSize="sm" className="shrink-0">
           Trusted by leading <br />
           product teams at
         </Text>
-        <Flex>
-          {brands.map((logo) => (
-            <Brand key={logo} logo={logo} />
-          ))}
+        <Flex align="center" className="gap-12" wrap>
+          <Image
+            src={digitankLogo}
+            alt="Digitank logo"
+            className="h-8 w-auto grayscale dark:invert"
+          />
+          <Image
+            src={miningoLogo}
+            alt="Miningo logo"
+            className="h-10 w-auto grayscale dark:invert"
+          />
+          <Image
+            src={zimboriginalLogo}
+            alt="Zimboriginal logo"
+            className="h-10 w-auto grayscale dark:invert"
+          />
+          <Image
+            src={mdsLogo}
+            alt="MDS logo"
+            className="h-10 w-auto grayscale dark:invert"
+          />
         </Flex>
       </Flex>
-      {/* <Marquee
-        // gradient
-        // gradientColor={resolvedTheme === "light" ? "#ffffff" : "#08090a"}
-        pauseOnHover
-        speed={30}
-      >
-        {brands.map((logo) => (
-          <Brand key={logo} logo={logo} />
-        ))}
-      </Marquee> */}
     </Container>
   );
 };
