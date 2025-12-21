@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
-import Marquee from "react-fast-marquee";
-import { useTheme } from "next-themes";
 import { Container } from "@/components/ui";
+import { Flex, Text } from "ui";
 
 const Brand = ({ logo }: { logo: string }) => {
   return (
@@ -17,28 +16,37 @@ const Brand = ({ logo }: { logo: string }) => {
 };
 
 export const SampleClients = () => {
-  const { resolvedTheme } = useTheme();
   const brands = [
+    "/images/brands/digitank.png",
     "/images/brands/miningo.svg",
     "/images/brands/mds.svg",
     "/images/brands/nesbil.png",
     "/images/brands/zimboriginal.png",
-    "/images/brands/digitank.png",
-    "/images/brands/wastemate.png",
   ];
 
   return (
-    <Container className="relative z-10 mb-20 max-w-6xl pt-24">
-      <Marquee
-        gradient
-        gradientColor={resolvedTheme === "light" ? "#ffffff" : "#08090a"}
+    <Container className="relative z-10 mt-16">
+      <Flex className="gap-10">
+        <Text color="muted" fontSize="sm">
+          Trusted by leading <br />
+          product teams at
+        </Text>
+        <Flex>
+          {brands.map((logo) => (
+            <Brand key={logo} logo={logo} />
+          ))}
+        </Flex>
+      </Flex>
+      {/* <Marquee
+        // gradient
+        // gradientColor={resolvedTheme === "light" ? "#ffffff" : "#08090a"}
         pauseOnHover
         speed={30}
       >
         {brands.map((logo) => (
           <Brand key={logo} logo={logo} />
         ))}
-      </Marquee>
+      </Marquee> */}
     </Container>
   );
 };

@@ -15,8 +15,8 @@ export default function Page() {
   return (
     <>
       <Hero />
-      <HeroCards />
       <SampleClients />
+      <HeroCards />
       <CoreValues />
       {/* <Features /> */}
       <Maya />
