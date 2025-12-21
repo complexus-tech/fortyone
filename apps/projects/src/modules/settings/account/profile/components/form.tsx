@@ -23,7 +23,10 @@ export const Form = () => {
 
   const handleUpdateProfile = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    updateProfile(form);
+    updateProfile({
+      fullName: form.fullName.trim(),
+      username: form.username.trim(),
+    });
   };
 
   useEffect(() => {

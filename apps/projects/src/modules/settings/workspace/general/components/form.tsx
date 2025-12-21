@@ -26,7 +26,7 @@ export const WorkspaceForm = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updateWorkspace({ name: form.name });
+    await updateWorkspace({ name: form.name.trim() });
     toast.success("Success", { description: "Workspace updated" });
   };
 

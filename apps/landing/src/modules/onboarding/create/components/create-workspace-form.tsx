@@ -29,7 +29,7 @@ export const CreateWorkspaceForm = () => {
   const [form, setForm] = useState({
     name: "",
     slug: "",
-    teamSize: "2-10",
+    teamSize: "1-5",
   });
   const { data: workspaces = [] } = useWorkspaces();
 
@@ -95,7 +95,11 @@ export const CreateWorkspaceForm = () => {
     }
 
     setIsLoading(true);
-    const res = await createWorkspaceAction(form);
+    const res = await createWorkspaceAction({
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+      teamSize: form.teamSize,
+    });
     if (res.error?.message) {
       setIsLoading(false);
       toast.error("Failed to create workspace", {
@@ -178,15 +182,15 @@ export const CreateWorkspaceForm = () => {
             <Select.Group>
               <Select.Option
                 className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
-                value="2-10"
+                value="1-5"
               >
-                2-10
+                1-5
               </Select.Option>
               <Select.Option
                 className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
-                value="11-50"
+                value="6-10"
               >
-                11-50
+                6-10
               </Select.Option>
               <Select.Option
                 className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
