@@ -52,7 +52,7 @@ const getInitials = (name: string) => {
   const names = name.split(" ");
 
   // If single word with 2 or more characters, return first two characters
-  if (names.length === 1 && names[0].length >= 2) {
+  if (names.length === 1) {
     return names[0].slice(0, 2).toUpperCase();
   }
 
@@ -92,7 +92,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
           imageClassName="object-top object-cover"
         />
       )}
-      {!src && name && <span title={name}>{getInitials(name)}</span>}
+      {!src && name && <span title={name}>{getInitials(name.trim())}</span>}
       {asIcon && (
         <AssigneeIcon
           className={cn("h-5 w-auto opacity-70", {
