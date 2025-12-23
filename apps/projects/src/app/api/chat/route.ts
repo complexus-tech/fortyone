@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
     webSearchEnabled = true,
-    provider = "google",
+    provider = "openai",
   } = await req.json();
   const modelMessages = await convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   const client =
     provider === "openai"
-      ? openaiClient("gpt-5.2")
+      ? openaiClient("gpt-5-nano-2025-08-07")
       : googleClient("gemini-flash-latest");
 
   const devToolsEnabledModel = wrapLanguageModel({
