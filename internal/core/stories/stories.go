@@ -109,6 +109,7 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		Type:         "create",
 		Field:        "story",
 		CurrentValue: cs.Title,
+		NewValue:     cs.Title,
 		UserID:       *ns.Reporter,
 		WorkspaceID:  workspaceId,
 	}
@@ -272,18 +273,21 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	ca := []CoreActivity{}
 
 	for field, value := range updates {
+		// ignore if field contains description
+		if strings.Contains(field, "description") {
+			continue
+		}
+
 		currentValue := s.formatValue(value)
 		na := CoreActivity{
 			StoryID:      storyID,
 			Type:         "update",
 			Field:        field,
 			CurrentValue: currentValue,
+			OldValue:     s.getOldValue(story, field),
+			NewValue:     value,
 			UserID:       actorID,
 			WorkspaceID:  workspaceID,
-		}
-		// ignore if field contains description
-		if strings.Contains(field, "description") {
-			continue
 		}
 		ca = append(ca, na)
 	}
@@ -860,4 +864,37 @@ func (s *Service) RemoveAssociation(ctx context.Context, associationID, workspac
 	}
 
 	return nil
+}
+
+func (s *Service) getOldValue(story CoreSingleStory, field string) any {
+	switch field {
+	case "title":
+		return story.Title
+	case "description":
+		return story.Description
+	case "description_html":
+		return story.DescriptionHTML
+	case "parent_id":
+		return story.Parent
+	case "objective_id":
+		return story.Objective
+	case "status_id":
+		return story.Status
+	case "assignee_id":
+		return story.Assignee
+	case "priority":
+		return story.Priority
+	case "sprint_id":
+		return story.Sprint
+	case "key_result_id":
+		return story.KeyResult
+	case "start_date":
+		return story.StartDate
+	case "end_date":
+		return story.EndDate
+	case "completed_at":
+		return story.CompletedAt
+	default:
+		return nil
+	}
 }

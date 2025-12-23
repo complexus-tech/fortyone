@@ -1285,6 +1285,8 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			activity_type, 
 			field_changed, 
 			current_value,
+			old_value,
+			new_value,
 			user_id,
 			workspace_id
 		)
@@ -1293,6 +1295,8 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			:activity_type, 
 			:field_changed, 
 			:current_value,
+			:old_value,
+			:new_value,
 			:user_id,
 			:workspace_id
 		)
@@ -1369,6 +1373,8 @@ SELECT
 		sa.activity_type,
 		sa.field_changed,
 		sa.current_value,
+		sa.old_value,
+		sa.new_value,
 		sa.created_at,
 		sa.workspace_id,
 		u.username,

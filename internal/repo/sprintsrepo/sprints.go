@@ -673,64 +673,113 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	// Optimized query for better performance
 	query := `
 		WITH date_series AS (
-			SELECT DATE(generate_series(
+			SELECT CAST(generate_series(
 				CAST(:start_date AS date),
 				CAST(:end_date AS date),
 				INTERVAL '1 day'
-			)) as burn_date
+			) AS date) as burn_date
 		),
-		-- Get initial scope before sprint started
+		-- Get initial scope (stories in sprint at the exact start time that are CURRENTLY active)
+		-- We check current state and adjust for changes during the sprint
+		initial_stories_list AS (
+			SELECT id FROM stories 
+			WHERE sprint_id = :sprint_id 
+			  AND deleted_at IS NULL 
+			  AND archived_at IS NULL
+			  AND created_at < :start_date
+			UNION
+			SELECT story_id FROM story_activities 
+			WHERE field_changed = 'sprint_id' 
+			  AND (
+				  CAST(NULLIF(new_value #>> '{}', 'null') AS uuid) = :sprint_id OR
+				  (new_value IS NULL AND current_value = CAST(:sprint_id AS text))
+			  )
+			  AND created_at >= :start_date
+			EXCEPT
+			SELECT story_id FROM story_activities 
+			WHERE field_changed = 'sprint_id' 
+			  AND (
+				  CAST(NULLIF(old_value #>> '{}', 'null') AS uuid) = :sprint_id OR
+				  (old_value IS NULL AND current_value != CAST(:sprint_id AS text)) -- This part is tricky without old_value, but is the best fallback
+			  )
+			  AND created_at >= :start_date
+		),
 		initial_scope AS (
-			SELECT COUNT(*) as initial_stories
-			FROM stories s
-			WHERE s.sprint_id = :sprint_id 
-			AND s.deleted_at IS NULL 
-			AND s.archived_at IS NULL
-			AND s.created_at < :start_date
+			SELECT COUNT(*) as count FROM initial_stories_list
 		),
-		-- Get daily sprint additions 
-		daily_additions AS (
+		-- Daily scope changes (+1 for join, -1 for leave)
+		daily_scope_changes AS (
 			SELECT 
-				DATE(sa.created_at) as add_date,
-				COUNT(DISTINCT sa.story_id) as stories_added
+				DATE(sa.created_at) as event_date,
+				SUM(CASE 
+					WHEN CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = :sprint_id 
+						 OR (sa.new_value IS NULL AND sa.current_value = CAST(:sprint_id AS text)) THEN 1 
+					WHEN CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = :sprint_id 
+						 OR (sa.old_value IS NULL AND sa.activity_type = 'update' AND sa.field_changed = 'sprint_id' AND sa.current_value != CAST(:sprint_id AS text)) THEN -1 
+					ELSE 0 
+				END) as delta
 			FROM story_activities sa
-			JOIN stories s ON sa.story_id = s.id
-			WHERE sa.activity_type = 'update'
-			  AND sa.field_changed = 'sprint_id'
-			  AND CAST(sa.current_value AS uuid) = :sprint_id
+			WHERE sa.field_changed = 'sprint_id'
 			  AND sa.created_at >= :start_date
 			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
-			  AND s.deleted_at IS NULL
-			  AND s.archived_at IS NULL
 			GROUP BY DATE(sa.created_at)
 		),
-		-- Get daily completions (simplified)
-		daily_completions AS (
+		-- Daily completion changes (+1 for done, -1 for undone)
+		daily_completion_changes AS (
 			SELECT 
-				DATE(sa.created_at) as completion_date,
-				COUNT(DISTINCT sa.story_id) as stories_completed
+				DATE(sa.created_at) as event_date,
+				SUM(CASE 
+					WHEN st_new.category = 'completed' AND (st_old.category IS NULL OR st_old.category != 'completed') THEN 1
+					WHEN st_old.category = 'completed' AND (st_new.category IS NULL OR st_new.category != 'completed') THEN -1
+					ELSE 0
+				END) as delta
 			FROM story_activities sa
-			JOIN stories s ON sa.story_id = s.id
-			JOIN statuses st ON CAST(sa.current_value AS uuid) = st.status_id
-			WHERE sa.activity_type = 'update'
-			  AND sa.field_changed = 'status_id'
-			  AND st.category = 'completed'
-			  AND s.sprint_id = :sprint_id
+			LEFT JOIN statuses st_old ON CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = st_old.status_id
+			LEFT JOIN statuses st_new ON CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = st_new.status_id
+			WHERE sa.field_changed = 'status_id'
 			  AND sa.created_at >= :start_date
 			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
-			  AND s.deleted_at IS NULL
-			  AND s.archived_at IS NULL
+			  -- Only count status changes for stories that are/were in this sprint
+			  AND sa.story_id IN (
+				  SELECT id FROM stories WHERE sprint_id = :sprint_id
+				  UNION
+				  SELECT story_id FROM story_activities 
+				  WHERE field_changed = 'sprint_id' 
+				    AND (
+					    CAST(NULLIF(old_value #>> '{}', 'null') AS uuid) = :sprint_id OR
+					    (old_value IS NULL AND current_value != CAST(:sprint_id AS text))
+					)
+			  )
 			GROUP BY DATE(sa.created_at)
+		),
+		-- Get initial completions (stories already done at start_date)
+		initial_completions AS (
+			SELECT COUNT(*) as count
+			FROM initial_stories_list isl
+			JOIN stories s ON isl.id = s.id
+			JOIN statuses st ON s.status_id = st.status_id
+			WHERE st.category = 'completed'
+			  -- AND stories that didn't change status to 'completed' AFTER start_date
+			  AND NOT EXISTS (
+				  SELECT 1 FROM story_activities sa
+				  JOIN statuses st2 ON CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = st2.status_id
+				  WHERE sa.story_id = s.id
+				    AND sa.field_changed = 'status_id'
+				    AND sa.created_at >= :start_date
+				    AND st2.category = 'completed'
+			  )
 		)
 		SELECT 
 			ds.burn_date as event_date,
-			COALESCE(da.stories_added, 0) as stories_added,
-			COALESCE(dc.stories_completed, 0) as stories_completed,
-			ins.initial_stories
+			COALESCE(sc.delta, 0) as scope_delta,
+			COALESCE(cc.delta, 0) as completion_delta,
+			ins.count as initial_stories,
+			inc.count as initial_completed
 		FROM date_series ds
 		CROSS JOIN initial_scope ins
-		LEFT JOIN daily_additions da ON ds.burn_date = da.add_date
-		LEFT JOIN daily_completions dc ON ds.burn_date = dc.completion_date
+		CROSS JOIN initial_completions inc
+		LEFT JOIN daily_scope_changes sc ON ds.burn_date = sc.event_date
+		LEFT JOIN daily_completion_changes cc ON ds.burn_date = cc.event_date
 		ORDER BY ds.burn_date
 	`
 
@@ -742,9 +791,10 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 
 	type queryResult struct {
 		EventDate        time.Time `db:"event_date"`
-		StoriesAdded     int       `db:"stories_added"`
-		StoriesCompleted int       `db:"stories_completed"`
+		ScopeDelta       int       `db:"scope_delta"`
+		CompletionDelta  int       `db:"completion_delta"`
 		InitialStories   int       `db:"initial_stories"`
+		InitialCompleted int       `db:"initial_completed"`
 	}
 
 	var results []queryResult
@@ -758,63 +808,58 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	}
 
 	// Build daily changes maps
-	scopeChanges := make(map[string]int)
-	completions := make(map[string]int)
+	scopeDeltas := make(map[string]int)
+	completionDeltas := make(map[string]int)
 	initialStories := 0
+	initialCompleted := 0
 
 	for _, result := range results {
 		dateKey := result.EventDate.Format("2006-01-02")
-		if result.StoriesAdded > 0 {
-			scopeChanges[dateKey] = result.StoriesAdded
-		}
-		if result.StoriesCompleted > 0 {
-			completions[dateKey] = result.StoriesCompleted
-		}
-		if result.InitialStories > 0 {
-			initialStories = result.InitialStories
-		}
+		scopeDeltas[dateKey] = result.ScopeDelta
+		completionDeltas[dateKey] = result.CompletionDelta
+		initialStories = result.InitialStories
+		initialCompleted = result.InitialCompleted
 	}
 
 	// Generate burndown data for all days
 	var burndownData []sprints.CoreBurndownDataPoint
-	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1 // +1 to include end date
 
 	currentTotal := initialStories
-	cumulativeCompleted := 0
+	cumulativeCompleted := initialCompleted
 
-	for i := 0; i < totalDays; i++ {
-		currentDate := startDate.AddDate(0, 0, i)
-		dateKey := currentDate.Format("2006-01-02")
+	totalDays := len(results)
+	for i, result := range results {
+		dateKey := result.EventDate.Format("2006-01-02")
 
-		// Add any new stories added on this day
-		if added, exists := scopeChanges[dateKey]; exists {
-			currentTotal += added
+		// Update current total scope for this day
+		currentTotal += scopeDeltas[dateKey]
+
+		// Update cumulative completions
+		if !result.EventDate.After(time.Now()) {
+			cumulativeCompleted += completionDeltas[dateKey]
 		}
 
-		// Calculate ideal remaining based on current scope and days remaining
+		// Calculate Ideal Remaining
+		// Linear burndown from the scope on each day
 		daysRemaining := totalDays - i - 1
 		idealRemaining := 0
-		if daysRemaining > 0 && currentTotal > cumulativeCompleted {
-			// Ideal burndown from current scope over remaining days
-			storiesRemaining := currentTotal - cumulativeCompleted
-			idealRemaining = storiesRemaining - (storiesRemaining * (i) / (totalDays - 1))
+		if i == 0 {
+			idealRemaining = initialStories
+		} else if totalDays > 1 {
+			idealRemaining = int(float64(currentTotal) * float64(daysRemaining) / float64(totalDays-1))
 		}
 		if idealRemaining < 0 {
 			idealRemaining = 0
 		}
 
-		// Calculate actual remaining
-		actualRemaining := currentTotal
-		if !currentDate.After(time.Now()) {
-			// Add any completions for this day
-			if completed, exists := completions[dateKey]; exists {
-				cumulativeCompleted += completed
-			}
-			actualRemaining = currentTotal - cumulativeCompleted
+		// Calculate Actual Remaining
+		actualRemaining := currentTotal - cumulativeCompleted
+		if actualRemaining < 0 {
+			actualRemaining = 0
 		}
 
 		burndownData = append(burndownData, sprints.CoreBurndownDataPoint{
-			Date:      currentDate,
+			Date:      result.EventDate,
 			Remaining: actualRemaining,
 			Ideal:     idealRemaining,
 		})

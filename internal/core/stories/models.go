@@ -161,6 +161,8 @@ type CoreActivity struct {
 	Type         string    `json:"type"`
 	Field        string    `json:"field"`
 	CurrentValue string    `json:"currentValue"`
+	OldValue     any       `json:"oldValue"`
+	NewValue     any       `json:"newValue"`
 	CreatedAt    time.Time `json:"createdAt"`
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
@@ -173,6 +175,8 @@ type CoreActivityWithUser struct {
 	Type         string      `json:"type"`
 	Field        string      `json:"field"`
 	CurrentValue string      `json:"currentValue"`
+	OldValue     any         `json:"oldValue"`
+	NewValue     any         `json:"newValue"`
 	CreatedAt    time.Time   `json:"createdAt"`
 	WorkspaceID  uuid.UUID   `json:"workspaceId"`
 	User         UserDetails `json:"user"`

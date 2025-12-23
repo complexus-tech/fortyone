@@ -190,26 +190,30 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 
 // dbActivity represents the database model for an dbActivity.
 type dbActivity struct {
-	ID           uuid.UUID `db:"activity_id"`
-	StoryID      uuid.UUID `db:"story_id"`
-	UserID       uuid.UUID `db:"user_id"`
-	Type         string    `db:"activity_type"`
-	Field        string    `db:"field_changed"`
-	CurrentValue string    `db:"current_value"`
-	CreatedAt    time.Time `db:"created_at"`
-	WorkspaceID  uuid.UUID `db:"workspace_id"`
+	ID           uuid.UUID        `db:"activity_id"`
+	StoryID      uuid.UUID        `db:"story_id"`
+	UserID       uuid.UUID        `db:"user_id"`
+	Type         string           `db:"activity_type"`
+	Field        string           `db:"field_changed"`
+	CurrentValue string           `db:"current_value"`
+	OldValue     *json.RawMessage `db:"old_value"`
+	NewValue     *json.RawMessage `db:"new_value"`
+	CreatedAt    time.Time        `db:"created_at"`
+	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 }
 
 // dbActivityWithUser represents the database model for an activity with user details
 type dbActivityWithUser struct {
-	ID           uuid.UUID `db:"activity_id"`
-	StoryID      uuid.UUID `db:"story_id"`
-	UserID       uuid.UUID `db:"user_id"`
-	Type         string    `db:"activity_type"`
-	Field        string    `db:"field_changed"`
-	CurrentValue string    `db:"current_value"`
-	CreatedAt    time.Time `db:"created_at"`
-	WorkspaceID  uuid.UUID `db:"workspace_id"`
+	ID           uuid.UUID        `db:"activity_id"`
+	StoryID      uuid.UUID        `db:"story_id"`
+	UserID       uuid.UUID        `db:"user_id"`
+	Type         string           `db:"activity_type"`
+	Field        string           `db:"field_changed"`
+	CurrentValue string           `db:"current_value"`
+	OldValue     *json.RawMessage `db:"old_value"`
+	NewValue     *json.RawMessage `db:"new_value"`
+	CreatedAt    time.Time        `db:"created_at"`
+	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 	// User details
 	Username  string `db:"username"`
 	FullName  string `db:"full_name"`
@@ -226,6 +230,8 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 		Type:         i.Type,
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
+		OldValue:     i.OldValue,
+		NewValue:     i.NewValue,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 	}
@@ -239,6 +245,8 @@ func toDBActivity(i stories.CoreActivity) dbActivity {
 		Type:         i.Type,
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
+		OldValue:     toJSONRawMessage(i.OldValue),
+		NewValue:     toJSONRawMessage(i.NewValue),
 		WorkspaceID:  i.WorkspaceID,
 	}
 }
@@ -261,6 +269,8 @@ func toCoreActivityWithUser(i dbActivityWithUser) stories.CoreActivityWithUser {
 		Type:         i.Type,
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
+		OldValue:     i.OldValue,
+		NewValue:     i.NewValue,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 		User: stories.UserDetails{
@@ -322,4 +332,16 @@ func toDBNewComment(i stories.CoreNewComment) commentsrepo.DbNewComment {
 		Comment:  i.Comment,
 		Mentions: i.Mentions,
 	}
+}
+
+func toJSONRawMessage(v any) *json.RawMessage {
+	if v == nil {
+		return nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	rm := json.RawMessage(b)
+	return &rm
 }
