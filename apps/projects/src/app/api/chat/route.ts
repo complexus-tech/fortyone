@@ -2,12 +2,15 @@
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { devToolsMiddleware } from "@ai-sdk/devtools";
+
 import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
   stepCountIs,
   streamText,
   smoothStream,
+  wrapLanguageModel,
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
     webSearchEnabled = true,
     provider = "google",
   } = await req.json();
-  const modelMessages = convertToModelMessages(
+  const modelMessages = await convertToModelMessages(
     messagesFromRequest as UIMessage[],
   );
 
@@ -67,7 +70,12 @@ export async function POST(req: NextRequest) {
       ? openaiClient("gpt-5.2")
       : googleClient("gemini-flash-latest");
 
-  const model = withTracing(client, phClient, {
+  const devToolsEnabledModel = wrapLanguageModel({
+    model: client,
+    middleware: devToolsMiddleware(),
+  });
+
+  const model = withTracing(devToolsEnabledModel, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
