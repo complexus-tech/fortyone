@@ -38,10 +38,10 @@ export const StoryPage = ({
     if (isDialog) {
       return {
         key: "story-details-dialog",
-        main: 70,
-        side: 30,
+        main: 72,
+        side: 28,
         maxSide: 35,
-        minSide: 28,
+        minSide: 26,
       };
     }
     return {
