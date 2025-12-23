@@ -672,56 +672,53 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
 	// Optimized query for better performance
 	query := `
-		WITH date_series AS (
+		WITH params AS (
+			SELECT 
+				CAST(:sprint_id AS uuid) as sprint_id,
+				CAST(:sprint_id AS text) as sprint_id_text,
+				CAST(:start_date AS timestamp) as start_date,
+				CAST(:end_date AS timestamp) as end_date
+		),
+		date_series AS (
 			SELECT CAST(generate_series(
-				CAST(:start_date AS date),
-				CAST(:end_date AS date),
+				(SELECT CAST(start_date AS date) FROM params),
+				(SELECT CAST(end_date AS date) FROM params),
 				INTERVAL '1 day'
 			) AS date) as burn_date
 		),
-		-- Get initial scope (stories in sprint at the exact start time that are CURRENTLY active)
-		-- We check current state and adjust for changes during the sprint
+		-- Reconstruct the set of stories present at the exact start time
+		-- Logic (Stories currently in sprint) EXCEPT (Stories that joined) UNION (Stories that left)
 		initial_stories_list AS (
-			SELECT id FROM stories 
-			WHERE sprint_id = :sprint_id 
-			  AND deleted_at IS NULL 
-			  AND archived_at IS NULL
-			  AND created_at < :start_date
-			UNION
-			SELECT story_id FROM story_activities 
-			WHERE field_changed = 'sprint_id' 
-			  AND (
-				  CAST(NULLIF(new_value #>> '{}', 'null') AS uuid) = :sprint_id OR
-				  (new_value IS NULL AND current_value = CAST(:sprint_id AS text))
-			  )
-			  AND created_at >= :start_date
+			SELECT s.id FROM stories s, params p
+			WHERE s.sprint_id = p.sprint_id 
+			  AND s.deleted_at IS NULL 
+			  AND s.archived_at IS NULL
 			EXCEPT
-			SELECT story_id FROM story_activities 
-			WHERE field_changed = 'sprint_id' 
-			  AND (
-				  CAST(NULLIF(old_value #>> '{}', 'null') AS uuid) = :sprint_id OR
-				  (old_value IS NULL AND current_value != CAST(:sprint_id AS text)) -- This part is tricky without old_value, but is the best fallback
-			  )
-			  AND created_at >= :start_date
-		),
-		initial_scope AS (
-			SELECT COUNT(*) as count FROM initial_stories_list
+			SELECT sa.story_id FROM story_activities sa, params p
+			WHERE sa.field_changed = 'sprint_id'
+			  AND (CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = p.sprint_id OR (sa.new_value IS NULL AND sa.current_value = p.sprint_id_text))
+			  AND sa.created_at >= p.start_date
+			UNION
+			SELECT sa.story_id FROM story_activities sa, params p
+			WHERE sa.field_changed = 'sprint_id'
+			  AND (CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = p.sprint_id OR (sa.old_value IS NULL AND sa.activity_type = 'update' AND sa.current_value != p.sprint_id_text))
+			  AND sa.created_at >= p.start_date
 		),
 		-- Daily scope changes (+1 for join, -1 for leave)
 		daily_scope_changes AS (
 			SELECT 
 				DATE(sa.created_at) as event_date,
 				SUM(CASE 
-					WHEN CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = :sprint_id 
-						 OR (sa.new_value IS NULL AND sa.current_value = CAST(:sprint_id AS text)) THEN 1 
-					WHEN CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = :sprint_id 
-						 OR (sa.old_value IS NULL AND sa.activity_type = 'update' AND sa.field_changed = 'sprint_id' AND sa.current_value != CAST(:sprint_id AS text)) THEN -1 
+					WHEN CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = p.sprint_id 
+						 OR (sa.new_value IS NULL AND sa.current_value = p.sprint_id_text) THEN 1 
+					WHEN CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = p.sprint_id 
+						 OR (sa.old_value IS NULL AND sa.activity_type = 'update' AND sa.field_changed = 'sprint_id' AND sa.current_value != p.sprint_id_text) THEN -1 
 					ELSE 0 
 				END) as delta
-			FROM story_activities sa
+			FROM story_activities sa, params p
 			WHERE sa.field_changed = 'sprint_id'
-			  AND sa.created_at >= :start_date
-			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
+			  AND sa.created_at >= p.start_date
+			  AND sa.created_at <= p.end_date + INTERVAL '1 day'
 			GROUP BY DATE(sa.created_at)
 		),
 		-- Daily completion changes (+1 for done, -1 for undone)
@@ -734,40 +731,52 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 					ELSE 0
 				END) as delta
 			FROM story_activities sa
+			JOIN params p ON true
 			LEFT JOIN statuses st_old ON CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = st_old.status_id
 			LEFT JOIN statuses st_new ON CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = st_new.status_id
 			WHERE sa.field_changed = 'status_id'
-			  AND sa.created_at >= :start_date
-			  AND sa.created_at <= CAST(:end_date AS timestamp) + INTERVAL '1 day'
+			  AND sa.created_at >= p.start_date
+			  AND sa.created_at <= p.end_date + INTERVAL '1 day'
 			  -- Only count status changes for stories that are/were in this sprint
 			  AND sa.story_id IN (
-				  SELECT id FROM stories WHERE sprint_id = :sprint_id
+				  SELECT s2.id FROM stories s2, params p2 WHERE s2.sprint_id = p2.sprint_id
 				  UNION
-				  SELECT story_id FROM story_activities 
-				  WHERE field_changed = 'sprint_id' 
+				  SELECT sa2.story_id FROM story_activities sa2, params p2
+				  WHERE sa2.field_changed = 'sprint_id' 
 				    AND (
-					    CAST(NULLIF(old_value #>> '{}', 'null') AS uuid) = :sprint_id OR
-					    (old_value IS NULL AND current_value != CAST(:sprint_id AS text))
+					    CAST(NULLIF(sa2.old_value #>> '{}', 'null') AS uuid) = p2.sprint_id OR
+					    (sa2.old_value IS NULL AND sa2.current_value != p2.sprint_id_text)
 					)
 			  )
 			GROUP BY DATE(sa.created_at)
 		),
-		-- Get initial completions (stories already done at start_date)
-		initial_completions AS (
-			SELECT COUNT(*) as count
-			FROM initial_stories_list isl
+		-- Reconstruct the set of COMPLETED stories at start time
+		-- Logic (Initial Stories currently Done) EXCEPT (Those that finished during sprint) UNION (Those that were undone during sprint)
+		initial_completed_list AS (
+			SELECT isl.id FROM initial_stories_list isl
 			JOIN stories s ON isl.id = s.id
 			JOIN statuses st ON s.status_id = st.status_id
 			WHERE st.category = 'completed'
-			  -- AND stories that didn't change status to 'completed' AFTER start_date
-			  AND NOT EXISTS (
-				  SELECT 1 FROM story_activities sa
-				  JOIN statuses st2 ON CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = st2.status_id
-				  WHERE sa.story_id = s.id
-				    AND sa.field_changed = 'status_id'
-				    AND sa.created_at >= :start_date
-				    AND st2.category = 'completed'
-			  )
+			EXCEPT
+			SELECT sa.story_id FROM story_activities sa
+			JOIN params p ON true
+			JOIN statuses st ON CAST(NULLIF(sa.new_value #>> '{}', 'null') AS uuid) = st.status_id
+			WHERE sa.field_changed = 'status_id'
+			  AND st.category = 'completed'
+			  AND sa.created_at >= p.start_date
+			UNION
+			SELECT sa.story_id FROM story_activities sa
+			JOIN params p ON true
+			JOIN statuses st ON CAST(NULLIF(sa.old_value #>> '{}', 'null') AS uuid) = st.status_id
+			WHERE sa.field_changed = 'status_id'
+			  AND st.category = 'completed'
+			  AND sa.created_at >= p.start_date
+		),
+		initial_scope AS (
+			SELECT COUNT(*) as count FROM initial_stories_list
+		),
+		initial_completions AS (
+			SELECT COUNT(*) as count FROM initial_completed_list
 		)
 		SELECT 
 			ds.burn_date as event_date,
