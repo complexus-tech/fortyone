@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -359,7 +360,7 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 				s.end_date
 			FROM sprints s
 			JOIN team_sprint_settings tss ON s.team_id = tss.team_id
-			WHERE s.end_date >= CURRENT_DATE - INTERVAL '2 days' -- Allow up to 2 days in the past
+			WHERE s.end_date >= CURRENT_DATE - INTERVAL '1 day' -- Allow up to 1 day in the past
         AND s.end_date < CURRENT_DATE
 				AND tss.move_incomplete_stories_enabled = true
 				AND EXISTS (
@@ -472,12 +473,14 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 
 // MigrationActivityRecord represents a story activity for sprint migration bulk insertion
 type MigrationActivityRecord struct {
-	StoryID      uuid.UUID `db:"story_id"`
-	UserID       uuid.UUID `db:"user_id"`
-	ActivityType string    `db:"activity_type"`
-	FieldChanged string    `db:"field_changed"`
-	CurrentValue uuid.UUID `db:"current_value"`
-	WorkspaceID  uuid.UUID `db:"workspace_id"`
+	StoryID      uuid.UUID        `db:"story_id"`
+	UserID       uuid.UUID        `db:"user_id"`
+	ActivityType string           `db:"activity_type"`
+	FieldChanged string           `db:"field_changed"`
+	CurrentValue string           `db:"current_value"`
+	OldValue     *json.RawMessage `db:"old_value"`
+	NewValue     *json.RawMessage `db:"new_value"`
+	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 }
 
 // recordMigrationActivitiesBatch bulk inserts activity records for migrated stories using VALUES clause
@@ -489,15 +492,23 @@ func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []
 		return nil
 	}
 
-	// Build structured activity records (much more efficient than maps)
+	// Build structured activity records
 	activities := make([]MigrationActivityRecord, len(stories))
 	for i, story := range stories {
+		oldSprintJSON, _ := json.Marshal(story.PreviousSprintID)
+		newSprintJSON, _ := json.Marshal(story.NewSprintID)
+
+		oldRaw := json.RawMessage(oldSprintJSON)
+		newRaw := json.RawMessage(newSprintJSON)
+
 		activities[i] = MigrationActivityRecord{
 			StoryID:      story.ID,
 			UserID:       systemUserID,
 			ActivityType: "update",
 			FieldChanged: "sprint_id",
-			CurrentValue: story.NewSprintID,
+			CurrentValue: story.NewSprintID.String(),
+			OldValue:     &oldRaw,
+			NewValue:     &newRaw,
 			WorkspaceID:  story.WorkspaceID,
 		}
 	}
@@ -510,8 +521,10 @@ func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []
 			activity_type, 
 			field_changed, 
 			current_value, 
+			old_value,
+			new_value,
 			workspace_id
-		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :workspace_id)`
+		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :old_value, :new_value, :workspace_id)`
 
 	// Execute single bulk insert with all records
 	result, err := tx.NamedExecContext(ctx, activityQuery, activities)
