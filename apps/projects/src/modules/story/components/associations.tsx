@@ -56,7 +56,7 @@ const AssociationBadge = ({
 
   return (
     <Badge
-      className="px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+      className="shrink-0 px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
       color={color}
       rounded="sm"
     >
