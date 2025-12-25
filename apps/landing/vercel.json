@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/docs/:path*",
+      "destination": "https://docs.fortyone.app/:path*"
+    }
+  ]
+}
