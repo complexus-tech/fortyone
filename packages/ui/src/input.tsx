@@ -12,7 +12,7 @@ const inputVariants = cva(
   {
     variants: {
       size: {
-        sm: "h-[2rem] text-sm px-3",
+        sm: "h-8 text-sm px-3",
         md: "h-[2.8rem]", // default size from original component
         lg: "h-[3.2rem] focus:ring-[3px]",
       },

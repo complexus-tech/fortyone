@@ -22,7 +22,7 @@ export const CircleProgressBar = ({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="rotate-[-90deg]"
+        className="-rotate-90"
       >
         <circle
           cx={size / 2}

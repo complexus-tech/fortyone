@@ -12,7 +12,7 @@ const NavigationMenuViewport = forwardRef<
   <div className={cn("absolute top-full flex justify-center", className)}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        "relative mt-3.5 h-[var(--radix-navigation-menu-viewport-height)] rounded-2xl w-full backdrop-blur shadow-lg md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "relative mt-3.5 h-(--radix-navigation-menu-viewport-height) rounded-2xl w-full backdrop-blur shadow-lg md:w-(--radix-navigation-menu-viewport-width)",
         className
       )}
       ref={ref}
@@ -121,7 +121,7 @@ const NavigationMenuIndicator = forwardRef<
   <NavigationMenuPrimitive.Indicator
     ref={ref}
     className={cn(
-      "top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in",
+      "top-full z-1 flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in",
       className
     )}
     {...props}

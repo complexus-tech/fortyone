@@ -22,7 +22,7 @@ const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-white/70 dark:bg-dark-200/80 backdrop-blur-[12px] z-50 border border-gray-100 dark:border-dark-50 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
+  "bg-white/70 dark:bg-dark-200/80 backdrop-blur-md z-50 border border-gray-100 dark:border-dark-50 w-max shadow shadow-gray-100 dark:shadow-dark/20 mt-1 py-1.5",
   {
     variants: {
       rounded: {
@@ -92,7 +92,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-100/70 focus:bg-gray-100/70 data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50",
       {
         "bg-gray-100/80 dark:bg-dark-50": active,
       },
@@ -113,7 +113,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-[disabled]:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-gray-50 focus:bg-gray-50 data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-[state=open]:bg-gray-50/80 data-disabled:opacity-50 hover:dark:bg-dark-50 focus:dark:bg-dark-50 data-[state=open]:dark:bg-dark-50",
       {
         "bg-gray-50/80 dark:bg-dark-100": active,
       },

@@ -32,12 +32,12 @@ const table = cva('w-full border-collapse relative dark:text-tertiary', {
     {
       variant: 'striped',
       color: 'primary',
-      className: 'odd:[&_tbody_tr]:bg-primary/[0.12]',
+      className: 'odd:[&_tbody_tr]:bg-primary/12',
     },
     {
       variant: 'striped',
       color: 'secondary',
-      className: 'odd:[&_tbody_tr]:bg-secondary/[0.12]',
+      className: 'odd:[&_tbody_tr]:bg-secondary/12',
     },
     {
       variant: 'striped',
@@ -47,17 +47,17 @@ const table = cva('w-full border-collapse relative dark:text-tertiary', {
     {
       variant: 'striped',
       color: 'info',
-      className: 'odd:[&_tbody_tr]:bg-info/[0.12]',
+      className: 'odd:[&_tbody_tr]:bg-info/12',
     },
     {
       variant: 'striped',
       color: 'danger',
-      className: 'odd:[&_tbody_tr]:bg-danger/[0.12]',
+      className: 'odd:[&_tbody_tr]:bg-danger/12',
     },
     {
       variant: 'striped',
       color: 'warning',
-      className: 'odd:[&_tbody_tr]:bg-warning/[0.12]',
+      className: 'odd:[&_tbody_tr]:bg-warning/12',
     },
     {
       variant: 'bordered',

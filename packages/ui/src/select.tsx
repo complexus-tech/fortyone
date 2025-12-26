@@ -76,7 +76,7 @@ const SelectContent = forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-2xl border shadow-md bg-white/80 dark:bg-dark-200/90 dark:text-gray-200 backdrop-blur text-gray border-gray-100 dark:border-dark-50 w-max shadow-dark/10 dark:shadow-dark/20",
+        "relative z-50 max-h-96 min-w-32 overflow-hidden rounded-2xl border shadow-md bg-white/80 dark:bg-dark-200/90 dark:text-gray-200 backdrop-blur text-gray border-gray-100 dark:border-dark-50 w-max shadow-dark/10 dark:shadow-dark/20",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
@@ -89,7 +89,7 @@ const SelectContent = forwardRef<
         className={cn(
           "p-1",
           position === "popper" &&
-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+            "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)"
         )}
       >
         {children}
@@ -119,7 +119,7 @@ const Item = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full hover:dark:bg-dark-50/60 rounded-[0.6rem] hover:bg-gray-100/50 select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full hover:dark:bg-dark-50/60 rounded-[0.6rem] hover:bg-gray-100/50 select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
       className
     )}
     {...props}

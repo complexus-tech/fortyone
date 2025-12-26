@@ -54,7 +54,7 @@ export const Calendar = ({
           "aria-selected:bg-primary/20 dark:aria-selected:bg-primary/10 aria-selected:text-black dark:aria-selected:text-white rounded-none",
         day_hidden: "invisible",
         dropdown:
-          "appearance-none absolute top-0 bottom-0 w-full m-0 p-0 border-0 bg-transparent left-0 z-[2]",
+          "appearance-none absolute top-0 bottom-0 w-full m-0 p-0 border-0 bg-transparent left-0 z-2",
         dropdown_year: "relative inline-flex items-center",
         dropdown_month: "relative inline-flex items-center",
         ...classNames,
