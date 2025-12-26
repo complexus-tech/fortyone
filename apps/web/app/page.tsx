@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Card } from "ui/card";
-import { Badge } from "ui/index";
+import { Badge } from "ui";
 
 const LINKS = [
   {
