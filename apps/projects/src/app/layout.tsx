@@ -11,6 +11,7 @@ import { auth } from "@/auth";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
 import { OnlineStatusMonitor } from "./online-monitor";
+import "ui/styles.css";
 
 const font = InstrumentSans({
   subsets: ["latin"],
