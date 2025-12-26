@@ -1,0 +1,38 @@
+@theme {
+  /* Fonts */
+  --font-satoshi: var(--font-satoshi);
+  --font-inter: var(--font-inter);
+  --font-sans: var(--font-sans);
+
+  /* Colors */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-primary: #f43f5e;
+  --color-secondary: #002f61;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #f43f5e;
+  --color-info: #06b6d4;
+  --color-sidebar: #fcf5e5;
+  --color-light: #fffff0;
+
+  /* Gray Scale */
+  --color-gray: #5f5f5f;
+  --color-gray-50: #f7f7f7;
+  --color-gray-100: #e8e8e8;
+  --color-gray-200: #d1d1d1;
+  --color-gray-300: #9e9e9e;
+  --color-gray-400: #7d7d7d;
+
+  /* Dark Scale */
+  --color-dark: #0c0d0e;
+  --color-dark-300: #101214;
+  --color-dark-200: #16181a;
+  --color-dark-100: #1d1f22;
+  --color-dark-50: #25282b;
+
+  /* Breakpoints */
+  --breakpoint-3xl: 1900px;
+}
