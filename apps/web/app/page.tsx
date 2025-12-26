@@ -29,9 +29,11 @@ export default function Page() {
   return (
     <main className="flex flex-col items-center justify-between min-h-screen p-24">
       <p>Hello world</p>
-      <Card title="test" href="/">
-        <span>Test</span>
-      </Card>
+      {LINKS.map((l) => (
+        <Card title="test" href="/" key={l.title}>
+          <span>{l.title}</span>
+        </Card>
+      ))}
     </main>
   );
 }
