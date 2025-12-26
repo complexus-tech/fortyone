@@ -165,7 +165,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:pb-36">
+    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:pb-36">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-8 md:grid-cols-3">

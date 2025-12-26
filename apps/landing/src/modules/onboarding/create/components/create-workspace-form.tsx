@@ -181,31 +181,31 @@ export const CreateWorkspaceForm = () => {
           <Select.Content>
             <Select.Group>
               <Select.Option
-                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-[0.6rem] text-[0.9rem]"
                 value="1-5"
               >
                 1-5
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-[0.6rem] text-[0.9rem]"
                 value="6-10"
               >
                 6-10
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-[0.6rem] text-[0.9rem]"
                 value="51-200"
               >
                 51-200
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-[0.6rem] text-[0.9rem]"
                 value="201-500"
               >
                 201-500
               </Select.Option>
               <Select.Option
-                className="h-[2.5rem] rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-[0.6rem] text-[0.9rem]"
                 value="500+"
               >
                 500+

@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "16.1.1",
+    "@tailwindcss/cli": "^4.1.18",
     "@types/node": "^20.12.7",
     "@types/nprogress": "^0.2.3",
     "@types/react": "19.2.7",
@@ -53,12 +54,11 @@
     "eslint-config-custom": "workspace:*",
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.6.1",
-    "tailwindcss": "^4.1.5",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "tailwindcss": "^4.1.18",
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
-    "typescript": "^5.5.4",
-    "@tailwindcss/cli": "^4.1.5"
+    "typescript": "^5.5.4"
   },
   "pnpm": {
     "overrides": {

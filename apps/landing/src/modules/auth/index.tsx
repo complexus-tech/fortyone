@@ -186,7 +186,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               Continue with Google
             </Button>
           </form>
-          <Text className="mt-3 pl-[1px] text-[90%]" color="muted">
+          <Text className="mt-3 pl-px text-[90%]" color="muted">
             &copy; {new Date().getFullYear()} &bull; Product of Complexus LLC
             &bull; All Rights Reserved.
           </Text>

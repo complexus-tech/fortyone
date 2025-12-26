@@ -8,8 +8,8 @@ import { signInWithGoogle } from "@/lib/actions/sign-in";
 export const Hero = () => {
   return (
     <Box>
-      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:45px_45px] dark:block" />
-      <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
+      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] dark:block" />
+      <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
         <Flex className="mb-8 mt-12 md:mt-16" direction="column">
           <motion.span
@@ -43,7 +43,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-[1] mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4.1rem] md:leading-[1.1]",
+                "relative z-1 mt-8 text-balance pb-2 text-5xl font-semibold md:max-w-4xl md:text-[4.1rem] md:leading-[1.1]",
               )}
             >
               The Agentic Project Management Platform That Works For You

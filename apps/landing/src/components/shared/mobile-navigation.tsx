@@ -23,7 +23,7 @@ const NavMenuButton = ({
       <span>
         <span
           className={cn(
-            "mb-[0.4rem] block h-[1px] w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
+            "mb-[0.4rem] block h-px w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
             {
               "mb-0 rotate-45": open,
             },
@@ -31,7 +31,7 @@ const NavMenuButton = ({
         />
         <span
           className={cn(
-            "block h-[1px] w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
+            "block h-px w-5 bg-dark transition duration-300 ease-in-out dark:bg-white",
             {
               "-translate-y-[0.05rem] -rotate-45": open,
             },

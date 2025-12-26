@@ -132,7 +132,7 @@ export const Hero = () => {
             placeholder="blur"
             src={sprintsImgLight}
           />
-          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+          <Box className="absolute inset-0 bg-linear-to-t from-white via-white via-20%" />
         </Box>
         <Box className="relative mx-auto mt-16 hidden max-w-6xl dark:block">
           <Image
@@ -141,7 +141,7 @@ export const Hero = () => {
             placeholder="blur"
             src={sprintsImg}
           />
-          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+          <Box className="absolute inset-0 bg-linear-to-t from-white via-white via-20%" />
         </Box>
       </Container>
     </Box>

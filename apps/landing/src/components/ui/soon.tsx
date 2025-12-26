@@ -5,7 +5,7 @@ import { Container } from "./container";
 export const ComingSoon = () => {
   return (
     <Box className="mb-40">
-      <Blur className="absolute -top-[65vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 dark:bg-primary/[0.03]" />
+      <Blur className="absolute -top-[65vh] left-1/2 right-1/2 h-screen w-screen -translate-x-1/2 bg-primary/15 dark:bg-primary/3" />
       <Container className="pt-20">
         <Flex
           align="center"

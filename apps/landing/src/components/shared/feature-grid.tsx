@@ -21,7 +21,7 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group border-[0.5px] border-gray-100/80 bg-gradient-to-b px-6 py-8 hover:from-gray-50 dark:border-dark-50/80 dark:hover:from-dark-200 md:px-7 md:py-16",
+        "group border-[0.5px] border-gray-100/80 bg-linear-to-b px-6 py-8 hover:from-gray-50 dark:border-dark-50/80 dark:hover:from-dark-200 md:px-7 md:py-16",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">

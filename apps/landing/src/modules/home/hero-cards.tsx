@@ -120,7 +120,7 @@ export const HeroCards = () => {
           </Swiper>
         </Box>
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-gradient-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
+      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
     </Box>
   );
 };

@@ -86,7 +86,7 @@ const Card = ({
         <Box>
           <Text className="mt-4 opacity-80">{description}</Text>
         </Box>
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
+        <div className="pointer-events-none absolute inset-0 z-3 bg-[url('/noise.png')] bg-repeat opacity-50" />
       </Box>
     </motion.div>
   );
@@ -125,7 +125,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="dark bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
+    <Box className="dark bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">

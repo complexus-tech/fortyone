@@ -74,7 +74,7 @@ export default async function BlogPost({
           <Box className="mb-6 rounded-[0.9rem] border border-gray-100 p-1.5 dark:border-dark-50 dark:bg-dark-100/60 dark:p-2">
             <BlurImage
               alt={post.metadata.title}
-              className="aspect-[16/8] rounded-[0.6rem]"
+              className="aspect-16/8 rounded-[0.6rem]"
               src={post.metadata.featuredImage}
             />
           </Box>

@@ -19,7 +19,7 @@ const scaleIn = {
 
 export const CallToAction = () => {
   return (
-    <Box className="overflow-hidden border-b border-gray-100/70 bg-gradient-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
+    <Box className="overflow-hidden border-b border-gray-100/70 bg-linear-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
         <Flex className="mb-8 md:mb-12" direction="column">
           <motion.div
@@ -74,12 +74,12 @@ export const CallToAction = () => {
             </Flex>
             <Image
               alt="CTA"
-              className="rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:hidden md:rounded-t-[0.7rem]"
+              className="rounded-t-lg border border-b-0 border-gray-100 dark:hidden md:rounded-t-[0.7rem]"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="hidden rounded-t-[0.5rem] border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[0.7rem]"
+              className="hidden rounded-t-lg border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[0.7rem]"
               src={ctaDark}
             />
             <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-dark/5 md:rounded-t-2xl">

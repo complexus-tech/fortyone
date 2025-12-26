@@ -9,7 +9,7 @@ export const MenuButton = ({ open }: { open: boolean }) => {
       <span>
         <span
           className={cn(
-            "mb-[0.4rem] block h-[1px] w-5 bg-dark dark:bg-white transition duration-300 ease-in-out",
+            "mb-[0.4rem] block h-px w-5 bg-dark dark:bg-white transition duration-300 ease-in-out",
             {
               "mb-0 rotate-45": open,
             },
@@ -17,7 +17,7 @@ export const MenuButton = ({ open }: { open: boolean }) => {
         />
         <span
           className={cn(
-            "block h-[1px] w-5 bg-dark dark:bg-white transition duration-300 ease-in-out",
+            "block h-px w-5 bg-dark dark:bg-white transition duration-300 ease-in-out",
             {
               "-translate-y-[0.05rem] -rotate-45": open,
             },

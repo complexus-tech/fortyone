@@ -26,7 +26,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
+    className="flex w-68 gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
     href={href}
     prefetch
   >
@@ -112,7 +112,7 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
+    <Box className="fixed left-0 z-15 w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <Flex align="center" className="hidden md:flex" gap={1}>
