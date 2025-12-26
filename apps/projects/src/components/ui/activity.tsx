@@ -190,7 +190,7 @@ export const Activity = ({
           "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-200 dark:border-dark-50",
         )}
       />
-      <Flex align="center" className="z-[1]" gap={1}>
+      <Flex align="center" className="z-1" gap={1}>
         <Tooltip
           className="py-2.5"
           title={

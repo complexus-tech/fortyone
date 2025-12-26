@@ -76,7 +76,7 @@ const CustomLegend = () => {
         <span className="text-gray dark:text-gray-300">Completed</span>
       </Box>
       <Box className="flex items-center gap-2">
-        <Box className="h-1 w-3 bg-[#eab308]" />
+        <Box className="h-1 w-3 bg-warning" />
         <span className="text-gray dark:text-gray-300">In Progress</span>
       </Box>
       <Box className="flex items-center gap-2">

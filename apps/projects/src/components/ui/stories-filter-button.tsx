@@ -396,7 +396,7 @@ export const StoriesFilterButton = ({
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-[35rem]"
+        className="mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-140"
       >
         <Flex align="center" className="h-11 px-4" justify="between">
           <Text

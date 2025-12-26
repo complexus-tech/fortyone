@@ -106,7 +106,7 @@ export const WalkthroughStep = ({
         zIndex: 60,
       }}
     >
-      <Box className="w-[27rem] max-w-[95vw] rounded-2xl border border-gray-100 bg-white shadow-lg dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
+      <Box className="w-108 max-w-[95vw] rounded-2xl border border-gray-100 bg-white shadow-lg dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
         <Flex
           align="center"
           className="border-b border-gray-100 px-4 py-3.5 dark:border-dark-50"

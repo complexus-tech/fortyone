@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tailwind-config";
+@import 'tailwindcss';
+@import 'tailwind-config';
 
 :root {
   --nprogress-color: #ea6060;
@@ -154,7 +154,7 @@ th {
 }
 
 .tiptap table .column-resize-handle {
-  @apply dark:bg-dark-50 pointer-events-none absolute -bottom-[1px] -right-[2px] top-0 z-[5] w-1 bg-gray-200;
+  @apply dark:bg-dark-50 pointer-events-none absolute -bottom-px -right-[2px] top-0 z-5 w-1 bg-gray-200;
 }
 
 .resize-cursor {
@@ -188,7 +188,7 @@ th {
 
 /* this is for sonner */
 [data-close-button] {
-  @apply dark:hover:!border-dark-50 hover:dark:!bg-dark-100;
+  @apply dark:hover:border-dark-50! hover:dark:bg-dark-100!;
 }
 
 /* CSS color for nprogress */

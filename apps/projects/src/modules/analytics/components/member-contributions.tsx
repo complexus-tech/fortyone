@@ -94,7 +94,7 @@ export const MemberContributions = () => {
 
                   <Box className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-100">
                     <Box
-                      className="from-green-500 to-green-600 h-full rounded-full bg-gradient-to-r"
+                      className="from-green-500 to-green-600 h-full rounded-full bg-linear-to-r"
                       style={{
                         width: `${Math.min(completionRate, 100)}%`,
                       }}

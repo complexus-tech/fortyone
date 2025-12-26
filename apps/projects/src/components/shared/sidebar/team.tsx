@@ -119,7 +119,7 @@ export const Team = ({
                   {
                     "cursor-grab": !isDragging,
                     "cursor-grabbing": isDragging,
-                    "pointer-events-none cursor-default !opacity-0":
+                    "pointer-events-none cursor-default opacity-0!":
                       isOpen || totalTeams === 1,
                   },
                 )}
@@ -129,7 +129,7 @@ export const Team = ({
               />
               <Flex
                 align="center"
-                className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
+                className="h-10 flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
                 justify="between"
                 onClick={() => {
                   setIsOpen(!isOpen);

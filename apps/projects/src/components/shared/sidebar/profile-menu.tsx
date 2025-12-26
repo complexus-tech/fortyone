@@ -70,7 +70,7 @@ export const ProfileMenu = () => {
               <ArrowRight2Icon className="shrink-0" />
             </Button>
             {myInvitations.length > 0 && (
-              <Box className="absolute right-1 top-0.5 z-[2] size-2.5 animate-pulse rounded-full bg-primary" />
+              <Box className="absolute right-1 top-0.5 z-2 size-2.5 animate-pulse rounded-full bg-primary" />
             )}
           </Box>
         </Menu.Button>

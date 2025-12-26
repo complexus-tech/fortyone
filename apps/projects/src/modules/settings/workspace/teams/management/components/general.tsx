@@ -73,7 +73,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
             </Text>
           </Box>
           <Input
-            className="h-[2.5rem] md:w-80"
+            className="h-10 md:w-80"
             maxLength={24}
             minLength={3}
             name="name"
@@ -93,7 +93,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
             </Text>
           </Box>
           <Input
-            className="h-[2.5rem] w-28"
+            className="h-10 w-28"
             maxLength={3}
             minLength={2}
             name="code"

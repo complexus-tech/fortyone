@@ -98,7 +98,7 @@ export const Chat = ({
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="max-w-[36rem] rounded-[1.5rem] border-[0.5px] border-gray-200/90 font-medium shadow-2xl outline-none backdrop-blur-lg dark:bg-dark-300/60 md:mb-[2.5dvh] md:mt-auto"
+          className="max-w-xl rounded-3xl border-[0.5px] border-gray-200/90 font-medium shadow-2xl outline-none backdrop-blur-lg dark:bg-dark-300/60 md:mb-[2.5dvh] md:mt-auto"
           hideClose
           overlayClassName="justify-end pr-[1.5vh] bg-dark/[0.07] dark:bg-dark/20"
         >
@@ -115,7 +115,7 @@ export const Chat = ({
           <Dialog.Description className="sr-only">
             Maya is your AI assistant.
           </Dialog.Description>
-          <Dialog.Body className="h-[52rem] max-h-[75dvh] p-0">
+          <Dialog.Body className="h-208 max-h-[75dvh] p-0">
             <Flex className="h-full" direction="column">
               <ChatMessages
                 messages={messages}

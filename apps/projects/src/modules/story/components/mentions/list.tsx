@@ -90,7 +90,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             type="button"
           >
             <Avatar name={item.label} size="sm" src={item.avatar} />
-            <Text className="max-w-[12rem] truncate">
+            <Text className="max-w-48 truncate">
               {item.label}
               {item.id === session?.user?.id && (
                 <Text as="span" color="muted">

@@ -120,7 +120,7 @@ export const KanbanBoard = ({
         className,
       )}
     >
-      <Box className="sticky top-0 z-[1] h-[3.5rem] w-max px-6 backdrop-blur">
+      <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex
           align="center"
           className="h-full shrink-0 overflow-x-auto"

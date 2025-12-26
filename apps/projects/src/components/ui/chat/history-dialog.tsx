@@ -25,7 +25,7 @@ export const HistoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="mb-8 mr-6 max-w-[37rem] rounded-3xl border border-gray-100 font-medium shadow-2xl shadow-gray-200 outline-none dark:border-dark-100 dark:bg-dark-300 dark:shadow-none md:mt-auto"
+        className="mb-8 mr-6 max-w-148 rounded-3xl border border-gray-100 font-medium shadow-2xl shadow-gray-200 outline-none dark:border-dark-100 dark:bg-dark-300 dark:shadow-none md:mt-auto"
         hideClose
         overlayClassName="justify-end bg-dark/5 dark:bg-dark/5"
       >

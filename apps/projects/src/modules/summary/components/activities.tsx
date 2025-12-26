@@ -11,14 +11,14 @@ export const Activities = () => {
     return <ActivitiesSkeleton />;
   }
   return (
-    <Wrapper className="min-h-[25rem] md:min-h-[30rem]">
+    <Wrapper className="min-h-100 md:min-h-120">
       <Flex align="center" className="mb-5" justify="between">
         <Text fontSize="lg">Recent activities</Text>
       </Flex>
       {activities.length === 0 ? (
         <Flex
           align="center"
-          className="h-[25rem]"
+          className="h-100"
           direction="column"
           gap={3}
           justify="center"

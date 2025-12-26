@@ -44,7 +44,7 @@ export const ContextMenuItem = ({
               />
             </Flex>
           </ContextMenu.SubTrigger>
-          <ContextMenu.SubItems className="min-w-[10rem]" rounded="md">
+          <ContextMenu.SubItems className="min-w-40" rounded="md">
             <ContextMenu.Group>
               {subMenu.map(
                 ({
@@ -64,7 +64,7 @@ export const ContextMenuItem = ({
                       <span className="flex text-gray dark:text-gray-200">
                         {subIcon}
                       </span>
-                      <Text className="max-w-[10rem] truncate text-[0.95rem]">
+                      <Text className="max-w-40 truncate text-[0.95rem]">
                         {subLabel}
                       </Text>
                     </Box>
@@ -85,7 +85,7 @@ export const ContextMenuItem = ({
         >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
             <span className="flex text-gray dark:text-gray-200">{icon}</span>
-            <Text className="max-w-[10rem] truncate">{label}</Text>
+            <Text className="max-w-40 truncate">{label}</Text>
           </Box>
           {shortCut ? <Flex className="text-gray">{shortCut}</Flex> : null}
         </ContextMenu.Item>

@@ -33,7 +33,7 @@ export const FilterButton = ({
         </Popover.Trigger>
         <Popover.Content
           align="start"
-          className="w-[23rem] bg-opacity-80 pb-2.5 dark:bg-opacity-80"
+          className="w-92 bg-opacity-80 pb-2.5 dark:bg-opacity-80"
         >
           {popover}
         </Popover.Content>

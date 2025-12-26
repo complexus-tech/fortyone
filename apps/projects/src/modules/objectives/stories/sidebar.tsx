@@ -109,7 +109,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
   return (
     <Container
       className={cn(
-        "bg-gradient-to-br from-white via-gray-50/50 to-gray-50 py-6 dark:from-dark-200/50 dark:to-dark md:pl-8",
+        "bg-linear-to-br from-white via-gray-50/50 to-gray-50 py-6 dark:from-dark-200/50 dark:to-dark md:pl-8",
         className,
       )}
     >

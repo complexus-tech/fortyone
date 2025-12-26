@@ -10,7 +10,7 @@ const ListLayoutSkeleton = () => {
       {Array.from({ length: 4 }).map((_, groupIndex) => (
         <Box className="mb-2" key={groupIndex}>
           {/* Group header, similar to StoriesHeader */}
-          <Box className="sticky top-0 z-[1] select-none border-y-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/60 dark:bg-dark-200/60">
+          <Box className="sticky top-0 z-1 select-none border-y-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/60 dark:bg-dark-200/60">
             <Flex align="center" className="px-12" justify="between">
               <Flex align="center" className="relative" gap={2}>
                 <Checkbox className="absolute -left-7 opacity-70" />
@@ -58,7 +58,7 @@ const KanbanLayoutSkeleton = () => {
   return (
     <Box>
       {/* Kanban header */}
-      <Box className="sticky top-0 z-[1] h-[3.5rem] w-max px-6 backdrop-blur">
+      <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex align="center" className="h-full shrink-0" gap={6}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Flex
@@ -99,7 +99,7 @@ const GanttLayoutSkeleton = () => {
     <div className="relative left-px h-[calc(100dvh-4rem)] overflow-x-auto overflow-y-hidden">
       <Flex className="min-h-full min-w-max">
         {/* Sidebar */}
-        <Box className="sticky left-0 z-20 w-[34rem] shrink-0 border-r-[0.5px] border-gray-200/60 dark:border-dark-100">
+        <Box className="sticky left-0 z-20 w-136 shrink-0 border-r-[0.5px] border-gray-200/60 dark:border-dark-100">
           {/* Header */}
           <Flex
             align="center"

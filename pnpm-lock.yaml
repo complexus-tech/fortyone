@@ -35,7 +35,7 @@ importers:
         version: 15.3.2(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       fumadocs-mdx:
         specifier: 11.6.3
-        version: 11.6.3(acorn@8.15.0)(fumadocs-core@15.3.2(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
+        version: 11.6.3(acorn@8.14.1)(fumadocs-core@15.3.2(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
       fumadocs-ui:
         specifier: 15.3.2
         version: 15.3.2(@types/react-dom@19.1.7(@types/react@19.1.9))(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.7)
@@ -96,13 +96,13 @@ importers:
         version: 1.5.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@mdx-js/loader':
         specifier: ^3.1.0
-        version: 3.1.0(acorn@8.14.1)(webpack@5.101.3)
+        version: 3.1.0(acorn@8.15.0)(webpack@5.101.3)
       '@mdx-js/react':
         specifier: ^3.1.0
         version: 3.1.0(@types/react@19.1.9)(react@19.2.3)
       '@next/mdx':
         specifier: 16.1.1
-        version: 16.1.1(@mdx-js/loader@3.1.0(acorn@8.14.1)(webpack@5.101.3))(@mdx-js/react@3.1.0(@types/react@19.1.9)(react@19.2.3))
+        version: 16.1.1(@mdx-js/loader@3.1.0(acorn@8.15.0)(webpack@5.101.3))(@mdx-js/react@3.1.0(@types/react@19.1.9)(react@19.2.3))
       '@next/third-parties':
         specifier: 16.1.1
         version: 16.1.1(next@16.1.1(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
@@ -144,10 +144,10 @@ importers:
         version: 16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next-auth:
         specifier: 5.0.0-beta.28
-        version: 5.0.0-beta.28(next@16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 5.0.0-beta.28(next@16.1.1(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       next-mdx-remote:
         specifier: ^5.0.0
-        version: 5.0.0(@types/react@19.1.9)(acorn@8.14.1)(react@19.2.3)
+        version: 5.0.0(@types/react@19.1.9)(acorn@8.15.0)(react@19.2.3)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -563,7 +563,7 @@ importers:
         version: 16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next-auth:
         specifier: 5.0.0-beta.28
-        version: 5.0.0-beta.28(next@16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 5.0.0-beta.28(next@16.1.1(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -647,7 +647,7 @@ importers:
         specifier: 16.1.1
         version: 16.1.1
       '@tailwindcss/cli':
-        specifier: ^4.1.5
+        specifier: ^4.1.18
         version: 4.1.18
       '@tailwindcss/typography':
         specifier: ^0.5.12
@@ -698,10 +698,10 @@ importers:
         specifier: ^3.2.5
         version: 3.2.5
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.1
-        version: 0.6.1(prettier@3.2.5)
+        specifier: ^0.7.2
+        version: 0.7.2(prettier@3.2.5)
       tailwindcss:
-        specifier: ^4.1.5
+        specifier: ^4.1.18
         version: 4.1.18
       ts-node:
         specifier: ^10.9.2
@@ -14836,9 +14836,9 @@ snapshots:
       - react
       - react-dom
 
-  '@mdx-js/loader@3.1.0(acorn@8.14.1)(webpack@5.101.3)':
+  '@mdx-js/loader@3.1.0(acorn@8.15.0)(webpack@5.101.3)':
     dependencies:
-      '@mdx-js/mdx': 3.1.0(acorn@8.14.1)
+      '@mdx-js/mdx': 3.1.0(acorn@8.15.0)
       source-map: 0.7.4
     optionalDependencies:
       webpack: 5.101.3
@@ -14986,11 +14986,11 @@ snapshots:
     dependencies:
       fast-glob: 3.3.1
 
-  '@next/mdx@16.1.1(@mdx-js/loader@3.1.0(acorn@8.14.1)(webpack@5.101.3))(@mdx-js/react@3.1.0(@types/react@19.1.9)(react@19.2.3))':
+  '@next/mdx@16.1.1(@mdx-js/loader@3.1.0(acorn@8.15.0)(webpack@5.101.3))(@mdx-js/react@3.1.0(@types/react@19.1.9)(react@19.2.3))':
     dependencies:
       source-map: 0.7.4
     optionalDependencies:
-      '@mdx-js/loader': 3.1.0(acorn@8.14.1)(webpack@5.101.3)
+      '@mdx-js/loader': 3.1.0(acorn@8.15.0)(webpack@5.101.3)
       '@mdx-js/react': 3.1.0(@types/react@19.1.9)(react@19.2.3)
 
   '@next/swc-darwin-arm64@15.3.5':
@@ -21716,9 +21716,9 @@ snapshots:
       - '@types/react'
       - supports-color
 
-  fumadocs-mdx@11.6.3(acorn@8.15.0)(fumadocs-core@15.3.2(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
+  fumadocs-mdx@11.6.3(acorn@8.14.1)(fumadocs-core@15.3.2(@types/react@19.1.9)(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(next@15.3.8(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
     dependencies:
-      '@mdx-js/mdx': 3.1.0(acorn@8.15.0)
+      '@mdx-js/mdx': 3.1.0(acorn@8.14.1)
       '@standard-schema/spec': 1.0.0
       chokidar: 4.0.3
       cross-spawn: 7.0.6
@@ -24523,16 +24523,16 @@ snapshots:
 
   nested-error-stacks@2.0.1: {}
 
-  next-auth@5.0.0-beta.28(next@16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3):
+  next-auth@5.0.0-beta.28(next@16.1.1(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3):
     dependencies:
       '@auth/core': 0.39.1
       next: 16.1.1(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
 
-  next-mdx-remote@5.0.0(@types/react@19.1.9)(acorn@8.14.1)(react@19.2.3):
+  next-mdx-remote@5.0.0(@types/react@19.1.9)(acorn@8.15.0)(react@19.2.3):
     dependencies:
       '@babel/code-frame': 7.26.2
-      '@mdx-js/mdx': 3.1.0(acorn@8.14.1)
+      '@mdx-js/mdx': 3.1.0(acorn@8.15.0)
       '@mdx-js/react': 3.1.0(@types/react@19.1.9)(react@19.2.3)
       react: 19.2.3
       unist-util-remove: 3.1.1

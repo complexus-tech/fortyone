@@ -119,7 +119,7 @@ export const OptionsHeader = ({
                   color="tertiary"
                   href={`/story/${id}/${slugify(title)}`}
                   leftIcon={
-                    <MaximizeIcon className="h-[1.25rem]" strokeWidth={2.5} />
+                    <MaximizeIcon className="h-5" strokeWidth={2.5} />
                   }
                   variant="naked"
                 >

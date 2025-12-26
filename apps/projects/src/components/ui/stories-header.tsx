@@ -43,7 +43,7 @@ export const StoriesHeader = ({
   return (
     <Container
       className={cn(
-        "sticky top-0 z-[1] select-none border-b-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/80 dark:bg-dark-200/90",
+        "sticky top-0 z-1 select-none border-b-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/80 dark:bg-dark-200/90",
         {
           "border-b-[0.5px] border-gray-100 dark:border-dark-50/60":
             group.loadedCount === 0,
@@ -102,8 +102,8 @@ export const StoriesHeader = ({
                   src={assignee?.avatarUrl}
                 />
                 <Text
-                  className={cn("relative -top-[1px]", {
-                    "top-[0px]": !assignee?.fullName,
+                  className={cn("relative -top-px", {
+                    "top-0": !assignee?.fullName,
                   })}
                   fontWeight="medium"
                 >

@@ -78,7 +78,7 @@ export const LoginPage = () => {
             Login
           </Button>
         </form>
-        <Text className="textt-[90%] mt-3 pl-[1px]" color="muted">
+        <Text className="textt-[90%] mt-3 pl-px" color="muted">
           &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
           All Rights Reserved.
         </Text>

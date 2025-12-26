@@ -60,7 +60,7 @@ const Items = ({
   const { setOpen } = useSprintsMenu();
 
   return (
-    <Popover.Content align={align} className="min-w-[23rem]">
+    <Popover.Content align={align} className="min-w-92">
       <Command>
         <Command.Input
           autoFocus

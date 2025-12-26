@@ -35,13 +35,13 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="relative flex h-dvh flex-col justify-between bg-gradient-to-br from-gray-100/50 to-gray-50/50 pb-6 dark:bg-gradient-to-br dark:from-black dark:to-dark-300">
-      <Box className="relative z-[1] px-4">
+    <Box className="relative flex h-dvh flex-col justify-between bg-linear-to-br from-gray-100/50 to-gray-50/50 pb-6 dark:bg-linear-to-br dark:from-black dark:to-dark-300">
+      <Box className="relative z-1 px-4">
         <Header />
         <Navigation />
         <Teams />
       </Box>
-      <Box className="relative z-[1]">
+      <Box className="relative z-1">
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
             <Box className="mb-4 rounded-xl border-[0.5px] border-warning bg-warning/20 p-4 shadow-lg shadow-gray-100 dark:border-warning/20 dark:bg-warning/10 dark:shadow-none">

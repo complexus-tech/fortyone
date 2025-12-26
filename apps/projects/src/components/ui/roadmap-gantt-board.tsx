@@ -256,7 +256,7 @@ export const RoadmapGanttBoard = ({
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark md:w-[34rem]">
+        <Box className="sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark md:w-136">
           <GanttHeader
             onReset={onReset}
             onZoomChange={onZoomChange}

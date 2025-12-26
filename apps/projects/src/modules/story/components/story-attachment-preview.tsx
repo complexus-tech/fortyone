@@ -272,7 +272,7 @@ export const StoryAttachmentPreview = ({
           ) : null}
 
           {isImage || isVideo ? (
-            <Box className="dark pointer-events-none absolute left-0 right-0 top-0 z-[3] h-20 bg-gradient-to-b from-dark/80 px-6 py-5">
+            <Box className="dark pointer-events-none absolute left-0 right-0 top-0 z-3 h-20 bg-linear-to-b from-dark/80 px-6 py-5">
               <Flex
                 align="center"
                 className="pointer-events-auto"

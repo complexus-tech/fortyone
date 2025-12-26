@@ -125,7 +125,7 @@ export const Billing = () => {
 
   return (
     <Box
-      className={cn("mx-auto max-w-[52rem]", {
+      className={cn("mx-auto max-w-208", {
         "max-w-7xl": showPlans,
       })}
     >
@@ -250,7 +250,7 @@ export const Billing = () => {
                     <Button
                       color="tertiary"
                       href={hostedUrl}
-                      rightIcon={<NewTabIcon className="h-[1.125rem]" />}
+                      rightIcon={<NewTabIcon className="h-4.5" />}
                       target="_blank"
                       variant="naked"
                     >

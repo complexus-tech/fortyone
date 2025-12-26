@@ -185,7 +185,7 @@ const MainComment = ({
       {isReplying ? (
         <Box className="mt-3 pl-[2.4rem] pr-1">
           <CommentInput
-            className="mb-2 min-h-[3rem] focus-within:shadow-none"
+            className="mb-2 min-h-12 focus-within:shadow-none"
             onCancel={handleCancel}
             parentId={id}
             storyId={storyId}
@@ -197,7 +197,7 @@ const MainComment = ({
       {isEditing ? (
         <Box className="mt-3 pl-8 pr-1">
           <CommentInput
-            className="mb-2 min-h-[3rem] focus-within:shadow-none"
+            className="mb-2 min-h-12 focus-within:shadow-none"
             commentId={id}
             initialComment={comment}
             onCancel={handleCancel}

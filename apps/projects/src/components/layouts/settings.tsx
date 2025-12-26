@@ -135,7 +135,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             {mobileMenu.map(({ href, title }) => (
               <Link
                 className={cn(
-                  "h-16 shrink-0 border-b border-transparent px-3 leading-[4rem]",
+                  "h-16 shrink-0 border-b border-transparent px-3 leading-16",
                   {
                     "border-primary text-primary": pathname === href,
                   },
@@ -156,7 +156,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       <Box className="hidden md:block">
         <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
           <ResizablePanel.Panel
-            className="bg-gray-50/60 dark:bg-[#000000]/45"
+            className="bg-gray-50/60 dark:bg-black/45"
             defaultSize={15}
             maxSize={20}
             minSize={12}
@@ -211,7 +211,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           <ResizablePanel.Panel defaultSize={85}>
             <Box className="h-dvh overflow-y-auto">
               <Container
-                className={cn("max-w-[54rem] py-12", {
+                className={cn("max-w-216 py-12", {
                   "max-w-7xl": pathname.includes("billing"),
                 })}
               >
