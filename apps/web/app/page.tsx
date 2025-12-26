@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Card } from "ui/card";
+import { Badge } from "ui/index";
 
 const LINKS = [
   {
@@ -29,6 +30,7 @@ export default function Page() {
   return (
     <main className="flex flex-col items-center justify-between min-h-screen p-24">
       <p>Hello world</p>
+      <Badge>Test</Badge>
       {LINKS.map((l) => (
         <Card title="test" href="/" key={l.title}>
           <span>{l.title}</span>
