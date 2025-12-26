@@ -21,7 +21,8 @@
     "lint": "eslint src --max-warnings 0"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "^19",
+    "cva": "npm:class-variance-authority@^0.7.0"
   },
   "devDependencies": {
     "eslint-config-custom": "workspace:*",
