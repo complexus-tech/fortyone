@@ -828,6 +828,9 @@ importers:
 
   packages/ui:
     dependencies:
+      cva:
+        specifier: npm:class-variance-authority@^0.7.0
+        version: class-variance-authority@0.7.1
       react:
         specifier: ^19
         version: 19.2.3
@@ -847,6 +850,9 @@ importers:
       icons:
         specifier: workspace:*
         version: link:../icons
+      lib:
+        specifier: workspace:*
+        version: link:../lib
       tailwind-config:
         specifier: workspace:*
         version: link:../tailwind-config
