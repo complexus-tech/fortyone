@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tailwind-config";
 
 :root {
   --nprogress-color: #ea6060;
@@ -36,7 +35,7 @@
 
 body,
 html {
-  @apply overflow-x-hidden scroll-smooth font-body text-[15px] font-medium tracking-wide text-dark-200 antialiased dark:bg-black dark:text-gray-200;
+  @apply font-body text-dark-200 overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased dark:bg-black dark:text-gray-200;
 }
 
 h1,
@@ -92,7 +91,7 @@ ul[data-type="taskList"] li {
 }
 
 ul[data-type="taskList"] li input {
-  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
+  @apply accent-primary relative top-[0.2rem] h-[1.1rem] w-[1.1rem];
 }
 
 ul[data-type="taskList"] li > label {
@@ -164,7 +163,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 #nprogress .bar {
-  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
+  @apply bg-primary fixed left-0 top-0 h-[3px] w-full;
   z-index: 19031 !important;
 }
 
@@ -243,7 +242,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   transform: scale(0);
 }
 .mf-cursor-text {
-  @apply absolute flex items-center justify-center rounded-full border border-dark-200 bg-dark p-2 text-center text-gray-50 opacity-0;
+  @apply border-dark-200 bg-dark absolute flex items-center justify-center rounded-full border p-2 text-center text-gray-50 opacity-0;
   position: absolute;
   top: -40px;
   left: -40px;

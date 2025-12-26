@@ -4,6 +4,7 @@ import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import Script from "next/script";
 import { body, heading, mono } from "@/styles/fonts";
+import "ui/styles.css";
 import "../styles/global.css";
 import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
