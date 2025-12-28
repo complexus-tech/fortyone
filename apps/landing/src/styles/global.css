@@ -1,14 +1,15 @@
 @import "tailwindcss";
 @import "tailwind-config";
 
-:root {
-  --nprogress-color: #ea6060;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Fonts */
   --font-body: var(--font-body);
   --font-heading: var(--font-heading);
+}
+
+:root {
+  --nprogress-color: #ea6060;
 }
 
 .animate-gradient {
@@ -41,7 +42,7 @@
 
 body,
 html {
-  @apply font-body text-dark-200 overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased dark:bg-black dark:text-gray-200;
+  @apply text-dark-200 font-body overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased dark:bg-black dark:text-gray-200;
 }
 
 h1,

@@ -1,10 +1,10 @@
+import "../styles/global.css";
 import type { Metadata, Viewport } from "next";
 import {
   Instrument_Sans as InstrumentSans,
   Bricolage_Grotesque as BricolageGrotesque,
 } from "next/font/google";
 import { type ReactNode } from "react";
-import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
 import { cn } from "lib";
 import { auth } from "@/auth";

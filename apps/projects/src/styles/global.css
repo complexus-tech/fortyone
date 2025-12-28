@@ -1,17 +1,21 @@
 @import "tailwindcss";
 @import "tailwind-config";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body), "Segoe UI",
+    sans-serif;
+  --font-heading: var(--font-heading);
+}
+
 :root {
   --nprogress-color: #ea6060;
-}
-@theme {
-  --font-body: var(--font-body);
-  --font-heading: var(--font-heading);
 }
 
 body,
 html {
-  @apply font-body text-dark h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13px] font-medium antialiased 2xl:text-[13.5px] dark:bg-black dark:text-gray-200;
+  @apply text-dark font-main h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13px] font-medium antialiased 2xl:text-[13.5px] dark:bg-black dark:text-gray-200;
 }
 
 @media not all and (min-resolution: 0.001dpcm) {

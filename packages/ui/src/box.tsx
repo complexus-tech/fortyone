@@ -28,11 +28,17 @@ export const Box = ({
       }
     : {};
 
-  return createElement(as, {
-    className,
-    style,
-    ...rest,
-    ...htmlProps,
-    children,
-  });
+  // return createElement(as, {
+  //   className,
+  //   style,
+  //   ...rest,
+  //   ...htmlProps,
+  //   children,
+  // });
+
+  return (
+    <div className={className} style={style} {...rest}>
+      {children}
+    </div>
+  );
 };
