@@ -111,7 +111,7 @@ const Th = ({ children, className, ...rest }: ThProps) => {
   return (
     <th
       className={cn(
-        'bg-whitee dark:bg-secondary-3000 z-10 min-w-[25px] py-3 sticky top-0 text-[0.88rem] font-semibold capitalize text-gray-300 dark:text-white',
+        'bg-white dark:bg-dark-200 z-10 min-w-[25px] py-3 sticky top-0 text-[0.88rem] font-semibold capitalize text-gray-300 dark:text-white',
         className
       )}
       {...rest}
@@ -147,7 +147,7 @@ const Tr = ({ children, className, ...rest }: TrProps) => {
   return (
     <tr
       className={cn(
-        'border-tertiary-50 dark:border-secondary-200 last:border-b-0 transition duration-200 ease-linear',
+        'border-tertiary-50 dark:border-dark-50 last:border-b-0 transition duration-200 ease-linear',
         className
       )}
       {...rest}
