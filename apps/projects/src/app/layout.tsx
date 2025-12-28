@@ -15,7 +15,7 @@ import "ui/styles.css";
 
 const font = InstrumentSans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-body",
   display: "swap",
   weight: "variable",
 });
