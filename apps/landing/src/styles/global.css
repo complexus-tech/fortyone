@@ -5,6 +5,12 @@
   --nprogress-color: #ea6060;
 }
 
+@theme {
+  /* Fonts */
+  --font-body: var(--font-body);
+  --font-heading: var(--font-heading);
+}
+
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-animate 10s ease infinite;
@@ -163,7 +169,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed left-0 top-0 h-[3px] w-full;
+  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
   z-index: 19031 !important;
 }
 

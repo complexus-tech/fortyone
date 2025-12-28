@@ -1,8 +1,12 @@
-@import 'tailwindcss';
-@import 'tailwind-config';
+@import "tailwindcss";
+@import "tailwind-config";
 
 :root {
   --nprogress-color: #ea6060;
+}
+@theme {
+  --font-body: var(--font-body);
+  --font-heading: var(--font-heading);
 }
 
 body,
@@ -154,7 +158,7 @@ th {
 }
 
 .tiptap table .column-resize-handle {
-  @apply dark:bg-dark-50 pointer-events-none absolute -bottom-px -right-[2px] top-0 z-5 w-1 bg-gray-200;
+  @apply dark:bg-dark-50 pointer-events-none absolute top-0 -right-[2px] -bottom-px z-5 w-1 bg-gray-200;
 }
 
 .resize-cursor {
@@ -208,7 +212,7 @@ th {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed left-0 top-0 h-[3px] w-full;
+  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
   z-index: 19031 !important;
 }
 

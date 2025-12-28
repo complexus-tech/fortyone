@@ -1,19 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  /* Fonts */
-  --font-satoshi: var(--font-satoshi);
-  --font-inter: var(--font-inter);
-  --font-sans: var(--font-sans);
-  --font-body: var(--font-body);
-  --font-heading: var(--font-heading);
-  --font-mono: var(--font-mono);
-
-  /* Font Families */
-  --font-family-body: var(--font-body);
-  --font-family-heading: var(--font-heading);
-  --font-family-mono: var(--font-mono);
-
   /* Colors */
   --color-transparent: transparent;
   --color-current: currentColor;
