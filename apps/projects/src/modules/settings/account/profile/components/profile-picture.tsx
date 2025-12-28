@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar } from "ui";
-import { ProfileUploadDialog } from "ui/src/ProfileUploadDialog/ProfileUploadDialog";
+import { ProfileUploadDialog } from "ui";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useProfile } from "@/lib/hooks/profile";
