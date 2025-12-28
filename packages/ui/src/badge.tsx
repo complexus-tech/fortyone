@@ -20,15 +20,16 @@ const badge = cva(
         full: "rounded-full",
       },
       color: {
-        primary: "text-primary-foreground bg-primary border-primary",
-        success: "text-success-foreground bg-success border-success",
-        danger: "text-danger-foreground bg-danger border-danger",
-        info: "text-info-foreground bg-info border-info",
-        warning: "text-warning-foreground bg-warning border-warning",
-        tertiary: "text-accent-foreground bg-accent border-border",
-        secondary: "text-secondary-foreground bg-secondary border-secondary",
+        primary: "text-white bg-primary border-primary",
+        success: "text-white bg-success border-success",
+        danger: "text-white bg-danger border-danger",
+        info: "text-white bg-info border-info",
+        warning: "text-white bg-warning border-warning",
+        tertiary:
+          "text-gray bg-gray-50 border-gray-100/80 dark:bg-dark-100/70 dark:border-dark-50 dark:text-gray-200",
+        secondary: "text-white bg-secondary border-secondary",
         invert:
-          "text-background bg-foreground border-foreground",
+          "text-white bg-black border-black dark:bg-white dark:border-white dark:text-black",
       },
       size: {
         xs: "h-[1.15rem] min-w-4 text-[70%] py-1 px-0.5",
@@ -41,7 +42,7 @@ const badge = cva(
       {
         variant: "outline",
         color: "tertiary",
-        className: "bg-background text-foreground",
+        className: "bg-white text-black dark:text-white",
       },
       {
         variant: "outline",
