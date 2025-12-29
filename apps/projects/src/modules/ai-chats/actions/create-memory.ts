@@ -1,19 +1,16 @@
 "use server";
 
 import { auth } from "@/auth";
-import { put } from "@/lib/http";
+import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
-import type { UpdateMemoryPayload } from "../types";
+import type { CreateMemoryPayload, Memory } from "../types";
 
-export const updateMemoryAction = async (
-  id: string,
-  payload: UpdateMemoryPayload,
-) => {
+export const createMemoryAction = async (payload: CreateMemoryPayload) => {
   try {
     const session = await auth();
-    const result = await put<UpdateMemoryPayload, ApiResponse<null>>(
-      `users/memory/${id}`,
+    const result = await post<CreateMemoryPayload, ApiResponse<Memory>>(
+      "users/memory",
       payload,
       session!,
     );

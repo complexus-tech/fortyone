@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { aiChatKeys } from "../constants";
-import { getMemory } from "../queries/get-memory";
+import { getMemories } from "../queries/get-memory";
 
-export const useMemory = () => {
+export const useMemories = () => {
   const { data: session } = useSession();
 
   return useQuery({
-    queryKey: aiChatKeys.memory(),
-    queryFn: () => getMemory(session!),
+    queryKey: aiChatKeys.memories(),
+    queryFn: () => getMemories(session!),
     enabled: Boolean(session),
   });
 };

@@ -32,11 +32,15 @@ export type Memory = {
   id: string;
   workspaceId: string;
   userId: string;
-  memory: string;
+  content: string;
   createdAt: string;
   updatedAt: string;
 };
 
+export type CreateMemoryPayload = {
+  content: string;
+};
+
 export type UpdateMemoryPayload = {
-  memory: string;
+  content: string;
 };

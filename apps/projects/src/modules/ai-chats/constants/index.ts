@@ -5,5 +5,6 @@ export const aiChatKeys = {
   detail: (id: string) => [...aiChatKeys.details(), id] as const,
   messages: (id: string) => [...aiChatKeys.detail(id), "messages"] as const,
   totalMessages: () => [...aiChatKeys.all, "total-messages"] as const,
-  memory: () => [...aiChatKeys.all, "memory"] as const,
+  memories: () => [...aiChatKeys.all, "memories"] as const,
+  memory: (id: string) => [...aiChatKeys.memories(), id] as const,
 };

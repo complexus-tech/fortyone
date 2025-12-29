@@ -1,21 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { aiChatKeys } from "../constants";
-import { updateMemoryAction } from "../actions/update-memory";
-import type { UpdateMemoryPayload, Memory } from "../types";
+import { deleteMemoryAction } from "../actions/delete-memory";
+import type { Memory } from "../types";
 
-export const useUpdateMemory = () => {
+export const useDeleteMemory = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateMemoryPayload;
-    }) => updateMemoryAction(id, payload),
-    onMutate: async ({ id, payload }) => {
+    mutationFn: (id: string) => deleteMemoryAction(id),
+    onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
 
       const previousMemories = queryClient.getQueryData<Memory[]>(
@@ -25,32 +19,24 @@ export const useUpdateMemory = () => {
       if (previousMemories) {
         queryClient.setQueryData<Memory[]>(
           aiChatKeys.memories(),
-          previousMemories.map((memory) =>
-            memory.id === id
-              ? {
-                  ...memory,
-                  content: payload.content,
-                  updatedAt: new Date().toISOString(),
-                }
-              : memory,
-          ),
+          previousMemories.filter((memory) => memory.id !== id),
         );
       }
 
       return { previousMemories };
     },
-    onError: (error, { id, payload }, context) => {
+    onError: (error, id, context) => {
       if (context?.previousMemories) {
         queryClient.setQueryData(
           aiChatKeys.memories(),
           context.previousMemories,
         );
       }
-      toast.error("Failed to update memory", {
-        description: error.message || "Your changes were not saved",
+      toast.error("Failed to delete memory", {
+        description: error.message || "Your memory was not deleted",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate({ id, payload }),
+          onClick: () => mutation.mutate(id),
         },
       });
     },
@@ -60,7 +46,7 @@ export const useUpdateMemory = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: aiChatKeys.memories() });
-      toast.success("Memory updated successfully");
+      toast.success("Memory deleted successfully");
     },
   });
 

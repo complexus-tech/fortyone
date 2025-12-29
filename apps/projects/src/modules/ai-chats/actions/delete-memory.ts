@@ -1,20 +1,15 @@
 "use server";
 
 import { auth } from "@/auth";
-import { put } from "@/lib/http";
+import { remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
-import type { UpdateMemoryPayload } from "../types";
 
-export const updateMemoryAction = async (
-  id: string,
-  payload: UpdateMemoryPayload,
-) => {
+export const deleteMemoryAction = async (id: string) => {
   try {
     const session = await auth();
-    const result = await put<UpdateMemoryPayload, ApiResponse<null>>(
+    const result = await remove<ApiResponse<null>>(
       `users/memory/${id}`,
-      payload,
       session!,
     );
     return result;
