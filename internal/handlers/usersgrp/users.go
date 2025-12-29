@@ -487,3 +487,57 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
+
+func (h *Handlers) UpsertUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.UpsertUserMemory")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req UpdateUserMemoryRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
+	}
+
+	memory := users.CoreUserMemory{
+		WorkspaceID: workspace.ID,
+		UserID:      userID,
+		Memory:      req.Memory,
+	}
+
+	if err := h.users.UpsertUserMemory(ctx, memory); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to upsert user memory: %w", err), http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) GetUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.GetUserMemory")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	memory, err := h.users.GetUserMemory(ctx, workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to get user memory: %w", err), http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUserMemory(memory), http.StatusOK)
+}

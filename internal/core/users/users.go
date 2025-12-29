@@ -495,3 +495,30 @@ func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, atta
 
 	return nil
 }
+
+// UpsertUserMemory creates or updates a user's memory for a specific workspace.
+func (s *Service) UpsertUserMemory(ctx context.Context, memory CoreUserMemory) error {
+	s.log.Info(ctx, "business.core.users.UpsertUserMemory")
+	ctx, span := web.AddSpan(ctx, "business.core.users.UpsertUserMemory")
+	defer span.End()
+
+	if err := s.repo.UpsertUserMemory(ctx, memory); err != nil {
+		return fmt.Errorf("upserting user memory: %w", err)
+	}
+
+	return nil
+}
+
+// GetUserMemory retrieves a user's memory for a specific workspace.
+func (s *Service) GetUserMemory(ctx context.Context, workspaceID, userID uuid.UUID) (CoreUserMemory, error) {
+	s.log.Info(ctx, "business.core.users.GetUserMemory")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserMemory")
+	defer span.End()
+
+	memory, err := s.repo.GetUserMemory(ctx, workspaceID, userID)
+	if err != nil {
+		return CoreUserMemory{}, fmt.Errorf("getting user memory: %w", err)
+	}
+
+	return memory, nil
+}

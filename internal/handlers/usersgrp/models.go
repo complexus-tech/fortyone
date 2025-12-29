@@ -138,3 +138,27 @@ func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) u
 		OpenStoryInDialog:          req.OpenStoryInDialog,
 	}
 }
+
+type UpdateUserMemoryRequest struct {
+	Memory string `json:"memory"`
+}
+
+type AppUserMemory struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	UserID      uuid.UUID `json:"userId"`
+	Memory      string    `json:"memory"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func toAppUserMemory(mem users.CoreUserMemory) AppUserMemory {
+	return AppUserMemory{
+		ID:          mem.ID,
+		WorkspaceID: mem.WorkspaceID,
+		UserID:      mem.UserID,
+		Memory:      mem.Memory,
+		CreatedAt:   mem.CreatedAt,
+		UpdatedAt:   mem.UpdatedAt,
+	}
+}

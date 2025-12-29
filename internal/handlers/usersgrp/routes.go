@@ -67,4 +67,8 @@ func Routes(cfg Config, app *web.App) {
 	// Automation preferences endpoints
 	app.Get("/workspaces/{workspaceSlug}/automation/preferences", h.GetAutomationPreferences, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/automation/preferences", h.UpdateAutomationPreferences, auth, workspace)
+
+	// User Memory endpoints
+	app.Get("/workspaces/{workspaceSlug}/users/memory", h.GetUserMemory, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/users/memory", h.UpsertUserMemory, auth, workspace)
 }
