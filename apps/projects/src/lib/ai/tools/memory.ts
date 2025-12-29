@@ -5,6 +5,8 @@ import { updateMemoryAction } from "@/modules/ai-chats/actions/update-memory";
 import { deleteMemoryAction } from "@/modules/ai-chats/actions/delete-memory";
 import { getMemories } from "@/modules/ai-chats/queries/get-memory";
 import { auth } from "@/auth";
+import { TIER_LIMITS } from "@/lib/hooks/subscription-features";
+import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 
 export const listMemories = tool({
   description: "List all memories about the user.",
@@ -44,6 +46,30 @@ export const createMemory = tool({
   }),
   execute: async ({ content }) => {
     try {
+      const session = await auth();
+      if (!session) {
+        return {
+          success: false,
+          error: "Authentication required",
+        };
+      }
+
+      const [memories, subscription] = await Promise.all([
+        getMemories(session),
+        getSubscription(session),
+      ]);
+
+      const tier = subscription?.tier as keyof typeof TIER_LIMITS;
+      const limit = TIER_LIMITS[tier].maxMemories;
+
+      if (memories.length >= limit) {
+        return {
+          success: false,
+          error: "MEMORY_LIMIT_REACHED",
+          memories: memories.map(m => ({ id: m.id, content: m.content })),
+        };
+      }
+
       const result = await createMemoryAction({ content });
       if (result.error?.message) {
         return {
