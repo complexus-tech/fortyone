@@ -70,12 +70,12 @@ export async function POST(req: NextRequest) {
       ? openaiClient("gpt-5.2")
       : googleClient("gemini-flash-latest");
 
-  const devToolsEnabledModel = wrapLanguageModel({
-    model: client,
-    middleware: devToolsMiddleware(),
-  });
+  // const devToolsEnabledModel = wrapLanguageModel({
+  //   model: client,
+  //   middleware: devToolsMiddleware(),
+  // });
 
-  const model = withTracing(devToolsEnabledModel, phClient, {
+  const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
