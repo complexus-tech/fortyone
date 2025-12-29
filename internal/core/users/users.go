@@ -59,6 +59,9 @@ type Repository interface {
 	// Automation preferences methods
 	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
 	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
+	// User Memory methods
+	UpsertUserMemory(ctx context.Context, memory CoreUserMemory) error
+	GetUserMemory(ctx context.Context, workspaceID, userID uuid.UUID) (CoreUserMemory, error)
 }
 
 // AttachmentsService interface for profile image operations

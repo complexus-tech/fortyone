@@ -101,3 +101,23 @@ func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomation
 		UpdatedAt:                  p.UpdatedAt,
 	}
 }
+
+type dbUserMemory struct {
+	ID          uuid.UUID `db:"id"`
+	WorkspaceID uuid.UUID `db:"workspace_id"`
+	UserID      uuid.UUID `db:"user_id"`
+	Memory      string    `db:"memory"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+}
+
+func toCoreUserMemory(db dbUserMemory) users.CoreUserMemory {
+	return users.CoreUserMemory{
+		ID:          db.ID,
+		WorkspaceID: db.WorkspaceID,
+		UserID:      db.UserID,
+		Memory:      db.Memory,
+		CreatedAt:   db.CreatedAt,
+		UpdatedAt:   db.UpdatedAt,
+	}
+}

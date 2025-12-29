@@ -73,3 +73,13 @@ type CoreUpdateAutomationPreferences struct {
 	MoveStoryToStartedOnBranch *bool
 	OpenStoryInDialog          *bool
 }
+
+// CoreUserMemory represents the context/memory associated with a user in a workspace.
+type CoreUserMemory struct {
+	ID          uuid.UUID `json:"id"`
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	UserID      uuid.UUID `json:"userId"`
+	Memory      string    `json:"memory"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
