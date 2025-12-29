@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   });
 
   const client =
-    provider === "openai"
+    provider === "google"
       ? openaiClient("gpt-5.2")
       : googleClient("gemini-flash-latest");
 
