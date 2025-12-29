@@ -139,26 +139,38 @@ func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) u
 	}
 }
 
-type UpdateUserMemoryRequest struct {
-	Memory string `json:"memory"`
+type AddUserMemoryRequest struct {
+	Content string `json:"content" validate:"required"`
 }
 
-type AppUserMemory struct {
+type UpdateUserMemoryRequest struct {
+	Content string `json:"content" validate:"required"`
+}
+
+type AppUserMemoryItem struct {
 	ID          uuid.UUID `json:"id"`
-	WorkspaceID uuid.UUID `json:"workspaceId"`
 	UserID      uuid.UUID `json:"userId"`
-	Memory      string    `json:"memory"`
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	Content     string    `json:"content"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-func toAppUserMemory(mem users.CoreUserMemory) AppUserMemory {
-	return AppUserMemory{
+func toAppUserMemoryItem(mem users.CoreUserMemoryItem) AppUserMemoryItem {
+	return AppUserMemoryItem{
 		ID:          mem.ID,
-		WorkspaceID: mem.WorkspaceID,
 		UserID:      mem.UserID,
-		Memory:      mem.Memory,
+		WorkspaceID: mem.WorkspaceID,
+		Content:     mem.Content,
 		CreatedAt:   mem.CreatedAt,
 		UpdatedAt:   mem.UpdatedAt,
 	}
+}
+
+func toAppUserMemoryItems(items []users.CoreUserMemoryItem) []AppUserMemoryItem {
+	result := make([]AppUserMemoryItem, len(items))
+	for i, item := range items {
+		result[i] = toAppUserMemoryItem(item)
+	}
+	return result
 }

@@ -1016,91 +1016,113 @@ func (r *repo) createDefaultAutomationPreferences(ctx context.Context, userID, w
 	return toCoreAutomationPreferences(prefs), nil
 }
 
-// UpsertUserMemory creates or updates a user's memory for a specific workspace.
-func (r *repo) UpsertUserMemory(ctx context.Context, memory users.CoreUserMemory) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.UpsertUserMemory")
+// AddUserMemory adds a new memory item for a user.
+func (r *repo) AddUserMemory(ctx context.Context, memory users.NewUserMemoryItem) (users.CoreUserMemoryItem, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.AddUserMemory")
 	defer span.End()
 
-	// Try to update first
-	updateQuery := `
-		UPDATE user_memory 
-		SET memory = :memory, updated_at = :updated_at
-		WHERE workspace_id = :workspace_id AND user_id = :user_id
-		RETURNING id
+	q := `
+		INSERT INTO user_memories (workspace_id, user_id, content, created_at, updated_at)
+		VALUES (:workspace_id, :user_id, :content, NOW(), NOW())
+		RETURNING id, workspace_id, user_id, content, created_at, updated_at
 	`
 
-	now := time.Now()
 	params := map[string]any{
 		"workspace_id": memory.WorkspaceID,
 		"user_id":      memory.UserID,
-		"memory":       memory.Memory,
-		"created_at":   now,
-		"updated_at":   now,
+		"content":      memory.Content,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, updateQuery)
+	var dbItem dbUserMemoryItem
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return users.CoreUserMemoryItem{}, fmt.Errorf("preparing insert statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &dbItem, params); err != nil {
+		return users.CoreUserMemoryItem{}, fmt.Errorf("inserting user memory: %w", err)
+	}
+
+	return toCoreUserMemoryItem(dbItem), nil
+}
+
+// UpdateUserMemory updates a memory item.
+func (r *repo) UpdateUserMemory(ctx context.Context, id uuid.UUID, update users.UpdateUserMemoryItem) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUserMemory")
+	defer span.End()
+
+	q := `
+		UPDATE user_memories
+		SET content = :content, updated_at = NOW()
+		WHERE id = :id
+	`
+
+	params := map[string]any{
+		"id":      id,
+		"content": *update.Content,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		return fmt.Errorf("preparing update statement: %w", err)
 	}
 	defer stmt.Close()
 
-	var id uuid.UUID
-	err = stmt.GetContext(ctx, &id, params)
-	if err == nil {
-		return nil // Updated successfully
-	}
-	if err != sql.ErrNoRows {
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
 		return fmt.Errorf("updating user memory: %w", err)
-	}
-
-	// Insert if not found
-	insertQuery := `
-		INSERT INTO user_memory (workspace_id, user_id, memory, created_at, updated_at)
-		VALUES (:workspace_id, :user_id, :memory, :created_at, :updated_at)
-	`
-
-	stmtInsert, err := r.db.PrepareNamedContext(ctx, insertQuery)
-	if err != nil {
-		return fmt.Errorf("preparing insert statement: %w", err)
-	}
-	defer stmtInsert.Close()
-
-	if _, err := stmtInsert.ExecContext(ctx, params); err != nil {
-		return fmt.Errorf("inserting user memory: %w", err)
 	}
 
 	return nil
 }
 
-// GetUserMemory retrieves a user's memory for a specific workspace.
-func (r *repo) GetUserMemory(ctx context.Context, workspaceID, userID uuid.UUID) (users.CoreUserMemory, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.users.GetUserMemory")
+// DeleteUserMemory deletes a memory item.
+func (r *repo) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.DeleteUserMemory")
 	defer span.End()
 
-	query := `
-		SELECT id, workspace_id, user_id, memory, created_at, updated_at
-		FROM user_memory
-		WHERE workspace_id = :workspace_id AND user_id = :user_id
-	`
+	q := `DELETE FROM user_memories WHERE id = :id`
 
-	params := map[string]any{
-		"workspace_id": workspaceID,
-		"user_id":      userID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
-		return users.CoreUserMemory{}, fmt.Errorf("preparing statement: %w", err)
+		return fmt.Errorf("preparing delete statement: %w", err)
 	}
 	defer stmt.Close()
 
-	var dbMem dbUserMemory
-	if err := stmt.GetContext(ctx, &dbMem, params); err != nil {
-		if err == sql.ErrNoRows {
-			return users.CoreUserMemory{}, nil
-		}
-		return users.CoreUserMemory{}, fmt.Errorf("getting user memory: %w", err)
+	if _, err := stmt.ExecContext(ctx, map[string]any{"id": id}); err != nil {
+		return fmt.Errorf("deleting user memory: %w", err)
 	}
 
-	return toCoreUserMemory(dbMem), nil
+	return nil
+}
+
+// ListUserMemories retrieves all memory items for a user in a workspace.
+func (r *repo) ListUserMemories(ctx context.Context, userID, workspaceID uuid.UUID) ([]users.CoreUserMemoryItem, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.ListUserMemories")
+	defer span.End()
+
+	q := `
+		SELECT id, workspace_id, user_id, content, created_at, updated_at
+		FROM user_memories
+		WHERE user_id = :user_id AND workspace_id = :workspace_id
+		ORDER BY created_at DESC
+	`
+
+	params := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}
+
+	var dbItems []dbUserMemoryItem
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("preparing list statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &dbItems, params); err != nil {
+		return nil, fmt.Errorf("listing user memories: %w", err)
+	}
+
+	return toCoreUserMemoryItems(dbItems), nil
 }

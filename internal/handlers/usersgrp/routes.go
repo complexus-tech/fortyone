@@ -69,6 +69,9 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceSlug}/automation/preferences", h.UpdateAutomationPreferences, auth, workspace)
 
 	// User Memory endpoints
-	app.Get("/workspaces/{workspaceSlug}/users/memory", h.GetUserMemory, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/users/memory", h.UpsertUserMemory, auth, workspace)
+	// User Memory
+	app.Post("/workspaces/{workspaceSlug}/users/memory", h.AddUserMemory, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/users/memory", h.ListUserMemories, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/users/memory/{id}", h.UpdateUserMemory, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/users/memory/{id}", h.DeleteUserMemory, auth, workspace)
 }

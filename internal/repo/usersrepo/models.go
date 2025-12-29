@@ -102,22 +102,30 @@ func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomation
 	}
 }
 
-type dbUserMemory struct {
+type dbUserMemoryItem struct {
 	ID          uuid.UUID `db:"id"`
 	WorkspaceID uuid.UUID `db:"workspace_id"`
 	UserID      uuid.UUID `db:"user_id"`
-	Memory      string    `db:"memory"`
+	Content     string    `db:"content"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }
 
-func toCoreUserMemory(db dbUserMemory) users.CoreUserMemory {
-	return users.CoreUserMemory{
+func toCoreUserMemoryItem(db dbUserMemoryItem) users.CoreUserMemoryItem {
+	return users.CoreUserMemoryItem{
 		ID:          db.ID,
 		WorkspaceID: db.WorkspaceID,
 		UserID:      db.UserID,
-		Memory:      db.Memory,
+		Content:     db.Content,
 		CreatedAt:   db.CreatedAt,
 		UpdatedAt:   db.UpdatedAt,
 	}
+}
+
+func toCoreUserMemoryItems(dbItems []dbUserMemoryItem) []users.CoreUserMemoryItem {
+	items := make([]users.CoreUserMemoryItem, len(dbItems))
+	for i, db := range dbItems {
+		items[i] = toCoreUserMemoryItem(db)
+	}
+	return items
 }

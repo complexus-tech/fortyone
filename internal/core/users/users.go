@@ -60,8 +60,10 @@ type Repository interface {
 	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
 	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
 	// User Memory methods
-	UpsertUserMemory(ctx context.Context, memory CoreUserMemory) error
-	GetUserMemory(ctx context.Context, workspaceID, userID uuid.UUID) (CoreUserMemory, error)
+	AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error)
+	UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error
+	DeleteUserMemory(ctx context.Context, id uuid.UUID) error
+	ListUserMemories(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) ([]CoreUserMemoryItem, error)
 }
 
 // AttachmentsService interface for profile image operations
@@ -496,29 +498,56 @@ func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, atta
 	return nil
 }
 
-// UpsertUserMemory creates or updates a user's memory for a specific workspace.
-func (s *Service) UpsertUserMemory(ctx context.Context, memory CoreUserMemory) error {
-	s.log.Info(ctx, "business.core.users.UpsertUserMemory")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpsertUserMemory")
+// AddUserMemory adds a new memory item for a user.
+func (s *Service) AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error) {
+	s.log.Info(ctx, "business.core.users.AddUserMemory")
+	ctx, span := web.AddSpan(ctx, "business.core.users.AddUserMemory")
 	defer span.End()
 
-	if err := s.repo.UpsertUserMemory(ctx, memory); err != nil {
-		return fmt.Errorf("upserting user memory: %w", err)
+	newItem, err := s.repo.AddUserMemory(ctx, memory)
+	if err != nil {
+		return CoreUserMemoryItem{}, fmt.Errorf("adding user memory: %w", err)
+	}
+
+	return newItem, nil
+}
+
+// UpdateUserMemory updates a memory item.
+func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error {
+	s.log.Info(ctx, "business.core.users.UpdateUserMemory")
+	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserMemory")
+	defer span.End()
+
+	if err := s.repo.UpdateUserMemory(ctx, id, update); err != nil {
+		return fmt.Errorf("updating user memory: %w", err)
 	}
 
 	return nil
 }
 
-// GetUserMemory retrieves a user's memory for a specific workspace.
-func (s *Service) GetUserMemory(ctx context.Context, workspaceID, userID uuid.UUID) (CoreUserMemory, error) {
-	s.log.Info(ctx, "business.core.users.GetUserMemory")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserMemory")
+// DeleteUserMemory deletes a memory item.
+func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+	s.log.Info(ctx, "business.core.users.DeleteUserMemory")
+	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteUserMemory")
 	defer span.End()
 
-	memory, err := s.repo.GetUserMemory(ctx, workspaceID, userID)
-	if err != nil {
-		return CoreUserMemory{}, fmt.Errorf("getting user memory: %w", err)
+	if err := s.repo.DeleteUserMemory(ctx, id); err != nil {
+		return fmt.Errorf("deleting user memory: %w", err)
 	}
 
-	return memory, nil
+	return nil
+}
+
+// ListUserMemories retrieves all memory items for a user in a workspace.
+func (s *Service) ListUserMemories(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreUserMemoryItem, error) {
+	s.log.Info(ctx, "business.core.users.ListUserMemories")
+	ctx, span := web.AddSpan(ctx, "business.core.users.ListUserMemories")
+	defer span.End()
+
+	items, err := s.repo.ListUserMemories(ctx, userID, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("listing user memories: %w", err)
+	}
+
+	return items, nil
 }

@@ -488,8 +488,9 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
-func (h *Handlers) UpsertUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.users.UpsertUserMemory")
+// AddUserMemory adds a new memory item for the user.
+func (h *Handlers) AddUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.AddUserMemory")
 	defer span.End()
 
 	userID, err := mid.GetUserID(ctx)
@@ -499,29 +500,76 @@ func (h *Handlers) UpsertUserMemory(ctx context.Context, w http.ResponseWriter, 
 
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	var req AddUserMemoryRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	newItem := users.NewUserMemoryItem{
+		UserID:      userID,
+		WorkspaceID: workspace.ID,
+		Content:     req.Content,
+	}
+
+	item, err := h.users.AddUserMemory(ctx, newItem)
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("adding user memory: %w", err), http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppUserMemoryItem(item), http.StatusCreated)
+}
+
+// UpdateUserMemory updates a memory item.
+func (h *Handlers) UpdateUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.UpdateUserMemory")
+	defer span.End()
+
+	idParam := web.Params(r, "id")
+	memoryID, err := uuid.Parse(idParam)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
 	var req UpdateUserMemoryRequest
 	if err := web.Decode(r, &req); err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	memory := users.CoreUserMemory{
-		WorkspaceID: workspace.ID,
-		UserID:      userID,
-		Memory:      req.Memory,
+	update := users.UpdateUserMemoryItem{
+		Content: &req.Content,
 	}
 
-	if err := h.users.UpsertUserMemory(ctx, memory); err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("failed to upsert user memory: %w", err), http.StatusInternalServerError)
+	if err := h.users.UpdateUserMemory(ctx, memoryID, update); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("updating user memory: %w", err), http.StatusInternalServerError)
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
-func (h *Handlers) GetUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, span := web.AddSpan(ctx, "handlers.users.GetUserMemory")
+// DeleteUserMemory deletes a memory item.
+func (h *Handlers) DeleteUserMemory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.DeleteUserMemory")
+	defer span.End()
+
+	idParam := web.Params(r, "id")
+	memoryID, err := uuid.Parse(idParam)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.users.DeleteUserMemory(ctx, memoryID); err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("deleting user memory: %w", err), http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// ListUserMemories retrieves all memory items for the user in the workspace.
+func (h *Handlers) ListUserMemories(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.users.ListUserMemories")
 	defer span.End()
 
 	userID, err := mid.GetUserID(ctx)
@@ -531,13 +579,13 @@ func (h *Handlers) GetUserMemory(ctx context.Context, w http.ResponseWriter, r *
 
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	memory, err := h.users.GetUserMemory(ctx, workspace.ID, userID)
+	items, err := h.users.ListUserMemories(ctx, userID, workspace.ID)
 	if err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("failed to get user memory: %w", err), http.StatusInternalServerError)
+		return web.RespondError(ctx, w, fmt.Errorf("listing user memories: %w", err), http.StatusInternalServerError)
 	}
 
-	return web.Respond(ctx, w, toAppUserMemory(memory), http.StatusOK)
+	return web.Respond(ctx, w, toAppUserMemoryItems(items), http.StatusOK)
 }

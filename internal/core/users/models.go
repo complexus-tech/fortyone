@@ -74,12 +74,22 @@ type CoreUpdateAutomationPreferences struct {
 	OpenStoryInDialog          *bool
 }
 
-// CoreUserMemory represents the context/memory associated with a user in a workspace.
-type CoreUserMemory struct {
+// CoreUserMemoryItem represents a single memory item for a user.
+type CoreUserMemoryItem struct {
 	ID          uuid.UUID `json:"id"`
-	WorkspaceID uuid.UUID `json:"workspaceId"`
 	UserID      uuid.UUID `json:"userId"`
-	Memory      string    `json:"memory"`
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	Content     string    `json:"content"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type NewUserMemoryItem struct {
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID
+	Content     string
+}
+
+type UpdateUserMemoryItem struct {
+	Content *string
 }
