@@ -9,6 +9,10 @@ export type AiChatSession = {
   updatedAt: string;
 };
 
+export type AiTotalChatMessages = {
+  count: number;
+};
+
 export type CreateAiChatPayload = {
   id: string;
   title: string;
