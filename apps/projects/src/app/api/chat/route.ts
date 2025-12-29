@@ -65,15 +65,17 @@ export async function POST(req: NextRequest) {
     apiKey: process.env.GOOGLE_API_KEY,
   });
 
-  const client =
+  let client =
     provider === "google"
       ? openaiClient("gpt-5.2")
       : googleClient("gemini-flash-latest");
 
-  // const devToolsEnabledModel = wrapLanguageModel({
-  //   model: client,
-  //   middleware: devToolsMiddleware(),
-  // });
+  if (process.env.NODE_ENV === "development") {
+    client = wrapLanguageModel({
+      model: client,
+      middleware: devToolsMiddleware(),
+    });
+  }
 
   const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
