@@ -310,7 +310,7 @@ func (r *repo) GetMessages(ctx context.Context, sessionID string) ([]any, error)
 }
 
 // CountUserMessages counts the number of user messages for a user in a given time range.
-func (r *repo) CountUserMessages(ctx context.Context, userID uuid.UUID, start, end time.Time) (int, error) {
+func (r *repo) CountUserMessages(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, start, end time.Time) (int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.CountUserMessages")
 	defer span.End()
 
@@ -320,15 +320,17 @@ func (r *repo) CountUserMessages(ctx context.Context, userID uuid.UUID, start, e
 		JOIN chat_messages m ON s.id = m.session_id
 		CROSS JOIN LATERAL jsonb_array_elements(m.messages) AS msg
 		WHERE s.user_id = :user_id
+		AND s.workspace_id = :workspace_id
 		AND s.created_at >= :start_date 
 		AND s.created_at < :end_date
 		AND msg->>'role' = 'user';
 	`
 
 	params := map[string]any{
-		"user_id":    userID,
-		"start_date": start,
-		"end_date":   end,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+		"start_date":   start,
+		"end_date":     end,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)

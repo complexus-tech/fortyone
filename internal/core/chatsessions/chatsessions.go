@@ -26,7 +26,7 @@ type Repository interface {
 	DeleteSession(ctx context.Context, id string, workspaceID uuid.UUID) error
 	SaveMessages(ctx context.Context, sessionID string, messages []any) error
 	GetMessages(ctx context.Context, sessionID string) ([]any, error)
-	CountUserMessages(ctx context.Context, userID uuid.UUID, start, end time.Time) (int, error)
+	CountUserMessages(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, start, end time.Time) (int, error)
 }
 
 // Service provides chat session-related operations.
@@ -165,7 +165,7 @@ func (s *Service) GetMessages(ctx context.Context, sessionID string) ([]any, err
 }
 
 // CountUserMessagesCurrentMonth returns the number of messages sent by the user in the current month.
-func (s *Service) CountUserMessagesCurrentMonth(ctx context.Context, userID uuid.UUID) (int, error) {
+func (s *Service) CountUserMessagesCurrentMonth(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (int, error) {
 	s.log.Info(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
 	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
 	defer span.End()
@@ -174,7 +174,7 @@ func (s *Service) CountUserMessagesCurrentMonth(ctx context.Context, userID uuid
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	end := now.Add(time.Duration(24 * time.Hour))
 
-	count, err := s.repo.CountUserMessages(ctx, userID, start, end)
+	count, err := s.repo.CountUserMessages(ctx, userID, workspaceID, start, end)
 	if err != nil {
 		return 0, fmt.Errorf("counting user messages: %w", err)
 	}

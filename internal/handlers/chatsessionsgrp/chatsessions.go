@@ -253,7 +253,14 @@ func (h *Handlers) GetUserMessageCount(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	count, err := h.chatsessions.CountUserMessagesCurrentMonth(ctx, userID)
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		h.log.Error(ctx, "invalid workspace id", "error", err)
+		web.RespondError(ctx, w, ErrInvalidWorkspaceID, http.StatusBadRequest)
+		return nil
+	}
+
+	count, err := h.chatsessions.CountUserMessagesCurrentMonth(ctx, userID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("failed to count user messages: %w", err), http.StatusInternalServerError)
 	}
