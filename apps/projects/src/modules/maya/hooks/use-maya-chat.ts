@@ -21,6 +21,7 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
+import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -30,6 +31,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: subscription } = useSubscription();
   const { data: teams = [] } = useTeams();
   const { data: profile } = useProfile();
+  const { data: memories = [] } = useMemories();
   const { workspace } = useCurrentWorkspace();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
@@ -151,13 +153,21 @@ export const useMayaChat = (config: MayaChatConfig) => {
               queryKey: notificationKeys.all,
             });
           }
-        } else if (part.type === "tool-objectiveStatuses") {
+        }
+        else if (part.type === "tool-deleteMemory" || part.type === "tool-updateMemory" || part.type === "tool-createMemory") {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: aiChatKeys.memories(),
+            });
+          }
+        } 
+        else if (part.type === "tool-objectiveStatuses") {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
               queryKey: objectiveKeys.statuses(),
             });
           }
-        }
+        } 
       });
     },
     messages: aiChatMessages,
@@ -178,6 +188,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
           username: profile?.username,
         },
         teams,
+        memories,
         workspace,
         terminology,
         id: idRef.current,

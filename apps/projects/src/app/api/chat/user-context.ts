@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
-import { getMemories } from "@/modules/ai-chats/queries/get-memory";
+import { Memory } from "@/modules/ai-chats/types";
 
 export async function getUserContext({
   currentPath,
@@ -12,6 +12,7 @@ export async function getUserContext({
   username,
   terminology,
   workspace,
+  memories
 }: {
   currentPath: string;
   currentTheme: string;
@@ -23,6 +24,7 @@ export async function getUserContext({
     status: string;
   };
   teams: Team[];
+  memories: Memory[];
   username: string;
   terminology: {
     stories: string;
@@ -42,7 +44,6 @@ export async function getUserContext({
   const currentTime = now.toLocaleTimeString("en-US", {
     hour12: false,
   });
-  const memories = await getMemories(session);
 
   const teamsList = teams
     .map((t) => `name: ${t.name} - id: ${t.id} - code: ${t.code}`)
