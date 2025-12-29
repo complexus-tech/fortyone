@@ -35,8 +35,10 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
+    memories,
     webSearchEnabled = true,
     provider = "openai",
+    totalMessages,
   } = await req.json();
   const modelMessages = await convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -48,10 +50,12 @@ export async function POST(req: NextRequest) {
     currentTheme,
     resolvedTheme,
     subscription,
+    memories,
     teams,
     username,
     terminology,
     workspace,
+    totalMessages,
   });
 
   const session = await auth();

@@ -194,6 +194,10 @@ export const useMayaChat = (config: MayaChatConfig) => {
         },
         teams,
         memories,
+        totalMessages: {
+            current: totalMessages,
+            limit: getLimit("maxAiMessages"),
+          },
         workspace,
         terminology,
         id: idRef.current,
@@ -256,6 +260,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
           },
           teams,
           workspace,
+          memories,
           terminology,
           totalMessages: {
             current: totalMessages,

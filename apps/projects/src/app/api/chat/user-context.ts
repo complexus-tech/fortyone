@@ -12,7 +12,8 @@ export async function getUserContext({
   username,
   terminology,
   workspace,
-  memories
+  memories,
+  totalMessages,
 }: {
   currentPath: string;
   currentTheme: string;
@@ -33,6 +34,10 @@ export async function getUserContext({
     keyResults: string;
   };
   workspace: Workspace;
+  totalMessages: {
+    current: number;
+    limit: number;
+  };
 }): Promise<string> {
   const session = await auth();
   if (!session?.user) {
@@ -80,6 +85,10 @@ export async function getUserContext({
     `
         : ""
     }
+
+    **Total Messages:**
+    - Current: ${totalMessages.current}
+    - Limit: ${totalMessages.limit}
 
 
     **Current Terminology:**
