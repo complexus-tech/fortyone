@@ -17,6 +17,8 @@ export const TIER_LIMITS = {
     customWorkflows: true,
     maxObjectives: 3,
     objective: true,
+    maxAiMessages: 15,
+    maxMemories: 5,
   },
   free: {
     maxMembers: 5,
@@ -28,6 +30,8 @@ export const TIER_LIMITS = {
     customWorkflows: false,
     maxObjectives: 1,
     objective: true,
+    maxAiMessages: 15,
+    maxMemories: 5,
   },
   pro: {
     maxMembers: 10,
@@ -39,6 +43,8 @@ export const TIER_LIMITS = {
     customWorkflows: true,
     maxObjectives: 20,
     objective: true,
+    maxAiMessages: 100,
+    maxMemories: 10,
   },
   business: {
     maxMembers: Infinity,
@@ -50,6 +56,8 @@ export const TIER_LIMITS = {
     customWorkflows: true,
     maxObjectives: Infinity,
     objective: true,
+    maxAiMessages: 500,
+    maxMemories: 15,
   },
   enterprise: {
     maxMembers: Infinity,
@@ -61,6 +69,8 @@ export const TIER_LIMITS = {
     customWorkflows: true,
     maxObjectives: Infinity,
     objective: true,
+    maxAiMessages: Infinity,
+    maxMemories: 15,
   },
 } as const;
 
