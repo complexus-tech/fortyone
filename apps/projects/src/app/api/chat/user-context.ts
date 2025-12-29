@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
+import { getMemories } from "@/modules/ai-chats/queries/get-memory";
 
 export async function getUserContext({
   currentPath,
@@ -41,6 +42,7 @@ export async function getUserContext({
   const currentTime = now.toLocaleTimeString("en-US", {
     hour12: false,
   });
+  const memories = await getMemories(session);
 
   const teamsList = teams
     .map((t) => `name: ${t.name} - id: ${t.id} - code: ${t.code}`)
@@ -63,6 +65,20 @@ export async function getUserContext({
     - Subscription Billing Interval: ${subscription?.billingInterval}
     - Subscription Billing Ends At: ${subscription?.billingEndsAt}
     - Subscription Status: ${subscription?.status}
+    ${
+      memories.length > 0
+        ? `
+    **Long-term User Memories:**
+    ${memories.map((m) => `
+      - id: ${m.id}
+      - content: ${m.content}
+      - created at: ${m.createdAt}
+      - updated at: ${m.updatedAt}
+      `).join("\n")}
+
+    `
+        : ""
+    }
 
 
     **Current Terminology:**
