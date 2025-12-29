@@ -17,7 +17,7 @@ export const TIER_LIMITS = {
     customWorkflows: true,
     maxObjectives: 3,
     objective: true,
-    maxAiMessages: 15,
+    maxAiMessages: 25,
     maxMemories: 5,
   },
   free: {
