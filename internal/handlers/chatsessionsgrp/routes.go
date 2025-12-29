@@ -35,6 +35,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}", h.GetSession, auth, workspace, gzip)
 	app.Put("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}", h.UpdateSession, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}", h.DeleteSession, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/chat-sessions/messages/count", h.GetUserMessageCount, auth, workspace)
 
 	// Chat messages
 	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/messages", h.SaveMessages, auth, workspace)

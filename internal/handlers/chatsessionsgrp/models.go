@@ -35,6 +35,10 @@ type AppUpdateSessionRequest struct {
 	Title string `json:"title" validate:"required"`
 }
 
+type GetUserMessageCountResponse struct {
+	Count int `json:"count"`
+}
+
 // Conversion functions
 func toAppChatSession(s chatsessions.CoreChatSession) AppChatSession {
 	return AppChatSession{

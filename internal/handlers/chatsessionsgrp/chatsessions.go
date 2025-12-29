@@ -3,6 +3,7 @@ package chatsessionsgrp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/complexus-tech/projects-api/internal/core/chatsessions"
@@ -241,4 +242,21 @@ func (h *Handlers) GetMessages(ctx context.Context, w http.ResponseWriter, r *ht
 
 	web.Respond(ctx, w, messages, http.StatusOK)
 	return nil
+}
+
+func (h *Handlers) GetUserMessageCount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.chatsessions.GetUserMessageCount")
+	defer span.End()
+
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	count, err := h.chatsessions.CountUserMessagesCurrentMonth(ctx, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, fmt.Errorf("failed to count user messages: %w", err), http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, GetUserMessageCountResponse{Count: count}, http.StatusOK)
 }

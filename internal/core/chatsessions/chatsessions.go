@@ -3,6 +3,8 @@ package chatsessions
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -24,6 +26,7 @@ type Repository interface {
 	DeleteSession(ctx context.Context, id string, workspaceID uuid.UUID) error
 	SaveMessages(ctx context.Context, sessionID string, messages []any) error
 	GetMessages(ctx context.Context, sessionID string) ([]any, error)
+	CountUserMessages(ctx context.Context, userID uuid.UUID, start, end time.Time) (int, error)
 }
 
 // Service provides chat session-related operations.
@@ -159,4 +162,22 @@ func (s *Service) GetMessages(ctx context.Context, sessionID string) ([]any, err
 	}
 
 	return messages, nil
+}
+
+// CountUserMessagesCurrentMonth returns the number of messages sent by the user in the current month.
+func (s *Service) CountUserMessagesCurrentMonth(ctx context.Context, userID uuid.UUID) (int, error) {
+	s.log.Info(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
+	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
+	defer span.End()
+
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	end := now.Add(time.Duration(24 * time.Hour))
+
+	count, err := s.repo.CountUserMessages(ctx, userID, start, end)
+	if err != nil {
+		return 0, fmt.Errorf("counting user messages: %w", err)
+	}
+
+	return count, nil
 }
