@@ -89,6 +89,7 @@ export async function getUserContext({
     **Total Messages:**
     - Current: ${totalMessages.current}
     - Limit: ${totalMessages.limit}
+    - Usage: ${totalMessages.current}/${totalMessages.limit}
 
 
     **Current Terminology:**
