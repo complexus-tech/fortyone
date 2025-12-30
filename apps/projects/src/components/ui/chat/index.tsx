@@ -146,10 +146,10 @@ export const Chat = ({
                   </Button>
                 </Box>
               ) : null}
-              {/* {messages.length === 0 && !needsUpgrade && (
+              {messages.length === 0 && !needsUpgrade && (
                 <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
-              )} */}
-              {!needsUpgrade && <LimitReached />}
+              )}
+              {needsUpgrade && <LimitReached />}
               <ChatInput
                 attachments={attachments}
                 messagesCount={messages.length}
