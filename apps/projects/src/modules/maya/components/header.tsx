@@ -47,8 +47,8 @@ export const Header = ({
                 <Box className="max-w-xs py-1.5">
                   <Text className="mb-2">
                     You&apos;re remaining with {remainingQueries} of{" "}
-                    {getLimit("maxAiMessages")} chat messages. Upgrade for
-                    unlimited messages!
+                    {getLimit("maxAiMessages")} chat messages. Upgrade to send
+                    more messages!
                   </Text>
                   <Button
                     color="invert"
