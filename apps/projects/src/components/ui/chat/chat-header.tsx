@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { HistoryDialog } from "./history-dialog";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const ChatHeader = ({
   currentChatId,
@@ -19,6 +21,9 @@ export const ChatHeader = ({
   const router = useRouter();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: chats = [] } = useAiChats();
+  const { data: totalMessages = 0 } = useTotalMessages();
+  const { remaining } = useSubscriptionFeatures();
+  const remainingQueries = remaining("maxAiMessages", totalMessages);
   return (
     <>
       <Flex align="center" justify="between">
@@ -66,7 +71,7 @@ export const ChatHeader = ({
           Maya <Badge className="rounded-lg">Beta</Badge>
         </Text>
         <Flex align="center" gap={3}>
-          <Box>0</Box>
+          <Box className="border">{remainingQueries}</Box>
 
           {chats.length > 0 && (
             <Tooltip title="History">
