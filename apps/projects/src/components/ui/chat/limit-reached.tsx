@@ -9,7 +9,11 @@ export const LimitReached = () => {
           Message limit hit! Resets on the 1st, or upgrade to keep the Maya
           magic flowing ✨
         </Text>
-        <Button color="invert" className="shrink-0">
+        <Button
+          color="invert"
+          className="shrink-0"
+          href="/settings/workspace/billing"
+        >
           Upgrade
         </Button>
       </Wrapper>
