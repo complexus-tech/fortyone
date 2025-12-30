@@ -77,40 +77,40 @@ export const ChatHeader = ({
           </Badge>
         </Text>
         <Flex align="center" gap={3}>
-          {remainingQueries < 100 && (
-            <Tooltip
-              title={
-                <Box className="max-w-xs py-1.5">
-                  <Text className="mb-2">
-                    You&apos;re remaining with {remainingQueries} of{" "}
-                    {getLimit("maxAiMessages")} chat messages. Upgrade for
-                    unlimited messages!
-                  </Text>
-                  <Button
-                    color="invert"
-                    href="/settings/workspace/billing"
-                    fullWidth
-                    align="center"
-                  >
-                    Upgrade plan
-                  </Button>
-                </Box>
-              }
-            >
-              <span className="flex cursor-default">
-                <CircleProgressBar
-                  progress={usageProgress}
-                  size={24}
-                  strokeWidth={3}
-                  invertColors={true}
+          <Tooltip
+            title={
+              <Box className="max-w-xs py-1.5">
+                <Text className="mb-2">
+                  You&apos;re remaining with {remainingQueries} of{" "}
+                  {getLimit("maxAiMessages")} chat messages. Upgrade for
+                  unlimited messages!
+                </Text>
+                <Button
+                  color="invert"
+                  href="/settings/workspace/billing"
+                  fullWidth
+                  align="center"
                 >
+                  Upgrade plan
+                </Button>
+              </Box>
+            }
+          >
+            <span className="flex cursor-default">
+              <CircleProgressBar
+                progress={usageProgress}
+                size={remainingQueries >= 100 ? 20 : 24}
+                strokeWidth={3}
+                invertColors={true}
+              >
+                {remainingQueries < 100 ? (
                   <Text className="max-w-[2ch] truncate text-xs font-semibold">
                     {remainingQueries}
                   </Text>
-                </CircleProgressBar>
-              </span>
-            </Tooltip>
-          )}
+                ) : null}
+              </CircleProgressBar>
+            </span>
+          </Tooltip>
 
           {chats.length > 0 && (
             <Tooltip title="History">
