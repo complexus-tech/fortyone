@@ -1,4 +1,4 @@
-import { CloseIcon, HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
+import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
 import { Flex, Button, Text, Tooltip, Badge, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
