@@ -146,9 +146,12 @@ export const Chat = ({
                   </Button>
                 </Box>
               ) : null}
-              {/* {messages.length === 0 && !needsUpgrade && (
-                <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
-              )} */}
+              {messages.length === 0 && (
+                <SuggestedPrompts
+                  fromIndex={needsUpgrade ? 1 : 0}
+                  onPromptSelect={handleSuggestedPrompt}
+                />
+              )}
               {!needsUpgrade && <LimitReached />}
               <ChatInput
                 attachments={attachments}

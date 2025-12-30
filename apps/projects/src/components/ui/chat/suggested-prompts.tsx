@@ -7,11 +7,13 @@ import { PriorityIcon } from "../priority-icon";
 type SuggestedPromptsProps = {
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
+  fromIndex?: number;
 };
 
 export const SuggestedPrompts = ({
   onPromptSelect,
   isOnPage,
+  fromIndex = 0,
 }: SuggestedPromptsProps) => {
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
@@ -46,12 +48,6 @@ export const SuggestedPrompts = ({
       value: "Find your most urgent stories across teams to focus on.",
       classes: "bg-danger/10 dark:bg-danger/10",
     },
-    // {
-    //   icon: <HelpIcon className="text-[#6366F1] dark:text-[#6366F1]" />,
-    //   label: "How can you help me?",
-    //   value: "Learn about what I can do and how to use the app effectively.",
-    //   classes: "bg-[#6366F1]/10 dark:bg-[#6366F1]/10",
-    // },
   ];
   return (
     <Box
@@ -71,7 +67,7 @@ export const SuggestedPrompts = ({
           "grid md:grid-cols-2 md:gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.map((prompt, index) => (
+        {SUGGESTED_PROMPTS.slice(fromIndex).map((prompt, index) => (
           <Wrapper
             className={cn(
               "flex cursor-pointer items-center gap-3 ring-primary transition hover:ring-2 md:px-4",

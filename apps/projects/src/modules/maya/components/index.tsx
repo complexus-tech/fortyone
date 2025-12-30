@@ -84,7 +84,7 @@ export const MayaChat = () => {
           </Box>
         ) : null}
 
-        {messages.length === 0 && !needsUpgrade && (
+        {messages.length === 0 && (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         )}
         {needsUpgrade && <LimitReached isOnPage />}
