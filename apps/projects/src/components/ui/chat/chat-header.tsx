@@ -1,5 +1,5 @@
-import { HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
-import { Flex, Button, Text, Tooltip } from "ui";
+import { CloseIcon, HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
+import { Flex, Button, Text, Tooltip, Badge, Box } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
@@ -59,10 +59,15 @@ export const ChatHeader = ({
             </Button>
           </Tooltip>
         </Flex>
-        <Text className="text-xl antialiased" fontWeight="semibold">
-          Maya is your AI assistant
+        <Text
+          className="flex items-center gap-2 text-xl antialiased"
+          fontWeight="semibold"
+        >
+          Maya <Badge className="rounded-lg">Beta</Badge>
         </Text>
         <Flex align="center" gap={3}>
+          <Box>0</Box>
+
           {chats.length > 0 && (
             <Tooltip title="History">
               <Button
@@ -89,7 +94,7 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <MinusIcon
+                <CloseIcon
                   className="text-dark dark:text-gray-200"
                   strokeWidth={2.8}
                 />
