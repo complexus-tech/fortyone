@@ -42,8 +42,16 @@ export const statusesTool = tool({
       .describe("Status ID for get/update/delete operations"),
     statusName: z.string().optional().describe("Status name for lookups"),
     // For creating/updating statuses
-    name: z.string().optional().describe("Status name"),
-    color: z.string().optional().describe("Status color (hex format)"),
+    name: z
+      .string()
+      .optional()
+      .describe("Status name (keep it short and clear)"),
+    color: z
+      .string()
+      .optional()
+      .describe(
+        "Status color (hex format) - suggest colors that work in both dark and light mode",
+      ),
     category: z
       .enum([
         "backlog",

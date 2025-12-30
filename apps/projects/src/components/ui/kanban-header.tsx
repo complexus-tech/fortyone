@@ -49,7 +49,12 @@ export const StoriesKanbanHeader = ({
           {groupBy === "status" && (
             <>
               <StoryStatusIcon statusId={status?.id} />
-              {status?.name}
+              <span
+                className="inline-block max-w-[20ch] truncate"
+                title={status?.name}
+              >
+                {status?.name}
+              </span>
             </>
           )}
           {groupBy === "priority" && (
@@ -68,12 +73,17 @@ export const StoriesKanbanHeader = ({
                 size="xs"
                 src={member?.avatarUrl}
               />
-              {member?.username || "Unassigned"}
+              <span
+                className="inline-block max-w-[20ch] truncate"
+                title={member?.username || "Unassigned"}
+              >
+                {member?.username || "Unassigned"}
+              </span>
             </>
           )}
           <Tooltip side="bottom" title="Total stories">
             <span>
-              <StoryIcon className="ml-3 h-5 w-auto" strokeWidth={2} />
+              <StoryIcon className="ml-0 h-5 w-auto" strokeWidth={2} />
             </span>
           </Tooltip>
           <Text color="muted">

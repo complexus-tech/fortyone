@@ -64,6 +64,12 @@ import { statusesTool } from "./statuses";
 import { commentsTool } from "./comments";
 import { notificationsTool } from "./notifications";
 import { suggestions } from "./suggestions";
+import {
+  listMemories,
+  createMemory,
+  updateMemory,
+  deleteMemory,
+} from "./memory";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -77,6 +83,12 @@ export { storyActivitiesTool } from "./story-activities";
 export { linksTool } from "./links";
 export { labelsTool } from "./labels";
 export { storyLabelsTool } from "./story-labels";
+export {
+  listMemories,
+  createMemory,
+  updateMemory,
+  deleteMemory,
+} from "./memory";
 
 export const tools = {
   navigation,
@@ -143,4 +155,9 @@ export const tools = {
   labels: labelsTool,
   storyActivities: storyActivitiesTool,
   storyLabels: storyLabelsTool,
+  // Memory
+  listMemories,
+  createMemory,
+  updateMemory,
+  deleteMemory,
 };

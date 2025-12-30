@@ -14,6 +14,9 @@ import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { SuggestedPrompts } from "./suggested-prompts";
+import { LimitReached } from "./limit-reached";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 type ChatProps = {
   isOpen?: boolean;
@@ -73,6 +76,9 @@ export const Chat = ({
   } = useMayaChat({
     currentChatId: generateId(),
   });
+  const { data: totalMessages = 0 } = useTotalMessages();
+  const { withinLimit } = useSubscriptionFeatures();
+  const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
 
   // Handle initial message when chat opens
   useEffect(() => {
@@ -141,8 +147,12 @@ export const Chat = ({
                 </Box>
               ) : null}
               {messages.length === 0 && (
-                <SuggestedPrompts onPromptSelect={handleSuggestedPrompt} />
+                <SuggestedPrompts
+                  fromIndex={needsUpgrade ? 1 : 0}
+                  onPromptSelect={handleSuggestedPrompt}
+                />
               )}
+              {needsUpgrade && <LimitReached />}
               <ChatInput
                 attachments={attachments}
                 messagesCount={messages.length}

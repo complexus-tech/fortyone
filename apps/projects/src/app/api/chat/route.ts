@@ -35,8 +35,10 @@ export async function POST(req: NextRequest) {
     username,
     terminology,
     workspace,
+    memories,
     webSearchEnabled = true,
     provider = "openai",
+    totalMessages,
   } = await req.json();
   const modelMessages = await convertToModelMessages(
     messagesFromRequest as UIMessage[],
@@ -48,10 +50,12 @@ export async function POST(req: NextRequest) {
     currentTheme,
     resolvedTheme,
     subscription,
+    memories,
     teams,
     username,
     terminology,
     workspace,
+    totalMessages,
   });
 
   const session = await auth();
@@ -65,17 +69,19 @@ export async function POST(req: NextRequest) {
     apiKey: process.env.GOOGLE_API_KEY,
   });
 
-  const client =
-    provider === "openai"
-      ? openaiClient("gpt-5-nano-2025-08-07")
-      : googleClient("gemini-flash-latest");
+  let client =
+    provider === "google"
+      ? openaiClient("gpt-5.2")
+      : googleClient("gemini-3-flash-preview");
 
-  const devToolsEnabledModel = wrapLanguageModel({
-    model: client,
-    middleware: devToolsMiddleware(),
-  });
+  if (process.env.NODE_ENV === "development") {
+    client = wrapLanguageModel({
+      model: client,
+      middleware: devToolsMiddleware(),
+    });
+  }
 
-  const model = withTracing(devToolsEnabledModel, phClient, {
+  const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user?.email ?? undefined,
     posthogProperties: {
       conversation_id: id,

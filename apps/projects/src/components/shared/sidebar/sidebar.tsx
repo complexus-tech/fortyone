@@ -35,16 +35,16 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="relative flex h-dvh flex-col justify-between bg-linear-to-br from-gray-100/50 to-gray-50/50 pb-6 dark:bg-linear-to-br dark:from-black dark:to-dark-300">
-      <Box className="relative z-1 px-4">
+    <Box className="bg-linear-to-br dark:bg-linear-to-br dark:to-dark-300 relative flex h-dvh flex-col justify-between from-gray-100/50 to-gray-50/50 pb-6 dark:from-black">
+      <Box className="z-1 relative px-4">
         <Header />
         <Navigation />
         <Teams />
       </Box>
-      <Box className="relative z-1">
+      <Box className="z-1 relative">
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
-            <Box className="mb-4 rounded-xl border-[0.5px] border-warning bg-warning/20 p-4 shadow-lg shadow-gray-100 dark:border-warning/20 dark:bg-warning/10 dark:shadow-none">
+            <Box className="border-warning bg-warning/20 dark:border-warning/20 dark:bg-warning/10 mb-4 rounded-xl border-[0.5px] p-4 shadow-lg shadow-gray-100 dark:shadow-none">
               <Text className="dark:text-white" fontWeight="semibold">
                 Workspace scheduled for deletion
               </Text>
@@ -75,7 +75,7 @@ export const Sidebar = () => {
           ) : (
             <>
               {tier === "free" && (
-                <Box className="rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:border-dark-50 dark:bg-dark-300 dark:shadow-none">
+                <Box className="dark:border-dark-50 dark:bg-dark-300 rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:shadow-none">
                   <Text fontWeight="medium">You&apos;re on the free plan</Text>
                   <Text className="mt-2" color="muted">
                     {userRole === "admin"
@@ -102,7 +102,7 @@ export const Sidebar = () => {
                 >
                   <span>
                     <Button
-                      className="mt-3 border-opacity-15 bg-opacity-10 px-3 text-primary dark:bg-opacity-15"
+                      className="text-primary mt-3 border-opacity-15 bg-opacity-10 px-3 dark:bg-opacity-15"
                       href={
                         userRole === "admin"
                           ? "/settings/workspace/billing"

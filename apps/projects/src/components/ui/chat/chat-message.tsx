@@ -77,21 +77,6 @@ const RenderMessage = ({
         )}
       {message.parts.map((part, index) => {
         if (part.type === "text") {
-          // return (
-          //   <Box
-          //     className={cn(
-          //       "chat-tables prose prose-stone leading-normal dark:prose-invert prose-table:border prose-table:border-gray-100 prose-img:size-10 prose-img:rounded-full prose-img:object-cover dark:prose-table:border-dark-100",
-          //       {
-          //         "text-gray-200 dark:text-dark": message.role === "user",
-          //       },
-          //     )}
-          //     key={index}
-          //   >
-          //     <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
-          //       {part.text}
-          //     </Markdown>
-          //   </Box>
-          // );
           return (
             <Streamdown
               className={cn("chat-tables", {
@@ -115,7 +100,7 @@ const RenderMessage = ({
               {part.text}
             </Streamdown>
           );
-        } else if (part.type === "reasoning") {
+        } else if (part.type === "reasoning" && isLast) {
           return (
             <Reasoning
               className="mb-2"

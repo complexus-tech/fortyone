@@ -15,13 +15,13 @@
 
 body,
 html {
-  @apply text-dark font-main h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13px] font-medium antialiased 2xl:text-[13.5px] dark:bg-black dark:text-gray-200;
+  @apply h-dvh w-screen overflow-hidden overscroll-contain bg-white font-body text-[13.5px] font-medium text-dark antialiased dark:bg-black dark:text-gray-200 2xl:text-[14px];
 }
 
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
     body {
-      @apply dark:border-dark-100 border-t-[0.5px] border-gray-100;
+      @apply border-t-[0.5px] border-gray-100 dark:border-dark-100;
     }
   }
 }
@@ -106,7 +106,7 @@ ul[data-type="taskList"] li {
 }
 
 ul[data-type="taskList"] li input {
-  @apply accent-primary relative top-[0.2rem] h-[1.1rem] w-[1.1rem];
+  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
 }
 
 ul[data-type="taskList"] li > label {
@@ -136,7 +136,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .tiptap input[type="checkbox"] {
-  @apply accent-primary h-[1.1rem] w-[1.1rem];
+  @apply h-[1.1rem] w-[1.1rem] accent-primary;
 }
 
 /* style tiptap tables */
@@ -145,24 +145,24 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 .tiptap table td,
 th {
-  @apply dark:border-dark-50 border border-gray-100;
+  @apply border border-gray-100 dark:border-dark-50;
 }
 .tiptap table p {
   @apply m-0;
 }
 .tiptap table th {
-  @apply dark:bg-dark-100 bg-gray-50/80 font-semibold text-black dark:text-gray-50;
+  @apply bg-gray-50/80 font-semibold text-black dark:bg-dark-100 dark:text-gray-50;
 }
 .tiptap table td,
 th {
   @apply relative px-2 py-2.5 text-left;
 }
 .tiptap table tr {
-  @apply dark:odd:bg-dark-300/80 dark:hover:bg-dark-300 transition odd:bg-gray-50/80 hover:bg-gray-50/60;
+  @apply transition odd:bg-gray-50/80 hover:bg-gray-50/60 dark:odd:bg-dark-300/80 dark:hover:bg-dark-300;
 }
 
 .tiptap table .column-resize-handle {
-  @apply dark:bg-dark-50 pointer-events-none absolute top-0 -right-[2px] -bottom-px z-5 w-1 bg-gray-200;
+  @apply z-5 pointer-events-none absolute -bottom-px -right-[2px] top-0 w-1 bg-gray-200 dark:bg-dark-50;
 }
 
 .resize-cursor {
@@ -216,7 +216,7 @@ th {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
+  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
   z-index: 19031 !important;
 }
 
@@ -235,15 +235,15 @@ th {
 }
 
 .chat-tables th {
-  @apply dark:border-dark-50 dark:bg-dark-200 border border-gray-100 bg-gray-50 p-3 text-left font-medium;
+  @apply border border-gray-100 bg-gray-50 p-3 text-left font-medium dark:border-dark-50 dark:bg-dark-200;
 }
 
 .chat-tables td {
-  @apply dark:border-dark-50 border border-gray-100 px-3 py-2;
+  @apply border border-gray-100 px-3 py-2 dark:border-dark-50;
 }
 
 .chat-tables tr:hover {
-  @apply dark:bg-dark-200/50 bg-gray-50;
+  @apply bg-gray-50 dark:bg-dark-200/50;
 }
 
 .chat-tables ul[data-type="taskList"] {

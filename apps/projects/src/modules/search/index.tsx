@@ -1,7 +1,6 @@
 "use client";
 import { Box, Tabs, Text } from "ui";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { ObjectiveIcon, StoryIcon } from "icons";
 import { useState } from "react";
 import { useTerminology } from "@/hooks";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
@@ -72,19 +71,13 @@ export const SearchPage = () => {
         >
           <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100 dark:border-dark-100">
             <Tabs.List>
-              <Tabs.Tab
-                leftIcon={<StoryIcon className="h-[1.2rem]" />}
-                value="stories"
-              >
+              <Tabs.Tab value="stories">
                 {getTermDisplay("storyTerm", {
                   variant: "plural",
                   capitalize: true,
                 })}
               </Tabs.Tab>
-              <Tabs.Tab
-                leftIcon={<ObjectiveIcon className="h-[1.1rem]" />}
-                value="objectives"
-              >
+              <Tabs.Tab value="objectives">
                 {getTermDisplay("objectiveTerm", {
                   variant: "plural",
                   capitalize: true,

@@ -19,6 +19,8 @@ import { substoryGenerationSchema } from "@/modules/stories/schemas";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { Thinking } from "@/components/ui/chat/thinking";
 import type { DetailedStory } from "../types";
+import { useChatContext } from "@/context/chat-context";
+import { useTeams } from "@/modules/teams/hooks/teams";
 
 export const SubStories = ({
   parent,
@@ -37,6 +39,9 @@ export const SubStories = ({
   );
   const [showSuggestions, setShowSuggestions] = useState(true);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
+  const { data: teams = [] } = useTeams();
+  const team = teams.find((team) => team.id === parent.teamId);
+  const { openChat } = useChatContext();
   const { userRole } = useUserRole();
   const completedStatus = statuses.find(
     (status) => status.category === "completed",
@@ -147,6 +152,19 @@ export const SubStories = ({
 
         {userRole !== "guest" && (
           <Flex align="center" gap={2}>
+            <Button
+              color="tertiary"
+              leftIcon={<AiIcon className="text-primary dark:text-primary" />}
+              onClick={() => {
+                openChat(
+                  `Improve the description of ${getTermDisplay("storyTerm")} ${team?.code}-${parent.sequenceId}`,
+                );
+              }}
+              size="sm"
+              variant="naked"
+            >
+              Improve {getTermDisplay("storyTerm")} description
+            </Button>
             <Button
               color="tertiary"
               disabled={isLoading}

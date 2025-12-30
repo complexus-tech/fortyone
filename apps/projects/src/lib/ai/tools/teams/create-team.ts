@@ -12,7 +12,11 @@ export const createTeamTool = tool({
     code: z
       .string()
       .describe("Team code (unique identifier) (required) (3 characters)"),
-    color: z.string().describe("Team color (hex code) (required)"),
+    color: z
+      .string()
+      .describe(
+        "Team color (hex code) (required) - suggest colors that work in both dark and light mode",
+      ),
     isPrivate: z
       .boolean()
       .optional()

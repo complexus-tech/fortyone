@@ -20,6 +20,7 @@ export const navigation = tool({
         "notifications",
         "settings",
         "roadmaps",
+        "billing"
       ])
       .describe("Type of navigation target"),
 
@@ -86,6 +87,11 @@ export const navigation = tool({
       case "settings":
         routePath = "/settings";
         message = "Navigating to settings";
+        break;
+
+      case "billing":
+        routePath = "/settings/workspace/billing";
+        message = "Navigating to billing";
         break;
 
       case "roadmaps":

@@ -11,6 +11,9 @@ import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { LimitReached } from "@/components/ui/chat/limit-reached";
 
 export const MayaChat = () => {
   const { chatRef, getInitialChatId, isNewChat } = useMayaNavigation();
@@ -47,6 +50,10 @@ export const MayaChat = () => {
     setIsSprintOpen,
   } = useMayaChat(config);
 
+  const { data: totalMessages = 0 } = useTotalMessages();
+  const { withinLimit } = useSubscriptionFeatures();
+  const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
+
   return (
     <>
       <Header
@@ -76,9 +83,11 @@ export const MayaChat = () => {
             </Button>
           </Box>
         ) : null}
-        {messages.length === 0 ? (
+
+        {messages.length === 0 && (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
-        ) : null}
+        )}
+        {needsUpgrade && <LimitReached isOnPage />}
         <ChatInput
           attachments={attachments}
           isOnPage

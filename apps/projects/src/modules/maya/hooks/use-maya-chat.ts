@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FileUIPart } from "ai";
@@ -21,6 +22,9 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
 import { useMayaNavigation } from "./use-maya-navigation";
+import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -30,6 +34,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: subscription } = useSubscription();
   const { data: teams = [] } = useTeams();
   const { data: profile } = useProfile();
+  const { data: memories = [] } = useMemories();
+  const { data: totalMessages = 0 } = useTotalMessages();
+  const { getLimit, displayTier } = useSubscriptionFeatures();
   const { workspace } = useCurrentWorkspace();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
@@ -104,6 +111,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
           queryClient.invalidateQueries({
             queryKey: aiChatKeys.lists(),
           });
+          queryClient.invalidateQueries({
+            queryKey: aiChatKeys.totalMessages(),
+          });
         } else if (
           part.type === "tool-createTeamTool" ||
           part.type === "tool-updateTeam" ||
@@ -151,6 +161,16 @@ export const useMayaChat = (config: MayaChatConfig) => {
               queryKey: notificationKeys.all,
             });
           }
+        } else if (
+          part.type === "tool-deleteMemory" ||
+          part.type === "tool-updateMemory" ||
+          part.type === "tool-createMemory"
+        ) {
+          if (part.state === "output-available") {
+            queryClient.invalidateQueries({
+              queryKey: aiChatKeys.memories(),
+            });
+          }
         } else if (part.type === "tool-objectiveStatuses") {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
@@ -178,6 +198,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
           username: profile?.username,
         },
         teams,
+        memories,
+        totalMessages: {
+          current: totalMessages,
+          limit: getLimit("maxAiMessages"),
+        },
         workspace,
         terminology,
         id: idRef.current,
@@ -196,6 +221,20 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
+
+    const limit = getLimit("maxAiMessages");
+    if (totalMessages >= limit) {
+      toast.error("Message limit reached", {
+        description: `You have reached your monthly limit of ${limit} messages for the ${displayTier} plan. Please upgrade to continue chatting.`,
+        action: {
+          label: "Upgrade",
+          onClick: () => {
+            router.push("/settings/workspace/billing");
+          },
+        },
+      });
+      return;
+    }
 
     // Convert attachments to base64 for AI SDK
     const attachmentData: FileUIPart[] = await Promise.all(
@@ -226,7 +265,12 @@ export const useMayaChat = (config: MayaChatConfig) => {
           },
           teams,
           workspace,
+          memories,
           terminology,
+          totalMessages: {
+            current: totalMessages,
+            limit: getLimit("maxAiMessages"),
+          },
           id: idRef.current,
         },
       },

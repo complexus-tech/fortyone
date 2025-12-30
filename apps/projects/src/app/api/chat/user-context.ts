@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
+import { Memory } from "@/modules/ai-chats/types";
 
 export async function getUserContext({
   currentPath,
@@ -11,6 +12,8 @@ export async function getUserContext({
   username,
   terminology,
   workspace,
+  memories,
+  totalMessages,
 }: {
   currentPath: string;
   currentTheme: string;
@@ -22,6 +25,7 @@ export async function getUserContext({
     status: string;
   };
   teams: Team[];
+  memories: Memory[];
   username: string;
   terminology: {
     stories: string;
@@ -30,6 +34,10 @@ export async function getUserContext({
     keyResults: string;
   };
   workspace: Workspace;
+  totalMessages: {
+    current: number;
+    limit: number;
+  };
 }): Promise<string> {
   const session = await auth();
   if (!session?.user) {
@@ -63,6 +71,25 @@ export async function getUserContext({
     - Subscription Billing Interval: ${subscription?.billingInterval}
     - Subscription Billing Ends At: ${subscription?.billingEndsAt}
     - Subscription Status: ${subscription?.status}
+    ${
+      memories.length > 0
+        ? `
+    **Long-term User Memories:**
+    ${memories.map((m) => `
+      - id: ${m.id}
+      - content: ${m.content}
+      - created at: ${m.createdAt}
+      - updated at: ${m.updatedAt}
+      `).join("\n")}
+
+    `
+        : ""
+    }
+
+    **Current Messages Context:**
+    - Current: ${totalMessages.current} - number of messages the user has sent for the current month
+    - Limit: ${totalMessages.limit} - the maximum number of messages the user can send for the current month
+    - Usage: ${totalMessages.current}/${totalMessages.limit}
 
 
     **Current Terminology:**

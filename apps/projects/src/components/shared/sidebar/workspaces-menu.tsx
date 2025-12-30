@@ -5,9 +5,9 @@ import {
   PlusIcon,
   SettingsIcon,
   UsersAddIcon,
-  ArrowRightIcon,
   WorkspaceIcon,
   ArrowDown2Icon,
+  ArrowRight2Icon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -78,9 +78,7 @@ export const WorkspacesMenu = () => {
           suppressHydrationWarning
           variant="naked"
         >
-          <span className="max-w-[18ch] truncate font-semibold">
-            {workspace?.name}
-          </span>
+          <span className="max-w-[18ch] truncate">{workspace?.name}</span>
         </Button>
       </Menu.Button>
       <Menu.Items align="start" className="min-w-80 pt-0">
@@ -121,7 +119,7 @@ export const WorkspacesMenu = () => {
                     <WorkspaceIcon className="h-5" />
                     Switch workspace
                   </span>
-                  <ArrowRightIcon className="h-4" />
+                  <ArrowRight2Icon className="h-4" />
                 </span>
               </Menu.SubTrigger>
               <Menu.SubItems className="min-w-64">
