@@ -6,10 +6,12 @@ export const LimitReached = () => {
     <Box className="mb-4 px-6">
       <Wrapper className="flex items-center gap-4">
         <Text>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptates
-          sint corrupti quae.
+          Message limit hit! Resets on the 1st, or upgrade to keep the Maya
+          magic flowing ✨
         </Text>
-        <Button color="invert">Upgrade</Button>
+        <Button color="invert" className="shrink-0">
+          Upgrade
+        </Button>
       </Wrapper>
     </Box>
   );
