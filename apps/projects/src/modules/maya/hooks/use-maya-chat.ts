@@ -111,6 +111,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
           queryClient.invalidateQueries({
             queryKey: aiChatKeys.lists(),
           });
+          queryClient.invalidateQueries({
+            queryKey: aiChatKeys.totalMessages(),
+          });
         } else if (
           part.type === "tool-createTeamTool" ||
           part.type === "tool-updateTeam" ||
@@ -158,21 +161,23 @@ export const useMayaChat = (config: MayaChatConfig) => {
               queryKey: notificationKeys.all,
             });
           }
-        }
-        else if (part.type === "tool-deleteMemory" || part.type === "tool-updateMemory" || part.type === "tool-createMemory") {
+        } else if (
+          part.type === "tool-deleteMemory" ||
+          part.type === "tool-updateMemory" ||
+          part.type === "tool-createMemory"
+        ) {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
               queryKey: aiChatKeys.memories(),
             });
           }
-        } 
-        else if (part.type === "tool-objectiveStatuses") {
+        } else if (part.type === "tool-objectiveStatuses") {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
               queryKey: objectiveKeys.statuses(),
             });
           }
-        } 
+        }
       });
     },
     messages: aiChatMessages,
@@ -195,9 +200,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
         teams,
         memories,
         totalMessages: {
-            current: totalMessages,
-            limit: getLimit("maxAiMessages"),
-          },
+          current: totalMessages,
+          limit: getLimit("maxAiMessages"),
+        },
         workspace,
         terminology,
         id: idRef.current,
@@ -226,7 +231,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
           onClick: () => {
             router.push("/settings/workspace/billing");
           },
-        }
+        },
       });
       return;
     }
