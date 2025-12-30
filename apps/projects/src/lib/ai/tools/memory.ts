@@ -28,7 +28,8 @@ export const listMemories = tool({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to list memories",
+        error:
+          error instanceof Error ? error.message : "Failed to list memories",
       };
     }
   },
@@ -59,14 +60,14 @@ export const createMemory = tool({
         getSubscription(session),
       ]);
 
-      const tier = subscription?.tier as keyof typeof TIER_LIMITS;
+      const tier = subscription?.tier || "free";
       const limit = TIER_LIMITS[tier].maxMemories;
 
       if (memories.length >= limit) {
         return {
           success: false,
           error: "MEMORY_LIMIT_REACHED",
-          memories: memories.map(m => ({ id: m.id, content: m.content })),
+          memories: memories.map((m) => ({ id: m.id, content: m.content })),
         };
       }
 
@@ -95,7 +96,9 @@ export const updateMemory = tool({
   description: "Update an existing memory about the user.",
   inputSchema: z.object({
     id: z.string().describe("The ID of the memory to update"),
-    content: z.string().describe("The new content of the memory. max length 200 words"),
+    content: z
+      .string()
+      .describe("The new content of the memory. max length 200 words"),
   }),
   execute: async ({ id, content }) => {
     try {
@@ -113,7 +116,8 @@ export const updateMemory = tool({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to update memory",
+        error:
+          error instanceof Error ? error.message : "Failed to update memory",
       };
     }
   },
@@ -140,7 +144,8 @@ export const deleteMemory = tool({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to delete memory",
+        error:
+          error instanceof Error ? error.message : "Failed to delete memory",
       };
     }
   },
