@@ -32,13 +32,12 @@ export const generateRandomColor = ({
 
 /**
  * Determines if a background color is light or dark based on luminance
- * @param backgroundColor - CSS color value (hex, rgb, rgba, hsl, etc.)
+ * @param color - CSS color value (hex, rgb, rgba, hsl, etc.) - optional
  * @returns 'light' for light backgrounds, 'dark' for dark backgrounds
  */
-/**
- * Determines if a background color is light or dark based on luminance
- */
-export const getColorBrightness = (color: string): "light" | "dark" => {
+export const getColorBrightness = (color?: string): "light" | "dark" => {
+  if (!color) return "light"; // Default to light when no color provided
+
   const rgb = parseColorToRgb(color);
   if (!rgb) return "light";
 
