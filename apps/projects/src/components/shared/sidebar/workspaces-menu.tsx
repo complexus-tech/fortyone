@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
+import { cn, getColorBrightness } from "lib";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -26,6 +27,7 @@ export const WorkspacesMenu = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
+  const brightness = getColorBrightness(workspace?.color);
 
   const handleLogout = async () => {
     try {
@@ -61,7 +63,10 @@ export const WorkspacesMenu = () => {
           data-workspace-switcher
           leftIcon={
             <Avatar
-              className="h-[1.6rem] text-sm"
+              className={cn("h-[1.6rem] text-sm", {
+                "text-dark": brightness === "light",
+                "text-white": brightness === "dark",
+              })}
               name={workspace?.name}
               rounded="md"
               src={workspace?.avatarUrl}
