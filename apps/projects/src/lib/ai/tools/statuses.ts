@@ -42,7 +42,10 @@ export const statusesTool = tool({
       .describe("Status ID for get/update/delete operations"),
     statusName: z.string().optional().describe("Status name for lookups"),
     // For creating/updating statuses
-    name: z.string().optional().describe("Status name"),
+    name: z
+      .string()
+      .optional()
+      .describe("Status name (keep it short and clear)"),
     color: z.string().optional().describe("Status color (hex format)"),
     category: z
       .enum([
