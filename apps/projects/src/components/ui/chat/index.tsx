@@ -152,7 +152,7 @@ export const Chat = ({
                   onPromptSelect={handleSuggestedPrompt}
                 />
               )}
-              {!needsUpgrade && <LimitReached />}
+              {needsUpgrade && <LimitReached />}
               <ChatInput
                 attachments={attachments}
                 messagesCount={messages.length}
