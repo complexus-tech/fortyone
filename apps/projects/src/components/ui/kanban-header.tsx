@@ -49,7 +49,10 @@ export const StoriesKanbanHeader = ({
           {groupBy === "status" && (
             <>
               <StoryStatusIcon statusId={status?.id} />
-              <span className="inline-block max-w-[20ch] truncate">
+              <span
+                className="inline-block max-w-[20ch] truncate"
+                title={status?.name}
+              >
                 {status?.name}
               </span>
             </>
@@ -70,7 +73,10 @@ export const StoriesKanbanHeader = ({
                 size="xs"
                 src={member?.avatarUrl}
               />
-              <span className="inline-block max-w-[20ch] truncate">
+              <span
+                className="inline-block max-w-[20ch] truncate"
+                title={member?.username || "Unassigned"}
+              >
                 {member?.username || "Unassigned"}
               </span>
             </>
