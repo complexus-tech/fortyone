@@ -8,12 +8,14 @@ export const CircleProgressBar = ({
   strokeWidth = 2,
   className,
   children,
+  invertColors = false,
 }: {
   progress: number;
   size?: number;
   strokeWidth?: number;
   className?: string;
   children?: React.ReactNode;
+  invertColors?: boolean;
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -44,10 +46,19 @@ export const CircleProgressBar = ({
           cy={size / 2}
           r={radius}
           className={cn("fill-none transition-all duration-300 ease-in-out", {
-            "stroke-danger": progress < 25,
-            "stroke-warning": progress >= 25 && progress < 50,
-            "stroke-info": progress >= 50 && progress < 75,
-            "stroke-success": progress >= 75,
+            ...(invertColors
+              ? {
+                  "stroke-success": progress < 25,
+                  "stroke-info": progress >= 25 && progress < 50,
+                  "stroke-warning": progress >= 50 && progress < 75,
+                  "stroke-danger": progress >= 75,
+                }
+              : {
+                  "stroke-danger": progress < 25,
+                  "stroke-warning": progress >= 25 && progress < 50,
+                  "stroke-info": progress >= 50 && progress < 75,
+                  "stroke-success": progress >= 75,
+                }),
           })}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}

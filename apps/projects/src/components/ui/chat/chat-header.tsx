@@ -74,12 +74,13 @@ export const ChatHeader = ({
           Maya <Badge className="rounded-lg">Beta</Badge>
         </Text>
         <Flex align="center" gap={3}>
-          {remainingQueries <= 20 && (
+          {remainingQueries <= 2000 && (
             <Box className="hidden w-[60px] shrink-0 items-center justify-center md:flex">
               <CircleProgressBar
                 progress={usageProgress}
                 size={32}
                 strokeWidth={3}
+                invertColors={true}
               >
                 <Text className="text-xs font-medium">{remainingQueries}</Text>
               </CircleProgressBar>
