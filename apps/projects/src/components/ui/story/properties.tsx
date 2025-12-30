@@ -15,7 +15,7 @@ import {
   SprintsIcon,
   SubStoryIcon,
 } from "icons";
-import { cn } from "lib";
+import { cn, getColorBrightness } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
 import { useState } from "react";
@@ -78,6 +78,7 @@ export const StoryProperties = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
+  const brightness = getColorBrightness(status?.color);
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
@@ -142,7 +143,10 @@ export const StoryProperties = ({
         <StatusesMenu>
           <StatusesMenu.Trigger>
             <Button
-              className="gap-1 pr-2"
+              className={cn("gap-1 pr-2", {
+                "text-dark": brightness === "light",
+                "text-white": brightness === "dark",
+              })}
               disabled={isGuest}
               rounded={asKanban ? "md" : "xl"}
               size="xs"

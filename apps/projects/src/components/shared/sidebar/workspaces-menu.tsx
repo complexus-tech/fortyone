@@ -96,7 +96,13 @@ export const WorkspacesMenu = () => {
           >
             <span className="flex items-center gap-2">
               <Avatar
-                className="h-[1.6rem] text-xs font-semibold tracking-wide"
+                className={cn(
+                  "h-[1.6rem] text-xs font-semibold tracking-wide",
+                  {
+                    "text-dark": brightness === "light",
+                    "text-white": brightness === "dark",
+                  },
+                )}
                 name={workspace?.name}
                 rounded="md"
                 src={workspace?.avatarUrl}
@@ -139,7 +145,13 @@ export const WorkspacesMenu = () => {
                       >
                         <span className="flex items-center gap-2">
                           <Avatar
-                            className="h-[1.6rem] text-xs font-semibold tracking-wide"
+                            className={cn(
+                              "h-[1.6rem] text-xs font-semibold tracking-wide",
+                              {
+                                "text-dark": brightness === "light",
+                                "text-white": brightness === "dark",
+                              },
+                            )}
                             name={name}
                             rounded="md"
                             src={avatarUrl}
