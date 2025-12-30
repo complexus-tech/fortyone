@@ -22,6 +22,7 @@ import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
+import Link from "next/link";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -165,19 +166,59 @@ const UserSelector = ({
   return (
     <Flex gap={2} wrap>
       {users.map((user) => (
-        <button
-          className={cn("relative rounded-full ring-2 ring-transparent", {
-            "ring-primary": selected?.includes(user.id),
-          })}
-          key={user.id}
-          onClick={() => {
-            toggleUser(user.id);
-          }}
-          type="button"
+        <Tooltip
+          className="mr-2 py-2.5"
+          title={
+            <Box>
+              <Flex gap={2}>
+                <Avatar
+                  className="mt-0.5"
+                  name={user.fullName || user.username}
+                  src={user.avatarUrl}
+                />
+                <Box>
+                  <Link
+                    className="mb-2 flex gap-1"
+                    href={`/profile/${user.id}`}
+                  >
+                    <Text fontSize="md" fontWeight="medium">
+                      {user.fullName}
+                    </Text>
+                    <Text color="muted" fontSize="md">
+                      ({user.username})
+                    </Text>
+                  </Link>
+                  <Button
+                    className="mb-0.5 ml-px px-2"
+                    color="tertiary"
+                    href={`/profile/${user.id}`}
+                    size="xs"
+                  >
+                    Go to profile
+                  </Button>
+                </Box>
+              </Flex>
+            </Box>
+          }
         >
-          <Avatar className="h-10" name={user.fullName} src={user.avatarUrl} />
-          <span className="sr-only">{user.fullName || user.username}</span>
-        </button>
+          <button
+            className={cn("relative rounded-full ring-2 ring-transparent", {
+              "ring-primary": selected?.includes(user.id),
+            })}
+            key={user.id}
+            onClick={() => {
+              toggleUser(user.id);
+            }}
+            type="button"
+          >
+            <Avatar
+              className="h-10"
+              name={user.fullName}
+              src={user.avatarUrl}
+            />
+            <span className="sr-only">{user.fullName || user.username}</span>
+          </button>
+        </Tooltip>
       ))}
     </Flex>
   );
