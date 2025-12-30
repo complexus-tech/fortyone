@@ -22,7 +22,7 @@ export const ChatHeader = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
-  const { remaining, tier, getLimit } = useSubscriptionFeatures();
+  const { remaining, getLimit } = useSubscriptionFeatures();
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -71,18 +71,23 @@ export const ChatHeader = ({
           className="flex items-center gap-2 text-xl antialiased"
           fontWeight="semibold"
         >
-          Maya <Badge className="rounded-lg">Beta</Badge>
+          Maya{" "}
+          <Badge color="invert" className="rounded-lg px-1.5 font-semibold">
+            Beta
+          </Badge>
         </Text>
         <Flex align="center" gap={3}>
-          {remainingQueries <= 2000 && (
-            <Box className="hidden w-[60px] shrink-0 items-center justify-center md:flex">
+          {remainingQueries <= 50 && (
+            <Box className="flex shrink-0 items-center justify-center">
               <CircleProgressBar
                 progress={usageProgress}
-                size={32}
+                size={24}
                 strokeWidth={3}
                 invertColors={true}
               >
-                <Text className="text-xs font-medium">{remainingQueries}</Text>
+                <Text className="text-xs font-semibold">
+                  {remainingQueries}
+                </Text>
               </CircleProgressBar>
             </Box>
           )}
