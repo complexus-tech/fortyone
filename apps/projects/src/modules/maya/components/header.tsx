@@ -63,7 +63,7 @@ export const Header = ({
             >
               <span className="flex cursor-default items-center gap-2">
                 <CircleProgressBar
-                  progress={usageProgress}
+                  progress={Math.max(usageProgress, 100)}
                   size={24}
                   strokeWidth={3}
                   invertColors={true}
