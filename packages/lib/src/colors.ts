@@ -31,18 +31,20 @@ export const generateRandomColor = ({
 };
 
 /**
- * Determines if a background color is light or dark based on luminance
- * @param color - CSS color value (hex, rgb, rgba, hsl, etc.) - optional
- * @returns 'light' for light backgrounds, 'dark' for dark backgrounds
+ * Gets the most readable text color (white or black) for a given background color
+ * @param backgroundColor - CSS color value (hex, rgb, rgba, hsl, etc.) - optional
+ * @returns 'white' for dark backgrounds, 'black' for light backgrounds
  */
-export const getColorBrightness = (color?: string): "light" | "dark" => {
-  if (!color) return "light"; // Default to light when no color provided
+export const getReadableTextColor = (
+  backgroundColor?: string
+): "white" | "black" => {
+  if (!backgroundColor) return "black"; // Default to black when no color provided
 
-  const rgb = parseColorToRgb(color);
-  if (!rgb) return "light";
+  const rgb = parseColorToRgb(backgroundColor);
+  if (!rgb) return "black";
 
   const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminance > 0.5 ? "light" : "dark";
+  return luminance > 0.5 ? "black" : "white";
 };
 
 /**
