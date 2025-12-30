@@ -1,3 +1,4 @@
+import React from "react";
 import { cn } from "lib";
 import { Box } from "../Box/Box";
 
@@ -6,18 +7,25 @@ export const CircleProgressBar = ({
   size = 24,
   strokeWidth = 2,
   className,
+  children,
 }: {
   progress: number;
   size?: number;
   strokeWidth?: number;
   className?: string;
+  children?: React.ReactNode;
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <Box className={cn("relative inline-flex items-center", className)}>
+    <Box
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        className
+      )}
+    >
       <svg
         width={size}
         height={size}
@@ -47,6 +55,11 @@ export const CircleProgressBar = ({
           strokeLinecap="round"
         />
       </svg>
+      {children && (
+        <Box className="absolute inset-0 flex items-center justify-center">
+          {children}
+        </Box>
+      )}
     </Box>
   );
 };

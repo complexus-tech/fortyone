@@ -1,5 +1,5 @@
 import { CloseIcon, HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
-import { Flex, Button, Text, Tooltip, Badge, Box } from "ui";
+import { Flex, Button, Text, Tooltip, Badge, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
@@ -22,8 +22,11 @@ export const ChatHeader = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
-  const { remaining } = useSubscriptionFeatures();
+  const { remaining, tier, getLimit } = useSubscriptionFeatures();
   const remainingQueries = remaining("maxAiMessages", totalMessages);
+  const maxMessages = getLimit("maxAiMessages");
+  const usageProgress =
+    maxMessages > 0 ? Math.round((totalMessages / maxMessages) * 100) : 0;
   return (
     <>
       <Flex align="center" justify="between">
@@ -71,7 +74,17 @@ export const ChatHeader = ({
           Maya <Badge className="rounded-lg">Beta</Badge>
         </Text>
         <Flex align="center" gap={3}>
-          <Box className="border">{remainingQueries}</Box>
+          {remainingQueries <= 20 && (
+            <Box className="hidden w-[60px] shrink-0 items-center justify-center md:flex">
+              <CircleProgressBar
+                progress={usageProgress}
+                size={32}
+                strokeWidth={3}
+              >
+                <Text className="text-xs font-medium">{remainingQueries}</Text>
+              </CircleProgressBar>
+            </Box>
+          )}
 
           {chats.length > 0 && (
             <Tooltip title="History">
