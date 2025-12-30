@@ -22,7 +22,7 @@ export const ChatHeader = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
-  const { remaining, getLimit } = useSubscriptionFeatures();
+  const { remaining, getLimit, tier } = useSubscriptionFeatures();
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -77,41 +77,42 @@ export const ChatHeader = ({
           </Badge>
         </Text>
         <Flex align="center" gap={3}>
-          <Tooltip
-            title={
-              <Box className="max-w-xs py-1.5">
-                <Text className="mb-2">
-                  You&apos;re remaining with {remainingQueries} of{" "}
-                  {getLimit("maxAiMessages")} chat messages. Upgrade for
-                  unlimited messages!
-                </Text>
-                <Button
-                  color="invert"
-                  href="/settings/workspace/billing"
-                  fullWidth
-                  align="center"
-                >
-                  Upgrade plan
-                </Button>
-              </Box>
-            }
-          >
-            <span className="flex cursor-default">
-              <CircleProgressBar
-                progress={usageProgress}
-                size={remainingQueries >= 100 ? 20 : 24}
-                strokeWidth={3}
-                invertColors={true}
-              >
-                {remainingQueries < 100 ? (
-                  <Text className="max-w-[2ch] truncate text-xs font-semibold">
-                    {remainingQueries}
+          {tier !== "enterprise" && (
+            <Tooltip
+              title={
+                <Box className="max-w-xs py-1.5">
+                  <Text className="mb-2">
+                    You&apos;re remaining with {remainingQueries} of{" "}
+                    {getLimit("maxAiMessages")} chat messages. Upgrade for
+                    unlimited messages!
                   </Text>
-                ) : null}
-              </CircleProgressBar>
-            </span>
-          </Tooltip>
-
+                  <Button
+                    color="invert"
+                    href="/settings/workspace/billing"
+                    fullWidth
+                    align="center"
+                  >
+                    Upgrade plan
+                  </Button>
+                </Box>
+              }
+            >
+              <span className="flex cursor-default">
+                <CircleProgressBar
+                  progress={usageProgress}
+                  size={remainingQueries >= 100 ? 20 : 24}
+                  strokeWidth={3}
+                  invertColors={true}
+                >
+                  {remainingQueries < 100 ? (
+                    <Text className="max-w-[2ch] truncate text-xs font-semibold">
+                      {remainingQueries}
+                    </Text>
+                  ) : null}
+                </CircleProgressBar>
+              </span>
+            </Tooltip>
+          )}
           {chats.length > 0 && (
             <Tooltip title="History">
               <Button
