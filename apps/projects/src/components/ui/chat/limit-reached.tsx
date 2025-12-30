@@ -7,7 +7,7 @@ export const LimitReached = ({ isOnPage }: { isOnPage?: boolean }) => {
       <Wrapper className="flex items-center justify-between gap-4">
         <Text>
           You've reached your monthly AI chat limit. Messages reset on the 1st,
-          or upgrade to continue chatting with Maya! ✨
+          or upgrade now to continue chatting with Maya! ✨
         </Text>
         <Button
           color="invert"
