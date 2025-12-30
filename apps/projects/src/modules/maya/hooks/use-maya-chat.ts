@@ -232,6 +232,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
             router.push("/settings/workspace/billing");
           },
         },
+        duration: 1000,
       });
       return;
     }
