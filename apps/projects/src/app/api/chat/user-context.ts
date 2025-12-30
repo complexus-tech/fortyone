@@ -86,9 +86,9 @@ export async function getUserContext({
         : ""
     }
 
-    **Total Messages:**
-    - Current: ${totalMessages.current}
-    - Limit: ${totalMessages.limit}
+    **Current Messages Context:**
+    - Current: ${totalMessages.current} - number of messages the user has sent for the current month
+    - Limit: ${totalMessages.limit} - the maximum number of messages the user can send for the current month
     - Usage: ${totalMessages.current}/${totalMessages.limit}
 
 
