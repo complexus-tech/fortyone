@@ -126,8 +126,8 @@ export async function POST(req: NextRequest) {
       sendReasoning: true,
       sendSources: true,
       originalMessages: messagesFromRequest,
-      onFinish: ({ messages }) => {
-        saveChat({ id, messages });
+      onFinish: async ({ messages }) => {
+        await saveChat({ id, messages });
       },
     });
   } catch {
