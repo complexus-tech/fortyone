@@ -69,7 +69,8 @@ export const Header = ({
                   invertColors={true}
                 />
                 <Text>
-                  {totalMessages}/{getLimit("maxAiMessages")}
+                  {Math.min(totalMessages, getLimit("maxAiMessages"))}/
+                  {getLimit("maxAiMessages")}
                 </Text>
               </span>
             </Tooltip>
