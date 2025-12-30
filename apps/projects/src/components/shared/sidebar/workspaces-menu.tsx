@@ -83,7 +83,12 @@ export const WorkspacesMenu = () => {
           suppressHydrationWarning
           variant="naked"
         >
-          <span className="max-w-[18ch] truncate">{workspace?.name}</span>
+          <span className="max-w-[18ch] truncate">
+            {workspace?.name} -{" "}
+            {getColorBrightness(
+              workspaces.find((w) => w.slug.includes("real"))?.color,
+            )}
+          </span>
         </Button>
       </Menu.Button>
       <Menu.Items align="start" className="min-w-80 pt-0">
@@ -99,7 +104,7 @@ export const WorkspacesMenu = () => {
                 className={cn(
                   "h-[1.6rem] text-xs font-semibold tracking-wide",
                   {
-                    "text-dark": brightness === "light",
+                    "text-dark!": brightness === "light",
                     "text-white": brightness === "dark",
                   },
                 )}
@@ -147,20 +152,20 @@ export const WorkspacesMenu = () => {
                           <Avatar
                             className={cn(
                               "h-[1.6rem] text-xs font-semibold tracking-wide",
-                              {
-                                "text-dark": brightness === "light",
-                                "text-white": brightness === "dark",
-                              },
                             )}
                             name={name}
                             rounded="md"
                             src={avatarUrl}
                             style={{
                               backgroundColor: color,
+                              color:
+                                getColorBrightness(color) === "dark"
+                                  ? "white"
+                                  : "black",
                             }}
                           />
                           <span className="inline-block max-w-[20ch] truncate">
-                            {name}
+                            {name} -
                           </span>
                           <Badge
                             className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
