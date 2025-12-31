@@ -6,7 +6,7 @@ import Link, { LinkProps } from "next/link";
 import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
-  "flex text-dark dark:text-gray-200 w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0",
+  "flex text-dark dark:text-gray-200 w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0 cursor-pointer",
   {
     variants: {
       variant: {
