@@ -9,12 +9,13 @@ import (
 )
 
 type dbChatSession struct {
-	ID          string    `db:"id"`
-	UserID      uuid.UUID `db:"user_id"`
-	WorkspaceID uuid.UUID `db:"workspace_id"`
-	Title       string    `db:"title"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	ID          string     `db:"id"`
+	UserID      uuid.UUID  `db:"user_id"`
+	WorkspaceID uuid.UUID  `db:"workspace_id"`
+	Title       string     `db:"title"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
 }
 
 type dbChatMessage struct {
@@ -33,6 +34,7 @@ func toCoreChatSession(s dbChatSession) chatsessions.CoreChatSession {
 		Title:       s.Title,
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
+		DeletedAt:   s.DeletedAt,
 	}
 }
 

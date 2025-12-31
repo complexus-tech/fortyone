@@ -111,9 +111,9 @@ func (r *repo) GetSession(ctx context.Context, id string, workspaceID uuid.UUID)
 	defer span.End()
 
 	q := `
-		SELECT id, user_id, workspace_id, title, created_at, updated_at
+		SELECT id, user_id, workspace_id, title, created_at, updated_at, deleted_at
 		FROM chat_sessions
-		WHERE id = :id AND workspace_id = :workspace_id
+		WHERE id = :id AND workspace_id = :workspace_id AND deleted_at IS NULL
 	`
 
 	var cs dbChatSession
@@ -142,9 +142,9 @@ func (r *repo) ListSessions(ctx context.Context, userID, workspaceID uuid.UUID) 
 	defer span.End()
 
 	q := `
-		SELECT id, user_id, workspace_id, title, created_at, updated_at
+		SELECT id, user_id, workspace_id, title, created_at, updated_at, deleted_at
 		FROM chat_sessions
-		WHERE user_id = :user_id AND workspace_id = :workspace_id
+		WHERE user_id = :user_id AND workspace_id = :workspace_id AND deleted_at IS NULL
 		ORDER BY updated_at DESC LIMIT 25
 	`
 
@@ -203,14 +203,15 @@ func (r *repo) UpdateSession(ctx context.Context, id string, workspaceID uuid.UU
 	return nil
 }
 
-// DeleteSession deletes the chat session with the specified ID.
+// DeleteSession performs soft delete of the chat session with the specified ID.
 func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.DeleteSession")
 	defer span.End()
 
 	q := `
-		DELETE FROM chat_sessions
-		WHERE id = :id AND workspace_id = :workspace_id
+		UPDATE chat_sessions
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE id = :id AND workspace_id = :workspace_id AND deleted_at IS NULL
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -219,11 +220,13 @@ func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UU
 	}
 	defer stmt.Close()
 
+	r.log.Info(ctx, fmt.Sprintf("Soft deleting chat session #%s", id), "id", id)
 	result, err := stmt.ExecContext(ctx, map[string]any{
 		"id":           id,
 		"workspace_id": workspaceID,
 	})
 	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to soft delete chat session: %s", err), "id", id)
 		return fmt.Errorf("failed to delete chat session: %w", err)
 	}
 
@@ -235,6 +238,9 @@ func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UU
 	if rowsAffected == 0 {
 		return chatsessions.ErrNotFound
 	}
+
+	r.log.Info(ctx, fmt.Sprintf("Chat session #%s soft deleted successfully", id), "id", id)
+	span.AddEvent("Chat session soft deleted.", trace.WithAttributes(attribute.String("session.id", id)))
 
 	return nil
 }
