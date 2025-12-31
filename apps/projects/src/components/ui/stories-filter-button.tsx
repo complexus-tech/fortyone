@@ -22,6 +22,7 @@ import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
+import { MemberTooltip } from "./member-tooltip";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -165,19 +166,25 @@ const UserSelector = ({
   return (
     <Flex gap={2} wrap>
       {users.map((user) => (
-        <button
-          className={cn("relative rounded-full ring-2 ring-transparent", {
-            "ring-primary": selected?.includes(user.id),
-          })}
-          key={user.id}
-          onClick={() => {
-            toggleUser(user.id);
-          }}
-          type="button"
-        >
-          <Avatar className="h-10" name={user.fullName} src={user.avatarUrl} />
-          <span className="sr-only">{user.fullName || user.username}</span>
-        </button>
+        <MemberTooltip member={user}>
+          <button
+            className={cn("relative rounded-full ring-2 ring-transparent", {
+              "ring-primary": selected?.includes(user.id),
+            })}
+            key={user.id}
+            onClick={() => {
+              toggleUser(user.id);
+            }}
+            type="button"
+          >
+            <Avatar
+              className="h-10"
+              name={user.fullName}
+              src={user.avatarUrl}
+            />
+            <span className="sr-only">{user.fullName || user.username}</span>
+          </button>
+        </MemberTooltip>
       ))}
     </Flex>
   );

@@ -47,8 +47,8 @@ export const Header = ({
                 <Box className="max-w-xs py-1.5">
                   <Text className="mb-2">
                     You&apos;re remaining with {remainingQueries} of{" "}
-                    {getLimit("maxAiMessages")} chat messages. Upgrade for
-                    unlimited messages!
+                    {getLimit("maxAiMessages")} chat messages. Upgrade to send
+                    more messages!
                   </Text>
                   <Button
                     color="invert"
@@ -63,13 +63,14 @@ export const Header = ({
             >
               <span className="flex cursor-default items-center gap-2">
                 <CircleProgressBar
-                  progress={usageProgress}
+                  progress={Math.min(usageProgress, 100)}
                   size={24}
                   strokeWidth={3}
                   invertColors={true}
                 />
                 <Text>
-                  {totalMessages}/{getLimit("maxAiMessages")}
+                  {Math.min(totalMessages, getLimit("maxAiMessages"))}/
+                  {getLimit("maxAiMessages")}
                 </Text>
               </span>
             </Tooltip>

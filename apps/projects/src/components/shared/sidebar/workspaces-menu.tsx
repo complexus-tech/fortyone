@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
+import { cn, getReadableTextColor } from "lib";
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
@@ -26,6 +27,7 @@ export const WorkspacesMenu = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
+  const brightness = getReadableTextColor(workspace?.color);
 
   const handleLogout = async () => {
     try {
@@ -67,6 +69,7 @@ export const WorkspacesMenu = () => {
               src={workspace?.avatarUrl}
               style={{
                 backgroundColor: workspace?.color,
+                color: getReadableTextColor(workspace?.color),
               }}
               suppressHydrationWarning
             />
@@ -97,6 +100,7 @@ export const WorkspacesMenu = () => {
                 src={workspace?.avatarUrl}
                 style={{
                   backgroundColor: workspace?.color,
+                  color: getReadableTextColor(workspace?.color),
                 }}
               />
               <span className="inline-block max-w-[20ch] truncate">
@@ -134,12 +138,15 @@ export const WorkspacesMenu = () => {
                       >
                         <span className="flex items-center gap-2">
                           <Avatar
-                            className="h-[1.6rem] text-xs font-semibold tracking-wide"
+                            className={cn(
+                              "h-[1.6rem] text-xs font-semibold tracking-wide",
+                            )}
                             name={name}
                             rounded="md"
                             src={avatarUrl}
                             style={{
                               backgroundColor: color,
+                              color: getReadableTextColor(color),
                             }}
                           />
                           <span className="inline-block max-w-[20ch] truncate">

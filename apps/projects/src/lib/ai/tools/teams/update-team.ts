@@ -11,10 +11,16 @@ export const updateTeam = tool({
     teamId: z.string().describe("Team ID to update (required)"),
     name: z.string().optional().describe("Updated team name"),
     color: z.string().optional().describe("Updated team color"),
+    code: z
+      .string()
+      .optional()
+      .describe(
+        "Updated team code, (unique identifier 3 characters). eg WEB, DEV, MKT, PRD",
+      ),
     isPrivate: z.boolean().optional().describe("Updated privacy setting"),
   }),
 
-  execute: async ({ teamId, name, color, isPrivate }) => {
+  execute: async ({ teamId, name, color, code, isPrivate }) => {
     try {
       const session = await auth();
 
@@ -39,6 +45,7 @@ export const updateTeam = tool({
       const updateData = {
         name,
         color,
+        code,
         isPrivate,
       };
 

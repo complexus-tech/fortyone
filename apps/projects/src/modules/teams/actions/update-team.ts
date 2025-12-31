@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 export type UpdateTeamInput = {
   name?: string;
   description?: string;
+  code?: string;
 };
 
 export const updateTeamAction = async (id: string, input: UpdateTeamInput) => {

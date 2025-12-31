@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Flex, Text, Tooltip, Avatar, Checkbox, Box, Button } from "ui";
+import { Flex, Text, Tooltip, Avatar, Checkbox, Box } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,6 +27,7 @@ import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { MemberTooltip } from "../member-tooltip";
 
 export const StoryRow = ({
   story,
@@ -193,43 +194,7 @@ export const StoryRow = ({
               />
               {isColumnVisible("Assignee") && (
                 <AssigneesMenu>
-                  <Tooltip
-                    className="mr-2 py-2.5"
-                    title={
-                      selectedAssignee ? (
-                        <Box>
-                          <Flex gap={2}>
-                            <Avatar
-                              className="mt-0.5"
-                              name={selectedAssignee.fullName}
-                              src={selectedAssignee.avatarUrl}
-                            />
-                            <Box>
-                              <Link
-                                className="mb-2 flex gap-1"
-                                href={`/profile/${selectedAssignee.id}`}
-                              >
-                                <Text fontSize="md" fontWeight="medium">
-                                  {selectedAssignee.fullName}
-                                </Text>
-                                <Text color="muted" fontSize="md">
-                                  ({selectedAssignee.username})
-                                </Text>
-                              </Link>
-                              <Button
-                                className="mb-0.5 ml-px px-2"
-                                color="tertiary"
-                                href={`/profile/${selectedAssignee.id}`}
-                                size="xs"
-                              >
-                                Go to profile
-                              </Button>
-                            </Box>
-                          </Flex>
-                        </Box>
-                      ) : null
-                    }
-                  >
+                  <MemberTooltip member={selectedAssignee}>
                     <span>
                       <AssigneesMenu.Trigger>
                         <button
@@ -248,7 +213,7 @@ export const StoryRow = ({
                         </button>
                       </AssigneesMenu.Trigger>
                     </span>
-                  </Tooltip>
+                  </MemberTooltip>
                   <AssigneesMenu.Items
                     assigneeId={selectedAssignee?.id}
                     onAssigneeSelected={(assigneeId) => {

@@ -97,7 +97,7 @@ const Items = ({
             >
               <Box className="grid grid-cols-[16px_auto] items-center">
                 <StoryStatusIcon statusId={id} />
-                <Text>{name}</Text>
+                <Text className="max-w-[22ch] truncate">{name}</Text>
               </Box>
               <Flex align="center" gap={2}>
                 {id === defaultStateId && (
