@@ -56,6 +56,19 @@ func (c *CleanupHandlers) HandleDeleteStories(ctx context.Context, t *asynq.Task
 	return nil
 }
 
+// HandleChatSessionsCleanup processes the chat sessions cleanup task
+func (c *CleanupHandlers) HandleChatSessionsCleanup(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing ChatSessionsCleanup task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.PurgeDeletedChatSessions(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to purge deleted chat sessions", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("chat sessions cleanup failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed ChatSessionsCleanup task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleWebhookCleanup processes the webhook cleanup task
 func (c *CleanupHandlers) HandleWebhookCleanup(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WebhookCleanup task", "task_id", t.ResultWriter().TaskID())

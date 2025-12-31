@@ -238,6 +238,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("failed to register disable inactive automation task: %w", err)
 	}
 
+	_, err = scheduler.Register(
+		"0 2 * * 2", // Tuesday 2:00 AM (quiet day)
+		asynq.NewTask(tasks.TypeChatSessionsCleanup, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register chat sessions cleanup task: %w", err)
+	}
+
 	srv := asynq.NewServer(
 		rdbConn,
 		asynq.Config{
@@ -274,6 +283,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
+	mux.HandleFunc(tasks.TypeChatSessionsCleanup, cleanupHandlers.HandleChatSessionsCleanup)
 	mux.HandleFunc(tasks.TypeWorkspaceCleanup, cleanupHandlers.HandleWorkspaceCleanup)
 	// Register automation handlers
 	mux.HandleFunc(tasks.TypeSprintAutoCreation, cleanupHandlers.HandleSprintAutoCreation)
