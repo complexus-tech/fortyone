@@ -269,7 +269,7 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "from-gray-50/10 via-gray-50/50 to-gray-50 pb-2 dark:from-dark-200/50 dark:to-dark md:h-dvh md:overflow-y-auto md:bg-linear-to-br md:pb-6",
+        "bg-surface to-gray-50 pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
@@ -292,7 +292,7 @@ export const Options = ({
           )}
           {isDeleted ? (
             <Badge
-              className="border-opacity-30 px-2 text-dark dark:bg-opacity-30 dark:text-white"
+              className="text-dark border-opacity-30 px-2 dark:bg-opacity-30 dark:text-white"
               color="tertiary"
               size="lg"
             >
