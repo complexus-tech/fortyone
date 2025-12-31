@@ -252,7 +252,7 @@ export const WorkflowSettings = () => {
   return (
     <FeatureGuard
       fallback={
-        <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+        <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
           <Flex align="center" gap={2}>
             <WarningIcon className="text-warning dark:text-warning" />
             <Text>
@@ -269,7 +269,7 @@ export const WorkflowSettings = () => {
       }
       feature="customWorkflows"
     >
-      <Box className="mb-6 rounded-2xl border border-gray-100 bg-white pb-6 dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="dark:border-dark-100 dark:bg-dark-100/40 mb-6 rounded-2xl border border-gray-100 bg-white pb-6">
         <SectionHeader
           className="mb-4"
           description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."
@@ -335,7 +335,7 @@ export const WorkflowSettings = () => {
                           state={{
                             id: "new",
                             name: "",
-                            color: "#6366F1",
+                            color: categoryStates[0]?.color || "#6366F1",
                             isDefault: false,
                             category: value,
                             orderIndex: 9999, // Temporary value, backend will set the actual orderIndex

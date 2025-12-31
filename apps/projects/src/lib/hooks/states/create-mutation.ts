@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { statusKeys } from "@/constants/keys";
 import type { NewState } from "../../actions/states/create";
 import { createStateAction } from "../../actions/states/create";
+import { State } from "@/types/states";
 
 export const useCreateStateMutation = () => {
   const queryClient = useQueryClient();
@@ -12,14 +13,50 @@ export const useCreateStateMutation = () => {
 
   const mutation = useMutation({
     mutationFn: (newState: NewState) => createStateAction(newState),
-    onMutate: () => {
+    onMutate: (newState) => {
+      // Optimistically add the new state to the cache
+      const previousStates = queryClient.getQueryData<State[]>(
+        statusKeys.team(teamId),
+      );
+
+      const tempId = `temp-state-${Date.now()}`;
+      const optimisticState: State = {
+        id: tempId, // Temporary ID for optimistic update
+        name: newState.name,
+        category: newState.category,
+        color: newState.color,
+        isDefault: false,
+        orderIndex: 9999, // Will be set by backend
+        teamId: newState.teamId,
+        workspaceId: "", // Will be set by backend
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (previousStates) {
+        queryClient.setQueryData<State[]>(statusKeys.team(teamId), [
+          ...previousStates,
+          optimisticState,
+        ]);
+      }
+
       toast.loading("Please wait...", {
         id: toastId,
         description: "Creating state...",
       });
+
+      return { previousStates, optimisticState, tempId };
     },
 
-    onError: (error, variables) => {
+    onError: (error, variables, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousStates) {
+        queryClient.setQueryData<State[]>(
+          statusKeys.team(teamId),
+          context.previousStates,
+        );
+      }
+
       toast.error("Failed to create state", {
         description: error.message || "Your changes were not saved",
         id: toastId,
@@ -31,17 +68,33 @@ export const useCreateStateMutation = () => {
         },
       });
     },
-    onSuccess: (res) => {
+    onSuccess: (res, variables, context) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
+
+      const createdState = res.data!;
+
+      // Replace the optimistic state with the real state from server
+      const currentStates = queryClient.getQueryData<State[]>(
+        statusKeys.team(teamId),
+      );
+      if (currentStates) {
+        const updatedStates = currentStates.map((state) =>
+          state.id === context?.tempId ? createdState : state,
+        );
+        queryClient.setQueryData<State[]>(
+          statusKeys.team(teamId),
+          updatedStates,
+        );
+      }
+
       toast.success("State created", {
         id: toastId,
         description: "Your state has been created",
       });
-      queryClient.invalidateQueries({
-        queryKey: statusKeys.team(teamId),
-      });
+
+      // Invalidate other related queries
       queryClient.invalidateQueries({
         queryKey: statusKeys.lists(),
       });
