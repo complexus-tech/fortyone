@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+          "border-border bg-surface-muted hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
@@ -75,13 +75,6 @@ export const buttonVariants = cva(
         variant: "solid",
         color: "warning",
         className: "text-warning-foreground",
-      },
-      // Outline variant
-      {
-        variant: "outline",
-        color: ["primary", "secondary", "warning", "danger", "info"],
-        className:
-          "enabled:bg-transparent hover:enabled:bg-state-hover focus-visible:enabled:bg-state-active",
       },
       {
         variant: "outline",

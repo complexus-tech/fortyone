@@ -43,7 +43,7 @@ export const StoriesHeader = ({
   return (
     <Container
       className={cn(
-        "border-border bg-surface-muted/80 sticky top-0 z-1 border-b-[0.5px] py-[0.4rem] backdrop-blur select-none",
+        "border-border bg-surface-muted/85 sticky top-0 z-1 border-b-[0.5px] py-[0.4rem] backdrop-blur select-none",
         {
           "border-border border-b-[0.5px]": group.loadedCount === 0,
         },
