@@ -101,7 +101,7 @@ const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
     className={cn(
-      "inline-block rounded-[0.6rem] p-1 outline-none transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-100",
+      "inline-block rounded-[0.6rem] p-1 outline-none transition hover:bg-accent",
       className
     )}
   >
@@ -127,7 +127,7 @@ const DialogContent = forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-gray-200 dark:border-dark-50 bg-popover",
+            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border bg-surface-elevated/90",
             "dialog-content-animate outline-transparent",
             {
               "max-w-md": size === "sm",
@@ -169,8 +169,7 @@ const DialogFooter = ({
     className={cn(
       "flex px-6 pb-[0.8rem]",
       {
-        "border-t-[0.5px] border-gray-100 pt-[0.8rem] dark:border-dark-50":
-          variant !== "bordered",
+        "border-t-[0.5px] border-border pt-[0.8rem]": variant !== "bordered",
         "justify-start": justify === "start",
         "justify-end": justify === "end",
         "justify-center": justify === "center",
@@ -204,10 +203,7 @@ const DialogDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn(
-      "px-6 text-[0.95rem] text-gray dark:text-gray-300",
-      className
-    )}
+    className={cn("px-6 text-[0.95rem] text-text-muted", className)}
     {...props}
   />
 ));
