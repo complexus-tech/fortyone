@@ -81,8 +81,7 @@ export const CommentInput = ({
       }),
       Mention.configure({
         HTMLAttributes: {
-          class:
-            "mention bg-surface-muted hover:bg-state-hover transition",
+          class: "mention bg-surface-muted hover:bg-state-hover transition",
         },
         renderHTML({ options, node }) {
           return [
@@ -229,7 +228,7 @@ export const CommentInput = ({
   return (
     <Flex
       className={cn(
-        "ml-1 min-h-24 w-full rounded-2xl border border-border/40 bg-surface-muted/40 bg-surface/50 dark:shadow-dark-300/50",
+        "border-border/40 bg-surface-muted/40 ml-1 min-h-24 w-full rounded-2xl border px-4 pb-4",
         className,
       )}
       direction="column"
@@ -237,7 +236,7 @@ export const CommentInput = ({
       justify="between"
     >
       <TextEditor
-        className="prose-base leading-6 antialiased prose-a:text-foreground"
+        className="prose-base prose-a:text-foreground leading-6 antialiased"
         editor={editor}
       />
       <Flex gap={2} justify="end">
