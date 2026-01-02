@@ -55,7 +55,7 @@ const CustomTooltip = ({
           In Progress: {data.inProgress}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-gray dark:text-gray-300">
+        <Box className="mb-0.5 text-foreground">
           Total: {data.total}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
@@ -73,21 +73,21 @@ const CustomLegend = () => {
     <Box className="flex justify-center gap-6">
       <Box className="flex items-center gap-2">
         <Box className="h-1 w-3 bg-[#6366F1]" />
-        <span className="text-gray dark:text-gray-300">Completed</span>
+        <span className="text-foreground">Completed</span>
       </Box>
       <Box className="flex items-center gap-2">
         <Box className="h-1 w-3 bg-warning" />
-        <span className="text-gray dark:text-gray-300">In Progress</span>
+        <span className="text-foreground">In Progress</span>
       </Box>
       <Box className="flex items-center gap-2">
         <Box
-          className="h-1 w-3 bg-gray dark:bg-gray-300"
+          className="h-1 w-3 bg-foreground"
           style={{
             borderColor: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
             opacity: 0.8,
           }}
         />
-        <span className="text-gray dark:text-gray-300">Total</span>
+        <span className="text-foreground">Total</span>
       </Box>
     </Box>
   );

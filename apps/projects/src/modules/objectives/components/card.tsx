@@ -144,14 +144,14 @@ export const ObjectiveCard = ({
               <AssigneesMenu.Trigger>
                 <Button
                   className={cn("font-medium", {
-                    "text-gray-200 dark:text-gray-300": !leadUser,
+                    "text-text-secondary": !leadUser,
                   })}
                   color="tertiary"
                   disabled={!canUpdate}
                   leftIcon={
                     <Avatar
                       className={cn({
-                        "text-dark/80 dark:text-gray-200": !leadUser,
+                        "text-foreground/80": !leadUser,
                       })}
                       name={lead?.username}
                       size="xs"
@@ -241,14 +241,14 @@ export const ObjectiveCard = ({
               <DatePicker.Trigger>
                 <Button
                   className={cn({
-                    "text-gray/80 dark:text-gray-300/80": !endDate,
+                    "text-text-muted": !endDate,
                   })}
                   color="tertiary"
                   disabled={!canUpdate}
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem]", {
-                        "text-gray/80 dark:text-gray-300/80": !endDate,
+                        "text-text-muted": !endDate,
                       })}
                     />
                   }

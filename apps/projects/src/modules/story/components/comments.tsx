@@ -60,7 +60,7 @@ const MainComment = ({
       className={cn(
         "relative pb-3",
         {
-          "ml-10 border-l-2 border-gray-200 pb-0 pl-1.5 pt-1 dark:border-dark-50":
+          "ml-10 border-l-2 border-border pb-0 pl-1.5 pt-1 d":
             isSubComment,
         },
         className,

@@ -60,7 +60,7 @@ export const AllStories = ({
     <Box>
       <Header layout={layout} setLayout={setLayout} />
       <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-gray-200/60 pr-6 dark:border-dark-100 md:pr-12">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] border-border/60 pr-6 d md:pr-12">
           <Tabs.List className="h-min">
             <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
               Overview

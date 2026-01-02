@@ -42,7 +42,7 @@ const CalendarPrimitive = (props: CalendarProps) => {
   const { onDayClick, ...rest } = props;
   const { setOpen } = usePicker();
   return (
-    <Popover.Content className="w-auto p-0 rounded-2xl border border-gray-100/90 dark:border-dark-50 bg-white z-50 dark:bg-dark-200 backdrop-blur ">
+    <Popover.Content className="w-auto p-0 rounded-2xl border border-border bg-surface-elevated z-50 backdrop-blur">
       <Calendar
         {...rest}
         onDayClick={(day, activeModifiers, event) => {

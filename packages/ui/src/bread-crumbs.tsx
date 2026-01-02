@@ -26,7 +26,7 @@ export const BreadCrumbs = ({ breadCrumbs, className }: BreadCrumbsProps) => {
           className={cn(
             "flex items-center gap-1.5 font-medium group first-letter:uppercase transition",
             {
-              "text-gray/80 dark:text-gray-300/80":
+              "text-text-muted":
                 idx + 1 === breadCrumbs.length,
               "pointer-events-none": !url,
             },

@@ -174,7 +174,7 @@ export const Overview = () => {
                 </Flex>
 
                 <TextEditor
-                  className="text-gray dark:text-gray-300"
+                  className="text-foreground"
                   editor={descriptionEditor}
                 />
               </Box>

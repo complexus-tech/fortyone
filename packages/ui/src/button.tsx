@@ -87,7 +87,7 @@ export const buttonVariants = cva(
       {
         variant: "outline",
         color: "black",
-        className: "text-black border-black bg-transparent ring-black",
+        className: "text-foreground border-border bg-transparent ring-ring",
       },
       {
         variant: "outline",
@@ -105,27 +105,27 @@ export const buttonVariants = cva(
           "info",
           "tertiary",
         ],
-        className: "bg-transparent dark:bg-transparent border-none",
+        className: "bg-transparent border-none",
       },
       {
         variant: "naked",
         color: ["secondary"],
-        className: "dark:text-white",
+        className: "text-foreground",
       },
       {
         variant: "naked",
         color: "primary",
-        className: "text-primary dark:text-primary",
+        className: "text-primary",
       },
       {
         variant: "naked",
         color: "danger",
-        className: "text-danger dark:text-danger dark:bg-danger/5 bg-danger/5",
+        className: "text-danger bg-state-hover",
       },
       {
         disabled: true,
         variant: ["outline", "naked"],
-        className: "bg-opacity-100 text-white",
+        className: "bg-state-disabled text-text-disabled",
       },
       {
         disabled: true,

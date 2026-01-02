@@ -161,7 +161,7 @@ export const Links = ({
         <Flex
           align="center"
           className={cn({
-            "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
+            "border-b-[0.5px] border-border pb-2 dark:border-dark-200":
               !isLinksOpen,
           })}
           justify={links.length > 0 ? "between" : "end"}
@@ -205,7 +205,7 @@ export const Links = ({
       )}
 
       {isLinksOpen && links.length > 0 ? (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100 pb-0 dark:border-dark-100">
+        <Box className="mt-2 border-t-[0.5px] border-border pb-0 d">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}

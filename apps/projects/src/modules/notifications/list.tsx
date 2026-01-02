@@ -10,7 +10,7 @@ export const ListNotifications = () => {
 
   if (isPending) return <NotificationsSkeleton />;
   return (
-    <Box className="h-dvh border-r-[0.5px] border-gray-200/60 pb-6 dark:border-dark-100">
+    <Box className="h-dvh border-r-[0.5px] border-border/60 pb-6 d">
       <NotificationsHeader />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {notifications.map((notification, idx) => (

@@ -40,8 +40,8 @@ const Button = ({ active, className, ...props }: ButtonProps) => {
     <ButtonBase
       asIcon
       active={active}
-      className={cn(className, "dark:hover:bg-gray/30 hover:bg-gray-300/20", {
-        "dark:bg-gray/50 bg-gray-300/30": active,
+      className={cn(className, "hover:bg-state-hover", {
+        "bg-state-active": active,
       })}
       {...props}
     />
@@ -295,7 +295,7 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-[0.6rem] border border-gray-100 bg-white/80 px-2 py-[0.2rem] backdrop-blur dark:border-dark-100 dark:bg-dark-200/80",
+          "w-max rounded-[0.6rem] border border-border bg-surface-elevated/80 px-2 py-[0.2rem] backdrop-blur",
           {
             hidden: !isLinkOpen,
           }
@@ -316,13 +316,13 @@ export const BubbleMenu = ({
             onChange={(e) => {
               setURL(e.target.value);
             }}
-            className="outline-none w-60 bg-transparent text-sm p-2 placeholder:text-gray-250 dark:placeholder:text-gray-200"
+            className="outline-none w-60 bg-transparent text-sm p-2 placeholder:text-text-muted"
             defaultValue={editor.getAttributes("link").href || ""}
           />
           <span className="opacity-30">|</span>
           <Button
             active
-            className="border-gray-200"
+            className="border-border"
             size="xs"
             type="button"
             color="tertiary"

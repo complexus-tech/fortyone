@@ -136,7 +136,7 @@ export const ProfileUploadDialog = ({
         <Dialog.Body className="px-6 py-5">
           {hasImage ? (
             <Box className="relative">
-              <Box className="relative mx-auto size-96 overflow-hidden rounded-2xl border-2 border-gray-200 dark:border-white/20">
+              <Box className="relative mx-auto size-96 overflow-hidden rounded-2xl border-2 border-border">
                 <BlurImage
                   src={displayImage!}
                   alt="Profile preview"

@@ -89,14 +89,14 @@ export const Properties = () => {
         <AssigneesMenu.Trigger>
           <Button
             className={cn("font-medium", {
-              "text-gray-200 dark:text-gray-300": !objective?.leadUser,
+              "text-text-secondary": !objective?.leadUser,
             })}
             color="tertiary"
             disabled={!canUpdate}
             leftIcon={
               <Avatar
                 className={cn({
-                  "text-dark/80 dark:text-gray-200": !objective?.leadUser,
+                  "text-foreground/80": !objective?.leadUser,
                 })}
                 name={leadUser?.username}
                 size="xs"
@@ -132,7 +132,7 @@ export const Properties = () => {
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem] w-auto", {
-                  "text-gray/80 dark:text-gray-300/80": !objective?.startDate,
+                  "text-text-muted": !objective?.startDate,
                 })}
               />
             }
@@ -163,14 +163,14 @@ export const Properties = () => {
         <DatePicker.Trigger>
           <Button
             className={cn({
-              "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
+              "text-text-muted": !objective?.endDate,
             })}
             color="tertiary"
             disabled={!canUpdate}
             leftIcon={
               <CalendarIcon
                 className={cn("h-[1.15rem]", {
-                  "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
+                  "text-text-muted": !objective?.endDate,
                 })}
               />
             }

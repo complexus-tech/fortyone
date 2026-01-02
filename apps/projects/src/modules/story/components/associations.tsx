@@ -56,7 +56,7 @@ const AssociationBadge = ({
 
   return (
     <Badge
-      className="shrink-0 px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+      className="shrink-0 px-1 text-sm font-bold uppercase d dark:text-opacity-70"
       color={color}
       rounded="sm"
     >
@@ -85,7 +85,7 @@ export const Associations = ({
         <Flex
           align="center"
           className={cn({
-            "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
+            "border-b-[0.5px] border-border pb-2 dark:border-dark-200":
               !isAssociationsOpen,
           })}
           justify="between"
@@ -113,7 +113,7 @@ export const Associations = ({
       )}
 
       {isAssociationsOpen && associations.length > 0 ? (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100 pb-0 dark:border-dark-100">
+        <Box className="mt-2 border-t-[0.5px] border-border pb-0 d">
           {associations.map((assoc) => {
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,

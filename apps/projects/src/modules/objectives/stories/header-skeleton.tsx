@@ -14,11 +14,11 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
         <Flex align="center" gap={2}>
           <Skeleton className="size-6 rounded-full" />
           <Skeleton className="h-5 w-20 rounded" />
-          <span className="hidden text-gray-300 dark:text-dark-100 md:inline">
+          <span className="hidden text-text-muted md:inline">
             /
           </span>
           <Skeleton className="hidden h-5 w-24 rounded md:block" />
-          <span className="hidden text-gray-300 dark:text-dark-100 md:inline">
+          <span className="hidden text-text-muted md:inline">
             /
           </span>
           <Skeleton className="hidden h-5 w-16 rounded md:block" />

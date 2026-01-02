@@ -26,7 +26,7 @@ export const ObjectivePageSkeleton = ({
     <>
       <HeaderSkeleton layout={layout} />
       <Tabs value={tab as string}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center border-b-[0.5px] border-gray-100/60 pr-12 dark:border-dark-100">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full items-center border-b-[0.5px] border-border pr-12 d">
           <Tabs.List className="h-min">
             <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
               Overview

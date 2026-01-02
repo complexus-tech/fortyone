@@ -27,7 +27,7 @@ export const BlurImage = ({
   return (
     <Box
       className={cn(
-        "group relative w-full overflow-hidden bg-gray-100 dark:bg-dark-200",
+        "group relative w-full overflow-hidden bg-surface-muted",
         className
       )}
     >

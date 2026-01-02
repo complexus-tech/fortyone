@@ -229,7 +229,7 @@ export const CommentInput = ({
   return (
     <Flex
       className={cn(
-        "ml-1 min-h-24 w-full rounded-2xl border border-gray-100/40 bg-gray-100/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-300/50",
+        "ml-1 min-h-24 w-full rounded-2xl border border-border/40 bg-gray-100/40 px-4 pb-4 text-[0.95rem] shadow-sm transition-shadow duration-200 ease-linear dark:border-dark-200/80 dark:bg-dark-200/50 dark:shadow-dark-300/50",
         className,
       )}
       direction="column"

@@ -31,7 +31,7 @@ const CommandInput = ({
     {icon}
     <CommandPrimitive.Input
       className={cn(
-        "bg-transparent placeholder:text-gray/80 placeholder:dark:text-gray-200/60 py-[0.15rem] pl-[1.1rem] outline-none w-full",
+        "bg-transparent placeholder:text-text-muted py-[0.15rem] pl-[1.1rem] outline-none w-full",
         className
       )}
       {...props}

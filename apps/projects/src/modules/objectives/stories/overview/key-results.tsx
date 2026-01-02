@@ -227,13 +227,13 @@ const Okr = ({
                     <Button
                       asIcon
                       className={cn("font-medium", {
-                        "text-gray-200 dark:text-gray-300": !lead,
+                        "text-text-secondary": !lead,
                       })}
                       color="tertiary"
                       leftIcon={
                         <Avatar
                           className={cn({
-                            "text-dark/80 dark:text-gray-200": !lead,
+                            "text-foreground/80": !lead,
                           })}
                           name={leadMember?.username}
                           size="sm"
@@ -267,7 +267,7 @@ const Okr = ({
               <Menu.Button>
                 <Button
                   asIcon
-                  className="border-gray-100/60"
+                  className="border-border"
                   color="tertiary"
                   leftIcon={<MoreHorizontalIcon />}
                   rounded="full"
@@ -488,12 +488,12 @@ export const KeyResults = () => {
         <Box className="my-3">
           {object.keyResults.length > 0 ? (
             <>
-              <Box className="rounded-2xl border border-gray-100/80 shadow-lg shadow-gray-50 dark:border-dark-100 dark:shadow-none">
+              <Box className="rounded-2xl border border-border/80 shadow-lg shadow-gray-50 d dark:shadow-none">
                 {object.keyResults.map((keyResult) => {
                   if (!keyResult?.name) return null;
                   return (
                     <RowWrapper
-                      className="gap-6 border-b border-gray-100/80 px-2 last-of-type:border-b-0 md:px-4"
+                      className="gap-6 border-b border-border/80 px-2 last-of-type:border-b-0 md:px-4"
                       key={keyResult.name}
                     >
                       <Flex align="center" className="flex-1" gap={2}>

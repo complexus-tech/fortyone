@@ -196,7 +196,7 @@ export const MainDetails = ({
 
         <Attachments
           className={cn(
-            "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
+            "mt-2.5 border-t border-border pt-2.5 d",
             {
               "mt-2 border-0":
                 (isSubStoriesOpen || isLinksOpen) &&
