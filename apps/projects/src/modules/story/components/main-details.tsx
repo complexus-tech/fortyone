@@ -195,14 +195,11 @@ export const MainDetails = ({
         </Box>
 
         <Attachments
-          className={cn(
-            "mt-2.5 border-t border-border pt-2.5 d",
-            {
-              "mt-2 border-0":
-                (isSubStoriesOpen || isLinksOpen) &&
-                (subStories.length > 0 || links.length > 0),
-            },
-          )}
+          className={cn("border-border mt-2.5 border-t-[0.5px] pt-2.5", {
+            "mt-2 border-0":
+              (isSubStoriesOpen || isLinksOpen) &&
+              (subStories.length > 0 || links.length > 0),
+          })}
           storyId={storyId}
         />
         <Divider className="my-6" />

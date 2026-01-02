@@ -265,7 +265,7 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "from-sidebar/90 to-sidebar/60 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+        "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
