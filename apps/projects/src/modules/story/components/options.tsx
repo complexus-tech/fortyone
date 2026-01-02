@@ -30,7 +30,6 @@ import {
   ConfirmDialog,
 } from "@/components/ui";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -42,7 +41,6 @@ import {
   useSprintsEnabled,
 } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
-import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
@@ -117,10 +115,8 @@ export const Options = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
-  const { data: sprints = [] } = useTeamSprints(teamId);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
-  const { data: objectives = [] } = useTeamObjectives(teamId);
   const { data: sprint } = useSprint(sprintId, teamId);
   const { data: objective } = useObjective(objectiveId, teamId);
   const status =
@@ -269,7 +265,7 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "bg-surface to-surface-muted pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+        "from-sidebar/90 to-sidebar/60 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
@@ -283,7 +279,7 @@ export const Options = ({
           storyId={storyId}
         />
       </Box>
-      <Container className="px-0.5 pt-4 text-text-muted md:px-6">
+      <Container className="text-text-muted px-0.5 pt-4 md:px-6">
         <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
           {!isNotifications && (
             <Text className="hidden md:block" fontWeight="semibold">
@@ -292,7 +288,7 @@ export const Options = ({
           )}
           {isDeleted ? (
             <Badge
-              className="text-foreground border-opacity-30 px-2 bg-opacity-30"
+              className="text-foreground border-opacity-30 bg-opacity-30 px-2"
               color="tertiary"
               size="lg"
             >
@@ -374,8 +370,7 @@ export const Options = ({
                     leftIcon={
                       <Avatar
                         className={cn({
-                          "text-foreground/80":
-                            !assignee?.fullName,
+                          "text-foreground/80": !assignee?.fullName,
                         })}
                         name={assignee?.fullName}
                         size="xs"

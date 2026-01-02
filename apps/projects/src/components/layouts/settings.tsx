@@ -130,7 +130,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </button>
           </Flex>
         </Container>
-        <Box className="overflow-x-auto border-y border-border pl-3">
+        <Box className="border-border overflow-x-auto border-y pl-3">
           <Flex align="center" gap={2}>
             {mobileMenu.map(({ href, title }) => (
               <Link
@@ -149,14 +149,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             ))}
           </Flex>
         </Box>
-        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pb-8 pt-6">
+        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
           <Container>{children}</Container>
         </Box>
       </Box>
       <Box className="hidden md:block">
         <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
           <ResizablePanel.Panel
-            className="bg-surface-muted/60"
+            className="from-sidebar to-sidebar/50 bg-linear-to-br"
             defaultSize={15}
             maxSize={20}
             minSize={12}

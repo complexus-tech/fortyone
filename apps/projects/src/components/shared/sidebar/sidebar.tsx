@@ -35,16 +35,16 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="bg-sidebar relative flex h-dvh flex-col justify-between pb-6">
-      <Box className="z-1 relative px-4">
+    <Box className="from-sidebar to-sidebar/50 relative flex h-dvh flex-col justify-between bg-linear-to-br pb-6">
+      <Box className="relative z-1 px-4">
         <Header />
         <Navigation />
         <Teams />
       </Box>
-      <Box className="z-1 relative">
+      <Box className="relative z-1">
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
-            <Box className="border-warning bg-warning/20 mb-4 rounded-xl border-[0.5px] p-4 shadow-lg shadow-shadow">
+            <Box className="border-warning bg-warning/20 shadow-shadow mb-4 rounded-xl border-[0.5px] p-4 shadow-lg">
               <Text className="text-foreground" fontWeight="semibold">
                 Workspace scheduled for deletion
               </Text>
@@ -75,7 +75,7 @@ export const Sidebar = () => {
           ) : (
             <>
               {tier === "free" && (
-                <Box className="rounded-xl border-[0.5px] border-border bg-surface p-4 shadow-lg shadow-shadow">
+                <Box className="border-border bg-surface shadow-shadow rounded-xl border-[0.5px] p-4 shadow-lg">
                   <Text fontWeight="medium">You&apos;re on the free plan</Text>
                   <Text className="mt-2" color="muted">
                     {userRole === "admin"
@@ -102,7 +102,7 @@ export const Sidebar = () => {
                 >
                   <span>
                     <Button
-                      className="text-primary mt-3 border-opacity-15 bg-opacity-10 px-3 dark:bg-opacity-15"
+                      className="text-primary border-opacity-15 bg-opacity-10 dark:bg-opacity-15 mt-3 px-3"
                       href={
                         userRole === "admin"
                           ? "/settings/workspace/billing"
