@@ -19,7 +19,6 @@
 
   --color-border: var(--color-border);
   --color-border-strong: var(--color-border-strong);
-  --color-separator: var(--color-separator);
   --color-input: var(--color-input);
   --color-ring: var(--color-ring);
   --color-focus: var(--color-focus);
@@ -113,7 +112,6 @@
 
   --color-border: oklch(0.922 0 0);
   --color-border-strong: oklch(0.85 0 0);
-  --color-separator: oklch(0.922 0 0);
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.628 0.258 12.25);
   --color-focus: oklch(0.628 0.258 12.25);
