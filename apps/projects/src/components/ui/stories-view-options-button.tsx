@@ -139,10 +139,10 @@ export const StoriesViewOptionsButton = ({
           color="tertiary"
           disabled={disabled}
           leftIcon={
-            <PreferencesIcon className="h-4 w-auto text-gray dark:text-gray-300" />
+            <PreferencesIcon className="h-4 w-auto text-text-muted" />
           }
           rightIcon={
-            <ArrowDownIcon className="h-3.5 w-auto text-gray dark:text-gray-300" />
+            <ArrowDownIcon className="h-3.5 w-auto text-text-muted" />
           }
           size="sm"
           variant="outline"

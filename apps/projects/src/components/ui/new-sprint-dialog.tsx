@@ -207,7 +207,7 @@ export const NewSprintDialog = ({
           </Dialog.Title>
           <Flex gap={2}>
             <Button
-              className="px-[0.35rem] dark:hover:bg-dark-100"
+              className="px-[0.35rem] hover:bg-state-hover"
               color="tertiary"
               onClick={() => {
                 setIsExpanded((prev) => !prev);

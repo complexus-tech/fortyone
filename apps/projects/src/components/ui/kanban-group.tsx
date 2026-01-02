@@ -46,8 +46,8 @@ const List = ({
         className={cn(
           "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
           {
-            "bg-gray-100/20 dark:bg-dark-200/10": totalStories === 0,
-            "bg-gray-100/40 dark:bg-dark-200/50": isOver,
+            "bg-surface-muted/50": totalStories === 0,
+            "bg-surface-muted": isOver,
           },
         )}
         ref={setNodeRef}
@@ -144,7 +144,7 @@ export const KanbanGroup = ({
 
       <Button
         align="center"
-        className="relative min-h-[2.35rem] w-[340px] border-gray-100/80 dark:border-dark-200 dark:bg-dark-200/60"
+        className="border-border bg-surface-muted relative min-h-[2.35rem] w-[340px]"
         color="tertiary"
         fullWidth
         onClick={() => {

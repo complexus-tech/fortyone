@@ -10,18 +10,18 @@ const ListLayoutSkeleton = () => {
       {Array.from({ length: 4 }).map((_, groupIndex) => (
         <Box className="mb-2" key={groupIndex}>
           {/* Group header, similar to StoriesHeader */}
-          <Box className="sticky top-0 z-1 select-none border-y-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/60 dark:bg-dark-200/60">
+          <Box className="border-border bg-surface-muted sticky top-0 z-1 border-y-[0.5px] py-[0.4rem] backdrop-blur select-none">
             <Flex align="center" className="px-12" justify="between">
               <Flex align="center" className="relative" gap={2}>
                 <Checkbox className="absolute -left-7 opacity-70" />
                 <Flex align="center" gap={2}>
-                  <Skeleton className="h-5 w-5 animate-none rounded-full dark:bg-dark-100/60" />
-                  <Skeleton className="h-4 w-24 animate-none dark:bg-dark-100/60" />
+                  <Skeleton className="h-5 w-5 animate-none rounded-full" />
+                  <Skeleton className="h-4 w-24 animate-none" />
                 </Flex>
-                <Skeleton className="ml-2 h-4 w-4 animate-none dark:bg-dark-100/60" />
-                <Skeleton className="h-4 w-12 animate-none dark:bg-dark-100/60" />
+                <Skeleton className="ml-2 h-4 w-4 animate-none" />
+                <Skeleton className="h-4 w-12 animate-none" />
               </Flex>
-              <Skeleton className="h-8 w-8 animate-none rounded-full dark:bg-dark-100/60" />
+              <Skeleton className="h-8 w-8 animate-none rounded-full" />
             </Flex>
           </Box>
           {/* Group items */}
@@ -45,7 +45,7 @@ const ListLayoutSkeleton = () => {
             </RowWrapper>
           ))}
           {/* Group footer/summary row */}
-          <RowWrapper className="pointer-events-none border-0 pb-1.5 pt-4">
+          <RowWrapper className="pointer-events-none border-0 pt-4 pb-1.5">
             <Skeleton className="h-4 w-64" />
           </RowWrapper>
         </Box>
@@ -82,10 +82,7 @@ const KanbanLayoutSkeleton = () => {
         {Array.from({ length: 4 }).map((_, i) => (
           <Box className="w-[280px]" key={i}>
             {Array.from({ length: 6 - i }).map((_, j) => (
-              <Skeleton
-                className="mb-3 h-28 shadow-sm dark:shadow-none"
-                key={j}
-              />
+              <Skeleton className="shadow-shadow mb-3 h-28 shadow-sm" key={j} />
             ))}
           </Box>
         ))}
@@ -99,11 +96,11 @@ const GanttLayoutSkeleton = () => {
     <div className="relative left-px h-[calc(100dvh-4rem)] overflow-x-auto overflow-y-hidden">
       <Flex className="min-h-full min-w-max">
         {/* Sidebar */}
-        <Box className="sticky left-0 z-20 w-136 shrink-0 border-r-[0.5px] border-gray-200/60 dark:border-dark-100">
+        <Box className="border-border sticky left-0 z-20 w-136 shrink-0 border-r-[0.5px]">
           {/* Header */}
           <Flex
             align="center"
-            className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 px-6 py-2.5 dark:border-dark-100"
+            className="border-border sticky top-0 z-10 h-16 border-b-[0.5px] px-6 py-2.5"
             justify="between"
           >
             <Skeleton className="h-8 w-16" />
@@ -115,10 +112,7 @@ const GanttLayoutSkeleton = () => {
 
           {/* Sidebar rows */}
           {Array.from({ length: 8 }).map((_, i) => (
-            <Box
-              className="h-14 border-b-[0.5px] border-gray-100 dark:border-dark-100"
-              key={i}
-            >
+            <Box className="border-border h-14 border-b-[0.5px]" key={i}>
               <Flex align="center" className="h-full px-6" justify="between">
                 <Flex align="center" gap={3}>
                   <Skeleton className="h-4 w-4 rounded" />
@@ -137,14 +131,14 @@ const GanttLayoutSkeleton = () => {
         {/* Chart */}
         <Box className="flex-1" style={{ minWidth: "1344px" }}>
           {/* Timeline Header */}
-          <Box className="sticky top-0 z-10 h-16 border-b-[0.5px] border-gray-200/60 dark:border-dark-100">
+          <Box className="border-border sticky top-0 z-10 h-16 border-b-[0.5px]">
             <Box className="h-8 w-full">
               {/* Month/Quarter row */}
-              <Box className="border-b-[0.5px] border-gray-100 dark:border-dark-100">
+              <Box className="border-border border-b-[0.5px]">
                 <Flex>
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Box
-                      className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                      className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
                       key={i}
                       style={{ width: "33.33%" }}
                     >
@@ -165,7 +159,7 @@ const GanttLayoutSkeleton = () => {
               <Flex>
                 {Array.from({ length: 21 }).map((_, i) => (
                   <Box
-                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                    className="border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
                     key={i}
                     style={{ minWidth: "64px" }}
                   >
@@ -186,7 +180,7 @@ const GanttLayoutSkeleton = () => {
               <Flex className="absolute inset-0">
                 {Array.from({ length: 21 }).map((_, j) => (
                   <Box
-                    className="min-w-16 flex-1 border-r-[0.5px] border-gray-100 dark:border-dark-100"
+                    className="border-border min-w-16 flex-1 border-r-[0.5px]"
                     key={j}
                     style={{
                       minWidth: "64px",
@@ -199,7 +193,7 @@ const GanttLayoutSkeleton = () => {
               {/* Gantt bar */}
               <Box className="relative z-10 h-full px-2">
                 <Skeleton
-                  className="absolute h-10 rounded-[0.6rem] border-[0.5px] border-gray-200/60 bg-gray-100 dark:border-dark-50/80 dark:bg-dark-200"
+                  className="border-border absolute h-10 rounded-[0.6rem] border-[0.5px]"
                   style={{
                     left: `${Math.random() * 50 + 10}%`,
                     width: `${15 + Math.random() * 25}%`,
@@ -226,9 +220,8 @@ export const BoardSkeleton = ({
     <BodyContainer
       className={cn(
         {
-          "overflow-x-auto bg-gray-50/60 dark:bg-transparent":
-            layout === "kanban",
-          "overflow-auto bg-white dark:bg-dark": layout === "gantt",
+          "bg-surface-muted overflow-x-auto": layout === "kanban",
+          "bg-background overflow-auto": layout === "gantt",
         },
         className,
       )}

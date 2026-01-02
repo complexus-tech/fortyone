@@ -19,7 +19,7 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "h-[2.2rem] items-center gap-1 rounded-[0.7rem] bg-gray-50 dark:bg-dark-200/70 md:mr-2",
+        "bg-surface-muted h-[2.2rem] items-center gap-1 rounded-[0.7rem] md:mr-2",
         {
           "opacity-50": disabled,
         },
@@ -29,9 +29,9 @@ export const LayoutSwitcher = ({
       {options.includes("list") && (
         <button
           className={cn(
-            "flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed dark:text-white/55 enabled:hover:dark:text-gray-100",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
+              "border-border bg-surface-elevated text-text-primary border":
                 layout === "list",
             },
           )}
@@ -50,9 +50,9 @@ export const LayoutSwitcher = ({
       {options.includes("kanban") && (
         <button
           className={cn(
-            "flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed dark:text-white/55 enabled:hover:dark:text-gray-100",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
+              "border-border bg-surface-elevated text-text-primary border":
                 layout === "kanban",
             },
           )}
@@ -70,9 +70,9 @@ export const LayoutSwitcher = ({
       {options.includes("gantt") && (
         <button
           className={cn(
-            "flex h-full items-center gap-1 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed dark:text-white/55 enabled:hover:dark:text-gray-100",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border border-gray-100 bg-white dark:border-dark-50 dark:bg-dark-200/80 dark:text-gray-100":
+              "border-border bg-surface-elevated text-text-primary border":
                 layout === "gantt",
             },
           )}

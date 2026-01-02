@@ -181,7 +181,7 @@ export const StoryProperties = ({
               </Button>
             ) : (
               <button
-                className="flex select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isGuest}
                 type="button"
               >
@@ -210,7 +210,7 @@ export const StoryProperties = ({
                     {selectedObjective.name}
                   </Text>
                   <Box
-                    className="mt-1 line-clamp-4 text-gray dark:text-gray-300/80"
+                    className="text-text-muted mt-1 line-clamp-4"
                     html={selectedObjective.description}
                   />
                 </Box>
@@ -303,7 +303,7 @@ export const StoryProperties = ({
                 >
                   <RowWrapper
                     className={cn(
-                      "group max-w-72 gap-4 px-0 py-2 dark:border-dark-50 md:px-0",
+                      "group dark:border-dark-50 max-w-72 gap-4 px-0 py-2 md:px-0",
                       {
                         "border-b-0": idx === subStories.length - 1,
                       },
@@ -331,7 +331,7 @@ export const StoryProperties = ({
           }
         >
           <Badge
-            className="hidden h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] text-dark md:flex"
+            className="text-foreground hidden h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] md:flex"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {

@@ -103,7 +103,7 @@ const Items = ({
                 >
                   <Flex align="center" gap={2}>
                     <Avatar
-                      className="text-dark/80 dark:text-gray-200"
+                      className="text-foreground/80"
                       color="primary"
                       size="sm"
                     />

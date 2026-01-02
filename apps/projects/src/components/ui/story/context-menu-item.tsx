@@ -29,17 +29,17 @@ export const ContextMenuItem = ({
         <ContextMenu.SubMenu>
           <ContextMenu.SubTrigger className="justify-between">
             <Box className="grid grid-cols-[24px_auto] items-center">
-              <span className="flex text-gray dark:text-gray-200">{icon}</span>
+              <span className="flex text-foreground">{icon}</span>
               <Text>{label}</Text>
             </Box>
             <Flex align="center" gap={3}>
               {shortCut ? (
-                <Flex className="text-sm text-gray dark:text-gray-200">
+                <Flex className="text-sm text-text-muted">
                   {shortCut}
                 </Flex>
               ) : null}
               <ArrowRightIcon
-                className="h-3.5 w-auto text-gray dark:text-gray-200"
+                className="h-3.5 w-auto text-text-muted"
                 strokeWidth={2.8}
               />
             </Flex>
@@ -69,7 +69,7 @@ export const ContextMenuItem = ({
                       </Text>
                     </Box>
                     {subShortCut ? (
-                      <Flex className="text-gray">{subShortCut}</Flex>
+                      <Flex className="text-text-muted">{subShortCut}</Flex>
                     ) : null}
                   </ContextMenu.Item>
                 ),
@@ -87,7 +87,7 @@ export const ContextMenuItem = ({
             <span className="flex text-gray dark:text-gray-200">{icon}</span>
             <Text className="max-w-40 truncate">{label}</Text>
           </Box>
-          {shortCut ? <Flex className="text-gray">{shortCut}</Flex> : null}
+          {shortCut ? <Flex className="text-text-muted">{shortCut}</Flex> : null}
         </ContextMenu.Item>
       )}
     </>

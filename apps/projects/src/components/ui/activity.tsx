@@ -187,7 +187,7 @@ export const Activity = ({
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
       <Box
         className={cn(
-          "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-gray-200 dark:border-dark-50",
+          "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-border",
         )}
       />
       <Flex align="center" className="z-1" gap={1}>
@@ -239,7 +239,7 @@ export const Activity = ({
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="relative left-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+            <Box className="relative left-px flex aspect-square items-center rounded-full bg-surface p-[0.3rem]">
               <Avatar
                 name={member?.fullName}
                 size="xs"

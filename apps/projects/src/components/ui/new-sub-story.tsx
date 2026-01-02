@@ -137,7 +137,7 @@ export const NewSubStory = ({
   return (
     <Box>
       {isOpen ? (
-        <Box className="mt-2 rounded-2xl border border-gray-100/60 bg-gray-50/40 px-4 py-3 dark:border-dark-100 dark:bg-dark-300">
+        <Box className="mt-2 rounded-2xl border border-border/60 bg-surface-muted/40 px-4 py-3">
           <TextEditor
             asTitle
             className="text-xl font-medium"

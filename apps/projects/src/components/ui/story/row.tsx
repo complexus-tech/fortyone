@@ -103,11 +103,9 @@ export const StoryRow = ({
             className={cn(
               "gap-4",
               {
-                "bg-gray-50 opacity-70 dark:bg-dark-50/40 dark:opacity-50":
-                  isDragging,
+                "bg-surface-muted opacity-70": isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
-                "bg-gray-50/50 pl-10 dark:bg-dark-200/50 md:pl-18":
-                  isSubStory,
+                "bg-surface-muted pl-10 md:pl-18": isSubStory,
               },
               className,
             )}

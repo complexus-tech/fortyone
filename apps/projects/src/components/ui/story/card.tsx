@@ -85,17 +85,16 @@ export const StoryCard = ({
       <StoryContextMenu story={story}>
         <Box
           className={cn(
-            "border-border dark:bg-dark-200/80 dark:hover:bg-dark-100/70 w-[340px] select-none rounded-[0.9rem] border-[0.5px] bg-white px-4 pb-4 shadow-lg shadow-gray-100/50 backdrop-blur transition duration-200 ease-linear hover:bg-white/50 dark:shadow-none",
+            "border-border bg-surface shadow-shadow hover:bg-surface-elevated w-[340px] rounded-[0.9rem] border-[0.5px] px-4 pb-4 shadow-lg backdrop-blur transition duration-200 ease-linear select-none",
             {
-              "dark:bg-dark-50/40 bg-gray-50 opacity-70 dark:opacity-50":
-                isDragging,
+              "bg-surface-muted opacity-70": isDragging,
               "pointer-events-none opacity-40": story.id.startsWith("123"),
             },
             className,
           )}
         >
           <div
-            className={cn("cursor-pointer pb-1.5 pt-3", {
+            className={cn("cursor-pointer pt-3 pb-1.5", {
               "cursor-grabbing": isDragging,
             })}
             ref={setNodeRef}
@@ -119,7 +118,7 @@ export const StoryCard = ({
               </Text>
               {isColumnVisible("ID") && (
                 <Text
-                  className="shrink-0 text-[0.95rem] uppercase leading-[1.4rem]"
+                  className="shrink-0 text-[0.95rem] leading-[1.4rem] uppercase"
                   color="muted"
                 >
                   {teamCode}-{story.sequenceId}

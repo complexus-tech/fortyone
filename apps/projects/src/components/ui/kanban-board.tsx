@@ -116,7 +116,7 @@ export const KanbanBoard = ({
   return (
     <BodyContainer
       className={cn(
-        "overflow-x-auto bg-gray-50/60 dark:bg-transparent",
+        "overflow-x-auto bg-surface-muted/60",
         className,
       )}
     >
