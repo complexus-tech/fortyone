@@ -130,7 +130,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </button>
           </Flex>
         </Container>
-        <Box className="overflow-x-auto border-y border-gray-100 pl-3 dark:border-dark-100">
+        <Box className="overflow-x-auto border-y border-border pl-3">
           <Flex align="center" gap={2}>
             {mobileMenu.map(({ href, title }) => (
               <Link
@@ -156,7 +156,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       <Box className="hidden md:block">
         <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
           <ResizablePanel.Panel
-            className="bg-gray-50/60 dark:bg-black/45"
+            className="bg-surface-muted/60"
             defaultSize={15}
             maxSize={20}
             minSize={12}

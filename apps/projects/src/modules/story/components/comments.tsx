@@ -101,7 +101,7 @@ const MainComment = ({
           }
         >
           <Flex className="cursor-pointer" gap={1}>
-            <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+            <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface-elevated">
               <Avatar
                 name={member?.fullName}
                 size="xs"

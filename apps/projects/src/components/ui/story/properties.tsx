@@ -303,7 +303,7 @@ export const StoryProperties = ({
                 >
                   <RowWrapper
                     className={cn(
-                      "group dark:border-dark-50 max-w-72 gap-4 px-0 py-2 md:px-0",
+                      "group border-border max-w-72 gap-4 px-0 py-2 md:px-0",
                       {
                         "border-b-0": idx === subStories.length - 1,
                       },

@@ -153,7 +153,7 @@ export const TerminologyPreferences = () => {
         }
         feature="customTerminology"
       >
-        <Box className="mb-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="mb-6 rounded-2xl border border-border bg-surface">
           <SectionHeader
             description="Customize the terminology used throughout your workspace."
             title="Terminology Preferences"
@@ -169,7 +169,7 @@ export const TerminologyPreferences = () => {
                   <Flex align="center" gap={2}>
                     <Flex
                       align="center"
-                      className="size-8 shrink-0 rounded-[0.6rem] bg-gray-100/50 dark:bg-dark-100"
+                      className="size-8 shrink-0 rounded-[0.6rem] bg-surface-muted"
                       justify="center"
                     >
                       {entity.icon}
@@ -215,14 +215,14 @@ export const TerminologyPreferences = () => {
       </FeatureGuard>
 
       {/* Preview Section */}
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-border bg-surface">
         <SectionHeader
           description="See how your selected terminology will appear throughout the application."
           title="Terminology Preview"
         />
 
         <Box className="grid grid-cols-1 md:grid-cols-2">
-          <Box className="border-r border-gray-100 dark:border-dark-100">
+          <Box className="border-r border-border">
             <RowWrapper className="justify-start gap-2 py-3 md:px-6">
               <StoryIcon />
               My {getTermDisplay("storyTerm", { variant: "plural" })}

@@ -106,10 +106,10 @@ export const WalkthroughStep = ({
         zIndex: 60,
       }}
     >
-      <Box className="w-108 max-w-[95vw] rounded-2xl border border-gray-100 bg-white shadow-lg dark:border-dark-50 dark:bg-dark-200 dark:shadow-dark/20">
+      <Box className="w-108 max-w-[95vw] rounded-2xl border border-border bg-surface-elevated shadow-lg shadow-shadow">
         <Flex
           align="center"
-          className="border-b border-gray-100 px-4 py-3.5 dark:border-dark-50"
+          className="border-b border-border px-4 py-3.5"
           justify="between"
         >
           <Text className="text-[1.1rem]" fontWeight="medium">
@@ -137,7 +137,7 @@ export const WalkthroughStep = ({
         {/* Footer */}
         <Flex
           align="center"
-          className="border-t border-gray-100 px-6 py-4 dark:border-dark-50"
+          className="border-t border-border px-6 py-4"
           justify="between"
         >
           <div>
@@ -164,9 +164,9 @@ export const WalkthroughStep = ({
               onClick={nextStep}
               rightIcon={
                 isLastStep ? (
-                  <CheckIcon className="text-white dark:text-gray-200" />
+                  <CheckIcon className="text-white" />
                 ) : (
-                  <ArrowRight2Icon className="text-white dark:text-gray-200" />
+                  <ArrowRight2Icon className="text-white" />
                 )
               }
             >

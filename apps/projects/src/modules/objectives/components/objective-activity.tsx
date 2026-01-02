@@ -252,7 +252,7 @@ export const ObjectiveActivityComponent = ({
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="relative left-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] dark:bg-dark-300">
+            <Box className="relative left-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface-elevated">
               <Avatar
                 name={member?.fullName}
                 size="xs"
@@ -337,7 +337,7 @@ export const ObjectiveActivityComponent = ({
             size="xs"
             src={member?.avatarUrl}
           />
-          <Box className="max-w-lg rounded-xl rounded-tl-md border border-gray-100/60 bg-gray-50/60 px-4 py-2 dark:border-dark-100/80 dark:bg-dark-300/80">
+          <Box className="max-w-lg rounded-xl rounded-tl-md border border-gray-100/60 bg-gray-50/60 px-4 py-2 dark:border-dark-100/80 bg-surface-elevated/80">
             <Text color="muted">{comment}</Text>
           </Box>
         </Flex>

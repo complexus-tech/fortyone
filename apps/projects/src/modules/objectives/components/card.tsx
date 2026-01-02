@@ -120,7 +120,7 @@ export const ObjectiveCard = ({
           >
             <Flex
               align="center"
-              className="size-8 shrink-0 rounded-[0.6rem] bg-gray-100/50 dark:bg-dark-200"
+              className="size-8 shrink-0 rounded-[0.6rem] bg-surface-muted"
               justify="center"
             >
               <ObjectiveIcon className="h-4" />
@@ -318,7 +318,7 @@ export const ObjectiveCard = ({
               Comment*
             </Text>
             <TextArea
-              className="resize-none rounded-2xl border py-4 leading-normal dark:border-dark-50/80 dark:bg-transparent"
+              className="resize-none rounded-2xl border py-4 leading-normal border-border/80 bg-transparent"
               onChange={(e) => {
                 setComment(e.target.value);
               }}

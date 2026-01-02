@@ -90,7 +90,7 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+        <span className="hidden text-text-secondary md:inline">
           |
         </span>
         <NewStoryButton className="hidden md:flex" teamId={teamId} />

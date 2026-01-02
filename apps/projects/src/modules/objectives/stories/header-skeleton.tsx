@@ -30,7 +30,7 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
             <LayoutSwitcher layout={layout} setLayout={() => {}} />
             <Skeleton className="size-9 rounded md:size-8" />
             <Skeleton className="size-9 rounded md:size-8" />
-            <span className="hidden text-gray-200 dark:text-dark-100 md:inline">
+            <span className="hidden text-text-secondary md:inline">
               |
             </span>
           </>

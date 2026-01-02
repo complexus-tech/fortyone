@@ -29,17 +29,15 @@ export const ContextMenuItem = ({
         <ContextMenu.SubMenu>
           <ContextMenu.SubTrigger className="justify-between">
             <Box className="grid grid-cols-[24px_auto] items-center">
-              <span className="flex text-foreground">{icon}</span>
+              <span className="text-foreground flex">{icon}</span>
               <Text>{label}</Text>
             </Box>
             <Flex align="center" gap={3}>
               {shortCut ? (
-                <Flex className="text-sm text-text-muted">
-                  {shortCut}
-                </Flex>
+                <Flex className="text-text-muted text-sm">{shortCut}</Flex>
               ) : null}
               <ArrowRightIcon
-                className="h-3.5 w-auto text-text-muted"
+                className="text-text-muted h-3.5 w-auto"
                 strokeWidth={2.8}
               />
             </Flex>
@@ -61,9 +59,7 @@ export const ContextMenuItem = ({
                     onSelect={subOnSelect}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center gap-1">
-                      <span className="flex text-gray dark:text-gray-200">
-                        {subIcon}
-                      </span>
+                      <span className="text-text-muted flex">{subIcon}</span>
                       <Text className="max-w-40 truncate text-[0.95rem]">
                         {subLabel}
                       </Text>
@@ -84,10 +80,12 @@ export const ContextMenuItem = ({
           onSelect={onSelect}
         >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
-            <span className="flex text-gray dark:text-gray-200">{icon}</span>
+            <span className="text-text-muted flex">{icon}</span>
             <Text className="max-w-40 truncate">{label}</Text>
           </Box>
-          {shortCut ? <Flex className="text-text-muted">{shortCut}</Flex> : null}
+          {shortCut ? (
+            <Flex className="text-text-muted">{shortCut}</Flex>
+          ) : null}
         </ContextMenu.Item>
       )}
     </>

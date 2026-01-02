@@ -278,7 +278,7 @@ export const WorkflowSettings = () => {
         }
         feature="customWorkflows"
       >
-        <Box className="mb-6 rounded-2xl border border-gray-100 bg-white pb-6 dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="mb-6 rounded-2xl border border-border bg-surface">
           <SectionHeader
             className="mb-4"
             description={`Configure custom workflow states to track the progress of ${getTermDisplay(

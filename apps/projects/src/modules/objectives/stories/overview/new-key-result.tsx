@@ -248,7 +248,7 @@ export const NewKeyResultButton = ({
                 ) : (
                   <>
                     <Input
-                      className="h-[2.7rem] bg-gray-50/30"
+                      className="h-[2.7rem] bg-surface-muted/30"
                       label={isMobile ? "Starting" : "Starting Value"}
                       max={
                         form.measurementType === "percentage" ? 100 : undefined

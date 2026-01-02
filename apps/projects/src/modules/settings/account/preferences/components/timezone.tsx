@@ -106,7 +106,7 @@ export const Timezone = () => {
   };
 
   return (
-    <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="mt-6 rounded-2xl border border-border bg-surface">
       <SectionHeader
         description="Set your local timezone for accurate time displays."
         title="Timezone"

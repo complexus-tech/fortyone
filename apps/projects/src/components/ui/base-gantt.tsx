@@ -589,7 +589,7 @@ const TimelineHeader = ({
               <Flex>
                 {getWeekSpans(periods).map(({ week, month, span }, index) => (
                   <Box
-                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
                     key={`${month}-${week}-${index}`}
                     style={{ width: `${(span / periods.length) * 100}%` }}
                   >
@@ -625,7 +625,7 @@ const TimelineHeader = ({
                 return (
                   <Box
                     className={cn(
-                      "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100",
+                      "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center",
                       {
                         "bg-surface-muted":
                           isWeekend(day) && !isToday,
@@ -665,7 +665,7 @@ const TimelineHeader = ({
               <Flex>
                 {periods.map((month) => (
                   <Box
-                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
                     key={month.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -697,7 +697,7 @@ const TimelineHeader = ({
             <Flex>
               {periods.map((month) => (
                 <Box
-                  className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                  className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center"
                   key={month.getTime()}
                   style={{ minWidth: `${columnWidth}px` }}
                 >
@@ -721,7 +721,7 @@ const TimelineHeader = ({
               <Flex>
                 {periods.map((quarter) => (
                   <Box
-                    className="border-r-[0.5px] border-gray-100 px-2 py-1.5 text-left dark:border-dark-100"
+                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -757,7 +757,7 @@ const TimelineHeader = ({
 
                 return (
                   <Box
-                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-gray-100 px-1 py-1 text-center dark:border-dark-100"
+                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >

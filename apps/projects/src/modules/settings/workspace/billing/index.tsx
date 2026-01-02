@@ -65,7 +65,7 @@ export const Billing = () => {
           <Text color="muted">
             For questions about billing,{" "}
             <a
-              className="text-dark dark:text-white"
+              className="text-foreground"
               href="mailto:info@complexus.app"
             >
               contact us.
@@ -136,7 +136,7 @@ export const Billing = () => {
         <Text color="muted">
           For questions about billing,{" "}
           <a
-            className="text-dark dark:text-white"
+            className="text-foreground"
             href="mailto:info@complexus.app"
           >
             contact us.
@@ -155,7 +155,7 @@ export const Billing = () => {
         </Button>
       </Flex>
 
-      <Box className="mb-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="mb-6 rounded-2xl border border-border bg-surface">
         <SectionHeader
           action={
             <Button
@@ -222,7 +222,7 @@ export const Billing = () => {
       </Box>
 
       {/* Recent Invoices Card */}
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="rounded-2xl border border-border bg-surface">
         <SectionHeader
           description="Your recent billing history and invoices."
           title="Recent Invoices"

@@ -304,7 +304,7 @@ export const UpdateKeyResultDialog = ({
             {updateMode === "progress" && (
               <Box className="mt-3">
                 <TextArea
-                  className="resize-none rounded-2xl border py-4 text-base leading-normal dark:border-dark-50/80 dark:bg-transparent"
+                  className="resize-none rounded-2xl border py-4 text-base leading-normal border-border/80 bg-transparent"
                   label="Comment"
                   onChange={(e) => {
                     setForm({ ...form, comment: e.target.value });
