@@ -80,7 +80,7 @@ const RenderMessage = ({
           return (
             <Streamdown
               className={cn("chat-tables", {
-                "text-white": message.role === "user",
+                "text-foreground-inverse": message.role === "user",
               })}
               controls={{
                 table: true, // Show table download button
@@ -134,7 +134,7 @@ const RenderMessage = ({
                   <Box className="mb-3" key={index}>
                     <Text
                       as="h3"
-                      className="mb-1 mt-4 text-xl font-semibold antialiased"
+                      className="mt-4 mb-1 text-xl font-semibold antialiased"
                     >
                       Burndown graph
                     </Text>
@@ -240,7 +240,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "rounded-tr-md bg-background": message.role === "user",
+              "bg-background-inverse rounded-tr-md": message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}
           >
