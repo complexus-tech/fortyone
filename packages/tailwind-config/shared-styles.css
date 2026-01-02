@@ -196,7 +196,7 @@
   --color-state-selected: oklch(0.922 0 0 / 0.12);
   --color-state-disabled: oklch(1 0 0 / 0.5);
 
-  --color-sidebar: oklch(0.16 0 0);
+  --color-sidebar: oklch(0.17 0 0);
   --color-sidebar-foreground: oklch(0.922 0 0);
   --color-sidebar-accent: oklch(0.19 0 0);
   --color-sidebar-accent-foreground: oklch(0.922 0 0);
