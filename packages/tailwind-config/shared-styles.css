@@ -8,6 +8,12 @@
   --color-surface: var(--color-surface);
   --color-surface-foreground: var(--color-surface-foreground);
 
+  --color-surface-muted: var(--color-surface-muted);
+  --color-surface-muted-foreground: var(--color-surface-muted-foreground);
+
+  --color-surface-elevated: var(--color-surface-elevated);
+  --color-surface-elevated-foreground: var(--color-surface-elevated-foreground);
+
   --color-popover: var(--color-popover);
   --color-popover-foreground: var(--color-popover-foreground);
 
@@ -18,8 +24,11 @@
   --color-accent-foreground: var(--color-accent-foreground);
 
   --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-separator: var(--color-separator);
   --color-input: var(--color-input);
   --color-ring: var(--color-ring);
+  --color-focus: var(--color-focus);
 
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
@@ -38,6 +47,23 @@
 
   --color-info: var(--color-info);
   --color-info-foreground: var(--color-info-foreground);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-disabled: var(--color-text-disabled);
+  --color-text-inverse: var(--color-text-inverse);
+
+  --color-state-hover: var(--color-state-hover);
+  --color-state-active: var(--color-state-active);
+  --color-state-selected: var(--color-state-selected);
+  --color-state-disabled: var(--color-state-disabled);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 
   --color-sidebar: var(--color-sidebar);
   --color-sidebar-foreground: var(--color-sidebar-foreground);
@@ -76,6 +102,12 @@
   --color-surface: oklch(1 0 0);
   --color-surface-foreground: oklch(0.145 0 0);
 
+  --color-surface-muted: oklch(0.975 0 0);
+  --color-surface-muted-foreground: oklch(0.45 0 0);
+
+  --color-surface-elevated: oklch(1 0 0);
+  --color-surface-elevated-foreground: oklch(0.145 0 0);
+
   --color-popover: oklch(1 0 0);
   --color-popover-foreground: oklch(0.145 0 0);
 
@@ -86,8 +118,11 @@
   --color-accent-foreground: oklch(0.145 0 0);
 
   --color-border: oklch(0.922 0 0);
+  --color-border-strong: oklch(0.85 0 0);
+  --color-separator: oklch(0.922 0 0);
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.628 0.258 12.25);
+  --color-focus: oklch(0.628 0.258 12.25);
 
   --color-primary: oklch(0.628 0.258 12.25);
   --color-primary-foreground: oklch(1 0 0);
@@ -106,6 +141,23 @@
 
   --color-info: oklch(0.715 0.143 195);
   --color-info-foreground: oklch(1 0 0);
+
+  --color-text-primary: oklch(0.145 0 0);
+  --color-text-secondary: oklch(0.35 0 0);
+  --color-text-muted: oklch(0.45 0 0);
+  --color-text-disabled: oklch(0.6 0 0);
+  --color-text-inverse: oklch(1 0 0);
+
+  --color-state-hover: oklch(0 0 0 / 0.04);
+  --color-state-active: oklch(0 0 0 / 0.08);
+  --color-state-selected: oklch(0.145 0 0 / 0.12);
+  --color-state-disabled: oklch(0 0 0 / 0.5);
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 
   --color-sidebar: oklch(0.972 0.017 91);
   --color-sidebar-foreground: oklch(0.145 0 0);
@@ -142,6 +194,12 @@
   --color-surface: oklch(0.16 0 0);
   --color-surface-foreground: oklch(0.922 0 0);
 
+  --color-surface-muted: oklch(0.21 0 0);
+  --color-surface-muted-foreground: oklch(0.682 0 0);
+
+  --color-surface-elevated: oklch(0.18 0 0);
+  --color-surface-elevated-foreground: oklch(0.922 0 0);
+
   --color-popover: oklch(0.18 0 0);
   --color-popover-foreground: oklch(0.922 0 0);
 
@@ -152,9 +210,22 @@
   --color-accent-foreground: oklch(0.922 0 0);
 
   --color-border: oklch(0.245 0 0);
+  --color-border-strong: oklch(0.35 0 0);
+  --color-separator: oklch(0.245 0 0);
   --color-input: oklch(0.245 0 0);
 
   --color-primary-foreground: oklch(0.145 0 0);
+
+  --color-text-primary: oklch(0.922 0 0);
+  --color-text-secondary: oklch(0.75 0 0);
+  --color-text-muted: oklch(0.682 0 0);
+  --color-text-disabled: oklch(0.5 0 0);
+  --color-text-inverse: oklch(0.145 0 0);
+
+  --color-state-hover: oklch(1 0 0 / 0.04);
+  --color-state-active: oklch(1 0 0 / 0.08);
+  --color-state-selected: oklch(0.922 0 0 / 0.12);
+  --color-state-disabled: oklch(1 0 0 / 0.5);
 
   --color-sidebar: oklch(0.16 0 0);
   --color-sidebar-foreground: oklch(0.922 0 0);
