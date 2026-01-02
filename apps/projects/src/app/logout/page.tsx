@@ -46,7 +46,7 @@ export default function Page() {
     >
       <Flex align="center" direction="column" justify="center">
         <Box className="aspect-square w-max animate-pulse rounded-full bg-primary p-4">
-          <Logo className="h-8 text-white" asIcon />
+          <Logo className="h-8 text-foreground" asIcon />
         </Box>
         <Text className="mt-4" color="muted" fontWeight="medium">
           Logging out...

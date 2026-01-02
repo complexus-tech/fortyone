@@ -49,7 +49,7 @@ export const KeyResultsProgress = () => {
               </Text>
             </Flex>
             <Box className="mb-1">
-              <Box className="relative h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-100">
+              <Box className="relative h-3 overflow-hidden rounded-full bg-surface-muted">
                 <Box
                   className={`h-full rounded-full transition-all duration-300 ${getProgressColor(item.avgProgress)}`}
                   style={{
@@ -71,7 +71,7 @@ export const KeyResultsProgress = () => {
       </Box>
 
       {progressData.length === 0 && (
-        <Box className="text-gray-400 flex h-[180px] items-center justify-center">
+        <Box className="text-text-muted flex h-[180px] items-center justify-center">
           <Text>No key results data available</Text>
         </Box>
       )}

@@ -283,7 +283,7 @@ export const Options = ({
           storyId={storyId}
         />
       </Box>
-      <Container className="px-0.5 pt-4 text-gray-300/90 md:px-6">
+      <Container className="px-0.5 pt-4 text-text-muted md:px-6">
         <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
           {!isNotifications && (
             <Text className="hidden md:block" fontWeight="semibold">
@@ -292,7 +292,7 @@ export const Options = ({
           )}
           {isDeleted ? (
             <Badge
-              className="text-dark border-opacity-30 px-2 dark:bg-opacity-30 dark:text-white"
+              className="text-foreground border-opacity-30 px-2 bg-opacity-30"
               color="tertiary"
               size="lg"
             >
@@ -367,14 +367,14 @@ export const Options = ({
                 <AssigneesMenu.Trigger>
                   <Button
                     className={cn("font-medium", {
-                      "text-gray-200 dark:text-gray-300": !assigneeId,
+                      "text-text-muted": !assigneeId,
                     })}
                     color="tertiary"
                     disabled={isDeleted || isGuest}
                     leftIcon={
                       <Avatar
                         className={cn({
-                          "text-dark/80 dark:text-gray-200":
+                          "text-foreground/80":
                             !assignee?.fullName,
                         })}
                         name={assignee?.fullName}
@@ -416,7 +416,7 @@ export const Options = ({
                     leftIcon={
                       <CalendarIcon
                         className={cn("h-[1.15rem] w-auto", {
-                          "text-gray/80 dark:text-gray-300/80": !startDate,
+                          "text-text-muted": !startDate,
                         })}
                       />
                     }
@@ -475,7 +475,7 @@ export const Options = ({
                             endDate &&
                             new Date(endDate) <= addDays(new Date(), 7) &&
                             new Date(endDate) >= new Date(),
-                          "text-gray/80 dark:text-gray-300/80": !endDate,
+                          "text-text-muted": !endDate,
                         })}
                         color="tertiary"
                         disabled={isDeleted || isGuest}

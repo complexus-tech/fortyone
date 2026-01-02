@@ -13,7 +13,7 @@ export const StatusSkeleton = () => {
         {/* Donut chart skeleton */}
         <Box className="relative h-[160px] w-full">
           <Skeleton className="absolute left-1/2 top-1/2 size-[160px] -translate-x-1/2 -translate-y-1/2 transform rounded-full" />
-          <Skeleton className="absolute left-1/2 top-1/2 size-[100px] -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-white dark:bg-dark-200" />
+          <Skeleton className="absolute left-1/2 top-1/2 size-[100px] -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-background" />
           {/* Center text skeleton */}
           <Flex className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
             <Skeleton className="h-8 w-10 rounded" />

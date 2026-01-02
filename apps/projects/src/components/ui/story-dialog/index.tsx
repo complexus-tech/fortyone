@@ -109,7 +109,7 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="dark:bg-dark-300 max-w-[88rem] overflow-clip rounded-[1.25rem] border bg-white md:mt-auto md:mb-auto"
+        className="max-w-[88rem] overflow-clip rounded-[1.25rem] border border-border bg-background md:mt-auto md:mb-auto"
         hideClose
         overlayClassName="bg-black/10"
       >
@@ -122,13 +122,13 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="dark:bg-dark-300/80 sticky top-0 z-2 bg-white/80 px-6 py-4 backdrop-blur"
+                className="sticky top-0 z-2 bg-surface-elevated/80 px-6 py-4 backdrop-blur"
                 gap={2}
                 justify="between"
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-dark/80 dark:border-dark-100 dark:bg-dark-100/30 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
+                    className="text-foreground/80 border-border bg-surface-muted/30 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {

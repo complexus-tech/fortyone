@@ -269,7 +269,7 @@ export const WorkflowSettings = () => {
       }
       feature="customWorkflows"
     >
-      <Box className="dark:border-dark-100 dark:bg-dark-100/40 mb-6 rounded-2xl border border-gray-100 bg-white pb-6">
+      <Box className="mb-6 rounded-2xl border border-border bg-surface-elevated pb-6">
         <SectionHeader
           className="mb-4"
           description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."

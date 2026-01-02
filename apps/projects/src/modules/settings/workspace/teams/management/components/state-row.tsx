@@ -104,7 +104,7 @@ export const StateRow = ({
   return (
     <form
       className={cn(
-        "dark:bg-dark-100/70 flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-gray-50 px-3",
+        "flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-surface-muted px-3",
         {
           "opacity-80 backdrop-blur": isDragging,
           "shadow-lg": isDragging,
@@ -133,7 +133,7 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="dark:bg-dark-50/40 rounded-[0.4rem] bg-gray-100/60 p-2">
+          <Box className="rounded-[0.4rem] bg-surface/40 p-2">
             <StoryStatusIcon statusId={state.id} />
           </Box>
         )}
@@ -141,9 +141,9 @@ export const StateRow = ({
         <Box>
           <input
             className={cn(
-              "placeholder:text-gray bg-transparent font-medium focus:outline-none dark:placeholder:text-gray-300",
+              "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
               {
-                "dark:bg-dark/10 my-0.5 rounded-[0.6rem] border border-gray-100 bg-white/50 px-3 py-1 dark:border-gray-300/20":
+                "my-0.5 rounded-[0.6rem] border border-border bg-surface/50 px-3 py-1":
                   isEditing,
               },
             )}

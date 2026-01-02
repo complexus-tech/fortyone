@@ -49,7 +49,7 @@ const CustomTooltip = ({
   const data = payload[0].payload;
 
   return (
-    <Box className="z-50 min-w-32 rounded-[0.6rem] border border-gray-100 bg-white/80 px-3 py-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:text-gray-200">
+    <Box className="z-50 min-w-32 rounded-[0.6rem] border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         <Text>Active sprints: {data.activeSprints}</Text>

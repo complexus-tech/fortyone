@@ -98,7 +98,7 @@ export const StateRow = ({
 
   return (
     <form
-      className="flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-gray-50 px-3 dark:bg-dark-100/70"
+      className="flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-surface-muted px-3"
       onSubmit={handleSubmit}
       ref={setNodeRef}
       style={style}
@@ -122,14 +122,14 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="rounded-[0.4rem] bg-gray-100/60 p-2 dark:bg-dark-50/40">
+          <Box className="rounded-[0.4rem] bg-surface/40 p-2">
             <ObjectiveStatusIcon statusId={status.id} />
           </Box>
         )}
 
         <Box>
           <input
-            className="w-max bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
+            className="w-max bg-transparent font-medium placeholder:text-foreground focus:outline-none"
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}

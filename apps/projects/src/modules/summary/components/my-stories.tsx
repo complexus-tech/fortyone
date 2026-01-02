@@ -114,7 +114,7 @@ const StoryRow = ({
 
 const List = ({ stories }: { stories: Story[] }) => {
   return (
-    <Box className="mt-2.5 border-t border-gray-50 dark:border-dark-200">
+    <Box className="mt-2.5 border-t border-border">
       {stories.slice(0, 9).map((story) => (
         <StoryRow key={story.id} {...story} />
       ))}

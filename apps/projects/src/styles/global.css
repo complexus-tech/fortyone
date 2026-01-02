@@ -16,13 +16,13 @@
 
 body,
 html {
-  @apply font-main text-dark h-dvh w-screen overflow-hidden overscroll-contain bg-white text-[13.5px] font-medium antialiased 2xl:text-[14px] dark:bg-black dark:text-gray-200;
+  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13.5px] font-medium antialiased 2xl:text-[14px];
 }
 
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
     body {
-      @apply dark:border-dark-100 border-t-[0.5px] border-gray-100;
+      @apply border-border border-t-[0.5px];
     }
   }
 }
@@ -73,11 +73,11 @@ svg {
 }
 
 *::-webkit-scrollbar-track {
-  @apply bg-white dark:bg-[#666666b3];
+  @apply bg-background;
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply rounded-[3px] bg-[#666666b3] dark:bg-white;
+  @apply bg-border-strong rounded-[3px];
 }
 
 * {
@@ -133,7 +133,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 .tiptap .is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
-  @apply pointer-events-none float-left h-0 text-gray-300/80 dark:text-gray-200/60;
+  @apply text-text-muted pointer-events-none float-left h-0;
 }
 
 .tiptap input[type="checkbox"] {
@@ -146,24 +146,24 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 .tiptap table td,
 th {
-  @apply dark:border-dark-50 border border-gray-100;
+  @apply border-border border;
 }
 .tiptap table p {
   @apply m-0;
 }
 .tiptap table th {
-  @apply dark:bg-dark-100 bg-gray-50/80 font-semibold text-black dark:text-gray-50;
+  @apply bg-surface-muted text-foreground font-semibold;
 }
 .tiptap table td,
 th {
   @apply relative px-2 py-2.5 text-left;
 }
 .tiptap table tr {
-  @apply dark:odd:bg-dark-300/80 dark:hover:bg-dark-300 transition odd:bg-gray-50/80 hover:bg-gray-50/60;
+  @apply odd:bg-surface-muted/80 hover:bg-state-hover transition;
 }
 
 .tiptap table .column-resize-handle {
-  @apply z-5 dark:bg-dark-50 pointer-events-none absolute -bottom-px -right-[2px] top-0 w-1 bg-gray-200;
+  @apply bg-border-strong pointer-events-none absolute top-0 -right-[2px] -bottom-px z-5 w-1;
 }
 
 .resize-cursor {
@@ -173,31 +173,31 @@ th {
 
 /*** Works on common browsers ***/
 ::selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /*** Mozilla based browsers ***/
 ::-moz-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /***For Other Browsers ***/
 ::-o-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 ::-ms-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /*** For Webkit ***/
 ::-webkit-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /* this is for sonner */
 [data-close-button] {
-  @apply dark:hover:border-dark-50! hover:dark:bg-dark-100!;
+  @apply hover:border-border hover:bg-state-hover!;
 }
 
 /* CSS color for nprogress */
@@ -217,7 +217,7 @@ th {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed left-0 top-0 h-[3px] w-full;
+  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
   z-index: 19031 !important;
 }
 
@@ -236,15 +236,15 @@ th {
 }
 
 .chat-tables th {
-  @apply dark:border-dark-50 dark:bg-dark-200 border border-gray-100 bg-gray-50 p-3 text-left font-medium;
+  @apply border-border bg-surface-muted border p-3 text-left font-medium;
 }
 
 .chat-tables td {
-  @apply dark:border-dark-50 border border-gray-100 px-3 py-2;
+  @apply border-border border px-3 py-2;
 }
 
 .chat-tables tr:hover {
-  @apply dark:bg-dark-200/50 bg-gray-50;
+  @apply bg-state-hover;
 }
 
 .chat-tables ul[data-type="taskList"] {

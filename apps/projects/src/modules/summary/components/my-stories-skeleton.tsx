@@ -38,7 +38,7 @@ export const MyStoriesSkeleton = () => {
           <Tabs.Tab value="due">Overdue</Tabs.Tab>
         </Tabs.List>
 
-        <Box className="mt-2.5 border-t border-gray-50 dark:border-dark-200">
+        <Box className="mt-2.5 border-t border-border">
           {Array.from({ length: 9 }).map((_, index) => (
             <StoryRowSkeleton key={index} />
           ))}
