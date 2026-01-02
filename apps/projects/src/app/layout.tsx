@@ -37,10 +37,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   minimumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
+  // themeColor: [
+  //   { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  //   { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  // ],
 };
 
 export default async function RootLayout({
