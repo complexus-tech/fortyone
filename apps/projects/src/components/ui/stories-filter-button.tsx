@@ -80,7 +80,7 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-gray-50 hover:dark:bg-dark-50/40",
+        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-state-hover",
       )}
       onClick={onClick}
       type="button"
@@ -403,7 +403,7 @@ export const StoriesFilterButton = ({
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 dark:bg-dark-200/90 md:w-140"
+        className="mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 bg-surface-elevated/90 md:w-140"
       >
         <Flex align="center" className="h-11 px-4" justify="between">
           <Text

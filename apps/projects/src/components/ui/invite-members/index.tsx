@@ -243,7 +243,7 @@ export const InviteMembersDialog = ({
               Email addresses*
             </Text>
             <TextArea
-              className="resize-none border py-4 leading-normal dark:border-dark-50/80 dark:bg-transparent"
+              className="resize-none border border-border py-4 leading-normal bg-transparent"
               onChange={(e) => {
                 handleEmailsChange(e.target.value);
               }}

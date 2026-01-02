@@ -37,7 +37,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <PlusIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.8}
                 />
               }
@@ -53,7 +53,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <NewTabIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.6}
                 />
               }
@@ -120,7 +120,7 @@ export const ChatHeader = ({
                 color="tertiary"
                 leftIcon={
                   <HistoryIcon
-                    className="text-dark dark:text-gray-200"
+                    className="text-foreground"
                     strokeWidth={2.8}
                   />
                 }
@@ -140,7 +140,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <CloseIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.8}
                 />
               }

@@ -357,7 +357,7 @@ export const NewStoryDialog = ({
                 unlimited {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
                 and unlock premium features.
               </Text>
-              <Wrapper className="dark:bg-dark-300/60">
+              <Wrapper className="bg-surface-elevated/60">
                 <Flex align="center" gap={3} justify="between">
                   <Text color="muted">Current plan:</Text>
                   <Text transform="capitalize">
@@ -458,7 +458,7 @@ export const NewStoryDialog = ({
             <Flex gap={2}>
               <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
                 <Button
-                  className="px-[0.35rem] dark:hover:bg-dark-100"
+                  className="px-[0.35rem] hover:bg-state-hover"
                   color="tertiary"
                   onClick={() => {
                     setIsExpanded((prev) => !prev);
@@ -751,7 +751,7 @@ export const NewStoryDialog = ({
               </label>
             </Text>
             <Button
-              leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+              leftIcon={<PlusIcon className="text-white" />}
               loading={loading}
               loadingText={`Creating ${getTermDisplay("storyTerm")}...`}
               onClick={handleCreateStory}

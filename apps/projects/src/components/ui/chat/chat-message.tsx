@@ -80,7 +80,7 @@ const RenderMessage = ({
           return (
             <Streamdown
               className={cn("chat-tables", {
-                "text-white dark:text-dark": message.role === "user",
+                "text-white": message.role === "user",
               })}
               controls={{
                 table: true, // Show table download button
@@ -240,7 +240,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "rounded-tr-md bg-dark dark:bg-white": message.role === "user",
+              "rounded-tr-md bg-background": message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}
           >

@@ -896,7 +896,7 @@ const Chart = <T extends GanttItem>({
       <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
       {items.map((item, idx) => (
         <Box
-          className="relative h-14 border-gray-100 hover:border-y-[0.5px] hover:bg-gray-50/50 dark:border-dark-100 dark:hover:bg-dark-200/30"
+          className="relative h-14 border-border hover:border-y-[0.5px] hover:bg-state-hover"
           key={item.id}
         >
           <Flex className="absolute inset-0">

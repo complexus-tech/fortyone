@@ -56,7 +56,7 @@ export const KeyResultEditor = ({
 
   return (
     <form
-      className="mb-6 space-y-4 rounded-2xl border border-gray-100/80 px-5 py-4 dark:border-dark-100"
+      className="mb-6 space-y-4 rounded-2xl border border-border px-5 py-4"
       onSubmit={handleSave}
     >
       <Input
@@ -115,7 +115,7 @@ export const KeyResultEditor = ({
               });
             }}
           >
-            <Select.Trigger className="h-[2.7rem] bg-white/70 text-base dark:bg-dark/20">
+            <Select.Trigger className="h-[2.7rem] bg-surface-elevated/70 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content defaultValue="number">
@@ -134,7 +134,7 @@ export const KeyResultEditor = ({
           <Box>
             <Text className="mb-1.5 font-medium">Current status</Text>
             <Flex
-              className="rounded-[0.6rem] border p-1 dark:border-dark-50/80 dark:bg-dark-100/50"
+              className="rounded-[0.6rem] border border-border p-1 bg-surface-muted"
               gap={1}
             >
               <Button

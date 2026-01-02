@@ -422,7 +422,7 @@ export const StoriesToolbar = () => {
               </Button>
               <Button
                 leftIcon={
-                  <DeleteIcon className="text-white dark:text-gray-200" />
+                  <DeleteIcon className="text-white" />
                 }
                 loading={isPending}
                 loadingText="Deleting..."

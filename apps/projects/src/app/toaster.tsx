@@ -21,9 +21,9 @@ export const Toaster = (_: ToasterProps) => {
           "w-full! rounded-2xl! p-4! flex! items-center! gap-3! shadow-lg!",
         classNames: {
           toast:
-            "bg-white/80! dark:bg-dark-100/80! backdrop-blur border! border-gray-100/60! dark:border-dark-50!",
-          closeButton: "bg-white/90! dark:bg-dark-100/90! dark:border-dark-50!",
-          description: "text-gray! dark:text-gray-300!",
+            "bg-surface-elevated/80! backdrop-blur border! border-border/60!",
+          closeButton: "bg-surface-elevated/90! border-border!",
+          description: "text-text-muted!",
         },
       }}
     />
