@@ -69,17 +69,17 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
 
     if (props.items.length === 0) {
       return (
-        <Box className="w-56 rounded-xl border border-border bg-surface-elevated">
+        <Box className="border-border bg-surface-elevated w-56 rounded-xl border p-2">
           <Text color="muted">No users found</Text>
         </Box>
       );
     }
 
     return (
-      <Box className="pointer-events-auto z-50 w-max min-w-64 space-y-1 rounded-[0.6rem] border border-border bg-surface-elevated dark:shadow-dark/20">
+      <Box className="border-border bg-surface-elevated dark:shadow-dark/20 pointer-events-auto z-50 w-max min-w-64 space-y-1 rounded-xl border p-2">
         {props.items.map((item, index) => (
           <button
-            className="flex w-full cursor-pointer select-none items-center gap-2 rounded-[0.6rem] px-2 py-1 outline-none hover:bg-state-hover focus:bg-state-active"
+            className="hover:bg-state-hover focus:bg-state-active flex w-full cursor-pointer items-center gap-2 rounded-[0.6rem] px-2 py-1 outline-none select-none"
             key={item.id}
             onClick={() => {
               selectItem(index);
