@@ -75,7 +75,7 @@ export const WorkspacesMenu = () => {
             />
           }
           rightIcon={
-            <ArrowDown2Icon className="relative top-[0.5px] h-4 w-auto text-text-muted" />
+            <ArrowDown2Icon className="text-text-muted relative top-[0.5px] h-4 w-auto" />
           }
           size="sm"
           suppressHydrationWarning
@@ -107,7 +107,7 @@ export const WorkspacesMenu = () => {
                 {workspace?.name}
               </span>
               <Badge
-                className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
+                className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
                 color="tertiary"
               >
                 {userRole}
@@ -153,7 +153,7 @@ export const WorkspacesMenu = () => {
                             {name}
                           </span>
                           <Badge
-                            className="h-6 bg-white px-1.5 text-[75%] font-medium uppercase tracking-wide"
+                            className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
                             color="tertiary"
                           >
                             {userRole}
@@ -208,7 +208,7 @@ export const WorkspacesMenu = () => {
         <Menu.Separator className="my-2" />
         <Menu.Group>
           <Menu.Item className="text-danger" onSelect={handleLogout}>
-            <LogoutIcon className="h-5 w-auto text-danger" />
+            <LogoutIcon className="text-danger h-5 w-auto" />
             Log out
           </Menu.Item>
         </Menu.Group>

@@ -14,7 +14,7 @@ const badge = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded-[0.4rem]",
-        md: "rounded-[0.65rem]",
+        md: "rounded-[0.55rem]",
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",
@@ -25,7 +25,7 @@ const badge = cva(
         danger: "text-white bg-danger border-danger",
         info: "text-white bg-info border-info",
         warning: "text-white bg-warning border-warning",
-        tertiary: "text-text-primary bg-surface-muted border-border",
+        tertiary: "text-text-primary bg-surface border-border",
         secondary: "text-white bg-secondary border-secondary",
         invert:
           "text-white bg-black border-black dark:bg-white dark:border-white dark:text-black",
@@ -38,11 +38,6 @@ const badge = cva(
       },
     },
     compoundVariants: [
-      {
-        variant: "outline",
-        color: "tertiary",
-        className: "bg-surface text-foreground",
-      },
       {
         variant: "outline",
         color: "primary",
