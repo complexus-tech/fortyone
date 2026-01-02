@@ -7,7 +7,7 @@ import { Container } from "./container";
 const FeatureCheck = ({ available }: { available: boolean }) => (
   <Box className="flex">
     {available ? (
-      <SuccessIcon className="text-dark dark:text-white" />
+      <SuccessIcon className="text-foreground" />
     ) : (
       <CloseIcon className="h-[1.15rem]" strokeWidth={2} />
     )}
@@ -36,12 +36,12 @@ export const ComparePlans = () => {
     <Container className="max-w-332 md:py-36">
       <Box className="hidden overflow-x-auto md:block">
         <Box>
-          <Flex className="border-b border-gray-100 dark:border-dark-100">
+          <Flex className="border-b border-border">
             <Box className="w-1/3 p-6" />
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/6 px-4 py-5", {
-                  "rounded-t-2xl border border-b-0 border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                  "rounded-t-2xl border border-b-0 border-border bg-gray-50 d dark:bg-dark-300":
                     plan.highlighted,
                 })}
                 key={plan.name}
@@ -53,21 +53,21 @@ export const ComparePlans = () => {
 
           {/* Limits section */}
           <Box>
-            <Flex className="border-b border-gray-100 dark:border-dark-100">
+            <Flex className="border-b border-border">
               <Box className="w-1/3 px-4 py-3">
                 <Text fontWeight="semibold">Limits</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    "border-x border-border bg-surface-muted":
                       plan.name === "Business",
                   })}
                   key={plan.name}
                 />
               ))}
             </Flex>
-            <Flex className="border-b border-gray-100 dark:border-dark-100">
+            <Flex className="border-b border-border">
               <Box className="w-1/3 px-4 py-3">
                 <Text>Members</Text>
               </Box>
@@ -76,7 +76,7 @@ export const ComparePlans = () => {
                   className={cn(
                     "w-1/6 px-4 py-3",
                     plan.highlighted &&
-                      "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300",
+                      "border-x border-border bg-surface-muted",
                   )}
                   key={`${plan.name}-members`}
                 >
@@ -85,14 +85,14 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-gray-100 dark:border-dark-100">
+            <Flex className="border-b border-border">
               <Box className="w-1/3 px-4 py-3">
                 <Text>File uploads</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    "border-x border-border bg-surface-muted":
                       plan.highlighted,
                   })}
                   key={`${plan.name}-files`}
@@ -102,14 +102,14 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-gray-100 dark:border-dark-100">
+            <Flex className="border-b border-border">
               <Box className="w-1/3 px-4 py-3">
                 <Text>Stories</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    "border-x border-border bg-surface-muted":
                       plan.highlighted,
                   })}
                   key={`${plan.name}stories`}
@@ -122,14 +122,14 @@ export const ComparePlans = () => {
 
           {/* Features section */}
           <Box>
-            <Flex className="border-b border-gray-100 dark:border-dark-100">
+            <Flex className="border-b border-border">
               <Box className="w-1/3 px-4 pb-3 pt-8">
                 <Text fontWeight="semibold">Features</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                    "border-x border-border bg-surface-muted":
                       plan.name === "Business",
                   })}
                   key={plan.name}
@@ -148,7 +148,7 @@ export const ComparePlans = () => {
                   <Flex
                     className={
                       !isLastItem
-                        ? "border-b border-gray-100 dark:border-dark-100"
+                        ? "border-b border-border"
                         : ""
                     }
                     key={featureKey}
@@ -163,7 +163,7 @@ export const ComparePlans = () => {
                       return (
                         <Box
                           className={cn("w-1/6 px-4 py-3", {
-                            "border-x border-gray-100 bg-gray-50 dark:border-dark-100 dark:bg-dark-300":
+                            "border-x border-border bg-surface-muted":
                               isHighlighted,
                           })}
                           key={`${plan.name}-${featureKey}`}
@@ -177,7 +177,7 @@ export const ComparePlans = () => {
               },
             )}
           </Box>
-          <Flex className="border-t border-gray-100 dark:border-dark-100">
+          <Flex className="border-t border-border">
             <Box className="w-1/3" />
             <Box className="w-1/6 px-4 py-3">
               <Button
@@ -201,7 +201,7 @@ export const ComparePlans = () => {
                 Try Proffesional
               </Button>
             </Box>
-            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-gray-100 bg-gray-50 px-4 py-3 dark:border-dark-100 dark:bg-dark-300">
+            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-border bg-gray-50 px-4 py-3 d dark:bg-dark-300">
               <Button
                 align="center"
                 color="invert"

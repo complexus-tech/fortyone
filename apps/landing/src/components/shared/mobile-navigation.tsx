@@ -69,7 +69,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0 dark:bg-dark/90"
+          className="m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0 bg-surface/90"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >

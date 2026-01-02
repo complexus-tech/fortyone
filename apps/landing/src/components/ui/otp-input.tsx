@@ -90,7 +90,7 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
             disabled={disabled}
             className={cn(
               "size-12 rounded-[0.6rem] border text-center text-lg font-semibold transition-all duration-200",
-              "border-gray-100 bg-white/70 dark:border-dark-100 dark:bg-dark/20",
+              "border-border bg-surface/70",
               "focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 focus:ring-offset-1 dark:focus:ring-dark-50",
               "disabled:cursor-not-allowed disabled:opacity-50",
               {

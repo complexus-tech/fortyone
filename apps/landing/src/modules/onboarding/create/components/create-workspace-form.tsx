@@ -175,7 +175,7 @@ export const CreateWorkspaceForm = () => {
           }}
           value={form.teamSize}
         >
-          <Select.Trigger className="h-[2.7rem] w-full rounded-[0.6rem] border-gray-100 bg-white/70 text-base dark:border-dark-100 dark:bg-dark/20">
+          <Select.Trigger className="h-[2.7rem] w-full rounded-[0.6rem] border-border bg-surface/70">
             <Select.Input />
           </Select.Trigger>
           <Select.Content>

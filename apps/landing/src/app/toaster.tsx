@@ -21,8 +21,8 @@ export const Toaster = (_: ToasterProps) => {
           "w-full rounded-[0.6rem] p-4 flex items-center gap-3 shadow-lg",
         classNames: {
           toast:
-            "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-gray-100/60 dark:border-dark-50",
-          closeButton: "bg-white/90 dark:bg-dark-100/90 dark:border-dark-50",
+            "bg-white/90 dark:bg-dark-100/90 backdrop-blur border border-border/60 d",
+          closeButton: "bg-surface-elevated/90 border-border",
         },
       }}
     />

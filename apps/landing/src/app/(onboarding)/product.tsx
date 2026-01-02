@@ -35,25 +35,25 @@ export const ProductImage = () => {
           </Text>
           <Box className="3xl:gap-16 flex gap-8">
             <Link href="https://x.com/fortyoneapp" target="_blank">
-              <TwitterIcon className="text-dark dark:text-black dark:hover:text-white" />
+              <TwitterIcon className="text-foreground dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.linkedin.com/company/complexus-tech/"
               target="_blank"
             >
-              <LinkedinIcon className="text-dark dark:text-black dark:hover:text-white" />
+              <LinkedinIcon className="text-foreground dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.instagram.com/complexus_tech/"
               target="_blank"
             >
-              <InstagramIcon className="text-dark dark:text-black dark:hover:text-white" />
+              <InstagramIcon className="text-foreground dark:text-black dark:hover:text-white" />
             </Link>
             <Link
               href="https://www.facebook.com/complexus.tech"
               target="_blank"
             >
-              <FacebookIcon className="text-dark dark:text-black dark:hover:text-white" />
+              <FacebookIcon className="text-foreground dark:text-black dark:hover:text-white" />
             </Link>
           </Box>
           <Text className="mt-10 text-[0.95rem] dark:text-black">
@@ -65,14 +65,14 @@ export const ProductImage = () => {
                 : "continuing"}
             , you agree to our{" "}
             <Link
-              className="text-dark underline dark:text-black dark:hover:text-white"
+              className="text-foreground underline"
               href="/terms"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
-              className="text-dark underline dark:text-black dark:hover:text-white"
+              className="text-foreground underline"
               href="/privacy"
             >
               Privacy Policy

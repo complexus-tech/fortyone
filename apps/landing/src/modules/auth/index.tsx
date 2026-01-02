@@ -165,9 +165,9 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               Continue
             </Button>
             <Flex align="center" className="my-4 gap-4" justify="between">
-              <Box className="h-px w-full bg-gray-100 dark:bg-white/20" />
+              <Box className="h-px w-full bg-surface-muted" />
               <Text className="text-[0.95rem] opacity-40">OR</Text>
-              <Box className="h-px w-full bg-gray-100 dark:bg-white/20" />
+              <Box className="h-px w-full bg-surface-muted" />
             </Flex>
             <Button
               align="center"

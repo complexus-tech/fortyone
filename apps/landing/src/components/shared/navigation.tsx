@@ -26,7 +26,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-68 gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
+    className="flex w-68 gap-2 rounded-[0.7rem] p-2 hover:bg-state-hover"
     href={href}
     prefetch
   >
@@ -56,7 +56,7 @@ export const Navigation = () => {
       href: "/features/stories",
       description: "Turn ideas into clear, actionable work.",
       icon: (
-        <StoryIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <StoryIcon className="relative h-6 shrink-0 text-foreground md:top-1 md:h-4" />
       ),
     },
     {
@@ -65,7 +65,7 @@ export const Navigation = () => {
       href: "/features/objectives",
       description: "Focus teams on the outcomes that matter most.",
       icon: (
-        <ObjectiveIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <ObjectiveIcon className="relative h-6 shrink-0 text-foreground md:top-1 md:h-4" />
       ),
     },
     {
@@ -74,7 +74,7 @@ export const Navigation = () => {
       href: "/features/okrs",
       description: "Align everyone on shared goals and see progress.",
       icon: (
-        <OKRIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <OKRIcon className="relative h-6 shrink-0 text-foreground md:top-1 md:h-4" />
       ),
     },
     {
@@ -84,7 +84,7 @@ export const Navigation = () => {
       description:
         "Build momentum with short cycles that turn plans into progress.",
       icon: (
-        <SprintsIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <SprintsIcon className="relative h-6 shrink-0 text-foreground md:top-1 md:h-4" />
       ),
     },
   ];
@@ -112,7 +112,7 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 z-15 w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
+    <Box className="fixed left-0 z-15 w-screen border-b border-border/70 bg-white/20 backdrop-blur-xl d/80 dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <Flex align="center" className="hidden md:flex" gap={1}>
@@ -131,8 +131,8 @@ export const Navigation = () => {
                 >
                   Product
                 </NavigationMenu.Trigger>
-                <NavigationMenu.Content className="rounded-2xl border border-gray-100 bg-white p-1.5 dark:border-dark-50 dark:bg-black">
-                  <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark/20">
+                <NavigationMenu.Content className="rounded-2xl border border-border bg-white p-1.5 d dark:bg-black">
+                  <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-border p-2 d dark:bg-dark/20">
                     {features.map(({ id, name, description, icon, href }) => (
                       <MenuItem
                         description={description}

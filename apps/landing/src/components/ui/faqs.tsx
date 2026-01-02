@@ -62,7 +62,7 @@ const AccordionItem = ({
   const buttonId = `faq-trigger-${index}`;
   const panelId = `faq-panel-${index}`;
   return (
-    <Box className="border-b border-gray-100 last:border-b-0 dark:border-dark-200">
+    <Box className="border-b border-border last:border-b-0 d">
       <button
         aria-controls={panelId}
         aria-expanded={isOpen}
@@ -77,7 +77,7 @@ const AccordionItem = ({
 
         <ArrowRight2Icon
           className={cn(
-            "h-6 shrink-0 text-dark transition-transform duration-300 dark:text-gray-200",
+            "h-6 shrink-0 text-foreground transition-transform duration-300 dark:text-gray-200",
             {
               "rotate-90": isOpen,
             },

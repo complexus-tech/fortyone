@@ -71,14 +71,14 @@ export default async function BlogPost({
           >
             {post.metadata.title}
           </Text>
-          <Box className="mb-6 rounded-[0.9rem] border border-gray-100 p-1.5 dark:border-dark-50 dark:bg-dark-100/60 dark:p-2">
+          <Box className="mb-6 rounded-[0.9rem] border border-border p-1.5 d">
             <BlurImage
               alt={post.metadata.title}
               className="aspect-16/8 rounded-[0.6rem]"
               src={post.metadata.featuredImage}
             />
           </Box>
-          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200">
+          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-foreground prose-pre:bg-surface-muted prose-pre:text-foreground">
             <MDXRemote components={mdxComponents} source={post.content} />
           </Box>
         </Box>

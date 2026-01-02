@@ -39,7 +39,7 @@ const FooterLink = ({
 
 const Copyright = () => {
   return (
-    <Box className="flex flex-col justify-between gap-y-8 border-b border-gray-100 pb-4 dark:border-dark-100 md:flex-row md:items-center md:gap-y-0">
+    <Box className="flex flex-col justify-between gap-y-8 border-b border-border pb-4 d md:flex-row md:items-center md:gap-y-0">
       <Box className="3xl:gap-16 flex gap-8">
         <Link
           className="hover:text-primary"
@@ -47,7 +47,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Twitter</span>
-          <TwitterIcon className="text-dark dark:text-gray-200" />
+          <TwitterIcon className="text-foreground" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -55,7 +55,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">LinkedIn</span>
-          <LinkedinIcon className="text-dark dark:text-gray-200" />
+          <LinkedinIcon className="text-foreground" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -63,7 +63,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Instagram</span>
-          <InstagramIcon className="text-dark dark:text-gray-200" />
+          <InstagramIcon className="text-foreground" />
         </Link>
         <Link
           className="hover:text-primary"
@@ -71,7 +71,7 @@ const Copyright = () => {
           target="_blank"
         >
           <span className="sr-only">Facebook</span>
-          <FacebookIcon className="text-dark dark:text-gray-200" />
+          <FacebookIcon className="text-foreground" />
         </Link>
       </Box>
       <Box className="hidden items-center gap-5 opacity-70 md:flex">
@@ -205,7 +205,7 @@ export const Footer = () => {
               >
                 <SystemIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": theme === "system",
+                    "text-foreground": theme === "system",
                   })}
                 />
               </button>
@@ -219,7 +219,7 @@ export const Footer = () => {
               >
                 <SunIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": theme === "light",
+                    "text-foreground": theme === "light",
                   })}
                 />
               </button>
@@ -227,7 +227,7 @@ export const Footer = () => {
             <Tooltip title="Dark">
               <button
                 className={cn("", {
-                  "text-dark dark:text-white": theme === "dark",
+                  "text-foreground": theme === "dark",
                 })}
                 onClick={() => {
                   setTheme("dark");
@@ -236,7 +236,7 @@ export const Footer = () => {
               >
                 <MoonIcon
                   className={cn("h-4", {
-                    "text-dark dark:text-white": theme === "dark",
+                    "text-foreground": theme === "dark",
                   })}
                 />
               </button>

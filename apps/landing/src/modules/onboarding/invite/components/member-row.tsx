@@ -35,7 +35,7 @@ export const MemberRow = ({
       {isRemovable ? (
         <Button
           asIcon
-          className="h-[2.6rem] rounded-l-none border-l-0 dark:border-dark-100 dark:bg-dark-300/20 md:h-[2.8rem]"
+          className="h-[2.6rem] rounded-l-none border-l-0 d bg-surface/20 md:h-[2.8rem]"
           color="tertiary"
           onClick={onRemove}
         >

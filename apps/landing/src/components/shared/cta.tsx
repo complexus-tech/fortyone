@@ -19,7 +19,7 @@ const scaleIn = {
 
 export const CallToAction = () => {
   return (
-    <Box className="overflow-hidden border-b border-gray-100/70 bg-linear-to-t from-gray-50 dark:border-dark-200 dark:from-dark-300/70">
+    <Box className="overflow-hidden border-b border-border/70 bg-linear-to-t from-surface-muted">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
         <Flex className="mb-8 md:mb-12" direction="column">
           <motion.div
@@ -63,7 +63,7 @@ export const CallToAction = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-gray-100 bg-dark/5 p-0.5 pb-0 shadow-2xl backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-border bg-background/5 p-0.5 pb-0 shadow-2xl backdrop-blur d/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
             <Flex align="center" className="mb-2 mt-1 px-1.5" justify="between">
               <Flex className="gap-1.5">
                 <Dot className="size-2.5 text-primary" />
@@ -74,15 +74,15 @@ export const CallToAction = () => {
             </Flex>
             <Image
               alt="CTA"
-              className="rounded-t-lg border border-b-0 border-gray-100 dark:hidden md:rounded-t-[0.7rem]"
+              className="rounded-t-lg border border-b-0 border-border dark:hidden md:rounded-t-[0.7rem]"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="hidden rounded-t-lg border border-b-0 border-gray-100 dark:block dark:border-dark-100 md:rounded-t-[0.7rem]"
+              className="hidden rounded-t-lg border border-b-0 border-border dark:block d md:rounded-t-[0.7rem]"
               src={ctaDark}
             />
-            <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-dark/5 md:rounded-t-2xl">
+            <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-background/5 md:rounded-t-2xl">
               <Button
                 className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pl-5 md:pr-4"
                 color="invert"
