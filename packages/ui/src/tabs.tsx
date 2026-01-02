@@ -19,7 +19,7 @@ const Trigger = ({
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "relative w-max data-[state=active]:border data-[state=active]:border-border-strong rounded-[0.7rem] text-text-secondary px-3 py-[0.3rem] hover:text-text-primary focus-visible:bg-state-hover focus-visible:outline-0 data-[state=active]:text-text-primary data-[state=active]:bg-surface-elevated flex items-center gap-2",
+        "relative w-max data-[state=active]:border data-[state=active]:border-border rounded-[0.7rem] text-text-secondary px-3 py-[0.3rem] hover:text-text-primary focus-visible:bg-state-hover focus-visible:outline-0 data-[state=active]:text-text-primary data-[state=active]:bg-surface-elevated flex items-center gap-2",
         className
       )}
       {...rest}
