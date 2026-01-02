@@ -2,6 +2,7 @@
 
 @theme {
   --rounded-app: var(--rounded-app);
+  /* --color-*: initial; */
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
 
