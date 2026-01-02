@@ -18,7 +18,7 @@ const FeatureCheck = ({ available }: { available: boolean }) => (
     {available ? (
       <SuccessIcon className="text-primary dark:text-primary" />
     ) : (
-      <ErrorIcon className="dark:text-white" />
+      <ErrorIcon className="dark:text-foreground" />
     )}
   </Box>
 );
@@ -29,7 +29,7 @@ const FeatureValue = ({
   value: boolean | string | undefined | null;
 }) => {
   if (value === undefined || value === null) {
-    return <ErrorIcon className="dark:text-white" />;
+    return <ErrorIcon className="dark:text-foreground" />;
   }
 
   if (typeof value === "boolean") {

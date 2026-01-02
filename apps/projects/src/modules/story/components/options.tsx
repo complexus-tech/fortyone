@@ -269,7 +269,7 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "bg-surface to-gray-50 pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+        "bg-surface to-surface-muted pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
