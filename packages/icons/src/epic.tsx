@@ -7,7 +7,7 @@ export const EpicsIcon = (props: Icon) => {
     <svg
       {...rest}
       fill="none"
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn("h-5 w-auto text-icon", className)}
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"

@@ -6,7 +6,7 @@ export const InternetIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
-      className={cn("w-auto h-5 text-gray dark:text-gray-300", className)}
+      className={cn("w-auto h-5 text-icon", className)}
       fill="none"
       height="24"
       viewBox="0 0 24 24"

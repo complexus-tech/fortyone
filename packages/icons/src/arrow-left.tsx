@@ -6,7 +6,7 @@ export const ArrowLeftIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
-      className={cn("h-5 text-gray dark:text-gray-300 w-auto", className)}
+      className={cn("h-5 text-icon w-auto", className)}
       fill="none"
       height="24"
       viewBox="0 0 24 24"

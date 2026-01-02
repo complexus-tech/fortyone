@@ -6,7 +6,7 @@ export const InstagramIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn("h-5 w-auto text-icon", className)}
       fill="currentColor"
       strokeWidth={strokeWidth}
       fillOpacity={0.1}

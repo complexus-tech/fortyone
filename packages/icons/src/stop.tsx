@@ -7,7 +7,7 @@ export const StopIcon = (props: Icon) => {
     <svg
       {...rest}
       className={cn(
-        "h-[1.3rem] w-auto text-gray dark:text-gray-300",
+        "h-[1.3rem] w-auto text-icon",
         className
       )}
       fill="none"

@@ -7,7 +7,7 @@ export const CommandIcon = (props: Icon) => {
     <svg
       {...rest}
       className={cn(
-        "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+        "h-[1.15rem] w-auto text-icon",
         className
       )}
       fill="none"

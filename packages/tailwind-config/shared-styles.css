@@ -22,6 +22,8 @@
   --color-border: var(--color-border);
   --color-border-strong: var(--color-border-strong);
   --color-input: var(--color-input);
+
+  --color-icon: var(--color-icon);
   --color-ring: var(--color-ring);
   --color-focus: var(--color-focus);
   --color-shadow: var(--color-shadow);
@@ -120,6 +122,8 @@
   --color-focus: oklch(0.628 0.258 12.25);
   --color-shadow: oklch(0 0 0 / 0.08);
 
+  --color-icon: oklch(0.145 0 0);
+
   --color-primary: oklch(0.628 0.258 12.25);
   --color-primary-foreground: oklch(1 0 0);
 
@@ -206,6 +210,8 @@
   --color-input: oklch(0.23 0 0);
 
   --color-shadow: oklch(0 0 0 / 0.3);
+
+  --color-icon: oklch(0.922 0 0);
 
   --color-primary-foreground: oklch(0.14 0 0);
 

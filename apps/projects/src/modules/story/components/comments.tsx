@@ -60,8 +60,7 @@ const MainComment = ({
       className={cn(
         "relative pb-3",
         {
-          "ml-10 border-l-2 border-border pb-0 pl-1.5 pt-1 d":
-            isSubComment,
+          "border-border d ml-10 border-l-2 pt-1 pb-0 pl-1.5": isSubComment,
         },
         className,
       )}
@@ -101,7 +100,7 @@ const MainComment = ({
           }
         >
           <Flex className="cursor-pointer" gap={1}>
-            <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface">
+            <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
               <Avatar
                 name={member?.fullName}
                 size="xs"
@@ -131,7 +130,7 @@ const MainComment = ({
               title="Edit"
               type="button"
             >
-              <EditIcon className="h-[1.2rem] transition hover:text-foreground" />
+              <EditIcon className="hover:text-foreground h-[1.2rem] transition" />
               <span className="sr-only">Edit</span>
             </button>
           ) : null}
@@ -143,7 +142,7 @@ const MainComment = ({
               title="Delete"
               type="button"
             >
-              <DeleteIcon className="h-[1.1rem] transition hover:text-foreground" />
+              <DeleteIcon className="hover:text-foreground h-[1.1rem] transition" />
               <span className="sr-only">Delete</span>
             </button>
           ) : null}
@@ -151,7 +150,7 @@ const MainComment = ({
       </Flex>
       {!isEditing && (
         <Box
-          className="prose prose-stone ml-9 mt-0.5 max-w-full leading-6 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground"
+          className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6"
           html={comment}
         />
       )}
@@ -171,7 +170,7 @@ const MainComment = ({
       )}
       {!isSubComment && !isReplying && !isEditing && (
         <Button
-          className="ml-10 mt-3 px-2"
+          className="mt-3 ml-10 px-2"
           color="tertiary"
           leftIcon={<ReplyIcon className="h-4" />}
           onClick={() => {
@@ -183,7 +182,7 @@ const MainComment = ({
         </Button>
       )}
       {isReplying ? (
-        <Box className="mt-3 pl-[2.4rem] pr-1">
+        <Box className="mt-3 pr-1 pl-[2.4rem]">
           <CommentInput
             className="mb-2 min-h-12 focus-within:shadow-none"
             onCancel={handleCancel}
@@ -195,7 +194,7 @@ const MainComment = ({
       ) : null}
 
       {isEditing ? (
-        <Box className="mt-3 pl-8 pr-1">
+        <Box className="mt-3 pr-1 pl-8">
           <CommentInput
             className="mb-2 min-h-12 focus-within:shadow-none"
             commentId={id}

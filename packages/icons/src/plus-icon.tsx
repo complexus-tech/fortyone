@@ -10,7 +10,7 @@ export const PlusIcon = (props: Icon) => {
       height="24"
       strokeWidth={strokeWidth}
       className={cn(
-        "h-[1.15rem] w-auto text-gray dark:text-gray-300",
+        "h-[1.15rem] w-auto text-icon",
         className
       )}
       viewBox="0 0 24 24"
