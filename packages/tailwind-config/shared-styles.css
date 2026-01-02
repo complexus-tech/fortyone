@@ -22,6 +22,7 @@
   --color-input: var(--color-input);
   --color-ring: var(--color-ring);
   --color-focus: var(--color-focus);
+  --color-shadow: var(--color-shadow);
 
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
@@ -115,6 +116,7 @@
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.628 0.258 12.25);
   --color-focus: oklch(0.628 0.258 12.25);
+  --color-shadow: oklch(0 0 0 / 0.08);
 
   --color-primary: oklch(0.628 0.258 12.25);
   --color-primary-foreground: oklch(1 0 0);
@@ -198,6 +200,8 @@
   --color-border: oklch(0.26 0 0);
   --color-border-strong: oklch(0.36 0 0);
   --color-input: oklch(0.23 0 0);
+
+  --color-shadow: oklch(0 0 0 / 0.3);
 
   --color-primary-foreground: oklch(0.14 0 0);
 

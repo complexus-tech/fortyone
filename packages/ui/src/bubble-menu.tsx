@@ -86,7 +86,7 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-xl border-[0.5px] border-gray-100 bg-white p-2 shadow-lg shadow-gray-200 backdrop-blur dark:border-dark-50 dark:bg-dark-200/95 dark:shadow-none",
+          "w-max rounded-xl border-[0.5px] border-border bg-surface-elevated/90 p-2 shadow-lg shadow-shadow backdrop-blur",
           {
             hidden: isLinkOpen,
           }
