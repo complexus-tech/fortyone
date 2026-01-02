@@ -182,7 +182,7 @@
 }
 
 .dark {
-  --color-background: oklch(0.12 0 0);
+  --color-background: oklch(0 0 0);
   --color-foreground: oklch(0.922 0 0);
 
   --color-surface: oklch(0.18 0 0);
