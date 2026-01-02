@@ -41,7 +41,7 @@ export const ComparePlans = () => {
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/6 px-4 py-5", {
-                  "rounded-t-2xl border border-b-0 border-border bg-gray-50 d dark:bg-dark-300":
+                  "rounded-t-2xl border border-b-0 border-border bg-surface-muted d dark:bg-surface-elevated":
                     plan.highlighted,
                 })}
                 key={plan.name}
@@ -201,7 +201,7 @@ export const ComparePlans = () => {
                 Try Proffesional
               </Button>
             </Box>
-            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-border bg-gray-50 px-4 py-3 d dark:bg-dark-300">
+            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-border bg-surface-muted px-4 py-3 d dark:bg-surface-elevated">
               <Button
                 align="center"
                 color="invert"

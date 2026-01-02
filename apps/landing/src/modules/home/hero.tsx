@@ -22,7 +22,7 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button
-              className="border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl dark:bg-dark-100/70 md:text-[0.95rem]"
+              className="border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl dark:bg-surface-elevated/70 md:text-[0.95rem]"
               color="tertiary"
               href="/signup"
               rounded="md"

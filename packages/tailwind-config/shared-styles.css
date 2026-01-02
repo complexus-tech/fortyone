@@ -72,23 +72,6 @@
 
   --color-skeleton: var(--color-skeleton);
 
-  /* Legacy colors (for backward compatibility during migration) */
-  --color-gray: var(--color-gray);
-  --color-gray-50: var(--color-gray-50);
-  --color-gray-100: var(--color-gray-100);
-  --color-gray-200: var(--color-gray-200);
-  --color-gray-300: var(--color-gray-300);
-  --color-gray-400: var(--color-gray-400);
-
-  --color-dark: var(--color-dark);
-  --color-dark-50: var(--color-dark-50);
-  --color-dark-100: var(--color-dark-100);
-  --color-dark-200: var(--color-dark-200);
-  --color-dark-300: var(--color-dark-300);
-
-  --color-tertiary: var(--color-tertiary);
-  --color-tertiary-50: var(--color-tertiary-50);
-
   --breakpoint-3xl: 1900px;
 }
 
@@ -167,23 +150,6 @@
   --color-sidebar-border: oklch(0.922 0 0);
 
   --color-skeleton: oklch(0.922 0 0);
-
-  /* Legacy colors (for backward compatibility during migration) */
-  --color-gray: oklch(0.45 0 0);
-  --color-gray-50: oklch(0.975 0 0);
-  --color-gray-100: oklch(0.922 0 0);
-  --color-gray-200: oklch(0.85 0 0);
-  --color-gray-300: oklch(0.682 0 0);
-  --color-gray-400: oklch(0.57 0 0);
-
-  --color-dark: oklch(0.145 0 0);
-  --color-dark-50: oklch(0.245 0 0);
-  --color-dark-100: oklch(0.21 0 0);
-  --color-dark-200: oklch(0.18 0 0);
-  --color-dark-300: oklch(0.16 0 0);
-
-  --color-tertiary: oklch(0.975 0 0);
-  --color-tertiary-50: oklch(0.922 0 0);
 
   --breakpoint-3xl: 1900px;
 }
