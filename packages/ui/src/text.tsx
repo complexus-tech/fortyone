@@ -15,9 +15,9 @@ const text = cva("text-foreground", {
       muted: "text-text-muted",
       danger: "text-danger dark:text-danger",
       gradient:
-        "bg-linear-to-r from-primary dark:via-gray-200 dark:to-info to-secondary bg-clip-text text-transparent dark:text-transparent",
+        "bg-linear-to-r from-primary dark:via-text-secondary dark:to-info to-text-muted bg-clip-text text-transparent dark:text-transparent",
       gradientDark:
-        "bg-linear-to-r from-dark dark:from-white dark:to-gray/70 to-dark/30 bg-clip-text text-transparent dark:text-transparent",
+        "bg-linear-to-r from-foreground dark:from-foreground dark:to-text-muted/70 to-foreground/30 bg-clip-text text-transparent dark:text-transparent",
       black: "text-text-muted",
       white: "text-text-inverse",
       warning: "text-warning",
