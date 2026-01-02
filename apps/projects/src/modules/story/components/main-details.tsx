@@ -164,7 +164,7 @@ export const MainDetails = ({
       >
         <TextEditor
           asTitle
-          className="mb-8 text-3xl font-medium md:text-4xl"
+          className="text-foreground mb-8 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
         <TextEditor editor={descriptionEditor} />
