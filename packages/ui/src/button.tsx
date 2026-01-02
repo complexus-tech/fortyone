@@ -33,8 +33,7 @@ export const buttonVariants = cva(
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
-        invert:
-          "dark:text-dark text-white bg-dark border-dark dark:border-white dark:bg-white ring-white",
+        invert: "text-foreground-inverse bg-background-inverse",
         black: "text-white border-black bg-black ring-black",
       },
       size: {
