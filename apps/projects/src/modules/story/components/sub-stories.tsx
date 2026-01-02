@@ -115,8 +115,7 @@ export const SubStories = ({
       <Flex
         align="center"
         className={cn({
-          "border-b-[0.5px] border-border pb-2 d":
-            !isSubStoriesOpen,
+          "border-border border-b-[0.5px]": !isSubStoriesOpen,
         })}
         justify={parent.subStories.length > 0 ? "between" : "end"}
       >
@@ -222,7 +221,7 @@ export const SubStories = ({
         <Box className="my-2.5">
           {object.substories.length > 0 ? (
             <>
-              <Box className="rounded-lg border-[0.5px] border-border d">
+              <Box className="border-border d rounded-lg border-[0.5px]">
                 {object.substories.map((substory) => {
                   if (!substory?.title) return null;
                   return (
@@ -272,7 +271,7 @@ export const SubStories = ({
               </Flex>
             </>
           ) : (
-            <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+            <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
               <Flex align="center" gap={2}>
                 <InfoIcon className="text-warning dark:text-warning" />
                 <Text>
@@ -299,7 +298,7 @@ export const SubStories = ({
 
       {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard
-          className="mt-2 h-auto border-t-[0.5px] border-border pb-0 d"
+          className="border-border mt-2 h-auto border-t-[0.5px] pb-0"
           groupedStories={{
             groups: [
               {
