@@ -8,14 +8,8 @@
   --color-surface: var(--color-surface);
   --color-surface-foreground: var(--color-surface-foreground);
 
-  --color-surface-muted: var(--color-surface-muted);
-  --color-surface-muted-foreground: var(--color-surface-muted-foreground);
-
   --color-surface-elevated: var(--color-surface-elevated);
   --color-surface-elevated-foreground: var(--color-surface-elevated-foreground);
-
-  --color-popover: var(--color-popover);
-  --color-popover-foreground: var(--color-popover-foreground);
 
   --color-muted: var(--color-muted);
   --color-muted-foreground: var(--color-muted-foreground);
@@ -194,14 +188,8 @@
   --color-surface: oklch(0.18 0 0);
   --color-surface-foreground: oklch(0.922 0 0);
 
-  --color-surface-muted: oklch(0.21 0 0);
-  --color-surface-muted-foreground: oklch(0.682 0 0);
-
-  --color-surface-elevated: oklch(0.2 0 0);
+  --color-surface-elevated: oklch(0.21 0 0);
   --color-surface-elevated-foreground: oklch(0.922 0 0);
-
-  --color-popover: oklch(0.2 0 0);
-  --color-popover-foreground: oklch(0.922 0 0);
 
   --color-muted: oklch(0.21 0 0);
   --color-muted-foreground: oklch(0.682 0 0);
