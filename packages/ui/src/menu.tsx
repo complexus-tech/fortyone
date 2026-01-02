@@ -24,7 +24,7 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-surface-elevated/80 backdrop-blur-md z-50 border border-border w-max shadow-lg shadow-gray-100 dark:shadow-dark/20 mt-1 py-2",
+  "bg-surface-elevated/90 backdrop-blur-md z-50 border border-border w-max shadow-lg shadow-gray-100 dark:shadow-dark/20 mt-1 py-2",
   {
     variants: {
       rounded: {
