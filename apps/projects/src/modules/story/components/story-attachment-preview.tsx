@@ -74,7 +74,7 @@ export const StoryAttachmentPreview = ({
     if (isImage || isVideo) {
       return (
         <Box
-          className="group relative h-24 overflow-hidden rounded-xl border border-gray-50 bg-gray-50/70 shadow-lg shadow-gray-100 ring-gray-200 transition-all duration-300 hover:ring hover:grayscale dark:border-dark-200 dark:bg-dark-200/50 dark:shadow-none dark:ring-dark-50 md:h-28 2xl:h-36"
+          className="group relative h-24 overflow-hidden rounded-xl border border-border bg-surface-muted/70 bg-surface/50 dark:shadow-none dark:ring-dark-50 md:h-28 2xl:h-36"
           onClick={() => {
             if (isUploading) return;
             setIsOpen(true);
@@ -131,7 +131,7 @@ export const StoryAttachmentPreview = ({
               setIsOpen(true);
             }}
           >
-            <Box className="rounded-[0.6rem] bg-gray-100/50 p-2 dark:bg-dark-200/80">
+            <Box className="rounded-[0.6rem] bg-surface-muted">
               {isUploading ? (
                 <LoadingIcon className="h-5 animate-spin md:h-6" />
               ) : (

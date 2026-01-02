@@ -161,7 +161,7 @@ export const Links = ({
         <Flex
           align="center"
           className={cn({
-            "border-b-[0.5px] border-border pb-2 dark:border-dark-200":
+            "border-b-[0.5px] border-border pb-2 d":
               !isLinksOpen,
           })}
           justify={links.length > 0 ? "between" : "end"}

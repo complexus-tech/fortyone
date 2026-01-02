@@ -183,7 +183,7 @@ export const NewKeyResultButton = ({
                       });
                     }}
                   >
-                    <Select.Trigger className="h-[2.65rem] bg-white/70 text-base dark:bg-dark/20">
+                    <Select.Trigger className="h-[2.65rem] bg-surface/70">
                       <Select.Input placeholder="Select measurement type" />
                     </Select.Trigger>
                     <Select.Content>
@@ -206,7 +206,7 @@ export const NewKeyResultButton = ({
                       {isMobile ? "Current" : "Current Value"}
                     </Text>
                     <Flex
-                      className="rounded-[0.45rem] border bg-white/70 p-1 d/80 dark:bg-dark/20"
+                      className="rounded-[0.45rem] border bg-surface/70"
                       gap={1}
                     >
                       <Button

@@ -101,7 +101,7 @@ const MainComment = ({
           }
         >
           <Flex className="cursor-pointer" gap={1}>
-            <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface-elevated">
+            <Box className="relative top-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface">
               <Avatar
                 name={member?.fullName}
                 size="xs"
@@ -131,7 +131,7 @@ const MainComment = ({
               title="Edit"
               type="button"
             >
-              <EditIcon className="h-[1.2rem] transition hover:text-dark dark:hover:text-white" />
+              <EditIcon className="h-[1.2rem] transition hover:text-foreground" />
               <span className="sr-only">Edit</span>
             </button>
           ) : null}
@@ -143,7 +143,7 @@ const MainComment = ({
               title="Delete"
               type="button"
             >
-              <DeleteIcon className="h-[1.1rem] transition hover:text-dark dark:hover:text-white" />
+              <DeleteIcon className="h-[1.1rem] transition hover:text-foreground" />
               <span className="sr-only">Delete</span>
             </button>
           ) : null}
@@ -151,7 +151,7 @@ const MainComment = ({
       </Flex>
       {!isEditing && (
         <Box
-          className="prose prose-stone ml-9 mt-0.5 max-w-full leading-6 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-dark-200 dark:prose-pre:bg-dark-200/80 dark:prose-pre:text-gray-200"
+          className="prose prose-stone ml-9 mt-0.5 max-w-full leading-6 dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground"
           html={comment}
         />
       )}

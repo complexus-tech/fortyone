@@ -7,8 +7,8 @@ export const SelectNotificationSkeleton = () => {
   return (
     <Flex align="center" className="h-full" justify="center">
       <Flex align="center" direction="column">
-        <div className="mb-3 h-16 w-16 animate-pulse rounded-full bg-gray-100 dark:bg-dark-200" />
-        <div className="h-5 w-40 animate-pulse rounded bg-gray-100 dark:bg-dark-200" />
+        <div className="mb-3 h-16 w-16 animate-pulse rounded-full bg-skeleton" />
+        <div className="h-5 w-40 animate-pulse rounded bg-skeleton" />
       </Flex>
     </Flex>
   );

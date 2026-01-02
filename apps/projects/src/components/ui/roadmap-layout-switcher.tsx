@@ -28,7 +28,7 @@ export const RoadmapLayoutSwitcher = ({
         className={cn(
           "flex h-full items-center gap-1 rounded-[0.6rem] px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
           {
-            "border border-border bg-surface-elevated text-text-primary":
+            "border border-border bg-surface text-text-primary":
               layout === "gantt",
           },
         )}
@@ -46,7 +46,7 @@ export const RoadmapLayoutSwitcher = ({
         className={cn(
           "flex h-full items-center gap-1.5 rounded-[0.6rem] px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
           {
-            "border border-border bg-surface-elevated text-text-primary":
+            "border border-border bg-surface text-text-primary":
               layout === "list",
           },
         )}

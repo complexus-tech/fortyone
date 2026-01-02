@@ -115,7 +115,7 @@ export const KeyResultEditor = ({
               });
             }}
           >
-            <Select.Trigger className="h-[2.7rem] bg-surface-elevated/70 text-base">
+            <Select.Trigger className="h-[2.7rem] bg-surface/70 text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content defaultValue="number">

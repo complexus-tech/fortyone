@@ -101,7 +101,7 @@ export const Activities = ({
         </Tabs.Panel>
         <Tabs.Panel value="comments">
           <Flex align="start" className="mb-3">
-            <Box className="z-1 flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface-elevated">
+            <Box className="z-1 flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface">
               <Avatar
                 name={session?.user?.name ?? undefined}
                 size="xs"

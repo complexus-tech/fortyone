@@ -91,7 +91,7 @@ export const StoriesToolbar = () => {
     <>
       <Flex
         align="center"
-        className="border-border bg-surface-elevated/90 shadow-shadow fixed right-1/2 bottom-8 left-1/2 z-50 w-max -translate-x-1/2 rounded-2xl border-[0.5px] px-2.5 py-2 shadow-lg backdrop-blur"
+        className="border-border bg-surface/90 shadow-shadow fixed right-1/2 bottom-8 left-1/2 z-50 w-max -translate-x-1/2 rounded-2xl border-[0.5px] px-2.5 py-2 shadow-lg backdrop-blur"
         gap={1}
       >
         <Text

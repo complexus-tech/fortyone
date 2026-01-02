@@ -278,7 +278,7 @@ export const NewObjectiveDialog = ({
                 })}{" "}
                 and unlock premium features.
               </Text>
-              <Wrapper className="bg-surface-elevated/60">
+              <Wrapper className="bg-surface/60">
                 <Flex align="center" gap={3} justify="between">
                   <Text color="muted" fontSize="lg">
                     Current plan:

@@ -31,7 +31,7 @@ export const LayoutSwitcher = ({
           className={cn(
             "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border-border bg-surface-elevated text-text-primary border":
+              "border-border bg-surface text-text-primary border":
                 layout === "list",
             },
           )}
@@ -52,7 +52,7 @@ export const LayoutSwitcher = ({
           className={cn(
             "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border-border bg-surface-elevated text-text-primary border":
+              "border-border bg-surface text-text-primary border":
                 layout === "kanban",
             },
           )}
@@ -72,7 +72,7 @@ export const LayoutSwitcher = ({
           className={cn(
             "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
             {
-              "border-border bg-surface-elevated text-text-primary border":
+              "border-border bg-surface text-text-primary border":
                 layout === "gantt",
             },
           )}
