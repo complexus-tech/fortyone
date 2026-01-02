@@ -261,7 +261,7 @@ export const WorkflowSettings = () => {
       </Text>
       <FeatureGuard
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -278,7 +278,7 @@ export const WorkflowSettings = () => {
         }
         feature="customWorkflows"
       >
-        <Box className="mb-6 rounded-2xl border border-border bg-surface">
+        <Box className="border-border bg-surface mb-6 rounded-2xl border">
           <SectionHeader
             className="mb-4"
             description={`Configure custom workflow states to track the progress of ${getTermDisplay(
@@ -289,7 +289,7 @@ export const WorkflowSettings = () => {
             )} across your workspace. Each category represents a different phase in your workflow process.`}
           />
           <DndContext onDragEnd={handleDragEnd}>
-            <Flex direction="column" gap={4}>
+            <Flex direction="column" gap={4} className="pb-6">
               {categories.map(({ label, value }) => {
                 const categoryStatuses = statuses
                   .filter((status) => status.category === value)

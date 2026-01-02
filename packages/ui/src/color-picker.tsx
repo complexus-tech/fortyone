@@ -48,10 +48,9 @@ export const ColorPicker = ({
               aria-label="Select color"
               key={color}
               className={cn(
-                "size-8 cursor-pointer rounded-full transition-transform focus:outline-none hover:ring-2 dark:hover:ring-offset-dark-100",
+                "size-8 cursor-pointer rounded-full transition-transform focus:outline-none hover:ring-2 ring-primary ",
                 {
-                  "ring-2 ring-offset-2 dark:ring-offset-dark-100":
-                    color === value,
+                  "ring-2 ring-offset-background": color === value,
                 }
               )}
               onClick={() => {
