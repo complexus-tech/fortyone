@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "bg-surface-muted border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+          "border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
@@ -87,11 +87,6 @@ export const buttonVariants = cva(
         variant: "outline",
         color: "black",
         className: "text-foreground border-border bg-transparent ring-ring",
-      },
-      {
-        variant: "outline",
-        color: "tertiary",
-        className: "bg-surface border-border",
       },
       // Naked variant
       {

@@ -127,7 +127,7 @@ const DialogContent = forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border bg-surface-elevated/90",
+            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border-strong bg-surface-elevated",
             "dialog-content-animate outline-transparent",
             {
               "max-w-md": size === "sm",
@@ -169,7 +169,8 @@ const DialogFooter = ({
     className={cn(
       "flex px-6 pb-[0.8rem]",
       {
-        "border-t-[0.5px] border-border pt-[0.8rem]": variant !== "bordered",
+        "border-t-[0.5px] border-border-strong pt-[0.8rem]":
+          variant !== "bordered",
         "justify-start": justify === "start",
         "justify-end": justify === "end",
         "justify-center": justify === "center",
