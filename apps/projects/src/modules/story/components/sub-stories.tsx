@@ -162,7 +162,7 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              Improve {getTermDisplay("storyTerm")} description
+              Improve description
             </Button>
             <Button
               color="tertiary"
@@ -178,9 +178,8 @@ export const SubStories = ({
                 <Thinking message="Maya is thinking" />
               ) : (
                 <>
-                  Suggest Sub{" "}
+                  Suggest sub{" "}
                   {getTermDisplay("storyTerm", {
-                    capitalize: true,
                     variant: "plural",
                   })}
                 </>
@@ -201,10 +200,7 @@ export const SubStories = ({
                 <span
                   className={cn({ "sr-only": parent.subStories.length > 0 })}
                 >
-                  Add Sub{" "}
-                  {getTermDisplay("storyTerm", {
-                    capitalize: true,
-                  })}
+                  Add sub {getTermDisplay("storyTerm")}
                 </span>
               </Button>
             </Tooltip>
