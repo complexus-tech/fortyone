@@ -27,8 +27,7 @@ const badge = cva(
         warning: "text-white bg-warning border-warning",
         tertiary: "text-text-primary bg-surface border-border",
         secondary: "text-white bg-secondary border-secondary",
-        invert:
-          "text-white bg-black border-black dark:bg-white dark:border-white dark:text-black",
+        invert: "bg-background-inverse text-foreground-inverse",
       },
       size: {
         xs: "h-[1.15rem] min-w-4 text-[70%] py-1 px-0.5",
