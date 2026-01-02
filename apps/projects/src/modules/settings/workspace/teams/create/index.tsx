@@ -82,7 +82,7 @@ export const CreateTeam = () => {
       <FeatureGuard
         count={teams.length}
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -99,13 +99,13 @@ export const CreateTeam = () => {
         }
         feature="maxTeams"
       >
-        <Box className="rounded-2xl border border-border bg-surface">
+        <Box className="border-border bg-surface rounded-2xl border">
           <SectionHeader
             description="Create a new team to group members, and collaborate on objectives."
             title="Create a new team"
           />
           <form
-            className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
+            className="divide-border divide-y-[0.5px]"
             onSubmit={handleSubmit}
           >
             <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
@@ -164,7 +164,7 @@ export const CreateTeam = () => {
             <FeatureGuard
               fallback={
                 <Box className="px-6 py-4">
-                  <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                  <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
                     <Flex align="center" gap={2}>
                       <WarningIcon className="text-warning dark:text-warning" />
                       <Text>
