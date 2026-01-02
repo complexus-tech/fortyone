@@ -115,7 +115,7 @@ export const Team = ({
             <Flex align="center" className="relative" gap={1} justify="between">
               <DragIcon
                 className={cn(
-                  "absolute -left-2.5 bottom-1/2 top-1/2 h-[1.1rem] -translate-y-1/2 opacity-0 outline-none transition-opacity group-hover:opacity-100",
+                  "absolute top-1/2 bottom-1/2 -left-2.5 h-[1.1rem] -translate-y-1/2 opacity-0 transition-opacity outline-none group-hover:opacity-100",
                   {
                     "cursor-grab": !isDragging,
                     "cursor-grabbing": isDragging,
@@ -129,7 +129,7 @@ export const Team = ({
               />
               <Flex
                 align="center"
-                className="h-10 flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
+                className="h-10 flex-1 rounded-[0.6rem] pr-2 pl-3 transition outline-none select-none"
                 justify="between"
                 onClick={() => {
                   setIsOpen(!isOpen);
@@ -220,7 +220,7 @@ export const Team = ({
             </Flex>
             <Flex
               className={cn(
-                "ml-5 h-0 overflow-hidden border-l border-dashed border-border pl-2 transition-all duration-300",
+                "border-border ml-5 h-0 overflow-hidden border-l pl-2 transition-all duration-300",
                 {
                   "mt-2 h-max": isOpen,
                 },
