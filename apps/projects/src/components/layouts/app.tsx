@@ -31,7 +31,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
           >
             <Sidebar />
           </ResizablePanel.Panel>
-          <ResizablePanel.Handle className="z-2" />
+          <ResizablePanel.Handle className="border-border-strong z-2" />
           <ResizablePanel.Panel defaultSize={85}>
             {children}
           </ResizablePanel.Panel>
