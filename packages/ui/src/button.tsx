@@ -92,7 +92,7 @@ export const buttonVariants = cva(
       {
         variant: "outline",
         color: "tertiary",
-        className: "bg-white border-gray-100",
+        className: "bg-white border-border,.",
       },
       // Naked variant
       {
