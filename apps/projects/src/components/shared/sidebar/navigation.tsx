@@ -50,7 +50,7 @@ export const Navigation = () => {
   const links: MenuItem[] = [
     {
       name: "Search",
-      icon: <SearchIcon />,
+      icon: <SearchIcon className="text-icon h-4.5" />,
       href: "/search",
     },
     {
