@@ -17,7 +17,7 @@ export const Switch = ({ className, children, ...props }: SwitchProps) => {
     >
       <SwitchPrimitive.Thumb
         className={cn(
-          "block h-[10px] translate-x-[1.5px] -translate-y-[0.2px] aspect-square bg-surface rounded-full data-[state=checked]:translate-x-[11px] will-change-transform transition",
+          "block h-[10px] translate-x-[1.5px] -translate-y-[0.2px] aspect-square bg-white rounded-full data-[state=checked]:translate-x-[11px] will-change-transform transition",
           className
         )}
       />
