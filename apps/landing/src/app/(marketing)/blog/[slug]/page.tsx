@@ -47,7 +47,7 @@ export default async function BlogPost({
         className="grid grid-cols-[1fr_4fr_1fr] items-start gap-10 py-32"
       >
         <Link className="flex items-center gap-1 pt-4" href="/blog">
-          <ArrowLeft2Icon className="dark:text-white" />
+          <ArrowLeft2Icon className="dark:text-foreground" />
           <span className="opacity-80">All blogs</span>
         </Link>
         <Box className="mx-auto max-w-3xl">
@@ -78,7 +78,7 @@ export default async function BlogPost({
               src={post.metadata.featuredImage}
             />
           </Box>
-          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-gray-50 prose-pre:text-[1.1rem] prose-pre:text-foreground prose-pre:bg-surface-muted prose-pre:text-foreground">
+          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:text-[1.1rem] prose-pre:bg-surface-muted prose-pre:text-foreground">
             <MDXRemote components={mdxComponents} source={post.content} />
           </Box>
         </Box>

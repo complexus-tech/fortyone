@@ -91,12 +91,12 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
             className={cn(
               "size-12 rounded-[0.6rem] border text-center text-lg font-semibold transition-all duration-200",
               "border-border bg-surface/70",
-              "focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 focus:ring-offset-1 dark:focus:ring-dark-50",
+              "focus:outline-0 focus:ring-[2.5px] focus:ring-border focus:ring-offset-1 dark:focus:ring-border",
               "disabled:cursor-not-allowed disabled:opacity-50",
               {
                 "border-danger focus:ring-danger dark:border-danger dark:focus:ring-danger":
                   hasError,
-                "ring-[2.5px] ring-gray-100 dark:ring-dark-50":
+                "ring-[2.5px] ring-border dark:ring-border":
                   focusedIndex === index,
               },
             )}

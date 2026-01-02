@@ -81,7 +81,7 @@ const Card = ({
         >
           <Image
             alt={alt}
-            className="aspect-square overflow-hidden rounded-3xl border border-gray-50 bg-gray-100 object-cover dark:hidden"
+            className="aspect-square overflow-hidden rounded-3xl border border-border bg-surface-muted object-cover dark:hidden"
             onMouseEnter={() => {
               setIsActive(true);
             }}
@@ -92,7 +92,7 @@ const Card = ({
           />
           {/* <Image
             alt={alt}
-            className="hidden aspect-square overflow-hidden rounded-3xl border border-gray-50 bg-gray-100 object-cover dark:block"
+            className="hidden aspect-square overflow-hidden rounded-3xl border border-border bg-surface-muted object-cover dark:block"
             onMouseEnter={() => {
               setIsActive(true);
             }}
@@ -165,7 +165,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] dark:from-dark-200 dark:via-black dark:to-black md:pb-36">
+    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] dark:from-surface-elevated dark:via-background dark:to-background md:pb-36">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-8 md:grid-cols-3">

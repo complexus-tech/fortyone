@@ -77,7 +77,7 @@ const AccordionItem = ({
 
         <ArrowRight2Icon
           className={cn(
-            "h-6 shrink-0 text-foreground transition-transform duration-300 dark:text-gray-200",
+            "h-6 shrink-0 text-foreground transition-transform duration-300 dark:text-text-secondary",
             {
               "rotate-90": isOpen,
             },
