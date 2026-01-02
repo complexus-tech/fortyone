@@ -45,17 +45,17 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="z-50 min-w-44 rounded-2xl border border-border bg-surface-elevated/60 text-foreground">
+      <Box className="border-border bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border p-4 backdrop-blur-lg">
         <Text fontWeight="semibold">{label}</Text>
         <Box className="mb-0.1 mt-1 text-[#6366F1]">
           Completed: {data.completed}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-warning">
+        <Box className="text-warning mb-0.5">
           In Progress: {data.inProgress}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-foreground">
+        <Box className="text-foreground mb-0.5">
           Total: {data.total}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
@@ -76,12 +76,12 @@ const CustomLegend = () => {
         <span className="text-foreground">Completed</span>
       </Box>
       <Box className="flex items-center gap-2">
-        <Box className="h-1 w-3 bg-warning" />
+        <Box className="bg-warning h-1 w-3" />
         <span className="text-foreground">In Progress</span>
       </Box>
       <Box className="flex items-center gap-2">
         <Box
-          className="h-1 w-3 bg-foreground"
+          className="bg-foreground h-1 w-3"
           style={{
             borderColor: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
             opacity: 0.8,

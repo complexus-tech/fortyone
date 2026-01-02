@@ -85,7 +85,7 @@ export const Header = () => {
             <span className="sr-only">Notifications</span>
             {unreadNotifications ? (
               <Badge
-                className="absolute -right-1 -top-1 shrink-0"
+                className="absolute -top-1 -right-1 shrink-0"
                 rounded="full"
                 size="sm"
               >
