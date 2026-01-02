@@ -18,7 +18,7 @@ export const DropZone = ({
       {label && (
         <label
           htmlFor=""
-          className="mb-3 inline-block font-medium dark:text-white"
+          className="mb-3 inline-block font-medium text-foreground"
         >
           {label}
           {required && <span className="text-danger">*</span>}
@@ -40,10 +40,9 @@ const Root = (props: RootProps) => {
   return (
     <div
       className={cn(
-        "flex h-24 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface p-4 transition hover:border-primary/80 dark:border-dark-100 dark:hover:border-primary/40",
+        "flex h-24 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-border bg-surface p-4 transition hover:border-primary/80",
         {
-          "bg-gray-50 transition hover:border-primary/40 dark:bg-dark-200/80 dark:hover:border-primary/40":
-            isDragActive,
+          "bg-surface-muted transition hover:border-primary/40": isDragActive,
         },
         className
       )}

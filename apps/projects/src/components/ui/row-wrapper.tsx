@@ -15,7 +15,7 @@ export const RowWrapper = ({
   return (
     <Box
       className={cn(
-        "border-border hover:dark:bg-dark-200/60 focus:dark:bg-dark-200/50 group flex items-center justify-between border-b-[0.5px] px-5 py-[0.655rem] outline-none hover:bg-gray-50/50 focus:bg-gray-50/50 md:px-12",
+        "border-border group flex items-center justify-between border-b-[0.5px] px-5 py-[0.655rem] outline-none hover:bg-state-hover focus-visible:bg-state-active md:px-12",
         {
           "pl-0 pr-0 md:pl-7": pathname.startsWith("/story"),
         },

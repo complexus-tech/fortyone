@@ -10,7 +10,7 @@ export const TextArea: FC<Props> = (props) => {
   return (
     <label>
       {label && (
-        <span className="mb-[0.35rem] block dark:text-white font-medium">
+        <span className="mb-[0.35rem] block text-foreground font-medium">
           {label}
           {required && <span className="text-danger">*</span>}
         </span>
@@ -18,7 +18,7 @@ export const TextArea: FC<Props> = (props) => {
       <textarea
         required={required}
         className={cn(
-          "w-full rounded-[0.6rem] border bg-white/70 dark:bg-dark/20 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 leading-[2.8rem] focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 dark:focus:ring-dark-50 focus:ring-offset-1 read-only:focus:ring-0 placeholder:text-gray/80 dark:placeholder:text-gray-300",
+          "w-full rounded-[0.6rem] border bg-surface border-input px-4 leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 read-only:focus-visible:ring-0 placeholder:text-text-muted",
           className
         )}
         {...rest}

@@ -3,7 +3,7 @@ import { HTMLAttributes, JSX, createElement } from "react";
 
 import { cn } from "lib";
 
-const text = cva("text-dark dark:text-gray-200", {
+const text = cva("text-foreground", {
   variants: {
     align: {
       left: "text-left",
@@ -12,14 +12,14 @@ const text = cva("text-dark dark:text-gray-200", {
     },
     color: {
       primary: "text-primary dark:text-primary",
-      muted: "text-gray dark:text-gray-300/80",
+      muted: "text-text-muted",
       danger: "text-danger dark:text-danger",
       gradient:
         "bg-linear-to-r from-primary dark:via-gray-200 dark:to-info to-secondary bg-clip-text text-transparent dark:text-transparent",
       gradientDark:
         "bg-linear-to-r from-dark dark:from-white dark:to-gray/70 to-dark/30 bg-clip-text text-transparent dark:text-transparent",
-      black: "text-gray-300",
-      white: "text-gray-200",
+      black: "text-text-muted",
+      white: "text-text-inverse",
       warning: "text-warning",
       info: "text-info",
       secondary: "text-secondary",

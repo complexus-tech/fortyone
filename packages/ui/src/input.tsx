@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "cva";
 import { cn } from "lib";
 
 const inputVariants = cva(
-  "w-full rounded-[0.45rem] border bg-white/70 dark:bg-dark/20 border-gray-100 dark:border-dark-100 dark:ring-offset-dark px-4 h-[2.8rem] leading-[2.8rem] focus:outline-0 focus:ring-[2.5px] focus:ring-gray-100 dark:focus:ring-dark-50 focus:ring-offset-1 read-only:focus:ring-0 placeholder:text-gray/80 dark:placeholder:text-gray-300",
+  "w-full rounded-[0.45rem] border bg-surface border-input px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 read-only:focus-visible:ring-0 placeholder:text-text-muted",
   {
     variants: {
       size: {
@@ -26,7 +26,7 @@ const inputVariants = cva(
       },
       variant: {
         default: "", // uses the base styles
-        solid: "bg-gray-100/60 border-0 dark:bg-dark-200 dark:border-dark-200",
+        solid: "bg-surface-muted border-0",
         error:
           "border-danger dark:border-danger focus:ring-danger dark:focus:ring-danger",
       },
@@ -111,7 +111,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
       {helpText && (
         <span
           className={cn(
-            "text-[0.9rem] font-medium inline-block left-[2px] mt-1 text-gray-300",
+            "text-[0.9rem] font-medium inline-block left-[2px] mt-1 text-text-muted",
             {
               "text-danger": hasError,
             }

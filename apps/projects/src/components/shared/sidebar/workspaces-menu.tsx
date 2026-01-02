@@ -75,7 +75,7 @@ export const WorkspacesMenu = () => {
             />
           }
           rightIcon={
-            <ArrowDown2Icon className="relative top-[0.5px] h-4 w-auto text-gray dark:text-gray-300" />
+            <ArrowDown2Icon className="relative top-[0.5px] h-4 w-auto text-text-muted" />
           }
           size="sm"
           suppressHydrationWarning
@@ -208,7 +208,7 @@ export const WorkspacesMenu = () => {
         <Menu.Separator className="my-2" />
         <Menu.Group>
           <Menu.Item className="text-danger" onSelect={handleLogout}>
-            <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
+            <LogoutIcon className="h-5 w-auto text-danger" />
             Log out
           </Menu.Item>
         </Menu.Group>

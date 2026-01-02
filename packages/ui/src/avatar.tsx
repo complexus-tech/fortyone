@@ -6,7 +6,7 @@ import { BlurImage } from "./image";
 import { AssigneeIcon } from "icons";
 
 const avatar = cva(
-  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0 text-dark dark:text-white",
+  "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0 text-foreground",
   {
     variants: {
       rounded: {
@@ -19,7 +19,7 @@ const avatar = cva(
       color: {
         primary: "text-white bg-primary",
         secondary: "text-white bg-secondary",
-        tertiary: "dark:bg-dark-50 bg-gray-100",
+        tertiary: "bg-surface-muted",
         naked: "bg-transparent",
       },
       size: {

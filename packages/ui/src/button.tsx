@@ -6,14 +6,14 @@ import Link, { LinkProps } from "next/link";
 import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
 
 export const buttonVariants = cva(
-  "flex text-dark dark:text-gray-200 w-max items-center border gap-2 transition duration-200 ease-linear focus:outline-0 cursor-pointer",
+  "flex text-foreground w-max items-center border gap-2 transition duration-200 ease-linear focus-visible:outline-0 cursor-pointer",
   {
     variants: {
       variant: {
         outline: null,
         solid: null,
         naked:
-          "bg-opacity-10 dark:bg-opacity-10 hover:bg-opacity-20 dark:hover:bg-opacity-20",
+          "bg-transparent border-none hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
       },
       rounded: {
         none: "rounded-none",
@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "dark:bg-dark-100/50 bg-gray-50/80 border-border focus:bg-gray-50 dark:focus:bg-dark-200 hover:bg-gray-100/50 active:bg-gray-50 dark:hover:bg-dark-200/80",
+          "bg-surface-muted border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
@@ -75,14 +75,14 @@ export const buttonVariants = cva(
       {
         variant: "solid",
         color: "warning",
-        className: "text-dark dark:text-dark",
+        className: "text-warning-foreground",
       },
       // Outline variant
       {
         variant: "outline",
         color: ["primary", "secondary", "warning", "danger", "info"],
         className:
-          "enabled:bg-opacity-0 hover:enabled:bg-opacity-10 focus:enabled:bg-opacity-10",
+          "enabled:bg-transparent hover:enabled:bg-state-hover focus-visible:enabled:bg-state-active",
       },
       {
         variant: "outline",
@@ -92,7 +92,7 @@ export const buttonVariants = cva(
       {
         variant: "outline",
         color: "tertiary",
-        className: "bg-white border-border,.",
+        className: "bg-surface border-border",
       },
       // Naked variant
       {
@@ -131,12 +131,12 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-opacity-100 text-gray cursor-not-allowed",
+        className: "bg-transparent text-text-disabled cursor-not-allowed",
       },
       {
         active: true,
         color: "tertiary",
-        className: "bg-gray-100/80 bg-opacity-100 dark:bg-dark-50",
+        className: "bg-state-selected",
       },
     ],
     defaultVariants: {

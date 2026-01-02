@@ -35,7 +35,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="bg-linear-to-br dark:bg-linear-to-br dark:to-dark-300 relative flex h-dvh flex-col justify-between from-gray-100/50 to-gray-50/70 pb-6 dark:from-black">
+    <Box className="bg-sidebar relative flex h-dvh flex-col justify-between pb-6">
       <Box className="z-1 relative px-4">
         <Header />
         <Navigation />
@@ -44,8 +44,8 @@ export const Sidebar = () => {
       <Box className="z-1 relative">
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
-            <Box className="border-warning bg-warning/20 dark:border-warning/20 dark:bg-warning/10 mb-4 rounded-xl border-[0.5px] p-4 shadow-lg shadow-gray-100 dark:shadow-none">
-              <Text className="dark:text-white" fontWeight="semibold">
+            <Box className="border-warning bg-warning/20 mb-4 rounded-xl border-[0.5px] p-4 shadow-lg shadow-shadow">
+              <Text className="text-foreground" fontWeight="semibold">
                 Workspace scheduled for deletion
               </Text>
               {getTimeRemaining() ? (
@@ -75,7 +75,7 @@ export const Sidebar = () => {
           ) : (
             <>
               {tier === "free" && (
-                <Box className="dark:border-dark-50 dark:bg-dark-300 rounded-xl border-[0.5px] border-gray-200/60 bg-white p-4 shadow-lg shadow-gray-100 dark:shadow-none">
+                <Box className="rounded-xl border-[0.5px] border-border bg-surface p-4 shadow-lg shadow-shadow">
                   <Text fontWeight="medium">You&apos;re on the free plan</Text>
                   <Text className="mt-2" color="muted">
                     {userRole === "admin"
