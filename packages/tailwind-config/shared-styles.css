@@ -100,7 +100,7 @@
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.628 0.258 12.25);
   --color-focus: oklch(0.628 0.258 12.25);
-  --color-shadow: oklch(0 0 0 / 0.08);
+  --color-shadow: oklch(0 0 0 / 0.04);
 
   --color-icon: oklch(0.5 0 0);
 
