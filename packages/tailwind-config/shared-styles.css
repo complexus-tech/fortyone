@@ -191,34 +191,34 @@
   --color-background: oklch(0.145 0 0);
   --color-foreground: oklch(0.922 0 0);
 
-  --color-surface: oklch(0.16 0 0);
+  --color-surface: oklch(0.19 0 0);
   --color-surface-foreground: oklch(0.922 0 0);
 
-  --color-surface-muted: oklch(0.21 0 0);
+  --color-surface-muted: oklch(0.24 0 0);
   --color-surface-muted-foreground: oklch(0.682 0 0);
 
-  --color-surface-elevated: oklch(0.18 0 0);
+  --color-surface-elevated: oklch(0.22 0 0);
   --color-surface-elevated-foreground: oklch(0.922 0 0);
 
-  --color-popover: oklch(0.18 0 0);
+  --color-popover: oklch(0.22 0 0);
   --color-popover-foreground: oklch(0.922 0 0);
 
-  --color-muted: oklch(0.21 0 0);
+  --color-muted: oklch(0.24 0 0);
   --color-muted-foreground: oklch(0.682 0 0);
 
-  --color-accent: oklch(0.245 0 0);
+  --color-accent: oklch(0.27 0 0);
   --color-accent-foreground: oklch(0.922 0 0);
 
-  --color-border: oklch(0.245 0 0);
-  --color-border-strong: oklch(0.35 0 0);
-  --color-separator: oklch(0.245 0 0);
-  --color-input: oklch(0.245 0 0);
+  --color-border: oklch(0.28 0 0);
+  --color-border-strong: oklch(0.4 0 0);
+  --color-separator: oklch(0.26 0 0);
+  --color-input: oklch(0.25 0 0);
 
   --color-primary-foreground: oklch(0.145 0 0);
 
   --color-text-primary: oklch(0.922 0 0);
-  --color-text-secondary: oklch(0.75 0 0);
-  --color-text-muted: oklch(0.682 0 0);
+  --color-text-secondary: oklch(0.78 0 0);
+  --color-text-muted: oklch(0.65 0 0);
   --color-text-disabled: oklch(0.5 0 0);
   --color-text-inverse: oklch(0.145 0 0);
 
@@ -227,11 +227,11 @@
   --color-state-selected: oklch(0.922 0 0 / 0.12);
   --color-state-disabled: oklch(1 0 0 / 0.5);
 
-  --color-sidebar: oklch(0.16 0 0);
+  --color-sidebar: oklch(0.17 0 0);
   --color-sidebar-foreground: oklch(0.922 0 0);
-  --color-sidebar-accent: oklch(0.21 0 0);
+  --color-sidebar-accent: oklch(0.23 0 0);
   --color-sidebar-accent-foreground: oklch(0.922 0 0);
-  --color-sidebar-border: oklch(0.245 0 0);
+  --color-sidebar-border: oklch(0.28 0 0);
 
-  --color-skeleton: oklch(0.245 0 0);
+  --color-skeleton: oklch(0.27 0 0);
 }
