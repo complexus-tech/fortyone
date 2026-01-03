@@ -212,7 +212,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             <Box className="h-dvh overflow-y-auto">
               <Container
                 className={cn("max-w-216 py-12", {
-                  "max-w-7xl": pathname.includes("billing"),
+                  "max-w-[80rem]": pathname.includes("billing"),
                 })}
               >
                 {children}

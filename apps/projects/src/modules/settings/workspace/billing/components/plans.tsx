@@ -243,7 +243,7 @@ export const Plans = () => {
   return (
     <Box className="hidden overflow-x-auto md:block">
       <Box>
-        <Flex className="border-b border-border">
+        <Flex className="border-border border-b">
           <Box className="flex w-1/5 items-end px-3 py-6">
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -254,7 +254,7 @@ export const Plans = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Box className="flex w-full gap-1 rounded-[0.7rem] border border-border bg-surface">
+              <Box className="border-border bg-surface flex w-full gap-1 rounded-[0.7rem] border">
                 {["annual", "monthly"].map((option) => (
                   <Button
                     className={cn("px-4 capitalize", {
@@ -333,7 +333,7 @@ export const Plans = () => {
               {proButtonText}
             </Button>
           </Box>
-          <Box className="w-1/5 rounded-t-2xl border border-b-0 border-border bg-surface">
+          <Box className="border-border bg-surface w-1/5 rounded-t-2xl border border-b-0 px-4 py-6">
             <Text className="mb-2 text-2xl">Business</Text>
             <Text className="mb-2 text-3xl font-semibold">
               ${billing === "annual" ? businessPrice * 0.8 : businessPrice}
@@ -384,21 +384,20 @@ export const Plans = () => {
 
         {/* Limits section */}
         <Box>
-          <Flex className="border-b border-border bg-surface/50">
+          <Flex className="border-border bg-surface/50 border-b">
             <Box className="w-1/5 px-4 py-4">
               <Text fontWeight="semibold">Limits</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-border bg-surface":
-                    plan.name === "Business",
+                  "border-border bg-surface border-x": plan.name === "Business",
                 })}
                 key={plan.name}
               />
             ))}
           </Flex>
-          <Flex className="border-b border-border">
+          <Flex className="border-border border-b">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">Members</Text>
             </Box>
@@ -406,8 +405,7 @@ export const Plans = () => {
               <Box
                 className={cn(
                   "w-1/5 px-4 py-4",
-                  plan.highlighted &&
-                    "border-x border-border bg-surface",
+                  plan.highlighted && "border-border bg-surface border-x",
                 )}
                 key={`${plan.name}-members`}
               >
@@ -416,15 +414,14 @@ export const Plans = () => {
             ))}
           </Flex>
 
-          <Flex className="border-b border-border">
+          <Flex className="border-border border-b">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">File uploads</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-border bg-surface":
-                    plan.highlighted,
+                  "border-border bg-surface border-x": plan.highlighted,
                 })}
                 key={`${plan.name}-files`}
               >
@@ -433,15 +430,14 @@ export const Plans = () => {
             ))}
           </Flex>
 
-          <Flex className="border-b border-border">
+          <Flex className="border-border border-b">
             <Box className="w-1/5 px-4 py-4">
               <Text className="opacity-80">Stories</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-border bg-surface":
-                    plan.highlighted,
+                  "border-border bg-surface border-x": plan.highlighted,
                 })}
                 key={`${plan.name}stories`}
               >
@@ -453,15 +449,14 @@ export const Plans = () => {
 
         {/* Features section */}
         <Box>
-          <Flex className="border-b border-border bg-surface/50">
+          <Flex className="border-border bg-surface/50 border-b">
             <Box className="w-1/5 px-4 py-4">
               <Text fontWeight="semibold">Features</Text>
             </Box>
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/5 px-4 py-4", {
-                  "border-x border-border bg-surface":
-                    plan.name === "Business",
+                  "border-border bg-surface border-x": plan.name === "Business",
                 })}
                 key={plan.name}
               />
@@ -478,11 +473,7 @@ export const Plans = () => {
 
               return (
                 <Flex
-                  className={
-                    !isLastItem
-                      ? "border-b border-border"
-                      : ""
-                  }
+                  className={!isLastItem ? "border-border border-b" : ""}
                   key={featureKey}
                 >
                   <Box className="w-1/5 px-4 py-4">
@@ -495,8 +486,7 @@ export const Plans = () => {
                     return (
                       <Box
                         className={cn("w-1/5 px-4 py-4", {
-                          "border-x border-border bg-surface":
-                            isHighlighted,
+                          "border-border bg-surface border-x": isHighlighted,
                         })}
                         key={`${plan.name}-${featureKey}`}
                       >

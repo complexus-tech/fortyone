@@ -64,10 +64,7 @@ export const Billing = () => {
         <Flex align="center" className="mb-6" justify="between">
           <Text color="muted">
             For questions about billing,{" "}
-            <a
-              className="text-foreground"
-              href="mailto:info@complexus.app"
-            >
+            <a className="text-foreground" href="mailto:info@complexus.app">
               contact us.
             </a>{" "}
             Your workspace has {totalValidMembers} users.
@@ -135,10 +132,7 @@ export const Billing = () => {
       <Flex align="center" className="mb-4" justify="between">
         <Text color="muted">
           For questions about billing,{" "}
-          <a
-            className="text-foreground"
-            href="mailto:info@complexus.app"
-          >
+          <a className="text-foreground" href="mailto:info@complexus.app">
             contact us.
           </a>{" "}
           Your plan has {totalValidMembers} users.
@@ -155,7 +149,7 @@ export const Billing = () => {
         </Button>
       </Flex>
 
-      <Box className="mb-6 rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface mb-6 rounded-2xl border">
         <SectionHeader
           action={
             <Button
@@ -222,7 +216,7 @@ export const Billing = () => {
       </Box>
 
       {/* Recent Invoices Card */}
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="Your recent billing history and invoices."
           title="Recent Invoices"
