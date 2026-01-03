@@ -38,7 +38,7 @@ export const CircleProgressBar = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          className="fill-none stroke-gray-100/50 dark:stroke-dark-100"
+          className="fill-none stroke-surface-prominent/70"
           strokeWidth={strokeWidth}
         />
         <circle
