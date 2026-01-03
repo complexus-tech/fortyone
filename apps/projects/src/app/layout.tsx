@@ -61,6 +61,7 @@ export default async function RootLayout({
         </SessionProvider>
         <OnlineStatusMonitor />
       </body>
+      <span className="text-icon" />
     </html>
   );
 }

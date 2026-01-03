@@ -107,6 +107,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <GoogleTagManager gtmId="G-TYRV8FKD2E" />
         </>
       ) : null}
+      <span className="text-icon" />
     </html>
   );
 }

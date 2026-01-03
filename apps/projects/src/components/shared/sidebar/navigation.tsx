@@ -49,7 +49,7 @@ export const Navigation = () => {
   const links: MenuItem[] = [
     {
       name: `My work`,
-      icon: <UserIcon className="text-icon" />,
+      icon: <UserIcon />,
       href: "/my-work",
     },
     {
