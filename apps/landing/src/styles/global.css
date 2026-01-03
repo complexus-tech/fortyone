@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tailwind-config";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -45,7 +46,7 @@
 
 body,
 html {
-  @apply text-text-primary font-body overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased dark:bg-background dark:text-text-primary;
+  @apply text-text-primary font-body dark:bg-background dark:text-text-primary overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased;
 }
 
 h1,
@@ -72,7 +73,7 @@ svg {
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply rounded-[3px] bg-border-strong dark:bg-surface-elevated;
+  @apply bg-border-strong dark:bg-surface-elevated rounded-[3px];
 }
 
 * {
@@ -105,13 +106,13 @@ ul[data-type="taskList"] li input {
   @apply accent-primary relative top-[0.2rem] h-[1.1rem] w-[1.1rem];
 }
 
-ul[data-type="taskList"] li>label {
+ul[data-type="taskList"] li > label {
   flex: 0 0 auto;
   margin-right: 0.5rem;
   user-select: none;
 }
 
-ul[data-type="taskList"] li>div {
+ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
 }
 
@@ -120,15 +121,15 @@ ul[data-type="taskList"] li ol li {
   display: list-item;
 }
 
-ul[data-type="taskList"]>li ul[data-type="taskList"],
-ul[data-type="taskList"]>li ol[data-type="taskList"] {
+ul[data-type="taskList"] > li ul[data-type="taskList"],
+ul[data-type="taskList"] > li ol[data-type="taskList"] {
   display: flex;
 }
 
 .tiptap .is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
-  @apply pointer-events-none float-left h-0 text-text-muted/80 dark:text-text-muted/60;
+  @apply text-text-muted/80 dark:text-text-muted/60 pointer-events-none float-left h-0;
 }
 
 /*** Works on common browsers ***/
@@ -266,7 +267,7 @@ ul[data-type="taskList"]>li ol[data-type="taskList"] {
 }
 
 .mf-cursor-text {
-  @apply border-border bg-background absolute flex items-center justify-center rounded-full border p-2 text-center text-text-primary opacity-0;
+  @apply border-border bg-background text-text-primary absolute flex items-center justify-center rounded-full border p-2 text-center opacity-0;
   position: absolute;
   top: -40px;
   left: -40px;
