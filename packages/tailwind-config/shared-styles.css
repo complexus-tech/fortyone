@@ -2,13 +2,17 @@
 
 @theme {
   --rounded-app: var(--rounded-app);
-  /* --color-*: initial; */
+  --color-*: initial;
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
   --color-foreground-inverse: var(--color-foreground-inverse);
   --color-background-inverse: var(--color-background-inverse);
   --color-surface: var(--color-surface);
   --color-surface-foreground: var(--color-surface-foreground);
+  --color-black: var(--color-black);
+  --color-white: var(--color-white);
+  --color-transparent: var(--color-transparent);
+  --color-current: var(--color-current);
 
   --color-surface-elevated: var(--color-surface-elevated);
   --color-surface-elevated-foreground: var(--color-surface-elevated-foreground);
@@ -74,6 +78,11 @@
   --rounded-app: 0.5rem;
 
   --color-background: oklch(1 0 0);
+  --color-black: oklch(0 0 0);
+  --color-white: oklch(1 0 0);
+  --color-transparent: oklch(0 0 0 / 0);
+  --color-current: oklch(0 0 0);
+
   --color-foreground: oklch(0.145 0 0);
   --color-foreground-inverse: oklch(1 0 0);
   --color-background-inverse: oklch(0.145 0 0);
