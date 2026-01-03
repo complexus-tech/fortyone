@@ -44,7 +44,7 @@ export const Header = ({
         >
           <input
             autoFocus
-            className="w-9/12 bg-transparent placeholder:text-text-muted/90"
+            className="placeholder:text-text-muted/90 w-9/12 bg-transparent outline-0"
             onChange={(e) => {
               setSearchTerm(e.target.value);
             }}
