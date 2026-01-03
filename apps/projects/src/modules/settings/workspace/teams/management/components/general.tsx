@@ -55,16 +55,13 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
   };
 
   return (
-    <Box className="rounded-2xl border border-border bg-surface">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         description="Basic information about your team."
         title="General Information"
       />
 
-      <form
-        className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
-        onSubmit={handleSubmit}
-      >
+      <form className="divide-border divide-y-[0.5px]" onSubmit={handleSubmit}>
         <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <Box>
             <Text>Team name</Text>
@@ -122,7 +119,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
         <FeatureGuard
           fallback={
             <Box className="px-6 py-4">
-              <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
                 <Flex align="center" gap={2}>
                   <WarningIcon className="text-warning dark:text-warning" />
                   <Text>
