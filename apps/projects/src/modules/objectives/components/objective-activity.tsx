@@ -202,7 +202,7 @@ export const ObjectiveActivityComponent = ({
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-3.5">
       <Box
         className={cn(
-          "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-border d",
+          "border-border d pointer-events-none absolute top-0 left-4 z-0 h-full border-l border-dashed",
         )}
       />
       <Flex align="center" className="z-1" gap={1}>
@@ -252,14 +252,14 @@ export const ObjectiveActivityComponent = ({
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="relative left-px flex aspect-square items-center rounded-full bg-white p-[0.3rem] bg-surface">
+            <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
               <Avatar
                 name={member?.fullName}
                 size="xs"
                 src={member?.avatarUrl}
               />
             </Box>
-            <Text className="relative ml-1 text-sm text-black dark:text-white md:text-[0.95rem]">
+            <Text className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white">
               {member?.username}
             </Text>
           </Flex>
@@ -289,7 +289,7 @@ export const ObjectiveActivityComponent = ({
               ) : null}
               <Text
                 as="span"
-                className="shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
+                className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
               >
                 {fieldMap[field].label || field}
               </Text>
@@ -304,7 +304,7 @@ export const ObjectiveActivityComponent = ({
                   </Text>
                   <Text
                     as="span"
-                    className="inline-block max-w-[24ch] shrink-0 truncate text-sm text-black dark:text-white md:text-[0.95rem]"
+                    className="inline-block max-w-[24ch] shrink-0 truncate text-sm text-black md:text-[0.95rem] dark:text-white"
                     title={currentValue}
                   >
                     {fieldMap[field].render(currentValue) || currentValue}
@@ -330,14 +330,14 @@ export const ObjectiveActivityComponent = ({
         </Box>
       </Flex>
       {comment ? (
-        <Flex align="start" className="ml-9 mt-2 gap-2">
+        <Flex align="start" className="mt-2 ml-9 gap-2">
           <Avatar
             className="mt-0.5"
             name={member?.fullName}
             size="xs"
             src={member?.avatarUrl}
           />
-          <Box className="max-w-lg rounded-xl rounded-tl-md border border-border bg-surface-muted px-4 py-2 d bg-surface/80">
+          <Box className="border-border bg-surface-muted d bg-surface/80 max-w-lg rounded-xl rounded-tl-md border px-4 py-2">
             <Text color="muted">{comment}</Text>
           </Box>
         </Flex>
