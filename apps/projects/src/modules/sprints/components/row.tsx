@@ -61,7 +61,7 @@ export const SprintRow = ({
       >
         <Flex
           align="center"
-          className="size-10 rounded-[0.6rem] bg-surface-muted"
+          className="bg-surface-muted size-10 rounded-[0.6rem]"
           justify="center"
         >
           <SprintsIcon />
@@ -84,7 +84,7 @@ export const SprintRow = ({
 
       <Flex className="items-center" gap={4}>
         <Badge
-          className="h-8 px-2 text-base capitalize tracking-wide"
+          className="h-8 px-2 text-base tracking-wide capitalize"
           color={statusColors[sprintStatus]}
         >
           {sprintStatus}
@@ -102,28 +102,28 @@ export const SprintRow = ({
             <StoryStatusIcon category="completed" />
             <Text>
               {completed}
-              <span className="text-muted ml-1.5">Done</span>
+              <span className="text-muted-foreground ml-1.5">Done</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
             <StoryStatusIcon category="started" />
             <Text className="whitespace-nowrap">
               {started}
-              <span className="text-muted ml-2">Active</span>
+              <span className="text-muted-foreground ml-2">Active</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
             <StoryStatusIcon category="unstarted" />
             <Text className="whitespace-nowrap">
               {unstarted}
-              <span className="text-muted ml-1.5">Todo</span>
+              <span className="text-muted-foreground ml-1.5">Todo</span>
             </Text>
           </Flex>
           <Flex align="center" className="min-w-[80px] gap-1.5">
             <StoryStatusIcon category="backlog" />
             <Text className="whitespace-nowrap">
               {backlog}
-              <span className="text-muted ml-1.5">Backlog</span>
+              <span className="text-muted-foreground ml-1.5">Backlog</span>
             </Text>
           </Flex>
         </Flex>
