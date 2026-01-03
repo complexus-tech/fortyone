@@ -104,16 +104,16 @@ const Package = ({
   return (
     <Box
       className={cn(
-        "h-full rounded-3xl border border-border px-6 pb-8 pt-6 shadow-2xl shadow-shadow bg-surface-elevated",
+        "border-border shadow-shadow h-full rounded-3xl border px-6 pt-6 pb-8 shadow-2xl",
         {
-          "border-2 border-dark dark:border-white": recommended,
+          "border-2 border-black dark:border-white": recommended,
         },
       )}
     >
       <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
-          <Badge color="invert" rounded="full">
+          <Badge color="invert" rounded="md" className="font-semibold">
             Most Popular
           </Badge>
         ) : null}
@@ -135,7 +135,9 @@ const Package = ({
 
       <Button
         align="center"
-        className="mt-6 border-border/30"
+        className={cn("border-border/80 mt-6", {
+          "border-background-inverse": recommended,
+        })}
         color={recommended ? "invert" : "tertiary"}
         fullWidth
         href={href}
@@ -144,7 +146,7 @@ const Package = ({
         {cta}
       </Button>
       <Text className="mt-4">{overview}</Text>
-      <Divider className="mb-5 mt-6 border-border" />
+      <Divider className="border-border mt-6 mb-5" />
       <Flex className="gap-4" direction="column">
         {features.map((feature) => (
           <Feature feature={feature} key={feature} />
@@ -212,7 +214,7 @@ export const Pricing = ({
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-full border border-border bg-white p-1 d dark:bg-dark-300">
+            <Box className="border-border bg-surface flex w-max gap-1 rounded-full border p-1">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-3 capitalize", {
