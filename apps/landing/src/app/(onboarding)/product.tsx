@@ -17,18 +17,18 @@ export const ProductImage = () => {
         className="h-full w-full rounded-2xl object-cover"
         src="/images/mesh.webp"
       />
-      <Container className="absolute inset-0 z-10 flex flex-col justify-between pb-16 pt-12 dark:text-black md:px-16">
+      <Container className="absolute inset-0 z-10 flex flex-col justify-between pt-12 pb-16 md:px-16 dark:text-black">
         <Logo className="h-7 dark:text-black" />
         <Box>
           <Text
             as="h2"
-            className="mb-4 font-mono font-semibold uppercase tracking-wider dark:text-black"
+            className="mb-4 font-mono font-semibold tracking-wider uppercase dark:text-black"
           >
             [Built for builders]
           </Text>
           <Text
             as="h3"
-            className="mb-10 text-5xl font-semibold leading-[1.2] dark:text-black"
+            className="mb-10 text-5xl leading-[1.2] font-semibold dark:text-black"
           >
             Plan, track, deliver with the project management tool your team will
             love.
@@ -64,17 +64,11 @@ export const ProductImage = () => {
                 ? "signing in"
                 : "continuing"}
             , you agree to our{" "}
-            <Link
-              className="text-foreground underline"
-              href="/terms"
-            >
+            <Link className="text-black underline" href="/terms">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link
-              className="text-foreground underline"
-              href="/privacy"
-            >
+            <Link className="text-black underline" href="/privacy">
               Privacy Policy
             </Link>
           </Text>
