@@ -29,22 +29,20 @@ export const ContextMenuItem = ({
         <ContextMenu.SubMenu>
           <ContextMenu.SubTrigger className="justify-between">
             <Box className="grid grid-cols-[24px_auto] items-center">
-              <span className="flex text-gray dark:text-gray-200">{icon}</span>
+              <span className="text-foreground flex">{icon}</span>
               <Text>{label}</Text>
             </Box>
             <Flex align="center" gap={3}>
               {shortCut ? (
-                <Flex className="text-sm text-gray dark:text-gray-200">
-                  {shortCut}
-                </Flex>
+                <Flex className="text-text-muted text-sm">{shortCut}</Flex>
               ) : null}
               <ArrowRightIcon
-                className="h-3.5 w-auto text-gray dark:text-gray-200"
+                className="text-text-muted h-3.5 w-auto"
                 strokeWidth={2.8}
               />
             </Flex>
           </ContextMenu.SubTrigger>
-          <ContextMenu.SubItems className="min-w-[10rem]" rounded="md">
+          <ContextMenu.SubItems className="min-w-40" rounded="md">
             <ContextMenu.Group>
               {subMenu.map(
                 ({
@@ -61,15 +59,13 @@ export const ContextMenuItem = ({
                     onSelect={subOnSelect}
                   >
                     <Box className="grid grid-cols-[24px_auto] items-center gap-1">
-                      <span className="flex text-gray dark:text-gray-200">
-                        {subIcon}
-                      </span>
-                      <Text className="max-w-[10rem] truncate text-[0.95rem]">
+                      <span className="text-text-muted flex">{subIcon}</span>
+                      <Text className="max-w-40 truncate text-[0.95rem]">
                         {subLabel}
                       </Text>
                     </Box>
                     {subShortCut ? (
-                      <Flex className="text-gray">{subShortCut}</Flex>
+                      <Flex className="text-text-muted">{subShortCut}</Flex>
                     ) : null}
                   </ContextMenu.Item>
                 ),
@@ -84,10 +80,12 @@ export const ContextMenuItem = ({
           onSelect={onSelect}
         >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
-            <span className="flex text-gray dark:text-gray-200">{icon}</span>
-            <Text className="max-w-[10rem] truncate">{label}</Text>
+            <span className="text-text-muted flex">{icon}</span>
+            <Text className="max-w-40 truncate">{label}</Text>
           </Box>
-          {shortCut ? <Flex className="text-gray">{shortCut}</Flex> : null}
+          {shortCut ? (
+            <Flex className="text-text-muted">{shortCut}</Flex>
+          ) : null}
         </ContextMenu.Item>
       )}
     </>

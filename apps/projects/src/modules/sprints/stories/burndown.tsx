@@ -34,9 +34,9 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="z-50 min-w-44 rounded-2xl border border-gray-100 bg-white/60 p-3 font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/60 dark:text-gray-200">
+      <Box className="border-border bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border p-4 backdrop-blur-lg">
         <Text fontWeight="semibold">{label}</Text>
-        <Box className="mb-0.1 mt-1 text-warning">
+        <Box className="mb-0.1 text-warning mt-1">
           Remaining: {data.actual}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>

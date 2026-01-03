@@ -114,7 +114,7 @@ const StoryRow = ({
 
 const List = ({ stories }: { stories: Story[] }) => {
   return (
-    <Box className="mt-2.5 border-t border-gray-50 dark:border-dark-200">
+    <Box className="mt-2.5 border-t border-border">
       {stories.slice(0, 9).map((story) => (
         <StoryRow key={story.id} {...story} />
       ))}
@@ -178,7 +178,7 @@ export const MyStories = () => {
   }
 
   return (
-    <Wrapper className="min-h-[25rem] md:min-h-[30rem]">
+    <Wrapper className="min-h-100 md:min-h-120">
       <Flex align="center" className="mb-2 md:mb-0" justify="between">
         <Text className="mb-2" fontSize="lg">
           Recent {getTermDisplay("storyTerm", { variant: "plural" })}
@@ -202,7 +202,7 @@ export const MyStories = () => {
           {inProgressStories.length === 0 ? (
             <Flex
               align="center"
-              className="h-[25rem]"
+              className="h-100"
               direction="column"
               gap={3}
               justify="center"
@@ -222,7 +222,7 @@ export const MyStories = () => {
           {upcomingStories.length === 0 ? (
             <Flex
               align="center"
-              className="h-[25rem]"
+              className="h-100"
               direction="column"
               gap={3}
               justify="center"
@@ -241,7 +241,7 @@ export const MyStories = () => {
           {overdueStories.length === 0 ? (
             <Flex
               align="center"
-              className="h-[25rem]"
+              className="h-100"
               direction="column"
               gap={3}
               justify="center"

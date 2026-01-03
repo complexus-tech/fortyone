@@ -84,7 +84,7 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-gray-100 bg-dark/5 p-0.5 shadow-gray-100 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-[0.35rem]"
+                className="relative rounded-lg border border-border bg-background/5 p-0.5 backdrop-blur d md:rounded-2xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Flex
@@ -102,14 +102,14 @@ export const HeroCards = () => {
                 <Box className="relative">
                   <Image
                     alt={card.title}
-                    className="relative hidden rounded-[0.4rem] border border-dark-50/70 dark:block md:rounded-[0.7rem]"
+                    className="relative hidden rounded-[0.4rem] border border-border/70 dark:block md:rounded-[0.7rem]"
                     placeholder="blur"
                     priority
                     src={card.image.src}
                   />
                   <Image
                     alt={card.title}
-                    className="relative rounded-[0.4rem] border border-gray-100 dark:hidden md:rounded-[0.7rem]"
+                    className="relative rounded-[0.4rem] border border-border dark:hidden md:rounded-[0.7rem]"
                     placeholder="blur"
                     priority
                     src={card.image.srcLight}
@@ -120,7 +120,7 @@ export const HeroCards = () => {
           </Swiper>
         </Box>
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-gradient-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
+      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
     </Box>
   );
 };

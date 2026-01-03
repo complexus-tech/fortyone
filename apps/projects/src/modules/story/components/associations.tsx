@@ -56,7 +56,7 @@ const AssociationBadge = ({
 
   return (
     <Badge
-      className="shrink-0 px-1 text-sm font-bold uppercase dark:border-dark-100 dark:text-opacity-70"
+      className="d dark:text-opacity-70 shrink-0 px-1 text-sm font-bold uppercase"
       color={color}
       rounded="sm"
     >
@@ -80,13 +80,12 @@ export const Associations = ({
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
 
   return (
-    <Box className="mt-8">
+    <Box className="mt-4">
       {associations.length > 0 && (
         <Flex
           align="center"
           className={cn({
-            "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
-              !isAssociationsOpen,
+            "border-border d border-b-[0.5px] pb-2": !isAssociationsOpen,
           })}
           justify="between"
         >
@@ -113,7 +112,7 @@ export const Associations = ({
       )}
 
       {isAssociationsOpen && associations.length > 0 ? (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100 pb-0 dark:border-dark-100">
+        <Box className="border-border d mt-2 border-t-[0.5px] pb-0">
           {associations.map((assoc) => {
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,

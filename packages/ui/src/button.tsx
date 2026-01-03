@@ -1,0 +1,232 @@
+import type { VariantProps } from "cva";
+import { cva } from "cva";
+import { LoadingIcon } from "icons";
+import { cn } from "lib";
+import Link, { LinkProps } from "next/link";
+import { ReactNode, forwardRef, type ButtonHTMLAttributes } from "react";
+
+export const buttonVariants = cva(
+  "flex text-foreground w-max items-center border gap-2 transition duration-200 ease-linear focus-visible:outline-0 cursor-pointer",
+  {
+    variants: {
+      variant: {
+        outline: null,
+        solid: null,
+        naked:
+          "bg-transparent border-none hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+      },
+      rounded: {
+        none: "rounded-none",
+        sm: "rounded",
+        md: "rounded-[0.7rem]",
+        lg: "rounded-[0.85rem]",
+        xl: "rounded-3xl",
+        full: "rounded-full",
+      },
+      color: {
+        primary: "border-primary bg-primary",
+        danger: "text-danger border-danger bg-danger ring-danger",
+        info: "text-info border-info bg-info ring-info",
+        warning: "text-warning border-warning bg-warning ring-warning",
+        tertiary:
+          "border-border bg-surface-muted hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+        secondary:
+          "text-secondary border-secondary bg-secondary ring-secondary",
+        white: "text-black dark:text-dark border-white bg-white ring-white",
+        invert: "text-foreground-inverse bg-background-inverse",
+        black: "text-white border-black bg-black ring-black",
+      },
+      size: {
+        xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
+        sm: "px-2 h-[2.1rem] gap-1",
+        md: "px-3 h-[2.4rem] md:h-10",
+        lg: "px-5 md:px-7 py-[0.56rem]",
+      },
+      disabled: {
+        true: "opacity-40 cursor-not-allowed",
+      },
+      active: {
+        true: null,
+      },
+      loading: {
+        true: "opacity-80 cursor-progress",
+      },
+      fullWidth: {
+        true: "w-full",
+      },
+      align: {
+        center: "justify-center",
+        left: "justify-start",
+        right: "justify-end",
+        between: "justify-between",
+      },
+      asIcon: {
+        true: "px-0 aspect-square justify-center",
+      },
+    },
+    compoundVariants: [
+      // Solid variant
+      {
+        variant: "solid",
+        color: ["primary", "secondary", "danger", "info"],
+        className: "text-white",
+      },
+      {
+        variant: "solid",
+        color: "warning",
+        className: "text-warning-foreground",
+      },
+      {
+        variant: "outline",
+        color: "black",
+        className: "text-foreground border-border bg-transparent ring-ring",
+      },
+      // Naked variant
+      {
+        variant: "naked",
+        color: [
+          "primary",
+          "secondary",
+          "warning",
+          "danger",
+          "info",
+          "tertiary",
+        ],
+        className: "bg-transparent border-none",
+      },
+      {
+        variant: "naked",
+        color: ["secondary"],
+        className: "text-foreground",
+      },
+      {
+        variant: "naked",
+        color: "primary",
+        className: "text-primary",
+      },
+      {
+        variant: "naked",
+        color: "danger",
+        className: "text-danger bg-state-hover",
+      },
+      {
+        disabled: true,
+        variant: ["outline", "naked"],
+        className: "bg-state-disabled text-text-disabled",
+      },
+      {
+        disabled: true,
+        variant: ["outline", "naked"],
+        color: ["primary", "tertiary"],
+        className: "bg-transparent text-text-disabled cursor-not-allowed",
+      },
+      {
+        active: true,
+        color: "tertiary",
+        className: "bg-state-selected",
+      },
+    ],
+    defaultVariants: {
+      size: "md",
+      variant: "solid",
+      color: "primary",
+      rounded: "md",
+      align: "left",
+    },
+  }
+);
+
+export interface ButtonProps
+  extends Omit<
+      ButtonHTMLAttributes<HTMLButtonElement>,
+      "color" | "disabled" | "active"
+    >,
+    VariantProps<typeof buttonVariants> {
+  href?: string;
+  loadingText?: string;
+  target?: "_blank" | "_self" | "_parent" | "_top";
+  prefetch?: LinkProps["prefetch"];
+  rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (props, ref) => {
+    const {
+      variant,
+      color,
+      rounded,
+      asIcon,
+      size,
+      target = "_self",
+      loading,
+      fullWidth,
+      align,
+      loadingText,
+      href,
+      active,
+      rightIcon,
+      leftIcon,
+      className,
+      disabled,
+      children,
+      prefetch,
+      ...rest
+    } = props;
+
+    const classes = cn(
+      buttonVariants({
+        variant,
+        color,
+        asIcon,
+        size,
+        disabled,
+        loading,
+        active,
+        rounded,
+        fullWidth,
+        align,
+      }),
+      className
+    );
+
+    return (
+      <>
+        {href ? (
+          <Link
+            className={classes}
+            href={href}
+            target={target}
+            prefetch={prefetch}
+          >
+            {leftIcon}
+            {children}
+            {rightIcon}
+          </Link>
+        ) : (
+          <button
+            className={classes}
+            disabled={disabled as boolean}
+            ref={ref}
+            {...rest}
+          >
+            {loading ? (
+              <>
+                <LoadingIcon className="animate-spin" />
+                {loadingText || "Loading..."}
+              </>
+            ) : (
+              <>
+                {leftIcon}
+                {children}
+                {rightIcon}
+              </>
+            )}
+          </button>
+        )}
+      </>
+    );
+  }
+);
+
+Button.displayName = "Button";

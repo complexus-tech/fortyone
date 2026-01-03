@@ -45,7 +45,7 @@ export const NotificationsHeader = () => {
   return (
     <Flex
       align="center"
-      className="h-16 border-b-[0.5px] border-gray-200/60 px-4 dark:border-dark-100"
+      className="h-16 border-b-[0.5px] border-border/60 px-4 d"
       justify="between"
     >
       <Flex align="center" className="gap-2">

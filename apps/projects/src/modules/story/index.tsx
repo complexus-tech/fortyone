@@ -103,7 +103,7 @@ export const StoryPage = ({
         <Box className="flex h-screen items-center justify-center">
           <Box className="flex flex-col items-center">
             <StoryMissingIcon className="h-20 w-auto rotate-12" />
-            <Text className="mb-6 mt-10" fontSize="3xl">
+            <Text className="mt-10 mb-6" fontSize="3xl">
               404: Item not found
             </Text>
             <Text className="mb-6 max-w-md text-center" color="muted">

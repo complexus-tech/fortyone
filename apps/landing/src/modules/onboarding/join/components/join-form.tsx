@@ -39,7 +39,7 @@ export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
             <Avatar
               name={workspaceName}
               rounded="md"
-              className="bg-dark text-white dark:bg-white dark:text-dark"
+              className="bg-dark text-white dark:bg-white dark:text-foreground"
             />
             <Box>
               <Text>{workspaceName}</Text>
@@ -61,11 +61,11 @@ export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
         </Flex>
       </Wrapper>
       <Flex align="center" className="my-3 gap-4" justify="between">
-        <Box className="h-px w-full bg-gray-100 dark:bg-white/10" />
+        <Box className="h-px w-full bg-surface-muted" />
         <Text color="muted" className="text-[0.95rem]">
           OR
         </Text>
-        <Box className="h-px w-full bg-gray-100 dark:bg-white/10" />
+        <Box className="h-px w-full bg-surface-muted" />
       </Flex>
       <Button
         align="center"

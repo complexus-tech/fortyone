@@ -1,4 +1,4 @@
-import { CloseIcon, HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
+import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
 import { Flex, Button, Text, Tooltip, Badge, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -37,7 +37,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <PlusIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.8}
                 />
               }
@@ -53,7 +53,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <NewTabIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.6}
                 />
               }
@@ -120,7 +120,7 @@ export const ChatHeader = ({
                 color="tertiary"
                 leftIcon={
                   <HistoryIcon
-                    className="text-dark dark:text-gray-200"
+                    className="text-foreground"
                     strokeWidth={2.8}
                   />
                 }
@@ -140,7 +140,7 @@ export const ChatHeader = ({
               color="tertiary"
               leftIcon={
                 <CloseIcon
-                  className="text-dark dark:text-gray-200"
+                  className="text-foreground"
                   strokeWidth={2.8}
                 />
               }

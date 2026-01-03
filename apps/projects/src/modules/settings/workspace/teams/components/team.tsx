@@ -25,7 +25,7 @@ export const WorkspaceTeam = ({
   return (
     <RowWrapper className="last-of-type:border-b-0 md:px-6">
       <Flex align="center" gap={3}>
-        <Box className="flex size-8 shrink-0 items-center justify-center rounded-[0.6rem] bg-gray-100/80 dark:bg-dark-100/80">
+        <Box className="flex size-8 shrink-0 items-center justify-center rounded-[0.6rem] bg-surface-muted/80">
           <TeamColor color={color} />
         </Box>
         <Link href={`/settings/workspace/teams/${id}`}>

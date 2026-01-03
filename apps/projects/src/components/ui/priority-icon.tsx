@@ -12,7 +12,7 @@ export const PriorityIcon = ({
     <>
       {priority === "No Priority" && (
         <svg
-          className={cn("shrink-0 text-gray dark:text-gray-300", className)}
+          className={cn("shrink-0 text-text-muted", className)}
           fill="currentColor"
           focusable="false"
           height="16"

@@ -139,10 +139,10 @@ export const StoriesViewOptionsButton = ({
           color="tertiary"
           disabled={disabled}
           leftIcon={
-            <PreferencesIcon className="h-4 w-auto text-gray dark:text-gray-300" />
+            <PreferencesIcon className="h-4 w-auto text-text-muted" />
           }
           rightIcon={
-            <ArrowDownIcon className="h-3.5 w-auto text-gray dark:text-gray-300" />
+            <ArrowDownIcon className="h-3.5 w-auto text-text-muted" />
           }
           size="sm"
           variant="outline"
@@ -210,7 +210,7 @@ export const StoriesViewOptionsButton = ({
           </Select>
         </Flex>
         <Divider className="my-2" />
-        <Box className="max-w-[27rem] px-4 py-2">
+        <Box className="max-w-108 px-4 py-2">
           <Text className="mb-4" fontWeight="medium">
             Display options
           </Text>

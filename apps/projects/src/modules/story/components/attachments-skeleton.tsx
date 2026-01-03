@@ -6,7 +6,7 @@ export const AttachmentsSkeleton = ({ className }: { className?: string }) => {
   return (
     <Wrapper
       className={cn(
-        "mb-4 mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
+        "mb-4 mt-2.5 border-t border-border pt-2.5 d",
         className,
       )}
     >

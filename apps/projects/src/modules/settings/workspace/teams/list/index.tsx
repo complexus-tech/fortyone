@@ -37,7 +37,7 @@ export const TeamsList = () => {
           />
         )}
       </Flex>
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
             <Button
@@ -79,7 +79,7 @@ export const TeamsList = () => {
 
         <Flex
           align="center"
-          className="hidden border-b-[0.5px] border-gray-100 px-6 py-5 dark:border-dark-100 md:flex"
+          className="border-border hidden border-b-[0.5px] px-6 py-5 md:flex"
           justify="between"
         >
           <Text>Name</Text>

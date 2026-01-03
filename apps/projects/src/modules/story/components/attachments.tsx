@@ -91,7 +91,7 @@ export const Attachments = ({
 
   return (
     <Box className={className} suppressHydrationWarning>
-      <Flex align="center" className="mb-2 mt-4" justify="between">
+      <Flex align="center" className="mt-4 mb-2" justify="between">
         <Text as="h4" className="flex items-center gap-1" fontWeight="semibold">
           <AttachmentIcon className="h-5 w-auto" />
           Attachments

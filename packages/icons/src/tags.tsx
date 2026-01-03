@@ -11,7 +11,7 @@ export const TagsIcon = (props: Icon) => {
       viewBox="0 0 24 24"
       width="24"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn("h-5 w-auto text-icon", className)}
     >
       <path
         fillRule="evenodd"

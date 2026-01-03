@@ -77,7 +77,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
         <>
           <Text fontSize="md">Sprint Goal:</Text>
           <Box
-            className="mt-1 line-clamp-4 text-gray dark:text-gray-300/80"
+            className="mt-1 line-clamp-4 text-text-muted"
             html={selectedSprint.goal}
           />
         </>

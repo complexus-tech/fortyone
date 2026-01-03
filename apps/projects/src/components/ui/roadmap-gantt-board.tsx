@@ -58,7 +58,7 @@ const ObjectiveRow = ({
     >
       <Flex
         align="center"
-        className="group h-14 border-b-[0.5px] border-gray-100 px-6 transition-colors hover:bg-gray-50 dark:border-dark-100 dark:hover:bg-dark-300"
+        className="group h-14 border-b-[0.5px] border-border px-6 transition-colors hover:bg-state-hover"
         justify="between"
       >
         <Flex align="center" className="min-w-0 flex-1 gap-3">
@@ -256,7 +256,7 @@ export const RoadmapGanttBoard = ({
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] border-gray-200/60 bg-white dark:border-dark-100 dark:bg-dark md:w-[34rem]">
+        <Box className="sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] border-border/60 bg-background md:w-136">
           <GanttHeader
             onReset={onReset}
             onZoomChange={onZoomChange}

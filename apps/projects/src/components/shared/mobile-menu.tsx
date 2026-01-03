@@ -25,7 +25,7 @@ export const MobileMenuButton = () => {
       </Button>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
-          className="mx-0 mb-0 mt-0 h-dvh w-72 rounded-none border-y-0 border-l-0 dark:bg-dark-300"
+          className="mx-0 mb-0 mt-0 h-dvh w-72 rounded-none border-y-0 border-l-0 bg-surface-elevated"
           hideClose
           overlayClassName=" justify-start"
         >

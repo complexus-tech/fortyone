@@ -68,7 +68,7 @@ const Items = ({
         <Command.Empty className="py-2">
           <Text color="muted">No timezone found.</Text>
         </Command.Empty>
-        <Command.Group className="max-h-[20rem] overflow-y-auto md:max-h-[25rem]">
+        <Command.Group className="max-h-80 overflow-y-auto md:max-h-100">
           {timezones.map((timezone) => (
             <Command.Item
               className="flex items-center gap-2 overflow-clip text-base"
@@ -106,7 +106,7 @@ export const Timezone = () => {
   };
 
   return (
-    <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="mt-6 rounded-2xl border border-border bg-surface">
       <SectionHeader
         description="Set your local timezone for accurate time displays."
         title="Timezone"

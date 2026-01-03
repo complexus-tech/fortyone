@@ -14,7 +14,7 @@ const OptionSkeleton = ({ label }: { label: string }) => (
 
 export const OptionsSkeleton = () => {
   return (
-    <Box className="h-full overflow-y-auto bg-gradient-to-br from-white via-gray-50/50 to-gray-50 pb-6 dark:from-dark-200/50 dark:to-dark">
+    <Box className="from-sidebar to-sidebar/50 h-full overflow-y-auto bg-linear-to-br pb-6">
       <Container className="pt-7 md:px-6">
         <Flex align="center" className="mb-12" justify="between">
           <Flex align="center" gap={2}>

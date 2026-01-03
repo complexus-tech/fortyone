@@ -207,7 +207,7 @@ export const NewSprintDialog = ({
           </Dialog.Title>
           <Flex gap={2}>
             <Button
-              className="px-[0.35rem] dark:hover:bg-dark-100"
+              className="px-[0.35rem] hover:bg-state-hover"
               color="tertiary"
               onClick={() => {
                 setIsExpanded((prev) => !prev);
@@ -362,7 +362,7 @@ export const NewSprintDialog = ({
             Discard
           </Button>
           <Button
-            leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+            leftIcon={<PlusIcon className="text-white" />}
             onClick={handleCreateSprint}
             size="md"
           >

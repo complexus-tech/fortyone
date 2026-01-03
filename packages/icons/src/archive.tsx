@@ -6,7 +6,7 @@ export const ArchiveIcon = (props: Icon) => {
   return (
     <svg
       {...rest}
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn("h-5 w-auto text-icon", className)}
       fill="currentColor"
       height="24"
       viewBox="0 0 24 24"

@@ -63,7 +63,7 @@ export const Welcome = ({
             <>
               Boost your productivity with keyboard shortcuts (press{" "}
               <Badge
-                className="inline-flex gap-0 rounded-[0.4rem] font-semibold text-gray dark:text-gray-300"
+                className="inline-flex gap-0 rounded-[0.4rem] font-semibold text-muted dark:text-text-secondary"
                 color="tertiary"
               >
                 <CommandIcon className="h-3" strokeWidth={3} />

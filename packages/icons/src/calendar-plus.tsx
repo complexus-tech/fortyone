@@ -8,7 +8,7 @@ export const CalendarPlusIcon = (props: Icon) => {
       {...rest}
       fill="none"
       height="24"
-      className={cn(className, "h-5 w-auto text-gray dark:text-gray-300")}
+      className={cn(className, "h-5 w-auto text-icon")}
       strokeWidth={strokeWidth}
       viewBox="0 0 24 24"
       width="24"

@@ -37,7 +37,7 @@ export const AllStories = ({
   return (
     <Box className="h-[calc(100vh-4rem)]">
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-gray-100 backdrop-blur-lg dark:border-dark-100/40">
+        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-border backdrop-blur-lg d/40">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>

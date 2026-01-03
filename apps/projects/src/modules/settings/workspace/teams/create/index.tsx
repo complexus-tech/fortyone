@@ -82,7 +82,7 @@ export const CreateTeam = () => {
       <FeatureGuard
         count={teams.length}
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -99,13 +99,13 @@ export const CreateTeam = () => {
         }
         feature="maxTeams"
       >
-        <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+        <Box className="border-border bg-surface rounded-2xl border">
           <SectionHeader
             description="Create a new team to group members, and collaborate on objectives."
             title="Create a new team"
           />
           <form
-            className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100"
+            className="divide-border divide-y-[0.5px]"
             onSubmit={handleSubmit}
           >
             <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
@@ -116,7 +116,7 @@ export const CreateTeam = () => {
                 </Text>
               </Box>
               <Input
-                className="h-[2.5rem] md:w-80"
+                className="h-10 md:w-80"
                 maxLength={24}
                 minLength={3}
                 name="name"
@@ -137,7 +137,7 @@ export const CreateTeam = () => {
                 </Text>
               </Box>
               <Input
-                className="h-[2.5rem] w-28"
+                className="h-10 w-28"
                 maxLength={3}
                 minLength={2}
                 name="code"
@@ -164,7 +164,7 @@ export const CreateTeam = () => {
             <FeatureGuard
               fallback={
                 <Box className="px-6 py-4">
-                  <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+                  <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
                     <Flex align="center" gap={2}>
                       <WarningIcon className="text-warning dark:text-warning" />
                       <Text>

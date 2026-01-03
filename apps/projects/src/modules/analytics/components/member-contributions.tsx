@@ -33,7 +33,7 @@ export const MemberContributions = () => {
         <Box className="space-y-2">
           {Array.from({ length: 4 }).map((_, index) => (
             <Box
-              className="h-10 animate-pulse rounded bg-gray-200 dark:bg-dark-100"
+              className="h-10 animate-pulse rounded bg-skeleton"
               key={index}
             />
           ))}
@@ -54,9 +54,9 @@ export const MemberContributions = () => {
       </Box>
 
       {contributionsData.length > 0 ? (
-        <Box className="overflow-hidden rounded-[0.6rem] border border-gray-200 dark:border-dark-50">
+        <Box className="overflow-hidden rounded-[0.6rem] border border-border">
           {/* Compact Rows */}
-          <Box className="bg-white dark:bg-dark-200">
+          <Box className="bg-background">
             {contributionsData.map((member, index) => {
               const completionRate =
                 member.assigned > 0
@@ -67,7 +67,7 @@ export const MemberContributions = () => {
                 <Box
                   className={`px-3 py-2.5 ${
                     index !== contributionsData.length - 1
-                      ? "border-b border-gray-100 dark:border-dark-50"
+                      ? "border-b border-border"
                       : ""
                   }`}
                   key={member.userId}
@@ -92,9 +92,9 @@ export const MemberContributions = () => {
                     </Text>
                   </Flex>
 
-                  <Box className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-100">
+                  <Box className="h-1 overflow-hidden rounded-full bg-skeleton">
                     <Box
-                      className="from-green-500 to-green-600 h-full rounded-full bg-gradient-to-r"
+                      className="from-green-500 to-green-600 h-full rounded-full bg-linear-to-r"
                       style={{
                         width: `${Math.min(completionRate, 100)}%`,
                       }}
@@ -106,7 +106,7 @@ export const MemberContributions = () => {
           </Box>
         </Box>
       ) : (
-        <Box className="text-gray-400 flex h-[100px] items-center justify-center">
+        <Box className="text-text-muted flex h-[100px] items-center justify-center">
           <Text fontSize="sm">No data available</Text>
         </Box>
       )}

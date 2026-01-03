@@ -1,10 +1,11 @@
+import "ui/styles.css";
+import "../styles/global.css";
 import type { Metadata, Viewport } from "next";
 import {
   Instrument_Sans as InstrumentSans,
   Bricolage_Grotesque as BricolageGrotesque,
 } from "next/font/google";
 import { type ReactNode } from "react";
-import "../styles/global.css";
 import { SessionProvider } from "next-auth/react";
 import { cn } from "lib";
 import { auth } from "@/auth";
@@ -14,7 +15,7 @@ import { OnlineStatusMonitor } from "./online-monitor";
 
 const font = InstrumentSans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-body",
   display: "swap",
   weight: "variable",
 });
@@ -36,10 +37,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
   minimumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
 };
 
 export default async function RootLayout({
@@ -64,6 +61,7 @@ export default async function RootLayout({
         </SessionProvider>
         <OnlineStatusMonitor />
       </body>
+      <span className="text-icon" />
     </html>
   );
 }

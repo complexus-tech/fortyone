@@ -109,7 +109,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
   return (
     <Container
       className={cn(
-        "bg-gradient-to-br from-white via-gray-50/50 to-gray-50 py-6 dark:from-dark-200/50 dark:to-dark md:pl-8",
+        "from-sidebar/70 to-sidebar/40 dark:from-dark-200/50 bg-linear-to-br py-6 md:pl-8",
         className,
       )}
     >
@@ -126,8 +126,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem] w-auto", {
-                        "text-gray/80 dark:text-gray-300/80":
-                          !objective?.startDate,
+                        "text-text-muted": !objective?.startDate,
                       })}
                     />
                   }
@@ -164,15 +163,14 @@ export const Sidebar = ({ className }: { className?: string }) => {
               <DatePicker.Trigger>
                 <Button
                   className={cn({
-                    "text-gray/80 dark:text-gray-300/80": !objective?.endDate,
+                    "text-text-muted": !objective?.endDate,
                   })}
                   color="tertiary"
                   disabled={!canUpdate}
                   leftIcon={
                     <CalendarIcon
                       className={cn("h-[1.15rem]", {
-                        "text-gray/80 dark:text-gray-300/80":
-                          !objective?.endDate,
+                        "text-text-muted": !objective?.endDate,
                       })}
                     />
                   }

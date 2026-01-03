@@ -60,7 +60,7 @@ export const InviteTeam = ({
   };
 
   return (
-    <Container className="max-h-dvh max-w-[30rem] overflow-y-auto md:max-w-xl">
+    <Container className="max-h-dvh max-w-120 overflow-y-auto md:max-w-xl">
       <Logo asIcon />
       <Text as="h1" className="mb-6 mt-10 text-4xl" fontWeight="semibold">
         Build With Your Team

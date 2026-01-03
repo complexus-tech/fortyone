@@ -12,7 +12,7 @@ export const ThumbsUpIcon = (props: Icon) => {
       strokeWidth={strokeWidth}
       width="24"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("h-5 w-auto text-gray dark:text-gray-300", className)}
+      className={cn("h-5 w-auto text-icon", className)}
     >
       <path
         d="M2 12.5C2 11.3954 2.89543 10.5 4 10.5C5.65685 10.5 7 11.8431 7 13.5V17.5C7 19.1569 5.65685 20.5 4 20.5C2.89543 20.5 2 19.6046 2 18.5V12.5Z"

@@ -91,7 +91,7 @@ export const StoriesToolbar = () => {
     <>
       <Flex
         align="center"
-        className="fixed bottom-8 left-1/2 right-1/2 z-50 w-max -translate-x-1/2 rounded-2xl border-[0.5px] border-gray-200/70 bg-white/70 px-2.5 py-2 shadow-lg shadow-gray-200 backdrop-blur dark:border-dark-50 dark:bg-dark-200/70 dark:shadow-dark/20"
+        className="border-border bg-surface/90 shadow-shadow fixed right-1/2 bottom-8 left-1/2 z-50 w-max -translate-x-1/2 rounded-2xl border-[0.5px] px-2.5 py-2 shadow-lg backdrop-blur"
         gap={1}
       >
         <Text
@@ -156,7 +156,7 @@ export const StoriesToolbar = () => {
                   leftIcon={
                     <StoryStatusIcon
                       category="started"
-                      className="h-[1.15rem] text-warning dark:text-warning"
+                      className="text-warning dark:text-warning h-[1.15rem]"
                     />
                   }
                   variant="naked"
@@ -181,7 +181,7 @@ export const StoriesToolbar = () => {
                 color="tertiary"
                 leftIcon={
                   <PriorityIcon
-                    className="h-[1.15rem] text-success dark:text-success"
+                    className="text-success dark:text-success h-[1.15rem]"
                     priority="High"
                   />
                 }
@@ -204,7 +204,7 @@ export const StoriesToolbar = () => {
               <Button
                 color="tertiary"
                 leftIcon={
-                  <CalendarIcon className="h-[1.15rem] text-primary dark:text-primary" />
+                  <CalendarIcon className="text-primary dark:text-primary h-[1.15rem]" />
                 }
                 variant="naked"
               >
@@ -278,9 +278,7 @@ export const StoriesToolbar = () => {
         ) : null}
 
         <Button
-          leftIcon={
-            <DeleteIcon className="h-[1.15rem] text-white dark:text-gray-200" />
-          }
+          leftIcon={<DeleteIcon className="h-[1.15rem] text-white" />}
           onClick={() => {
             setIsOpen(true);
           }}
@@ -424,7 +422,7 @@ export const StoriesToolbar = () => {
               </Button>
               <Button
                 leftIcon={
-                  <DeleteIcon className="text-white dark:text-gray-200" />
+                  <DeleteIcon className="text-white" />
                 }
                 loading={isPending}
                 loadingText="Deleting..."

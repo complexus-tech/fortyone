@@ -20,7 +20,7 @@ export const Automations = () => {
   return (
     <>
       {/* Sprint Configuration Section */}
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description={`Configure ${getTermDisplay("sprintTerm", { variant: "plural" })} and automation settings for your team.`}
           title={getTermDisplay("sprintTerm", {
@@ -29,7 +29,7 @@ export const Automations = () => {
           })}
         />
 
-        <Box className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100">
+        <Box className="divide-border divide-y-[0.5px]">
           {/* Enable Automation Toggle */}
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
@@ -206,13 +206,13 @@ export const Automations = () => {
       </Box>
 
       {/* Story Automations Section */}
-      <Box className="mt-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
           description={`Automate cleanup and management of ${getTermDisplay("storyTerm", { variant: "plural" })}.`}
           title={`${getTermDisplay("storyTerm", { capitalize: true, variant: "plural" })} automations`}
         />
 
-        <Box className="divide-y-[0.5px] divide-gray-100 dark:divide-dark-100">
+        <Box className="divide-border divide-y-[0.5px]">
           {/* Auto-close Inactive Stories */}
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>

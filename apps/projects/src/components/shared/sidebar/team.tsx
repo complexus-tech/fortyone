@@ -115,11 +115,11 @@ export const Team = ({
             <Flex align="center" className="relative" gap={1} justify="between">
               <DragIcon
                 className={cn(
-                  "absolute -left-2.5 bottom-1/2 top-1/2 h-[1.1rem] -translate-y-1/2 opacity-0 outline-none transition-opacity group-hover:opacity-100",
+                  "absolute top-1/2 bottom-1/2 -left-2.5 h-[1.1rem] -translate-y-1/2 opacity-0 transition-opacity outline-none group-hover:opacity-100",
                   {
                     "cursor-grab": !isDragging,
                     "cursor-grabbing": isDragging,
-                    "pointer-events-none cursor-default !opacity-0":
+                    "pointer-events-none cursor-default opacity-0!":
                       isOpen || totalTeams === 1,
                   },
                 )}
@@ -129,7 +129,7 @@ export const Team = ({
               />
               <Flex
                 align="center"
-                className="h-[2.5rem] flex-1 select-none rounded-[0.6rem] pl-3 pr-2 outline-none transition"
+                className="h-10 flex-1 rounded-[0.6rem] pr-2 pl-3 transition outline-none select-none"
                 justify="between"
                 onClick={() => {
                   setIsOpen(!isOpen);
@@ -205,13 +205,13 @@ export const Team = ({
                   <Menu.Separator />
                   <Menu.Group>
                     <Menu.Item
-                      className="text-danger dark:text-danger"
+                      className="text-danger"
                       disabled={totalTeams === 1}
                       onClick={() => {
                         setIsLeaving(true);
                       }}
                     >
-                      <LogoutIcon className="text-danger dark:text-danger" />
+                      <LogoutIcon className="text-danger" />
                       Leave team
                     </Menu.Item>
                   </Menu.Group>
@@ -220,7 +220,7 @@ export const Team = ({
             </Flex>
             <Flex
               className={cn(
-                "ml-5 h-0 overflow-hidden border-l border-dashed border-gray-200/80 pl-2 transition-all duration-300 dark:border-dark-50",
+                "border-border ml-5 h-0 overflow-hidden border-l pl-2 transition-all duration-300",
                 {
                   "mt-2 h-max": isOpen,
                 },
@@ -280,13 +280,13 @@ export const Team = ({
         <ContextMenu.Separator />
         <ContextMenu.Group>
           <ContextMenu.Item
-            className="text-danger dark:text-danger"
+            className="text-danger"
             disabled={totalTeams === 1}
             onClick={() => {
               setIsLeaving(true);
             }}
           >
-            <LogoutIcon className="text-danger dark:text-danger" />
+            <LogoutIcon className="text-danger" />
             Leave team
           </ContextMenu.Item>
         </ContextMenu.Group>

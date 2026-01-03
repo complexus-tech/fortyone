@@ -68,7 +68,7 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           onClick={addMember}
           type="button"
         >
-          <PlusIcon className="h-[1.1rem] text-dark" />
+          <PlusIcon className="h-[1.1rem] text-foreground" />
           Add another colleague
         </button>
       ) : (

@@ -278,7 +278,7 @@ export const NewObjectiveDialog = ({
                 })}{" "}
                 and unlock premium features.
               </Text>
-              <Wrapper className="dark:bg-dark-300/60">
+              <Wrapper className="bg-surface/60">
                 <Flex align="center" gap={3} justify="between">
                   <Text color="muted" fontSize="lg">
                     Current plan:
@@ -385,7 +385,7 @@ export const NewObjectiveDialog = ({
             <Flex gap={3}>
               <Button
                 asIcon
-                className="dark:hover:bg-dark-50"
+                className="hover:bg-state-hover"
                 color="tertiary"
                 onClick={() => {
                   setIsExpanded((prev) => !prev);
@@ -695,7 +695,7 @@ export const NewObjectiveDialog = ({
               Discard
             </Button>
             <Button
-              leftIcon={<PlusIcon className="text-white dark:text-gray-200" />}
+              leftIcon={<PlusIcon className="text-white" />}
               loading={createMutation.isPending}
               loadingText="Creating..."
               onClick={handleCreateObjective}

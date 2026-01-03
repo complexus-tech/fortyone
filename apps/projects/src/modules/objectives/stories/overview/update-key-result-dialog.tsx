@@ -206,7 +206,7 @@ export const UpdateKeyResultDialog = ({
                   <Box className="col-span-3">
                     <Text className="mb-[0.35rem]">Current Value</Text>
                     <Flex
-                      className="rounded-xl border border-gray-100 bg-white/70 p-1 dark:border-dark-50/80 dark:bg-dark/20"
+                      className="rounded-xl border border-border bg-surface/70"
                       gap={1}
                     >
                       <Button
@@ -304,7 +304,7 @@ export const UpdateKeyResultDialog = ({
             {updateMode === "progress" && (
               <Box className="mt-3">
                 <TextArea
-                  className="resize-none rounded-2xl border py-4 text-base leading-normal dark:border-dark-50/80 dark:bg-transparent"
+                  className="resize-none rounded-2xl border py-4 text-base leading-normal border-border/80 bg-transparent"
                   label="Comment"
                   onChange={(e) => {
                     setForm({ ...form, comment: e.target.value });

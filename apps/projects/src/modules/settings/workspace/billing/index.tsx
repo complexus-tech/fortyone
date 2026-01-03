@@ -64,10 +64,7 @@ export const Billing = () => {
         <Flex align="center" className="mb-6" justify="between">
           <Text color="muted">
             For questions about billing,{" "}
-            <a
-              className="text-dark dark:text-white"
-              href="mailto:info@complexus.app"
-            >
+            <a className="text-foreground" href="mailto:info@complexus.app">
               contact us.
             </a>{" "}
             Your workspace has {totalValidMembers} users.
@@ -125,7 +122,7 @@ export const Billing = () => {
 
   return (
     <Box
-      className={cn("mx-auto max-w-[52rem]", {
+      className={cn("mx-auto max-w-208", {
         "max-w-7xl": showPlans,
       })}
     >
@@ -135,10 +132,7 @@ export const Billing = () => {
       <Flex align="center" className="mb-4" justify="between">
         <Text color="muted">
           For questions about billing,{" "}
-          <a
-            className="text-dark dark:text-white"
-            href="mailto:info@complexus.app"
-          >
+          <a className="text-foreground" href="mailto:info@complexus.app">
             contact us.
           </a>{" "}
           Your plan has {totalValidMembers} users.
@@ -155,7 +149,7 @@ export const Billing = () => {
         </Button>
       </Flex>
 
-      <Box className="mb-6 rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface mb-6 rounded-2xl border">
         <SectionHeader
           action={
             <Button
@@ -222,7 +216,7 @@ export const Billing = () => {
       </Box>
 
       {/* Recent Invoices Card */}
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="Your recent billing history and invoices."
           title="Recent Invoices"
@@ -250,7 +244,7 @@ export const Billing = () => {
                     <Button
                       color="tertiary"
                       href={hostedUrl}
-                      rightIcon={<NewTabIcon className="h-[1.125rem]" />}
+                      rightIcon={<NewTabIcon className="h-4.5" />}
                       target="_blank"
                       variant="naked"
                     >

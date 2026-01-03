@@ -99,7 +99,7 @@ export const OptionsHeader = ({
   });
   return (
     <>
-      <Container className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-gray-100 dark:border-dark-100 md:border-b-0 md:px-6">
+      <Container className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-border d md:border-b-0 md:px-6">
         <Flex align="center" gap={2}>
           <MobileMenuButton />
           <Text color="muted" fontWeight="semibold" transform="uppercase">
@@ -119,7 +119,7 @@ export const OptionsHeader = ({
                   color="tertiary"
                   href={`/story/${id}/${slugify(title)}`}
                   leftIcon={
-                    <MaximizeIcon className="h-[1.25rem]" strokeWidth={2.5} />
+                    <MaximizeIcon className="h-5" strokeWidth={2.5} />
                   }
                   variant="naked"
                 >

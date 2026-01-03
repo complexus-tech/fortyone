@@ -62,7 +62,7 @@ export const Sidebar = () => {
   } as const;
 
   return (
-    <Box className="h-full bg-gray-50/30 py-6 dark:bg-dark-300/60">
+    <Box className="h-full bg-surface-muted/30 py-6 bg-surface/60">
       <Box className="px-6">
         <Flex align="center" justify="between">
           <Text className="flex items-center gap-1.5" fontSize="lg">

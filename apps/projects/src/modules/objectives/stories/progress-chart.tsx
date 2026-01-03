@@ -45,17 +45,17 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="z-50 min-w-44 rounded-2xl border border-gray-100 bg-white/60 p-3 font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200/60 dark:text-gray-200">
+      <Box className="border-border bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border p-4 backdrop-blur-lg">
         <Text fontWeight="semibold">{label}</Text>
         <Box className="mb-0.1 mt-1 text-[#6366F1]">
           Completed: {data.completed}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-warning">
+        <Box className="text-warning mb-0.5">
           In Progress: {data.inProgress}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-gray dark:text-gray-300">
+        <Box className="text-foreground mb-0.5">
           Total: {data.total}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
@@ -73,21 +73,21 @@ const CustomLegend = () => {
     <Box className="flex justify-center gap-6">
       <Box className="flex items-center gap-2">
         <Box className="h-1 w-3 bg-[#6366F1]" />
-        <span className="text-gray dark:text-gray-300">Completed</span>
+        <span className="text-foreground">Completed</span>
       </Box>
       <Box className="flex items-center gap-2">
-        <Box className="h-1 w-3 bg-[#eab308]" />
-        <span className="text-gray dark:text-gray-300">In Progress</span>
+        <Box className="bg-warning h-1 w-3" />
+        <span className="text-foreground">In Progress</span>
       </Box>
       <Box className="flex items-center gap-2">
         <Box
-          className="h-1 w-3 bg-gray dark:bg-gray-300"
+          className="bg-foreground h-1 w-3"
           style={{
             borderColor: resolvedTheme === "dark" ? "#9CA3AF" : "#6B7280",
             opacity: 0.8,
           }}
         />
-        <span className="text-gray dark:text-gray-300">Total</span>
+        <span className="text-foreground">Total</span>
       </Box>
     </Box>
   );

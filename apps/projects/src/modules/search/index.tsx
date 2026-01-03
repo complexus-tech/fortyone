@@ -69,7 +69,7 @@ export const SearchPage = () => {
           }}
           value={tab}
         >
-          <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-gray-100 dark:border-dark-100">
+          <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-border d">
             <Tabs.List>
               <Tabs.Tab value="stories">
                 {getTermDisplay("storyTerm", {

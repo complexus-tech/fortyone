@@ -33,7 +33,7 @@ const capabilities = [
   {
     icon: (
       <OKRIcon
-        className="h-7 text-dark dark:text-white md:h-9"
+        className="h-7 text-foreground md:h-9"
         strokeWidth={1.8}
       />
     ),
@@ -44,7 +44,7 @@ const capabilities = [
   {
     icon: (
       <SprintsIcon
-        className="h-7 text-dark dark:text-white md:h-10"
+        className="h-7 text-foreground md:h-10"
         strokeWidth={1.6}
       />
     ),
@@ -53,7 +53,7 @@ const capabilities = [
       "Accelerate project delivery with agile sprint planning, story prioritization, and velocity tracking.",
   },
   {
-    icon: <AiIcon className="h-7 w-auto text-dark dark:text-white md:h-10" />,
+    icon: <AiIcon className="h-7 w-auto text-foreground md:h-10" />,
     title: "AI-Powered Insights",
     description:
       "Work smarter with Maya, your AI assistant for project management, automated summaries, and predictive insights.",
@@ -61,7 +61,7 @@ const capabilities = [
   {
     icon: (
       <HistoryIcon
-        className="h-7 text-dark dark:text-white md:h-10"
+        className="h-7 text-foreground md:h-10"
         strokeWidth={1.6}
       />
     ),
@@ -72,7 +72,7 @@ const capabilities = [
   {
     icon: (
       <SettingsIcon
-        className="h-7 text-dark dark:text-white md:h-10"
+        className="h-7 text-foreground md:h-10"
         strokeWidth={1.6}
       />
     ),
@@ -83,7 +83,7 @@ const capabilities = [
   {
     icon: (
       <GitIcon
-        className="h-7 text-dark dark:text-white md:h-10"
+        className="h-7 text-foreground md:h-10"
         strokeWidth={1.6}
       />
     ),

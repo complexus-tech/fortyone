@@ -75,7 +75,7 @@ const Card = ({
     >
       <Box
         className={cn(
-          "relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-dark-50 bg-dark p-6 pb-8 md:h-[420px]",
+          "relative flex min-h-[400px] flex-col justify-between overflow-hidden rounded-3xl border border-border bg-surface p-6 pb-8 md:h-[420px]",
         )}
         onMouseEnter={() => {
           setIsActive(true);
@@ -97,7 +97,7 @@ const Card = ({
               className={cn(
                 "pointer-events-none mx-auto block aspect-square rounded-xl object-contain",
                 {
-                  "aspect-[6/4]": name.toLowerCase().includes("keyboard"),
+                  "aspect-6/4": name.toLowerCase().includes("keyboard"),
                   "object-bottom": name.toLowerCase().includes("analytics"),
                 },
               )}
@@ -105,11 +105,11 @@ const Card = ({
               quality={100}
               src={src}
             />
-            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-dark/90 via-50% to-dark" />
+            <Box className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-transparent via-dark/90 via-50% to-dark" />
           </Box>
           <Text className="mt-4 opacity-80">{description}</Text>
         </Box>
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[url('/noise.png')] bg-repeat opacity-50" />
+        <div className="pointer-events-none absolute inset-0 z-3 bg-[url('/noise.png')] bg-repeat opacity-50" />
       </Box>
     </motion.div>
   );
@@ -164,7 +164,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="dark bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
+    <Box className="dark bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-dark-200 via-black to-black pb-20 md:pb-48">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-6 md:grid-cols-4">

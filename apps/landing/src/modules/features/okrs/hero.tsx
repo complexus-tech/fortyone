@@ -126,20 +126,20 @@ export const Hero = () => {
         <Box className="relative mx-auto mt-16 max-w-6xl dark:hidden">
           <Image
             alt="OKRs Dashboard - Objectives and Key Results tracking"
-            className="rounded border-[6px] border-gray-100 md:rounded-2xl"
+            className="rounded border-[6px] border-border md:rounded-2xl"
             placeholder="blur"
             src={okrsImgLight}
           />
-          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+          <Box className="absolute inset-0 bg-linear-to-t from-white via-white via-20%" />
         </Box>
         <Box className="relative mx-auto mt-16 hidden max-w-6xl dark:block">
           <Image
             alt="OKRs Dashboard - Objectives and Key Results tracking"
-            className="rounded border-[6px] dark:border-dark-100 md:rounded-2xl"
+            className="rounded border-[6px] d md:rounded-2xl"
             placeholder="blur"
             src={okrsImg}
           />
-          <Box className="absolute inset-0 bg-gradient-to-t from-white via-white via-20%" />
+          <Box className="absolute inset-0 bg-linear-to-t from-white via-white via-20%" />
         </Box>
       </Container>
     </Box>

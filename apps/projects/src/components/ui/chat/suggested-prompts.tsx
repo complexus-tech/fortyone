@@ -84,7 +84,7 @@ export const SuggestedPrompts = ({
             <Flex
               align="center"
               className={cn(
-                "size-10 shrink-0 rounded-lg bg-gray-50 dark:bg-dark-200",
+                "size-10 shrink-0 rounded-lg bg-surface-muted",
                 prompt.classes,
               )}
               gap={2}

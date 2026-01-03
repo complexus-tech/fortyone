@@ -6,7 +6,6 @@ import {
   DashboardIcon,
   GridIcon,
   RoadmapIcon,
-  SearchIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -48,11 +47,6 @@ export const Navigation = () => {
   };
 
   const links: MenuItem[] = [
-    {
-      name: "Search",
-      icon: <SearchIcon />,
-      href: "/search",
-    },
     {
       name: `My work`,
       icon: <UserIcon />,

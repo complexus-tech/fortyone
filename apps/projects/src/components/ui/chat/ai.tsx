@@ -27,10 +27,10 @@ export const AiIcon = () => {
   return (
     <Flex
       align="center"
-      className="size-8 rounded-full bg-dark dark:bg-white"
+      className="size-8 rounded-full bg-background border border-border"
       justify="center"
     >
-      <Ai className="h-5 text-white dark:text-dark" strokeWidth={2.8} />
+      <Ai className="h-5 text-foreground" strokeWidth={2.8} />
     </Flex>
   );
 };

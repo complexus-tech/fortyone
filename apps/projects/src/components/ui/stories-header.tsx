@@ -43,10 +43,9 @@ export const StoriesHeader = ({
   return (
     <Container
       className={cn(
-        "sticky top-0 z-[1] select-none border-b-[0.5px] border-gray-100 bg-gray-50/90 py-[0.4rem] backdrop-blur dark:border-dark-50/80 dark:bg-dark-200/90",
+        "border-border bg-surface-muted/85 sticky top-0 z-1 border-b-[0.5px] py-[0.4rem] backdrop-blur select-none",
         {
-          "border-b-[0.5px] border-gray-100 dark:border-dark-50/60":
-            group.loadedCount === 0,
+          "border-border border-b-[0.5px]": group.loadedCount === 0,
         },
         className,
       )}
@@ -79,12 +78,9 @@ export const StoriesHeader = ({
             }}
             rightIcon={
               <ArrowDownIcon
-                className={cn(
-                  "h-4 w-auto text-gray transition dark:text-gray-300",
-                  {
-                    "-rotate-90": isCollapsed,
-                  },
-                )}
+                className={cn("text-text-muted h-4 w-auto transition", {
+                  "-rotate-90": isCollapsed,
+                })}
                 strokeWidth={1}
               />
             }
@@ -102,8 +98,8 @@ export const StoriesHeader = ({
                   src={assignee?.avatarUrl}
                 />
                 <Text
-                  className={cn("relative -top-[1px]", {
-                    "top-[0px]": !assignee?.fullName,
+                  className={cn("relative -top-px", {
+                    "top-0": !assignee?.fullName,
                   })}
                   fontWeight="medium"
                 >
@@ -127,7 +123,7 @@ export const StoriesHeader = ({
           <Tooltip side="bottom" title="Total stories">
             <span>
               <StoryIcon
-                className="ml-1 h-5 w-auto text-gray dark:text-gray-300"
+                className="text-text-muted ml-1 h-5 w-auto"
                 strokeWidth={2}
               />
             </span>
@@ -148,7 +144,7 @@ export const StoriesHeader = ({
               color="tertiary"
               disabled={userRole === "guest"}
               leftIcon={
-                <PlusIcon className="h-[1.1rem] w-auto dark:text-gray-200" />
+                <PlusIcon className="text-foreground h-[1.1rem] w-auto" />
               }
               onClick={() => {
                 if (userRole !== "guest") {

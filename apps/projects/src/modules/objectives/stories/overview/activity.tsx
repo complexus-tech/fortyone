@@ -120,7 +120,7 @@ export const Activity = () => {
               Comment*
             </Text>
             <TextArea
-              className="resize-none rounded-2xl border py-4 leading-normal dark:border-dark-50/80 dark:bg-transparent"
+              className="resize-none rounded-2xl border py-4 leading-normal border-border/80 bg-transparent"
               onChange={(e) => {
                 setComment(e.target.value);
               }}

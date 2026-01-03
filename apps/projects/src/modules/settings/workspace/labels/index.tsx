@@ -35,7 +35,7 @@ export const WorkspaceLabelsSettings = () => {
         Labels
       </Text>
 
-      <Box className="rounded-2xl border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
             <Button
@@ -61,7 +61,7 @@ export const WorkspaceLabelsSettings = () => {
               </Text>
             </Box>
           ) : (
-            <Box className="divide-y divide-gray-100 dark:divide-dark-100">
+            <Box className="divide-border divide-y">
               {isCreateOpen ? (
                 <WorkspaceLabel
                   {...newLabel}

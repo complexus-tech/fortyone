@@ -164,7 +164,7 @@ export const MainDetails = ({
       >
         <TextEditor
           asTitle
-          className="mb-8 text-3xl font-medium md:text-4xl"
+          className="text-foreground mb-8 text-3xl font-medium md:text-4xl"
           editor={titleEditor}
         />
         <TextEditor editor={descriptionEditor} />
@@ -195,14 +195,11 @@ export const MainDetails = ({
         </Box>
 
         <Attachments
-          className={cn(
-            "mt-2.5 border-t border-gray-100/60 pt-2.5 dark:border-dark-100/80",
-            {
-              "mt-2 border-0":
-                (isSubStoriesOpen || isLinksOpen) &&
-                (subStories.length > 0 || links.length > 0),
-            },
-          )}
+          className={cn("border-border mt-2.5 border-t-[0.5px] pt-2.5", {
+            "mt-2 border-0":
+              (isSubStoriesOpen || isLinksOpen) &&
+              (subStories.length > 0 || links.length > 0),
+          })}
           storyId={storyId}
         />
         <Divider className="my-6" />

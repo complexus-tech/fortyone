@@ -44,7 +44,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
                 src={metadata.image}
               />
             ) : (
-              <NewTabIcon className="mx-0.5 h-[1.3rem] text-info/80 dark:text-info/80" />
+              <NewTabIcon className="text-info/80 dark:text-info/80 mx-0.5 h-[1.3rem]" />
             )}
             <Text
               className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
@@ -156,13 +156,12 @@ export const Links = ({
   const { userRole } = useUserRole();
 
   return (
-    <Box className="mt-8">
+    <Box className="mt-4">
       {links.length > 0 && (
         <Flex
           align="center"
           className={cn({
-            "border-b-[0.5px] border-gray-100/60 pb-2 dark:border-dark-200":
-              !isLinksOpen,
+            "border-border d border-b-[0.5px] pb-2": !isLinksOpen,
           })}
           justify={links.length > 0 ? "between" : "end"}
         >
@@ -205,7 +204,7 @@ export const Links = ({
       )}
 
       {isLinksOpen && links.length > 0 ? (
-        <Box className="mt-2 border-t-[0.5px] border-gray-100 pb-0 dark:border-dark-100">
+        <Box className="border-border d mt-2 border-t-[0.5px] pb-0">
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}

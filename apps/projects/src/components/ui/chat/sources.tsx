@@ -20,10 +20,10 @@ export const Trigger = ({ count, children, ...props }: SourcesTriggerProps) => (
     {children ?? (
       <>
         <p className="flex items-center gap-1.5 text-[0.95rem] font-medium">
-          <InternetIcon className="h-4 text-dark dark:text-white" />
+          <InternetIcon className="h-4 text-foreground" />
           Used {count} sources
         </p>
-        <ArrowDown2Icon className="h-4 text-dark dark:text-white" />
+        <ArrowDown2Icon className="h-4 text-foreground" />
       </>
     )}
   </Collapsible.Trigger>
@@ -53,7 +53,7 @@ const Source = ({ href, title, children, ...props }: SourceProps) => (
   >
     {children ?? (
       <>
-        <BookIcon className="relative top-[0.5px] h-4 text-dark dark:text-white" />
+        <BookIcon className="relative top-[0.5px] h-4 text-foreground" />
         <span className="block font-medium">{title}</span>
       </>
     )}

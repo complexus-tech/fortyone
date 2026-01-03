@@ -6,7 +6,7 @@ export const AnalyticsIcon = (props: Icon) => {
   return (
     <svg
       className={cn(
-        "shrink-0 text-gray dark:text-gray-300 h-5 w-auto",
+        "shrink-0 text-icon h-5 w-auto",
         className
       )}
       fill="currentColor"

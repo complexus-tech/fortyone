@@ -61,7 +61,7 @@ const Okr = ({
   onRemove: (index: number) => void;
 }) => {
   return (
-    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-2.5 dark:bg-dark-300/40">
+    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-2.5 bg-surface/40">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-8 border-opacity-50 dark:border-opacity-50"

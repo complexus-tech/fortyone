@@ -80,7 +80,7 @@ const Items = ({
                 {team.name}
               </Flex>
               <Button
-                className="px-2 dark:border-dark-50/80"
+                className="px-2 border-border/80"
                 color="tertiary"
                 disabled={teams.length === 1}
                 size="xs"
@@ -112,7 +112,7 @@ const Items = ({
                 {team.name}
               </Flex>
               <Button
-                className="px-3 dark:border-dark-50/80"
+                className="px-3 border-border/80"
                 color="tertiary"
                 size="xs"
               >

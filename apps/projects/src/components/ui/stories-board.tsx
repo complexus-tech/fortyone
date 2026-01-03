@@ -63,14 +63,14 @@ const StoryOverlay = ({
     >
       {layout === "kanban" ? (
         <StoryCard
-          className="rotate-3 border border-gray-200/80 shadow-lg dark:border-gray-200/20 dark:bg-dark-100 dark:shadow-dark"
+          className="border-border shadow-shadow rotate-3 border shadow-lg"
           handleStoryClick={() => {}}
           story={story!}
         />
       ) : (
         <Flex
           align="center"
-          className="w-max rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-3.5 shadow backdrop-blur dark:border-dark-100 dark:bg-dark-200/70"
+          className="border-border bg-surface-muted shadow-shadow w-max rounded-xl border px-3 py-3.5 shadow backdrop-blur"
           gap={2}
         >
           {selectedStories > 1 ? (
@@ -109,7 +109,7 @@ const EmptyState = ({
   <Box className="flex h-[70dvh] items-center justify-center">
     <Box className="flex flex-col items-center">
       <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
-      <Text className="mb-6 mt-8" fontSize="3xl">
+      <Text className="mt-8 mb-6" fontSize="3xl">
         No {getTermDisplay("storyTerm", { variant: "plural" })} found
       </Text>
       <Text className="mb-6 max-w-md text-center" color="muted">

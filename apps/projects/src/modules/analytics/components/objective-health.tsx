@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   }
 
   return (
-    <Box className="relative z-50 min-w-28 rounded-[0.6rem] border border-gray-100 bg-white/80 px-3 py-3 text-[0.95rem] font-medium text-gray backdrop-blur dark:border-dark-50 dark:bg-dark-200 dark:text-gray-200">
+    <Box className="relative z-50 min-w-28 rounded-[0.6rem] border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
       <Flex align="center" gap={2}>
         {payload[0].name}
       </Flex>

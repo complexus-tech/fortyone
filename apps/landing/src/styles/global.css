@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tailwind-config";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-body: var(--font-body);
+  --font-heading: var(--font-heading);
+}
 
 :root {
   --nprogress-color: #ea6060;
@@ -15,9 +22,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -28,6 +37,7 @@
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: #000;
 }
+
 .dark .text-stroke-white {
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke-width: 1px;
@@ -36,7 +46,7 @@
 
 body,
 html {
-  @apply overflow-x-hidden scroll-smooth font-body text-[15px] font-medium tracking-wide text-dark-200 antialiased dark:bg-black dark:text-gray-200;
+  @apply text-text-primary font-body dark:bg-background dark:text-text-primary overflow-x-hidden scroll-smooth text-[15px] font-medium tracking-wide antialiased;
 }
 
 h1,
@@ -52,17 +62,18 @@ svg {
   shape-rendering: auto;
   vector-effect: non-scaling-stroke;
 }
+
 /* Chrome, Safari, Edge */
 *::-webkit-scrollbar {
   width: 3px;
 }
 
 *::-webkit-scrollbar-track {
-  @apply bg-white dark:bg-[#666666b3];
+  @apply bg-surface dark:bg-surface-muted;
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply rounded-[3px] bg-[#666666b3] dark:bg-white;
+  @apply bg-border-strong dark:bg-surface-elevated rounded-[3px];
 }
 
 * {
@@ -92,7 +103,7 @@ ul[data-type="taskList"] li {
 }
 
 ul[data-type="taskList"] li input {
-  @apply relative top-[0.2rem] h-[1.1rem] w-[1.1rem] accent-primary;
+  @apply accent-primary relative top-[0.2rem] h-[1.1rem] w-[1.1rem];
 }
 
 ul[data-type="taskList"] li > label {
@@ -118,31 +129,31 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 .tiptap .is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
-  @apply pointer-events-none float-left h-0 text-gray-300/80 dark:text-gray-200/60;
+  @apply text-text-muted/80 dark:text-text-muted/60 pointer-events-none float-left h-0;
 }
 
 /*** Works on common browsers ***/
 ::selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /*** Mozilla based browsers ***/
 ::-moz-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /***For Other Browsers ***/
 ::-o-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 ::-ms-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /*** For Webkit ***/
 ::-webkit-selection {
-  @apply bg-primary text-dark;
+  @apply bg-primary text-primary-foreground;
 }
 
 /* CSS color for nprogress */
@@ -164,7 +175,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 #nprogress .bar {
-  @apply fixed left-0 top-0 h-[3px] w-full bg-primary;
+  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
   z-index: 19031 !important;
 }
 
@@ -172,6 +183,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   overflow: hidden;
   position: relative;
 }
+
 .nprogress-custom-parent #nprogress .spinner,
 .nprogress-custom-parent #nprogress .bar {
   position: absolute;
@@ -192,11 +204,13 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
     opacity 0.3s,
     color 0.4s;
 }
+
 @media screen and (min-width: 768px) {
   .mf-cursor {
     opacity: 1;
   }
 }
+
 .mf-cursor:before {
   content: "";
   position: absolute;
@@ -211,39 +225,49 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
     transform 0.25s ease-in-out,
     opacity 0.1s;
 }
+
 .mf-cursor.-inverse {
   color: invert(#000);
 }
+
 .mf-cursor.-exclusion {
   -webkit-mix-blend-mode: exclusion;
   mix-blend-mode: exclusion;
 }
+
 .mf-cursor.-exclusion:before {
   background: invert(#000);
 }
+
 .mf-cursor.-pointer:before {
   transform: scale(0.15);
 }
+
 .mf-cursor.-text:before {
   opacity: 0.75;
   transform: scale(1.7);
   background: transparent;
 }
+
 .mf-cursor.-text.-active:before {
   transform: scale(1.6);
   transition-duration: 0.2s;
 }
+
 .mf-cursor.-icon:before {
   transform: scale(1.5);
 }
+
 .mf-cursor.-icon.-active:before {
   transform: scale(1.4);
 }
+
 .mf-cursor.-hidden:before {
   transform: scale(0);
 }
+
 .mf-cursor-text {
-  @apply absolute flex items-center justify-center rounded-full border border-dark-200 bg-dark p-2 text-center text-gray-50 opacity-0;
+  @apply border-border bg-background text-text-primary absolute flex items-center justify-center rounded-full border p-2 text-center opacity-0;
   position: absolute;
   top: -40px;
   left: -40px;
@@ -257,17 +281,20 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
     opacity 0.4s,
     transform 0.3s;
 }
+
 .mf-cursor.-text .mf-cursor-text,
 .mf-cursor.-icon .mf-cursor-text {
   opacity: 1;
   transform: scale(1);
 }
+
 .mf-cursor-media {
   position: absolute;
   width: 400px;
   height: 400px;
   margin: -200px 0 0 -200px;
 }
+
 .mf-cursor-media img,
 .mf-cursor-media video {
   position: absolute;
@@ -285,9 +312,11 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   object-fit: cover;
   transform: translateZ(0);
 }
+
 .mf-cursor-media img {
   transform: scale(0.2);
 }
+
 .mf-cursor-media-box {
   position: relative;
   width: 100%;
@@ -301,6 +330,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
     transform 0.35s,
     opacity 0.2s 0.2s;
 }
+
 .mf-cursor.-media .mf-cursor-media-box {
   opacity: 1;
   transform: scale(0.696);

@@ -104,16 +104,16 @@ const Package = ({
   return (
     <Box
       className={cn(
-        "h-full rounded-3xl border border-gray-200 px-6 pb-8 pt-6 shadow-2xl shadow-gray-200 dark:border-dark-50 dark:bg-dark dark:shadow-dark",
+        "border-border shadow-shadow h-full rounded-3xl border px-6 pt-6 pb-8 shadow-2xl",
         {
-          "border-2 border-dark dark:border-white": recommended,
+          "border-2 border-black dark:border-white": recommended,
         },
       )}
     >
       <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
-          <Badge color="invert" rounded="full">
+          <Badge color="invert" rounded="md" className="font-semibold">
             Most Popular
           </Badge>
         ) : null}
@@ -135,7 +135,9 @@ const Package = ({
 
       <Button
         align="center"
-        className="mt-6 border-dark/30"
+        className={cn("border-border/80 mt-6", {
+          "border-background-inverse": recommended,
+        })}
         color={recommended ? "invert" : "tertiary"}
         fullWidth
         href={href}
@@ -144,7 +146,7 @@ const Package = ({
         {cta}
       </Button>
       <Text className="mt-4">{overview}</Text>
-      <Divider className="mb-5 mt-6 border-gray-200" />
+      <Divider className="border-border mt-6 mb-5" />
       <Flex className="gap-4" direction="column">
         {features.map((feature) => (
           <Feature feature={feature} key={feature} />
@@ -166,7 +168,7 @@ export const Pricing = ({
 
   return (
     <Box className={cn("relative md:pt-12", className)}>
-      <Container className="max-w-[83rem]">
+      <Container className="max-w-332">
         <Flex
           className={cn("mt-10 pb-6", {
             "md:mt-20": pathname === "/pricing",
@@ -212,7 +214,7 @@ export const Pricing = ({
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="flex w-max gap-1 rounded-full border border-gray-100 bg-white p-1 dark:border-dark-100 dark:bg-dark-300">
+            <Box className="border-border bg-surface flex w-max gap-1 rounded-full border p-1">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-3 capitalize", {

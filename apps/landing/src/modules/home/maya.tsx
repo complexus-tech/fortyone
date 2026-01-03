@@ -42,7 +42,7 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="rounded-[0.6rem] border border-b-0 border-gray-100 bg-dark/5 p-0.5 shadow-2xl shadow-gray-200 backdrop-blur dark:border-dark-50/70 dark:bg-dark-200/40 dark:shadow-none md:rounded-2xl md:p-1.5">
+        <Box className="rounded-[0.6rem] border border-b-0 border-border bg-background/5 p-0.5 shadow-2xl shadow-shadow md:rounded-2xl md:p-1.5">
           <Flex
             align="center"
             className="mb-2 mt-1 px-1.5 dark:mb-2.5"
@@ -87,7 +87,7 @@ export const Maya = () => {
               Maya keeps projects moving, anticipating next steps and removing
               blockers before they slow you down.
             </Text>
-            <Box className="mt-8 h-60 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
+            <Box className="mt-8 h-60 rounded-3xl bg-surface-muted" />
           </Box>
         </motion.div>
         <motion.div
@@ -105,7 +105,7 @@ export const Maya = () => {
               Turn rough ideas into fully scoped sprints in seconds, with AI
               handling the details.
             </Text>
-            <Box className="mt-8 h-60 rounded-3xl bg-gray-100 dark:bg-dark-300/80" />
+            <Box className="mt-8 h-60 rounded-3xl bg-surface-muted" />
           </Box>
         </motion.div>
       </Box> */}

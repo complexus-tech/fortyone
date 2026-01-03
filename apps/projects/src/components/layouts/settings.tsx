@@ -130,12 +130,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </button>
           </Flex>
         </Container>
-        <Box className="overflow-x-auto border-y border-gray-100 pl-3 dark:border-dark-100">
+        <Box className="border-border overflow-x-auto border-y pl-3">
           <Flex align="center" gap={2}>
             {mobileMenu.map(({ href, title }) => (
               <Link
                 className={cn(
-                  "h-16 shrink-0 border-b border-transparent px-3 leading-[4rem]",
+                  "h-16 shrink-0 border-b border-transparent px-3 leading-16",
                   {
                     "border-primary text-primary": pathname === href,
                   },
@@ -149,14 +149,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             ))}
           </Flex>
         </Box>
-        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pb-8 pt-6">
+        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
           <Container>{children}</Container>
         </Box>
       </Box>
       <Box className="hidden md:block">
         <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
           <ResizablePanel.Panel
-            className="bg-gray-50/60 dark:bg-[#000000]/45"
+            className="from-sidebar to-sidebar/50 bg-linear-to-br"
             defaultSize={15}
             maxSize={20}
             minSize={12}
@@ -211,8 +211,8 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           <ResizablePanel.Panel defaultSize={85}>
             <Box className="h-dvh overflow-y-auto">
               <Container
-                className={cn("max-w-[54rem] py-12", {
-                  "max-w-7xl": pathname.includes("billing"),
+                className={cn("max-w-216 py-12", {
+                  "max-w-[80rem]": pathname.includes("billing"),
                 })}
               >
                 {children}

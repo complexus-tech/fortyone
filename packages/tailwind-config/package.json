@@ -1,12 +1,14 @@
 {
   "name": "tailwind-config",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
-  "files": [
-    "tailwind.config.ts"
-  ],
+  "exports": {
+    ".": "./shared-styles.css",
+    "./postcss": "./postcss.config.js"
+  },
   "devDependencies": {
-    "tailwindcss": "^3.4.3",
-    "tsconfig": "workspace:*"
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.5"
   }
 }

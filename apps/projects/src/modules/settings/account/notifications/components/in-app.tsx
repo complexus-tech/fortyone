@@ -22,7 +22,7 @@ export const InAppNotifications = () => {
   };
 
   return (
-    <Box className="rounded-[0.6rem] border border-gray-100 bg-white dark:border-dark-100 dark:bg-dark-100/40">
+    <Box className="rounded-[0.6rem] border border-border bg-surface">
       <SectionHeader
         description="Choose what updates you want to receive via in-app notifications."
         title="In-App Notifications"

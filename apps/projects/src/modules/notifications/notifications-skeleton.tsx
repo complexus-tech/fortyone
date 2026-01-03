@@ -2,10 +2,10 @@ import { Box, Flex, Skeleton } from "ui";
 
 export const NotificationsSkeleton = () => {
   return (
-    <Box className="h-dvh border-r-[0.5px] border-gray-200/60 pb-6 dark:border-dark-50">
+    <Box className="h-dvh border-r-[0.5px] border-border/60 pb-6 d">
       <Flex
         align="center"
-        className="h-16 border-b-[0.5px] border-gray-200/60 px-4 dark:border-dark-50"
+        className="h-16 border-b-[0.5px] border-border/60 px-4 d"
         justify="between"
       >
         <Flex align="center" gap={2}>
@@ -20,7 +20,7 @@ export const NotificationsSkeleton = () => {
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {Array.from({ length: 8 }).map((_, index) => (
           <Flex
-            className="border-b border-gray-100/70 px-4 py-3 dark:border-dark-50/60"
+            className="border-b border-border/70 px-4 py-3 d/60"
             direction="column"
             gap={2}
             key={index}

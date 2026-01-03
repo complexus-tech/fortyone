@@ -279,7 +279,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="rounded-[1.25rem] border border-gray-100 py-2 dark:border-dark-50/80">
+      <Box className="rounded-[1.25rem] border border-border py-2">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -344,7 +344,7 @@ export const ChatInput = ({
           {!value && (
             <Box
               className={cn(
-                "pointer-events-none absolute left-5 top-2 text-[1.1rem] text-gray transition-all duration-200 ease-in-out dark:text-gray-200/60",
+                "pointer-events-none absolute left-5 top-2 text-[1.1rem] text-text-muted transition-all duration-200 ease-in-out",
                 {
                   "translate-y-1 opacity-0 first-letter:uppercase": isAnimating,
                 },

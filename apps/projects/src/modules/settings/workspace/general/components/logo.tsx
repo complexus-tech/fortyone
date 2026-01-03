@@ -1,6 +1,6 @@
 import { Avatar } from "ui";
 import { useState } from "react";
-import { ProfileUploadDialog } from "ui/src/ProfileUploadDialog/ProfileUploadDialog";
+import { ProfileUploadDialog } from "ui";
 import { toast } from "sonner";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useUploadWorkspaceLogoMutation } from "@/lib/hooks/workspace/upload-logo-mutation";

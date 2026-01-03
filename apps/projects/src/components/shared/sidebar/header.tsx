@@ -85,7 +85,7 @@ export const Header = () => {
             <span className="sr-only">Notifications</span>
             {unreadNotifications ? (
               <Badge
-                className="absolute -right-1 -top-1 shrink-0"
+                className="absolute -top-1 -right-1 shrink-0"
                 rounded="full"
                 size="sm"
               >
@@ -95,7 +95,7 @@ export const Header = () => {
           </Button>
         </Box>
       </Flex>
-      <Flex className="mb-3">
+      <Flex className="mb-3 gap-1">
         <Button
           className="truncate md:h-[2.4rem]"
           color="tertiary"
@@ -111,6 +111,17 @@ export const Header = () => {
           variant="outline"
         >
           Create {getTermDisplay("storyTerm")}
+        </Button>
+        <Button
+          asIcon
+          className="md:h-[2.4rem]"
+          color="tertiary"
+          href="/search"
+          leftIcon={<SearchIcon className="h-4" />}
+          prefetch
+          variant="outline"
+        >
+          <span className="sr-only">Search</span>
         </Button>
       </Flex>
 

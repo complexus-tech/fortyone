@@ -72,7 +72,7 @@ export const WorkspaceLabel = ({
   }, [isEditing]);
 
   return (
-    <Box className="px-6 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-dark-300">
+    <Box className="px-6 py-2.5 transition-colors hover:bg-state-hover">
       <form
         className="flex items-center justify-between"
         onSubmit={handleSubmit}
@@ -88,7 +88,7 @@ export const WorkspaceLabel = ({
             value={form.color}
           />
           <input
-            className="bg-transparent font-medium placeholder:text-gray focus:outline-none dark:placeholder:text-gray-300"
+            className="bg-transparent font-medium placeholder:text-foreground"
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}

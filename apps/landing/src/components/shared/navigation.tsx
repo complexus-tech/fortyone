@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Flex, NavLink, NavigationMenu, Text } from "ui";
+import { Box, Button, Flex, NavLink, Text } from "ui";
 import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,7 +11,6 @@ import { Logo, Container } from "@/components/ui";
 import type { Workspace } from "@/types";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { useProfile } from "@/lib/hooks/profile";
-import { RequestDemo } from "./request-demo";
 import { MobileNavigation } from "./mobile-navigation";
 
 const MenuItem = ({
@@ -26,7 +25,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="flex w-[17rem] gap-2 rounded-[0.7rem] p-2 hover:bg-gray-50/80 hover:dark:bg-dark-100/50"
+    className="hover:bg-state-hover flex w-68 gap-2 rounded-[0.7rem] p-2"
     href={href}
     prefetch
   >
@@ -56,7 +55,7 @@ export const Navigation = () => {
       href: "/features/stories",
       description: "Turn ideas into clear, actionable work.",
       icon: (
-        <StoryIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <StoryIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
       ),
     },
     {
@@ -65,7 +64,7 @@ export const Navigation = () => {
       href: "/features/objectives",
       description: "Focus teams on the outcomes that matter most.",
       icon: (
-        <ObjectiveIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <ObjectiveIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
       ),
     },
     {
@@ -74,7 +73,7 @@ export const Navigation = () => {
       href: "/features/okrs",
       description: "Align everyone on shared goals and see progress.",
       icon: (
-        <OKRIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <OKRIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
       ),
     },
     {
@@ -84,7 +83,7 @@ export const Navigation = () => {
       description:
         "Build momentum with short cycles that turn plans into progress.",
       icon: (
-        <SprintsIcon className="relative h-6 shrink-0 text-dark dark:text-white md:top-1 md:h-4" />
+        <SprintsIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
       ),
     },
   ];
@@ -112,41 +111,10 @@ export const Navigation = () => {
   };
 
   return (
-    <Box className="fixed left-0 z-[15] w-screen border-b border-gray-100/70 bg-white/20 backdrop-blur-xl dark:border-dark-100/80 dark:bg-black/40">
+    <Box className="border-border/70 d/80 fixed left-0 z-15 w-screen border-b bg-white/20 backdrop-blur-xl dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <Flex align="center" className="hidden md:flex" gap={1}>
-          <NavigationMenu>
-            <NavigationMenu.List>
-              <NavigationMenu.Item>
-                <NavigationMenu.Trigger
-                  className={cn(
-                    "px-3 py-1.5 opacity-90 transition hover:opacity-100",
-                    {
-                      "opacity-100 dark:text-white dark:opacity-100":
-                        pathname?.startsWith("/features"),
-                    },
-                  )}
-                  hideArrow
-                >
-                  Product
-                </NavigationMenu.Trigger>
-                <NavigationMenu.Content className="rounded-2xl border border-gray-100 bg-white p-1.5 dark:border-dark-50 dark:bg-black">
-                  <Box className="grid w-max grid-cols-2 gap-2 rounded-xl border border-gray-100 p-2 dark:border-dark-50 dark:bg-dark/20">
-                    {features.map(({ id, name, description, icon, href }) => (
-                      <MenuItem
-                        description={description}
-                        href={href}
-                        icon={icon}
-                        key={id}
-                        name={name}
-                      />
-                    ))}
-                  </Box>
-                </NavigationMenu.Content>
-              </NavigationMenu.Item>
-            </NavigationMenu.List>
-          </NavigationMenu>
           {navLinks.map(({ title, href }) => (
             <NavLink
               className={cn(

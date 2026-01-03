@@ -44,7 +44,7 @@ export const ProfileMenu = () => {
   };
 
   return (
-    <Box className="border-t-[0.5px] border-gray-200/60 px-3 pt-4 dark:border-dark-50">
+    <Box className="border-t-[0.5px] border-border px-3 pt-4">
       <Menu>
         <Menu.Button>
           <Box className="relative">
@@ -70,7 +70,7 @@ export const ProfileMenu = () => {
               <ArrowRight2Icon className="shrink-0" />
             </Button>
             {myInvitations.length > 0 && (
-              <Box className="absolute right-1 top-0.5 z-[2] size-2.5 animate-pulse rounded-full bg-primary" />
+              <Box className="absolute right-1 top-0.5 z-2 size-2.5 animate-pulse rounded-full bg-primary" />
             )}
           </Box>
         </Menu.Button>
@@ -182,7 +182,7 @@ export const ProfileMenu = () => {
           <Menu.Separator className="my-2" />
           <Menu.Group>
             <Menu.Item className="text-danger" onSelect={handleLogout}>
-              <LogoutIcon className="h-5 w-auto text-danger dark:text-danger" />
+              <LogoutIcon className="h-5 w-auto text-danger" />
               Log out
             </Menu.Item>
           </Menu.Group>
