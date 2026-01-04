@@ -384,7 +384,7 @@ Before making the repository public, verify:
 **Critical (Must Fix):**
 
 1. ✅ Add LICENSE (MIT + Commons Clause)
-2. ✅ Update package.json `private` flags
+2. ✅ Update package.json `private` flags (root, apps, lib)
 3. ✅ Create .env.example files
 4. ✅ Move hardcoded Sentry DSN to env vars
 5. ✅ Update email addresses
