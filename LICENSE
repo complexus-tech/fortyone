@@ -1,0 +1,161 @@
+================================================================================
+FORTYONE LICENSE AGREEMENT
+================================================================================
+
+This license agreement governs the use of FortyOne software and related
+documentation ("Software"). By using, copying, modifying, or distributing
+the Software, you agree to be bound by the terms of this agreement.
+
+Effective Date: January 4, 2026
+Software: FortyOne
+Version: All versions
+Licensor: Complexus LLC
+Contact: hello@complexus.tech
+
+# ================================================================================ 1. LICENSE GRANT
+
+Subject to the restrictions and conditions set forth in this agreement,
+Complexus LLC ("Licensor") grants you a limited, non-exclusive,
+non-transferable license to:
+
+1.1 Use the Software for personal, educational, and non-commercial purposes
+1.2 Modify the Software for personal use
+1.3 Distribute unmodified copies of the Software for non-commercial purposes
+1.4 Create derivative works for non-commercial purposes
+
+# ================================================================================ 2. COMMERCIAL RESTRICTIONS
+
+2.1 COMMERCIAL LICENSE REQUIREMENT
+
+A commercial license from Complexus LLC is required if:
+
+a) You offer the Software as a commercial service or SaaS platform
+b) You host the Software for third parties for a fee
+c) You sell access to the Software or its functionality
+d) Your organization has annual revenue of $200,000 or more
+e) You use the Software as part of a commercial product or service offering
+
+2.2 PROHIBITED WITHOUT LICENSE
+
+Without a commercial license, you are expressly PROHIBITED from:
+
+a) Offering FortyOne as a hosted service for third parties
+b) Using FortyOne in commercial SaaS applications
+c) Monetizing FortyOne's functionality in any revenue-generating business
+
+2.3 COMMERCIAL LICENSING
+
+Organizations meeting the criteria above must obtain a commercial license
+from Complexus LLC. Contact hello@complexus.tech for licensing inquiries.
+
+# ================================================================================ 3. PERMITTED USE EXAMPLES
+
+3.1 ALLOWED (Free):
+
+- Personal website/blog hosting
+- Educational use in classrooms
+- Non-profit organization internal use
+- Small business internal tools (under $200K annual revenue)
+- Open-source project contributions
+- Personal development and learning
+- Self-hosting for personal use
+- Startup internal use during development phase
+
+  3.2 REQUIRES COMMERCIAL LICENSE:
+
+- SaaS platform offering FortyOne hosting
+- Commercial web hosting with FortyOne
+- Enterprise deployment for businesses with $200K+ annual revenue
+- Monetized use of the Software in revenue-generating businesses
+
+# ================================================================================ 4. SOURCE CODE ACCESS
+
+4.1 The Software is provided as source-available software
+4.2 Source code is freely available for inspection, modification, and distribution
+4.3 All modifications must comply with this license
+4.4 Contributions to the project are welcome and encouraged
+
+# ================================================================================ 5. INTELLECTUAL PROPERTY
+
+5.1 Copyright: Complexus LLC retains all copyright in the Software
+5.2 Trademarks: "FortyOne" and related marks are trademarks of Complexus LLC
+5.3 Patents: This license does not grant any patent rights
+
+# ================================================================================ 6. CONTRIBUTIONS AND DERIVATIVE WORKS
+
+6.1 Contributions to the FortyOne project are governed by this license
+6.2 Contributors grant Complexus LLC a perpetual, royalty-free license
+to use, modify, and distribute their contributions
+6.3 Derivative works must include this license agreement
+6.4 Commercial derivative works require separate licensing
+
+# ================================================================================ 7. REDISTRIBUTION
+
+7.1 You may redistribute the Software provided that:
+a) This license agreement is included in all copies
+b) The redistribution is for non-commercial purposes
+c) No fees are charged for the Software itself
+d) Attribution to Complexus LLC is maintained
+
+# ================================================================================ 8. SUPPORT AND MAINTENANCE
+
+8.1 The Software is provided "as is" without support obligations
+8.2 Community support is available through GitHub issues and discussions
+8.3 Commercial support requires a separate support agreement
+
+# ================================================================================ 9. TERMINATION
+
+9.1 This license is effective until terminated
+9.2 Licensor may terminate this license if you violate its terms
+9.3 Upon termination, you must cease all use of the Software
+9.4 Sections 10-13 survive termination
+
+# ================================================================================ 10. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT
+SHALL COMPLEXUS LLC, ITS AFFILIATES, OR THEIR LICENSORS BE LIABLE FOR ANY
+DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF
+PROFITS, BUSINESS INTERRUPTION, LOSS OF INFORMATION, OR OTHER PECUNIARY
+LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF
+COMPLEXUS LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+# ================================================================================ 11. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL COMPLEXUS LLC BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO
+LOSS OF PROFITS, DATA, USE, OR OTHER INTANGIBLE LOSSES, RESULTING FROM
+YOUR USE OF THE SOFTWARE OR INABILITY TO USE THE SOFTWARE.
+
+# ================================================================================ 12. GOVERNING LAW
+
+This license agreement shall be governed by and construed in accordance
+with the laws of the State of Delaware, United States, without regard to
+its conflict of law provisions.
+
+# ================================================================================ 13. MISCELLANEOUS
+
+13.1 Entire Agreement: This agreement constitutes the entire agreement
+between the parties and supersedes all prior agreements.
+
+13.2 Severability: If any provision is held invalid, the remainder
+remains in effect.
+
+13.3 No Waiver: Failure to enforce any provision does not waive the right
+to enforce it later.
+
+13.4 Amendments: This license may only be amended by Complexus LLC in
+writing.
+
+================================================================================
+CONTACT INFORMATION
+================================================================================
+
+For commercial licensing inquiries: hello@complexus.tech
+For general questions: hello@complexus.tech
+Project repository: https://github.com/complexus/fortyone
+
+================================================================================
+END OF LICENSE
+================================================================================

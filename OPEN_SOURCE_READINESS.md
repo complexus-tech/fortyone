@@ -10,24 +10,23 @@ This document outlines all the changes and additions needed to make the FortyOne
 
 ### 1. Add LICENSE File
 
-**Status:** ❌ Missing  
-**Action:** Create a `LICENSE` file in the root directory
+**Status:** ✅ Complete - MIT License + Commons Clause
+**Action:** Created `LICENSE` file in root directory
 
-Choose an appropriate open-source license:
+**Chosen License:** MIT License with Commons Clause addendum
 
-- **MIT** (Recommended) - Most permissive, widely used
-- **Apache 2.0** - More corporate-friendly, includes patent protection
-- **GPL** - Copyleft, requires derivative works to be open source
+**Why this license:**
 
-Example MIT License structure:
+- Allows free personal and non-commercial use
+- Prevents commercial exploitation (SaaS offerings, paid hosting, etc.)
+- Requires commercial entities to obtain separate licensing
+- Maintains open-source development benefits
 
-```
-MIT License
+**License Details:**
 
-Copyright (c) 2025 FortyOne
-
-Permission is hereby granted, free of charge, to any person obtaining a copy...
-```
+- **Base License:** MIT (permissive, widely compatible)
+- **Commercial Restriction:** Commons Clause (prohibits selling/offering as service)
+- **Licensor:** Complexus LLC
 
 ---
 
@@ -384,7 +383,7 @@ Before making the repository public, verify:
 
 **Critical (Must Fix):**
 
-1. ✅ Add LICENSE
+1. ✅ Add LICENSE (MIT + Commons Clause)
 2. ✅ Update package.json `private` flags
 3. ✅ Create .env.example files
 4. ✅ Move hardcoded Sentry DSN to env vars
