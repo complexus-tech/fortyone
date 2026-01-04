@@ -47,43 +47,15 @@ This document outlines all the changes and additions needed to make the FortyOne
 
 ### 3. Create .env.example Files
 
-**Status:** ❌ Missing  
-**Action:** Create environment variable examples
+**Status:** ✅ Complete
+**Action:** Created environment variable examples
 
-#### Root `.env.example`
+Created `.env.example` files for apps that need them:
 
-```bash
-# Application URLs
-NEXT_PUBLIC_API_URL=https://api.example.com
-NEXT_PUBLIC_DOMAIN=fortyone.app
-EXPO_PUBLIC_API_URL=https://api.example.com
-
-# Analytics
-NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
-NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=your_google_analytics_id
-
-# AI Services
-OPENAI_API_KEY=your_openai_api_key
-GOOGLE_API_KEY=your_google_api_key
-
-# Authentication
-AUTH_SECRET=your_auth_secret_here
-NEXTAUTH_SECRET=your_nextauth_secret
-
-# Error Tracking (Optional)
-NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
-
-# Google OAuth (for landing app)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
-
-Also create `.env.example` files in:
-
-- [ ] `apps/landing/` (if app-specific vars needed)
-- [ ] `apps/projects/` (if app-specific vars needed)
-- [ ] `apps/mobile/` (if app-specific vars needed)
+- ✅ `apps/landing/.env.example` - Domain, API, analytics, auth, AI services, OAuth
+- ✅ `apps/projects/.env.example` - Domain, API, analytics, auth, AI services, Sentry, Azure storage
+- ✅ `apps/mobile/.env.example` - API URL for Expo
+- ℹ️ `apps/docs/` - No environment variables needed (static docs site)
 
 ---
 
