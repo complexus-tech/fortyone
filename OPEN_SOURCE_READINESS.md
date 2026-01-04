@@ -50,38 +50,38 @@ This document outlines all the changes and additions needed to make the FortyOne
 **Status:** ✅ Complete
 **Action:** Created environment variable examples
 
-Created `.env.example` files for apps that need them:
+Created `.env.example` and `.env` files for apps:
 
-- ✅ `apps/landing/.env.example` - Domain, API, analytics, auth, AI services, OAuth
-- ✅ `apps/projects/.env.example` - Domain, API, analytics, auth, AI services, Sentry, Azure storage
-- ✅ `apps/mobile/.env.example` - API URL for Expo
+- ✅ `apps/landing/.env.example` & `.env` - Domain, API, analytics, auth, AI services, OAuth, Sentry
+- ✅ `apps/projects/.env.example` & `.env` - Domain, API, analytics, auth, AI services, Sentry, Azure storage
+- ✅ `apps/mobile/.env.example` & `.env` - API URL for Expo
 - ℹ️ `apps/docs/` - No environment variables needed (static docs site)
+
+**⚠️ IMPORTANT:** Update `NEXT_PUBLIC_SENTRY_DSN=your_actual_sentry_dsn_here` in `.env` files with your real Sentry DSN before deploying.
 
 ---
 
 ### 4. Move Hardcoded Sentry DSN to Environment Variable
 
-**Status:** ⚠️ Critical Security Issue  
-**Action:** Update these files:
+**Status:** ✅ Complete - Security Issue Resolved
+**Action:** Updated Sentry configuration files to use environment variables
 
-**Files to update:**
+**Files updated:**
 
-- [ ] `apps/projects/sentry.server.config.ts` (line 8)
-- [ ] `apps/projects/sentry.edge.config.ts` (line 8)
+- ✅ `apps/projects/sentry.server.config.ts` - DSN now uses `process.env.NEXT_PUBLIC_SENTRY_DSN`
+- ✅ `apps/projects/sentry.edge.config.ts` - DSN now uses `process.env.NEXT_PUBLIC_SENTRY_DSN`
 
-**Current code:**
+**Security Fix Applied:**
 
 ```typescript
+// Before (EXPOSED SECRET):
 dsn: "https://1731711ff88c9c60022dadf2d2e85381@o4508848135077888.ingest.us.sentry.io/4508848139075584",
-```
 
-**Should be:**
-
-```typescript
+// After (SECURE):
 dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 ```
 
-**Why:** This is a sensitive identifier that should not be committed to the repository.
+**Impact:** Removed sensitive API credentials from codebase. Developers must now configure `NEXT_PUBLIC_SENTRY_DSN` in their environment.
 
 ---
 
