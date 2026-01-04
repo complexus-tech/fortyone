@@ -46,7 +46,7 @@ export const Hero = () => {
                 "relative z-1 mt-8 pb-2 text-5xl font-semibold text-balance md:max-w-4xl md:text-[4.1rem] md:leading-[1.1]",
               )}
             >
-              The Agentic Project Management Platform That Works For You
+              The Open Source Agentic Project Management Platform
             </Text>
           </motion.span>
 
