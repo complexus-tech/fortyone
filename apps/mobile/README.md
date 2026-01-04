@@ -1,50 +1,246 @@
-# Welcome to your Expo app 👋
+# FortyOne Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+[![Expo](https://img.shields.io/badge/Expo-~52.0.0-black.svg)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.76-blue.svg)](https://reactnative.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
-## Get started
+The React Native mobile application for FortyOne, built with Expo. Provides mobile access to project management features, real-time collaboration, and team productivity tools on iOS and Android devices.
 
-1. Install dependencies
+## ✨ Features
+
+- **📱 Native Mobile Experience**: iOS and Android apps with native performance
+- **🎯 Project Management**: Full access to project management features
+- **👥 Team Collaboration**: Real-time collaboration with team members
+- **📋 Task Management**: Create, edit, and track tasks on mobile
+- **📷 Camera Integration**: Photo and document capture for tasks
+- **🔔 Push Notifications**: Real-time notifications and updates
+- **🔐 Secure Authentication**: Biometric authentication support
+- **📶 Offline Support**: Core functionality works offline
+- **🎨 Native UI**: Platform-specific design and interactions
+- **⚡ Fast Performance**: Optimized for mobile performance
+- **🔄 Auto Updates**: Over-the-air updates via Expo
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm 9.3.0+
+- Expo CLI: `npm install -g @expo/cli`
+- iOS Simulator (macOS) or Android Studio (all platforms)
+
+### Development Setup
+
+1. **Install dependencies**:
 
    ```bash
-   npm install
+   cd apps/mobile
+   pnpm install
    ```
 
-2. Start the app
+2. **Set up environment variables**:
 
    ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
+   ```
+
+3. **Start the Expo development server**:
+
+   ```bash
+   pnpm start
+   # or
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. **Run on device/emulator**:
+   - **iOS**: Press `i` in the terminal or scan QR code with Camera app
+   - **Android**: Press `a` in the terminal or scan QR code with Expo Go
+   - **Web**: Press `w` for web development
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Environment Variables
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Create a `.env` file with:
 
 ```bash
-npm run reset-project
+# API Configuration
+EXPO_PUBLIC_API_URL=api_url
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🏗️ Architecture
 
-## Learn more
+### Tech Stack
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Framework**: Expo SDK ~52.0
+- **Runtime**: React Native 0.76
+- **Navigation**: Expo Router (file-based routing)
+- **State Management**: React Context + hooks
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **HTTP Client**: Custom fetch utilities
+- **Storage**: AsyncStorage for local data
+- **Notifications**: Expo Notifications
+- **Camera**: Expo Camera
+- **Build**: EAS Build for production builds
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Key Features
 
-## Join the community
+- **Authentication**: Secure login with biometric support
+- **Project Views**: Mobile-optimized project dashboards
+- **Task Management**: Touch-friendly task creation and editing
+- **File Attachments**: Camera integration for task documentation
+- **Real-time Sync**: Background sync when online
+- **Offline Mode**: Core functionality without internet
+- **Push Notifications**: Important updates and reminders
 
-Join our community of developers creating universal apps.
+### Directory Structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+apps/mobile/
+├── app/                    # Expo Router app structure
+│   ├── (auth)/            # Authentication screens
+│   ├── (tabs)/            # Main tab navigation
+│   ├── _layout.tsx        # Root layout
+│   └── +not-found.tsx     # 404 screen
+├── components/            # Reusable React Native components
+│   ├── ui/               # Design system components
+│   ├── shared/           # Shared mobile components
+│   └── [feature]/        # Feature-specific components
+├── lib/                  # Business logic and utilities
+│   ├── actions/          # API actions
+│   ├── queries/          # API queries
+│   ├── hooks/            # Custom hooks
+│   └── utils/            # Helper functions
+├── constants/            # App constants
+├── types/                # TypeScript definitions
+├── assets/               # Images, fonts, and other assets
+└── utils/                # Platform-specific utilities
+```
+
+## 📦 Available Scripts
+
+```bash
+# Development
+pnpm start         # Start Expo development server
+pnpm ios           # Run on iOS simulator
+pnpm android       # Run on Android emulator
+pnpm web           # Run in web browser
+
+# Building
+pnpm build:ios     # Build for iOS
+pnpm build:android # Build for Android
+
+# Utilities
+pnpm reset-project # Reset to fresh Expo project
+pnpm lint          # Run linting
+```
+
+## 🚀 Deployment
+
+### EAS Build (Recommended)
+
+Expo Application Services (EAS) provides managed builds:
+
+1. **Install EAS CLI**:
+
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. **Configure EAS**:
+
+   ```bash
+   eas build:configure
+   ```
+
+3. **Build for platforms**:
+
+   ```bash
+   # iOS
+   eas build --platform ios
+
+   # Android
+   eas build --platform android
+   ```
+
+### App Store Deployment
+
+1. **iOS (TestFlight/App Store)**:
+
+   ```bash
+   eas submit --platform ios
+   ```
+
+2. **Android (Play Store)**:
+   ```bash
+   eas submit --platform android
+   ```
+
+### Environment-Specific Builds
+
+Configure different environments in `eas.json`:
+
+```json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "distribution": "store"
+    }
+  }
+}
+```
+
+## 📱 Device Testing
+
+### Development Builds
+
+For advanced testing features:
+
+```bash
+# Create development build
+eas build --platform ios --profile development
+eas build --platform android --profile development
+```
+
+### Testing Checklist
+
+- [ ] Authentication flow works
+- [ ] Offline functionality works
+- [ ] Push notifications arrive
+- [ ] Camera integration works
+- [ ] Performance is smooth
+- [ ] All screen sizes supported
+
+## 🤝 Contributing
+
+See the main [Contributing Guide](../../CONTRIBUTING.md) for details.
+
+### Mobile-Specific Guidelines
+
+- **Platform Testing**: Test on both iOS and Android
+- **Performance**: Optimize for mobile performance
+- **Accessibility**: Follow mobile accessibility guidelines
+- **Offline First**: Consider offline functionality
+- **Touch Interactions**: Design for touch interfaces
+
+## 📄 License
+
+This project is licensed under the [FortyOne License](../../LICENSE).
+
+## 📞 Support
+
+- **Documentation**: [docs.fortyone.app](https://docs.fortyone.app/mobile)
+- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
+
+## 🔗 Related Projects
+
+- **Web App**: [apps/projects/](../../apps/projects/)
+- **Landing Page**: [apps/landing/](../../apps/landing/)
+- **Documentation**: [apps/docs/](../../apps/docs/)

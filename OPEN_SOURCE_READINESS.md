@@ -361,7 +361,7 @@ Before making the repository public, verify:
 4. ✅ Move hardcoded Sentry DSN to env vars
 5. ✅ Update email addresses
 
-**Important (Should Have):** 6. ✅ Create CONTRIBUTING.md 7. ✅ Create SECURITY.md 8. ✅ Enhance README.md files 9. ✅ Document external services 10. ✅ Resolve branding inconsistencies
+**Important (Should Have):** 6. ✅ Create CONTRIBUTING.md 7. ✅ Create SECURITY.md 8. ✅ Enhance README.md files (root, landing, projects, docs, mobile) 9. ✅ Document external services (EXTERNAL_SERVICES.md) 10. ✅ Resolve branding inconsistencies (emails, domains, product names)
 
 **Optional (Nice to Have):** 11. ✅ GitHub templates and workflows 12. ✅ Additional tests and code quality 13. ✅ Extra documentation
 

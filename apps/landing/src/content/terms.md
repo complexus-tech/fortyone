@@ -64,7 +64,7 @@ Fees do not include any taxes, levies, duties or similar governmental assessment
 
 ### 5.1. Agreement Term and Renewals
 
-Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying Complexus at info@complexus.app or by modifying its subscription through Customer's account within the Service.
+Subscriptions to access and use the Service commence on the start date stated on the applicable Order ("Subscription Start Date") and continue for the duration of the Subscription Period. Customer may choose not to renew its Subscription Period by notifying FortyOne at hello@complexus.tech or by modifying its subscription through Customer's account within the Service.
 
 ### 5.2. Termination
 
@@ -116,11 +116,11 @@ As Customer (including its Users) interacts with the Service, the Service collec
 
 ### 10.1. Changes
 
-Customer acknowledges that the Service is an on-line, subscription-based product, and that to provide improved customer experience Complexus may make changes to the Service provided, however Complexus will not materially decrease the core functionality of the Service. Complexus may also unilaterally modify the terms of this Agreement by notifying you at least thirty (30) days prior to such changes taking effect and posting such changes at complexus.app/terms.
+Customer acknowledges that the Service is an on-line, subscription-based product, and that to provide improved customer experience FortyOne may make changes to the Service provided, however FortyOne will not materially decrease the core functionality of the Service. FortyOne may also unilaterally modify the terms of this Agreement by notifying you at least thirty (30) days prior to such changes taking effect and posting such changes at fortyone.app/terms.
 
 ### 10.2. Email Communications
 
-Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although Complexus may instead choose to provide notice to Customer through the Service, (b) notices to Complexus must be sent to info@complexus.app, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
+Notices under this Agreement will be provided as follows: (a) all notices regarding the Service will be sent by email, although FortyOne may instead choose to provide notice to Customer through the Service, (b) notices to FortyOne must be sent to hello@complexus.tech, and (c) all notices to Customer will be sent to the email(s) provided through the Service.
 
 ### 10.3. Governing Law and Venue
 
@@ -134,10 +134,10 @@ This Agreement, including all referenced pages and Orders, if applicable, consti
 
 For questions about these Terms, please contact us at:
 
-Legal Department: info@complexus.app
+Legal Department: hello@complexus.tech
 
 For general inquiries:
-Support: info@complexus.app
+Support: hello@complexus.tech
 
 For billing questions:
-Billing: info@complexus.app
+Billing: hello@complexus.tech

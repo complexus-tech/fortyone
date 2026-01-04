@@ -1,6 +1,114 @@
-# fortyone.app
+# FortyOne
 
-A modern web platform built with Next.js, TypeScript, and Turborepo. The Fortyone ecosystem consists of multiple interconnected applications served through local subdomains during development.
+[![License](https://img.shields.io/badge/license-FortyOne%20License-blue.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+
+A modern, open-source web platform for project management and collaboration. FortyOne provides a comprehensive suite of tools for teams to organize, track, and deliver projects efficiently.
+
+![FortyOne Dashboard](https://via.placeholder.com/800x400/4f46e5/ffffff?text=FortyOne+Dashboard)
+
+## ✨ Features
+
+- **🎯 Project Management**: Organize projects with objectives, key results, and milestones
+- **📋 Task Tracking**: Create, assign, and track tasks with rich text editing
+- **👥 Team Collaboration**: Real-time collaboration with team members
+- **📊 Analytics**: PostHog integration for user analytics and insights
+- **🔐 Authentication**: Secure authentication with NextAuth and Google OAuth
+- **📱 Cross-Platform**: Web application with React Native mobile app
+- **🎨 Modern UI**: Built with Radix UI, Tailwind CSS, and Framer Motion
+- **⚡ Performance**: Optimized with Next.js 15 and React 19
+- **🔍 Search**: Built-in search functionality across all content
+- **📚 Documentation**: Comprehensive documentation site with Fumadocs
+
+## 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/complexus/fortyone.git
+cd fortyone
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp apps/landing/.env.example apps/landing/.env
+cp apps/projects/.env.example apps/projects/.env
+cp apps/mobile/.env.example apps/mobile/.env
+# Edit .env files with your actual values
+
+# Start development server
+pnpm dev
+```
+
+Visit [https://fortyone.lc](https://fortyone.lc) to see the application.
+
+## 📖 Documentation
+
+- **[📚 User Guide](https://docs.fortyone.app)** - Complete documentation
+- **[🤝 Contributing](CONTRIBUTING.md)** - How to contribute
+- **[🔒 Security](SECURITY.md)** - Security policy and reporting
+
+## 🏗️ Architecture
+
+FortyOne is built as a monorepo using Turborepo with the following structure:
+
+```
+fortyone/
+├── apps/                    # Applications
+│   ├── landing/            # Marketing & authentication
+│   ├── docs/               # Documentation site
+│   ├── projects/           # Main project management app
+│   └── mobile/             # React Native mobile app
+├── packages/               # Shared packages
+│   ├── ui/                 # Component library
+│   ├── lib/                # Shared utilities
+│   ├── icons/              # Icon library
+│   └── [config]/           # Tooling configurations
+└── tools/                  # Development tools
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development
+pnpm dev
+
+# Run tests
+pnpm test
+
+# Lint code
+pnpm lint
+```
+
+## 📄 License
+
+This project is licensed under the [FortyOne License](LICENSE) - see the [LICENSE](LICENSE) file for details.
+
+The FortyOne License allows free personal and non-commercial use, while requiring commercial licensing for businesses with $200K+ annual revenue.
+
+## 📞 Contact & Support
+
+- **📧 Email**: hello@complexus.tech
+- **🐛 Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
+- **📖 Documentation**: [docs.fortyone.app](https://docs.fortyone.app)
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/), [React](https://reactjs.org/), and [TypeScript](https://www.typescriptlang.org/)
+- UI components by [Radix UI](https://www.radix-ui.com/)
+- Analytics by [PostHog](https://posthog.com/)
+
+---
 
 ## Prerequisites
 
@@ -40,7 +148,7 @@ sudo apt install caddy
 
 ```bash
 git clone <repository-url>
-cd fortyone.tech
+cd fortyone
 pnpm install
 ```
 
@@ -91,16 +199,6 @@ This command will:
 - Launch Caddy server with SSL/TLS termination
 - Enable hot reloading across all apps
 - Serve apps with HTTPS (using Caddy's internal CA)
-
-**Alternative commands:**
-
-```bash
-# Start only the Next.js apps (without Caddy)
-pnpm dev:turbo
-
-# Start only Caddy (if apps are running separately)
-pnpm dev:caddy
-```
 
 ### 4. Access Applications
 
@@ -166,7 +264,7 @@ fortyone.tech/
 - **Purpose**: Main application for project management
 - **URL**: https://\*.fortyone.lc (handles workspace-specific subdomain routing)
 - **Port**: 3001
-- **Tech Stack**: Next.js 15, React 19, TanStack Query, Tiptap
+- **Tech Stack**: Next.js 16, React 19, TanStack Query, Tiptap
 - **Features**:
   - Rich text editing with Tiptap
   - Drag and drop functionality

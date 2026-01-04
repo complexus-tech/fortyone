@@ -5,15 +5,15 @@ export const Support = () => {
   const features = [
     {
       heading: "Support",
-      email: "support@complexus.app",
+      email: "hello@complexus.tech",
       description:
         "Get expert assistance with platform setup, technical issues, or general guidance. Our support team is here to ensure your success.",
     },
     {
-      email: "sales@complexus.app",
+      email: "hello@complexus.tech",
       heading: "Sales",
       description:
-        "Discover how complexus can transform your business. Schedule a demo, discuss custom solutions, or learn about enterprise pricing.",
+        "Discover how FortyOne can transform your business. Schedule a demo, discuss custom solutions, or learn about enterprise pricing.",
     },
   ];
 
@@ -30,7 +30,7 @@ export const Support = () => {
                 {description}
               </Text>
               <a
-                className="my-1 block text-center text-primary underline underline-offset-4 opacity-90 transition"
+                className="text-primary my-1 block text-center underline underline-offset-4 opacity-90 transition"
                 href={`mailto:${email}`}
               >
                 {email}
