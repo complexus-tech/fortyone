@@ -26,6 +26,26 @@ A modern, open-source web platform for project management and collaboration. For
 - **🔍 Search**: Built-in search functionality across all content
 - **📚 Documentation**: Comprehensive documentation site with Fumadocs
 
+## 📸 Screenshots
+
+### Core Features
+
+#### 📋 List View - Story Management
+
+![List View](apps/landing/public/images/product/list.webp)
+
+#### 📊 Kanban Board - Task Workflow
+
+![Kanban Board](apps/landing/public/images/product/kanban-light.webp)
+
+#### 🎯 OKR Objectives - Goal Tracking
+
+![OKR Objectives](apps/landing/public/images/product/objective.webp)
+
+#### 🤖 Maya AI Assistant
+
+![Maya AI Assistant](apps/landing/public/images/product/maya.webp)
+
 ## 🚀 Quick Start
 
 ```bash
