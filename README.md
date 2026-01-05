@@ -31,6 +31,35 @@
    make worker
    ```
 
+## Database Migrations
+
+This project uses [golang-migrate](https://github.com/golang-migrate/migrate) for database schema management.
+
+### Install the CLI
+
+```bash
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.3
+```
+
+### Usage
+
+| Command | Description |
+|---------|-------------|
+| `make migrate-create name=add_users_table` | Create a new migration |
+| `make migrate-up` | Apply all pending migrations |
+| `make migrate-down n=1` | Rollback last N migrations |
+| `make migrate-version` | Show current version |
+| `make migrate-force v=2` | Force set version (use with caution) |
+
+**Note:** Set `DB_URL` or the individual env vars (`APP_DB_USER`, `APP_DB_PASSWORD`, `APP_DB_HOST`, `APP_DB_PORT`, `APP_DB_NAME`) before running.
+
+### Best Practices
+
+- Keep migrations small and focused (one logical change per migration)
+- Always write both `.up.sql` and `.down.sql` files
+- Use `IF NOT EXISTS` / `IF EXISTS` for idempotency
+- Test migrations locally before applying to production
+- Never edit migrations that have been applied to production
 
 ## Brevo Integration
 
