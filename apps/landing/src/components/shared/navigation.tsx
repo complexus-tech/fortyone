@@ -46,6 +46,8 @@ export const Navigation = () => {
     { title: "Contact", href: "/contact" },
     { title: "Blog", href: "/blog" },
     { title: "Help Center", href: "https://docs.fortyone.app" },
+    { title: "GitHub", href: "https://github.com/complexus-tech/fortyone.app" },
+    { title: "Pitch", href: "https://pitch.fortyone.app" },
   ];
 
   const features = [

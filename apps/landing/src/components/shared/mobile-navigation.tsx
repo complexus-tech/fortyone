@@ -59,6 +59,8 @@ export const MobileNavigation = () => {
     { label: "Contact", href: "/contact" },
     { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "https://docs.fortyone.app" },
+    { label: "GitHub", href: "https://github.com/complexus-tech/fortyone.app" },
+    { label: "Pitch", href: "https://pitch.fortyone.app" },
   ];
 
   return (
