@@ -7,7 +7,11 @@
 
 A modern, open-source web platform for project management and collaboration. FortyOne provides a comprehensive suite of tools for teams to organize, track, and deliver projects efficiently.
 
-![FortyOne Dashboard](https://via.placeholder.com/800x400/4f46e5/ffffff?text=FortyOne+Dashboard)
+[![FortyOne Demo Video](https://via.placeholder.com/800x400/4f46e5/ffffff?text=🎬+Watch+Demo)](https://www.fortyone.app/videos/demo.mp4)
+
+<p align="center">
+  <em>Click the image above to watch the FortyOne demo video</em>
+</p>
 
 ## ✨ Features
 
