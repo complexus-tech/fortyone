@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     workspace,
     memories,
     webSearchEnabled = true,
-    provider = "openai",
+    provider = "google",
     totalMessages,
   } = await req.json();
   const modelMessages = await convertToModelMessages(
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   });
 
   let client =
-    provider === "google"
+    provider === "openai"
       ? openaiClient("gpt-5.2")
       : googleClient("gemini-3-flash-preview");
 

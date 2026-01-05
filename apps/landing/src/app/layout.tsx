@@ -12,9 +12,9 @@ import Providers from "./providers";
 
 export const metadata: Metadata = {
   title:
-    "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
+    "FortyOne - The Open Source Agentic Project Management Platform",
   description:
-    "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+    "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     title:
-      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
+      "FortyOne - The Open Source Agentic Project Management Platform",
     description:
-      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+      "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -54,9 +54,9 @@ export const metadata: Metadata = {
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
     title:
-      "FortyOne - Project Management Platform | AI-Powered OKRs & Team Collaboration",
+      "FortyOne - The Open Source Agentic Project Management Platform",
     description:
-      "FortyOne is the leading project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+      "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
   },
   alternates: {
     canonical: "https://www.fortyone.app",

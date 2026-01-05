@@ -1,5 +1,5 @@
 {
-  "private": true,
+  "private": false,
   "scripts": {
     "build": "turbo run build",
     "dev:caddy": "turbo run dev",

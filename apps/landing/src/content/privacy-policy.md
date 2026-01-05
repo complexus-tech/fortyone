@@ -160,7 +160,7 @@ If you have any questions about this Privacy Policy, You can contact us:
 By email: info@complexus.app
 
 For data protection inquiries:
-Data Protection Officer: info@complexus.app
+Data Protection Officer: hello@complexus.tech
 
 For general support:
-Support: info@complexus.app
+Support: hello@complexus.tech

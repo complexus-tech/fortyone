@@ -1,45 +1,264 @@
-# docs
+# FortyOne Documentation
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Fumadocs](https://img.shields.io/badge/Fumadocs-15-blue.svg)](https://fumadocs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
-Run development server:
+The comprehensive documentation site for FortyOne, built with Next.js and Fumadocs. This site provides user guides, API documentation, developer resources, and community support materials.
 
-```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+## ✨ Features
+
+- **📚 Comprehensive Documentation**: User guides, API docs, and tutorials
+- **🔍 Full-Text Search**: Fast, client-side search across all content
+- **📝 MDX Support**: Rich content with code blocks, tables, and components
+- **🎨 Modern UI**: Clean, responsive design with dark/light mode
+- **🚀 Fast Performance**: Optimized loading and navigation
+- **📱 Mobile Friendly**: Responsive design for all devices
+- **🔗 Cross-References**: Automatic linking between related pages
+- **📊 Analytics**: Usage tracking and content insights
+- **🌐 SEO Optimized**: Meta tags and structured data
+- **🛠️ Developer Friendly**: Easy to contribute and maintain
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm 9.3.0+
+
+### Development Setup
+
+1. **Install dependencies**:
+
+   ```bash
+   cd apps/docs
+   pnpm install
+   ```
+
+2. **Start development server**:
+
+   ```bash
+   pnpm dev
+   ```
+
+3. **Access the documentation**:
+   - Local: https://docs.fortyone.lc (requires Caddy for SSL)
+   - Direct: http://localhost:3002
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Documentation**: Fumadocs for content management
+- **Content**: MDX for rich documentation
+- **Search**: Built-in full-text search
+- **Styling**: Tailwind CSS with Fumadocs UI
+- **Deployment**: Vercel or static hosting
+
+### Content Structure
+
+```
+apps/docs/
+├── content/               # Documentation content
+│   ├── docs/             # Main documentation pages
+│   │   ├── getting-started/
+│   │   ├── user-guide/
+│   │   ├── api/
+│   │   └── developer/
+│   └── blog/             # Blog posts and announcements
+├── components/           # Custom documentation components
+├── lib/                  # Documentation utilities
+│   ├── source.ts        # Content source configuration
+│   └── mdx-components.tsx # Custom MDX components
+├── app/                  # Next.js app structure
+│   ├── (home)/          # Landing and overview pages
+│   ├── docs/            # Documentation pages
+│   └── api/             # Search API
+└── source.config.ts     # Fumadocs configuration
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+## 📝 Writing Documentation
 
-## Explore
+### Content Guidelines
 
-In the project, you can see:
+- **Clear Structure**: Use headings, lists, and code blocks appropriately
+- **Code Examples**: Include practical, runnable examples
+- **Cross-References**: Link to related documentation
+- **Up-to-Date**: Keep examples and instructions current
+- **Accessible**: Write in clear, inclusive language
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `app/layout.config.tsx`: Shared options for layouts, optional but preferred to keep.
+### MDX Features
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+````mdx
+---
+title: Getting Started
+description: Learn how to get started with FortyOne
+---
 
-### Fumadocs MDX
+# Getting Started
 
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
+Welcome to FortyOne! This guide will help you get up and running quickly.
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+## Installation
 
-## Learn More
+Install FortyOne using your preferred package manager:
 
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
+```bash
+npm install fortyone
+# or
+yarn add fortyone
+# or
+pnpm add fortyone
+```
+````
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs
+## Basic Usage
+
+```tsx
+import { FortyOne } from "fortyone";
+
+function App() {
+  return <FortyOne />;
+}
+```
+
+<Callout type="info">
+  Make sure you have Node.js 18+ installed before proceeding.
+</Callout>
+```
+
+### Frontmatter
+
+Use frontmatter to add metadata to your pages:
+
+```yaml
+---
+title: Page Title
+description: Brief description for SEO
+icon: IconName
+---
+# Page Content
+```
+
+## 📦 Available Scripts
+
+```bash
+# Development
+pnpm dev          # Start development server
+pnpm build        # Build for production
+pnpm start        # Start production server
+
+# Content
+pnpm postinstall  # Generate MDX content (runs automatically)
+```
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. **Connect Repository**:
+
+   - Import to Vercel with build settings:
+     - Build Command: `cd apps/docs && pnpm build`
+     - Output Directory: `apps/docs/.next`
+     - Install Command: `pnpm install`
+
+2. **Custom Domain**:
+   - Configure `docs.fortyone.app` or your preferred domain
+
+### Static Export
+
+For static hosting platforms:
+
+```bash
+pnpm build
+# Output will be in .next/static
+```
+
+## 🤝 Contributing Documentation
+
+### Adding New Pages
+
+1. **Create MDX file** in appropriate directory under `content/`
+2. **Add frontmatter** with title, description, and metadata
+3. **Write content** following style guidelines
+4. **Test locally** to ensure proper rendering
+5. **Submit PR** for review
+
+### Content Organization
+
+```
+content/docs/
+├── getting-started/     # Onboarding guides
+├── user-guide/         # Feature documentation
+├── api/                # API reference
+├── developer/          # Developer resources
+└── troubleshooting/    # Common issues and solutions
+```
+
+### Style Guidelines
+
+- **Headers**: Use sentence case for headings
+- **Code**: Use backticks for inline code, triple backticks for blocks
+- **Links**: Use relative links for internal documentation
+- **Images**: Store in `public/` directory
+- **Lists**: Use consistent formatting and indentation
+
+## 🔧 Configuration
+
+### Fumadocs Config
+
+The `source.config.ts` file controls documentation behavior:
+
+```typescript
+import { createDocs } from "fumadocs-core";
+
+export const source = createDocs({
+  docs: {
+    // Documentation pages
+    dir: "content/docs",
+    // URL prefix
+    url: "/docs",
+  },
+  meta: {
+    // Global metadata
+    title: "FortyOne Docs",
+    description: "Comprehensive documentation for FortyOne",
+  },
+});
+```
+
+### Custom Components
+
+Add custom MDX components in `lib/mdx-components.tsx`:
+
+```tsx
+import { Callout } from "fumadocs-ui/components";
+
+export const components = {
+  Callout,
+  // Add your custom components here
+};
+```
+
+## 📊 Analytics & Insights
+
+The documentation site includes analytics to understand:
+
+- Most visited pages
+- Search query patterns
+- User engagement metrics
+- Content effectiveness
+
+Access analytics through your configured provider.
+
+## 📄 License
+
+This documentation is licensed under the [FortyOne License](../../LICENSE).
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
+- **Contributing**: See [CONTRIBUTING.md](../../CONTRIBUTING.md)
