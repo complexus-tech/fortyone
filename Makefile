@@ -59,3 +59,11 @@ migrate-version:
 # Force set migration version: make migrate-force v=2
 migrate-force:
 	$(MIGRATE) -path cmd/migrations -database $(DB_URL) force $(v)
+
+# =============================================================================
+# Database Seeding
+# =============================================================================
+
+# Run database seeding: make seed name="My Workspace" slug="my-workspace" email="admin@example.com"
+seed:
+	go run cmd/seed/main.go --name "$(or $(name),Development)" --slug "$(or $(slug),dev)" --email "$(or $(email),admin@example.com)" --fullname "$(or $(fullname),Admin User)" --disable-tls=$(or $(disable-tls),true)

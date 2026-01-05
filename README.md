@@ -61,6 +61,26 @@ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.
 - Test migrations locally before applying to production
 - Never edit migrations that have been applied to production
 
+## Database Seeding
+
+The project includes a Go-based seeder to quickly set up a development environment with a user, workspace, and default data (teams, statuses, stories).
+
+### Usage
+
+```bash
+# Seed with default values (admin@example.com, "Development" workspace)
+make seed
+
+# Seed with custom values
+make seed name="My Project" slug="my-project" email="joseph@example.com" fullname="Joseph"
+```
+
+The seeder leverages application side-effects, so creating a workspace will automatically:
+- Create a default team ("Team 1")
+- Create default story statuses
+- Create initial "Welcome" stories
+- Initialize workspace settings
+
 ## Brevo Integration
 
 This service integrates with Brevo (formerly Sendinblue) to manage subscriber onboarding and emails.
