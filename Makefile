@@ -24,7 +24,19 @@ tidy:
 # =============================================================================
 # Database Migrations (golang-migrate)
 # =============================================================================
+# Load environment variables from .env if it exists
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 # Override DB_URL inline or set environment variables
+APP_DB_NAME ?= complexus
+APP_DB_USER ?= postgres
+APP_DB_PASSWORD ?= password
+APP_DB_HOST ?= localhost
+APP_DB_PORT ?= 5432
+
 DB_URL ?= "postgresql://$(APP_DB_USER):$(APP_DB_PASSWORD)@$(APP_DB_HOST):$(APP_DB_PORT)/$(APP_DB_NAME)?sslmode=disable"
 MIGRATE ?= ~/go/bin/migrate
 
