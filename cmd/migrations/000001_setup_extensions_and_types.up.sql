@@ -9,3 +9,21 @@ CREATE TYPE public.user_role AS ENUM (
 );
 
 CREATE TYPE public.billing_interval_enum AS ENUM (
+    'day',
+    'week',
+    'month',
+    'year'
+);
+
+CREATE TYPE public.measurement_type AS ENUM (
+    'percentage',
+    'number',
+    'boolean'
+);
+
+CREATE TYPE public.subscription_tier_enum AS ENUM (
+    'free',
+    'pro',
+    'business',
+    'enterprise'
+);
