@@ -1,6 +1,4 @@
 -- 000029_workspace_invitations.up.sql
-DROP TYPE IF EXISTS "public"."user_role";
-CREATE TYPE "public"."user_role" AS ENUM ('admin', 'member', 'guest', 'system');
 
 -- Table Definition
 CREATE TABLE "public"."workspace_invitations" (
