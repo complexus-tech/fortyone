@@ -23,4 +23,7 @@ tmp
 go.work
 
 .vscode/
-.env*
+.env
+.env.production
+.env.development
+.env.local
