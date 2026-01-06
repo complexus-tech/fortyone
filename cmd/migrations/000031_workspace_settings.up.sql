@@ -1,17 +1,18 @@
 -- 000031_workspace_settings.up.sql
-CREATE TABLE public.workspace_settings (
-    workspace_id uuid NOT NULL,
-    story_term character varying(50) DEFAULT 'story'::character varying NOT NULL,
-    sprint_term character varying(50) DEFAULT 'sprint'::character varying NOT NULL,
-    objective_term character varying(50) DEFAULT 'objective'::character varying NOT NULL,
-    key_result_term character varying(50) DEFAULT 'key result'::character varying NOT NULL,
-    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    objective_enabled boolean DEFAULT true NOT NULL,
-    key_result_enabled boolean DEFAULT true NOT NULL
+CREATE TABLE "public"."workspace_settings" (
+    "workspace_id" uuid NOT NULL,
+    "story_term" varchar(50) NOT NULL DEFAULT 'story'::character varying,
+    "sprint_term" varchar(50) NOT NULL DEFAULT 'sprint'::character varying,
+    "objective_term" varchar(50) NOT NULL DEFAULT 'objective'::character varying,
+    "key_result_term" varchar(50) NOT NULL DEFAULT 'key result'::character varying,
+    "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "objective_enabled" bool NOT NULL DEFAULT true,
+    "key_result_enabled" bool NOT NULL DEFAULT true,
+    CONSTRAINT "workspace_terminology_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("workspace_id") ON DELETE CASCADE,
+    PRIMARY KEY ("workspace_id")
 );
 
-ALTER TABLE ONLY public.workspace_settings ADD CONSTRAINT workspace_terminology_pkey PRIMARY KEY (workspace_id);
 
-ALTER TABLE ONLY public.workspace_settings 
-    ADD CONSTRAINT workspace_terminology_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(workspace_id) ON DELETE CASCADE;
+-- Indices
+CREATE UNIQUE INDEX workspace_terminology_pkey ON public.workspace_settings USING btree (workspace_id);
