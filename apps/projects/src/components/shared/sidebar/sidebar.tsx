@@ -102,7 +102,7 @@ export const Sidebar = () => {
                 >
                   <span>
                     <Button
-                      className="text-primary border-opacity-15 bg-opacity-10 dark:bg-opacity-15 mt-3 px-3"
+                      className="text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 mt-3 px-3"
                       href={
                         userRole === "admin"
                           ? "/settings/workspace/billing"
