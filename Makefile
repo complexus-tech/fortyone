@@ -42,23 +42,23 @@ MIGRATE ?= ~/go/bin/migrate
 
 # Create a new migration: make migrate-create name=create_users_table
 migrate-create:
-	$(MIGRATE) create -ext sql -dir cmd/migrations -seq $(name)
+	$(MIGRATE) create -ext sql -dir internal/migrations -seq $(name)
 
 # Apply all pending migrations
 migrate-up:
-	$(MIGRATE) -path cmd/migrations -database $(DB_URL) up
+	$(MIGRATE) -path internal/migrations -database $(DB_URL) up
 
 # Rollback last N migrations (default 1): make migrate-down n=1
 migrate-down:
-	$(MIGRATE) -path cmd/migrations -database $(DB_URL) down $(or $(n),1)
+	$(MIGRATE) -path internal/migrations -database $(DB_URL) down $(or $(n),1)
 
 # Show current migration version
 migrate-version:
-	$(MIGRATE) -path cmd/migrations -database $(DB_URL) version
+	$(MIGRATE) -path internal/migrations -database $(DB_URL) version
 
 # Force set migration version: make migrate-force v=2
 migrate-force:
-	$(MIGRATE) -path cmd/migrations -database $(DB_URL) force $(v)
+	$(MIGRATE) -path internal/migrations -database $(DB_URL) force $(v)
 
 # =============================================================================
 # Database Seeding

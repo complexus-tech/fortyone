@@ -37,7 +37,7 @@ services:
   migrations:
     image: migrate/migrate
     volumes:
-      - ./cmd/migrations:/migrations
+      - ./internal/migrations:/migrations
     entrypoint: [ "migrate", "-path", "/migrations", "-database", "postgresql://postgres:password@db:5432/complexus?sslmode=disable", "up" ]
     depends_on:
       db:
