@@ -151,15 +151,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
 
-	fmt.Println("DB_HOST", cfg.DB.Host)
-	fmt.Println("DB_PORT", cfg.DB.Port)
-	fmt.Println("DB_USER", cfg.DB.User)
-	fmt.Println("DB_PASSWORD", cfg.DB.Password)
-	fmt.Println("DB_NAME", cfg.DB.Name)
-	fmt.Println("DB_MAX_IDLE_CONNS", cfg.DB.MaxIdleConns)
-	fmt.Println("DB_MAX_OPEN_CONNS", cfg.DB.MaxOpenConns)
-	fmt.Println("DB_DISABLE_TLS", cfg.DB.DisableTLS)
-	fmt.Println("DB_DISABLE_TLS", os.Getenv("APP_DB_DISABLE_TLS"))
 	// Connect to postgres database
 	db, err := database.Open(database.Config{
 		Host:         cfg.DB.Host,
