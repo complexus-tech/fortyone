@@ -36,8 +36,16 @@ APP_DB_USER ?= postgres
 APP_DB_PASSWORD ?= password
 APP_DB_HOST ?= localhost
 APP_DB_PORT ?= 5432
+APP_DB_DISABLE_TLS ?= true
 
-DB_URL ?= "postgresql://$(APP_DB_USER):$(APP_DB_PASSWORD)@$(APP_DB_HOST):$(APP_DB_PORT)/$(APP_DB_NAME)?sslmode=disable"
+# Set SSL mode based on APP_DB_DISABLE_TLS
+ifeq ($(APP_DB_DISABLE_TLS),true)
+    SSL_MODE = disable
+else
+    SSL_MODE = require
+endif
+
+DB_URL ?= "postgresql://$(APP_DB_USER):$(APP_DB_PASSWORD)@$(APP_DB_HOST):$(APP_DB_PORT)/$(APP_DB_NAME)?sslmode=$(SSL_MODE)"
 MIGRATE ?= ~/go/bin/migrate
 
 # Create a new migration: make migrate-create name=create_users_table
