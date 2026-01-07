@@ -66,11 +66,11 @@ type Config struct {
 		DebugHost       string        `default:"localhost:9000" env:"APP_API_DEBUG_HOST"`
 	}
 	DB struct {
-		Host         string `default:"localhost"`
+		Host         string `default:"localhost" env:"APP_DB_HOST"`
 		Port         string `default:"5432" env:"APP_DB_PORT"`
-		User         string `default:"postgres"`
-		Password     string `default:"password"`
-		Name         string `default:"complexus"`
+		User         string `default:"postgres" env:"APP_DB_USER"`
+		Password     string `default:"password" env:"APP_DB_PASSWORD"`
+		Name         string `default:"complexus" env:"APP_DB_NAME"`
 		MaxIdleConns int    `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
 		MaxOpenConns int    `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
@@ -150,6 +150,16 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
+
+	fmt.Println("DB_HOST", cfg.DB.Host)
+	fmt.Println("DB_PORT", cfg.DB.Port)
+	fmt.Println("DB_USER", cfg.DB.User)
+	fmt.Println("DB_PASSWORD", cfg.DB.Password)
+	fmt.Println("DB_NAME", cfg.DB.Name)
+	fmt.Println("DB_MAX_IDLE_CONNS", cfg.DB.MaxIdleConns)
+	fmt.Println("DB_MAX_OPEN_CONNS", cfg.DB.MaxOpenConns)
+	fmt.Println("DB_DISABLE_TLS", cfg.DB.DisableTLS)
+	fmt.Println("DB_DISABLE_TLS", os.Getenv("APP_DB_DISABLE_TLS"))
 	// Connect to postgres database
 	db, err := database.Open(database.Config{
 		Host:         cfg.DB.Host,
