@@ -7,6 +7,12 @@
 
 A modern, open-source web platform for project management and collaboration. FortyOne provides a comprehensive suite of tools for teams to organize, track, and deliver projects efficiently.
 
+The Frontend for [FortyOne API](https://github.com/complexus-tech/api.fortyone.app) - The Open Source Agentic Project Management Platform.
+
+## Related Repositories
+
+- **[Backend Application](https://github.com/complexus-tech/api.fortyone.app)**: Golang backend application for this project
+
 ## ✨ Features
 
 - **🎯 Project Management**: Organize projects with objectives, key results, and milestones
