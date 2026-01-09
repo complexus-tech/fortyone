@@ -375,7 +375,7 @@ When adding a new workspace or subdomain:
 
 3. **Restart Caddy:**
    ```bash
-   # Stop current dev process (Ctrl+C) and restart
+    # Stop current dev process (Ctrl+C) and restart
    pnpm dev
    ```
 
