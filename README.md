@@ -9,6 +9,7 @@ The backend API for [FortyOne](https://github.com/complexus-tech/fortyone.app) -
 ## Running the project locally
 
 ### Prerequisites
+
 - Go 1.23+
 - Docker & Docker Compose
 - `air` (for live reload) - `go install github.com/air-verse/air@latest`
@@ -18,18 +19,22 @@ The backend API for [FortyOne](https://github.com/complexus-tech/fortyone.app) -
 1. **Clone the repository** (if you haven't already)
 
 2. **Setup Environment Variables**
+
    ```bash
    cp .env.example .env
    ```
+
    Update `.env` with your local configuration.
 
 3. **Start Dependencies**
    Ensure your database and other services are running
 
 4. **Run the Server**
+
    ```bash
    make dev
    ```
+
    This command starts the API using `air` for hot-reloading.
 
 5. **Run the Worker**
@@ -49,13 +54,13 @@ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.
 
 ### Usage
 
-| Command | Description |
-|---------|-------------|
-| `make migrate-create name=add_users_table` | Create a new migration |
-| `make migrate-up` | Apply all pending migrations |
-| `make migrate-down n=1` | Rollback last N migrations |
-| `make migrate-version` | Show current version |
-| `make migrate-force v=2` | Force set version (use with caution) |
+| Command                                    | Description                          |
+| ------------------------------------------ | ------------------------------------ |
+| `make migrate-create name=add_users_table` | Create a new migration               |
+| `make migrate-up`                          | Apply all pending migrations         |
+| `make migrate-down n=1`                    | Rollback last N migrations           |
+| `make migrate-version`                     | Show current version                 |
+| `make migrate-force v=2`                   | Force set version (use with caution) |
 
 **Note:** Set `DB_URL` or the individual env vars (`APP_DB_USER`, `APP_DB_PASSWORD`, `APP_DB_HOST`, `APP_DB_PORT`, `APP_DB_NAME`) before running.
 
@@ -78,10 +83,11 @@ The project includes a Go-based seeder to quickly set up a development environme
 make seed
 
 # Seed with custom values
-make seed name="My Project" slug="my-project" email="joseph@example.com" fullname="Joseph"
+make seed name="My Project" slug="my-project" email="joseph@example.com" fullname="Joseph Mukorivo"
 ```
 
 The seeder leverages application side-effects, so creating a workspace will automatically:
+
 - Create a default team ("Team 1")
 - Create default story statuses
 - Create initial "Welcome" stories
@@ -113,6 +119,7 @@ The Projects API follows a **Hexagonal (or Layered) Architecture** pattern, desi
 ### System Overview
 
 The system is structured into concentric layers:
+
 1.  **Transport Layer (`cmd`, `internal/mux`, `internal/handlers`)**: Handles HTTP requests, routing, and input validation.
 2.  **Domain Layer (`internal/core`)**: Contains pure business logic and interfaces.
 3.  **Data Layer (`internal/repo`)**: Implements storage interfaces using SQLx (PostgreSQL).
@@ -132,17 +139,17 @@ graph TD
 
 #### Key Directories
 
--   **`cmd/`**: Application entry points.
-    -   `api/`: The main REST API server.
-    -   `worker/`: Background job processor (using Asynq).
--   **`internal/mux`**: Router setup, middleware configuration, and dependency injection root.
--   **`internal/handlers`**: HTTP handlers grouped by domain (e.g., `storiesgrp`, `usersgrp`). Responsible for parsing requests and sending responses.
--   **`internal/core`**: The heart of the application.
-    -   Defines domain models (structs).
-    -   Defines interfaces for Repositories and Services.
-    -   Implements business logic (Services).
--   **`internal/repo`**: Database implementations of the interfaces defined in `core`. Uses `sqlx` for explicitly managed SQL queries.
--   **`pkg/`**: Library code that is not specific to the application's business domain (e.g., `logger`, `database`, `brevo`, `azure`).
+- **`cmd/`**: Application entry points.
+  - `api/`: The main REST API server.
+  - `worker/`: Background job processor (using Asynq).
+- **`internal/mux`**: Router setup, middleware configuration, and dependency injection root.
+- **`internal/handlers`**: HTTP handlers grouped by domain (e.g., `storiesgrp`, `usersgrp`). Responsible for parsing requests and sending responses.
+- **`internal/core`**: The heart of the application.
+  - Defines domain models (structs).
+  - Defines interfaces for Repositories and Services.
+  - Implements business logic (Services).
+- **`internal/repo`**: Database implementations of the interfaces defined in `core`. Uses `sqlx` for explicitly managed SQL queries.
+- **`pkg/`**: Library code that is not specific to the application's business domain (e.g., `logger`, `database`, `brevo`, `azure`).
 
 ### Data Flow
 
@@ -154,20 +161,20 @@ graph TD
 
 ### Technology Stack
 
--   **Language**: Go 1.23+
--   **Database**: PostgreSQL (via `jmoiron/sqlx`)
--   **Caching**: Redis (via `go-redis`)
--   **Background Jobs**: Asynq (Redis-backed queue)
--   **Routing**: Standard `net/http` with custom Mux
--   **Observability**: OpenTelemetry & Slog
--   **Integrations**:
-    -   **Brevo**: Email & Transactional messaging
-    -   **Google**: OAuth2 Authentication
-    -   **Azure**: Blob Storage
-    -   **Stripe**: Billing
+- **Language**: Go 1.23+
+- **Database**: PostgreSQL (via `jmoiron/sqlx`)
+- **Caching**: Redis (via `go-redis`)
+- **Background Jobs**: Asynq (Redis-backed queue)
+- **Routing**: Standard `net/http` with custom Mux
+- **Observability**: OpenTelemetry & Slog
+- **Integrations**:
+  - **Brevo**: Email & Transactional messaging
+  - **Google**: OAuth2 Authentication
+  - **Azure**: Blob Storage
+  - **Stripe**: Billing
 
 ### Development Patterns
 
--   **Dependency Injection**: Dependencies are created in `main.go` and passed down explicitly (no global state).
--   **Tracing**: Key operations are wrapped in `web.AddSpan` for observability.
--   **Transactions**: Explicit transaction management (`BeginTxx`) in repositories for multi-step writes.
+- **Dependency Injection**: Dependencies are created in `main.go` and passed down explicitly (no global state).
+- **Tracing**: Key operations are wrapped in `web.AddSpan` for observability.
+- **Transactions**: Explicit transaction management (`BeginTxx`) in repositories for multi-step writes.
