@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Box, Text, Button, Flex, Tooltip, Wrapper } from "ui";
 import { PlusIcon, WarningIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -17,7 +17,7 @@ import { useCreateStateMutation } from "@/lib/hooks/states/create-mutation";
 import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
 import { useUserRole } from "@/hooks";
 import { StateRow } from "./state-row";
 
@@ -71,8 +71,23 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { userRole } = useUserRole();
-  const { data: states = [] } = useTeamStatuses(teamId);
-  const { data: stories = [] } = useTeamStories(teamId);
+  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const { data: groupedStories } = useGroupedStories({
+    groupBy: "status",
+    teamIds: [teamId],
+  });
+
+  const storyCounts = useMemo(() => {
+    if (!groupedStories?.groups) return {};
+    return groupedStories.groups.reduce(
+      (acc, group) => ({
+        ...acc,
+        [group.key]: group.totalCount,
+      }),
+      {} as Record<string, number>,
+    );
+  }, [groupedStories]);
+
   const deleteMutation = useDeleteStateMutation();
   const createMutation = useCreateStateMutation();
   const updateMutation = useUpdateStateMutation();
@@ -82,7 +97,7 @@ export const WorkflowSettings = () => {
   const [stateToDelete, setStateToDelete] = useState<State | null>(null);
 
   const handleDeleteState = (state: State) => {
-    const categoryStates = states.filter((s) => s.category === state.category);
+    const categoryStates = statuses.filter((s) => s.category === state.category);
     if (
       categoryStates.length <= 1 &&
       ["unstarted", "started"].includes(state.category)
@@ -128,7 +143,7 @@ export const WorkflowSettings = () => {
       return;
     }
 
-    const activeState = states.find((state) => state.id === active.id);
+    const activeState = statuses.find((state) => state.id === active.id);
     if (!activeState) return;
 
     // Find the category configuration
@@ -137,7 +152,7 @@ export const WorkflowSettings = () => {
     );
     if (!categoryConfig) return;
 
-    const categoryStates = states
+    const categoryStates = statuses
       .filter((state) => state.category === activeState.category)
       .sort((a, b) => a.orderIndex - b.orderIndex);
 
@@ -278,7 +293,7 @@ export const WorkflowSettings = () => {
         <DndContext onDragEnd={handleDragEnd}>
           <Flex direction="column" gap={4}>
             {categories.map(({ label, value }) => {
-              const categoryStates = states
+              const categoryStates = statuses
                 .filter((state) => state.category === value)
                 .sort((a, b) => a.orderIndex - b.orderIndex);
               const isCreatingInCategory =
@@ -309,20 +324,14 @@ export const WorkflowSettings = () => {
                     strategy={verticalListSortingStrategy}
                   >
                     <Flex direction="column" gap={3}>
-                      {categoryStates.map((state) => {
-                        const storyCount = stories.filter(
-                          (story) => story.statusId === state.id,
-                        ).length;
-
-                        return (
-                          <StateRow
-                            key={state.id}
-                            onDelete={handleDeleteState}
-                            state={state}
-                            storyCount={storyCount}
-                          />
-                        );
-                      })}
+                      {categoryStates.map((state) => (
+                        <StateRow
+                          key={state.id}
+                          onDelete={handleDeleteState}
+                          state={state}
+                          storyCount={storyCounts[state.id] || 0}
+                        />
+                      ))}
                       {isCreatingInCategory ? (
                         <StateRow
                           isNew
