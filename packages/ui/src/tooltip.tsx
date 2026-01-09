@@ -6,12 +6,14 @@ import { cn } from "lib";
 
 type ContentProps = Omit<TooltipPrimitive.TooltipContentProps, "title"> & {
   title?: ReactNode;
+  delayDuration?: number;
 };
 export const Tooltip = ({
   children,
   title,
   className = "",
   sideOffset = 3,
+  delayDuration = 600,
   ...rest
 }: ContentProps) => {
   if (!title) {
@@ -19,7 +21,7 @@ export const Tooltip = ({
   }
   return (
     <TooltipPrimitive.Provider>
-      <TooltipPrimitive.Root delayDuration={600}>
+      <TooltipPrimitive.Root delayDuration={delayDuration}>
         <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
