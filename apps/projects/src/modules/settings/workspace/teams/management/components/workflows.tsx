@@ -71,7 +71,7 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { userRole } = useUserRole();
-  const { data: states = [] } = useTeamStatuses(teamId);
+  const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: stories = [] } = useTeamStories(teamId);
   const deleteMutation = useDeleteStateMutation();
   const createMutation = useCreateStateMutation();
@@ -82,7 +82,7 @@ export const WorkflowSettings = () => {
   const [stateToDelete, setStateToDelete] = useState<State | null>(null);
 
   const handleDeleteState = (state: State) => {
-    const categoryStates = states.filter((s) => s.category === state.category);
+    const categoryStates = statuses.filter((s) => s.category === state.category);
     if (
       categoryStates.length <= 1 &&
       ["unstarted", "started"].includes(state.category)
@@ -128,7 +128,7 @@ export const WorkflowSettings = () => {
       return;
     }
 
-    const activeState = states.find((state) => state.id === active.id);
+    const activeState = statuses.find((state) => state.id === active.id);
     if (!activeState) return;
 
     // Find the category configuration
@@ -137,7 +137,7 @@ export const WorkflowSettings = () => {
     );
     if (!categoryConfig) return;
 
-    const categoryStates = states
+    const categoryStates = statuses
       .filter((state) => state.category === activeState.category)
       .sort((a, b) => a.orderIndex - b.orderIndex);
 
@@ -278,7 +278,7 @@ export const WorkflowSettings = () => {
         <DndContext onDragEnd={handleDragEnd}>
           <Flex direction="column" gap={4}>
             {categories.map(({ label, value }) => {
-              const categoryStates = states
+              const categoryStates = statuses
                 .filter((state) => state.category === value)
                 .sort((a, b) => a.orderIndex - b.orderIndex);
               const isCreatingInCategory =
