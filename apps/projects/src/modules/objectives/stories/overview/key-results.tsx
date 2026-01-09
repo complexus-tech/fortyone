@@ -166,10 +166,7 @@ const Okr = ({
   return (
     <Wrapper className="flex flex-col gap-4 py-2.5 md:flex-row md:items-center md:justify-between md:gap-2 md:px-3.5">
       <Flex align="center" gap={3}>
-        <Badge
-          className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
-          color="tertiary"
-        >
+        <Badge className="aspect-square h-9" color="tertiary">
           <OKRIcon strokeWidth={2.8} />
         </Badge>
         <Box>
@@ -190,7 +187,7 @@ const Okr = ({
       </Flex>
       <Flex
         align="center"
-        className="shrink-0 justify-between divide-x divide-gray-100 dark:divide-dark-100/80"
+        className="divide-border shrink-0 justify-between divide-x"
       >
         <Flex
           align="center"
@@ -488,19 +485,16 @@ export const KeyResults = () => {
         <Box className="my-3">
           {object.keyResults.length > 0 ? (
             <>
-              <Box className="rounded-2xl border border-border/80 shadow-lg shadow-gray-50 d dark:shadow-none">
+              <Box className="border-border/80 shadow-shadow rounded-2xl border shadow-lg dark:shadow-none">
                 {object.keyResults.map((keyResult) => {
                   if (!keyResult?.name) return null;
                   return (
                     <RowWrapper
-                      className="gap-6 border-b border-border/80 px-2 last-of-type:border-b-0 md:px-4"
+                      className="border-border/80 gap-6 border-b px-2 last-of-type:border-b-0 md:px-4"
                       key={keyResult.name}
                     >
                       <Flex align="center" className="flex-1" gap={2}>
-                        <Badge
-                          className="aspect-square h-9 border-opacity-50 dark:border-opacity-50"
-                          color="tertiary"
-                        >
+                        <Badge className="aspect-square h-9" color="tertiary">
                           <AiIcon />
                         </Badge>
                         <Text
@@ -543,7 +537,7 @@ export const KeyResults = () => {
               </Flex>
             </>
           ) : (
-            <Wrapper className="flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+            <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
               <Flex align="center" gap={2}>
                 <InfoIcon className="text-warning dark:text-warning" />
                 <Text>
