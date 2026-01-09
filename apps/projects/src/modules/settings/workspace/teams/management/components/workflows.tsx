@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Box, Text, Button, Flex, Tooltip, Wrapper } from "ui";
 import { PlusIcon, WarningIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -17,7 +17,7 @@ import { useCreateStateMutation } from "@/lib/hooks/states/create-mutation";
 import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
-import { useTeamStories } from "@/modules/stories/hooks/team-stories";
+import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
 import { useUserRole } from "@/hooks";
 import { StateRow } from "./state-row";
 
@@ -72,7 +72,22 @@ export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { userRole } = useUserRole();
   const { data: statuses = [] } = useTeamStatuses(teamId);
-  const { data: stories = [] } = useTeamStories(teamId);
+  const { data: groupedStories } = useGroupedStories({
+    groupBy: "status",
+    teamIds: [teamId],
+  });
+
+  const storyCounts = useMemo(() => {
+    if (!groupedStories?.groups) return {};
+    return groupedStories.groups.reduce(
+      (acc, group) => ({
+        ...acc,
+        [group.key]: group.totalCount,
+      }),
+      {} as Record<string, number>,
+    );
+  }, [groupedStories]);
+
   const deleteMutation = useDeleteStateMutation();
   const createMutation = useCreateStateMutation();
   const updateMutation = useUpdateStateMutation();
@@ -309,20 +324,14 @@ export const WorkflowSettings = () => {
                     strategy={verticalListSortingStrategy}
                   >
                     <Flex direction="column" gap={3}>
-                      {categoryStates.map((state) => {
-                        const storyCount = stories.filter(
-                          (story) => story.statusId === state.id,
-                        ).length;
-
-                        return (
-                          <StateRow
-                            key={state.id}
-                            onDelete={handleDeleteState}
-                            state={state}
-                            storyCount={storyCount}
-                          />
-                        );
-                      })}
+                      {categoryStates.map((state) => (
+                        <StateRow
+                          key={state.id}
+                          onDelete={handleDeleteState}
+                          state={state}
+                          storyCount={storyCounts[state.id] || 0}
+                        />
+                      ))}
                       {isCreatingInCategory ? (
                         <StateRow
                           isNew
