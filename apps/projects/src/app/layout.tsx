@@ -56,12 +56,12 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <Providers>
             {children}
+            <span className="text-icon" />
             <Toaster />
           </Providers>
         </SessionProvider>
         <OnlineStatusMonitor />
       </body>
-      <span className="text-icon" />
     </html>
   );
 }

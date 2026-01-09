@@ -11,8 +11,7 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title:
-    "FortyOne - The Open Source Agentic Project Management Platform",
+  title: "FortyOne - The Open Source Agentic Project Management Platform",
   description:
     "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
   metadataBase: new URL("https://www.fortyone.app"),
@@ -42,8 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title:
-      "FortyOne - The Open Source Agentic Project Management Platform",
+    title: "FortyOne - The Open Source Agentic Project Management Platform",
     description:
       "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
     siteName: "FortyOne",
@@ -53,8 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title:
-      "FortyOne - The Open Source Agentic Project Management Platform",
+    title: "FortyOne - The Open Source Agentic Project Management Platform",
     description:
       "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
   },
@@ -96,7 +93,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           heading.variable,
         )}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <span className="text-icon" />
+        </Providers>
         <Toaster />
       </body>
       {isProduction ? (
@@ -107,7 +107,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <GoogleTagManager gtmId="G-TYRV8FKD2E" />
         </>
       ) : null}
-      <span className="text-icon" />
     </html>
   );
 }
