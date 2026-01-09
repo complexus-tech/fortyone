@@ -217,7 +217,7 @@ export const SubStories = ({
         <Box className="my-2.5">
           {object.substories.length > 0 ? (
             <>
-              <Box className="border-border d rounded-lg border-[0.5px]">
+              <Box className="border-border rounded-2xl border-[0.5px]">
                 {object.substories.map((substory) => {
                   if (!substory?.title) return null;
                   return (
