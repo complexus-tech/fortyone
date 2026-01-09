@@ -422,7 +422,11 @@ export const StoryProperties = ({
           </Tooltip>
           <DatePicker.Calendar
             onDayClick={(day) => {
-              handleUpdate({ endDate: formatISO(day) });
+              handleUpdate({
+                endDate: formatISO(day, {
+                  representation: "date",
+                }),
+              });
             }}
             selected={new Date(endDate)}
           />
