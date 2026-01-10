@@ -70,7 +70,7 @@ export const SuggestedPrompts = ({
         {SUGGESTED_PROMPTS.slice(fromIndex).map((prompt, index) => (
           <Wrapper
             className={cn(
-              "flex cursor-pointer items-center gap-3 ring-primary transition hover:ring-2 md:px-4",
+              "dark:bg-surface/60 ring-primary flex cursor-pointer items-center gap-3 transition hover:ring-2 md:px-4",
               {
                 "gap-3 md:px-4 md:py-3": isOnPage,
               },
@@ -84,7 +84,7 @@ export const SuggestedPrompts = ({
             <Flex
               align="center"
               className={cn(
-                "size-10 shrink-0 rounded-lg bg-surface-muted",
+                "bg-surface-muted size-10 shrink-0 rounded-lg",
                 prompt.classes,
               )}
               gap={2}
