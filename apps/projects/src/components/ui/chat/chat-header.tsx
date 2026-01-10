@@ -36,10 +36,7 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <PlusIcon
-                  className="text-foreground"
-                  strokeWidth={2.8}
-                />
+                <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
               }
               onClick={handleNewChat}
               variant="naked"
@@ -52,10 +49,7 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <NewTabIcon
-                  className="text-foreground"
-                  strokeWidth={2.6}
-                />
+                <NewTabIcon className="text-foreground/70" strokeWidth={2.6} />
               }
               onClick={() => {
                 router.push(`/maya?chatRef=${currentChatId}`);
@@ -120,7 +114,7 @@ export const ChatHeader = ({
                 color="tertiary"
                 leftIcon={
                   <HistoryIcon
-                    className="text-foreground"
+                    className="text-foreground/70"
                     strokeWidth={2.8}
                   />
                 }
@@ -139,10 +133,7 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <CloseIcon
-                  className="text-foreground"
-                  strokeWidth={2.8}
-                />
+                <CloseIcon className="text-foreground/70" strokeWidth={2.8} />
               }
               onClick={() => {
                 setIsOpen(false);
