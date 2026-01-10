@@ -74,7 +74,7 @@ export const StoryAttachmentPreview = ({
     if (isImage || isVideo) {
       return (
         <Box
-          className="group relative h-24 overflow-hidden rounded-xl border border-border bg-surface-muted/70 bg-surface/50 dark:shadow-none dark:ring-dark-50 md:h-28 2xl:h-36"
+          className="group border-border bg-surface-muted ring-accent relative h-24 overflow-hidden rounded-xl border hover:ring-2 md:h-28 2xl:h-36 dark:shadow-none"
           onClick={() => {
             if (isUploading) return;
             setIsOpen(true);
@@ -95,7 +95,7 @@ export const StoryAttachmentPreview = ({
             />
           )}
           {isUploading ? (
-            <Box className="absolute inset-0 flex items-center justify-center bg-dark/50">
+            <Box className="bg-dark/50 absolute inset-0 flex items-center justify-center">
               <LoadingIcon className="h-6 animate-spin" />
             </Box>
           ) : null}
@@ -103,14 +103,14 @@ export const StoryAttachmentPreview = ({
           {isInChat && onDelete ? (
             <Button
               asIcon
-              className="absolute right-2 top-2"
+              className="absolute top-2 right-2"
               color="invert"
               onClick={onDelete}
               rounded="full"
               size="xs"
             >
               <CloseIcon
-                className="h-4 text-white dark:text-dark"
+                className="dark:text-dark h-4 text-white"
                 strokeWidth={3}
               />
             </Button>
@@ -120,7 +120,7 @@ export const StoryAttachmentPreview = ({
     }
 
     return (
-      <Wrapper className="px-3 py-2 ring-gray-200 ring-offset-1 transition-all duration-300 hover:ring dark:ring-dark-50 dark:ring-offset-dark md:px-4 md:py-2.5">
+      <Wrapper className="ring-accent px-3 py-2 transition-all duration-300 hover:ring-2 md:px-4 md:py-2.5">
         <Flex align="center" className="gap-3 md:gap-6" justify="between">
           <Flex
             align="center"
@@ -131,7 +131,7 @@ export const StoryAttachmentPreview = ({
               setIsOpen(true);
             }}
           >
-            <Box className="rounded-[0.6rem] bg-surface-muted">
+            <Box className="bg-surface-muted rounded-[0.6rem]">
               {isUploading ? (
                 <LoadingIcon className="h-5 animate-spin md:h-6" />
               ) : (
@@ -156,7 +156,7 @@ export const StoryAttachmentPreview = ({
               size="sm"
             >
               <CloseIcon
-                className="h-4 text-white dark:text-dark"
+                className="dark:text-dark h-4 text-white"
                 strokeWidth={3}
               />
             </Button>
@@ -223,22 +223,77 @@ export const StoryAttachmentPreview = ({
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className={cn(
-            "relative my-auto rounded-2xl border-0 px-2 pt-2 dark:border-[0.5px] md:mb-auto md:mt-auto",
-            {
-              "bg-dark dark:bg-dark": isImage,
-            },
+            "relative my-auto rounded-2xl border-0 md:mt-auto md:mb-auto dark:border-[0.5px]",
           )}
           hideClose
           size="lg"
         >
-          <Dialog.Header className="sr-only">
-            <Dialog.Title className="mb-0 px-6">{file.filename}</Dialog.Title>
+          <Dialog.Header className="border-border-strong flex items-center justify-between border-b-[0.5px] px-3">
+            <Dialog.Title>{file.filename}</Dialog.Title>
+            <Flex
+              align="center"
+              className="pointer-events-auto"
+              justify="between"
+            >
+              <Flex align="center" gap={3}>
+                {isAdminOrOwner && !isInChat ? (
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    leftIcon={<DeleteIcon className="h-4.5" />}
+                    onClick={() => {
+                      setIsDeleting(true);
+                    }}
+                    size="sm"
+                  >
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                ) : null}
+                {!isInChat ? (
+                  <>
+                    <Button
+                      asIcon
+                      color="tertiary"
+                      href={file.url}
+                      leftIcon={<NewTabIcon className="h-4.5" />}
+                      target="_blank"
+                      size="sm"
+                    >
+                      <span className="sr-only">Open in new tab</span>
+                    </Button>
+                    <Button
+                      asIcon
+                      color="tertiary"
+                      href={file.url}
+                      leftIcon={<DownloadIcon className="h-4.5" />}
+                      onClick={onDownload}
+                      target="_blank"
+                      size="sm"
+                    >
+                      <span className="sr-only">Download</span>
+                    </Button>
+                  </>
+                ) : null}
+
+                <Button
+                  asIcon
+                  color="tertiary"
+                  leftIcon={<CloseIcon />}
+                  onClick={() => {
+                    setIsOpen(false);
+                  }}
+                  size="sm"
+                >
+                  <span className="sr-only">Close</span>
+                </Button>
+              </Flex>
+            </Flex>
           </Dialog.Header>
           {isImage ? (
-            <Box className="flex h-[50dvh] items-center justify-center overflow-y-auto rounded-[0.6rem] md:h-[70dvh]">
+            <Box className="flex h-[50dvh] justify-center overflow-y-auto px-2 md:h-[60dvh]">
               <BlurImage
                 alt={file.filename}
-                className="h-full bg-dark dark:bg-dark"
+                className="h-full w-full"
                 imageClassName="object-contain"
                 src={file.url}
               />
@@ -269,73 +324,6 @@ export const StoryAttachmentPreview = ({
               data={file.url}
               type="application/pdf"
             />
-          ) : null}
-
-          {isImage || isVideo ? (
-            <Box className="dark pointer-events-none absolute left-0 right-0 top-0 z-3 h-20 bg-linear-to-b from-dark/80 px-6 py-5">
-              <Flex
-                align="center"
-                className="pointer-events-auto"
-                justify="between"
-              >
-                <Text className="text-white" fontSize="sm">
-                  {file.filename}
-                </Text>
-                <Flex align="center" gap={3}>
-                  {isAdminOrOwner && !isInChat ? (
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      leftIcon={<DeleteIcon className="h-4" />}
-                      onClick={() => {
-                        setIsDeleting(true);
-                      }}
-                      size="xs"
-                    >
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  ) : null}
-                  {!isInChat ? (
-                    <>
-                      <Button
-                        asIcon
-                        color="tertiary"
-                        href={file.url}
-                        leftIcon={<NewTabIcon className="h-4" />}
-                        size="xs"
-                        target="_blank"
-                      >
-                        <span className="sr-only">Open in new tab</span>
-                      </Button>
-                      <Button
-                        asIcon
-                        color="tertiary"
-                        href={file.url}
-                        leftIcon={<DownloadIcon className="h-4" />}
-                        onClick={onDownload}
-                        size="xs"
-                        target="_blank"
-                      >
-                        <span className="sr-only">Download</span>
-                      </Button>
-                    </>
-                  ) : null}
-
-                  <Button
-                    asIcon
-                    color="tertiary"
-                    leftIcon={<CloseIcon className="h-4" />}
-                    onClick={() => {
-                      setIsOpen(false);
-                    }}
-                    rounded="full"
-                    size="xs"
-                  >
-                    <span className="sr-only">Close</span>
-                  </Button>
-                </Flex>
-              </Flex>
-            </Box>
           ) : null}
         </Dialog.Content>
       </Dialog>
