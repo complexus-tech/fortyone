@@ -113,7 +113,7 @@
   --color-focus: oklch(0.628 0.258 12.25);
   --color-shadow: oklch(0 0 0 / 0.03);
 
-  --color-icon: oklch(0.5 0 0);
+  --color-icon: oklch(0.55 0 0);
 
   --color-primary: oklch(0.628 0.258 12.25);
   --color-primary-foreground: oklch(1 0 0);
@@ -181,7 +181,7 @@
 
   --color-shadow: oklch(0 0 0 / 0.3);
 
-  --color-icon: oklch(0.65 0 0);
+  --color-icon: oklch(0.64 0 0);
 
   --color-primary-foreground: oklch(0.14 0 0);
 
