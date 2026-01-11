@@ -136,7 +136,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "right",
         },
-        /*
         {
           id: "manage-teams",
           target: "[data-manage-teams-button]",
@@ -156,7 +155,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
-        */
         ...(userRole === "admin"
           ? [
               {

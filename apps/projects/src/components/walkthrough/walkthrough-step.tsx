@@ -118,7 +118,7 @@ export const WalkthroughStep = ({
         className={cn(
           "bg-surface-elevated shadow-shadow w-108 max-w-[95vw] rounded-2xl border shadow-lg",
           step.highlight
-            ? "from-primary border-transparent bg-linear-to-br via-purple-500 to-pink-500 p-[1px]"
+            ? "from-primary to-warning border-transparent bg-linear-to-br p-px"
             : "border-border",
         )}
       >
@@ -134,7 +134,7 @@ export const WalkthroughStep = ({
             justify="between"
           >
             <Text className="text-[1.1rem]" fontWeight="medium">
-              {step.title} [{state.currentStep + 1}/{state.totalSteps}]
+              {step.title} [{state.currentStep + 1}/{state.totalSteps - 1}]
             </Text>
             <Tooltip
               className="w-56"
