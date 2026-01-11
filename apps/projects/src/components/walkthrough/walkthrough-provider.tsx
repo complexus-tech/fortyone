@@ -20,6 +20,7 @@ export interface WalkthroughStep {
   position?:
     | "top"
     | "top-start"
+    | "top-end"
     | "bottom"
     | "bottom-start"
     | "center"
@@ -27,6 +28,7 @@ export interface WalkthroughStep {
     | "right";
   showSkip?: boolean;
   action?: () => void; // Optional action to perform when step is shown
+  highlight?: boolean;
 }
 
 interface WalkthroughState {

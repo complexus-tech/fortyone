@@ -6,6 +6,7 @@ import {
   useWalkthrough,
   type WalkthroughStep as WalkthroughStepType,
 } from "./walkthrough-provider";
+import { cn } from "lib";
 
 interface ElementPosition {
   top: number;
@@ -39,6 +40,13 @@ const getPositionStyles = (
         top: targetPosition.top - padding,
         left: targetPosition.left,
         transform: "translate(0, -100%)",
+        marginBottom: arrowSize,
+      };
+    case "top-end":
+      return {
+        top: targetPosition.top - padding,
+        left: targetPosition.left + targetPosition.width,
+        transform: "translate(-100%, -100%)",
         marginBottom: arrowSize,
       };
     case "bottom":
@@ -106,74 +114,88 @@ export const WalkthroughStep = ({
         zIndex: 60,
       }}
     >
-      <Box className="w-108 max-w-[95vw] rounded-2xl border border-border bg-surface-elevated shadow-lg shadow-shadow">
-        <Flex
-          align="center"
-          className="border-b border-border px-4 py-3.5"
-          justify="between"
+      <Box
+        className={cn(
+          "bg-surface-elevated shadow-shadow w-108 max-w-[95vw] rounded-2xl border shadow-lg",
+          step.highlight
+            ? "from-primary border-transparent bg-linear-to-br via-purple-500 to-pink-500 p-[1px]"
+            : "border-border",
+        )}
+      >
+        <Box
+          className={cn(
+            "bg-surface-elevated h-full w-full rounded-2xl",
+            step.highlight ? "text-foreground" : "",
+          )}
         >
-          <Text className="text-[1.1rem]" fontWeight="medium">
-            {step.title} [{state.currentStep + 1}/{state.totalSteps}]
-          </Text>
-          <Tooltip
-            className="w-56"
-            title="This will temporarily dismiss the walkthrough"
+          <Flex
+            align="center"
+            className="border-border border-b px-4 py-3.5"
+            justify="between"
           >
-            <Button
-              asIcon
-              color="tertiary"
-              onClick={closeWalkthrough}
-              size="sm"
+            <Text className="text-[1.1rem]" fontWeight="medium">
+              {step.title} [{state.currentStep + 1}/{state.totalSteps}]
+            </Text>
+            <Tooltip
+              className="w-56"
+              title="This will temporarily dismiss the walkthrough"
             >
-              <CloseIcon className="h-5 w-auto" strokeWidth={3} />
-              <span className="sr-only">Close walkthrough</span>
-            </Button>
-          </Tooltip>
-        </Flex>
-        <Box className="p-4">
-          <Box className="text-[1.06rem]">{step.content}</Box>
-        </Box>
-
-        {/* Footer */}
-        <Flex
-          align="center"
-          className="border-t border-border px-6 py-4"
-          justify="between"
-        >
-          <div>
-            {step.showSkip !== false && (
-              <Button color="tertiary" onClick={skipWalkthrough}>
-                Skip tour
-              </Button>
-            )}
-          </div>
-
-          <Flex align="center" gap={3}>
-            {!isFirstStep && (
               <Button
-                className="pl-2"
+                asIcon
                 color="tertiary"
-                leftIcon={<ArrowLeft2Icon />}
-                onClick={prevStep}
+                onClick={closeWalkthrough}
+                size="sm"
               >
-                Back
+                <CloseIcon className="h-5 w-auto" strokeWidth={3} />
+                <span className="sr-only">Close walkthrough</span>
               </Button>
-            )}
-            <Button
-              className="pl-6"
-              onClick={nextStep}
-              rightIcon={
-                isLastStep ? (
-                  <CheckIcon className="text-white" />
-                ) : (
-                  <ArrowRight2Icon className="text-white" />
-                )
-              }
-            >
-              {isLastStep ? "Finish" : "Next"}
-            </Button>
+            </Tooltip>
           </Flex>
-        </Flex>
+          <Box className="p-4">
+            <Box className="text-[1.06rem]">{step.content}</Box>
+          </Box>
+
+          {/* Footer */}
+          <Flex
+            align="center"
+            className="border-border border-t px-6 py-4"
+            justify="between"
+          >
+            <div>
+              {step.showSkip !== false && (
+                <Button color="tertiary" onClick={skipWalkthrough}>
+                  Skip tour
+                </Button>
+              )}
+            </div>
+
+            <Flex align="center" gap={3}>
+              {!isFirstStep && (
+                <Button
+                  className="pl-2"
+                  color="tertiary"
+                  leftIcon={<ArrowLeft2Icon />}
+                  onClick={prevStep}
+                >
+                  Back
+                </Button>
+              )}
+              <Button
+                className="pl-6"
+                onClick={nextStep}
+                rightIcon={
+                  isLastStep ? (
+                    <CheckIcon className="text-white" />
+                  ) : (
+                    <ArrowRight2Icon className="text-white" />
+                  )
+                }
+              >
+                {isLastStep ? "Finish" : "Next"}
+              </Button>
+            </Flex>
+          </Flex>
+        </Box>
       </Box>
     </div>
   );
