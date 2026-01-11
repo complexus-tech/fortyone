@@ -4,9 +4,11 @@ import confetti from "canvas-confetti";
 import { useSession } from "next-auth/react";
 import { useUserRole } from "@/hooks";
 import { type WalkthroughStep } from "./walkthrough-provider";
+import { usePathname } from "next/navigation";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const { userRole } = useUserRole();
   return useMemo(
     () =>
@@ -29,30 +31,48 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
+        ...(!pathname?.includes("/maya")
+          ? [
+              {
+                id: "ai-assistant-floating",
+                target: "[data-chat-button]",
+                title: "Meet Maya, Your AI Assistant",
+                content: (
+                  <Box className="space-y-3">
+                    <Text color="muted">
+                      Maya is your always-on AI assistant. She can help you
+                      manage tasks, answer questions, and navigate your
+                      workspace.
+                    </Text>
+                    <Text color="muted">
+                      Click here internally or press <Kbd>Shift + M</Kbd>{" "}
+                      anytime to start chatting.
+                    </Text>
+                  </Box>
+                ),
+                position: "top-end",
+                highlight: true,
+              },
+            ]
+          : []),
         {
-          id: "ai-assistant-floating",
-          target: "[data-chat-button]",
-          title: "Meet Maya, Your AI Assistant",
-          content: (
+          id: "ai-assistant-nav",
+          target: "[data-nav-ai-assistant]",
+          title: pathname?.includes("/maya")
+            ? "Meet Maya, Your AI Assistant"
+            : "Dedicated AI Space",
+          content: pathname?.includes("/maya") ? (
             <Box className="space-y-3">
               <Text color="muted">
                 Maya is your always-on AI assistant. She can help you manage
                 tasks, answer questions, and navigate your workspace.
               </Text>
               <Text color="muted">
-                Click here internally or press <Kbd>Shift + M</Kbd> anytime to
-                start chatting.
+                This contains your chat history and dedicated workspace for AI
+                interactions.
               </Text>
             </Box>
-          ),
-          position: "top-end",
-          highlight: true,
-        },
-        {
-          id: "ai-assistant-nav",
-          target: "[data-nav-ai-assistant]",
-          title: "Dedicated AI Space",
-          content: (
+          ) : (
             <Box className="space-y-3">
               <Text color="muted">
                 You can also access the full-page AI experience here. Perfect
@@ -61,6 +81,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
             </Box>
           ),
           position: "right",
+          highlight: pathname?.includes("/maya"),
         },
         {
           id: "my-notifications",
