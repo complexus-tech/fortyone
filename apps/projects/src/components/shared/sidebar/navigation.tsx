@@ -90,6 +90,7 @@ export const Navigation = () => {
               active={isActive}
               data-nav-my-work={href === "/my-work" ? "" : undefined}
               data-nav-summary={href === "/summary" ? "" : undefined}
+              data-nav-ai-assistant={href === "/maya" ? "" : undefined}
               href={href}
               key={name}
             >

@@ -80,7 +80,7 @@ const ToggleButton = ({
   return (
     <button
       className={cn(
-        "flex w-full items-center justify-between px-4 py-3 transition hover:bg-state-hover",
+        "hover:bg-state-hover flex w-full items-center justify-between px-4 py-3 transition",
       )}
       onClick={onClick}
       type="button"
@@ -89,7 +89,7 @@ const ToggleButton = ({
         {icon}
         {label}
       </span>
-      {isActive ? <CheckIcon className="h-5 w-auto text-primary" /> : null}
+      {isActive ? <CheckIcon className="text-primary h-5 w-auto" /> : null}
     </button>
   );
 };
@@ -259,7 +259,7 @@ const TeamSelector = ({
       {teams.map((team) => (
         <Button
           className={cn({
-            "ring-2 ring-primary": selected?.includes(team.id),
+            "ring-primary ring-2": selected?.includes(team.id),
           })}
           color="tertiary"
           key={team.id}
@@ -301,7 +301,7 @@ const SprintSelector = ({
 
   return (
     <Flex gap={2} wrap>
-      {sprints.map((sprint) => {
+      {sprints.slice(0, 10).map((sprint) => {
         const startDate = format(new Date(sprint.startDate), "MMM d");
         const endDate = format(new Date(sprint.endDate), "MMM d");
         const sprintName = `${sprint.name} (${startDate} - ${endDate})`;
@@ -403,7 +403,7 @@ export const StoriesFilterButton = ({
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 bg-surface-elevated/90 md:w-140"
+        className="bg-surface-elevated/90 mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-[1.25rem] pb-2 md:w-140"
       >
         <Flex align="center" className="h-11 px-4" justify="between">
           <Text

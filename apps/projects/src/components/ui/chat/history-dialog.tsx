@@ -25,11 +25,11 @@ export const HistoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="mb-8 mr-6 max-w-148 rounded-3xl border border-border font-medium shadow-2xl shadow-shadow outline-none bg-surface-elevated md:mt-auto"
+        className="border-border shadow-shadow bg-surface-elevated mr-6 mb-8 max-w-148 rounded-3xl border font-medium shadow-2xl outline-none md:mt-auto"
         hideClose
         overlayClassName="justify-end bg-black/5"
       >
-        <Dialog.Header className="flex h-16 items-center border-b border-border px-6">
+        <Dialog.Header className="border-border flex h-16 items-center border-b px-6">
           <Dialog.Title className="flex w-full items-center gap-2 text-lg font-semibold">
             <Button
               asIcon
@@ -40,10 +40,7 @@ export const HistoryDialog = ({
               size="sm"
               variant="naked"
             >
-              <CloseIcon
-                className="text-foreground"
-                strokeWidth={2.8}
-              />
+              <CloseIcon className="text-foreground/80" strokeWidth={2.8} />
             </Button>
             History
           </Dialog.Title>

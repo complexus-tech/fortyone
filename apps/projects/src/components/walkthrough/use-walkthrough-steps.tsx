@@ -30,6 +30,39 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           position: "bottom-start",
         },
         {
+          id: "ai-assistant-floating",
+          target: "[data-chat-button]",
+          title: "Meet Maya, Your AI Assistant",
+          content: (
+            <Box className="space-y-3">
+              <Text color="muted">
+                Maya is your always-on AI assistant. She can help you manage
+                tasks, answer questions, and navigate your workspace.
+              </Text>
+              <Text color="muted">
+                Click here internally or press <Kbd>Shift + M</Kbd> anytime to
+                start chatting.
+              </Text>
+            </Box>
+          ),
+          position: "top-end",
+          highlight: true,
+        },
+        {
+          id: "ai-assistant-nav",
+          target: "[data-nav-ai-assistant]",
+          title: "Dedicated AI Space",
+          content: (
+            <Box className="space-y-3">
+              <Text color="muted">
+                You can also access the full-page AI experience here. Perfect
+                for long conversations or complex planning.
+              </Text>
+            </Box>
+          ),
+          position: "right",
+        },
+        {
           id: "my-notifications",
           target: "[data-sidebar-notifications-button]",
           title: "Stay Updated",
@@ -65,25 +98,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
-
-        {
-          id: "summary",
-          target: "[data-nav-summary]",
-          title: "Dashboard Overview",
-          content: (
-            <Box className="space-y-3">
-              <Text color="muted">
-                Get a bird&apos;s-eye view of your workspace activity, team
-                progress, and recent updates all in one place.
-              </Text>
-              <Text color="muted">
-                Perfect for understanding what&apos;s happening across your
-                workspace and staying aligned with your team.
-              </Text>
-            </Box>
-          ),
-          position: "bottom-start",
-        },
         {
           id: "navigation",
           target: "[data-nav-my-work]",
@@ -101,7 +115,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               </Text>
             </Box>
           ),
-          position: "right",
+          position: "bottom-start",
         },
 
         {

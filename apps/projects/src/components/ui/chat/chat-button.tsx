@@ -17,7 +17,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
   return (
     <Box
       className={cn(
-        "fixed bottom-6 right-6 z-50 hidden transition-all duration-500 ease-in-out md:flex",
+        "fixed right-6 bottom-6 z-50 hidden transition-all duration-500 ease-in-out md:flex",
         {
           "-bottom-16": isOpen,
           "md:hidden": isOnPage,
@@ -26,8 +26,9 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
     >
       <Button
         asIcon
-        className="border-0 shadow-xl shadow-gray-200 dark:shadow-none md:h-[3.4rem]"
+        className="border-0 shadow-xl shadow-gray-200 md:h-[3.4rem] dark:shadow-none"
         color="invert"
+        data-chat-button
         leftIcon={<AiIcon className="h-7 text-current dark:text-current" />}
         onClick={onOpen}
         rounded="full"

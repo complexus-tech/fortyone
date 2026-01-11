@@ -17,7 +17,7 @@ const getRedirectUrl = (
   if (!activeWorkspace) {
     return "/onboarding/create";
   }
-  return `https://${activeWorkspace.slug}.${domain}/my-work`;
+  return `https://${activeWorkspace.slug}.${domain}/maya`;
 };
 
 export const Welcome = ({
@@ -32,7 +32,7 @@ export const Welcome = ({
   return (
     <Container className="max-w-md md:max-w-xl">
       <Logo asIcon />
-      <Text as="h1" className="mb-6 mt-10 text-4xl" fontWeight="semibold">
+      <Text as="h1" className="mt-10 mb-6 text-4xl" fontWeight="semibold">
         Welcome to FortyOne👋
       </Text>
       <Text className="mb-6" color="muted">
@@ -63,7 +63,7 @@ export const Welcome = ({
             <>
               Boost your productivity with keyboard shortcuts (press{" "}
               <Badge
-                className="inline-flex gap-0 rounded-[0.4rem] font-semibold text-muted dark:text-text-secondary"
+                className="text-muted dark:text-text-secondary inline-flex gap-0 rounded-[0.4rem] font-semibold"
                 color="tertiary"
               >
                 <CommandIcon className="h-3" strokeWidth={3} />

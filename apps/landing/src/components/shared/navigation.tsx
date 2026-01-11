@@ -106,7 +106,7 @@ export const Navigation = () => {
       } else {
         workspace = workspaces[0];
       }
-      return `https://${workspace!.slug}.${domain}/my-work`;
+      return `https://${workspace!.slug}.${domain}/maya`;
     }
     return "/login";
   };
