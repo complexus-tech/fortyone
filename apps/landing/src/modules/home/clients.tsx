@@ -5,18 +5,10 @@ import { Flex, Text } from "ui";
 import digitankLogo from "../../../public/images/brands/digitank.png";
 import miningoLogo from "../../../public/images/brands/miningo.svg";
 import zimboriginalLogo from "../../../public/images/brands/zimboriginal.png";
-import mdsLogo from "../../../public/images/brands/wastemate.png";
+import artCircles from "../../../public/images/brands/artcircles.png";
 import Image from "next/image";
 
 export const SampleClients = () => {
-  const brands = [
-    "/images/brands/digitank.png",
-    "/images/brands/miningo.svg",
-    "/images/brands/mds.svg",
-    "/images/brands/nesbil.png",
-    "/images/brands/zimboriginal.png",
-  ];
-
   return (
     <Container className="relative z-10 mt-12 hidden md:block">
       <Flex className="gap-10" align="center">
@@ -33,16 +25,16 @@ export const SampleClients = () => {
           <Image
             src={miningoLogo}
             alt="Miningo logo"
-            className="h-10 w-auto grayscale dark:invert"
+            className="h-11 w-auto grayscale dark:invert"
+          />
+          <Image
+            src={artCircles}
+            alt="Art Circles logo"
+            className="h-7 w-auto opacity-80 dark:invert"
           />
           <Image
             src={zimboriginalLogo}
             alt="Zimboriginal logo"
-            className="h-10 w-auto grayscale dark:invert"
-          />
-          <Image
-            src={mdsLogo}
-            alt="MDS logo"
             className="h-10 w-auto grayscale dark:invert"
           />
         </Flex>
