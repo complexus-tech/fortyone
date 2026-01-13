@@ -18,19 +18,20 @@ export const SampleClients = () => {
         </Text>
         <Flex align="center" className="gap-12" wrap>
           <Image
-            src={digitankLogo}
-            alt="Digitank logo"
-            className="h-8 w-auto grayscale dark:invert"
-          />
-          <Image
             src={miningoLogo}
             alt="Miningo logo"
             className="h-11 w-auto grayscale dark:invert"
           />
           <Image
+            src={digitankLogo}
+            alt="Digitank logo"
+            className="h-8 w-auto grayscale dark:invert"
+          />
+
+          <Image
             src={artCircles}
             alt="Art Circles logo"
-            className="h-7 w-auto opacity-80 dark:invert"
+            className="mb-1.5 h-6 w-auto opacity-80 dark:invert"
           />
           <Image
             src={zimboriginalLogo}
