@@ -1,8 +1,6 @@
 package workspacesgrp
 
 import (
-	"context"
-
 	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
 	"github.com/complexus-tech/projects-api/internal/core/states"
@@ -21,10 +19,10 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -33,16 +31,17 @@ import (
 )
 
 type Config struct {
-	DB            *sqlx.DB
-	Log           *logger.Logger
-	SecretKey     string
-	Publisher     *publisher.Publisher
-	Cache         *cache.Service
-	StripeClient  *client.API
-	WebhookSecret string
-	TasksService  *tasks.Service
-	SystemUserID  uuid.UUID
-	AzureConfig   azure.Config
+	DB             *sqlx.DB
+	Log            *logger.Logger
+	SecretKey      string
+	Publisher      *publisher.Publisher
+	Cache          *cache.Service
+	StripeClient   *client.API
+	WebhookSecret  string
+	TasksService   *tasks.Service
+	SystemUserID   uuid.UUID
+	StorageConfig  storage.Config
+	StorageService storage.StorageService
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -56,12 +55,7 @@ func Routes(cfg Config, app *web.App) {
 
 	// Create attachments service for workspace logos
 	attachmentsRepo := attachmentsrepo.New(cfg.Log, cfg.DB)
-	azureBlobService, err := azure.New(cfg.AzureConfig, cfg.Log)
-	if err != nil {
-		cfg.Log.Error(context.Background(), "failed to initialize Azure blob service", "error", err)
-		return
-	}
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
+	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

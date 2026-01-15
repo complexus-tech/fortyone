@@ -1,32 +1,31 @@
 package usersgrp
 
 import (
-	"context"
-
 	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/repo/attachmentsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB            *sqlx.DB
-	Log           *logger.Logger
-	SecretKey     string
-	GoogleService *google.Service
-	Publisher     *publisher.Publisher
-	TasksService  *tasks.Service
-	AzureConfig   azure.Config
-	Cache         *cache.Service
+	DB             *sqlx.DB
+	Log            *logger.Logger
+	SecretKey      string
+	GoogleService  *google.Service
+	Publisher      *publisher.Publisher
+	TasksService   *tasks.Service
+	StorageConfig  storage.Config
+	StorageService storage.StorageService
+	Cache          *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -35,12 +34,7 @@ func Routes(cfg Config, app *web.App) {
 
 	// Create attachments service for profile images
 	attachmentsRepo := attachmentsrepo.New(cfg.Log, cfg.DB)
-	azureBlobService, err := azure.New(cfg.AzureConfig, cfg.Log)
-	if err != nil {
-		cfg.Log.Error(context.Background(), "failed to initialize Azure blob service", "error", err)
-		return
-	}
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
+	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
 
 	h := New(usersService, attachmentsService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)

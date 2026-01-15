@@ -6,13 +6,13 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/go-playground/validator/v10"
@@ -30,25 +30,26 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB            *sqlx.DB
-	Redis         *redis.Client
-	Publisher     *publisher.Publisher
-	Shutdown      chan os.Signal
-	Log           *logger.Logger
-	Tracer        trace.Tracer
-	SecretKey     string
-	EmailService  email.Service
-	BrevoService  *brevo.Service
-	GoogleService *google.Service
-	Validate      *validator.Validate
-	Cache         *cache.Service
-	TasksService  *tasks.Service
-	StripeClient  *client.API
-	AzureConfig   azure.Config
-	WebhookSecret string
-	SSEHub        *sse.Hub
-	CorsOrigin    string
-	SystemUserID  uuid.UUID
+	DB             *sqlx.DB
+	Redis          *redis.Client
+	Publisher      *publisher.Publisher
+	Shutdown       chan os.Signal
+	Log            *logger.Logger
+	Tracer         trace.Tracer
+	SecretKey      string
+	EmailService   email.Service
+	BrevoService   *brevo.Service
+	GoogleService  *google.Service
+	Validate       *validator.Validate
+	Cache          *cache.Service
+	TasksService   *tasks.Service
+	StripeClient   *client.API
+	StorageConfig  storage.Config
+	StorageService storage.StorageService
+	WebhookSecret  string
+	SSEHub         *sse.Hub
+	CorsOrigin     string
+	SystemUserID   uuid.UUID
 }
 
 // New returns a new HTTP handler that defines all the API routes.

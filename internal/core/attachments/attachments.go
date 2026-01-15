@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -27,19 +28,19 @@ type Repository interface {
 
 // Service manages attachment operations
 type Service struct {
-	log       *logger.Logger
-	repo      Repository
-	azureBlob *azure.BlobService
-	config    azure.Config
+	log     *logger.Logger
+	repo    Repository
+	storage storage.StorageService
+	config  storage.Config
 }
 
 // New creates a new attachment service
-func New(log *logger.Logger, repo Repository, azureBlob *azure.BlobService, config azure.Config) *Service {
+func New(log *logger.Logger, repo Repository, storageService storage.StorageService, config storage.Config) *Service {
 	return &Service{
-		log:       log,
-		repo:      repo,
-		azureBlob: azureBlob,
-		config:    config,
+		log:     log,
+		repo:    repo,
+		storage: storageService,
+		config:  config,
 	}
 }
 
@@ -58,17 +59,23 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	// Generate a unique filename
 	blobName := validate.GenerateFileName(fileHeader.Filename)
 
-	// Upload to Azure
-	blobURL, err := s.azureBlob.UploadBlob(
+	containerName, err := s.getContainerName("attachments")
+	if err != nil {
+		span.RecordError(err)
+		return FileInfo{}, err
+	}
+
+	// Upload to storage
+	_, err = s.storage.UploadFile(
 		ctx,
-		s.config.AttachmentsContainer,
+		containerName,
 		blobName,
 		file,
 		fileHeader.Header.Get("Content-Type"),
 	)
 	if err != nil {
 		span.RecordError(err)
-		return FileInfo{}, fmt.Errorf("failed to upload to Azure: %w", err)
+		return FileInfo{}, fmt.Errorf("failed to upload to storage: %w", err)
 	}
 
 	// Create attachment record in database
@@ -83,20 +90,20 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	if err != nil {
 		span.RecordError(err)
 		// Try to clean up the blob since DB insert failed
-		_ = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, blobName)
+		_ = s.storage.DeleteFile(ctx, containerName, blobName)
 		return FileInfo{}, fmt.Errorf("failed to create attachment record: %w", err)
 	}
 
-	// Generate a SAS token for the uploaded file (30 minutes)
-	sasToken, err := s.azureBlob.GenerateSASToken(
+	// Generate a presigned URL for the uploaded file (30 minutes)
+	accessURL, err := s.storage.GenerateAccessURL(
 		ctx,
-		s.config.AttachmentsContainer,
+		containerName,
 		blobName,
 		30*time.Minute,
 	)
 	if err != nil {
 		span.RecordError(err)
-		return FileInfo{}, fmt.Errorf("failed to generate SAS token: %w", err)
+		return FileInfo{}, fmt.Errorf("failed to generate access URL: %w", err)
 	}
 
 	span.AddEvent("attachment created", trace.WithAttributes(
@@ -110,7 +117,7 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 		BlobName:   blobName,
 		Size:       attachment.Size,
 		MimeType:   attachment.MimeType,
-		URL:        blobURL + "?" + sasToken,
+		URL:        accessURL,
 		CreatedAt:  attachment.CreatedAt,
 		UploadedBy: attachment.UploadedBy,
 	}, nil
@@ -129,15 +136,21 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 		return nil, err
 	}
 
+	containerName, err := s.getContainerName("attachments")
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
 	fileInfos := make([]FileInfo, len(attachments))
 	for i, attachment := range attachments {
 		// Use the stored blob name instead of generating a new one
 		blobName := attachment.BlobName
 
-		// Generate a SAS token for each file (15 minutes)
-		sasToken, err := s.azureBlob.GenerateSASToken(
+		// Generate a presigned URL for each file (15 minutes)
+		accessURL, err := s.storage.GenerateAccessURL(
 			ctx,
-			s.config.AttachmentsContainer,
+			containerName,
 			blobName,
 			15*time.Minute,
 		)
@@ -146,22 +159,17 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 			continue
 		}
 
-		// Construct the blob URL
-		blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
-			s.config.StorageAccountName,
-			s.config.AttachmentsContainer,
-			blobName)
-
 		fileInfos[i] = FileInfo{
 			ID:         attachment.ID,
 			Filename:   attachment.Filename,
 			BlobName:   blobName,
 			Size:       attachment.Size,
 			MimeType:   attachment.MimeType,
-			URL:        blobURL + "?" + sasToken,
+			URL:        accessURL,
 			CreatedAt:  attachment.CreatedAt,
 			UploadedBy: attachment.UploadedBy,
 		}
+
 	}
 
 	return fileInfos, nil
@@ -196,11 +204,17 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 		return err
 	}
 
-	// Delete from Azure
-	err = s.azureBlob.DeleteBlob(ctx, s.config.AttachmentsContainer, blobName)
+	containerName, err := s.getContainerName("attachments")
 	if err != nil {
 		span.RecordError(err)
-		s.log.Error(ctx, "failed to delete blob from Azure", "error", err)
+		return err
+	}
+
+	// Delete from storage
+	err = s.storage.DeleteFile(ctx, containerName, blobName)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "failed to delete blob from storage", "error", err)
 		// We don't return this error since the DB record is already deleted
 	}
 
@@ -278,24 +292,31 @@ func (s *Service) UploadProfileImage(ctx context.Context, file multipart.File, f
 	// Generate a unique filename for profile images
 	blobName := fmt.Sprintf("profile_%s_%s", userID.String(), validate.GenerateFileName(fileHeader.Filename))
 
-	// Upload to Azure profile images container
-	_, err := s.azureBlob.UploadBlob(
+	containerName, err := s.getContainerName("profile-images")
+	if err != nil {
+		span.RecordError(err)
+		return "", err
+	}
+
+	// Upload to storage profile images container
+	_, err = s.storage.UploadFile(
 		ctx,
-		s.config.ProfileImagesContainer,
+		containerName,
 		blobName,
 		file,
 		fileHeader.Header.Get("Content-Type"),
 	)
 	if err != nil {
 		span.RecordError(err)
-		return "", fmt.Errorf("failed to upload profile image to Azure: %w", err)
+		return "", fmt.Errorf("failed to upload profile image to storage: %w", err)
 	}
 
 	// Generate permanent URL (container must be set to public access)
-	imageURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
-		s.config.StorageAccountName,
-		s.config.ProfileImagesContainer,
-		blobName)
+	imageURL, err := s.storage.GetPublicURL(ctx, containerName, blobName)
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to generate profile image URL: %w", err)
+	}
 
 	span.AddEvent("profile image uploaded", trace.WithAttributes(
 		attribute.String("user_id", userID.String()),
@@ -306,7 +327,7 @@ func (s *Service) UploadProfileImage(ctx context.Context, file multipart.File, f
 	return imageURL, nil
 }
 
-// DeleteProfileImage deletes a profile image from Azure
+// DeleteProfileImage deletes a profile image from storage
 func (s *Service) DeleteProfileImage(ctx context.Context, avatarURL string) error {
 	s.log.Info(ctx, "core.attachments.deleteProfileImage")
 	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteProfileImage")
@@ -316,19 +337,23 @@ func (s *Service) DeleteProfileImage(ctx context.Context, avatarURL string) erro
 		return nil // Nothing to delete
 	}
 
-	// Extract blob name from URL
-	// URL format: https://account.blob.core.windows.net/container/blobname
-	parts := strings.Split(avatarURL, "/")
-	if len(parts) < 2 {
-		return fmt.Errorf("invalid avatar URL format")
-	}
-	blobName := parts[len(parts)-1]
-
-	// Delete from Azure
-	err := s.azureBlob.DeleteBlob(ctx, s.config.ProfileImagesContainer, blobName)
+	containerName, err := s.getContainerName("profile-images")
 	if err != nil {
 		span.RecordError(err)
-		s.log.Error(ctx, "failed to delete profile image from Azure", "error", err)
+		return err
+	}
+
+	blobName, err := s.getObjectNameFromURL(avatarURL, containerName)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delete from storage
+	err = s.storage.DeleteFile(ctx, containerName, blobName)
+	if err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "failed to delete profile image from storage", "error", err)
 		// Don't return error as this is not critical
 	}
 
@@ -350,10 +375,22 @@ func (s *Service) UploadWorkspaceLogo(ctx context.Context, file multipart.File, 
 	}
 
 	blobName := fmt.Sprintf("%s/%s", workspaceID.String(), fileHeader.Filename)
-	url, err := s.azureBlob.UploadBlob(ctx, s.config.WorkspaceLogosContainer, blobName, file, fileHeader.Header.Get("Content-Type"))
+	containerName, err := s.getContainerName("workspace-logos")
+	if err != nil {
+		span.RecordError(err)
+		return "", err
+	}
+
+	_, err = s.storage.UploadFile(ctx, containerName, blobName, file, fileHeader.Header.Get("Content-Type"))
 	if err != nil {
 		span.RecordError(err)
 		return "", fmt.Errorf("failed to upload workspace logo: %w", err)
+	}
+
+	url, err := s.storage.GetPublicURL(ctx, containerName, blobName)
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to generate workspace logo URL: %w", err)
 	}
 
 	span.AddEvent("workspace logo uploaded.", trace.WithAttributes(
@@ -373,14 +410,19 @@ func (s *Service) DeleteWorkspaceLogo(ctx context.Context, logoURL string) error
 		return nil // Nothing to delete
 	}
 
-	// Extract blob name from URL (same logic as profile images)
-	urlParts := strings.Split(logoURL, s.config.WorkspaceLogosContainer+"/")
-	if len(urlParts) < 2 {
-		return fmt.Errorf("invalid workspace logo URL format")
+	containerName, err := s.getContainerName("workspace-logos")
+	if err != nil {
+		span.RecordError(err)
+		return err
 	}
-	blobName := urlParts[1]
 
-	if err := s.azureBlob.DeleteBlob(ctx, s.config.WorkspaceLogosContainer, blobName); err != nil {
+	blobName, err := s.getObjectNameFromURL(logoURL, containerName)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	if err := s.storage.DeleteFile(ctx, containerName, blobName); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to delete workspace logo: %w", err)
 	}
@@ -390,4 +432,53 @@ func (s *Service) DeleteWorkspaceLogo(ctx context.Context, logoURL string) error
 	))
 
 	return nil
+}
+
+func (s *Service) getContainerName(fileType string) (string, error) {
+	switch s.config.Provider {
+	case "azure":
+		switch fileType {
+		case "attachments":
+			return s.config.Azure.AttachmentsContainer, nil
+		case "profile-images":
+			return s.config.Azure.ProfileImagesContainer, nil
+		case "workspace-logos":
+			return s.config.Azure.WorkspaceLogosContainer, nil
+		}
+	case "aws":
+		switch fileType {
+		case "attachments":
+			return s.config.AWS.AttachmentsBucket, nil
+		case "profile-images":
+			return s.config.AWS.ProfileImagesBucket, nil
+		case "workspace-logos":
+			return s.config.AWS.WorkspaceLogosBucket, nil
+		}
+	default:
+		return "", fmt.Errorf("unsupported storage provider: %s", s.config.Provider)
+	}
+
+	return "", fmt.Errorf("unsupported file type: %s", fileType)
+}
+
+func (s *Service) getObjectNameFromURL(fileURL, container string) (string, error) {
+	parsed, err := url.Parse(fileURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid file URL: %w", err)
+	}
+
+	path := strings.TrimPrefix(parsed.Path, "/")
+	if path == "" {
+		return "", fmt.Errorf("invalid file URL format")
+	}
+
+	if s.config.Provider == "azure" {
+		prefix := container + "/"
+		if !strings.HasPrefix(path, prefix) {
+			return "", fmt.Errorf("invalid file URL format")
+		}
+		return strings.TrimPrefix(path, prefix), nil
+	}
+
+	return path, nil
 }

@@ -14,29 +14,29 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 )
 
-// BlobService provides operations with Azure Blob Storage
-type BlobService struct {
+// AzureStorageService provides operations with Azure Blob Storage.
+type AzureStorageService struct {
 	config Config
 	client *azblob.Client
 	log    *logger.Logger
 }
 
-// New creates a new Azure blob service
-func New(config Config, log *logger.Logger) (*BlobService, error) {
+// NewStorageService creates a new Azure storage service.
+func NewStorageService(config Config, log *logger.Logger) (*AzureStorageService, error) {
 	client, err := azblob.NewClientFromConnectionString(config.ConnectionString, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Azure client: %w", err)
 	}
 
-	return &BlobService{
+	return &AzureStorageService{
 		config: config,
 		client: client,
 		log:    log,
 	}, nil
 }
 
-// UploadBlob uploads a file to Azure Blob Storage
-func (s *BlobService) UploadBlob(ctx context.Context, containerName string, blobName string, data io.Reader, contentType string) (string, error) {
+// UploadFile implements storage.StorageService.
+func (s *AzureStorageService) UploadFile(ctx context.Context, containerName string, blobName string, data io.Reader, contentType string) (string, error) {
 	// Ensure container exists
 	_, err := s.client.CreateContainer(ctx, containerName, nil)
 	if err != nil {
@@ -64,56 +64,65 @@ func (s *BlobService) UploadBlob(ctx context.Context, containerName string, blob
 		return "", fmt.Errorf("failed to upload blob: %w", err)
 	}
 
-	// Construct the blob URL
-	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
-		s.config.StorageAccountName,
-		containerName,
-		blobName)
-
-	return blobURL, nil
+	return s.GetPublicURL(ctx, containerName, blobName)
 }
 
-// GenerateSASToken generates a SAS token for temporary access to a blob
-func (s *BlobService) GenerateSASToken(ctx context.Context, containerName string, blobName string, expiry time.Duration) (string, error) {
-	// Create a BlobSASPermissions object with desired permissions and expiry time
-	permissions := sas.BlobPermissions{
-		Read: true,
-	}
-
-	// Convert permissions to string
-	permStr := permissions.String()
-
-	// Get account key credential
-	credential, err := azblob.NewSharedKeyCredential(s.config.StorageAccountName, s.config.AccountKey)
+// GenerateAccessURL implements storage.StorageService.
+func (s *AzureStorageService) GenerateAccessURL(ctx context.Context, containerName string, blobName string, expiry time.Duration) (string, error) {
+	sasToken, err := s.generateSASToken(containerName, blobName, expiry)
 	if err != nil {
-		return "", fmt.Errorf("failed to create shared key credential: %w", err)
+		return "", err
 	}
 
-	// Setup SAS token generation parameters
-	sasValues := sas.BlobSignatureValues{
-		Protocol:      sas.ProtocolHTTPS,
-		StartTime:     time.Now().UTC().Add(-1 * time.Minute),
-		ExpiryTime:    time.Now().UTC().Add(expiry),
-		Permissions:   permStr,
-		ContainerName: containerName,
-		BlobName:      blobName,
-	}
-
-	// Generate SAS token
-	sasToken, err := sasValues.SignWithSharedKey(credential)
+	baseURL, err := s.GetPublicURL(ctx, containerName, blobName)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate SAS token: %w", err)
+		return "", err
 	}
 
-	return sasToken.Encode(), nil
+	return baseURL + "?" + sasToken, nil
 }
 
-// DeleteBlob deletes a blob from Azure Blob Storage
-func (s *BlobService) DeleteBlob(ctx context.Context, containerName string, blobName string) error {
+// DeleteFile implements storage.StorageService.
+func (s *AzureStorageService) DeleteFile(ctx context.Context, containerName string, blobName string) error {
 	_, err := s.client.DeleteBlob(ctx, containerName, blobName, nil)
 	if err != nil {
 		return fmt.Errorf("failed to delete blob: %w", err)
 	}
 
 	return nil
+}
+
+// GetPublicURL implements storage.StorageService.
+func (s *AzureStorageService) GetPublicURL(ctx context.Context, containerName string, blobName string) (string, error) {
+	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s",
+		s.config.StorageAccountName,
+		containerName,
+		blobName), nil
+}
+
+func (s *AzureStorageService) generateSASToken(containerName string, blobName string, expiry time.Duration) (string, error) {
+	permissions := sas.BlobPermissions{
+		Read: true,
+	}
+
+	credential, err := azblob.NewSharedKeyCredential(s.config.StorageAccountName, s.config.AccountKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to create shared key credential: %w", err)
+	}
+
+	sasValues := sas.BlobSignatureValues{
+		Protocol:      sas.ProtocolHTTPS,
+		StartTime:     time.Now().UTC().Add(-1 * time.Minute),
+		ExpiryTime:    time.Now().UTC().Add(expiry),
+		Permissions:   permissions.String(),
+		ContainerName: containerName,
+		BlobName:      blobName,
+	}
+
+	sasToken, err := sasValues.SignWithSharedKey(credential)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate SAS token: %w", err)
+	}
+
+	return sasToken.Encode(), nil
 }

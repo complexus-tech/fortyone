@@ -1,8 +1,6 @@
 package storiesgrp
 
 import (
-	"context"
-
 	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/comments"
 	"github.com/complexus-tech/projects-api/internal/core/links"
@@ -13,23 +11,24 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
-	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB          *sqlx.DB
-	Log         *logger.Logger
-	SecretKey   string
-	Publisher   *publisher.Publisher
-	Validate    *validator.Validate
-	AzureConfig azure.Config
-	Cache       *cache.Service
+	DB             *sqlx.DB
+	Log            *logger.Logger
+	SecretKey      string
+	Publisher      *publisher.Publisher
+	Validate       *validator.Validate
+	StorageConfig  storage.Config
+	StorageService storage.StorageService
+	Cache          *cache.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -39,12 +38,7 @@ func Routes(cfg Config, app *web.App) {
 	linksService := links.New(cfg.Log, linksrepo.New(cfg.Log, cfg.DB))
 
 	attachmentsRepo := attachmentsrepo.New(cfg.Log, cfg.DB)
-	azureBlobService, err := azure.New(cfg.AzureConfig, cfg.Log)
-	if err != nil {
-		cfg.Log.Error(context.Background(), "failed to initialize Azure blob service", "error", err)
-		return
-	}
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, azureBlobService, cfg.AzureConfig)
+	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)

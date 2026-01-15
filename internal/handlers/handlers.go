@@ -43,13 +43,14 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	storiesgrp.Routes(storiesgrp.Config{
-		DB:          cfg.DB,
-		Log:         cfg.Log,
-		SecretKey:   cfg.SecretKey,
-		Publisher:   cfg.Publisher,
-		AzureConfig: cfg.AzureConfig,
-		Validate:    cfg.Validate,
-		Cache:       cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Publisher:      cfg.Publisher,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
+		Validate:       cfg.Validate,
+		Cache:          cfg.Cache,
 	}, app)
 
 	objectivesgrp.Routes(objectivesgrp.Config{
@@ -116,27 +117,29 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	usersgrp.Routes(usersgrp.Config{
-		DB:            cfg.DB,
-		Log:           cfg.Log,
-		SecretKey:     cfg.SecretKey,
-		GoogleService: cfg.GoogleService,
-		Publisher:     cfg.Publisher,
-		TasksService:  cfg.TasksService,
-		AzureConfig:   cfg.AzureConfig,
-		Cache:         cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		GoogleService:  cfg.GoogleService,
+		Publisher:      cfg.Publisher,
+		TasksService:   cfg.TasksService,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
+		Cache:          cfg.Cache,
 	}, app)
 
 	workspacesgrp.Routes(workspacesgrp.Config{
-		DB:            cfg.DB,
-		Log:           cfg.Log,
-		SecretKey:     cfg.SecretKey,
-		Publisher:     cfg.Publisher,
-		Cache:         cfg.Cache,
-		StripeClient:  cfg.StripeClient,
-		WebhookSecret: cfg.WebhookSecret,
-		TasksService:  cfg.TasksService,
-		SystemUserID:  cfg.SystemUserID,
-		AzureConfig:   cfg.AzureConfig,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Publisher:      cfg.Publisher,
+		Cache:          cfg.Cache,
+		StripeClient:   cfg.StripeClient,
+		WebhookSecret:  cfg.WebhookSecret,
+		TasksService:   cfg.TasksService,
+		SystemUserID:   cfg.SystemUserID,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	commentsgrp.Routes(commentsgrp.Config{

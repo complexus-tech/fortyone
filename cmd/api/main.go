@@ -29,6 +29,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
 	"github.com/complexus-tech/projects-api/internal/sse"
+	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -38,6 +39,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
@@ -107,6 +109,9 @@ type Config struct {
 	Website struct {
 		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
 	}
+	Storage struct {
+		Provider string `env:"APP_STORAGE_PROVIDER" default:"azure"`
+	}
 	Azure struct {
 		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
 		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
@@ -114,6 +119,14 @@ type Config struct {
 		ProfileImagesContainer  string `default:"profile-images" env:"APP_AZURE_CONTAINER_PROFILE_IMAGES"`
 		WorkspaceLogosContainer string `default:"workspace-logos" env:"APP_AZURE_CONTAINER_WORKSPACE_LOGOS"`
 		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
+	}
+	AWS struct {
+		AccessKeyID          string `env:"APP_AWS_ACCESS_KEY_ID"`
+		SecretAccessKey      string `env:"APP_AWS_SECRET_ACCESS_KEY"`
+		Region               string `env:"APP_AWS_REGION"`
+		ProfileImagesBucket  string `env:"APP_AWS_PROFILE_IMAGES_BUCKET"`
+		WorkspaceLogosBucket string `env:"APP_AWS_WORKSPACE_LOGOS_BUCKET"`
+		AttachmentsBucket    string `env:"APP_AWS_ATTACHMENTS_BUCKET"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -213,6 +226,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 		ProfileImagesContainer:  cfg.Azure.ProfileImagesContainer,
 		WorkspaceLogosContainer: cfg.Azure.WorkspaceLogosContainer,
 		AttachmentsContainer:    cfg.Azure.AttachmentsContainer,
+	}
+
+	awsConfig := aws.Config{
+		AccessKeyID:          cfg.AWS.AccessKeyID,
+		SecretAccessKey:      cfg.AWS.SecretAccessKey,
+		Region:               cfg.AWS.Region,
+		ProfileImagesBucket:  cfg.AWS.ProfileImagesBucket,
+		WorkspaceLogosBucket: cfg.AWS.WorkspaceLogosBucket,
+		AttachmentsBucket:    cfg.AWS.AttachmentsBucket,
+	}
+
+	storageConfig := storage.Config{
+		Provider: cfg.Storage.Provider,
+		Azure:    azureConfig,
+		AWS:      awsConfig,
+	}
+
+	storageService, err := storage.NewStorageService(storageConfig, log)
+	if err != nil {
+		return fmt.Errorf("error initializing storage service: %w", err)
 	}
 
 	// Initialize email service
@@ -320,25 +353,26 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:            db,
-		Redis:         rdb,
-		Publisher:     publisher,
-		Shutdown:      shutdown,
-		Log:           log,
-		Tracer:        tracer,
-		SecretKey:     cfg.Auth.SecretKey,
-		EmailService:  emailService,
-		BrevoService:  brevoService,
-		GoogleService: googleService,
-		Validate:      validate,
-		AzureConfig:   azureConfig,
-		Cache:         cacheService,
-		TasksService:  tasksService,
-		StripeClient:  stripeClient,
-		WebhookSecret: cfg.Stripe.WebhookSecret,
-		SSEHub:        sseHub,
-		CorsOrigin:    "*",
-		SystemUserID:  systemUserID,
+		DB:             db,
+		Redis:          rdb,
+		Publisher:      publisher,
+		Shutdown:       shutdown,
+		Log:            log,
+		Tracer:         tracer,
+		SecretKey:      cfg.Auth.SecretKey,
+		EmailService:   emailService,
+		BrevoService:   brevoService,
+		GoogleService:  googleService,
+		Validate:       validate,
+		StorageConfig:  storageConfig,
+		StorageService: storageService,
+		Cache:          cacheService,
+		TasksService:   tasksService,
+		StripeClient:   stripeClient,
+		WebhookSecret:  cfg.Stripe.WebhookSecret,
+		SSEHub:         sseHub,
+		CorsOrigin:     "*",
+		SystemUserID:   systemUserID,
 	}
 
 	// Create the mux
