@@ -142,7 +142,7 @@ export const Footer = () => {
     },
     {
       title: "GitHub",
-      href: "https://github.com/complexus-tech/fortyone.app",
+      href: "https://github.com/complexus-tech/fortyone",
     },
     {
       title: "Pitch",
