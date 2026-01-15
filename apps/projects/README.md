@@ -1,8 +1,8 @@
 # FortyOne Projects App
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)](https://www.typescriptlang.org/)
 [![Jest](https://img.shields.io/badge/Jest-29-red.svg)](https://jestjs.io/)
 
 The core FortyOne application for project management and team collaboration. Built with modern web technologies, it provides a comprehensive platform for organizing projects, tracking tasks, and collaborating with team members in real-time.
@@ -96,12 +96,6 @@ The projects app includes a comprehensive Jest test suite:
 # Run all tests
 pnpm test
 
-# Run tests in watch mode
-pnpm test:watch
-
-# Run tests with coverage
-pnpm test:coverage
-
 # Run specific test file
 pnpm test -- components/Button.test.tsx
 ```
@@ -179,12 +173,6 @@ pnpm type-check   # Run TypeScript checking
 
 # Testing
 pnpm test         # Run Jest tests
-pnpm test:watch   # Run tests in watch mode
-pnpm test:coverage # Run tests with coverage report
-
-# Database (if applicable)
-pnpm db:migrate   # Run database migrations
-pnpm db:seed      # Seed database with test data
 ```
 
 ## 🚀 Deployment

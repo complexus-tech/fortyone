@@ -1,10 +1,6 @@
 # Projects API
 
-The backend API for [FortyOne](https://github.com/complexus-tech/fortyone.app) - The Open Source Agentic Project Management Platform.
-
-## Related Repositories
-
-- **[Frontend Application](https://github.com/complexus-tech/fortyone.app)**: Next.js-based web application with landing page, documentation, and project management interface
+The backend API for FortyOne — a Go service that powers the web and mobile apps in this monorepo.
 
 ## Running the project locally
 

@@ -1,10 +1,10 @@
 # FortyOne Landing App
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)](https://www.typescriptlang.org/)
 
-The FortyOne landing page and marketing website, built with Next.js 15, React 19, and modern web technologies. This app serves as the main entry point for users, providing authentication, marketing content, and access to the FortyOne platform.
+The FortyOne landing page and marketing website, built with Next.js 16, React 19, and modern web technologies. This app serves as the main entry point for users, providing authentication, marketing content, and access to the FortyOne platform.
 
 ## ✨ Features
 

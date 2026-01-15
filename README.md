@@ -7,11 +7,7 @@
 
 A modern, open-source web platform for project management and collaboration. FortyOne provides a comprehensive suite of tools for teams to organize, track, and deliver projects efficiently.
 
-The Frontend for [FortyOne API](https://github.com/complexus-tech/api.fortyone.app) - The Open Source Agentic Project Management Platform.
-
-## Related Repositories
-
-- **[Backend Application](https://github.com/complexus-tech/api.fortyone.app)**: Golang backend application for this project
+A full-stack, open-source platform for project management and collaboration, with a Go API and multi-app web/mobile clients.
 
 ## ✨ Features
 
@@ -60,6 +56,7 @@ pnpm install
 cp apps/landing/.env.example apps/landing/.env
 cp apps/projects/.env.example apps/projects/.env
 cp apps/mobile/.env.example apps/mobile/.env
+cp apps/server/.env.example apps/server/.env
 # Edit .env files with your actual values
 
 # Start development server
@@ -84,6 +81,7 @@ fortyone/
 │   ├── landing/            # Marketing & authentication
 │   ├── docs/               # Documentation site
 │   ├── projects/           # Main project management app
+│   ├── server/             # Go backend API
 │   └── mobile/             # React Native mobile app
 ├── packages/               # Shared packages
 │   ├── ui/                 # Component library
@@ -142,6 +140,7 @@ Before setting up the development environment, ensure you have the following ins
 
 - **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
 - **pnpm** (v9.3.0 or higher) - Install with `npm install -g pnpm`
+- **Go** (v1.23 or higher) - [Install Go](https://go.dev/doc/install)
 - **Caddy** (v2 or higher) - [Installation guide](https://caddyserver.com/docs/install)
 
 ### Caddy Installation
