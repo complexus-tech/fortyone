@@ -1,31 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const publicPaths = new Set([
-  "/",
-  "/login",
-  "/signup",
-  "/sign-in",
-  "/sign-up",
-  "/auth-callback",
-]);
-
-const isPublicPath = (pathname: string) => {
-  if (publicPaths.has(pathname)) {
-    return true;
-  }
-  if (pathname.startsWith("/verify/")) {
-    return true;
-  }
-  if (pathname.startsWith("/onboarding/join")) {
-    return true;
-  }
-  return false;
-};
-
 export default auth((req) => {
-  const pathname = req.nextUrl.pathname;
-  if (!req.auth && !isPublicPath(pathname)) {
+  if (!req.auth && req.nextUrl.pathname !== "/login") {
+    const pathname = req.nextUrl.pathname;
     const searchParams = req.nextUrl.search;
     const callBackUrl = `${pathname}${searchParams}`;
     const newUrl = new URL("/login", req.nextUrl.origin);
@@ -40,10 +18,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - login (Auth routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!_next/static|images|_next/image|favicon*|logout|ingest|unauthorized|manifest*|apple-icon*).*)",
+    "/((?!login|_next/static|images|_next/image|favicon*|logout|ingest|unauthorized|manifest*|apple-icon*).*)",
   ],
 };
