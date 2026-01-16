@@ -30,7 +30,7 @@ export default function GlobalError({
         <Box className="flex h-screen items-center justify-center">
           <Box className="flex flex-col items-center">
             <Logo className="h-8" />
-            <Text className="mb-6 mt-10" fontSize="3xl">
+            <Text className="mt-10 mb-6" fontSize="3xl">
               There was an error
             </Text>
             <Text className="mb-6 max-w-md text-center" color="muted">
@@ -51,7 +51,7 @@ export default function GlobalError({
               <Button
                 className="gap-1 pl-2"
                 color="tertiary"
-                href="https://www.fortyone.app/login"
+                href="/login"
                 leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
               >
                 Go to home

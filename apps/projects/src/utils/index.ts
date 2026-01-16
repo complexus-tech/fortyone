@@ -1,5 +1,29 @@
 import { ApiError } from "@/lib/http/error";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse, Workspace } from "@/types";
+import type { Invitation } from "@/modules/invitations/types";
+
+const domain = process.env.NEXT_PUBLIC_DOMAIN!;
+
+export const getRedirectUrl = (
+  workspaces: Workspace[],
+  invitations: Invitation[] = [],
+  lastUsedWorkspaceId?: string,
+) => {
+  if (workspaces.length === 0) {
+    if (invitations.length > 0) {
+      return `/onboarding/join?token=${invitations[0].token}`;
+    }
+    return "/onboarding/create";
+  }
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
+    workspaces[0];
+  return `https://${activeWorkspace.slug}.${domain}/my-work`;
+};
+
+export const buildWorkspaceUrl = (slug: string) => {
+  return `https://${slug}.${domain}/my-work`;
+};
 
 export const slugify = (text = "") => {
   return text

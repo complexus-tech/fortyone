@@ -20,8 +20,6 @@ import { useLocalStorage, useAnalytics } from "@/hooks";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "./utils";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const ProfileMenu = () => {
   const { data: myInvitations = [] } = useMyInvitations();
   const { data: profile } = useProfile();
@@ -36,15 +34,15 @@ export const ProfileMenu = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     } finally {
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     }
   };
 
   return (
-    <Box className="border-t-[0.5px] border-border px-3 pt-4">
+    <Box className="border-border border-t-[0.5px] px-3 pt-4">
       <Menu>
         <Menu.Button>
           <Box className="relative">
@@ -70,12 +68,12 @@ export const ProfileMenu = () => {
               <ArrowRight2Icon className="shrink-0" />
             </Button>
             {myInvitations.length > 0 && (
-              <Box className="absolute right-1 top-0.5 z-2 size-2.5 animate-pulse rounded-full bg-primary" />
+              <Box className="bg-primary absolute top-0.5 right-1 z-2 size-2.5 animate-pulse rounded-full" />
             )}
           </Box>
         </Menu.Button>
         <Menu.Items align="end" className="ml-3 pt-0">
-          <Menu.Group className="px-4 pb-2 pt-2.5">
+          <Menu.Group className="px-4 pt-2.5 pb-2">
             <Text className="line-clamp-1" color="muted">
               {profile?.email}
             </Text>
@@ -182,7 +180,7 @@ export const ProfileMenu = () => {
           <Menu.Separator className="my-2" />
           <Menu.Group>
             <Menu.Item className="text-danger" onSelect={handleLogout}>
-              <LogoutIcon className="h-5 w-auto text-danger" />
+              <LogoutIcon className="text-danger h-5 w-auto" />
               Log out
             </Menu.Item>
           </Menu.Group>

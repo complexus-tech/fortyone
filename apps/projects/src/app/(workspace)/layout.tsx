@@ -27,14 +27,16 @@ import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
 import { IdentifyUser } from "./identify";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export default async function RootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
   const session = await auth();
+
+  if (!session) {
+    redirect("/login");
+  }
 
   const headersList = await headers();
   const host = headersList.get("host");
@@ -43,7 +45,7 @@ export default async function RootLayout({
   const workspaces = await getWorkspaces(token);
 
   if (workspaces.length === 0) {
-    redirect(`https://${domain}/onboarding/create`);
+    redirect("/onboarding/create");
   }
 
   // First try to find workspace in session

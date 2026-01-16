@@ -32,7 +32,7 @@ export default function Page() {
         // console.error("Error during logout process:", error);
       } finally {
         clearClientStorage();
-        window.location.href = "https://www.fortyone.app?signedOut=true";
+        window.location.href = "/login?signedOut=true";
       }
     };
 
@@ -45,8 +45,8 @@ export default function Page() {
       justify="center"
     >
       <Flex align="center" direction="column" justify="center">
-        <Box className="aspect-square w-max animate-pulse rounded-full bg-primary p-4">
-          <Logo className="h-8 text-foreground" asIcon />
+        <Box className="bg-primary aspect-square w-max animate-pulse rounded-full p-4">
+          <Logo className="text-foreground h-8" asIcon />
         </Box>
         <Text className="mt-4" color="muted" fontWeight="medium">
           Logging out...

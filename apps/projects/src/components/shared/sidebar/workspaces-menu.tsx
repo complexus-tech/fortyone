@@ -34,10 +34,10 @@ export const WorkspacesMenu = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     } finally {
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     }
   };
 
@@ -51,7 +51,7 @@ export const WorkspacesMenu = () => {
   };
 
   const handleCreateWorkspace = () => {
-    window.location.href = `https://${domain}/onboarding/create`;
+    window.location.href = "/onboarding/create";
   };
 
   return (

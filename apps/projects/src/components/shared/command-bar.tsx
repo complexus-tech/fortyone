@@ -56,7 +56,7 @@ export const CommandBar = ({
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.fortyone.app?signedOut=true";
+      window.location.href = "/login?signedOut=true";
     }
   };
 
@@ -271,7 +271,7 @@ export const CommandBar = ({
           <Dialog.Header className="sr-only">
             <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="px-0 pb-0 pt-2">
+          <Dialog.Body className="px-0 pt-2 pb-0">
             <Command>
               <Command.Input
                 className="my-2.5 text-2xl antialiased"

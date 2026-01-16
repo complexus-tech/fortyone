@@ -1,17 +1,36 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { AuthLayout } from "@/modules/auth";
 import { auth } from "@/auth";
+import { getProfile } from "@/lib/queries/profile";
+import { getWorkspaces } from "@/lib/queries/get-workspaces";
+import { redirect } from "next/navigation";
+import { getRedirectUrl } from "@/utils";
 
 export const metadata: Metadata = {
-  title: "Login",
+  title: "Login - FortyOne",
+  description:
+    "Access your FortyOne workspace securely to continue projects, collaborate with your team, and pick up where you left off—fast, private, reliable.",
 };
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ mobile?: string }>;
+}) {
+  const params = await searchParams;
+  const isMobile = params?.mobile === "true";
+
   const session = await auth();
-  if (session) {
-    redirect("/my-work");
+
+  // Only redirect web users if they're already logged in
+  if (session && !isMobile) {
+    const [workspaces, profile] = await Promise.all([
+      getWorkspaces(session?.token || ""),
+      getProfile(session),
+    ]);
+    redirect(getRedirectUrl(workspaces, [], profile?.lastUsedWorkspaceId));
   }
 
-  redirect(`https://${domain}/login`);
+  // Mobile users always see login form (even if already logged in on web)
+  return <AuthLayout page="login" />;
 }

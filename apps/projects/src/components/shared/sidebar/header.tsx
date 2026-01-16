@@ -18,8 +18,6 @@ import { clearAllStorage } from "./utils";
 import { WorkspacesMenu } from "./workspaces-menu";
 import { logOut } from "./actions";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const Header = () => {
   const { getTermDisplay } = useTerminology();
   const { analytics } = useAnalytics();
@@ -58,10 +56,10 @@ export const Header = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     } finally {
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/login?signedOut=true";
     }
   };
 
