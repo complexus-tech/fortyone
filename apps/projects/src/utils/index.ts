@@ -2,8 +2,6 @@ import { ApiError } from "@/lib/http/error";
 import type { ApiResponse, Workspace } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const getRedirectUrl = (
   workspaces: Workspace[],
   invitations: Invitation[] = [],
@@ -18,11 +16,11 @@ export const getRedirectUrl = (
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
     workspaces[0];
-  return `https://${activeWorkspace.slug}.${domain}/my-work`;
+  return `/${activeWorkspace.slug}/my-work`;
 };
 
 export const buildWorkspaceUrl = (slug: string) => {
-  return `https://${slug}.${domain}/my-work`;
+  return `/${slug}/my-work`;
 };
 
 export const slugify = (text = "") => {

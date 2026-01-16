@@ -18,8 +18,6 @@ import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 import { cn, getReadableTextColor } from "lib";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const WorkspacesMenu = () => {
   const pathname = usePathname();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
@@ -27,7 +25,6 @@ export const WorkspacesMenu = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
-  const brightness = getReadableTextColor(workspace?.color);
 
   const handleLogout = async () => {
     try {
@@ -44,9 +41,9 @@ export const WorkspacesMenu = () => {
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
     try {
       await changeWorkspace(workspaceId);
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      window.location.href = `/${slug}/my-work`;
     } catch (error) {
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      window.location.href = `/${slug}/my-work`;
     }
   };
 

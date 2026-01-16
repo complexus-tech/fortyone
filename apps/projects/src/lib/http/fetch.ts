@@ -13,9 +13,16 @@ const getClientContext = cache(async (token: string) => {
   let subdomain = "";
   if (isServer) {
     const headersList = await getHeaders();
-    subdomain = headersList.get("host")?.split(".")[0] || "";
+    // In a path-based approach, we might need a better way to get the slug on the server
+    // For now, let's try to extract it from the referer or a custom header if we can
+    // Or, we can rely on the caller passing it, but let's try to keep it autonomous
+    const referer = headersList.get("referer");
+    if (referer) {
+      const url = new URL(referer);
+      subdomain = url.pathname.split("/")[1] || "";
+    }
   } else {
-    subdomain = window.location.hostname.split(".")[0];
+    subdomain = window.location.pathname.split("/")[1];
   }
 
   const prefixUrl = `${apiURL}/workspaces/${subdomain.toLowerCase()}/`;

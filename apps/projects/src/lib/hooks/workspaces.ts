@@ -7,7 +7,7 @@ import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 
 export const getCurrentWorkspace = (workspaces: Workspace[]) => {
   if (typeof window === "undefined") return null;
-  const slug = window.location.hostname.split(".")[0];
+  const slug = window.location.pathname.split("/")[1];
   return workspaces.find((workspace) => workspace.slug === slug);
 };
 

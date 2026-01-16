@@ -29,8 +29,10 @@ import { IdentifyUser } from "./identify";
 
 export default async function RootLayout({
   children,
+  params,
 }: {
   children: ReactNode;
+  params: Promise<{ workspace: string }>;
 }) {
   const session = await auth();
 
@@ -38,9 +40,7 @@ export default async function RootLayout({
     redirect("/login");
   }
 
-  const headersList = await headers();
-  const host = headersList.get("host");
-  const subdomain = host?.split(".")[0];
+  const { workspace: slug } = await params;
   const token = session?.token || "";
   const workspaces = await getWorkspaces(token);
 
@@ -48,9 +48,9 @@ export default async function RootLayout({
     redirect("/onboarding/create");
   }
 
-  // First try to find workspace in session
+  // First try to find workspace
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain?.toLowerCase(),
+    (w) => w.slug.toLowerCase() === slug?.toLowerCase(),
   );
 
   if (!workspace) {

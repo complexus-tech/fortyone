@@ -52,12 +52,12 @@ export const WorkspaceForm = () => {
           label="URL (read-only)"
           name="slug"
           onClick={() => {
-            copy(`https://${host}`);
+            copy(`https://${host}/${workspace?.slug}`);
             toast.success("Copied to clipboard");
           }}
           readOnly
           rightIcon={<CopyIcon />}
-          value={`https://${host}`}
+          value={`https://${host}/${workspace?.slug}`}
         />
       </Box>
       {hasChanges ? (

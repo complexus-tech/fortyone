@@ -10,15 +10,18 @@ export const metadata: Metadata = {
   title: "Analytics",
 };
 
-export default async function Page() {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ workspace: string }>;
+}) {
+  const { workspace: slug } = await params;
   const session = await auth();
   const posthog = PostHogClient();
-  const headersList = await headers();
-  const subdomain = headersList.get("host")!.split(".")[0];
 
   const workspaces = await getWorkspaces(session?.token || "");
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === subdomain.toLowerCase(),
+    (w) => w.slug.toLowerCase() === slug.toLowerCase(),
   );
 
   const isAnalyticsEnabled = await posthog.isFeatureEnabled(
