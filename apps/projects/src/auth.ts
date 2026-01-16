@@ -35,7 +35,7 @@ export const {
       name: "Credentials",
       id: "credentials",
       credentials: {},
-      async authorize(credentials) {
+      async authorize(credentials, _request) {
         const { email, token } = credentials as {
           email: string;
           token: string;
@@ -46,20 +46,20 @@ export const {
           error.message = res.error.message;
           throw error;
         }
-        return res.data;
+        return res.data ?? null;
       },
     }),
     Credentials({
       name: "One Tap",
       id: "one-tap",
       credentials: {},
-      async authorize(credentials) {
+      async authorize(credentials, _request) {
         const { idToken } = credentials as { idToken: string };
         const googleUser = await authenticateGoogleUser({ idToken });
         if (!googleUser) {
           throw new Error("Failed to authenticate Google user");
         }
-        return googleUser;
+        return googleUser ?? null;
       },
     }),
   ],
