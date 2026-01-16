@@ -13,7 +13,9 @@ export default async function AuthCallback({
 }) {
   const params = await searchParams;
   const isMobile = params?.mobile === "true";
+
   const session = await auth();
+
   if (!session) {
     redirect("/login");
   }

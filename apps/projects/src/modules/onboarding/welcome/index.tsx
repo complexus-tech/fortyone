@@ -5,8 +5,6 @@ import { Logo } from "@/components/ui";
 import type { User, Workspace } from "@/types";
 import { ActionCard } from "./components/action-card";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 const getRedirectUrl = (
   workspaces: Workspace[],
   lastUsedWorkspaceId?: string,
@@ -17,7 +15,7 @@ const getRedirectUrl = (
   if (!activeWorkspace) {
     return "/onboarding/create";
   }
-  return `https://${activeWorkspace.slug}.${domain}/maya`;
+  return `/${activeWorkspace.slug}/maya`;
 };
 
 export const Welcome = ({

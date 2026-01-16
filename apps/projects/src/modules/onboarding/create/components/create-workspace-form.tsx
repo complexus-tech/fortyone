@@ -16,30 +16,17 @@ const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
-  const checkAvailability = useDebounce<
-    string,
-    ApiResponse<{
-      available: boolean;
-      slug: string;
-    }>
-  >(checkWorkspaceAvailability, 1000);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAvailable, setIsAvailable] = useState(true);
-  const [hasOrgBlurred, setHasOrgBlurred] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    teamSize: "1-5",
-  });
-  const { data: workspaces = [] } = useWorkspaces();
-
-  const formatSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-") // Replace non-alphanumeric chars with dash
-      .replace(/-+/g, "-") // Replace multiple dashes with single dash
-      .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
-  };
+  const checkAvailability = useDebounce<string>(async (slugToCheck) => {
+    if (slugToCheck.length > 3) {
+      setIsAvailable(true); // Reset availability while checking
+      try {
+        const res = await checkWorkspaceAvailability(slugToCheck);
+        setIsAvailable(res.data?.available || false);
+      } catch (error) {
+        setIsAvailable(false);
+      }
+    }
+  }, 1000);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -53,17 +40,7 @@ export const CreateWorkspaceForm = () => {
 
       // Check availability when slug changes
       if (name === "slug" || (name === "name" && !hasOrgBlurred)) {
-        const slugToCheck = updates.slug.toLowerCase();
-        if (slugToCheck.length > 3) {
-          setIsAvailable(true); // Reset availability while checking
-          void checkAvailability(slugToCheck)
-            .then((res) => {
-              setIsAvailable(res.data?.available || false);
-            })
-            .catch(() => {
-              setIsAvailable(false);
-            });
-        }
+        checkAvailability(updates.slug.toLowerCase());
       }
 
       return updates;
@@ -110,10 +87,8 @@ export const CreateWorkspaceForm = () => {
     const workspace = res.data!;
     if (workspaces.length === 0) {
       router.push("/onboarding/account");
-    } else if (domain.includes("localhost")) {
-      window.location.href = `http://${workspace?.slug}.${domain}/my-work`;
     } else {
-      window.location.href = `https://${workspace?.slug}.${domain}/my-work`;
+      window.location.href = `/${workspace?.slug}/my-work`;
     }
   };
 
@@ -148,7 +123,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            <Text>{`.${domain}`}</Text>
+            <Text>{`/${form.slug || "slug"}`}</Text>
             {!isAvailable ? (
               <Flex
                 align="center"
