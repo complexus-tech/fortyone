@@ -25,7 +25,7 @@ export const useTeamStoriesGrouped = (
     queryKey,
     queryFn: () =>
       getGroupedStories({ session: session!, workspaceSlug }, params),
-    enabled: Boolean(teamId),
+    enabled: Boolean(teamId && session),
     staleTime: 1000 * 60 * 2,
   });
 };
