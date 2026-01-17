@@ -6,18 +6,17 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 import type { NewInvitation } from "../types";
 
-export const inviteMembers = async (invites: NewInvitation[]) => {
+export const inviteMembers = async (
+  invites: NewInvitation[],
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const response = await post<
-      { invitations: NewInvitation[] },
-      ApiResponse<null>
-    >(
+    const ctx = { session: session!, workspaceSlug };
+    const response = await post<{ invitations: NewInvitation[] }, ApiResponse<null>>(
       "invitations",
-      {
-        invitations: invites,
-      },
-      session!,
+      { invitations: invites },
+      ctx,
     );
     return response;
   } catch (error) {

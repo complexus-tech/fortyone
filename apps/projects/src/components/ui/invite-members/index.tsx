@@ -21,7 +21,7 @@ import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
 import { invitationKeys } from "@/constants/keys";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { FeatureGuard } from "../feature-guard";
 
 type InviteFormState = {
@@ -45,6 +45,7 @@ export const InviteMembersDialog = ({
 }) => {
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
+  const { workspaceSlug } = useWorkspacePath();
   const { remaining, tier, getLimit } = useSubscriptionFeatures();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
@@ -166,7 +167,7 @@ export const InviteMembersDialog = ({
       teamIds: formState.teamIds.length > 0 ? formState.teamIds : undefined,
     }));
 
-    const res = await inviteMembers(invites);
+    const res = await inviteMembers(invites, workspaceSlug);
     if (res.error?.message) {
       toast.error("Failed to send invites", {
         description: res.error.message,

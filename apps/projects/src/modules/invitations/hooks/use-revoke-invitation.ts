@@ -1,15 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { invitationKeys } from "@/constants/keys";
+import { useWorkspacePath } from "@/hooks";
 import { revokeInvitation } from "../actions/revoke";
 import type { Invitation } from "../types";
 
 export const useRevokeInvitationMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const toastId = "revoke-invitation";
 
   const mutation = useMutation({
-    mutationFn: (invitationId: string) => revokeInvitation(invitationId),
+    mutationFn: (invitationId: string) =>
+      revokeInvitation(invitationId, workspaceSlug),
     onMutate: async (invitationId) => {
       await queryClient.cancelQueries({
         queryKey: invitationKeys.pending,

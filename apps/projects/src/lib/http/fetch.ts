@@ -5,12 +5,12 @@ import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-export type Ctx = {
+export type WorkspaceCtx = {
   session: Session;
   workspaceSlug: string;
 };
 
-const createClient = (ctx: Ctx) => {
+const createClient = (ctx: WorkspaceCtx) => {
   const prefixUrl = `${apiURL}/workspaces/${ctx.workspaceSlug}/`;
 
   const client = ky.create({
@@ -37,7 +37,7 @@ const createClient = (ctx: Ctx) => {
 
 export const get = async <T>(
   url: string,
-  ctx: Ctx,
+  ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
@@ -47,7 +47,7 @@ export const get = async <T>(
 export const post = async <T, U>(
   url: string,
   json: T,
-  ctx: Ctx,
+  ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
@@ -62,7 +62,7 @@ export const post = async <T, U>(
 export const put = async <T, U>(
   url: string,
   json: T,
-  ctx: Ctx,
+  ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
@@ -77,7 +77,7 @@ export const put = async <T, U>(
 export const patch = async <T, U>(
   url: string,
   json: T,
-  ctx: Ctx,
+  ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
@@ -91,7 +91,7 @@ export const patch = async <T, U>(
 
 export const remove = async <T>(
   url: string,
-  ctx: Ctx,
+  ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
