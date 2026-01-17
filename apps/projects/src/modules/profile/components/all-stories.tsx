@@ -12,7 +12,6 @@ import { Skeleton } from "./skeleton";
 export const AllStories = ({
   layout,
 }: {
-  stories: Story[];
   layout: StoriesLayout;
 }) => {
   const { userId } = useParams<{

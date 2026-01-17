@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTeams } from "@/modules/teams/queries/get-teams";
 import { auth } from "@/auth";
@@ -39,10 +38,9 @@ export default async function RootLayout({
   if (!session) {
     redirect("/login");
   }
-
   const { workspaceSlug } = await params;
-  const token = session?.token || "";
-  const workspaces = await getWorkspaces(token);
+  const ctx = { session: session!, workspaceSlug };
+  const workspaces = await getWorkspaces(session?.token);
 
   if (workspaces.length === 0) {
     redirect("/onboarding/create");
@@ -56,37 +54,38 @@ export default async function RootLayout({
   if (!workspace) {
     redirect("/unauthorized");
   }
+
   // kick off non-critical important queries without waiting for them
   const queryClient = fetchNonCriticalImportantQueries(
     getQueryClient(),
-    session!,
-    workspaceSlug,
+    ctx
   );
+
   // await critical queries
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: teamKeys.lists(),
-      queryFn: () => getTeams(session!),
+      queryFn: () => getTeams(ctx),
     }),
     queryClient.prefetchQuery({
       queryKey: statusKeys.lists(),
-      queryFn: () => getStatuses(session!),
+      queryFn: () => getStatuses(ctx),
     }),
     queryClient.prefetchQuery({
       queryKey: objectiveKeys.statuses(),
-      queryFn: () => getObjectiveStatuses(session!),
+      queryFn: () => getObjectiveStatuses(ctx),
     }),
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
-      queryFn: () => getWorkspaces(token),
+      queryFn: () => getWorkspaces(ctx.session.token),
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(),
-      queryFn: () => getRunningSprints(session!),
+      queryFn: () => getRunningSprints(ctx),
     }),
     queryClient.prefetchQuery({
       queryKey: userKeys.profile(),
-      queryFn: () => getProfile(session!),
+      queryFn: () => getProfile(ctx.session),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     switchWorkspace(workspace.id),

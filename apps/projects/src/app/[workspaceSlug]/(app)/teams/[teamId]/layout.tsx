@@ -9,11 +9,12 @@ export default async function Layout({
   params,
 }: {
   children: ReactNode;
-  params: Promise<{ teamId: string }>;
+  params: Promise<{ teamId: string; workspaceSlug: string }>;
 }) {
-  const { teamId } = await params;
+  const { teamId, workspaceSlug } = await params;
   const session = await auth();
-  const data = await getTeam(teamId, session!);
+  const ctx = { session: session!, workspaceSlug };
+  const data = await getTeam(teamId, ctx);
   if (data.error?.message) {
     return (
       <Box className="flex h-screen items-center justify-center">

@@ -11,15 +11,17 @@ export async function generateMetadata({
   params: Promise<{
     teamId: string;
     objectiveId: string;
+    workspaceSlug: string;
   }>;
   searchParams: Promise<{
     tab: "stories" | "overview";
   }>;
 }): Promise<Metadata> {
-  const { objectiveId } = await params;
+  const { objectiveId, workspaceSlug } = await params;
   const { tab = "overview" } = await searchParams;
   const session = await auth();
-  const objectiveData = await getObjective(objectiveId, session!);
+  const ctx = { session: session!, workspaceSlug };
+  const objectiveData = await getObjective(objectiveId, ctx);
   const name = objectiveData?.name || "Objective";
 
   return {
@@ -31,6 +33,7 @@ export default async function Page(props: {
   params: Promise<{
     teamId: string;
     objectiveId: string;
+    workspaceSlug: string;
   }>;
 }) {
   const params = await props.params;

@@ -6,11 +6,12 @@ import { auth } from "@/auth";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ teamId: string }>;
+  params: Promise<{ teamId: string; workspaceSlug: string }>;
 }): Promise<Metadata> {
-  const { teamId } = await params;
+  const { teamId, workspaceSlug } = await params;
   const session = await auth();
-  const teamData = await getTeam(teamId, session!);
+  const ctx = { session: session!, workspaceSlug };
+  const teamData = await getTeam(teamId, ctx);
 
   return {
     title: `${teamData.data?.name || "Team"} › Objectives`,

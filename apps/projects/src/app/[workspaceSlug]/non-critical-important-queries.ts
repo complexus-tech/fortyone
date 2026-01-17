@@ -27,20 +27,20 @@ import { getNotificationPreferences } from "@/modules/notifications/queries/get-
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getInvoices } from "@/lib/queries/billing/invoices";
+import { WorkspaceCtx } from "@/lib/http";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
-  session: Session,
-  workspaceSlug: string,
+  ctx: WorkspaceCtx,
 ) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
-    queryFn: () => getAutomationPreferences({ session, workspaceSlug }),
+    queryFn: () => getAutomationPreferences(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: teamKeys.public(),
-    queryFn: () => getPublicTeams(session),
+    queryFn: () => getPublicTeams(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
@@ -85,7 +85,7 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.pending(workspaceSlug),
-    queryFn: () => getPendingInvitations({ session, workspaceSlug }),
+    queryFn: () => getPendingInvitations(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({

@@ -6,24 +6,27 @@ import { auth } from "@/auth";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 
 export async function generateMetadata({
+  params,
   searchParams,
 }: {
-  params: Promise<{ notificationId: string }>;
+  params: Promise<{ notificationId: string; workspaceSlug: string }>;
   searchParams: Promise<{
     entityId: string;
     entityType?: "story" | "objective";
   }>;
 }): Promise<Metadata> {
+  const { workspaceSlug } = await params;
   const { entityType, entityId } = await searchParams;
   const session = await auth();
+  const ctx = { session: session!, workspaceSlug };
 
   let title = "Notification Details";
   if (entityType === "story") {
-    const storyData = await getStory(entityId, session!);
+    const storyData = await getStory(entityId, ctx);
 
     title = storyData?.title || "Story";
   } else if (entityType === "objective") {
-    const objectiveData = await getObjective(entityId, session!);
+    const objectiveData = await getObjective(entityId, ctx);
     title = objectiveData?.name || "Objective";
   }
   return {
@@ -35,7 +38,7 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: Promise<{ notificationId: string }>;
+  params: Promise<{ notificationId: string; workspaceSlug: string }>;
   searchParams: Promise<{
     entityId?: string;
     entityType?: "story" | "objective";
