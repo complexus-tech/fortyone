@@ -51,7 +51,7 @@ export const commentsTool = tool({
     mentions = [],
     includeReplies = true,
     limit = 20,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -62,12 +62,16 @@ export const commentsTool = tool({
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session: session!, workspaceSlug };
+
       // Get user's workspace and role for permissions
-      const workspace = await getWorkspace(session);
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Get members for mention resolution and commenter info
-      const members = await getMembers(session);
+      const members = await getMembers(ctx);
       const memberMap = new Map(members.map((m) => [m.id, m]));
 
       switch (action) {

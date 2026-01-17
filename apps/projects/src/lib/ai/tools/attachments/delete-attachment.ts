@@ -29,7 +29,7 @@ export const deleteAttachment = tool({
       const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
       
 
-      const ctx = { session: session!, workspaceSlug };
+      const ctx = { session, workspaceSlug };
 
       const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
