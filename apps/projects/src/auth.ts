@@ -137,9 +137,9 @@ export const {
     maxAge: DURATION_FROM_SECONDS.DAY * 30,
   },
   pages: {
-    signIn: "/login",
+    signIn: "/",
     signOut: "/",
-    error: `/login?error=${encodeURIComponent(errorMessage)}`,
+    error: `/?error=${encodeURIComponent(errorMessage)}`,
   },
   debug: true,
 });

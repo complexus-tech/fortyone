@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 export default auth((req) => {
-  if (!req.auth && req.nextUrl.pathname !== "/login") {
+  if (!req.auth && req.nextUrl.pathname !== "/") {
     const pathname = req.nextUrl.pathname;
     const searchParams = req.nextUrl.search;
     const callBackUrl = `${pathname}${searchParams}`;
-    const newUrl = new URL("/login", req.nextUrl.origin);
+    const newUrl = new URL("/", req.nextUrl.origin);
     newUrl.searchParams.set("callbackUrl", callBackUrl);
     return NextResponse.redirect(newUrl);
   }
@@ -23,6 +23,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!login|verify|auth-callback|api/auth|_next/static|images|_next/image|favicon*|logout|ingest|unauthorized|manifest*|apple-icon*).*)",
+    "/((?!verify|auth-callback|signup|api/auth|_next/static|images|_next/image|favicon*|ingest|unauthorized|manifest*|apple-icon*).*)",
   ],
 };

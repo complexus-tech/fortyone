@@ -38,7 +38,7 @@ export const EmailVerificationCallback = () => {
           if (isMobile && workspaces.length > 0) {
             const authCodeResponse = await getAuthCode(session);
             if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/login?mobile=true&error=Failed to generate auth code");
+              redirect("/?mobile=true&error=Failed to generate auth code");
               return;
             }
             redirect(
@@ -58,7 +58,7 @@ export const EmailVerificationCallback = () => {
           );
           return;
         }
-        redirect(`/login?error=${res.error}`);
+        redirect(`/?error=${res.error}`);
       } else {
         const session = await getSession();
         const [workspaces, profile] = await Promise.all([
@@ -69,7 +69,7 @@ export const EmailVerificationCallback = () => {
           if (isMobile && workspaces.length > 0) {
             const authCodeResponse = await getAuthCode(session);
             if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/login?mobile=true&error=Failed to generate auth code");
+              redirect("/?mobile=true&error=Failed to generate auth code");
             } else {
               redirect(
                 `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,

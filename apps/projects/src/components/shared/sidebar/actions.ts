@@ -6,7 +6,7 @@ import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 
 export const logOut = async () => {
   await signOut();
-  redirect("/login?signedOut=true");
+  redirect("/?signedOut=true");
 };
 
 export const changeWorkspace = async (workspaceId: string) => {

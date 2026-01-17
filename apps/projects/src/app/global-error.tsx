@@ -51,7 +51,7 @@ export default function GlobalError({
               <Button
                 className="gap-1 pl-2"
                 color="tertiary"
-                href="/login"
+                href="/"
                 leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
               >
                 Go to home

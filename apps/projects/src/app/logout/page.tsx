@@ -32,7 +32,7 @@ export default function Page() {
         // console.error("Error during logout process:", error);
       } finally {
         clearClientStorage();
-        window.location.href = "/login?signedOut=true";
+        window.location.href = "/?signedOut=true";
       }
     };
 

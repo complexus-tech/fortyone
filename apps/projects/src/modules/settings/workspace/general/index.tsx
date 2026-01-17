@@ -32,7 +32,7 @@ export const WorkspaceGeneralSettings = () => {
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "/login?signedOut=true";
+      window.location.href = "/?signedOut=true";
     }
   };
 

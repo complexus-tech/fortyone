@@ -11,7 +11,7 @@ export const Back = () => {
       await logOut();
       analytics.logout(true);
     } finally {
-      window.location.href = "/login?signedOut=true";
+      window.location.href = "/?signedOut=true";
     }
   };
 

@@ -17,7 +17,7 @@ export default async function AuthCallback({
   const session = await auth();
 
   if (!session) {
-    redirect("/login");
+    redirect("/");
   }
 
   const [invitations, workspaces, profile] = await Promise.all([
@@ -29,7 +29,7 @@ export default async function AuthCallback({
   if (isMobile && workspaces.length > 0) {
     const authCodeResponse = await getAuthCode(session);
     if (authCodeResponse.error || !authCodeResponse.data) {
-      redirect("/login?mobile=true&error=Failed to generate auth code");
+      redirect("/?mobile=true&error=Failed to generate auth code");
     } else {
       redirect(
         `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,

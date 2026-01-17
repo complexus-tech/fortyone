@@ -34,10 +34,10 @@ export const ProfileMenu = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = "/login?signedOut=true";
+      window.location.href = "/?signedOut=true";
     } finally {
       clearAllStorage();
-      window.location.href = "/login?signedOut=true";
+      window.location.href = "/?signedOut=true";
     }
   };
 

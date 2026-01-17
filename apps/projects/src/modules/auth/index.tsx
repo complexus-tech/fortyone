@@ -127,10 +127,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
-              <Link
-                className="text-primary underline dark:text-white"
-                href="/login"
-              >
+              <Link className="text-primary underline dark:text-white" href="/">
                 Sign in
               </Link>
             </Text>

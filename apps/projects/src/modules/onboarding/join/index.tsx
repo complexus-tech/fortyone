@@ -40,7 +40,7 @@ export const JoinWorkspace = async ({
           className="md:py-3"
           color="invert"
           fullWidth
-          href="/login"
+          href="/"
           size="lg"
         >
           Sign in

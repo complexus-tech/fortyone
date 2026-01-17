@@ -5,10 +5,7 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
-export const manageBilling = async (
-  workspaceSlug: string,
-  returnUrl = "/login",
-) => {
+export const manageBilling = async (workspaceSlug: string, returnUrl = "/") => {
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };

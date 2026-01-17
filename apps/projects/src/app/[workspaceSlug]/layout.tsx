@@ -36,7 +36,7 @@ export default async function RootLayout({
   const session = await auth();
 
   if (!session) {
-    redirect("/login");
+    redirect("/");
   }
   const { workspaceSlug } = await params;
   const ctx = { session: session!, workspaceSlug };
@@ -56,10 +56,7 @@ export default async function RootLayout({
   }
 
   // kick off non-critical important queries without waiting for them
-  const queryClient = fetchNonCriticalImportantQueries(
-    getQueryClient(),
-    ctx
-  );
+  const queryClient = fetchNonCriticalImportantQueries(getQueryClient(), ctx);
 
   // await critical queries
   await Promise.all([
