@@ -108,6 +108,9 @@ export async function POST(req: NextRequest) {
         delayInMs: 20,
         chunking: "word",
       }),
+      experimental_context: {
+        workspaceSlug: workspace?.slug,
+      },
       providerOptions: {
         openai: {
           reasoningEffort: "low",

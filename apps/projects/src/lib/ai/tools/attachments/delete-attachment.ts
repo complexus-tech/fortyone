@@ -15,7 +15,7 @@ export const deleteAttachment = tool({
     attachmentId: z.string().describe("Attachment ID to delete (required)"),
   }),
 
-  execute: async ({ storyId, attachmentId }) => {
+  execute: async ({ storyId, attachmentId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -26,12 +26,17 @@ export const deleteAttachment = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      
+
+      const ctx = { session: session!, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       const userId = session.user!.id;
 
       // Check if user owns the attachment or is admin
-      const attachments = await getStoryAttachments(storyId, session);
+      const attachments = await getStoryAttachments(storyId, ctx);
       const attachment = attachments.find((a) => a.id === attachmentId);
 
       if (!attachment) {
@@ -48,7 +53,7 @@ export const deleteAttachment = tool({
         };
       }
 
-      const result = await deleteStoryAttachmentAction(storyId, attachmentId);
+      const result = await deleteStoryAttachmentAction(storyId, attachmentId, workspaceSlug);
 
       if (result.error) {
         return {
