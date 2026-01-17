@@ -5,13 +5,18 @@ import { ApiError } from "./error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-const createClient = (workspaceSlug: string, token: string) => {
-  const prefixUrl = `${apiURL}/workspaces/${workspaceSlug}/`;
+export type Ctx = {
+  session: Session;
+  workspaceSlug: string;
+};
+
+const createClient = (ctx: Ctx) => {
+  const prefixUrl = `${apiURL}/workspaces/${ctx.workspaceSlug}/`;
 
   const client = ky.create({
     prefixUrl,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${ctx.session.token}`,
     },
     hooks: {
       beforeError: [
@@ -32,22 +37,20 @@ const createClient = (workspaceSlug: string, token: string) => {
 
 export const get = async <T>(
   url: string,
-  session: Session,
-  workspaceSlug: string,
+  ctx: Ctx,
   options?: Options,
 ) => {
-  const client = createClient(workspaceSlug, session.token);
+  const client = createClient(ctx);
   return client.get(url, options).json<T>();
 };
 
 export const post = async <T, U>(
   url: string,
   json: T,
-  session: Session,
-  workspaceSlug: string,
+  ctx: Ctx,
   options?: Options,
 ) => {
-  const client = createClient(workspaceSlug, session.token);
+  const client = createClient(ctx);
 
   if (json instanceof FormData) {
     return client.post(url, { body: json, ...options }).json<U>();
@@ -59,11 +62,10 @@ export const post = async <T, U>(
 export const put = async <T, U>(
   url: string,
   json: T,
-  session: Session,
-  workspaceSlug: string,
+  ctx: Ctx,
   options?: Options,
 ) => {
-  const client = createClient(workspaceSlug, session.token);
+  const client = createClient(ctx);
 
   if (json instanceof FormData) {
     return client.put(url, { body: json, ...options }).json<U>();
@@ -75,11 +77,10 @@ export const put = async <T, U>(
 export const patch = async <T, U>(
   url: string,
   json: T,
-  session: Session,
-  workspaceSlug: string,
+  ctx: Ctx,
   options?: Options,
 ) => {
-  const client = createClient(workspaceSlug, session.token);
+  const client = createClient(ctx);
 
   if (json instanceof FormData) {
     return client.patch(url, { body: json, ...options }).json<U>();
@@ -90,10 +91,9 @@ export const patch = async <T, U>(
 
 export const remove = async <T>(
   url: string,
-  session: Session,
-  workspaceSlug: string,
+  ctx: Ctx,
   options?: Options,
 ) => {
-  const client = createClient(workspaceSlug, session.token);
+  const client = createClient(ctx);
   return client.delete(url, options).json<T>();
 };
