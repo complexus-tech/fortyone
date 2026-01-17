@@ -5,10 +5,11 @@ import type { ApiResponse, User } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
-export const deleteWorkspaceLogoAction = async () => {
+export const deleteWorkspaceLogoAction = async (workspaceSlug: string) => {
   try {
     const session = await auth();
-    const res = await remove<ApiResponse<User>>("logo", session!);
+    const ctx = { session: session!, workspaceSlug };
+    const res = await remove<ApiResponse<User>>("logo", ctx);
     return res;
   } catch (error) {
     return getApiError(error);

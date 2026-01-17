@@ -13,14 +13,14 @@ export type NewState = {
   color: string;
 };
 
-export const createStateAction = async (payload: NewState) => {
+export const createStateAction = async (
+  payload: NewState,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const state = await post<NewState, ApiResponse<State>>(
-      "states",
-      payload,
-      session!,
-    );
+    const ctx = { session: session!, workspaceSlug };
+    const state = await post<NewState, ApiResponse<State>>("states", payload, ctx);
     return state;
   } catch (error) {
     return getApiError(error);

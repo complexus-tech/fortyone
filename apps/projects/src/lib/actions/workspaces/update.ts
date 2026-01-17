@@ -9,13 +9,15 @@ export type UpdateWorkspaceSettings = Partial<WorkspaceSettings>;
 
 export const updateWorkspaceSettingsAction = async (
   payload: UpdateWorkspaceSettings,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await put<
       UpdateWorkspaceSettings,
       ApiResponse<WorkspaceSettings>
-    >("settings", payload, session!);
+    >("settings", payload, ctx);
     return res;
   } catch (error) {
     return getApiError(error);

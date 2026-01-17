@@ -10,13 +10,16 @@ export const checkout = async ({
   plan,
   successUrl,
   cancelUrl,
+  workspaceSlug,
 }: {
   plan: Plan;
   successUrl: string;
   cancelUrl: string;
+  workspaceSlug: string;
 }) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await post<
       { priceLookupKey: Plan; successUrl?: string; cancelUrl?: string },
       ApiResponse<{ url: string }>
@@ -27,7 +30,7 @@ export const checkout = async ({
         successUrl,
         cancelUrl,
       },
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

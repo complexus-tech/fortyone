@@ -13,13 +13,15 @@ export type UpdateLabel = {
 export const editLabelAction = async (
   labelId: string,
   updates: UpdateLabel,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const label = await put<UpdateLabel, ApiResponse<Label>>(
       `labels/${labelId}`,
       updates,
-      session!,
+      ctx,
     );
     return label;
   } catch (error) {

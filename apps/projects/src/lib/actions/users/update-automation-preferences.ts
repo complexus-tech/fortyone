@@ -11,13 +11,15 @@ import { auth } from "@/auth";
 
 export const updateAutomationPreferencesAction = async (
   payload: UpdateAutomationPreferences,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await put<
       UpdateAutomationPreferences,
       ApiResponse<AutomationPreferences>
-    >("automation/preferences", payload, session!);
+    >("automation/preferences", payload, ctx);
     return res;
   } catch (error) {
     return getApiError(error);

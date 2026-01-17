@@ -11,14 +11,14 @@ export type NewLabel = {
   teamId?: string;
 };
 
-export const createLabelAction = async (newLabel: NewLabel) => {
+export const createLabelAction = async (
+  newLabel: NewLabel,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const label = await post<NewLabel, ApiResponse<Label>>(
-      "labels",
-      newLabel,
-      session!,
-    );
+    const ctx = { session: session!, workspaceSlug };
+    const label = await post<NewLabel, ApiResponse<Label>>("labels", newLabel, ctx);
     return label;
   } catch (error) {
     return getApiError(error);
