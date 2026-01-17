@@ -32,7 +32,7 @@ export default async function RootLayout({
   params,
 }: {
   children: ReactNode;
-  params: Promise<{ workspace: string }>;
+  params: Promise<{ workspaceSlug: string }>;
 }) {
   const session = await auth();
 
@@ -40,7 +40,7 @@ export default async function RootLayout({
     redirect("/login");
   }
 
-  const { workspace: slug } = await params;
+  const { workspaceSlug } = await params;
   const token = session?.token || "";
   const workspaces = await getWorkspaces(token);
 
@@ -50,7 +50,7 @@ export default async function RootLayout({
 
   // First try to find workspace
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === slug?.toLowerCase(),
+    (w) => w.slug.toLowerCase() === workspaceSlug?.toLowerCase(),
   );
 
   if (!workspace) {

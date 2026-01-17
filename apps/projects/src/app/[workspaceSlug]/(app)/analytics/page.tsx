@@ -13,15 +13,15 @@ export const metadata: Metadata = {
 export default async function Page({
   params,
 }: {
-  params: Promise<{ workspace: string }>;
+  params: Promise<{ workspaceSlug: string }>;
 }) {
-  const { workspace: slug } = await params;
+  const { workspaceSlug } = await params;
   const session = await auth();
   const posthog = PostHogClient();
 
   const workspaces = await getWorkspaces(session?.token || "");
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === slug.toLowerCase(),
+    (w) => w.slug.toLowerCase() === workspaceSlug.toLowerCase(),
   );
 
   const isAnalyticsEnabled = await posthog.isFeatureEnabled(

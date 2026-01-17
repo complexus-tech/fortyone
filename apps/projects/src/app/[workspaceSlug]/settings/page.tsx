@@ -1,27 +1,30 @@
-import type { ReactNode } from "react";
+import type { Metadata } from "next";
+import { WorkspaceGeneralSettings } from "@/modules/settings/workspace/general";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 
-export default async function RootLayout({
-  children,
+export const metadata: Metadata = {
+  title: "Settings",
+};
+
+export default async function Page({
   params,
 }: {
-  children: ReactNode;
-  params: Promise<{ workspace: string }>;
+  params: Promise<{ workspaceSlug: string }>;
 }) {
-  const { workspace: slug } = await params;
+  const { workspaceSlug } = await params;
   const session = await auth();
 
   const workspaces = await getWorkspaces(session!.token);
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === slug.toLowerCase(),
+    (w) => w.slug.toLowerCase() === workspaceSlug.toLowerCase(),
   );
 
   if (workspace?.userRole !== "admin") {
     redirect("/settings/account");
   }
 
-  return <>{children}</>;
+  return <WorkspaceGeneralSettings />;
 }
