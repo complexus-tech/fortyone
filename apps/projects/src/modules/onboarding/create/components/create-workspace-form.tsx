@@ -9,14 +9,30 @@ import { CloseIcon } from "icons";
 import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 import { useDebounce } from "@/hooks";
 import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
-import type { ApiResponse } from "@/types";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
-
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
+import { buildWorkspaceUrl } from "@/utils";
 
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
-  const checkAvailability = useDebounce<string>(async (slugToCheck) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [hasOrgBlurred, setHasOrgBlurred] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    teamSize: "1-5",
+  });
+  const { data: workspaces = [] } = useWorkspaces();
+
+  const formatSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-") // Replace non-alphanumeric chars with dash
+      .replace(/-+/g, "-") // Replace multiple dashes with single dash
+      .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
+  };
+
+  const checkAvailability = useDebounce(async (slugToCheck: string) => {
     if (slugToCheck.length > 3) {
       setIsAvailable(true); // Reset availability while checking
       try {
@@ -88,7 +104,7 @@ export const CreateWorkspaceForm = () => {
     if (workspaces.length === 0) {
       router.push("/onboarding/account");
     } else {
-      window.location.href = `/${workspace?.slug}/my-work`;
+      window.location.href = buildWorkspaceUrl(workspace?.slug);
     }
   };
 
@@ -123,7 +139,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            <Text>{`/${form.slug || "slug"}`}</Text>
+            <Text>{buildWorkspaceUrl(form.slug)}</Text>
             {!isAvailable ? (
               <Flex
                 align="center"
