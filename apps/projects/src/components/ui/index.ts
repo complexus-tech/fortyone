@@ -1,4 +1,7 @@
+"use client";
+
 export * from "./story/row";
+
 export * from "./stories-header";
 export * from "./story-status-icon";
 export * from "./stories-toolbar";
