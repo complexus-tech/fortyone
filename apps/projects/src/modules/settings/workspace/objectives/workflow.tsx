@@ -19,7 +19,7 @@ import {
   useUpdateObjectiveStatusMutation,
 } from "@/modules/objectives/hooks/statuses";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { StateRow } from "./components/state-row";
 
 const categories: {
@@ -81,6 +81,7 @@ export const WorkflowSettings = () => {
   );
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
 
   const handleDeleteState = (status: ObjectiveStatus) => {
     const categoryStatuses = statuses.filter(
@@ -270,7 +271,7 @@ export const WorkflowSettings = () => {
               </Text>
             </Flex>
             {userRole === "admin" && (
-              <Button color="warning" href="/settings/workspace/billing">
+              <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
                 Upgrade now
               </Button>
             )}

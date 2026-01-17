@@ -7,6 +7,7 @@ import { getQueryClient } from "@/app/get-query-client";
 import { getStory } from "@/modules/story/queries/get-story";
 import { storyKeys } from "@/modules/stories/constants";
 import { auth } from "@/auth";
+import { withWorkspacePath } from "@/utils";
 
 export async function generateMetadata({
   params,
@@ -52,7 +53,7 @@ export default async function Page(props: Props) {
           <Button
             className="gap-1 pl-2"
             color="tertiary"
-            href="/my-work"
+            href={withWorkspacePath("/my-work", workspaceSlug)}
             leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
           >
             Go to my work

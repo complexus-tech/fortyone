@@ -4,17 +4,19 @@ import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { ConfirmDialog } from "@/components/ui";
 import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
+import { useWorkspacePath } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 
 export const DeleteTeam = ({ team }: { team: Team }) => {
   const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const { mutate: deleteTeam, isPending } = useDeleteTeamMutation();
 
   const handleDelete = () => {
     deleteTeam(team.id, {
       onSuccess: () => {
-        router.push("/settings/workspace/teams");
+        router.push(withWorkspace("/settings/workspace/teams"));
       },
     });
   };

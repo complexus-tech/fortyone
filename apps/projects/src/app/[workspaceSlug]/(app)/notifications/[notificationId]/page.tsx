@@ -4,6 +4,7 @@ import { NotificationDetails } from "@/modules/notifications/details";
 import { getStory } from "@/modules/story/queries/get-story";
 import { auth } from "@/auth";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { withWorkspacePath } from "@/utils";
 
 export async function generateMetadata({
   params,
@@ -44,11 +45,11 @@ export default async function Page({
     entityType?: "story" | "objective";
   }>;
 }) {
-  const { notificationId } = await params;
+  const { notificationId, workspaceSlug } = await params;
   const { entityId, entityType } = await searchParams;
 
   if (!entityId || !entityType) {
-    return redirect("/notifications");
+    return redirect(withWorkspacePath("/notifications", workspaceSlug));
   }
 
   return (

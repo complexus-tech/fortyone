@@ -109,7 +109,7 @@ export const InviteMembersDialog = ({
             ? {
                 label: "Upgrade",
                 onClick: () => {
-                  router.push("/settings/workspace/billing");
+                  router.push(withWorkspace("/settings/workspace/billing"));
                 },
               }
             : undefined,

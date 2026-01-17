@@ -38,7 +38,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: totalMessages = 0 } = useTotalMessages();
   const { getLimit, displayTier } = useSubscriptionFeatures();
   const { workspace } = useCurrentWorkspace();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -230,7 +230,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         action: {
           label: "Upgrade",
           onClick: () => {
-            router.push("/settings/workspace/billing");
+            router.push(withWorkspace("/settings/workspace/billing"));
           },
         },
         duration: 4000,

@@ -13,7 +13,7 @@ export const useRemoveMemberMutation = () => {
   const queryClient = useQueryClient();
   const { teamId: teamIdParam } = useParams<{ teamId?: string }>();
   const { data: session } = useSession();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const router = useRouter();
   const currentUserId = session?.user?.id ?? "";
   const toastId = "remove-member-mutation";
@@ -95,7 +95,7 @@ export const useRemoveMemberMutation = () => {
         queryClient.invalidateQueries({ queryKey: storyKeys.mine(workspaceSlug) });
         queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
         if (teamIdParam === teamId) {
-          router.push("/my-work");
+          router.push(withWorkspace("/my-work"));
         }
       }
     },

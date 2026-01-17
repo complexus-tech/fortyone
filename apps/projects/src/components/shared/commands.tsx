@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter, usePathname } from "next/navigation";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
   NewObjectiveDialog,
@@ -22,6 +22,7 @@ export const Commands = () => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { withWorkspace } = useWorkspacePath();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
 
   useHotkeys("mod+k", (e) => {
@@ -30,30 +31,30 @@ export const Commands = () => {
   });
 
   useHotkeys("g+i", () => {
-    if (pathname !== "/notifications") {
-      router.push("/notifications");
+    if (pathname !== withWorkspace("/notifications")) {
+      router.push(withWorkspace("/notifications"));
     }
   });
   useHotkeys("g+m", () => {
-    if (pathname !== "/my-work") {
-      router.push("/my-work");
+    if (pathname !== withWorkspace("/my-work")) {
+      router.push(withWorkspace("/my-work"));
     }
   });
 
   useHotkeys("g+s", () => {
-    if (pathname !== "/summary") {
-      router.push("/summary");
+    if (pathname !== withWorkspace("/summary")) {
+      router.push(withWorkspace("/summary"));
     }
   });
   useHotkeys("g+o", () => {
-    if (pathname !== "/objectives") {
-      router.push("/objectives");
+    if (pathname !== withWorkspace("/objectives")) {
+      router.push(withWorkspace("/objectives"));
     }
   });
 
   useHotkeys("alt+shift+s", () => {
-    if (pathname !== "/settings") {
-      router.push("/settings");
+    if (pathname !== withWorkspace("/settings")) {
+      router.push(withWorkspace("/settings"));
     }
   });
 
@@ -70,8 +71,8 @@ export const Commands = () => {
   });
 
   useHotkeys("/", () => {
-    if (pathname !== "search") {
-      router.push("/search");
+    if (pathname !== withWorkspace("/search")) {
+      router.push(withWorkspace("/search"));
     }
   });
 

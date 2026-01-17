@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { Text, Button, Box } from "ui";
 import { CrownIcon } from "icons";
 import { FeatureGuard } from "@/components/ui";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
 import { TeamObjectivesHeader } from "./components/team-header";
@@ -14,6 +14,7 @@ import { ObjectivesSkeleton } from "./components/objectives-skeleton";
 const Guard = () => {
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   return (
     <Box className="flex h-[80%] items-center justify-center">
       <Box className="flex flex-col items-center">
@@ -34,7 +35,7 @@ const Guard = () => {
           , and unlock more premium features.
         </Text>
         {userRole === "admin" && (
-          <Button color="warning" href="/settings/workspace/billing">
+          <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
             Upgrade now
           </Button>
         )}

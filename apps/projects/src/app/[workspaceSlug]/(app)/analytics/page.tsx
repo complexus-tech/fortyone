@@ -5,6 +5,7 @@ import { AnalyticsPage } from "@/modules/analytics";
 import PostHogClient from "@/app/posthog-server";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { withWorkspacePath } from "@/utils";
 
 export const metadata: Metadata = {
   title: "Analytics",
@@ -30,7 +31,7 @@ export default async function Page({
   );
 
   if (workspace?.userRole !== "admin" || !isAnalyticsEnabled) {
-    redirect("/summary");
+    redirect(withWorkspacePath("/summary", workspaceSlug));
   }
 
   return <AnalyticsPage />;

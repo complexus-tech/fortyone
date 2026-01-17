@@ -6,6 +6,7 @@ import { createContext, useContext, useState } from "react";
 import { TeamIcon, PlusIcon } from "icons";
 import { useRouter } from "next/navigation";
 import { useTeams, usePublicTeams } from "@/modules/teams/hooks/teams";
+import { useWorkspacePath } from "@/hooks";
 
 type TeamContextType = {
   open: boolean;
@@ -48,6 +49,7 @@ const Items = ({
   setTeam: (teamId: string, action: "join" | "leave") => void;
 }) => {
   const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
   const { data: teams = [] } = useTeams();
   const { data: publicTeams = [] } = usePublicTeams();
   const { setOpen } = useTeamsMenu();
@@ -127,7 +129,7 @@ const Items = ({
             <Command.Group>
               <Command.Item
                 onSelect={() => {
-                  router.push("/settings/workspace/teams");
+                  router.push(withWorkspace("/settings/workspace/teams"));
                   setOpen(false);
                 }}
               >
@@ -138,7 +140,7 @@ const Items = ({
               </Command.Item>
               <Command.Item
                 onSelect={() => {
-                  router.push("/settings/workspace/teams/create");
+                  router.push(withWorkspace("/settings/workspace/teams/create"));
                   setOpen(false);
                 }}
               >
