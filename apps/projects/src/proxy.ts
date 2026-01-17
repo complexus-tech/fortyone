@@ -23,6 +23,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!login|_next/static|images|_next/image|favicon*|logout|ingest|unauthorized|manifest*|apple-icon*).*)",
+    "/((?!login|verify|auth-callback|api/auth|_next/static|images|_next/image|favicon*|logout|ingest|unauthorized|manifest*|apple-icon*).*)",
   ],
 };
