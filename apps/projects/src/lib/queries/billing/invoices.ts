@@ -1,10 +1,10 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse, Invoice } from "@/types";
 
-export const getInvoices = async (session: Session) => {
+export const getInvoices = async (ctx: WorkspaceCtx) => {
   try {
-    const invoices = await get<ApiResponse<Invoice[]>>("invoices", session);
+    const invoices = await get<ApiResponse<Invoice[]>>("invoices", ctx);
     return invoices.data!;
   } catch {
     return [];

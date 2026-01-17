@@ -35,7 +35,7 @@ export const fetchNonCriticalImportantQueries = (
 ) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
-    queryFn: () => getAutomationPreferences(session),
+    queryFn: () => getAutomationPreferences({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
@@ -55,7 +55,7 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: labelKeys.lists(),
-    queryFn: () => getLabels(session),
+    queryFn: () => getLabels({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
@@ -70,12 +70,12 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.settings(),
-    queryFn: () => getWorkspaceSettings(session),
+    queryFn: () => getWorkspaceSettings({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: memberKeys.lists(),
-    queryFn: () => getMembers(session),
+    queryFn: () => getMembers({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
@@ -95,12 +95,12 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: subscriptionKeys.details,
-    queryFn: () => getSubscription(session),
+    queryFn: () => getSubscription({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   queryClient.prefetchQuery({
     queryKey: ["invoices"],
-    queryFn: () => getInvoices(session),
+    queryFn: () => getInvoices({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;

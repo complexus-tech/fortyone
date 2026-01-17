@@ -1,10 +1,10 @@
 import { stringify } from "qs";
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
 
 export const getLabels = async (
-  session: Session,
+  ctx: WorkspaceCtx,
   params: {
     teamId?: string;
   } = {},
@@ -14,6 +14,6 @@ export const getLabels = async (
     addQueryPrefix: true,
     encodeValuesOnly: true,
   });
-  const labels = await get<ApiResponse<Label[]>>(`labels${query}`, session);
+  const labels = await get<ApiResponse<Label[]>>(`labels${query}`, ctx);
   return labels.data!;
 };

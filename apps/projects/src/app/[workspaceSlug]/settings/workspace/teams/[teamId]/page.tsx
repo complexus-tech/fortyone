@@ -11,11 +11,11 @@ import { getTeam } from "@/modules/teams/queries/get-team";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ teamId: string }>;
+  params: Promise<{ teamId: string; workspaceSlug: string }>;
 }): Promise<Metadata> {
-  const { teamId } = await params;
+  const { teamId, workspaceSlug } = await params;
   const session = await auth();
-  const teamData = await getTeam(teamId, session!);
+  const teamData = await getTeam(teamId, { session: session!, workspaceSlug });
 
   return {
     title: `Settings › ${teamData.data?.name || "Team"}`,
@@ -25,20 +25,21 @@ export async function generateMetadata({
 export default async function TeamManagementPage({
   params,
 }: {
-  params: Promise<{ teamId: string }>;
+  params: Promise<{ teamId: string; workspaceSlug: string }>;
 }) {
-  const { teamId } = await params;
+  const { teamId, workspaceSlug } = await params;
   const session = await auth();
+  const ctx = { session: session!, workspaceSlug };
 
   const queryClient = getQueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: memberKeys.team(teamId),
-      queryFn: () => getTeamMembers(teamId, session!),
+      queryFn: () => getTeamMembers(teamId, ctx),
     }),
     queryClient.prefetchQuery({
       queryKey: teamKeys.settings(teamId),
-      queryFn: () => getTeamSettings(teamId, session!),
+      queryFn: () => getTeamSettings(teamId, ctx),
     }),
   ]);
 
