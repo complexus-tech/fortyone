@@ -23,6 +23,22 @@ export const buildWorkspaceUrl = (slug: string) => {
   return `/${slug}/my-work`;
 };
 
+export const withWorkspacePath = (path: string, slug?: string) => {
+  if (!slug) {
+    return path;
+  }
+
+  if (path.startsWith(`/${slug}`)) {
+    return path;
+  }
+
+  if (path.startsWith("/")) {
+    return `/${slug}${path}`;
+  }
+
+  return `/${slug}/${path}`;
+};
+
 export const slugify = (text = "") => {
   return text
     .toString()

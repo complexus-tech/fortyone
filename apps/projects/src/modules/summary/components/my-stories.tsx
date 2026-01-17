@@ -12,7 +12,7 @@ import { useMembers } from "@/lib/hooks/members";
 import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { MyStoriesSkeleton } from "./my-stories-skeleton";
 import { useState } from "react";
 
@@ -26,6 +26,7 @@ const StoryRow = ({
   assigneeId,
   endDate,
 }: Story) => {
+  const { withWorkspace } = useWorkspacePath();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -43,7 +44,7 @@ const StoryRow = ({
   };
 
   return (
-    <Link href={`/story/${id}/${slugify(title)}`}>
+    <Link href={withWorkspace(`/story/${id}/${slugify(title)}`)}>
       <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
         <Flex align="center" className="relative select-none" gap={2}>
           <Flex align="center" gap={2}>
@@ -124,6 +125,7 @@ const List = ({ stories }: { stories: Story[] }) => {
 
 export const MyStories = () => {
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   const [activeTab, setActiveTab] = useState("inProgress");
 
   const now = formatISO(new Date(), { representation: "date" });
@@ -185,7 +187,7 @@ export const MyStories = () => {
         </Text>
         <Button
           color="tertiary"
-          href="/my-work"
+          href={withWorkspace("/my-work")}
           rightIcon={<ArrowRightIcon className="h-4" />}
           size="sm"
         >

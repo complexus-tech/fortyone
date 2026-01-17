@@ -6,6 +6,7 @@ import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { HistoryDialog } from "./history-dialog";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useWorkspacePath } from "@/hooks";
 
 export const ChatHeader = ({
   currentChatId,
@@ -23,6 +24,7 @@ export const ChatHeader = ({
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
   const { remaining, getLimit, tier } = useSubscriptionFeatures();
+  const { withWorkspace } = useWorkspacePath();
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -82,7 +84,7 @@ export const ChatHeader = ({
                   </Text>
                   <Button
                     color="invert"
-                    href="/settings/workspace/billing"
+                    href={withWorkspace("/settings/workspace/billing")}
                     fullWidth
                     align="center"
                   >

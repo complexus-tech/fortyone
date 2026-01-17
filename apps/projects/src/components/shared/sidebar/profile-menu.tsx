@@ -16,7 +16,7 @@ import { useTheme } from "next-themes";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useProfile } from "@/lib/hooks/profile";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
-import { useLocalStorage, useAnalytics } from "@/hooks";
+import { useLocalStorage, useAnalytics, useWorkspacePath } from "@/hooks";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "./utils";
 
@@ -25,6 +25,7 @@ export const ProfileMenu = () => {
   const { data: profile } = useProfile();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
+  const { withWorkspace } = useWorkspacePath();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
@@ -83,7 +84,7 @@ export const ProfileMenu = () => {
             <Menu.Item>
               <Link
                 className="flex w-full items-center gap-2"
-                href="/settings/account"
+                href={withWorkspace("/settings/account")}
                 onClick={() => {
                   setPathBeforeSettings(pathname);
                 }}
@@ -157,7 +158,7 @@ export const ProfileMenu = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center justify-between gap-2"
-                  href="/settings/invitations"
+                  href={withWorkspace("/settings/invitations")}
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}

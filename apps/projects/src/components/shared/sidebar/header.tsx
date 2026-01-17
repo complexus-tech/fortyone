@@ -10,7 +10,12 @@ import {
 } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
-import { useAnalytics, useFeatures, useTerminology } from "@/hooks";
+import {
+  useAnalytics,
+  useFeatures,
+  useTerminology,
+  useWorkspacePath,
+} from "@/hooks";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useUserRole } from "@/hooks/role";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
@@ -27,6 +32,7 @@ export const Header = () => {
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { userRole } = useUserRole();
   const features = useFeatures();
+  const { withWorkspace } = useWorkspacePath();
 
   useHotkeys("shift+n", () => {
     if (userRole !== "guest") {
@@ -72,7 +78,7 @@ export const Header = () => {
             asIcon
             className="group relative"
             color="tertiary"
-            href="/notifications"
+            href={withWorkspace("/notifications")}
             leftIcon={
               <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
             }
@@ -114,7 +120,7 @@ export const Header = () => {
           asIcon
           className="md:h-[2.4rem]"
           color="tertiary"
-          href="/search"
+          href={withWorkspace("/search")}
           leftIcon={<SearchIcon className="h-4" />}
           prefetch
           variant="outline"

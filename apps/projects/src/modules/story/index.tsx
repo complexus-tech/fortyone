@@ -7,6 +7,7 @@ import { MainDetails } from "./components/main-details";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
 import { StorySkeleton } from "./components/story-skeleton";
+import { useWorkspacePath } from "@/hooks";
 
 export const StoryPage = ({
   storyId,
@@ -20,6 +21,7 @@ export const StoryPage = ({
   mainHeader?: ReactNode;
 }) => {
   const { isPending, data: story } = useStoryById(storyId);
+  const { withWorkspace } = useWorkspacePath();
 
   if (isPending) {
     return <StorySkeleton isNotifications={isNotifications} />;
@@ -112,7 +114,7 @@ export const StoryPage = ({
             <Button
               className="gap-1 pl-2"
               color="tertiary"
-              href="/my-work"
+              href={withWorkspace("/my-work")}
               leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
             >
               Go to my work

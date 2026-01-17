@@ -139,7 +139,7 @@ export const NewStoryDialog = ({
   const queryClient = useQueryClient();
   const router = useRouter();
   const features = useFeatures();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -287,7 +287,9 @@ export const NewStoryDialog = ({
       editor.commands.setContent("");
       dispatch({ type: "RESET_FORM", payload: initialForm });
       if (tier === "free") {
-        queryClient.invalidateQueries({ queryKey: storyKeys.total(workspaceSlug) });
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.total(workspaceSlug),
+        });
       }
     } finally {
       setLoading(false);
@@ -340,7 +342,7 @@ export const NewStoryDialog = ({
         <Dialog open={isOpen}>
           <Dialog.Content hideClose>
             <Dialog.Header className="flex items-center gap-2 px-6 pt-6 text-xl">
-              <CrownIcon className="relative -top-px h-6 text-warning" />
+              <CrownIcon className="text-warning relative -top-px h-6" />
               <Dialog.Title>
                 {getTermDisplay("storyTerm", {
                   capitalize: true,
@@ -385,7 +387,7 @@ export const NewStoryDialog = ({
                   align="center"
                   className="mt-4 border-0"
                   fullWidth
-                  href="/settings/workspace/billing"
+                  href={withWorkspace("/settings/workspace/billing")}
                   rounded="lg"
                   size="lg"
                 >
@@ -394,7 +396,7 @@ export const NewStoryDialog = ({
               )}
               <Button
                 align="center"
-                className="mb-2 mt-3 border-[0.5px]"
+                className="mt-3 mb-2 border-[0.5px]"
                 color="tertiary"
                 fullWidth
                 onClick={() => {
@@ -460,7 +462,7 @@ export const NewStoryDialog = ({
             <Flex gap={2}>
               <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
                 <Button
-                  className="px-[0.35rem] hover:bg-state-hover"
+                  className="hover:bg-state-hover px-[0.35rem]"
                   color="tertiary"
                   onClick={() => {
                     setIsExpanded((prev) => !prev);

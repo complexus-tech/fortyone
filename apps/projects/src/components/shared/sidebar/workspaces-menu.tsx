@@ -11,7 +11,7 @@ import {
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAnalytics, useLocalStorage } from "@/hooks";
+import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
@@ -25,6 +25,7 @@ export const WorkspacesMenu = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
+  const { withWorkspace } = useWorkspacePath();
 
   const handleLogout = async () => {
     try {
@@ -39,11 +40,12 @@ export const WorkspacesMenu = () => {
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
+    const nextPath = `/${slug}/my-work`;
     try {
       await changeWorkspace(workspaceId);
-      window.location.href = `/${slug}/my-work`;
+      window.location.href = nextPath;
     } catch (error) {
-      window.location.href = `/${slug}/my-work`;
+      window.location.href = nextPath;
     }
   };
 
@@ -177,7 +179,7 @@ export const WorkspacesMenu = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings"
+                  href={withWorkspace("/settings")}
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}
@@ -190,7 +192,7 @@ export const WorkspacesMenu = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings/workspace/members"
+                  href={withWorkspace("/settings/workspace/members")}
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}
