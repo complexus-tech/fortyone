@@ -1,10 +1,9 @@
-import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { useParams } from "next/navigation";
 
 const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|tel:)/i;
 
 export const useWorkspacePath = () => {
-  const { workspace } = useCurrentWorkspace();
-  const workspaceSlug = workspace?.slug ?? "";
+  const workspaceSlug = useParams<{ workspaceSlug: string }>();
 
   const withWorkspace = (path: string) => {
     if (!workspaceSlug || !path) {
