@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -20,6 +20,7 @@ import { updateStoryAction } from "../actions/update-story";
 
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -32,9 +33,11 @@ export const useUpdateStoryMutation = () => {
     }) => updateStoryAction(storyId, payload),
 
     onMutate: ({ storyId, payload }) => {
-      queryClient.cancelQueries({ queryKey: storyKeys.detail(storyId) });
+      queryClient.cancelQueries({
+        queryKey: storyKeys.detail(workspaceSlug, storyId),
+      });
       const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId),
+        storyKeys.detail(workspaceSlug, storyId),
       );
 
       const activeQueries = queryClient.getQueryCache().getAll();
@@ -54,10 +57,13 @@ export const useUpdateStoryMutation = () => {
       updateSearchResults(queryClient, storyId, payload);
 
       if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          ...payload,
-        });
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(workspaceSlug, storyId),
+          {
+            ...previousStory,
+            ...payload,
+          },
+        );
         return { previousStory };
       }
     },
@@ -65,12 +71,12 @@ export const useUpdateStoryMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStory) {
         queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(variables.storyId),
+          storyKeys.detail(workspaceSlug, variables.storyId),
           context.previousStory,
         );
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       toast.error("Failed to update story", {
         description: error.message || "Your changes were not saved",
         action: {
@@ -92,7 +98,7 @@ export const useUpdateStoryMutation = () => {
         ...payload,
       });
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
     },
   });
 

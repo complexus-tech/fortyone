@@ -11,11 +11,11 @@ import { auth } from "@/auth";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ storyId: string }>;
+  params: Promise<{ storyId: string; workspaceSlug: string }>;
 }): Promise<Metadata> {
-  const { storyId } = await params;
+  const { storyId, workspaceSlug } = await params;
   const session = await auth();
-  const story = await getStory(storyId, session!);
+  const story = await getStory(storyId, { session: session!, workspaceSlug });
   return {
     title: story?.title || "Story",
   };
@@ -24,17 +24,18 @@ export async function generateMetadata({
 type Props = {
   params: Promise<{
     storyId: string;
+    workspaceSlug: string;
   }>;
 };
 export default async function Page(props: Props) {
   const params = await props.params;
   const session = await auth();
 
-  const { storyId } = params;
+  const { storyId, workspaceSlug } = params;
   const queryClient = getQueryClient();
   const story = await queryClient.fetchQuery({
-    queryKey: storyKeys.detail(storyId),
-    queryFn: () => getStory(storyId, session!),
+    queryKey: storyKeys.detail(workspaceSlug, storyId),
+    queryFn: () => getStory(storyId, { session: session!, workspaceSlug }),
   });
 
   if (!story) {

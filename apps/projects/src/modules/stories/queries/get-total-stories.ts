@@ -1,12 +1,12 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 
-export const getTotalStories = async (session: Session) => {
+export const getTotalStories = async (ctx: WorkspaceCtx) => {
   try {
     const stories = await get<ApiResponse<{ count: number }>>(
       "stories/count",
-      session,
+      ctx,
     );
     return stories.data!.count;
   } catch {

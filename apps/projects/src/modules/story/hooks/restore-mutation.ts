@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -77,13 +78,14 @@ const updateListQuery = (
 
 export const useRestoreStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: restoreStoryAction,
 
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId),
+        storyKeys.detail(workspaceSlug, storyId),
       );
       if (previousStory) {
         const restoredStory = {
@@ -91,7 +93,7 @@ export const useRestoreStoryMutation = () => {
           deletedAt: null,
         };
         queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
+          storyKeys.detail(workspaceSlug, storyId),
           restoredStory,
         );
 
@@ -116,7 +118,7 @@ export const useRestoreStoryMutation = () => {
     onError: (error, storyId, context) => {
       if (context?.previousStory) {
         queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
+          storyKeys.detail(workspaceSlug, storyId),
           context.previousStory,
         );
       }
@@ -152,7 +154,7 @@ export const useRestoreStoryMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
     },
   });
 

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import type { Comment } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { deleteCommentAction } from "../actions/comments/delete-comment";
@@ -19,6 +20,7 @@ type InfiniteCommentsData = {
 
 export const useDeleteCommentMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({ commentId }: { commentId: string; storyId: string }) =>
@@ -26,7 +28,7 @@ export const useDeleteCommentMutation = () => {
 
     onMutate: ({ commentId, storyId }) => {
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(storyId),
+        storyKeys.commentsInfinite(workspaceSlug, storyId),
       );
 
       if (previousData) {
@@ -41,7 +43,7 @@ export const useDeleteCommentMutation = () => {
         };
 
         queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(storyId),
+          storyKeys.commentsInfinite(workspaceSlug, storyId),
           updatedData,
         );
       }
@@ -50,7 +52,7 @@ export const useDeleteCommentMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(
-          storyKeys.commentsInfinite(variables.storyId),
+          storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
           context.previousData,
         );
       }
@@ -64,7 +66,7 @@ export const useDeleteCommentMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(variables.storyId),
+        queryKey: storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
       });
     },
     onSuccess: (res, { storyId }) => {
@@ -73,7 +75,7 @@ export const useDeleteCommentMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(storyId),
+        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
       });
     },
   });

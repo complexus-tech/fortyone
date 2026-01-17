@@ -60,6 +60,7 @@ import {
   useTerminology,
   useUserRole,
   useSprintsEnabled,
+  useWorkspacePath,
 } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import type { NewStory } from "@/modules/story/types";
@@ -138,6 +139,7 @@ export const NewStoryDialog = ({
   const queryClient = useQueryClient();
   const router = useRouter();
   const features = useFeatures();
+  const { workspaceSlug } = useWorkspacePath();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
@@ -285,7 +287,7 @@ export const NewStoryDialog = ({
       editor.commands.setContent("");
       dispatch({ type: "RESET_FORM", payload: initialForm });
       if (tier === "free") {
-        queryClient.invalidateQueries({ queryKey: storyKeys.total() });
+        queryClient.invalidateQueries({ queryKey: storyKeys.total(workspaceSlug) });
       }
     } finally {
       setLoading(false);

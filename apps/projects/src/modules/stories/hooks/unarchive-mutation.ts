@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "../constants";
 import { bulkUnarchiveAction } from "../actions/bulk-unarchive-stories";
 
 export const useBulkUnarchiveStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: bulkUnarchiveAction,
@@ -29,7 +31,7 @@ export const useBulkUnarchiveStoryMutation = () => {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
     },
   });
 

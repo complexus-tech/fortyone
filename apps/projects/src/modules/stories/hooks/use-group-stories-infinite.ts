@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useWorkspacePath } from "@/hooks";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getGroupStories } from "../queries/get-group-stories";
 import { storyKeys } from "../constants";
@@ -10,6 +11,7 @@ export const useGroupStoriesInfinite = (
   initialGroup: StoryGroup,
 ) => {
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
 
   const initialData = {
     pages: [
@@ -29,10 +31,13 @@ export const useGroupStoriesInfinite = (
   };
 
   return useInfiniteQuery({
-    queryKey: storyKeys.groupStories(params.groupKey, params),
+    queryKey: storyKeys.groupStories(workspaceSlug, params.groupKey, params),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     queryFn: ({ pageParam }) =>
-      getGroupStories(session!, { ...params, page: pageParam }),
+      getGroupStories(
+        { session: session!, workspaceSlug },
+        { ...params, page: pageParam },
+      ),
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     initialPageParam: initialGroup.nextPage,

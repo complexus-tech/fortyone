@@ -13,7 +13,7 @@ import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -46,6 +46,7 @@ const StoryRow = ({
   const { userRole } = useUserRole();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
   // Get team members for this specific story's team
   const { data: members = [] } = useTeamMembers(story.teamId);
@@ -58,17 +59,18 @@ const StoryRow = ({
     <Box
       onMouseEnter={() => {
         if (session) {
+          const ctx = { session, workspaceSlug };
           queryClient.prefetchQuery({
-            queryKey: storyKeys.detail(story.id),
-            queryFn: () => getStory(story.id, session),
+            queryKey: storyKeys.detail(workspaceSlug, story.id),
+            queryFn: () => getStory(story.id, ctx),
           });
           queryClient.prefetchQuery({
-            queryKey: storyKeys.attachments(story.id),
-            queryFn: () => getStoryAttachments(story.id, session),
+            queryKey: storyKeys.attachments(workspaceSlug, story.id),
+            queryFn: () => getStoryAttachments(story.id, ctx),
           });
           queryClient.prefetchQuery({
             queryKey: linkKeys.story(story.id),
-            queryFn: () => getLinks(story.id, session),
+            queryFn: () => getLinks(story.id, ctx),
           });
         }
         router.prefetch(`/story/${story.id}/${slugify(story.title)}`);

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -101,6 +102,7 @@ const updateListQuery = (
 
 export const useUpdateLabelsMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({ storyId, labels }: { storyId: string; labels: string[] }) =>
@@ -108,13 +110,16 @@ export const useUpdateLabelsMutation = () => {
 
     onMutate: ({ storyId, labels }) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId),
+        storyKeys.detail(workspaceSlug, storyId),
       );
       if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          labels,
-        });
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(workspaceSlug, storyId),
+          {
+            ...previousStory,
+            labels,
+          },
+        );
       }
 
       const queryCache = queryClient.getQueryCache();
@@ -137,12 +142,12 @@ export const useUpdateLabelsMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStory) {
         queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(variables.storyId),
+          storyKeys.detail(workspaceSlug, variables.storyId),
           context.previousStory,
         );
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
       toast.error("Failed to update labels", {
         description: error.message || "Your changes were not saved",
@@ -159,7 +164,7 @@ export const useUpdateLabelsMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       queryClient.invalidateQueries({ queryKey: labelKeys.lists() });
     },
   });

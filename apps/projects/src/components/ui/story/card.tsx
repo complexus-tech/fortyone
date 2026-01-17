@@ -12,7 +12,7 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useMembers } from "@/lib/hooks/members";
-import { useMediaQuery, useUserRole } from "@/hooks";
+import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
@@ -42,6 +42,7 @@ export const StoryCard = ({
   const openStoryInDialog = preferences?.openStoryInDialog;
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { userRole } = useUserRole();
+  const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
@@ -67,18 +68,21 @@ export const StoryCard = ({
   return (
     <Box
       onMouseEnter={() => {
-        queryClient.prefetchQuery({
-          queryKey: storyKeys.detail(story.id),
-          queryFn: () => getStory(story.id, session!),
-        });
-        queryClient.prefetchQuery({
-          queryKey: storyKeys.attachments(story.id),
-          queryFn: () => getStoryAttachments(story.id, session!),
-        });
-        queryClient.prefetchQuery({
-          queryKey: linkKeys.story(story.id),
-          queryFn: () => getLinks(story.id, session!),
-        });
+        if (session) {
+          const ctx = { session, workspaceSlug };
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.detail(workspaceSlug, story.id),
+            queryFn: () => getStory(story.id, ctx),
+          });
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.attachments(workspaceSlug, story.id),
+            queryFn: () => getStoryAttachments(story.id, ctx),
+          });
+          queryClient.prefetchQuery({
+            queryKey: linkKeys.story(story.id),
+            queryFn: () => getLinks(story.id, ctx),
+          });
+        }
         router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
       }}
     >

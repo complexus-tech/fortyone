@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import type { GroupedStoriesResponse, GroupStoriesResponse } from "../types";
@@ -96,6 +96,7 @@ const updateListQuery = (
 export const useBulkUpdateStoriesMutation = () => {
   const queryClient = useQueryClient();
   const { storyId } = useParams<{ storyId?: string }>();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -130,20 +131,20 @@ export const useBulkUpdateStoriesMutation = () => {
 
       if (storyId) {
         const parentStory = queryClient.getQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
+          storyKeys.detail(workspaceSlug, storyId),
         );
         if (parentStory) {
           const previousParentData = queryClient.getQueryData(
-            storyKeys.detail(storyId),
+            storyKeys.detail(workspaceSlug, storyId),
           );
           previousQueryStates.set(
-            JSON.stringify(storyKeys.detail(storyId)),
+            JSON.stringify(storyKeys.detail(workspaceSlug, storyId)),
             previousParentData,
           );
 
           updateDetailQuery(
             queryClient,
-            storyKeys.detail(storyId),
+            storyKeys.detail(workspaceSlug, storyId),
             storyIds,
             payload,
           );
@@ -165,7 +166,7 @@ export const useBulkUpdateStoriesMutation = () => {
         });
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
       toast.error("Failed to update stories", {
         description: error.message || "Your changes were not saved",
@@ -189,7 +190,7 @@ export const useBulkUpdateStoriesMutation = () => {
         ...payload,
       });
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
     },
   });
 

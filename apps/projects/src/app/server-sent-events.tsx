@@ -8,6 +8,7 @@ import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
+import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import type { Story } from "@/modules/stories/types";
 
@@ -33,6 +34,7 @@ export const ServerSentEvents = () => {
   const posthog = usePostHog();
   const { data: session } = useSession();
   const { workspace } = useCurrentWorkspace();
+  const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
 
   const handleNotification = useCallback(
@@ -42,11 +44,11 @@ export const ServerSentEvents = () => {
       });
       if (notification.entityType === "story") {
         queryClient.invalidateQueries({
-          queryKey: storyKeys.detail(notification.entityId),
+          queryKey: storyKeys.detail(workspaceSlug, notification.entityId),
         });
       }
     },
-    [queryClient],
+    [queryClient, workspaceSlug],
   );
 
   const handleWorkspaceUpdate = useCallback(
@@ -81,7 +83,7 @@ export const ServerSentEvents = () => {
       });
 
       queryClient.setQueryData(
-        storyKeys.detail(workspaceUpdate.storyId),
+        storyKeys.detail(workspaceSlug, workspaceUpdate.storyId),
         (oldData: DetailedStory | undefined) => {
           if (!oldData) return oldData;
           return {
@@ -91,7 +93,7 @@ export const ServerSentEvents = () => {
         },
       );
     },
-    [queryClient],
+    [queryClient, workspaceSlug],
   );
 
   useEffect(() => {

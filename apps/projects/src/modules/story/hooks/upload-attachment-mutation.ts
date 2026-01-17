@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { addAttachmentAction } from "../actions/add-attachment";
 import type { StoryAttachment } from "../types";
@@ -9,17 +10,18 @@ export const useUploadAttachmentMutation = (storyId: string) => {
   const queryClient = useQueryClient();
   const toastid = "upload-attachment";
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: (file: File) => addAttachmentAction(storyId, file),
     onMutate: async (file) => {
       toast.loading("Uploading...", { id: toastid, description: file.name });
       await queryClient.cancelQueries({
-        queryKey: storyKeys.attachments(storyId),
+        queryKey: storyKeys.attachments(workspaceSlug, storyId),
       });
       const previousAttachments =
         queryClient.getQueryData<StoryAttachment[]>(
-          storyKeys.attachments(storyId),
+          storyKeys.attachments(workspaceSlug, storyId),
         ) || [];
       const optimisticAttachment: StoryAttachment = {
         id: `temp-${Date.now()}`,
@@ -30,7 +32,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
         createdAt: new Date().toISOString(),
         uploadedBy: session?.user?.id || "",
       };
-      queryClient.setQueryData(storyKeys.attachments(storyId), [
+      queryClient.setQueryData(storyKeys.attachments(workspaceSlug, storyId), [
         ...previousAttachments,
         optimisticAttachment,
       ]);
@@ -40,7 +42,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
     onError: (error, file, context) => {
       if (context) {
         queryClient.setQueryData(
-          storyKeys.attachments(storyId),
+          storyKeys.attachments(workspaceSlug, storyId),
           context.previousAttachments,
         );
       }
@@ -65,7 +67,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
 
       const attachment = res.data!;
       // remove the temp attachment and add the new attachment
-      queryClient.setQueryData(storyKeys.attachments(storyId), [
+      queryClient.setQueryData(storyKeys.attachments(workspaceSlug, storyId), [
         ...context.previousAttachments,
         attachment,
       ]);

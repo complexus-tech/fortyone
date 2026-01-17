@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { deleteStoryAttachmentAction } from "../actions/delete-attachment";
 import type { StoryAttachment } from "../types";
@@ -7,6 +8,7 @@ import type { StoryAttachment } from "../types";
 export const useDeleteAttachmentMutation = (storyId: string) => {
   const queryClient = useQueryClient();
   const toastId = "delete-attachment";
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: (attachmentId: string) =>
@@ -16,16 +18,16 @@ export const useDeleteAttachmentMutation = (storyId: string) => {
       toast.loading("Deleting attachment...", { id: toastId });
 
       await queryClient.cancelQueries({
-        queryKey: storyKeys.attachments(storyId),
+        queryKey: storyKeys.attachments(workspaceSlug, storyId),
       });
 
       const previousAttachments =
         queryClient.getQueryData<StoryAttachment[]>(
-          storyKeys.attachments(storyId),
+          storyKeys.attachments(workspaceSlug, storyId),
         ) || [];
 
       queryClient.setQueryData(
-        storyKeys.attachments(storyId),
+        storyKeys.attachments(workspaceSlug, storyId),
         previousAttachments.filter(
           (attachment) => attachment.id !== attachmentId,
         ),
@@ -37,7 +39,7 @@ export const useDeleteAttachmentMutation = (storyId: string) => {
     onError: (error, attachmentId, context) => {
       if (context) {
         queryClient.setQueryData(
-          storyKeys.attachments(storyId),
+          storyKeys.attachments(workspaceSlug, storyId),
           context.previousAttachments,
         );
       }
@@ -58,7 +60,7 @@ export const useDeleteAttachmentMutation = (storyId: string) => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
-        queryKey: storyKeys.attachments(storyId),
+        queryKey: storyKeys.attachments(workspaceSlug, storyId),
       });
       toast.success("Attachment deleted", {
         id: toastId,

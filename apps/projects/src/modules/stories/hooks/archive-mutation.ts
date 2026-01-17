@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
+import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkArchiveAction } from "../actions/bulk-archive-stories";
@@ -95,6 +96,7 @@ const updateListQuery = (
 
 export const useBulkArchiveStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: bulkArchiveAction,
@@ -118,7 +120,7 @@ export const useBulkArchiveStoryMutation = () => {
     },
 
     onError: (error, storyIds) => {
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
       toast.error("Failed to archive stories", {
         description:
@@ -137,7 +139,7 @@ export const useBulkArchiveStoryMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
       toast.success("Stories archived successfully", {
         description: `${storyIds.length} stor${
