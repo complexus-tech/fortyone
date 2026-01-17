@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
+import { withWorkspacePath } from "@/utils";
 
 export default async function RootLayout({
   children,
@@ -20,7 +20,7 @@ export default async function RootLayout({
   );
 
   if (workspace?.userRole !== "admin") {
-    redirect("/settings/account");
+    redirect(withWorkspacePath("/settings/account", workspaceSlug));
   }
 
   return <>{children}</>;
