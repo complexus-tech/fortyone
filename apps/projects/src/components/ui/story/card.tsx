@@ -42,7 +42,7 @@ export const StoryCard = ({
   const openStoryInDialog = preferences?.openStoryInDialog;
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { userRole } = useUserRole();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = useQueryClient();
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
@@ -83,7 +83,7 @@ export const StoryCard = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
+        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
       }}
     >
       <StoryContextMenu story={story}>
@@ -107,7 +107,7 @@ export const StoryCard = ({
           >
             <Link
               className="flex justify-between gap-2"
-              href={`/story/${story.id}/${slugify(story.title)}`}
+              href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
               onClick={(e) => {
                 if (isDesktop && openStoryInDialog) {
                   e.preventDefault();

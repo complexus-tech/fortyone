@@ -2,6 +2,7 @@ import { Member } from "@/types";
 import React from "react";
 import { Avatar, Box, Button, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
+import { useWorkspacePath } from "@/hooks";
 
 export const MemberTooltip = ({
   member,
@@ -10,6 +11,8 @@ export const MemberTooltip = ({
   member?: Member;
   children: React.ReactNode;
 }) => {
+  const { withWorkspace } = useWorkspacePath();
+
   if (!member) {
     return children;
   }
@@ -26,7 +29,7 @@ export const MemberTooltip = ({
               src={member?.avatarUrl}
             />
             <Box>
-              <Link className="mb-2 flex gap-1" href={`/profile/${member?.id}`}>
+              <Link className="mb-2 flex gap-1" href={withWorkspace(`/profile/${member?.id}`)}>
                 <Text fontSize="md" fontWeight="medium">
                   {member?.fullName}
                 </Text>
@@ -37,7 +40,7 @@ export const MemberTooltip = ({
               <Button
                 className="mb-0.5 ml-px px-2"
                 color="tertiary"
-                href={`/profile/${member?.id}`}
+                href={withWorkspace(`/profile/${member?.id}`)}
                 size="xs"
               >
                 Go to profile

@@ -11,6 +11,7 @@ import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useWorkspacePath } from "@/hooks";
 
 const DisplaySprint = ({
   sprintId,
@@ -20,6 +21,7 @@ const DisplaySprint = ({
   teamId?: string;
 }) => {
   const { data: sprint } = useSprint(sprintId, teamId);
+  const { withWorkspace } = useWorkspacePath();
   return (
     <>
       {!sprintId || sprintId.includes("nil") ? (
@@ -27,7 +29,7 @@ const DisplaySprint = ({
       ) : (
         <Link
           className="flex items-center gap-1"
-          href={`/teams/${sprint?.teamId}/sprints/${sprintId}/stories`}
+          href={withWorkspace(`/teams/${sprint?.teamId}/sprints/${sprintId}/stories`)}
         >
           <SprintsIcon className="h-5" />
           {sprint?.name}
@@ -45,12 +47,13 @@ const DisplayObjective = ({
   teamId?: string;
 }) => {
   const { data: objective } = useObjective(objectiveId, teamId);
+  const { withWorkspace } = useWorkspacePath();
   return (
     <>
       {!objectiveId || objectiveId.includes("nil") ? (
         <span>No objective</span>
       ) : (
-        <Link href={`/teams/${objective?.teamId}/objectives/${objectiveId}`}>
+        <Link href={withWorkspace(`/teams/${objective?.teamId}/objectives/${objectiveId}`)}>
           {objective?.name}
         </Link>
       )}
@@ -68,6 +71,7 @@ export const Activity = ({
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
+  const { withWorkspace } = useWorkspacePath();
   const member = members.find((m) => m.id === userId);
 
   if (field === "completed_at") {
@@ -112,7 +116,7 @@ export const Activity = ({
           ) : (
             <Link
               className="flex items-center gap-1.5 pb-0.5"
-              href={`/profile/${members.find((m) => m.id === value)?.id}`}
+              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
             >
               <Avatar
                 className="relative top-px"
@@ -222,7 +226,7 @@ export const Activity = ({
                       <Button
                         className="mb-0.5 ml-px px-2"
                         color="tertiary"
-                        href={`/profile/${member.id}`}
+                        href={withWorkspace(`/profile/${member.id}`)}
                         size="xs"
                       >
                         Go to profile

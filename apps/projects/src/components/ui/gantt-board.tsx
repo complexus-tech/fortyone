@@ -46,7 +46,7 @@ const StoryRow = ({
   const { userRole } = useUserRole();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
   // Get team members for this specific story's team
   const { data: members = [] } = useTeamMembers(story.teamId);
@@ -73,7 +73,7 @@ const StoryRow = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
+        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
       }}
     >
       <StoryContextMenu story={story}>
@@ -184,7 +184,7 @@ const StoryRow = ({
 
             <Link
               className="flex min-w-0 flex-1 items-center gap-1.5"
-              href={`/story/${story.id}/${slugify(story.title)}`}
+              href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
             >
               <Text
                 className="line-clamp-1 hover:opacity-90"
@@ -243,7 +243,8 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
   const router = useRouter();
-
+  const { withWorkspace } = useWorkspacePath();
+  
   // Simple function to get team code from teamId
   const getTeamCode = (teamId: string): string => {
     const team = teams.find((t) => t.id === teamId);
@@ -267,7 +268,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   // Handle bar clicks to navigate to story page
   const handleBarClick = useCallback(
     (story: Story) => {
-      router.push(`/story/${story.id}/${slugify(story.title)}`);
+      router.push(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
     },
     [router],
   );

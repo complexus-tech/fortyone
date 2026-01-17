@@ -242,7 +242,7 @@ const removeOptimisticStory = (
 export const useDuplicateStoryMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -327,7 +327,7 @@ export const useDuplicateStoryMutation = () => {
           label: "View story",
           onClick: () => {
             router.push(
-              `/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`,
+              withWorkspace(`/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`),
             );
           },
         },

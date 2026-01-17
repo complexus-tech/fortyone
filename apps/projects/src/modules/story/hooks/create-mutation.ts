@@ -241,7 +241,7 @@ const removeOptimisticStory = (
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -319,7 +319,7 @@ export const useCreateStoryMutation = () => {
             label: "View story",
             onClick: () => {
               router.push(
-                `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+                withWorkspace(`/story/${createdStory.id}/${slugify(createdStory.title)}`),
               );
             },
           },

@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Team } from "@/modules/teams/types";
 import { ConfirmDialog, RowWrapper, TeamColor } from "@/components/ui";
 import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
+import { useWorkspacePath } from "@/hooks";
 
 export const WorkspaceTeam = ({
   id,
@@ -15,6 +16,7 @@ export const WorkspaceTeam = ({
   memberCount,
 }: Team) => {
   const { mutate: deleteTeam } = useDeleteTeamMutation();
+  const { withWorkspace } = useWorkspacePath();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleDeleteTeam = () => {
@@ -28,7 +30,7 @@ export const WorkspaceTeam = ({
         <Box className="flex size-8 shrink-0 items-center justify-center rounded-[0.6rem] bg-surface-muted/80">
           <TeamColor color={color} />
         </Box>
-        <Link href={`/settings/workspace/teams/${id}`}>
+        <Link href={withWorkspace(`/settings/workspace/teams/${id}`)}>
           <Text className="font-medium">{name}</Text>
           <Text className="text-[0.95rem]" color="muted">
             {code}
@@ -60,7 +62,7 @@ export const WorkspaceTeam = ({
               <Menu.Item className="p-0">
                 <Link
                   className="flex items-center gap-2 px-2 py-1.5"
-                  href={`/settings/workspace/teams/${id}`}
+                  href={withWorkspace(`/settings/workspace/teams/${id}`)}
                   prefetch
                 >
                   <SettingsIcon />

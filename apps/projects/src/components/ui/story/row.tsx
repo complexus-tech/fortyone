@@ -49,7 +49,7 @@ export const StoryRow = ({
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useTeamMembers(story.teamId);
   const { userRole } = useUserRole();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
@@ -98,7 +98,7 @@ export const StoryRow = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
+        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
       }}
     >
       <div ref={setNodeRef}>
@@ -169,7 +169,7 @@ export const StoryRow = ({
 
               <Link
                 className="flex items-center gap-1.5"
-                href={`/story/${story.id}/${slugify(story.title)}`}
+                href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
                 onClick={(e) => {
                   if (isDesktop && openStoryInDialog) {
                     e.preventDefault();

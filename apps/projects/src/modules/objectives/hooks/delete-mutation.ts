@@ -10,7 +10,7 @@ export const useDeleteObjectiveMutation = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -45,9 +45,9 @@ export const useDeleteObjectiveMutation = () => {
       });
       queryClient.invalidateQueries({ queryKey: objectiveKeys.list(workspaceSlug) });
       if (!teamId) {
-        router.replace("/objectives");
+        router.replace(withWorkspace("/objectives"));
       } else {
-        router.replace(`/teams/${teamId}/objectives`);
+        router.replace(withWorkspace(`/teams/${teamId}/objectives`));
       }
     },
   });
