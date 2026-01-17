@@ -183,7 +183,7 @@ export const InviteMembersDialog = ({
       });
     } else {
       queryClient.invalidateQueries({
-        queryKey: invitationKeys.pending,
+        queryKey: invitationKeys.pending(workspaceSlug),
       });
       toast.info("Success", {
         description: "Invitations sent to member emails",

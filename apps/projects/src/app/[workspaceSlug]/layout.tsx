@@ -60,6 +60,7 @@ export default async function RootLayout({
   const queryClient = fetchNonCriticalImportantQueries(
     getQueryClient(),
     session!,
+    workspaceSlug,
   );
   // await critical queries
   await Promise.all([

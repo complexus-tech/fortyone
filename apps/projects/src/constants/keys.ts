@@ -67,7 +67,9 @@ export const userKeys = {
 };
 
 export const invitationKeys = {
-  pending: ["pending-invitations"] as const,
+  all: ["invitations"] as const,
+  pending: (workspaceSlug: string) =>
+    [...invitationKeys.all, "pending", workspaceSlug] as const,
   mine: ["my-invitations"] as const,
 };
 

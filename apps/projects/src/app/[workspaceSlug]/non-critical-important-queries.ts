@@ -31,6 +31,7 @@ import { getInvoices } from "@/lib/queries/billing/invoices";
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
   session: Session,
+  workspaceSlug: string,
 ) => {
   queryClient.prefetchQuery({
     queryKey: userKeys.automationPreferences(),
@@ -83,8 +84,8 @@ export const fetchNonCriticalImportantQueries = (
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: invitationKeys.pending,
-    queryFn: () => getPendingInvitations(session),
+    queryKey: invitationKeys.pending(workspaceSlug),
+    queryFn: () => getPendingInvitations({ session, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({

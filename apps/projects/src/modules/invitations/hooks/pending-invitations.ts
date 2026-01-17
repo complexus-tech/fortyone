@@ -9,7 +9,7 @@ export const usePendingInvitations = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: invitationKeys.pending,
+    queryKey: invitationKeys.pending(workspaceSlug),
     queryFn: () => getPendingInvitations({ session: session!, workspaceSlug }),
   });
 };
