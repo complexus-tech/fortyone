@@ -15,7 +15,7 @@ import { getAuthCode } from "@/lib/queries/get-auth-code";
 export const EmailVerificationCallback = () => {
   const params = useParams<{ email: string; token: string }>();
   const searchParams = useSearchParams();
-  const isMobile = searchParams?.get("mobile") === "true";
+  const isMobileApp = searchParams?.get("mobileApp") === "true";
   const validatedEmail = decodeURIComponent(params?.email || "");
   const validatedToken = decodeURIComponent(params?.token || "");
   const { analytics } = useAnalytics();
@@ -35,10 +35,10 @@ export const EmailVerificationCallback = () => {
             getWorkspaces(session?.token || ""),
             getProfile(session!),
           ]);
-          if (isMobile && workspaces.length > 0) {
+          if (isMobileApp && workspaces.length > 0) {
             const authCodeResponse = await getAuthCode(session);
             if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/?mobile=true&error=Failed to generate auth code");
+              redirect("/?mobileApp=true&error=Failed to generate auth code");
               return;
             }
             redirect(
@@ -66,10 +66,10 @@ export const EmailVerificationCallback = () => {
           getProfile(session!),
         ]);
         if (session) {
-          if (isMobile && workspaces.length > 0) {
+          if (isMobileApp && workspaces.length > 0) {
             const authCodeResponse = await getAuthCode(session);
             if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/?mobile=true&error=Failed to generate auth code");
+              redirect("/?mobileApp=true&error=Failed to generate auth code");
             } else {
               redirect(
                 `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
@@ -91,7 +91,7 @@ export const EmailVerificationCallback = () => {
     };
 
     void validate();
-  }, [validatedEmail, validatedToken, analytics, isMobile]);
+  }, [validatedEmail, validatedToken, analytics, isMobileApp]);
 
   return (
     <Flex

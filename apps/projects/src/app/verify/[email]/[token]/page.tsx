@@ -9,12 +9,12 @@ import { EmailVerificationCallback } from "./client";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobile?: string }>;
+  searchParams: Promise<{ mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobile = params?.mobile === "true";
+  const isMobileApp = params?.mobileApp === "true";
   const session = await auth();
-  if (session && !isMobile) {
+  if (session && !isMobileApp) {
     const [invitations, workspaces, profile] = await Promise.all([
       getMyInvitations(),
       getWorkspaces(session?.token || ""),

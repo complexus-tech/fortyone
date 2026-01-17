@@ -5,12 +5,12 @@ import { requestError } from "../fetch-error";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function requestMagicEmail(email: string, isMobile: boolean) {
+export async function requestMagicEmail(email: string, isMobileApp: boolean) {
   try {
     await ky.post(`${apiURL}/users/verify/email`, {
       json: {
         email,
-        isMobile,
+        isMobile: isMobileApp,
       },
     });
 

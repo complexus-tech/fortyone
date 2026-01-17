@@ -16,15 +16,15 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobile?: string }>;
+  searchParams: Promise<{ mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobile = params?.mobile === "true";
+  const isMobileApp = params?.mobileApp === "true";
 
   const session = await auth();
 
   // Only redirect web users if they're already logged in
-  if (session && !isMobile) {
+  if (session && !isMobileApp) {
     const [workspaces, profile] = await Promise.all([
       getWorkspaces(session?.token || ""),
       getProfile(session),
@@ -32,7 +32,7 @@ export default async function Page({
     redirect(getRedirectUrl(workspaces, [], profile?.lastUsedWorkspaceId));
   }
 
-  // Mobile users always see login form (even if already logged in on web)
+  // Mobile app users always see login form (even if already logged in on web)
   return (
     <OnboardingLayout>
       <AuthLayout page="login" />

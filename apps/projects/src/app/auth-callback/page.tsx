@@ -9,10 +9,10 @@ import { getAuthCode } from "@/lib/queries/get-auth-code";
 export default async function AuthCallback({
   searchParams,
 }: {
-  searchParams: Promise<{ mobile?: string }>;
+  searchParams: Promise<{ mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobile = params?.mobile === "true";
+  const isMobileApp = params?.mobileApp === "true";
 
   const session = await auth();
 
@@ -26,10 +26,10 @@ export default async function AuthCallback({
     getProfile(session),
   ]);
 
-  if (isMobile && workspaces.length > 0) {
+  if (isMobileApp && workspaces.length > 0) {
     const authCodeResponse = await getAuthCode(session);
     if (authCodeResponse.error || !authCodeResponse.data) {
-      redirect("/?mobile=true&error=Failed to generate auth code");
+      redirect("/?mobileApp=true&error=Failed to generate auth code");
     } else {
       redirect(
         `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,

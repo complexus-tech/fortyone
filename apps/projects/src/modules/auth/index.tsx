@@ -20,13 +20,13 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const searchParams = useSearchParams();
   const error = searchParams?.get("error");
-  const isMobile = searchParams?.get("mobile") === "true";
+  const isMobileApp = searchParams?.get("mobileApp") === "true";
   const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    const result = await requestMagicEmail(email, isMobile);
+    const result = await requestMagicEmail(email, isMobileApp);
     if (result?.error?.message) {
       toast.error("Failed to send magic link", {
         description: result.error.message,
@@ -39,9 +39,10 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
 
   const handleOTPSubmit = async () => {
     let url = `/verify/${email}/${otp}`;
-    if (isMobile) {
-      url += "?mobile=true";
+    if (isMobileApp) {
+      url += "?mobileApp=true";
     }
+
     if (otp.length !== 6) {
       toast.error("Please enter a valid 6-digit code");
       return;
@@ -63,7 +64,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             Check your email
           </Text>
           <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
-            A secure sign-in {isMobile ? "code" : "link"} has been sent to{" "}
+            A secure sign-in {isMobileApp ? "code" : "link"} has been sent to{" "}
             <span className="font-semibold dark:text-white/70">{email}</span>.
             ✨ Please check your inbox to continue.
           </Text>
@@ -108,7 +109,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           </Text>
           {page === "login" ? (
             <>
-              {isMobile ? (
+              {isMobileApp ? (
                 <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
                   Welcome back! sign in to your account to continue.
                 </Text>
@@ -174,7 +175,9 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
               leftIcon={<GoogleIcon />}
               onClick={async () => {
                 await signInWithGoogle(
-                  isMobile ? "/auth-callback?mobile=true" : "/auth-callback",
+                  isMobileApp
+                    ? "/auth-callback?mobileApp=true"
+                    : "/auth-callback",
                 );
               }}
               type="button"
