@@ -3,7 +3,8 @@ import { useParams } from "next/navigation";
 const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|tel:)/i;
 
 export const useWorkspacePath = () => {
-  const workspaceSlug = useParams<{ workspaceSlug: string }>();
+  const params = useParams<{ workspaceSlug?: string }>();
+  const workspaceSlug = params?.workspaceSlug?.toLowerCase() ?? "";
 
   const withWorkspace = (path: string) => {
     if (!workspaceSlug || !path) {

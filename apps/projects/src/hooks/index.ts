@@ -12,4 +12,4 @@ export * from "./features";
 export * from "./media";
 export { useVoiceRecording } from "./use-voice-recording";
 export { useSprintsEnabled } from "./use-sprints-enabled";
-export { useWorkspacePath } from "./use-worksspace-path";
+export { useWorkspacePath } from "./use-workspace-path";
