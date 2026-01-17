@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { useWorkspacePath } from "@/hooks";
 import { statusKeys } from "@/constants/keys";
 import type { State } from "@/types/states";
 import type { UpdateState } from "../../actions/states/update";
@@ -9,6 +10,7 @@ import { updateStateAction } from "../../actions/states/update";
 export const useUpdateStateMutation = () => {
   const queryClient = useQueryClient();
   const { teamId } = useParams<{ teamId: string }>();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -17,11 +19,11 @@ export const useUpdateStateMutation = () => {
     }: {
       stateId: string;
       payload: UpdateState;
-    }) => updateStateAction(stateId, payload),
+    }) => updateStateAction(stateId, payload, workspaceSlug),
 
     onMutate: (newState) => {
       const previousStates = queryClient.getQueryData<State[]>(
-        statusKeys.team(teamId),
+        statusKeys.team(workspaceSlug, teamId),
       );
       if (previousStates) {
         const updatedStates = previousStates.map((state) => {
@@ -44,7 +46,7 @@ export const useUpdateStateMutation = () => {
           return state;
         });
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           updatedStates,
         );
       }
@@ -54,7 +56,7 @@ export const useUpdateStateMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           context.previousStates,
         );
       }
@@ -68,7 +70,7 @@ export const useUpdateStateMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: statusKeys.lists(),
+        queryKey: statusKeys.lists(workspaceSlug),
       });
     },
     onSuccess: (res) => {
@@ -76,10 +78,10 @@ export const useUpdateStateMutation = () => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
-        queryKey: statusKeys.lists(),
+        queryKey: statusKeys.lists(workspaceSlug),
       });
       queryClient.invalidateQueries({
-        queryKey: statusKeys.team(teamId),
+        queryKey: statusKeys.team(workspaceSlug, teamId),
       });
     },
   });

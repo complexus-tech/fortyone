@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { uploadWorkspaceLogoAction } from "@/lib/actions/workspaces/upload-logo";
 import { workspaceKeys } from "@/constants/keys";
 import type { Workspace } from "@/types";
@@ -8,9 +9,10 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 export const useUploadWorkspaceLogoMutation = () => {
   const queryClient = useQueryClient();
   const { workspace: currentWorkspace } = useCurrentWorkspace();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (file: File) => uploadWorkspaceLogoAction(file),
+    mutationFn: (file: File) => uploadWorkspaceLogoAction(file, workspaceSlug),
     onMutate: async (file) => {
       await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
       const previousWorkspaces = queryClient.getQueryData<Workspace[]>(

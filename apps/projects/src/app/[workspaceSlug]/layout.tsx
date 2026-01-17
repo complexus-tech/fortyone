@@ -64,15 +64,15 @@ export default async function RootLayout({
   // await critical queries
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: teamKeys.lists(),
+      queryKey: teamKeys.lists(workspaceSlug),
       queryFn: () => getTeams(ctx),
     }),
     queryClient.prefetchQuery({
-      queryKey: statusKeys.lists(),
+      queryKey: statusKeys.lists(workspaceSlug),
       queryFn: () => getStatuses(ctx),
     }),
     queryClient.prefetchQuery({
-      queryKey: objectiveKeys.statuses(),
+      queryKey: objectiveKeys.statuses(workspaceSlug),
       queryFn: () => getObjectiveStatuses(ctx),
     }),
     queryClient.prefetchQuery({
@@ -80,7 +80,7 @@ export default async function RootLayout({
       queryFn: () => getWorkspaces(ctx.session.token),
     }),
     queryClient.prefetchQuery({
-      queryKey: sprintKeys.running(),
+      queryKey: sprintKeys.running(workspaceSlug),
       queryFn: () => getRunningSprints(ctx),
     }),
     queryClient.prefetchQuery({

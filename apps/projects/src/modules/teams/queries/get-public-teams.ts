@@ -1,9 +1,9 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { Team } from "../types";
 
-export const getPublicTeams = async (session: Session): Promise<Team[]> => {
-  const response = await get<ApiResponse<Team[]>>("teams/public", session);
+export const getPublicTeams = async (ctx: WorkspaceCtx): Promise<Team[]> => {
+  const response = await get<ApiResponse<Team[]>>("teams/public", ctx);
   return response.data!;
 };

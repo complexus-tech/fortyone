@@ -10,7 +10,7 @@ export const useWorkspaceSettings = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: workspaceKeys.settings(),
+    queryKey: workspaceKeys.settings(workspaceSlug),
     queryFn: () => getWorkspaceSettings({ session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

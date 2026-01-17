@@ -1,15 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { linkKeys } from "@/constants/keys";
 import type { Link } from "@/types";
 import { deleteLinkAction } from "../actions/links/delete-link";
 
 export const useDeleteLinkMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({ linkId }: { linkId: string; storyId: string }) =>
-      deleteLinkAction(linkId),
+      deleteLinkAction(linkId, workspaceSlug),
 
     onMutate: ({ linkId, storyId }) => {
       const previousLinks = queryClient.getQueryData<Link[]>(

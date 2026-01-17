@@ -10,7 +10,7 @@ export const useSubscription = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: subscriptionKeys.details,
+    queryKey: subscriptionKeys.details(workspaceSlug),
     queryFn: () => getSubscription({ session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     refetchInterval: DURATION_FROM_MILLISECONDS.MINUTE * 10,

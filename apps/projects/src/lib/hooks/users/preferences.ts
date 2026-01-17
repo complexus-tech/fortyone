@@ -10,7 +10,7 @@ export const useAutomationPreferences = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: userKeys.automationPreferences(),
+    queryKey: userKeys.automationPreferences(workspaceSlug),
     queryFn: () =>
       getAutomationPreferences({ session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,

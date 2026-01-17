@@ -11,7 +11,7 @@ export const useStatuses = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: statusKeys.lists(),
+    queryKey: statusKeys.lists(workspaceSlug),
     queryFn: () => getStatuses({ session: session!, workspaceSlug }),
   });
 };
@@ -21,7 +21,7 @@ export const useTeamStatuses = (teamId: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: statusKeys.team(teamId),
+    queryKey: statusKeys.team(workspaceSlug, teamId),
     queryFn: () =>
       getTeamStatuses(teamId, { session: session!, workspaceSlug }),
     enabled: Boolean(teamId),

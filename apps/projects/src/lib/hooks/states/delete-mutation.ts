@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { useWorkspacePath } from "@/hooks";
 import { statusKeys } from "@/constants/keys";
 import type { State } from "@/types/states";
 import { deleteStateAction } from "../../actions/states/delete";
@@ -8,16 +9,17 @@ import { deleteStateAction } from "../../actions/states/delete";
 export const useDeleteStateMutation = () => {
   const queryClient = useQueryClient();
   const { teamId } = useParams<{ teamId: string }>();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (stateId: string) => deleteStateAction(stateId),
+    mutationFn: (stateId: string) => deleteStateAction(stateId, workspaceSlug),
     onMutate: (stateId) => {
       const previousStates = queryClient.getQueryData<State[]>(
-        statusKeys.team(teamId),
+        statusKeys.team(workspaceSlug, teamId),
       );
       if (previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           previousStates.filter((state) => state.id !== stateId),
         );
       }
@@ -26,7 +28,7 @@ export const useDeleteStateMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           context.previousStates,
         );
       }
@@ -40,10 +42,10 @@ export const useDeleteStateMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: statusKeys.team(teamId),
+        queryKey: statusKeys.team(workspaceSlug, teamId),
       });
       queryClient.invalidateQueries({
-        queryKey: statusKeys.lists(),
+        queryKey: statusKeys.lists(workspaceSlug),
       });
     },
     onSuccess: (res) => {
@@ -52,10 +54,10 @@ export const useDeleteStateMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: statusKeys.lists(),
+        queryKey: statusKeys.lists(workspaceSlug),
       });
       queryClient.invalidateQueries({
-        queryKey: statusKeys.team(teamId),
+        queryKey: statusKeys.team(workspaceSlug, teamId),
       });
     },
   });

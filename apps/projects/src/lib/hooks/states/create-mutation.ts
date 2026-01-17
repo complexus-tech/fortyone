@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { useWorkspacePath } from "@/hooks";
 import { statusKeys } from "@/constants/keys";
 import type { NewState } from "../../actions/states/create";
 import { createStateAction } from "../../actions/states/create";
@@ -9,14 +10,16 @@ import { State } from "@/types/states";
 export const useCreateStateMutation = () => {
   const queryClient = useQueryClient();
   const { teamId } = useParams<{ teamId: string }>();
+  const { workspaceSlug } = useWorkspacePath();
   const toastId = "create-state";
 
   const mutation = useMutation({
-    mutationFn: (newState: NewState) => createStateAction(newState),
+    mutationFn: (newState: NewState) =>
+      createStateAction(newState, workspaceSlug),
     onMutate: (newState) => {
       // Optimistically add the new state to the cache
       const previousStates = queryClient.getQueryData<State[]>(
-        statusKeys.team(teamId),
+        statusKeys.team(workspaceSlug, teamId),
       );
 
       const tempId = `temp-state-${Date.now()}`;
@@ -34,7 +37,7 @@ export const useCreateStateMutation = () => {
       };
 
       if (previousStates) {
-        queryClient.setQueryData<State[]>(statusKeys.team(teamId), [
+        queryClient.setQueryData<State[]>(statusKeys.team(workspaceSlug, teamId), [
           ...previousStates,
           optimisticState,
         ]);
@@ -52,7 +55,7 @@ export const useCreateStateMutation = () => {
       // Rollback optimistic update on error
       if (context?.previousStates) {
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           context.previousStates,
         );
       }
@@ -77,14 +80,14 @@ export const useCreateStateMutation = () => {
 
       // Replace the optimistic state with the real state from server
       const currentStates = queryClient.getQueryData<State[]>(
-        statusKeys.team(teamId),
+        statusKeys.team(workspaceSlug, teamId),
       );
       if (currentStates) {
         const updatedStates = currentStates.map((state) =>
           state.id === context?.tempId ? createdState : state,
         );
         queryClient.setQueryData<State[]>(
-          statusKeys.team(teamId),
+          statusKeys.team(workspaceSlug, teamId),
           updatedStates,
         );
       }
@@ -96,7 +99,7 @@ export const useCreateStateMutation = () => {
 
       // Invalidate other related queries
       queryClient.invalidateQueries({
-        queryKey: statusKeys.lists(),
+        queryKey: statusKeys.lists(workspaceSlug),
       });
     },
   });

@@ -24,7 +24,7 @@ export const useDeleteCommentMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({ commentId }: { commentId: string; storyId: string }) =>
-      deleteCommentAction(commentId),
+      deleteCommentAction(commentId, workspaceSlug),
 
     onMutate: ({ commentId, storyId }) => {
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(

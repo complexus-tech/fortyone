@@ -12,7 +12,7 @@ import type { DateRange } from "react-day-picker";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
@@ -35,6 +35,7 @@ const ObjectiveRow = ({
   // Import userRole directly in this component
   const { userRole } = useUserRole();
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
 
@@ -49,9 +50,10 @@ const ObjectiveRow = ({
     <Box
       onMouseEnter={() => {
         if (session) {
+          const ctx = { session, workspaceSlug };
           queryClient.prefetchQuery({
-            queryKey: objectiveKeys.objective(objective.id),
-            queryFn: () => getObjective(objective.id, session),
+            queryKey: objectiveKeys.objective(workspaceSlug, objective.id),
+            queryFn: () => getObjective(objective.id, ctx),
           });
         }
       }}

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { statusKeys, teamKeys } from "@/constants/keys";
 import type { Team } from "../types";
 import { createTeam } from "../actions";
@@ -10,12 +10,13 @@ export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { analytics } = useAnalytics();
+  const { workspaceSlug } = useWorkspacePath();
   const toastId = "create-team";
 
   const mutation = useMutation({
     mutationFn: createTeam,
     onMutate: (data) => {
-      const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists());
+      const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists(workspaceSlug));
 
       const newTeam: Team = {
         ...data,
@@ -27,7 +28,7 @@ export const useCreateTeamMutation = () => {
         memberCount: 1,
       };
 
-      queryClient.setQueryData(teamKeys.lists(), (old: Team[]) => [
+      queryClient.setQueryData(teamKeys.lists(workspaceSlug), (old: Team[]) => [
         ...old,
         newTeam,
       ]);
@@ -41,7 +42,7 @@ export const useCreateTeamMutation = () => {
     },
 
     onError: (error, variables, context) => {
-      queryClient.setQueryData(teamKeys.lists(), context?.previousTeams);
+      queryClient.setQueryData(teamKeys.lists(workspaceSlug), context?.previousTeams);
       toast.error("Failed to create team", {
         description: error.message || "Team code must be unique",
         id: toastId,
@@ -78,8 +79,8 @@ export const useCreateTeamMutation = () => {
         description: "Team created successfully",
         id: toastId,
       });
-      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
       router.push(`/settings/workspace/teams/${data?.id}`);
     },
   });

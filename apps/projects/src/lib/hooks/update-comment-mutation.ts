@@ -31,7 +31,7 @@ export const useUpdateCommentMutation = () => {
       commentId: string;
       payload: UpdateComment;
       storyId: string;
-    }) => updateCommentAction(commentId, payload),
+    }) => updateCommentAction(commentId, payload, workspaceSlug),
 
     onMutate: (newComment) => {
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(

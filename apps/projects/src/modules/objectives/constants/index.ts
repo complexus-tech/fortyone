@@ -1,17 +1,17 @@
 export const objectiveKeys = {
-  all: ["objectives"] as const,
-  statuses: () => [...objectiveKeys.all, "statuses"] as const,
-  list: () => [...objectiveKeys.all, "list"] as const,
-  team: (teamId: string) => [...objectiveKeys.all, "list", teamId] as const,
-  objective: (objectiveId: string) =>
-    [...objectiveKeys.all, "list", objectiveId] as const,
-  keyResults: (objectiveId: string) =>
-    [...objectiveKeys.all, objectiveId, "key-results"] as const,
-  analytics: (objectiveId: string) =>
-    [...objectiveKeys.all, "analytics", objectiveId] as const,
-  activitiesInfinite: (objectiveId: string) =>
+  all: (workspaceSlug: string) => ["objectives", workspaceSlug] as const,
+  statuses: (workspaceSlug: string) => [...objectiveKeys.all(workspaceSlug), "statuses"] as const,
+  list: (workspaceSlug: string) => [...objectiveKeys.all(workspaceSlug), "list"] as const,
+  team: (workspaceSlug: string, teamId: string) => [...objectiveKeys.all(workspaceSlug), "list", teamId] as const,
+  objective: (workspaceSlug: string, objectiveId: string) =>
+    [...objectiveKeys.all(workspaceSlug), "list", objectiveId] as const,
+  keyResults: (workspaceSlug: string, objectiveId: string) =>
+    [...objectiveKeys.all(workspaceSlug), objectiveId, "key-results"] as const,
+  analytics: (workspaceSlug: string, objectiveId: string) =>
+    [...objectiveKeys.all(workspaceSlug), "analytics", objectiveId] as const,
+  activitiesInfinite: (workspaceSlug: string, objectiveId: string) =>
     [
-      ...objectiveKeys.objective(objectiveId),
+      ...objectiveKeys.objective(workspaceSlug, objectiveId),
       "activities",
       "infinite",
     ] as const,

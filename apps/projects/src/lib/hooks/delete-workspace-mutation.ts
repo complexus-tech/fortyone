@@ -1,14 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { deleteWorkspaceAction } from "@/lib/actions/workspaces/delete-workspace";
 import { workspaceKeys } from "@/constants/keys";
 import type { Workspace } from "@/types";
 
 export const useDeleteWorkspaceMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: () => deleteWorkspaceAction(),
+    mutationFn: () => deleteWorkspaceAction(workspaceSlug),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
       const previousWorkspaces = queryClient.getQueryData<Workspace[]>(

@@ -10,7 +10,7 @@ export const useLabels = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: labelKeys.lists(),
+    queryKey: labelKeys.lists(workspaceSlug),
     queryFn: () => getLabels({ session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

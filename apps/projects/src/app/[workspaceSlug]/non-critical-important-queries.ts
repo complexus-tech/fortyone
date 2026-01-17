@@ -1,5 +1,4 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { Session } from "next-auth";
 import { getObjectives } from "@/modules/objectives/queries/get-objectives";
 import { getSprints } from "@/modules/sprints/queries/get-sprints";
 import {
@@ -27,80 +26,80 @@ import { getNotificationPreferences } from "@/modules/notifications/queries/get-
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getInvoices } from "@/lib/queries/billing/invoices";
-import { WorkspaceCtx } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 
 export const fetchNonCriticalImportantQueries = (
   queryClient: QueryClient,
   ctx: WorkspaceCtx,
 ) => {
   queryClient.prefetchQuery({
-    queryKey: userKeys.automationPreferences(),
+    queryKey: userKeys.automationPreferences(ctx.workspaceSlug),
     queryFn: () => getAutomationPreferences(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: teamKeys.public(),
+    queryKey: teamKeys.public(ctx.workspaceSlug),
     queryFn: () => getPublicTeams(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: sprintKeys.lists(),
-    queryFn: () => getSprints(session),
+    queryKey: sprintKeys.lists(ctx.workspaceSlug),
+    queryFn: () => getSprints(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: objectiveKeys.list(),
-    queryFn: () => getObjectives(session),
+    queryKey: objectiveKeys.list(ctx.workspaceSlug),
+    queryFn: () => getObjectives(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: labelKeys.lists(),
-    queryFn: () => getLabels({ session, workspaceSlug }),
+    queryKey: labelKeys.lists(ctx.workspaceSlug),
+    queryFn: () => getLabels(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: invitationKeys.mine,
-    queryFn: () => getMyInvitations(session),
+    queryFn: () => getMyInvitations(ctx.session),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: notificationKeys.unread(),
-    queryFn: () => getUnreadNotifications(session),
+    queryKey: notificationKeys.unread(ctx.workspaceSlug),
+    queryFn: () => getUnreadNotifications(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: workspaceKeys.settings(),
-    queryFn: () => getWorkspaceSettings({ session, workspaceSlug }),
+    queryKey: workspaceKeys.settings(ctx.workspaceSlug),
+    queryFn: () => getWorkspaceSettings(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: memberKeys.lists(),
-    queryFn: () => getMembers({ session, workspaceSlug }),
+    queryKey: memberKeys.lists(ctx.workspaceSlug),
+    queryFn: () => getMembers(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: () => getWorkspaces(session.token),
+    queryFn: () => getWorkspaces(ctx.session.token),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: invitationKeys.pending(workspaceSlug),
+    queryKey: invitationKeys.pending(ctx.workspaceSlug),
     queryFn: () => getPendingInvitations(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: notificationKeys.preferences(),
-    queryFn: () => getNotificationPreferences(session),
+    queryKey: notificationKeys.preferences(ctx.workspaceSlug),
+    queryFn: () => getNotificationPreferences(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({
-    queryKey: subscriptionKeys.details,
-    queryFn: () => getSubscription({ session, workspaceSlug }),
+    queryKey: subscriptionKeys.details(ctx.workspaceSlug),
+    queryFn: () => getSubscription(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   queryClient.prefetchQuery({
-    queryKey: ["invoices"],
-    queryFn: () => getInvoices({ session, workspaceSlug }),
+    queryKey: ["invoices", ctx.workspaceSlug],
+    queryFn: () => getInvoices(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
   return queryClient;

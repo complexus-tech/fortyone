@@ -10,7 +10,7 @@ export const useMembers = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: memberKeys.lists(),
+    queryKey: memberKeys.lists(workspaceSlug),
     queryFn: () => getMembers({ session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
