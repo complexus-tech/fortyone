@@ -13,7 +13,7 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
@@ -34,6 +34,7 @@ export const NotificationCard = ({
 }: AppNotification & { index: number }) => {
   const pathname = usePathname();
   const { data: members = [] } = useMembers();
+  const { withWorkspace } = useWorkspacePath();
   const actor = members.find((member) => member.id === actorId);
   const isUnread = !readAt;
   const { mutate: readNotification } = useReadNotificationMutation();
@@ -62,7 +63,7 @@ export const NotificationCard = ({
         <Box>
           <Link
             className="block"
-            href={`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`}
+            href={withWorkspace(`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`)}
             prefetch={index <= 10 ? true : null}
           >
             <Box

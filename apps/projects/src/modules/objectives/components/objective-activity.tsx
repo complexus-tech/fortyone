@@ -12,6 +12,7 @@ import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import type { ObjectiveActivity, ObjectiveHealth } from "../types";
+import { useWorkspacePath } from "@/hooks";
 
 export const ObjectiveActivityComponent = ({
   userId,
@@ -29,6 +30,7 @@ export const ObjectiveActivityComponent = ({
   const member = members.find((m) => m.id === userId);
   const { data: keyResults = [] } = useKeyResults(objectiveId);
   const keyResult = keyResults.find((kr) => kr.id === keyResultId);
+  const { withWorkspace } = useWorkspacePath();
 
   if (field === "completed_at") {
     return null;
@@ -99,7 +101,7 @@ export const ObjectiveActivityComponent = ({
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={`/profile/${members.find((m) => m.id === value)?.id}`}
+              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
             >
               <Avatar
                 name={members.find((m) => m.id === value)?.fullName}
@@ -167,7 +169,7 @@ export const ObjectiveActivityComponent = ({
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={`/profile/${members.find((m) => m.id === value)?.id}`}
+              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
             >
               <Avatar
                 className="relative"
@@ -223,7 +225,7 @@ export const ObjectiveActivityComponent = ({
                         "mb-0": member.role === "system",
                       })}
                       href={
-                        member.role === "system" ? "" : `/profile/${member.id}`
+                        member.role === "system" ? "" : withWorkspace(`/profile/${member.id}`)
                       }
                     >
                       <Text fontSize="md">{member.fullName}</Text>
@@ -235,7 +237,7 @@ export const ObjectiveActivityComponent = ({
                       <Button
                         className="mb-0.5 ml-px px-2"
                         color="tertiary"
-                        href={`/profile/${member.id}`}
+                        href={withWorkspace(`/profile/${member.id}`)}
                         size="xs"
                       >
                         Go to profile
@@ -337,7 +339,7 @@ export const ObjectiveActivityComponent = ({
             size="xs"
             src={member?.avatarUrl}
           />
-          <Box className="border-border bg-surface-muted d bg-surface/80 max-w-lg rounded-xl rounded-tl-md border px-4 py-2">
+          <Box className="border-border bg-surface/80 max-w-lg rounded-xl rounded-tl-md border px-4 py-2">
             <Text color="muted">{comment}</Text>
           </Box>
         </Flex>
