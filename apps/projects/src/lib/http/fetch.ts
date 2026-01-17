@@ -1,34 +1,18 @@
 import type { Options } from "ky";
 import ky from "ky";
-import { cache } from "react";
 import type { Session } from "next-auth";
 import { ApiError } from "./error";
-import { getHeaders } from "./header";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
-const isServer = typeof window === "undefined";
 
-// Cache client creation with workspace context using React's cache function
-const getClientContext = cache(async (token: string) => {
-  let subdomain = "";
-  if (isServer) {
-    const headersList = await getHeaders();
-    // In a path-based approach, we might need a better way to get the slug on the server
-    // For now, let's try to extract it from the referer or a custom header if we can
-    // Or, we can rely on the caller passing it, but let's try to keep it autonomous
-    const referer = headersList.get("referer");
-    if (referer) {
-      const url = new URL(referer);
-      subdomain = url.pathname.split("/")[1] || "";
-    }
-  } else {
-    subdomain = window.location.pathname.split("/")[1];
-  }
-
-  const prefixUrl = `${apiURL}/workspaces/${subdomain.toLowerCase()}/`;
+const createClient = (workspaceSlug: string, token: string) => {
+  const prefixUrl = `${apiURL}/workspaces/${workspaceSlug}/`;
 
   const client = ky.create({
     prefixUrl,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     hooks: {
       beforeError: [
         async (error) => {
@@ -43,104 +27,73 @@ const getClientContext = cache(async (token: string) => {
     },
   });
 
-  const authHeaders = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  return { client, authHeaders };
-});
+  return client;
+};
 
 export const get = async <T>(
   url: string,
   session: Session,
+  workspaceSlug: string,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session.token);
-  const mergedOptions = {
-    headers: {
-      ...authHeaders,
-      ...(options?.headers || {}),
-    },
-    ...options,
-  };
-
-  return client.get(url, mergedOptions).json<T>();
+  const client = createClient(workspaceSlug, session.token);
+  return client.get(url, options).json<T>();
 };
 
 export const post = async <T, U>(
   url: string,
   json: T,
   session: Session,
+  workspaceSlug: string,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session.token);
-  const mergedOptions = {
-    headers: {
-      ...authHeaders,
-      ...(options?.headers || {}),
-    },
-    ...options,
-  };
+  const client = createClient(workspaceSlug, session.token);
 
   if (json instanceof FormData) {
-    return client.post(url, { body: json, ...mergedOptions }).json<U>();
+    return client.post(url, { body: json, ...options }).json<U>();
   }
 
-  return client.post(url, { json, ...mergedOptions }).json<U>();
+  return client.post(url, { json, ...options }).json<U>();
 };
 
 export const put = async <T, U>(
   url: string,
   json: T,
   session: Session,
+  workspaceSlug: string,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session.token);
-  const mergedOptions = {
-    headers: {
-      ...authHeaders,
-      ...(options?.headers || {}),
-    },
-    ...options,
-  };
+  const client = createClient(workspaceSlug, session.token);
+
   if (json instanceof FormData) {
-    return client.put(url, { body: json, ...mergedOptions }).json<U>();
+    return client.put(url, { body: json, ...options }).json<U>();
   }
-  return client.put(url, { json, ...mergedOptions }).json<U>();
+
+  return client.put(url, { json, ...options }).json<U>();
 };
 
 export const patch = async <T, U>(
   url: string,
   json: T,
   session: Session,
+  workspaceSlug: string,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session.token);
-  const mergedOptions = {
-    headers: {
-      ...authHeaders,
-      ...(options?.headers || {}),
-    },
-    ...options,
-  };
+  const client = createClient(workspaceSlug, session.token);
+
   if (json instanceof FormData) {
-    return client.patch(url, { body: json, ...mergedOptions }).json<U>();
+    return client.patch(url, { body: json, ...options }).json<U>();
   }
-  return client.patch(url, { json, ...mergedOptions }).json<U>();
+
+  return client.patch(url, { json, ...options }).json<U>();
 };
 
 export const remove = async <T>(
   url: string,
   session: Session,
+  workspaceSlug: string,
   options?: Options,
 ) => {
-  const { client, authHeaders } = await getClientContext(session.token);
-  const mergedOptions = {
-    headers: {
-      ...authHeaders,
-      ...(options?.headers || {}),
-    },
-    ...options,
-  };
-  return client.delete(url, mergedOptions).json<T>();
+  const client = createClient(workspaceSlug, session.token);
+  return client.delete(url, options).json<T>();
 };
