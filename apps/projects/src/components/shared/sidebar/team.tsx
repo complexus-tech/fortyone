@@ -25,6 +25,7 @@ import {
   useFeatures,
   useUserRole,
   useSprintsEnabled,
+  useWorkspacePath,
 } from "@/hooks";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
@@ -53,6 +54,7 @@ export const Team = ({
   );
   const { data: statuses } = useTeamStatuses(id);
   const pathname = usePathname();
+  const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
   const hasBacklog = statuses?.some((status) => status.category === "backlog");
@@ -79,24 +81,24 @@ export const Team = ({
     {
       name: "Backlog",
       icon: <BacklogIcon className="h-[1.15rem]" />,
-      href: `/teams/${id}/backlog`,
+      href: withWorkspace(`/teams/${id}/backlog`),
       disabled: !hasBacklog,
     },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
-      href: `/teams/${id}/stories`,
+      href: withWorkspace(`/teams/${id}/stories`),
     },
     {
       name: getTermDisplay("objectiveTerm", { variant: "plural" }),
       icon: <ObjectiveIcon />,
-      href: `/teams/${id}/objectives`,
+      href: withWorkspace(`/teams/${id}/objectives`),
       disabled: !features.objectiveEnabled,
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
       icon: <SprintsIcon />,
-      href: `/teams/${id}/sprints`,
+      href: withWorkspace(`/teams/${id}/sprints`),
       disabled: !sprintsEnabled,
     },
   ];
@@ -175,7 +177,7 @@ export const Team = ({
                     <Menu.Item className="py-0" disabled={userRole !== "admin"}>
                       <Link
                         className="flex items-center gap-1.5 py-1.5"
-                        href={`/settings/workspace/teams/${id}`}
+                        href={withWorkspace(`/settings/workspace/teams/${id}`)}
                       >
                         <SettingsIcon />
                         Team settings
@@ -184,7 +186,7 @@ export const Team = ({
                     <Menu.Item className="py-0" disabled={userRole !== "admin"}>
                       <Link
                         className="flex items-center gap-1.5 py-1.5"
-                        href={`/teams/${id}/archived`}
+                        href={withWorkspace(`/teams/${id}/archived`)}
                       >
                         <ArchiveIcon />
                         Archived{" "}
@@ -194,7 +196,7 @@ export const Team = ({
                     <Menu.Item className="py-0" disabled={userRole !== "admin"}>
                       <Link
                         className="flex items-center gap-1.5 py-1.5"
-                        href={`/teams/${id}/deleted`}
+                        href={withWorkspace(`/teams/${id}/deleted`)}
                       >
                         <DeleteIcon />
                         Deleted{" "}
@@ -233,8 +235,8 @@ export const Team = ({
                 .filter(({ disabled }) => !disabled)
                 .map(({ name, icon, href }) => {
                   const isActive =
-                    href === "/"
-                      ? pathname === href || pathname.startsWith("/dashboard")
+                    href === withWorkspace("/")
+                      ? pathname === href || pathname.startsWith(withWorkspace("/dashboard"))
                       : pathname.startsWith(href);
                   return (
                     <NavLink active={isActive} href={href} key={name}>
@@ -252,7 +254,7 @@ export const Team = ({
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
               className="flex items-center gap-1.5 py-1.5"
-              href={`/settings/workspace/teams/${id}`}
+              href={withWorkspace(`/settings/workspace/teams/${id}`)}
             >
               <SettingsIcon />
               Team settings
@@ -261,7 +263,7 @@ export const Team = ({
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
               className="flex items-center gap-1.5 py-1.5"
-              href={`/teams/${id}/archived`}
+              href={withWorkspace(`/teams/${id}/archived`)}
             >
               <ArchiveIcon />
               Archived {getTermDisplay("storyTerm", { variant: "plural" })}
@@ -270,7 +272,7 @@ export const Team = ({
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
               className="flex items-center gap-1.5 py-1.5"
-              href={`/teams/${id}/deleted`}
+              href={withWorkspace(`/teams/${id}/deleted`)}
             >
               <DeleteIcon />
               Deleted {getTermDisplay("storyTerm", { variant: "plural" })}

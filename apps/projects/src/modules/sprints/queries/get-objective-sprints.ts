@@ -1,12 +1,11 @@
 import { stringify } from "qs";
-import type { Session } from "next-auth";
-import { get } from "@/lib/http";
+import { get, type WorkspaceCtx } from "@/lib/http";
 import type { Sprint } from "@/modules/sprints/types";
 import type { ApiResponse } from "@/types";
 
 export const getObjectiveSprints = async (
   objectiveId: string,
-  session: Session,
+  ctx: WorkspaceCtx,
 ) => {
   if (!objectiveId) return [];
   const query = stringify(
@@ -18,6 +17,6 @@ export const getObjectiveSprints = async (
     },
   );
 
-  const sprints = await get<ApiResponse<Sprint[]>>(`sprints${query}`, session);
+  const sprints = await get<ApiResponse<Sprint[]>>(`sprints${query}`, ctx);
   return sprints.data!;
 };

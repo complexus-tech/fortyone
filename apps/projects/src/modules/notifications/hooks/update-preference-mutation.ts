@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { notificationKeys } from "@/constants/keys";
 import { updateNotificationPreferences } from "../actions/update-preferences";
 import type {
@@ -15,27 +16,28 @@ type UpdatePreferenceParams = {
 
 export const useUpdateNotificationPreferenceMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({ type, preferences }: UpdatePreferenceParams) =>
-      updateNotificationPreferences(preferences, type),
+      updateNotificationPreferences(preferences, type, workspaceSlug),
 
     onMutate: async ({ type, preferences }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({
-        queryKey: notificationKeys.preferences(),
+        queryKey: notificationKeys.preferences(workspaceSlug),
       });
 
       // Get the previous data
       const previousPreferences =
         queryClient.getQueryData<NotificationPreferences>(
-          notificationKeys.preferences(),
+          notificationKeys.preferences(workspaceSlug),
         );
 
       // Optimistically update to the new value
       if (previousPreferences) {
         queryClient.setQueryData<NotificationPreferences>(
-          notificationKeys.preferences(),
+          notificationKeys.preferences(workspaceSlug),
           {
             ...previousPreferences,
             preferences: {
@@ -60,7 +62,7 @@ export const useUpdateNotificationPreferenceMutation = () => {
       // Revert to the previous value
       if (context?.previousPreferences) {
         queryClient.setQueryData(
-          notificationKeys.preferences(),
+          notificationKeys.preferences(workspaceSlug),
           context.previousPreferences,
         );
       }
@@ -81,7 +83,7 @@ export const useUpdateNotificationPreferenceMutation = () => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
-        queryKey: notificationKeys.preferences(),
+        queryKey: notificationKeys.preferences(workspaceSlug),
       });
     },
   });

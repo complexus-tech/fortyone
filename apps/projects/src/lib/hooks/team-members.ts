@@ -10,7 +10,7 @@ export const useTeamMembers = (teamId?: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: memberKeys.team(teamId ?? ""),
+    queryKey: memberKeys.team(workspaceSlug, teamId ?? ""),
     queryFn: () =>
       getTeamMembers(teamId!, { session: session!, workspaceSlug }),
     enabled: Boolean(teamId),

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { createKeyResult } from "../actions/create-key-result";
@@ -9,18 +10,20 @@ import type { KeyResult, NewObjectiveKeyResult } from "../types";
 export const useCreateKeyResultMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: createKeyResult,
+    mutationFn: (newKeyResult: NewObjectiveKeyResult) =>
+      createKeyResult(newKeyResult, workspaceSlug),
 
     onMutate: async (newKeyResult: NewObjectiveKeyResult) => {
       await queryClient.cancelQueries({
-        queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
+        queryKey: objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
       });
 
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
-        objectiveKeys.keyResults(newKeyResult.objectiveId),
+        objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
       );
 
       const optimisticKeyResult: KeyResult = {
@@ -34,7 +37,7 @@ export const useCreateKeyResultMutation = () => {
       };
 
       queryClient.setQueryData<KeyResult[]>(
-        objectiveKeys.keyResults(newKeyResult.objectiveId),
+        objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
         (old = []) => [optimisticKeyResult, ...old],
       );
 
@@ -43,7 +46,7 @@ export const useCreateKeyResultMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousKeyResults) {
         queryClient.setQueryData<KeyResult[]>(
-          objectiveKeys.keyResults(variables.objectiveId),
+          objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
           context.previousKeyResults,
         );
       }
@@ -73,10 +76,10 @@ export const useCreateKeyResultMutation = () => {
       });
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.keyResults(newKeyResult.objectiveId),
+        queryKey: objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.activitiesInfinite(newKeyResult.objectiveId),
+        queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, newKeyResult.objectiveId),
       });
     },
   });

@@ -1,21 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import type { ObjectiveStatus } from "../../types";
 import { objectiveKeys } from "../../constants";
 import { deleteObjectiveStatusAction } from "../../actions/statuses/delete";
 
 export const useDeleteObjectiveStatusMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (statusId: string) => deleteObjectiveStatusAction(statusId),
+    mutationFn: (statusId: string) => deleteObjectiveStatusAction(statusId, workspaceSlug),
     onMutate: (statusId) => {
       const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
-        objectiveKeys.statuses(),
+        objectiveKeys.statuses(workspaceSlug),
       );
       if (previousStatuses) {
         queryClient.setQueryData<ObjectiveStatus[]>(
-          objectiveKeys.statuses(),
+          objectiveKeys.statuses(workspaceSlug),
           previousStatuses.filter((status) => status.id !== statusId),
         );
       }
@@ -24,7 +26,7 @@ export const useDeleteObjectiveStatusMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousStatuses) {
         queryClient.setQueryData<ObjectiveStatus[]>(
-          objectiveKeys.statuses(),
+          objectiveKeys.statuses(workspaceSlug),
           context.previousStatuses,
         );
       }
@@ -38,7 +40,7 @@ export const useDeleteObjectiveStatusMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
     onSuccess: (res) => {
@@ -47,7 +49,7 @@ export const useDeleteObjectiveStatusMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
   });

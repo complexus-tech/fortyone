@@ -8,12 +8,20 @@ import { getNotifications } from "@/modules/notifications/queries/get-notificati
 import { notificationKeys } from "@/constants/keys";
 import { auth } from "@/auth";
 
-export default async function Layout({ children }: { children: ReactNode }) {
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const queryClient = getQueryClient();
   const session = await auth();
+  const { workspaceSlug } = await params;
+  const ctx = { session: session!, workspaceSlug };
   queryClient.prefetchQuery({
-    queryKey: notificationKeys.all,
-    queryFn: () => getNotifications(session!),
+    queryKey: notificationKeys.all(workspaceSlug),
+    queryFn: () => getNotifications(ctx),
   });
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

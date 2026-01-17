@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "../../constants";
 import type { UpdateObjectiveStatus } from "../../actions/statuses/update";
 import { updateObjectiveStatusAction } from "../../actions/statuses/update";
@@ -7,6 +8,7 @@ import type { ObjectiveStatus } from "../../types";
 
 export const useUpdateObjectiveStatusMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -15,11 +17,11 @@ export const useUpdateObjectiveStatusMutation = () => {
     }: {
       statusId: string;
       payload: UpdateObjectiveStatus;
-    }) => updateObjectiveStatusAction(statusId, payload),
+    }) => updateObjectiveStatusAction(statusId, payload, workspaceSlug),
 
     onMutate: (newStatus) => {
       const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
-        objectiveKeys.statuses(),
+        objectiveKeys.statuses(workspaceSlug),
       );
       if (previousStatuses) {
         const updatedStatuses = previousStatuses.map((status) => {
@@ -43,7 +45,7 @@ export const useUpdateObjectiveStatusMutation = () => {
         });
 
         queryClient.setQueryData<ObjectiveStatus[]>(
-          objectiveKeys.statuses(),
+          objectiveKeys.statuses(workspaceSlug),
           updatedStatuses,
         );
       }
@@ -53,7 +55,7 @@ export const useUpdateObjectiveStatusMutation = () => {
     onError: (_, variables, context) => {
       if (context?.previousStatuses) {
         queryClient.setQueryData<ObjectiveStatus[]>(
-          objectiveKeys.statuses(),
+          objectiveKeys.statuses(workspaceSlug),
           context.previousStatuses,
         );
       }
@@ -67,7 +69,7 @@ export const useUpdateObjectiveStatusMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
     onSuccess: (res) => {
@@ -76,7 +78,7 @@ export const useUpdateObjectiveStatusMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
   });

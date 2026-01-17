@@ -40,7 +40,7 @@ export const ServerSentEvents = () => {
   const handleNotification = useCallback(
     (notification: AppNotification) => {
       queryClient.invalidateQueries({
-        queryKey: notificationKeys.all,
+        queryKey: notificationKeys.all(workspaceSlug),
       });
       if (notification.entityType === "story") {
         queryClient.invalidateQueries({

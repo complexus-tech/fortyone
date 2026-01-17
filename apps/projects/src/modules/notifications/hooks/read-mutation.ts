@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { notificationKeys } from "@/constants/keys";
 import { readNotification } from "../actions/read";
 import type { AppNotification } from "../types";
@@ -13,26 +14,27 @@ import type { AppNotification } from "../types";
 
 export const useReadNotificationMutation = (isOptimistic = true) => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) => readNotification(notificationId),
+    mutationFn: (notificationId: string) => readNotification(notificationId, workspaceSlug),
 
     onMutate: async (notificationId) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
 
       // Get the previous data
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
-        notificationKeys.all,
+        notificationKeys.all(workspaceSlug),
       );
 
       const previousUnreadCount = queryClient.getQueryData<number>(
-        notificationKeys.unread(),
+        notificationKeys.unread(workspaceSlug),
       );
 
       if (previousUnreadCount && isOptimistic) {
         queryClient.setQueryData<number>(
-          notificationKeys.unread(),
+          notificationKeys.unread(workspaceSlug),
           previousUnreadCount - 1,
         );
       }
@@ -40,7 +42,7 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
       // Optimistically update the notifications
       if (previousNotifications && isOptimistic) {
         queryClient.setQueryData<AppNotification[]>(
-          notificationKeys.all,
+          notificationKeys.all(workspaceSlug),
           previousNotifications.map((notification) =>
             notification.id === notificationId
               ? { ...notification, readAt: new Date().toISOString() }
@@ -56,14 +58,14 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
       // Rollback on error
       if (context?.previousNotifications) {
         queryClient.setQueryData(
-          notificationKeys.all,
+          notificationKeys.all(workspaceSlug),
           context.previousNotifications,
         );
       }
 
       if (context?.previousUnreadCount) {
         queryClient.setQueryData<number>(
-          notificationKeys.unread(),
+          notificationKeys.unread(workspaceSlug),
           context.previousUnreadCount,
         );
       }
@@ -80,8 +82,8 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
 
     onSettled: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
     },
   });
 

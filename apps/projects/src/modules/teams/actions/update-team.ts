@@ -12,13 +12,18 @@ export type UpdateTeamInput = {
   code?: string;
 };
 
-export const updateTeamAction = async (id: string, input: UpdateTeamInput) => {
+export const updateTeamAction = async (
+  id: string,
+  input: UpdateTeamInput,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const team = await put<UpdateTeamInput, ApiResponse<Team>>(
       `teams/${id}`,
       input,
-      session!,
+      ctx,
     );
     return team;
   } catch (error) {

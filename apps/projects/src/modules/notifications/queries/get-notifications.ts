@@ -1,13 +1,12 @@
-import type { Session } from "next-auth";
-import { get } from "@/lib/http";
+import { get, type WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { AppNotification } from "../types";
 
-export const getNotifications = async (session: Session) => {
+export const getNotifications = async (ctx: WorkspaceCtx) => {
   try {
     const res = await get<ApiResponse<AppNotification[]>>(
       "notifications",
-      session,
+      ctx,
     );
     return res.data ?? [];
   } catch (error) {

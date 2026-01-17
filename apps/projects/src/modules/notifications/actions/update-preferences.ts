@@ -15,10 +15,12 @@ export const updateNotificationPreferences = async (
     | "key_result_update"
     | "story_comment"
     | "reminders",
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
-    await put(`notification-preferences/${type}`, preferences, session!);
+    const ctx = { session: session!, workspaceSlug };
+    await put(`notification-preferences/${type}`, preferences, ctx);
   } catch (error) {
     return getApiError(error);
   }
