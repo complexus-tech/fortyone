@@ -9,10 +9,14 @@ export const removeStoryAssociation = tool({
   inputSchema: z.object({
     associationId: z.string().describe("The ID of the association to remove"),
   }),
-  execute: async ({ associationId }) => {
+  execute: async (({ associationId }), { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
 
       const workspace = await getWorkspace(session);
       if (workspace.userRole === "guest")

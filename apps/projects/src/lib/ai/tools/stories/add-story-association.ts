@@ -16,10 +16,14 @@ export const addStoryAssociation = tool({
       .enum(["related", "blocking", "duplicate"])
       .describe("The type of association"),
   }),
-  execute: async ({ fromStoryId, toStoryId, type }) => {
+  execute: async (({ fromStoryId, toStoryId, type }), { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
 
       const workspace = await getWorkspace(session);
       if (workspace.userRole === "guest")

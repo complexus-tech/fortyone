@@ -54,7 +54,7 @@ export const navigation = tool({
       ),
   }),
 
-  execute: async ({ targetType, entityId, teamId, route }) => {
+  execute: async (({ targetType, entityId, teamId, route }), { experimental_context }) => {
     let routePath: string;
     let message: string;
 

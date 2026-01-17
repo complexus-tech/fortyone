@@ -8,12 +8,17 @@ export const listRunningSprints = tool({
     "List all currently running sprints. Returns active sprints with their details.",
   inputSchema: z.object({}),
 
-  execute: async () => {
+  execute: async ((), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access sprints",
         };

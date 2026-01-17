@@ -79,6 +79,8 @@ export const searchTool = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to perform search",

@@ -9,12 +9,17 @@ export const listPublicTeams = tool({
     "List all public teams that the current user can join. Returns teams that are not private and that the user is not already a member of.",
   inputSchema: z.object({}),
 
-  execute: async () => {
+  execute: async ((), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access teams",
         };

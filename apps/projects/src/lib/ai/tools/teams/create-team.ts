@@ -23,12 +23,17 @@ export const createTeamTool = tool({
       .describe("Whether team is private (default: false)"),
   }),
 
-  execute: async ({ name, code, color, isPrivate = false }) => {
+  execute: async (({ name, code, color, isPrivate = false }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to create teams",
         };

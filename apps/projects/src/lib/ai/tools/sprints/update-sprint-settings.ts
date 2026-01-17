@@ -48,6 +48,8 @@ export const updateSprintSettings = tool({
     try {
       const session = await auth();
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to update sprint settings",

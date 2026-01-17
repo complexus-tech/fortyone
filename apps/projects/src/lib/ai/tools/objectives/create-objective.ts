@@ -72,6 +72,8 @@ export const createObjectiveTool = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to create objectives",

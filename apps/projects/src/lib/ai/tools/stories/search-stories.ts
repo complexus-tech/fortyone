@@ -46,6 +46,8 @@ export const searchStories = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to search stories",

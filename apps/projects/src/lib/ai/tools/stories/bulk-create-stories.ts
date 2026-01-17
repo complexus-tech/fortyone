@@ -45,12 +45,17 @@ export const bulkCreateStories = tool({
       .describe("Array of story data for bulk creation (required)"),
   }),
 
-  execute: async ({ storiesData }) => {
+  execute: async (({ storiesData }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to create stories",
         };

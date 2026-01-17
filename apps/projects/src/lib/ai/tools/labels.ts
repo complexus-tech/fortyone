@@ -21,12 +21,15 @@ export const labelsTool = tool({
     color: z.string().optional(),
     teamId: z.string().optional(),
   }),
-  execute: async ({ action, labelId, name, color, teamId }) => {
+  execute: async ({ action, labelId, name, color, teamId }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
 
-      const workspace = await getWorkspace(session);
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       const isGuest = userRole === "guest";
 
@@ -38,14 +41,14 @@ export const labelsTool = tool({
         case "list-labels":
           return {
             success: true,
-            labels: await getLabels(session, teamId ? { teamId } : {}),
+            labels: await getLabels(ctx, teamId ? { teamId } : {}),
           };
 
         case "create-label":
           if (!name || !color)
             return { success: false, error: "Name and color are required" };
           {
-            const res = await createLabelAction({ name, color, teamId });
+            const res = await createLabelAction({ name, color, teamId }, workspaceSlug);
             if (res.error) return { success: false, error: res.error.message };
             return { success: true, label: res.data };
           }
@@ -64,6 +67,7 @@ export const labelsTool = tool({
             const res = await editLabelAction(
               labelId,
               updates as { name: string; color: string },
+              workspaceSlug,
             );
             if (res.error) return { success: false, error: res.error.message };
             return { success: true, label: res.data };
@@ -73,7 +77,7 @@ export const labelsTool = tool({
           if (!labelId)
             return { success: false, error: "Label ID is required" };
           {
-            const res = await deleteLabelAction(labelId);
+            const res = await deleteLabelAction(labelId, workspaceSlug);
             if (res.error) return { success: false, error: res.error.message };
             return { success: true, message: "Label deleted" };
           }

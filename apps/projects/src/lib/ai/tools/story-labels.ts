@@ -17,10 +17,14 @@ export const storyLabelsTool = tool({
     storyId: z.string(),
     labelIds: z.array(z.string()).optional(),
   }),
-  execute: async ({ action, storyId, labelIds = [] }) => {
+  execute: async (({ action, storyId, labelIds = [] }), { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
 
       const workspace = await getWorkspace(session);
       const userRole = workspace.userRole;

@@ -45,6 +45,8 @@ export const updateKeyResultTool = tool({
     const session = await auth();
 
     if (!session) {
+
+
       return {
         success: false,
         error: "Authentication required",

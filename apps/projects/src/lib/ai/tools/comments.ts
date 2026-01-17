@@ -56,6 +56,8 @@ export const commentsTool = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to access comments",
@@ -64,7 +66,7 @@ export const commentsTool = tool({
 
       const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
 
-      const ctx = { session: session!, workspaceSlug };
+      const ctx = { session, workspaceSlug };
 
       // Get user's workspace and role for permissions
       const workspace = await getWorkspace(ctx);
@@ -83,7 +85,7 @@ export const commentsTool = tool({
             };
           }
 
-          const response = await getStoryComments(storyId, session);
+          const response = await getStoryComments(storyId, ctx);
           const comments = response.comments;
 
           // Filter and limit comments
@@ -159,7 +161,7 @@ export const commentsTool = tool({
             comment: content,
             parentId: parentId ?? null,
             mentions,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {
@@ -214,7 +216,7 @@ export const commentsTool = tool({
             comment: content,
             parentId,
             mentions,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {

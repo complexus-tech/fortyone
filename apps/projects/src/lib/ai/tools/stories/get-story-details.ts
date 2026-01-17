@@ -22,7 +22,7 @@ export const getStoryDetails = tool({
       ),
   }),
 
-  execute: async ({ storyId, storyRef }) => {
+  execute: async (({ storyId, storyRef }), { experimental_context }) => {
     if (!storyId && !storyRef) {
       return {
         success: false,
@@ -33,7 +33,12 @@ export const getStoryDetails = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access story details",
         };

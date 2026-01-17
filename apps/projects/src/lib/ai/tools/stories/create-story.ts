@@ -69,6 +69,8 @@ export const createStory = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to create stories",

@@ -12,12 +12,17 @@ export const deleteStory = tool({
     storyId: z.string().describe("Story ID to delete (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async (({ storyId }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to delete stories",
         };

@@ -10,7 +10,7 @@ export const listAttachments = tool({
     storyId: z.string().describe("Story ID to list attachments for (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async ({ storyId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -21,7 +21,11 @@ export const listAttachments = tool({
         };
       }
 
-      const attachments = await getStoryAttachments(storyId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const attachments = await getStoryAttachments(storyId, ctx);
 
       const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return `${bytes} B`;

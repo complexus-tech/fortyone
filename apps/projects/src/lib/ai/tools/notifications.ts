@@ -104,6 +104,8 @@ export const notificationsTool = tool({
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to access notifications",

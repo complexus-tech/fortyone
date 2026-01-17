@@ -77,7 +77,7 @@ export const statusesTool = tool({
     color,
     category,
     isDefault,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -87,19 +87,23 @@ export const statusesTool = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       const getTeamName = async (teamId: string): Promise<string | null> => {
-        const teams = await getTeams(session);
+        const teams = await getTeams(ctx);
         const team = teams.find((t) => t.id === teamId);
         return team ? team.name : null;
       };
 
       const findStatusByName = async (statusName: string, teamId?: string) => {
         const statuses = teamId
-          ? await getTeamStatuses(teamId, session)
-          : await getStatuses(session);
+          ? await getTeamStatuses(teamId, ctx)
+          : await getStatuses(ctx);
 
         const status = statuses.find(
           (s) => s.name.toLowerCase() === statusName.toLowerCase(),
@@ -115,7 +119,7 @@ export const statusesTool = tool({
 
       switch (action) {
         case "list-all-statuses": {
-          const statuses = await getStatuses(session);
+          const statuses = await getStatuses(ctx);
           return {
             success: true,
             data: statuses.map((status) => ({
@@ -149,7 +153,7 @@ export const statusesTool = tool({
             };
           }
 
-          const statuses = await getTeamStatuses(teamId, session);
+          const statuses = await getTeamStatuses(teamId, ctx);
 
           return {
             success: true,
@@ -171,7 +175,7 @@ export const statusesTool = tool({
           let status;
 
           if (statusId) {
-            const allStatuses = await getStatuses(session);
+            const allStatuses = await getStatuses(ctx);
             status = allStatuses.find((s) => s.id === statusId);
             if (!status) {
               return {
@@ -238,7 +242,7 @@ export const statusesTool = tool({
             color,
           };
 
-          const result = await createStateAction(newStatusData);
+          const result = await createStateAction(newStatusData, workspaceSlug);
 
           if (result.error) {
             return {
@@ -281,7 +285,7 @@ export const statusesTool = tool({
           if (name) updateData.name = name;
           if (isDefault !== undefined) updateData.isDefault = isDefault;
 
-          const result = await updateStateAction(targetStatusId, updateData);
+          const result = await updateStateAction(targetStatusId, updateData, workspaceSlug);
 
           if (result.error) {
             return {
@@ -319,7 +323,7 @@ export const statusesTool = tool({
             };
           }
 
-          const result = await deleteStateAction(targetStatusId);
+          const result = await deleteStateAction(targetStatusId, workspaceSlug);
 
           if (result.error) {
             return {
@@ -360,7 +364,7 @@ export const statusesTool = tool({
 
           const result = await updateStateAction(targetStatusId, {
             isDefault: true,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {

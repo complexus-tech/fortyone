@@ -11,12 +11,17 @@ export const duplicateStory = tool({
     storyId: z.string().describe("Story ID to duplicate (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async (({ storyId }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to duplicate stories",
         };

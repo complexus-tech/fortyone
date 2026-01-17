@@ -54,11 +54,16 @@ export const objectiveStatusesTool = tool({
       .optional()
       .describe("Whether this should be the default objective status"),
   }),
-  execute: async ({ action, statusId, name, color, category, isDefault }) => {
+  execute: async (({ action, statusId, name, color, category, isDefault }), { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access objective statuses",
         };

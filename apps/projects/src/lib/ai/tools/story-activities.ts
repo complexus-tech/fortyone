@@ -59,12 +59,17 @@ export const storyActivitiesTool = tool({
       ),
   }),
 
-  execute: async ({ action, storyId, limit = 20 }) => {
+  execute: async (({ action, storyId, limit = 20 }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access story activities",
         };

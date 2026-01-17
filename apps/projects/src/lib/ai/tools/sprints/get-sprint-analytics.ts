@@ -9,12 +9,17 @@ export const getSprintAnalyticsTool = tool({
   inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get analytics for (required)"),
   }),
-  execute: async ({ sprintId }) => {
+  execute: async (({ sprintId }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access sprint analytics",
         };

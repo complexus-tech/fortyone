@@ -20,12 +20,17 @@ export const updateTeam = tool({
     isPrivate: z.boolean().optional().describe("Updated privacy setting"),
   }),
 
-  execute: async ({ teamId, name, color, code, isPrivate }) => {
+  execute: async (({ teamId, name, color, code, isPrivate }), { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to update teams",
         };
