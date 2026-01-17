@@ -19,6 +19,7 @@ import { useMembers } from "@/lib/hooks/members";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { CommentInput } from "@/modules/story/components/comment-input";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
+import { useWorkspacePath } from "@/hooks";
 
 const MainComment = ({
   storyId,
@@ -36,6 +37,7 @@ const MainComment = ({
   const { data: members = [] } = useMembers();
   const { data: session } = useSession();
   const { mutate: deleteComment } = useDeleteCommentMutation();
+  const { withWorkspace } = useWorkspacePath();
   const [isOpen, setIsOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -80,7 +82,7 @@ const MainComment = ({
                   <Box>
                     <Link
                       className="mb-2 flex gap-1"
-                      href={`/profile/${member.id}`}
+                      href={withWorkspace(`/profile/${member.id}`)}
                     >
                       <Text fontSize="md">{member.fullName}</Text>
                       <Text color="muted">({member.username})</Text>
@@ -88,7 +90,7 @@ const MainComment = ({
                     <Button
                       className="mb-0.5 ml-px px-2"
                       color="tertiary"
-                      href={`/profile/${member.id}`}
+                      href={withWorkspace(`/profile/${member.id}`)}
                       size="xs"
                     >
                       Go to profile

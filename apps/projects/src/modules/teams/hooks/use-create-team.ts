@@ -10,7 +10,7 @@ export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { analytics } = useAnalytics();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const toastId = "create-team";
 
   const mutation = useMutation({
@@ -81,7 +81,7 @@ export const useCreateTeamMutation = () => {
       });
       queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
       queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
-      router.push(`/settings/workspace/teams/${data?.id}`);
+      router.push(withWorkspace(`/settings/workspace/teams/${data?.id}`));
     },
   });
 

@@ -32,7 +32,7 @@ export const SprintRow = ({
   const { getTermDisplay } = useTerminology();
   const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
   const { data: session } = useSession();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = new QueryClient();
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
@@ -50,7 +50,7 @@ export const SprintRow = ({
     <RowWrapper className="gap-3 py-2">
       <Link
         className="flex flex-1 items-center gap-4"
-        href={`/teams/${teamId}/sprints/${id}/stories`}
+        href={withWorkspace(`/teams/${teamId}/sprints/${id}/stories`)}
         onMouseEnter={() => {
           if (session) {
             queryClient.prefetchQuery({

@@ -4,7 +4,7 @@ import { CopyIcon, DeleteIcon, GitIcon, MaximizeIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useCopyToClipboard, useTerminology, useUserRole } from "@/hooks";
+import { useCopyToClipboard, useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
@@ -44,6 +44,7 @@ export const OptionsHeader = ({
   const { getTermDisplay } = useTerminology();
   const { data: automationPreferences } = useAutomationPreferences();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
 
   const generateGitBranchName = () => {
     const branchName =
@@ -117,7 +118,7 @@ export const OptionsHeader = ({
                 <Button
                   asIcon
                   color="tertiary"
-                  href={`/story/${id}/${slugify(title)}`}
+                  href={withWorkspace(`/story/${id}/${slugify(title)}`)}
                   leftIcon={
                     <MaximizeIcon className="h-5" strokeWidth={2.5} />
                   }

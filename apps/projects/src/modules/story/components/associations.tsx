@@ -19,6 +19,7 @@ import type { StoryAssociation } from "../types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import Link from "next/link";
 import { slugify } from "@/utils";
+import { useWorkspacePath } from "@/hooks";
 
 const AssociationBadge = ({
   association,
@@ -78,6 +79,7 @@ export const Associations = ({
 }) => {
   const { data: teams = [] } = useTeams();
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
+  const { withWorkspace } = useWorkspacePath();
 
   return (
     <Box className="mt-4">
@@ -123,7 +125,7 @@ export const Associations = ({
                 <Flex align="center" className="flex-1 gap-2">
                   <AssociationBadge association={assoc} storyId={storyId} />
                   <Link
-                    href={`/story/${assoc.story.id}/${slugify(assoc.story.title)}`}
+                    href={withWorkspace(`/story/${assoc.story.id}/${slugify(assoc.story.title)}`)}
                   >
                     <Text
                       className="line-clamp-1 font-medium"

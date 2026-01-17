@@ -34,7 +34,7 @@ export const StoryDialog = ({
   const { data: story } = useStoryById(storyId);
   const queryClient = useQueryClient();
   const { data: session } = useSession();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
 
   // Memoized navigation state
   const navigationState = useMemo(() => {
@@ -182,7 +182,7 @@ export const StoryDialog = ({
                       <Button
                         asIcon
                         color="tertiary"
-                        href={`/story/${story?.id}/${slugify(story?.title)}`}
+                        href={withWorkspace(`/story/${story?.id}/${slugify(story?.title)}`)}
                         leftIcon={
                           <MaximizeIcon
                             className="h-[1.15rem]"

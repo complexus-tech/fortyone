@@ -54,7 +54,7 @@ export const ChatHeader = ({
                 <NewTabIcon className="text-foreground/70" strokeWidth={2.6} />
               }
               onClick={() => {
-                router.push(`/maya?chatRef=${currentChatId}`);
+                router.push(withWorkspace(`/maya?chatRef=${currentChatId}`));
                 setIsOpen(false);
               }}
               variant="naked"

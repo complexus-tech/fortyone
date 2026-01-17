@@ -35,7 +35,7 @@ const ObjectiveRow = ({
   // Import userRole directly in this component
   const { userRole } = useUserRole();
   const { data: session } = useSession();
-  const { workspaceSlug } = useWorkspacePath();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = useQueryClient();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
 
@@ -159,7 +159,7 @@ const ObjectiveRow = ({
 
           <Link
             className="flex min-w-0 flex-1 items-center gap-1.5"
-            href={`/teams/${objective.teamId}/objectives/${objective.id}`}
+            href={withWorkspace(`/teams/${objective.teamId}/objectives/${objective.id}`)}
           >
             <Text className="line-clamp-1 hover:opacity-90" fontWeight="medium">
               {objective.name}
@@ -216,6 +216,7 @@ export const RoadmapGanttBoard = ({
 }: RoadmapGanttBoardProps) => {
   const { mutate } = useUpdateObjectiveMutation();
   const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -234,9 +235,9 @@ export const RoadmapGanttBoard = ({
   // Handle bar clicks to navigate to objective page
   const handleBarClick = useCallback(
     (objective: Objective) => {
-      router.push(`/teams/${objective.teamId}/objectives/${objective.id}`);
+      router.push(withWorkspace(`/teams/${objective.teamId}/objectives/${objective.id}`));
     },
-    [router],
+    [router, withWorkspace],
   );
 
   const handleUpdate = useCallback(
