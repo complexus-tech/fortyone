@@ -1,15 +1,14 @@
-import type { Session } from "next-auth";
-import { get } from "@/lib/http";
+import { get, type WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { SprintAnalytics } from "../types";
 
 export const getSprintAnalytics = async (
   sprintId: string,
-  session: Session,
+  ctx: WorkspaceCtx,
 ) => {
   const analytics = await get<ApiResponse<SprintAnalytics>>(
     `sprints/${sprintId}/analytics`,
-    session,
+    ctx,
   );
   return analytics.data!;
 };

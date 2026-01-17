@@ -84,17 +84,17 @@ export const subscriptionKeys = {
 };
 
 export const analyticsKeys = {
-  all: ["analytics"] as const,
-  overview: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "overview", filters] as const,
-  storyAnalytics: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "story-analytics", filters] as const,
-  objectiveProgress: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "objective-progress", filters] as const,
-  teamPerformance: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "team-performance", filters] as const,
-  sprintAnalytics: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "sprint-analytics", filters] as const,
-  timelineTrends: (filters?: Record<string, unknown>) =>
-    [...analyticsKeys.all, "timeline-trends", filters] as const,
+  all: (workspaceSlug: string) => ["analytics", workspaceSlug] as const,
+  overview: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "overview", filters] as const,
+  storyAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "story-analytics", filters] as const,
+  objectiveProgress: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "objective-progress", filters] as const,
+  teamPerformance: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "team-performance", filters] as const,
+  sprintAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "sprint-analytics", filters] as const,
+  timelineTrends: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "timeline-trends", filters] as const,
 };
