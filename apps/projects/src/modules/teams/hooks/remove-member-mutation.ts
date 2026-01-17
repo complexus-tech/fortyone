@@ -21,7 +21,7 @@ export const useRemoveMemberMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      removeTeamMemberAction(teamId, memberId),
+      removeTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Leaving team..." : "Removing member...",

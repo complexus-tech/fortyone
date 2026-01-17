@@ -75,7 +75,7 @@ export const useDeleteStoryMutation = () => {
   const { mutateAsync } = useRestoreStoryMutation();
 
   const mutation = useMutation({
-    mutationFn: deleteStoryAction,
+    mutationFn: (storyId: string) => deleteStoryAction(storyId, workspaceSlug),
 
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(

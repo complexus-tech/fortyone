@@ -5,27 +5,29 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 import type { Team, CreateTeamInput, UpdateTeamInput } from "../types";
 
-export async function createTeam(input: CreateTeamInput) {
+export async function createTeam(input: CreateTeamInput, workspaceSlug: string) {
   try {
     const session = await auth();
-    const team = await post<CreateTeamInput, ApiResponse<Team>>(
-      "teams",
-      input,
-      session!,
-    );
+    const ctx = { session: session!, workspaceSlug };
+    const team = await post<CreateTeamInput, ApiResponse<Team>>("teams", input, ctx);
     return team;
   } catch (error) {
     return getApiError(error);
   }
 }
 
-export async function updateTeam(teamId: string, input: UpdateTeamInput) {
+export async function updateTeam(
+  teamId: string,
+  input: UpdateTeamInput,
+  workspaceSlug: string,
+) {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const team = await put<UpdateTeamInput, ApiResponse<Team>>(
       `teams/${teamId}`,
       input,
-      session!,
+      ctx,
     );
     return team;
   } catch (error) {

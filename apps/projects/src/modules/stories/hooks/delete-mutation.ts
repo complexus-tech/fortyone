@@ -6,6 +6,11 @@ import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
 import type { GroupedStoriesResponse, GroupStoriesResponse } from "../types";
+
+type Payload = {
+  storyIds: string[];
+  hardDelete?: boolean;
+};
 import { useBulkRestoreStoryMutation } from "./restore-mutation";
 
 const updateDetailQuery = (
@@ -101,7 +106,8 @@ export const useBulkDeleteStoryMutation = () => {
   const { mutateAsync } = useBulkRestoreStoryMutation();
 
   const mutation = useMutation({
-    mutationFn: bulkDeleteAction,
+    mutationFn: (payload: Payload) =>
+      bulkDeleteAction(payload, workspaceSlug),
 
     onMutate: ({ storyIds }) => {
       const queryCache = queryClient.getQueryCache();

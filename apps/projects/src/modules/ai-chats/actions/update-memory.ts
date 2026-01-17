@@ -9,13 +9,15 @@ import type { UpdateMemoryPayload } from "../types";
 export const updateMemoryAction = async (
   id: string,
   payload: UpdateMemoryPayload,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const result = await put<UpdateMemoryPayload, ApiResponse<null>>(
       `users/memory/${id}`,
       payload,
-      session!,
+      ctx,
     );
     return result;
   } catch (error) {

@@ -99,7 +99,8 @@ export const useBulkArchiveStoryMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: bulkArchiveAction,
+    mutationFn: (storyIds: string[]) =>
+      bulkArchiveAction(storyIds, workspaceSlug),
 
     onMutate: (storyIds) => {
       const queryCache = queryClient.getQueryCache();

@@ -17,7 +17,7 @@ export const useAddMemberMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      addTeamMemberAction(teamId, memberId),
+      addTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Joining team..." : "Adding member...",

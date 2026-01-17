@@ -1,12 +1,11 @@
-import type { Session } from "next-auth";
-import { get } from "@/lib/http";
+import { get, type WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { AiTotalChatMessages } from "../types";
 
-export const getTotalMessagesForTheMonth = async (session: Session) => {
+export const getTotalMessagesForTheMonth = async (ctx: WorkspaceCtx) => {
   const chats = await get<ApiResponse<AiTotalChatMessages>>(
     "chat-sessions/messages/count",
-    session,
+    ctx,
   );
   return chats?.data?.count || 0;
 };

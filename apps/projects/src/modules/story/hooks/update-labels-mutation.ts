@@ -106,7 +106,7 @@ export const useUpdateLabelsMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({ storyId, labels }: { storyId: string; labels: string[] }) =>
-      updateLabelsAction(storyId, labels),
+      updateLabelsAction(storyId, labels, workspaceSlug),
 
     onMutate: ({ storyId, labels }) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
@@ -165,7 +165,7 @@ export const useUpdateLabelsMutation = () => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: labelKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: labelKeys.lists(workspaceSlug) });
     },
   });
 

@@ -245,7 +245,7 @@ export const useCreateStoryMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: createStoryAction,
+    mutationFn: (story: NewStory) => createStoryAction(story, workspaceSlug),
 
     onMutate: (story) => {
       const queryCache = queryClient.getQueryCache();

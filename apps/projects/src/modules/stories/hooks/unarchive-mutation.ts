@@ -9,7 +9,8 @@ export const useBulkUnarchiveStoryMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: bulkUnarchiveAction,
+    mutationFn: (storyIds: string[]) =>
+      bulkUnarchiveAction(storyIds, workspaceSlug),
     onError: (error, storyIds) => {
       toast.error("Failed to unarchive stories", {
         description:

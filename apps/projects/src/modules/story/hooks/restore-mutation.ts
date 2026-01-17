@@ -81,7 +81,7 @@ export const useRestoreStoryMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: restoreStoryAction,
+    mutationFn: (storyId: string) => restoreStoryAction(storyId, workspaceSlug),
 
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(

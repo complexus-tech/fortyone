@@ -106,7 +106,7 @@ export const useBulkUpdateStoriesMutation = () => {
     }: {
       storyIds: string[];
       payload: Partial<DetailedStory>;
-    }) => bulkUpdateAction({ storyIds, updates: payload }),
+    }) => bulkUpdateAction({ storyIds, updates: payload }, workspaceSlug),
 
     onMutate: ({ storyIds, payload }) => {
       const previousQueryStates = new Map<string, unknown>();

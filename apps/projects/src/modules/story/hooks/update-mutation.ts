@@ -30,7 +30,7 @@ export const useUpdateStoryMutation = () => {
     }: {
       storyId: string;
       payload: Partial<DetailedStory>;
-    }) => updateStoryAction(storyId, payload),
+    }) => updateStoryAction(storyId, payload, workspaceSlug),
 
     onMutate: ({ storyId, payload }) => {
       queryClient.cancelQueries({

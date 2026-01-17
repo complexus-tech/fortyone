@@ -34,11 +34,15 @@ export const useCommentStoryMutation = () => {
         mentions: string[];
       };
     }) =>
-      commentStoryAction(storyId, {
-        comment: payload.comment,
-        mentions: payload.mentions,
-        parentId: payload.parentId,
-      }),
+      commentStoryAction(
+        storyId,
+        {
+          comment: payload.comment,
+          mentions: payload.mentions,
+          parentId: payload.parentId,
+        },
+        workspaceSlug,
+      ),
     onError: (error, variables) => {
       toast.error("Failed to comment story", {
         description: error.message || "Your comment was not saved",

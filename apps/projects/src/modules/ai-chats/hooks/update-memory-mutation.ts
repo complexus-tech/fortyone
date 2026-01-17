@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { aiChatKeys } from "../constants";
 import { updateMemoryAction } from "../actions/update-memory";
 import type { UpdateMemoryPayload, Memory } from "../types";
 
 export const useUpdateMemory = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -14,7 +16,7 @@ export const useUpdateMemory = () => {
     }: {
       id: string;
       payload: UpdateMemoryPayload;
-    }) => updateMemoryAction(id, payload),
+    }) => updateMemoryAction(id, payload, workspaceSlug),
     onMutate: async ({ id, payload }) => {
       await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
 

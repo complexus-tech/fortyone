@@ -1,11 +1,10 @@
-import type { Session } from "next-auth";
 import { stringify } from "qs";
-import { get } from "@/lib/http";
+import { get, type WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { KeyResultListResponse, KeyResultFilters } from "../types";
 
 export const getWorkspaceKeyResults = async (
-  session: Session,
+  ctx: WorkspaceCtx,
   filters?: KeyResultFilters,
 ) => {
   const query = stringify(filters, {
@@ -17,7 +16,7 @@ export const getWorkspaceKeyResults = async (
 
   const keyResults = await get<ApiResponse<KeyResultListResponse>>(
     `key-results${query}`,
-    session,
+    ctx,
   );
 
   return keyResults.data!;

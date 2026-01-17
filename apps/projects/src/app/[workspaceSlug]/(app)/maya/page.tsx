@@ -13,17 +13,21 @@ export const metadata: Metadata = {
 
 export default async function MayaPage({
   searchParams,
+  params,
 }: {
   searchParams: Promise<{ chatRef: string }>;
+  params: Promise<{ workspaceSlug: string }>;
 }) {
   const session = await auth();
   const { chatRef } = await searchParams;
+  const { workspaceSlug } = await params;
+  const ctx = { session: session!, workspaceSlug };
   const queryClient = getQueryClient();
 
   if (chatRef && session) {
     await queryClient.prefetchQuery({
       queryKey: aiChatKeys.messages(chatRef),
-      queryFn: () => getAiChatMessages(session, chatRef),
+      queryFn: () => getAiChatMessages(ctx, chatRef),
     });
   }
 

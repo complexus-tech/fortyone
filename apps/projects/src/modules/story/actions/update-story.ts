@@ -9,13 +9,15 @@ import type { DetailedStory } from "../types";
 export const updateStoryAction = async (
   storyId: string,
   payload: Partial<DetailedStory>,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await put<Partial<DetailedStory>, ApiResponse<null>>(
       `stories/${storyId}`,
       payload,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

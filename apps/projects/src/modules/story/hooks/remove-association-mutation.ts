@@ -15,7 +15,7 @@ export const useRemoveAssociationMutation = () => {
     }: {
       associationId: string;
       storyId: string;
-    }) => removeAssociationAction(associationId),
+    }) => removeAssociationAction(associationId, workspaceSlug),
 
     onMutate: async ({ storyId, associationId }) => {
       await queryClient.cancelQueries({

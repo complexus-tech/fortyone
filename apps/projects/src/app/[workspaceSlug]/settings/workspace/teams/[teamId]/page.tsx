@@ -34,11 +34,11 @@ export default async function TeamManagementPage({
   const queryClient = getQueryClient();
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: memberKeys.team(teamId),
+      queryKey: memberKeys.team(workspaceSlug, teamId),
       queryFn: () => getTeamMembers(teamId, ctx),
     }),
     queryClient.prefetchQuery({
-      queryKey: teamKeys.settings(teamId),
+      queryKey: teamKeys.settings(workspaceSlug, teamId),
       queryFn: () => getTeamSettings(teamId, ctx),
     }),
   ]);

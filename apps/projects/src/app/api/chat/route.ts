@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       sendSources: true,
       originalMessages: messagesFromRequest,
       onFinish: async ({ messages }) => {
-        await saveChat({ id, messages });
+        await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });
       },
     });
   } catch {

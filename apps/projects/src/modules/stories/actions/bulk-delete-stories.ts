@@ -10,10 +10,14 @@ type Payload = {
   hardDelete?: boolean;
 };
 
-export const bulkDeleteAction = async ({ storyIds, hardDelete }: Payload) => {
+export const bulkDeleteAction = async (
+  { storyIds, hardDelete }: Payload,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const stories = await remove<ApiResponse<Payload>>("stories", session!, {
+    const ctx = { session: session!, workspaceSlug };
+    const stories = await remove<ApiResponse<Payload>>("stories", ctx, {
       json: { storyIds, hardDelete },
     });
     return stories;

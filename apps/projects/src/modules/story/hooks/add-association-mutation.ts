@@ -18,7 +18,7 @@ export const useAddAssociationMutation = () => {
       fromStoryId: string;
       toStoryId: string;
       type: StoryAssociationType;
-    }) => addAssociationAction(fromStoryId, { toStoryId, type }),
+    }) => addAssociationAction(fromStoryId, { toStoryId, type }, workspaceSlug),
 
     onSuccess: (res, { fromStoryId, toStoryId }) => {
       if (res.error) {

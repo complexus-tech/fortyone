@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { aiChatKeys } from "../constants";
 import { updateAiChatAction } from "../actions/update-ai-chat";
 import type { UpdateAiChatPayload, AiChatSession } from "../types";
 
 export const useUpdateAiChat = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -14,7 +16,7 @@ export const useUpdateAiChat = () => {
     }: {
       id: string;
       payload: UpdateAiChatPayload;
-    }) => updateAiChatAction(id, payload),
+    }) => updateAiChatAction(id, payload, workspaceSlug),
     onMutate: async ({ id, payload }) => {
       await queryClient.cancelQueries({ queryKey: aiChatKeys.lists() });
       await queryClient.cancelQueries({ queryKey: aiChatKeys.detail(id) });

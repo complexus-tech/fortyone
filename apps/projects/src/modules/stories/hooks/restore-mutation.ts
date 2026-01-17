@@ -9,7 +9,8 @@ export const useBulkRestoreStoryMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: bulkRestoreAction,
+    mutationFn: (storyIds: string[]) =>
+      bulkRestoreAction(storyIds, workspaceSlug),
 
     onMutate: (storyIds) => {
       // For restore operations, we rely on invalidation rather than optimistic updates

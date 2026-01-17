@@ -8,13 +8,15 @@ import type { SaveMessagesPayload } from "../types";
 
 export const saveAiChatMessagesAction = async (
   payload: SaveMessagesPayload,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const result = await post<SaveMessagesPayload, ApiResponse<null>>(
       `chat-sessions/${payload.id}/messages`,
       payload,
-      session!,
+      ctx,
     );
     return result;
   } catch (error) {

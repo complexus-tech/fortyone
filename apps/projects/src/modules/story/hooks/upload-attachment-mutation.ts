@@ -13,7 +13,7 @@ export const useUploadAttachmentMutation = (storyId: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (file: File) => addAttachmentAction(storyId, file),
+    mutationFn: (file: File) => addAttachmentAction(storyId, file, workspaceSlug),
     onMutate: async (file) => {
       toast.loading("Uploading...", { id: toastid, description: file.name });
       await queryClient.cancelQueries({

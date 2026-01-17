@@ -12,9 +12,11 @@ import posthogServer from "@/app/posthog-server";
 export const saveChat = async ({
   id,
   messages,
+  workspaceSlug,
 }: {
   id: string;
   messages: UIMessage[];
+  workspaceSlug: string;
 }) => {
   const session = await auth();
   let title = "";
@@ -61,9 +63,9 @@ export const saveChat = async ({
 
   try {
     if (title) {
-      await createAiChatAction({ id, title, messages });
+      await createAiChatAction({ id, title, messages }, workspaceSlug);
     } else {
-      await saveAiChatMessagesAction({ id, messages });
+      await saveAiChatMessagesAction({ id, messages }, workspaceSlug);
     }
   } catch (error) {
     // log to posthog or sentry later

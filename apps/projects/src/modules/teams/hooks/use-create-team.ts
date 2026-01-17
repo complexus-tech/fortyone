@@ -14,7 +14,7 @@ export const useCreateTeamMutation = () => {
   const toastId = "create-team";
 
   const mutation = useMutation({
-    mutationFn: createTeam,
+    mutationFn: (data: Parameters<typeof createTeam>[0]) => createTeam(data, workspaceSlug),
     onMutate: (data) => {
       const previousTeams = queryClient.getQueryData<Team[]>(teamKeys.lists(workspaceSlug));
 

@@ -8,12 +8,14 @@ import { getApiError } from "@/utils";
 export const deleteStoryAttachmentAction = async (
   storyId: string,
   attachmentId: string,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await remove<ApiResponse<null>>(
       `stories/${storyId}/attachments/${attachmentId}`,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

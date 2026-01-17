@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import type {
   GroupedStoriesResponse,
@@ -242,11 +242,12 @@ const removeOptimisticStory = (
 export const useDuplicateStoryMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({ storyId }: { storyId: string; story: DetailedStory }) =>
-      duplicateStoryAction(storyId),
+      duplicateStoryAction(storyId, workspaceSlug),
 
     onMutate: ({ story }) => {
       const queryCache = queryClient.getQueryCache();

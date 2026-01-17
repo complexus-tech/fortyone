@@ -12,7 +12,7 @@ export const useDeleteAttachmentMutation = (storyId: string) => {
 
   const mutation = useMutation({
     mutationFn: (attachmentId: string) =>
-      deleteStoryAttachmentAction(storyId, attachmentId),
+      deleteStoryAttachmentAction(storyId, attachmentId, workspaceSlug),
 
     onMutate: async (attachmentId) => {
       toast.loading("Deleting attachment...", { id: toastId });

@@ -14,13 +14,15 @@ type CommentPayload = {
 export const commentStoryAction = async (
   storyId: string,
   payload: CommentPayload,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await post<CommentPayload, ApiResponse<Comment>>(
       `stories/${storyId}/comments`,
       payload,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {
