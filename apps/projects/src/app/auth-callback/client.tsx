@@ -31,8 +31,10 @@ export const ClientPage = ({
         email: session.user!.email!,
         name: session.user!.name!,
       });
-      redirect(
-        getRedirectUrl(workspaces, invitations, profile.lastUsedWorkspaceId),
+      window.location.href = getRedirectUrl(
+        workspaces,
+        invitations,
+        profile.lastUsedWorkspaceId,
       );
     }
   }, [analytics, session, invitations, workspaces, profile]);

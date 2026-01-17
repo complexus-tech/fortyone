@@ -51,12 +51,10 @@ export const EmailVerificationCallback = () => {
             name: session.user!.name!,
           });
           const invitations = await getMyInvitations();
-          redirect(
-            getRedirectUrl(
-              workspaces,
-              invitations.data || [],
-              profile?.lastUsedWorkspaceId,
-            ),
+          window.location.href = getRedirectUrl(
+            workspaces,
+            invitations.data || [],
+            profile?.lastUsedWorkspaceId,
           );
           return;
         }
@@ -83,12 +81,10 @@ export const EmailVerificationCallback = () => {
             name: session.user!.name!,
           });
           const invitations = await getMyInvitations();
-          redirect(
-            getRedirectUrl(
-              workspaces,
-              invitations.data || [],
-              profile?.lastUsedWorkspaceId,
-            ),
+          window.location.href = getRedirectUrl(
+            workspaces,
+            invitations.data || [],
+            profile?.lastUsedWorkspaceId,
           );
         }
       }
