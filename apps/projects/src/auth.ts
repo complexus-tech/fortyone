@@ -7,7 +7,7 @@ import {
 } from "./lib/actions/auth";
 import { DURATION_FROM_SECONDS } from "./constants/time";
 
-const domain = `.${process.env.NEXT_PUBLIC_DOMAIN!}`;
+const domain = process.env.NEXT_PUBLIC_DOMAIN ? `.${process.env.NEXT_PUBLIC_DOMAIN}` : undefined;
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
@@ -64,18 +64,20 @@ export const {
     }),
   ],
 
-  cookies: {
-    sessionToken: {
-      name: "__Secure-next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        domain,
-        secure: true,
+  ...(domain && {
+    cookies: {
+      sessionToken: {
+        name: "__Secure-next-auth.session-token",
+        options: {
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+          domain,
+          secure: true,
+        },
       },
     },
-  },
+  }),
 
   callbacks: {
     async jwt({ token, user, account }) {
