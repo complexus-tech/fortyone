@@ -12,6 +12,8 @@ import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availa
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 import { buildWorkspaceUrl } from "@/utils";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 export const CreateWorkspaceForm = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +141,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            <Text>{buildWorkspaceUrl(form.slug)}</Text>
+            {isFortyOneApp && <Text>.fortyone.app</Text>}  
             {!isAvailable ? (
               <Flex
                 align="center"
