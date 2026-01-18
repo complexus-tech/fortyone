@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
+import { withWorkspacePath } from "@/utils";
 
 export const navigation = tool({
   description:
@@ -58,44 +59,48 @@ export const navigation = tool({
     let routePath: string;
     let message: string;
 
+    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+
+
     switch (targetType) {
       case "my-work":
-        routePath = "/my-work";
+        routePath = withWorkspacePath("/my-work", workspaceSlug);
         message = "Navigating to my work";
         break;
 
       case "summary":
-        routePath = "/summary";
+        routePath = withWorkspacePath("/summary", workspaceSlug);
         message = "Navigating to summary";
         break;
 
       case "analytics":
-        routePath = "/analytics";
+        routePath = withWorkspacePath("/analytics", workspaceSlug);
         message = "Navigating to analytics";
         break;
 
       case "sprints":
-        routePath = "/sprints";
+        routePath = withWorkspacePath("/sprints", workspaceSlug);
         message = "Navigating to sprints";
         break;
 
       case "notifications":
-        routePath = "/notifications";
+        routePath = withWorkspacePath("/notifications", workspaceSlug);
         message = "Navigating to notifications";
         break;
 
       case "settings":
-        routePath = "/settings";
+        routePath = withWorkspacePath("/settings", workspaceSlug);
         message = "Navigating to settings";
         break;
 
       case "billing":
-        routePath = "/settings/workspace/billing";
+        routePath = withWorkspacePath("/settings/workspace/billing", workspaceSlug);
         message = "Navigating to billing";
         break;
 
       case "roadmaps":
-        routePath = "/roadmaps";
+        routePath = withWorkspacePath("/roadmaps", workspaceSlug);
         message = "Navigating to roadmaps";
         break;
 
@@ -105,7 +110,7 @@ export const navigation = tool({
             error: "Entity ID is required for user profile navigation",
           };
         }
-        routePath = `/profile/${entityId}`;
+        routePath = withWorkspacePath(`/profile/${entityId}`, workspaceSlug);
         message = "Navigating to user profile";
         break;
 
@@ -115,7 +120,7 @@ export const navigation = tool({
             error: "Entity ID is required for story navigation",
           };
         }
-        routePath = `/story/${entityId}`;
+        routePath = withWorkspacePath(`/story/${entityId}`, workspaceSlug);
         message = "Navigating to story details";
         break;
 
@@ -126,7 +131,7 @@ export const navigation = tool({
             error: "Team ID and Entity ID are required for sprint navigation",
           };
         }
-        routePath = `/teams/${teamId}/sprints/${entityId}/stories`;
+        routePath = withWorkspacePath(`/teams/${teamId}/sprints/${entityId}/stories`, workspaceSlug);
         message = "Navigating to sprint details";
         break;
 
@@ -137,7 +142,7 @@ export const navigation = tool({
               "Team ID and Entity ID are required for objective navigation",
           };
         }
-        routePath = `/teams/${teamId}/objectives/${entityId}`;
+        routePath = withWorkspacePath(`/teams/${teamId}/objectives/${entityId}`, workspaceSlug);
         message = "Navigating to objective details";
         break;
 
@@ -150,10 +155,10 @@ export const navigation = tool({
         }
 
         if (route) {
-          routePath = `/teams/${teamId}/${route}`;
+          routePath = withWorkspacePath(`/teams/${teamId}/${route}`, workspaceSlug);
           message = `Navigating to team ${route}`;
         } else {
-          routePath = `/teams/${teamId}/stories`;
+          routePath = withWorkspacePath(`/teams/${teamId}/stories`, workspaceSlug);
           message = "Navigating to team stories";
         }
         break;
