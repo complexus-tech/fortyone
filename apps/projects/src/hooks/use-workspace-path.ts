@@ -2,6 +2,12 @@ import { useParams } from "next/navigation";
 
 const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|tel:)/i;
 
+const isFortyOneSubdomain = () => {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname;
+  return hostname.endsWith(".fortyone.app");
+};
+
 export const useWorkspacePath = () => {
   const params = useParams<{ workspaceSlug?: string }>();
   const workspaceSlug = params?.workspaceSlug?.toLowerCase() ?? "";
@@ -12,6 +18,11 @@ export const useWorkspacePath = () => {
     }
 
     if (EXTERNAL_LINK_PATTERN.test(path)) {
+      return path;
+    }
+
+    // If we're on a fortyone.app subdomain, don't add the workspace slug
+    if (isFortyOneSubdomain()) {
       return path;
     }
 
