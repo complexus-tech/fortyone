@@ -89,14 +89,6 @@ export default auth((req) => {
     return buildAuthRedirect(callbackUrl);
   }
 
-  if (isSubdomain && !pathname.startsWith(`/${subdomain}`)) {
-    const nextPath =
-      pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
-    const rewriteUrl = new URL(nextPath, req.nextUrl);
-    rewriteUrl.search = searchParams;
-    return NextResponse.rewrite(rewriteUrl);
-  }
-
   if (!req.auth && !isAuthOnlyPath(pathname)) {
     return buildAuthRedirect(`${pathname}${searchParams}`);
   }

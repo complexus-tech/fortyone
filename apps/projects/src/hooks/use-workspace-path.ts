@@ -21,7 +21,7 @@ export const useWorkspacePath = () => {
       return path;
     }
 
-    // If we're on a fortyone.app subdomain, don't add the workspace slug
+    // If on subdomain, paths are already clean
     if (isFortyOneSubdomain()) {
       return path;
     }
