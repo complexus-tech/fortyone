@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 
 const AUTH_HOST = "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
-const RESERVED_SUBDOMAINS = new Set(["auth"]);
+const RESERVED_SUBDOMAINS = new Set(["cloud"]);
 const AUTH_ONLY_PREFIXES = new Set([
   "/signup",
   "/auth-callback",
