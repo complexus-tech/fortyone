@@ -18,6 +18,15 @@ import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 import { cn, getReadableTextColor } from "lib";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
+const getWorkspaceUrl = (slug: string) => {
+  if (isFortyOneApp) {
+    return `https://${slug}.fortyone.app/my-work`;
+  }
+  return `/${slug}/my-work`;
+};
+
 export const WorkspacesMenu = () => {
   const pathname = usePathname();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
@@ -40,7 +49,7 @@ export const WorkspacesMenu = () => {
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
-    const nextPath = `/${slug}/my-work`;
+    const nextPath = getWorkspaceUrl(slug);
     try {
       await changeWorkspace(workspaceId);
       window.location.href = nextPath;
