@@ -7,8 +7,6 @@ import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon } from "icons";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const ProductImage = () => {
   const pathname = usePathname();
 
@@ -68,14 +66,14 @@ export const ProductImage = () => {
             , you agree to our{" "}
             <Link
               className="text-black underline"
-              href={`https://${domain}/terms`}
+              href="https://www.fortyone.app/terms"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
               className="text-black underline"
-              href={`https://${domain}/privacy`}
+              href="https://www.fortyone.app/privacy"
             >
               Privacy Policy
             </Link>

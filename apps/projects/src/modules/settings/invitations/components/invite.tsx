@@ -7,8 +7,6 @@ import type { Invitation } from "@/modules/invitations/types";
 import { useRevokeInvitationMutation } from "@/modules/invitations/hooks/use-revoke-invitation";
 import { useAcceptInvitationMutation } from "@/modules/invitations/hooks/use-accept-invitation";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
   const { mutate: declineInvitation } = useRevokeInvitationMutation();
   const { mutate: acceptInvitation } = useAcceptInvitationMutation();
@@ -48,7 +46,7 @@ export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
             </Text>
           </Text>
           <Text color="muted" fontSize="sm">
-            {invitation.workspaceSlug}.{domain} &bull; {invitation.role}
+            {invitation.workspaceSlug} &bull; {invitation.role}
           </Text>
         </Box>
       </Flex>

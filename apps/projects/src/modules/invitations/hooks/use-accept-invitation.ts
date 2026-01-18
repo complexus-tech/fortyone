@@ -5,15 +5,6 @@ import { invitationKeys, workspaceKeys } from "@/constants/keys";
 import { acceptInvitation } from "../actions/accept-invitation";
 import type { Invitation } from "../types";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
-const getRedirectUrl = (slug: string) => {
-  if (domain.includes("localhost")) {
-    return `http://${slug}.${domain}/my-work`;
-  }
-  return `https://${slug}.${domain}/my-work`;
-};
-
 export const useAcceptInvitationMutation = () => {
   const queryClient = useQueryClient();
   const toastId = "accept-invitation";
@@ -76,7 +67,7 @@ export const useAcceptInvitationMutation = () => {
           action: {
             label: "Open",
             onClick: () => {
-              redirect(getRedirectUrl(context.invitation!.workspaceSlug));
+              redirect(`/${context.invitation!.workspaceSlug}/my-work`);
             },
           },
         });
