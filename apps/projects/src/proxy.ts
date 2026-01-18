@@ -97,6 +97,11 @@ export default auth((req) => {
     return NextResponse.redirect(redirectUrl);
   }
 
+  if (isSubdomain && !req.auth) {
+    const callbackUrl = `https://${subdomain}${DOMAIN_SUFFIX}${pathname}${searchParams}`;
+    return buildAuthRedirect(callbackUrl);
+  }
+
   if (isSubdomain && !pathname.startsWith(`/${subdomain}`)) {
     const nextPath =
       pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
