@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const AUTH_HOST = "auth.fortyone.app";
+const AUTH_HOST = "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
 const RESERVED_SUBDOMAINS = new Set(["auth"]);
 const AUTH_ONLY_PREFIXES = new Set([
