@@ -15,7 +15,7 @@ The core FortyOne application for project management and team collaboration. Bui
 - **📝 Rich Text Editor**: Advanced text editing with formatting, links, and media
 - **🎨 Drag & Drop**: Intuitive drag-and-drop interface for task management
 - **📊 Analytics**: PostHog integration for usage insights
-- **🔐 Workspace Security**: Subdomain-based workspace isolation
+- **🔐 Workspace Security**: Workspace-aware access controls
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile
 - **⚡ Real-time Updates**: Live collaboration features
 - **🔍 Search**: Powerful search across all content
@@ -54,8 +54,7 @@ The core FortyOne application for project management and team collaboration. Bui
    ```
 
 4. **Access the application**:
-   - Local: https://qa.fortyone.lc (requires Caddy for SSL)
-   - Direct: http://localhost:3001
+   - http://localhost:3001
 
 ### Environment Variables
 
@@ -63,7 +62,7 @@ Create a `.env` file with the following variables:
 
 ```bash
 # Domain Configuration
-NEXT_PUBLIC_DOMAIN=fortyone.lc
+NEXT_PUBLIC_DOMAIN=your-domain.com
 
 # API Configuration
 NEXT_PUBLIC_API_URL=api_url
@@ -128,7 +127,7 @@ src/
 
 ### Key Features
 
-- **Workspace Routing**: Subdomain-based multi-tenancy
+- **Workspace Routing**: Path-based workspace routing
 - **Real-time Collaboration**: Live updates and notifications
 - **Rich Text Editing**: Full-featured editor with markdown support
 - **File Uploads**: Secure file storage and management
@@ -190,23 +189,20 @@ pnpm test         # Run Jest tests
 2. **Environment Variables**:
 
    - Add all environment variables to Vercel project settings
-   - Configure subdomain routing for workspaces
 
 3. **Custom Domains**:
-   - Set up wildcard domain routing (\*.yourdomain.com)
-   - Configure SSL certificates
 
-```
+   - Configure your production domain and SSL certificates
 
 ## 🔧 Configuration
 
-### Subdomain Routing
+### Workspace Routing
 
-The app uses subdomain-based routing for workspace isolation:
+The app uses path-based routing for workspace isolation:
 
-- `qa.fortyone.lc` → QA workspace
-- `marketing.fortyone.lc` → Marketing workspace
-- `*.fortyone.lc` → Dynamic workspace routing
+- `/{workspace-slug}/my-work`
+- `/{workspace-slug}/settings`
+- `/{workspace-slug}/reports`
 
 ### File Storage
 
@@ -238,4 +234,7 @@ This project is licensed under the [FortyOne License](../../LICENSE).
 - **Documentation**: [docs.fortyone.app](https://docs.fortyone.app)
 - **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
+
+```
+
 ```

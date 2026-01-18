@@ -15,7 +15,7 @@ A full-stack, open-source platform for project management and collaboration, wit
 - **📋 Task Tracking**: Create, assign, and track tasks with rich text editing
 - **👥 Team Collaboration**: Real-time collaboration with team members
 - **📊 Analytics**: PostHog integration for user analytics and insights
-- **🔐 Authentication**: Secure authentication with NextAuth and Google OAuth
+- **🔐 Authentication**: Secure authentication with NextAuth and Google OAuth (projects app)
 - **📱 Cross-Platform**: Web application with React Native mobile app
 - **🎨 Modern UI**: Built with Radix UI, Tailwind CSS, and Framer Motion
 - **⚡ Performance**: Optimized with Next.js 15 and React 19
@@ -63,7 +63,7 @@ cp apps/server/.env.example apps/server/.env
 pnpm dev
 ```
 
-Visit [https://fortyone.lc](https://fortyone.lc) to see the application. Access workspaces at paths like `https://fortyone.lc/{workspace-slug}/my-work`.
+Visit the marketing site locally or in production to explore the product. Workspace access and authentication now live in the projects app.
 
 ## 📖 Documentation
 
@@ -78,9 +78,9 @@ FortyOne is built as a monorepo using Turborepo with the following structure:
 ```
 fortyone/
 ├── apps/                    # Applications
-│   ├── landing/            # Marketing & authentication (fortyone.lc)
-│   ├── docs/               # Documentation site (docs.fortyone.lc)
-│   ├── projects/           # Main project management app (fortyone.lc/{workspace})
+│   ├── landing/            # Marketing site
+│   ├── docs/               # Documentation site
+│   ├── projects/           # Main project management app
 │   ├── server/             # Go backend API
 │   └── mobile/             # React Native mobile app
 ├── packages/               # Shared packages
@@ -142,7 +142,6 @@ Before setting up the development environment, ensure you have the following ins
 - **pnpm** (v9.3.0 or higher) - Install with `npm install -g pnpm`
 - **Go** (v1.23 or higher) - [Install Go](https://go.dev/doc/install)
 
-
 ## Local Development Setup
 
 ### 1. Clone and Install Dependencies
@@ -153,27 +152,7 @@ cd fortyone
 pnpm install
 ```
 
-### 2. Optional: Configure Local Domains (for OAuth testing)
-
-If you want to test OAuth flows locally, you can configure local domains that can be registered as valid redirect URIs with OAuth providers like Google.
-
-Add the following entries to your `/etc/hosts` file:
-
-```bash
-sudo nano /etc/hosts
-```
-
-Add these lines:
-
-```
-127.0.0.1   fortyone.lc
-127.0.0.1   docs.fortyone.lc
-127.0.0.1   www.fortyone.lc
-```
-
-**Note:** Without these entries, applications will run on `localhost:3000`, `localhost:3001`, etc.
-
-### 3. Start Development Environment
+### 2. Start Development Environment
 
 The project includes a unified development command that starts all applications:
 
@@ -186,19 +165,14 @@ This command will:
 - Start all Next.js applications in development mode
 - Enable hot reloading across all apps
 
-### 4. Access Applications
+### 3. Access Applications
 
 Once running, access your applications at:
 
 - **Landing Page**: http://localhost:3000
 - **Documentation**: http://localhost:3002
-- **Projects App**: http://localhost:3001/{workspace-slug}/...
+- **Projects App**: http://localhost:3001/{workspace}/...
   - Example workspace: http://localhost:3001/my-workspace/my-work
-
-**Note:** If you configured local domains in step 2, you can also access applications at:
-- **Landing Page**: https://fortyone.lc
-- **Documentation**: https://docs.fortyone.lc
-- **Projects App**: https://fortyone.lc/{workspace-slug}/...
 
 ## Code Structure
 
@@ -225,19 +199,16 @@ fortyone/
 #### 🏠 Landing App (`apps/landing/`)
 
 - **Purpose**: Main marketing and landing pages
-- **URL**: https://fortyone.lc
 - **Port**: 3000
 - **Tech Stack**: Next.js 15, React 19, Framer Motion, GSAP
 - **Features**:
   - MDX content support
-  - Authentication with NextAuth
   - PostHog analytics
   - Cal.com integration
 
 #### 📚 Docs App (`apps/docs/`)
 
 - **Purpose**: Documentation and guides
-- **URL**: https://docs.fortyone.lc
 - **Port**: 3002
 - **Tech Stack**: Next.js 15, Fumadocs
 - **Features**:
@@ -247,8 +218,7 @@ fortyone/
 
 #### 🚀 Projects App (`apps/projects/`)
 
-- **Purpose**: Main application for project management
-- **URL**: https://fortyone.lc/{workspace-slug}/... (path-based workspace routing)
+- **Purpose**: Main application for project management and authentication
 - **Port**: 3001
 - **Tech Stack**: Next.js 16, React 19, TanStack Query, Tiptap
 - **Features**:
@@ -315,13 +285,12 @@ cd apps/projects
 pnpm test
 ```
 
-
 ## Networking Architecture
 
 Applications run on separate ports for development:
 
-- `localhost:3000` (landing)
-- `localhost:3001` (projects)
+- `localhost:3000` (projects)
+- `localhost:3001` (landing)
 - `localhost:3002` (docs)
 
 This setup allows for:
@@ -329,13 +298,6 @@ This setup allows for:
 - **Clean application separation**: Each app runs independently
 - **Simplified routing**: Path-based workspace navigation within the projects app
 - **Easy development**: No complex proxy configuration needed
-
-### Optional: Custom Domains for OAuth
-
-If you want to test OAuth flows locally, you can configure `.lc` domains that can be registered as valid redirect URIs with OAuth providers like Google.
-
-- **OAuth Support**: `.lc` domains can be registered as valid redirect URIs with OAuth providers, enabling full authentication testing in development
-- **Valid TLD**: `.lc` is Saint Lucia's country code TLD, making it a legitimate domain for authentication services
 
 ## Troubleshooting
 
@@ -345,12 +307,6 @@ If you want to test OAuth flows locally, you can configure `.lc` domains that ca
 
 - Check if ports 3000, 3001, 3002 are available
 - Kill conflicting processes: `lsof -ti:3000 | xargs kill`
-
-**OAuth authentication issues:**
-
-- If using custom domains, verify they are registered in your OAuth provider's console
-- Ensure redirect URIs include the correct domain in the allowed domains
-- Check that the domain resolves correctly before testing auth
 
 **Dependencies issues:**
 

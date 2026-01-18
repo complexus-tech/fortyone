@@ -42,8 +42,7 @@ The comprehensive documentation site for FortyOne, built with Next.js and Fumado
    ```
 
 3. **Access the documentation**:
-   - Local: https://docs.fortyone.lc (requires Caddy for SSL)
-   - Direct: http://localhost:3002
+   - http://localhost:3002
 
 ## 🏗️ Architecture
 
