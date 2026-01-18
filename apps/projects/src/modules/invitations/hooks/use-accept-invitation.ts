@@ -5,6 +5,8 @@ import { invitationKeys, workspaceKeys } from "@/constants/keys";
 import { acceptInvitation } from "../actions/accept-invitation";
 import type { Invitation } from "../types";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 export const useAcceptInvitationMutation = () => {
   const queryClient = useQueryClient();
   const toastId = "accept-invitation";
@@ -67,7 +69,11 @@ export const useAcceptInvitationMutation = () => {
           action: {
             label: "Open",
             onClick: () => {
-              redirect(`/${context.invitation!.workspaceSlug}/my-work`);
+              if (isFortyOneApp) {
+                redirect(`https://${context.invitation!.workspaceSlug}.fortyone.app/my-work`);
+              } else {
+                redirect(`/${context.invitation!.workspaceSlug}/my-work`);
+              }
             },
           },
         });

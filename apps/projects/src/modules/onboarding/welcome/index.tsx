@@ -5,6 +5,8 @@ import { Logo } from "@/components/ui";
 import type { User, Workspace } from "@/types";
 import { ActionCard } from "./components/action-card";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 const getRedirectUrl = (
   workspaces: Workspace[],
   lastUsedWorkspaceId?: string,
@@ -15,7 +17,12 @@ const getRedirectUrl = (
   if (!activeWorkspace) {
     return "/onboarding/create";
   }
-  return `/${activeWorkspace.slug}/maya`;
+
+  if (isFortyOneApp) {
+    return `https://${activeWorkspace.slug}.fortyone.app/my-work`;
+  }
+
+  return `/${activeWorkspace.slug}/my-work`;
 };
 
 export const Welcome = ({
