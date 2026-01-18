@@ -2,9 +2,27 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 export default auth((req) => {
-  if (!req.auth && req.nextUrl.pathname !== "/") {
-    const pathname = req.nextUrl.pathname;
-    const searchParams = req.nextUrl.search;
+  const pathname = req.nextUrl.pathname;
+  const searchParams = req.nextUrl.search;
+  const host = req.headers.get("host")?.split(":")[0];
+  const isFortyoneHost = host?.endsWith(".fortyone.app");
+  const reservedSubdomains = new Set(["cloud"]);
+
+  if (host && isFortyoneHost) {
+    const subdomain = host.replace(".fortyone.app", "");
+
+    if (
+      subdomain.length > 0 &&
+      !reservedSubdomains.has(subdomain) &&
+      !pathname.startsWith(`/${subdomain}`)
+    ) {
+      const rewriteUrl = new URL(`/${subdomain}${pathname}`, req.nextUrl);
+      rewriteUrl.search = searchParams;
+      return NextResponse.rewrite(rewriteUrl);
+    }
+  }
+
+  if (!req.auth && pathname !== "/") {
     const callBackUrl = `${pathname}${searchParams}`;
     const newUrl = new URL("/", req.nextUrl.origin);
     newUrl.searchParams.set("callbackUrl", callBackUrl);
