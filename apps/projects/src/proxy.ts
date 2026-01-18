@@ -65,7 +65,26 @@ export default auth((req) => {
   const subdomain = getSubdomain(host);
   const isSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
 
+  if (isSubdomain && subdomain) {
+    const subdomainPrefix = `/${subdomain}`;
+    if (
+      pathname === subdomainPrefix ||
+      pathname.startsWith(`${subdomainPrefix}/`)
+    ) {
+      const restPath = pathname.replace(subdomainPrefix, "") || "/";
+      const redirectUrl = new URL(restPath, req.nextUrl);
+      redirectUrl.search = searchParams;
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   if (isSubdomain && isAuthOnlyPath(pathname)) {
+    if (pathname === "/" && req.auth) {
+      const rewriteUrl = new URL(`/${subdomain}/my-work`, req.nextUrl);
+      rewriteUrl.search = searchParams;
+      return NextResponse.rewrite(rewriteUrl);
+    }
+
     const redirectUrl = buildAuthUrl(pathname, searchParams);
 
     if (pathname === "/") {
