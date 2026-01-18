@@ -72,13 +72,14 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             <OTPInput value={otp} onChange={setOtp} className="mb-4" />
             <Button
               align="center"
-              className="mb-4"
+              className="mb-4 md:py-3"
               color="invert"
               fullWidth
               loading={otpLoading}
               loadingText="Verifying..."
               onClick={handleOTPSubmit}
               disabled={otp.length !== 6}
+              size="lg"
             >
               Verify Code
             </Button>

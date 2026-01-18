@@ -53,7 +53,7 @@ export const LoginPage = () => {
         <form onSubmit={handleSubmit}>
           <Input
             autoFocus
-            className="mb-4 h-12 rounded-[0.6rem]"
+            className="mb-4 rounded-[0.6rem]"
             label="Email"
             name="email"
             placeholder="e.g john@example.com"
@@ -61,7 +61,7 @@ export const LoginPage = () => {
             type="email"
           />
           <Input
-            className="mb-5 h-12 rounded-[0.6rem]"
+            className="mb-5 rounded-[0.6rem]"
             label="Password"
             name="password"
             required
@@ -69,7 +69,8 @@ export const LoginPage = () => {
           />
           <Button
             align="center"
-            className="md:h-12"
+            className="md:py-3"
+            size="lg"
             fullWidth
             loading={loading}
             loadingText="Logging in..."
@@ -78,7 +79,7 @@ export const LoginPage = () => {
             Login
           </Button>
         </form>
-        <Text className="textt-[90%] mt-3 pl-px" color="muted">
+        <Text className="mt-3 pl-px" color="muted">
           &copy; {new Date().getFullYear()} &bull; Powered by FortyOne &bull;
           All Rights Reserved.
         </Text>
