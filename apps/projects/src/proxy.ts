@@ -10,15 +10,6 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/verify",
   "/onboarding",
   "/unauthorized",
-  "/api/auth",
-]);
-const AUTH_ONLY_SEGMENTS = new Set([
-  "signup",
-  "auth-callback",
-  "verify",
-  "onboarding",
-  "unauthorized",
-  "api",
 ]);
 
 const getHost = (req: Request) => req.headers.get("host")?.split(":")[0];
@@ -29,17 +20,6 @@ const getSubdomain = (host?: string) =>
 const isAuthOnlyPath = (pathname: string) =>
   pathname === "/" ||
   Array.from(AUTH_ONLY_PREFIXES).some((prefix) => pathname.startsWith(prefix));
-
-const getPathSegments = (pathname: string) =>
-  pathname.split("/").filter(Boolean);
-
-const getAuthWorkspaceSlug = (host: string, pathSegments: string[]) => {
-  if (host !== AUTH_HOST || pathSegments.length === 0) {
-    return undefined;
-  }
-
-  return AUTH_ONLY_SEGMENTS.has(pathSegments[0]) ? undefined : pathSegments[0];
-};
 
 const buildAuthUrl = (pathname: string, searchParams: string) => {
   const url = new URL(pathname, `https://${AUTH_HOST}`);
@@ -64,16 +44,6 @@ const buildHostRedirect = (
   return NextResponse.redirect(url);
 };
 
-const buildSubdomainUrl = (
-  subdomain: string,
-  restPath: string,
-  searchParams: string,
-) => {
-  const url = new URL(restPath, `https://${subdomain}${DOMAIN_SUFFIX}`);
-  url.search = searchParams;
-  return url;
-};
-
 export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const searchParams = req.nextUrl.search;
@@ -93,26 +63,7 @@ export default auth((req) => {
   }
 
   const subdomain = getSubdomain(host);
-  const isAuthHost = host === AUTH_HOST;
   const isSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
-  const pathSegments = getPathSegments(pathname);
-  const authWorkspaceSlug = getAuthWorkspaceSlug(host, pathSegments);
-
-  if (isAuthHost && authWorkspaceSlug) {
-    const restPath = pathname.replace(`/${authWorkspaceSlug}`, "") || "/";
-    const subdomainUrl = buildSubdomainUrl(
-      authWorkspaceSlug,
-      restPath,
-      searchParams,
-    );
-
-    if (!req.auth) {
-      const callbackUrl = `https://${authWorkspaceSlug}${DOMAIN_SUFFIX}${restPath}${searchParams}`;
-      return buildAuthRedirect(callbackUrl);
-    }
-
-    return NextResponse.redirect(subdomainUrl);
-  }
 
   if (isSubdomain && isAuthOnlyPath(pathname)) {
     const redirectUrl = buildAuthUrl(pathname, searchParams);
@@ -128,11 +79,6 @@ export default auth((req) => {
   }
 
   if (isSubdomain && !pathname.startsWith(`/${subdomain}`)) {
-    if (!req.auth) {
-      const callbackUrl = `https://${subdomain}${DOMAIN_SUFFIX}${pathname}${searchParams}`;
-      return buildAuthRedirect(callbackUrl);
-    }
-
     const nextPath =
       pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
     const rewriteUrl = new URL(nextPath, req.nextUrl);
@@ -149,6 +95,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!verify|auth-callback|signup|api/auth|_next/static|images|_next/image|favicon*|ingest|unauthorized|manifest*|apple-icon*).*)",
+    "/((?!api/auth|_next/static|images|_next/image|favicon*|ingest|manifest*|apple-icon*).*)",
   ],
 };
