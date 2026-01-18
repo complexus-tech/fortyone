@@ -2,8 +2,7 @@
   "private": false,
   "scripts": {
     "build": "turbo run build",
-    "dev:caddy": "turbo run dev",
-    "dev": "concurrently \"turbo run dev\" \"caddy run\" --names \"turbo,caddy\" --prefix-colors \"blue,green\"",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },

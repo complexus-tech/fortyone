@@ -26,7 +26,6 @@
 - Go `>=1.23` for `apps/server` (see `apps/server/README.md`).
 - Docker & Docker Compose are required for the server stack.
 - `air` is used for live reload in `apps/server` (`go install github.com/air-verse/air@latest`).
-- Caddy is required for full local dev routing (see `README.md`).
 - Install dependencies: `pnpm install`.
 
 ## Build / Lint / Test Commands
@@ -36,8 +35,7 @@
 - Build everything: `pnpm build` (runs `turbo run build`).
 - Lint everything: `pnpm lint` (runs `turbo run lint`).
 - Format code: `pnpm format` (Prettier for `ts/tsx/md`).
-- Dev + Caddy: `pnpm dev`.
-- Dev without Caddy: `pnpm dev:caddy` (runs Turbo only).
+- Dev: `pnpm dev` (runs all applications).
 
 ### App-Specific Commands
 
