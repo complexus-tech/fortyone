@@ -59,7 +59,7 @@ export const storyActivitiesTool = tool({
       ),
   }),
 
-  execute: async ({ action, storyId, limit = 20 }) => {
+  execute: async ({ action, storyId, limit = 20 }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -70,6 +70,10 @@ export const storyActivitiesTool = tool({
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       switch (action) {
         case "list-activities": {
           if (!storyId) {
@@ -79,7 +83,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           return {
@@ -98,7 +102,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           // Sort by creation date (oldest first for timeline)
@@ -143,7 +147,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           // Sort by creation date (newest first)

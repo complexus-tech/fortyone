@@ -21,7 +21,7 @@ import type { NewInvitation } from "@/modules/invitations/types";
 import { useMembers } from "@/lib/hooks/members";
 import { invitationKeys } from "@/constants/keys";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { FeatureGuard } from "../feature-guard";
 
 type InviteFormState = {
@@ -45,6 +45,7 @@ export const InviteMembersDialog = ({
 }) => {
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { remaining, tier, getLimit } = useSubscriptionFeatures();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
@@ -108,7 +109,7 @@ export const InviteMembersDialog = ({
             ? {
                 label: "Upgrade",
                 onClick: () => {
-                  router.push("/settings/workspace/billing");
+                  router.push(withWorkspace("/settings/workspace/billing"));
                 },
               }
             : undefined,
@@ -166,7 +167,7 @@ export const InviteMembersDialog = ({
       teamIds: formState.teamIds.length > 0 ? formState.teamIds : undefined,
     }));
 
-    const res = await inviteMembers(invites);
+    const res = await inviteMembers(invites, workspaceSlug);
     if (res.error?.message) {
       toast.error("Failed to send invites", {
         description: res.error.message,
@@ -182,7 +183,7 @@ export const InviteMembersDialog = ({
       });
     } else {
       queryClient.invalidateQueries({
-        queryKey: invitationKeys.pending,
+        queryKey: invitationKeys.pending(workspaceSlug),
       });
       toast.info("Success", {
         description: "Invitations sent to member emails",
@@ -213,9 +214,9 @@ export const InviteMembersDialog = ({
           count={members.length}
           fallback={
             <Dialog.Body className="mt-2 pb-6">
-              <Wrapper className="flex items-center justify-between gap-3 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+              <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-3 border p-4">
                 <Flex align="center" gap={3}>
-                  <WarningIcon className="shrink-0 text-warning dark:text-warning" />
+                  <WarningIcon className="text-warning dark:text-warning shrink-0" />
                   <Text>
                     You&apos;ve reached the limit of {getLimit("maxMembers")}{" "}
                     members on your {tier.replace("free", "hobby")} plan.{" "}
@@ -228,7 +229,7 @@ export const InviteMembersDialog = ({
                   <Button
                     className="shrink-0"
                     color="warning"
-                    href="/settings/workspace/billing"
+                    href={withWorkspace("/settings/workspace/billing")}
                   >
                     Upgrade now
                   </Button>
@@ -243,7 +244,7 @@ export const InviteMembersDialog = ({
               Email addresses*
             </Text>
             <TextArea
-              className="resize-none border border-border py-4 leading-normal bg-transparent"
+              className="border-border resize-none border bg-transparent py-4 leading-normal"
               onChange={(e) => {
                 handleEmailsChange(e.target.value);
               }}
@@ -251,7 +252,7 @@ export const InviteMembersDialog = ({
               rows={4}
               value={formState.emails}
             />
-            <Text className="mb-2 mt-6" color="muted">
+            <Text className="mt-6 mb-2" color="muted">
               Role
             </Text>
             <Select onValueChange={handleRoleChange} value={formState.role}>
@@ -281,7 +282,7 @@ export const InviteMembersDialog = ({
                 ))}
               </Select.Content>
             </Select>
-            <Text className="mb-2 mt-6" color="muted">
+            <Text className="mt-6 mb-2" color="muted">
               Teams - members will be added to the selected teams
             </Text>
             <Flex gap={2} wrap>

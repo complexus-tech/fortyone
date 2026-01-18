@@ -17,7 +17,7 @@ import type { Team } from "@/modules/teams/types";
 import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { FeatureGuard } from "@/components/ui";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 
 export const GeneralSettings = ({ team }: { team: Team }) => {
   const [form, setForm] = useState({
@@ -27,6 +27,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
     isPrivate: team.isPrivate,
   });
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
   const updateTeam = useUpdateTeamMutation(team.id);
 
   const formatCode = (name: string) => {
@@ -130,7 +131,7 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
                   </Text>
                 </Flex>
                 {userRole === "admin" && (
-                  <Button color="warning" href="/settings/workspace/billing">
+                  <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
                     Upgrade now
                   </Button>
                 )}

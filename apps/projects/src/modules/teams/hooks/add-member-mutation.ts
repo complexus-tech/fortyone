@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { useMembers } from "@/lib/hooks/members";
@@ -10,12 +11,13 @@ export const useAddMemberMutation = () => {
   const queryClient = useQueryClient();
   const { data: members = [] } = useMembers();
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
   const currentUserId = session?.user?.id ?? "";
   const toastId = "add-member-mutation";
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      addTeamMemberAction(teamId, memberId),
+      addTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Joining team..." : "Adding member...",
@@ -24,23 +26,23 @@ export const useAddMemberMutation = () => {
           description: "Please wait...",
         },
       );
-      await queryClient.cancelQueries({ queryKey: memberKeys.team(teamId) });
+      await queryClient.cancelQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
       const previousMembers = queryClient.getQueryData<Member[]>(
-        memberKeys.team(teamId),
+        memberKeys.team(workspaceSlug, teamId),
       );
       const newMember = members.find((member) => member.id === memberId);
       if (newMember) {
         const newMembers = [...(previousMembers || []), newMember].sort(
           (a, b) => a.fullName.localeCompare(b.fullName),
         );
-        queryClient.setQueryData(memberKeys.team(teamId), newMembers);
+        queryClient.setQueryData(memberKeys.team(workspaceSlug, teamId), newMembers);
       }
 
       return { previousMembers };
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        memberKeys.team(variables.teamId),
+        memberKeys.team(workspaceSlug, variables.teamId),
         context?.previousMembers,
       );
       toast.error(
@@ -77,11 +79,11 @@ export const useAddMemberMutation = () => {
               : "Member added",
         },
       );
-      queryClient.invalidateQueries({ queryKey: memberKeys.team(teamId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
       if (memberId === session?.user?.id) {
-        queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: teamKeys.public() });
-        queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
+        queryClient.invalidateQueries({ queryKey: teamKeys.public(workspaceSlug) });
+        queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
       }
     },
   });

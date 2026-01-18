@@ -6,13 +6,17 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 import type { NewObjectiveKeyResult } from "../types";
 
-export const createKeyResult = async (params: NewObjectiveKeyResult) => {
+export const createKeyResult = async (
+  params: NewObjectiveKeyResult,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await post<NewObjectiveKeyResult, ApiResponse<null>>(
       "key-results",
       params,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

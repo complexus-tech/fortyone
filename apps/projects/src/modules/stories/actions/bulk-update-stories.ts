@@ -11,14 +11,14 @@ type Payload = {
   updates: Partial<DetailedStory>;
 };
 
-export const bulkUpdateAction = async (updates: Payload) => {
+export const bulkUpdateAction = async (
+  updates: Payload,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const stories = await put<Payload, ApiResponse<null>>(
-      "stories",
-      updates,
-      session!,
-    );
+    const ctx = { session: session!, workspaceSlug };
+    const stories = await put<Payload, ApiResponse<null>>("stories", updates, ctx);
     return stories;
   } catch (error) {
     return getApiError(error);

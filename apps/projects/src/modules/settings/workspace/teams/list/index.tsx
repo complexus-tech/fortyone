@@ -6,10 +6,12 @@ import { PlusIcon, SearchIcon, TeamIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import { WorkspaceTeam } from "../components/team";
+import { useWorkspacePath } from "@/hooks";
 
 export const TeamsList = () => {
   const { data: teams = [] } = useTeams();
   const [search, setSearch] = useState("");
+  const { withWorkspace } = useWorkspacePath();
 
   const filteredTeams = teams.filter(
     (team) =>
@@ -43,7 +45,7 @@ export const TeamsList = () => {
             <Button
               className="shrink-0"
               color="tertiary"
-              href="/settings/workspace/teams/create"
+              href={withWorkspace("/settings/workspace/teams/create")}
               leftIcon={
                 <PlusIcon className="h-[1.1rem] text-black dark:text-white" />
               }
@@ -69,7 +71,7 @@ export const TeamsList = () => {
             </Text>
             <Button
               color="tertiary"
-              href="/settings/workspace/teams/create"
+              href={withWorkspace("/settings/workspace/teams/create")}
               leftIcon={<PlusIcon className="h-[1.1rem]" />}
             >
               Create Team

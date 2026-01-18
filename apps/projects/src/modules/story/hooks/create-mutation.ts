@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -241,10 +241,11 @@ const removeOptimisticStory = (
 export const useCreateStoryMutation = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: createStoryAction,
+    mutationFn: (story: NewStory) => createStoryAction(story, workspaceSlug),
 
     onMutate: (story) => {
       const queryCache = queryClient.getQueryCache();
@@ -303,11 +304,13 @@ export const useCreateStoryMutation = () => {
         hasSprint: Boolean(createdStory.sprintId),
       });
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+      });
 
       if (createdStory.parentId) {
         queryClient.invalidateQueries({
-          queryKey: storyKeys.detail(createdStory.parentId),
+          queryKey: storyKeys.detail(workspaceSlug, createdStory.parentId),
         });
       } else {
         toast.success("Success", {
@@ -316,7 +319,7 @@ export const useCreateStoryMutation = () => {
             label: "View story",
             onClick: () => {
               router.push(
-                `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+                withWorkspace(`/story/${createdStory.id}/${slugify(createdStory.title)}`),
               );
             },
           },

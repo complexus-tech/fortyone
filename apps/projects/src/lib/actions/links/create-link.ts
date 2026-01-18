@@ -11,14 +11,14 @@ export type NewLink = {
   storyId: string;
 };
 
-export const createLinkAction = async (payload: NewLink) => {
+export const createLinkAction = async (
+  payload: NewLink,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
-    const link = await post<NewLink, ApiResponse<Link>>(
-      "links",
-      payload,
-      session!,
-    );
+    const ctx = { session: session!, workspaceSlug };
+    const link = await post<NewLink, ApiResponse<Link>>("links", payload, ctx);
     return link;
   } catch (error) {
     return getApiError(error);

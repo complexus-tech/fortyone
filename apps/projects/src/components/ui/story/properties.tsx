@@ -31,7 +31,7 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
+import { useMediaQuery, useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
@@ -67,6 +67,7 @@ export const StoryProperties = ({
 }: StoryPropertiesProps) => {
   const { getTermDisplay } = useTerminology();
   const { isColumnVisible } = useBoard();
+  const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: selectedSprint } = useSprint(sprintId, teamId);
   const { data: selectedObjective } = useObjective(objectiveId, teamId);
@@ -298,7 +299,7 @@ export const StoryProperties = ({
               <Divider />
               {subStories.map((subStory, idx) => (
                 <Link
-                  href={`/story/${subStory.id}/${slugify(subStory.title)}`}
+                  href={withWorkspace(`/story/${subStory.id}/${slugify(subStory.title)}`)}
                   key={subStory.id}
                 >
                   <RowWrapper

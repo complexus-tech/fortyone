@@ -12,7 +12,7 @@ import type { DateRange } from "react-day-picker";
 import type { Objective } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
@@ -35,6 +35,7 @@ const ObjectiveRow = ({
   // Import userRole directly in this component
   const { userRole } = useUserRole();
   const { data: session } = useSession();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = useQueryClient();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
 
@@ -49,9 +50,10 @@ const ObjectiveRow = ({
     <Box
       onMouseEnter={() => {
         if (session) {
+          const ctx = { session, workspaceSlug };
           queryClient.prefetchQuery({
-            queryKey: objectiveKeys.objective(objective.id),
-            queryFn: () => getObjective(objective.id, session),
+            queryKey: objectiveKeys.objective(workspaceSlug, objective.id),
+            queryFn: () => getObjective(objective.id, ctx),
           });
         }
       }}
@@ -157,7 +159,7 @@ const ObjectiveRow = ({
 
           <Link
             className="flex min-w-0 flex-1 items-center gap-1.5"
-            href={`/teams/${objective.teamId}/objectives/${objective.id}`}
+            href={withWorkspace(`/teams/${objective.teamId}/objectives/${objective.id}`)}
           >
             <Text className="line-clamp-1 hover:opacity-90" fontWeight="medium">
               {objective.name}
@@ -214,6 +216,7 @@ export const RoadmapGanttBoard = ({
 }: RoadmapGanttBoardProps) => {
   const { mutate } = useUpdateObjectiveMutation();
   const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -232,9 +235,9 @@ export const RoadmapGanttBoard = ({
   // Handle bar clicks to navigate to objective page
   const handleBarClick = useCallback(
     (objective: Objective) => {
-      router.push(`/teams/${objective.teamId}/objectives/${objective.id}`);
+      router.push(withWorkspace(`/teams/${objective.teamId}/objectives/${objective.id}`));
     },
-    [router],
+    [router, withWorkspace],
   );
 
   const handleUpdate = useCallback(

@@ -1,28 +1,3 @@
-import type { Invitation, Workspace } from "@/types";
-
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
-export const getRedirectUrl = (
-  workspaces: Workspace[],
-  invitations: Invitation[] = [],
-  lastUsedWorkspaceId?: string,
-) => {
-  if (workspaces.length === 0) {
-    if (invitations.length > 0) {
-      return `/onboarding/join?token=${invitations[0].token}`;
-    }
-    return "/onboarding/create";
-  }
-  const activeWorkspace =
-    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
-    workspaces[0];
-  return `https://${activeWorkspace.slug}.${domain}/my-work`;
-};
-
-export const buildWorkspaceUrl = (slug: string) => {
-  return `https://${slug}.${domain}/my-work`;
-};
-
 const second = 1000;
 const minute = 60 * second;
 const hour = 60 * minute;

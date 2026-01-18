@@ -16,7 +16,7 @@ import {
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useTerminology, useAnalytics, useUserRole } from "@/hooks";
+import { useTerminology, useAnalytics, useUserRole, useWorkspacePath } from "@/hooks";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
@@ -45,6 +45,7 @@ export const CommandBar = ({
   const pathname = usePathname();
   const { resolvedTheme: theme, setTheme } = useTheme();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const { withWorkspace } = useWorkspacePath();
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -56,7 +57,7 @@ export const CommandBar = ({
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = "https://www.fortyone.app?signedOut=true";
+      window.location.href = "/?signedOut=true";
     }
   };
 
@@ -128,8 +129,8 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== "/my-work") {
-              router.push("/my-work");
+            if (pathname !== withWorkspace("/my-work")) {
+              router.push(withWorkspace("/my-work"));
             }
           },
         },
@@ -144,8 +145,8 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== "/notifications") {
-              router.push("/notifications");
+            if (pathname !== withWorkspace("/notifications")) {
+              router.push(withWorkspace("/notifications"));
             }
           },
         },
@@ -160,8 +161,8 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== "/summary") {
-              router.push("/summary");
+            if (pathname !== withWorkspace("/summary")) {
+              router.push(withWorkspace("/summary"));
             }
           },
         },
@@ -179,8 +180,8 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== "/objectives") {
-              router.push("/objectives");
+            if (pathname !== withWorkspace("/objectives")) {
+              router.push(withWorkspace("/objectives"));
             }
           },
         },
@@ -190,8 +191,8 @@ export const CommandBar = ({
           shortcut: <Kbd>/</Kbd>,
           action: () => {
             setIsOpen(false);
-            if (pathname !== "search") {
-              router.push("/search");
+            if (pathname !== withWorkspace("/search")) {
+              router.push(withWorkspace("/search"));
             }
           },
         },
@@ -212,8 +213,8 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== "/settings") {
-              router.push("/settings");
+            if (pathname !== withWorkspace("/settings")) {
+              router.push(withWorkspace("/settings"));
             }
           },
         },
@@ -271,7 +272,7 @@ export const CommandBar = ({
           <Dialog.Header className="sr-only">
             <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="px-0 pb-0 pt-2">
+          <Dialog.Body className="px-0 pt-2 pb-0">
             <Command>
               <Command.Input
                 className="my-2.5 text-2xl antialiased"

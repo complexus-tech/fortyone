@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { updateWorkspaceAction } from "@/lib/actions/workspaces/update-workspace";
 import type { UpdateWorkspaceInput } from "@/lib/actions/workspaces/update-workspace";
 import { workspaceKeys } from "@/constants/keys";
@@ -9,9 +10,11 @@ import { useCurrentWorkspace } from "./workspaces";
 export const useUpdateWorkspaceMutation = () => {
   const queryClient = useQueryClient();
   const { workspace: currentWorkspace } = useCurrentWorkspace();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (input: UpdateWorkspaceInput) => updateWorkspaceAction(input),
+    mutationFn: (input: UpdateWorkspaceInput) =>
+      updateWorkspaceAction(input, workspaceSlug),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: workspaceKeys.lists() });
       const previousWorkspaces = queryClient.getQueryData<Workspace[]>(

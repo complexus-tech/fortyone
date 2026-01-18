@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { addAssociationAction } from "../actions/add-association";
 import type { StoryAssociationType } from "../types";
 
 export const useAddAssociationMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   return useMutation({
     mutationFn: ({
@@ -16,14 +18,18 @@ export const useAddAssociationMutation = () => {
       fromStoryId: string;
       toStoryId: string;
       type: StoryAssociationType;
-    }) => addAssociationAction(fromStoryId, { toStoryId, type }),
+    }) => addAssociationAction(fromStoryId, { toStoryId, type }, workspaceSlug),
 
     onSuccess: (res, { fromStoryId, toStoryId }) => {
       if (res.error) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(fromStoryId) });
-      queryClient.invalidateQueries({ queryKey: storyKeys.detail(toStoryId) });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.detail(workspaceSlug, fromStoryId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.detail(workspaceSlug, toStoryId),
+      });
       toast.success("Association added");
     },
 

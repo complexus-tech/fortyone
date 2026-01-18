@@ -11,14 +11,12 @@ import {
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAnalytics, useLocalStorage } from "@/hooks";
+import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { logOut, changeWorkspace } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
 import { cn, getReadableTextColor } from "lib";
-
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 
 export const WorkspacesMenu = () => {
   const pathname = usePathname();
@@ -27,31 +25,32 @@ export const WorkspacesMenu = () => {
   const { data: workspaces = [] } = useWorkspaces();
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
-  const brightness = getReadableTextColor(workspace?.color);
+  const { withWorkspace } = useWorkspacePath();
 
   const handleLogout = async () => {
     try {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/?signedOut=true";
     } finally {
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/?signedOut=true";
     }
   };
 
   const handleChangeWorkspace = async (workspaceId: string, slug: string) => {
+    const nextPath = `/${slug}/my-work`;
     try {
       await changeWorkspace(workspaceId);
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      window.location.href = nextPath;
     } catch (error) {
-      window.location.href = `https://${slug}.${domain}/my-work`;
+      window.location.href = nextPath;
     }
   };
 
   const handleCreateWorkspace = () => {
-    window.location.href = `https://${domain}/onboarding/create`;
+    window.location.href = "/onboarding/create";
   };
 
   return (
@@ -180,7 +179,7 @@ export const WorkspacesMenu = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings"
+                  href={withWorkspace("/settings")}
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}
@@ -193,7 +192,7 @@ export const WorkspacesMenu = () => {
               <Menu.Item>
                 <Link
                   className="flex w-full items-center gap-2"
-                  href="/settings/workspace/members"
+                  href={withWorkspace("/settings/workspace/members")}
                   onClick={() => {
                     setPathBeforeSettings(pathname);
                   }}

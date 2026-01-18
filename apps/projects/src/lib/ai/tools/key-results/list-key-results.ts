@@ -59,7 +59,7 @@ export const listKeyResultsTool = tool({
       .describe("Filter options for listing key results"),
   }),
 
-  execute: async ({ filters }) => {
+  execute: async ({ filters }, { experimental_context }) => {
     const session = await auth();
 
     if (!session) {
@@ -69,8 +69,12 @@ export const listKeyResultsTool = tool({
       };
     }
 
+    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+    const ctx = { session, workspaceSlug };
+
     // Get user's workspace and role for permissions
-    const workspace = await getWorkspace(session);
+    const workspace = await getWorkspace(ctx);
     const userRole = workspace.userRole;
 
     if (userRole === "guest") {
@@ -80,7 +84,7 @@ export const listKeyResultsTool = tool({
       };
     }
 
-    const response = await getWorkspaceKeyResults(session, filters);
+    const response = await getWorkspaceKeyResults(ctx, filters);
 
     return {
       success: true,

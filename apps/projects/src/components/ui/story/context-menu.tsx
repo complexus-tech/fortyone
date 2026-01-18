@@ -15,7 +15,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
-import { useCopyToClipboard, useUserRole } from "@/hooks";
+import { useCopyToClipboard, useUserRole, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
@@ -39,6 +39,7 @@ export const StoryContextMenu = ({
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const [_, copy] = useCopyToClipboard();
+  const { withWorkspace } = useWorkspacePath();
   const { mutate: deleteStory } = useBulkDeleteStoryMutation();
   const { mutate: archiveStory } = useBulkArchiveStoryMutation();
   const { mutate: unarchiveStory } = useBulkUnarchiveStoryMutation();
@@ -49,7 +50,7 @@ export const StoryContextMenu = ({
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
 
-  const storyUrl = `/story/${story.id}/${slugify(story.title)}`;
+  const storyUrl = withWorkspace(`/story/${story.id}/${slugify(story.title)}`);
 
   const handleArchive = () => {
     archiveStory([story.id]);

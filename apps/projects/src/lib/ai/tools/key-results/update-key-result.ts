@@ -41,7 +41,7 @@ export const updateKeyResultTool = tool({
     endDate,
     lead,
     contributors,
-  }) => {
+  }, { experimental_context }) => {
     const session = await auth();
 
     if (!session) {
@@ -51,8 +51,12 @@ export const updateKeyResultTool = tool({
       };
     }
 
+    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+    const ctx = { session, workspaceSlug };
+
     // Get user's workspace and role for permissions
-    const workspace = await getWorkspace(session);
+    const workspace = await getWorkspace(ctx);
     const userRole = workspace.userRole;
 
     if (userRole === "guest") {
@@ -71,7 +75,7 @@ export const updateKeyResultTool = tool({
       endDate,
       lead,
       contributors,
-    });
+    }, workspaceSlug);
 
     if (result.error) {
       return {

@@ -19,7 +19,7 @@ const scaleIn = {
 
 export const CallToAction = () => {
   return (
-    <Box className="overflow-hidden border-b border-border/70 bg-linear-to-t from-surface-muted">
+    <Box className="border-border/70 from-surface-muted overflow-hidden border-b bg-linear-to-t">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
         <Flex className="mb-8 md:mb-12" direction="column">
           <motion.div
@@ -33,7 +33,7 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-3xl text-balance pb-2 text-5xl font-semibold md:text-6xl md:leading-[1.1]"
+              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-semibold text-balance md:text-6xl md:leading-[1.1]"
             >
               Ready to <span className="text-stroke-white">10x</span> Your
               Team&apos;s Velocity? Start Free
@@ -63,30 +63,30 @@ export const CallToAction = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group relative rounded-t-[0.6rem] border border-b-0 border-border bg-background/5 p-0.5 pb-0 shadow-2xl backdrop-blur d/70 dark:bg-dark-200/40 md:rounded-t-2xl md:px-1.5 md:pt-1.5">
-            <Flex align="center" className="mb-2 mt-1 px-1.5" justify="between">
+          <Box className="group border-border bg-background/5 d/70 dark:bg-dark-200/40 relative rounded-t-[0.6rem] border border-b-0 p-0.5 pb-0 shadow-2xl backdrop-blur md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+            <Flex align="center" className="mt-1 mb-2 px-1.5" justify="between">
               <Flex className="gap-1.5">
-                <Dot className="size-2.5 text-primary" />
-                <Dot className="size-2.5 text-warning" />
-                <Dot className="size-2.5 text-success" />
+                <Dot className="text-primary size-2.5" />
+                <Dot className="text-warning size-2.5" />
+                <Dot className="text-success size-2.5" />
               </Flex>
               <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
             </Flex>
             <Image
               alt="CTA"
-              className="rounded-t-lg border border-b-0 border-border dark:hidden md:rounded-t-[0.7rem]"
+              className="border-border rounded-t-lg border border-b-0 md:rounded-t-[0.7rem] dark:hidden"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="hidden rounded-t-lg border border-b-0 border-border dark:block d md:rounded-t-[0.7rem]"
+              className="border-border d hidden rounded-t-lg border border-b-0 md:rounded-t-[0.7rem] dark:block"
               src={ctaDark}
             />
-            <Box className="absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 group-hover:bg-background/5 md:rounded-t-2xl">
+            <Box className="group-hover:bg-background/5 absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 md:rounded-t-2xl">
               <Button
-                className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pl-5 md:pr-4"
+                className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pr-4 md:pl-5"
                 color="invert"
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 rounded="lg"
                 size="lg"
               >

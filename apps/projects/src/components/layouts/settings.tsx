@@ -6,7 +6,7 @@ import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "lib";
-import { useLocalStorage, useUserRole, useTerminology } from "@/hooks";
+import { useLocalStorage, useUserRole, useTerminology, useWorkspacePath } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { BodyContainer, MobileMenuButton } from "../shared";
@@ -21,9 +21,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { data: myInvitations = [] } = useMyInvitations();
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
 
   const goBack = () => {
-    router.push(prevPage || "/my-work");
+    router.push(prevPage || withWorkspace("/my-work"));
     setPrevPage("");
   };
 
@@ -35,31 +36,31 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const isMember = userRole === "member";
 
   const accountItems = [
-    { title: "Profile", href: "/settings/account" },
-    { title: "Preferences", href: "/settings/account/preferences" },
-    { title: "Notifications", href: "/settings/account/notifications" },
-    { title: "Security", href: "/settings/account/security" },
+    { title: "Profile", href: withWorkspace("/settings/account") },
+    { title: "Preferences", href: withWorkspace("/settings/account/preferences") },
+    { title: "Notifications", href: withWorkspace("/settings/account/notifications") },
+    { title: "Security", href: withWorkspace("/settings/account/security") },
     ...(myInvitations.length > 0
-      ? [{ title: "Invitations", href: "/settings/invitations" }]
+      ? [{ title: "Invitations", href: withWorkspace("/settings/invitations") }]
       : []),
   ];
 
   const workspaceItems = [
     ...(isAdmin
       ? [
-          { title: "General", href: "/settings" },
-          { title: "Members", href: "/settings/workspace/members" },
-          { title: "Billing & plans", href: "/settings/workspace/billing" },
+          { title: "General", href: withWorkspace("/settings") },
+          { title: "Members", href: withWorkspace("/settings/workspace/members") },
+          { title: "Billing & plans", href: withWorkspace("/settings/workspace/billing") },
           ...(hasFeature("customTerminology")
             ? [
                 {
                   title: "Terminology",
-                  href: "/settings/workspace/terminology",
+                  href: withWorkspace("/settings/workspace/terminology"),
                 },
               ]
             : []),
-          // { title: "Integrations", href: "/settings/workspace/integrations" },
-          // { title: "API tokens", href: "/settings/workspace/api" },
+          // { title: "Integrations", href: withWorkspace("/settings/workspace/integrations") },
+          // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
         ]
       : []),
   ];
@@ -67,15 +68,15 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin || isMember
       ? [
-          { title: "Labels", href: "/settings/workspace/labels" },
+          { title: "Labels", href: withWorkspace("/settings/workspace/labels") },
           {
             title: getTermDisplay("objectiveTerm", {
               variant: "plural",
               capitalize: true,
             }),
-            href: "/settings/workspace/objectives",
+            href: withWorkspace("/settings/workspace/objectives"),
           },
-          { title: "Teams", href: "/settings/workspace/teams" },
+          { title: "Teams", href: withWorkspace("/settings/workspace/teams") },
         ]
       : []),
   ];

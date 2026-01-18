@@ -40,6 +40,7 @@ import {
   useLocalStorage,
   useTerminology,
   useUserRole,
+  useWorkspacePath,
 } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -76,6 +77,7 @@ export const NewObjectiveDialog = ({
   teamId?: string;
 }) => {
   const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
   const { userRole } = useUserRole();
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useMembers();
@@ -222,7 +224,7 @@ export const NewObjectiveDialog = ({
         action: {
           label: "Join a team",
           onClick: () => {
-            router.push("/settings/workspace/teams");
+            router.push(withWorkspace("/settings/workspace/teams"));
           },
         },
       });
@@ -306,7 +308,7 @@ export const NewObjectiveDialog = ({
                   align="center"
                   className="mt-4 border-0"
                   fullWidth
-                  href="/settings/workspace/billing"
+                  href={withWorkspace("/settings/workspace/billing")}
                   rounded="lg"
                   size="lg"
                 >

@@ -8,12 +8,14 @@ import { auth } from "@/auth";
 export const removeTeamMemberAction = async (
   teamId: string,
   memberId: string,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await remove<ApiResponse<void>>(
       `teams/${teamId}/members/${memberId}`,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

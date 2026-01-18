@@ -11,7 +11,7 @@ export const deleteTeam = tool({
     teamId: z.string().describe("Team ID to delete (required)"),
   }),
 
-  execute: async ({ teamId }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -22,7 +22,11 @@ export const deleteTeam = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Only admins can delete teams
@@ -33,7 +37,7 @@ export const deleteTeam = tool({
         };
       }
 
-      const result = await deleteTeamAction(teamId);
+      const result = await deleteTeamAction(teamId, workspaceSlug);
 
       if (result.error) {
         return {

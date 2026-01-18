@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { updateKeyResult } from "../actions/update-key-result";
@@ -13,25 +14,26 @@ type UpdateKeyResultVariables = {
 
 export const useUpdateKeyResultMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({ keyResultId, data }: UpdateKeyResultVariables) =>
-      updateKeyResult(keyResultId, data),
+      updateKeyResult(keyResultId, data, workspaceSlug),
 
     onMutate: async ({ keyResultId, objectiveId, data }) => {
       await queryClient.cancelQueries({
-        queryKey: objectiveKeys.keyResults(objectiveId),
+        queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
       });
       toast.success("Success", {
         description: "Key result updated successfully",
       });
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
-        objectiveKeys.keyResults(objectiveId),
+        objectiveKeys.keyResults(workspaceSlug, objectiveId),
       );
 
       queryClient.setQueryData<KeyResult[]>(
-        objectiveKeys.keyResults(objectiveId),
+        objectiveKeys.keyResults(workspaceSlug, objectiveId),
         (old = []) =>
           old.map((keyResult) =>
             keyResult.id === keyResultId
@@ -49,7 +51,7 @@ export const useUpdateKeyResultMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousKeyResults) {
         queryClient.setQueryData<KeyResult[]>(
-          objectiveKeys.keyResults(variables.objectiveId),
+          objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
           context.previousKeyResults,
         );
       }
@@ -75,10 +77,10 @@ export const useUpdateKeyResultMutation = () => {
       });
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.keyResults(objectiveId),
+        queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.activitiesInfinite(objectiveId),
+        queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
       });
     },
   });

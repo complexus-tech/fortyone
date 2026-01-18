@@ -44,7 +44,7 @@ export const updateSprintSettings = tool({
     sprintDurationWeeks,
     sprintStartDay,
     moveIncompleteStoriesEnabled,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -54,7 +54,11 @@ export const updateSprintSettings = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole !== "admin") {
@@ -72,7 +76,7 @@ export const updateSprintSettings = tool({
         moveIncompleteStoriesEnabled,
       };
 
-      const result = await updateSprintSettingsAction(teamId, updateData);
+      const result = await updateSprintSettingsAction(teamId, updateData, workspaceSlug);
 
       if (result.error) {
         return {

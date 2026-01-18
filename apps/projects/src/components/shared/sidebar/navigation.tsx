@@ -11,7 +11,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import {
-  useTerminology,
+  useWorkspacePath,
   useFeatures,
   useFeatureFlag,
   useUserRole,
@@ -27,10 +27,11 @@ type MenuItem = {
 
 export const Navigation = () => {
   const pathname = usePathname();
+  const { withWorkspace } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
   const { userRole } = useUserRole();
   const isAnalyticsEnabled = useFeatureFlag("analytics_page");
-  const { getTermDisplay } = useTerminology();
+
   const features = useFeatures();
 
   const getSprintsItem = (): MenuItem | null => {
@@ -41,40 +42,40 @@ export const Navigation = () => {
       icon: <GridIcon />,
       href:
         runningSprints.length > 1
-          ? "/sprints"
-          : `/teams/${sprint.teamId}/sprints/${sprint.id}/stories`,
+          ? withWorkspace("/sprints")
+          : withWorkspace(`/teams/${sprint.teamId}/sprints/${sprint.id}/stories`),
     };
   };
 
   const links: MenuItem[] = [
     {
-      name: `My work`,
+      name: "My work",
       icon: <UserIcon />,
-      href: "/my-work",
+      href: withWorkspace("/my-work"),
     },
     {
       name: "Roadmap",
       icon: <RoadmapIcon strokeWidth={2} />,
-      href: "/roadmaps",
+      href: withWorkspace("/roadmaps"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Summary",
       icon: <DashboardIcon />,
-      href: "/summary",
+      href: withWorkspace("/summary"),
     },
 
     {
       name: "AI Assistant",
       icon: <AiIcon />,
-      href: "/maya",
+      href: withWorkspace("/maya"),
     },
     ...(getSprintsItem() ? [getSprintsItem()!] : []),
 
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
-      href: "/analytics",
+      href: withWorkspace("/analytics") ,
       disabled: !isAnalyticsEnabled,
     },
   ];
@@ -88,9 +89,9 @@ export const Navigation = () => {
           return (
             <NavLink
               active={isActive}
-              data-nav-my-work={href === "/my-work" ? "" : undefined}
-              data-nav-summary={href === "/summary" ? "" : undefined}
-              data-nav-ai-assistant={href === "/maya" ? "" : undefined}
+              data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
+              data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
+              data-nav-ai-assistant={href === withWorkspace("/maya") ? "" : undefined}
               href={href}
               key={name}
             >

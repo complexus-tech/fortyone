@@ -5,17 +5,16 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
-export const manageBilling = async (
-  returnUrl = "https://www.fortyone.app/login",
-) => {
+export const manageBilling = async (workspaceSlug: string, returnUrl = "/") => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await post<{ returnUrl: string }, ApiResponse<{ url: string }>>(
       "subscriptions/portal",
       {
         returnUrl,
       },
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

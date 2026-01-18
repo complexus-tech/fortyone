@@ -1,4 +1,7 @@
+"use client";
+
 export * from "./story/row";
+
 export * from "./stories-header";
 export * from "./story-status-icon";
 export * from "./stories-toolbar";
@@ -41,3 +44,5 @@ export * from "./story/card";
 export * from "./new-sprint-button";
 export * from "./feature-guard";
 export * from "./member-tooltip";
+export * from "./google-icon";
+export * from "./otp-input";

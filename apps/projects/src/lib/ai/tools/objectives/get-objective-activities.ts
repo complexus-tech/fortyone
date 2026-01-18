@@ -17,7 +17,7 @@ export const getObjectiveActivitiesTool = tool({
       .describe("Number of activities per page"),
   }),
 
-  execute: async ({ objectiveId, page = 1, pageSize = 20 }) => {
+  execute: async ({ objectiveId, page = 1, pageSize = 20 }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -28,9 +28,13 @@ export const getObjectiveActivitiesTool = tool({
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       const response = await getObjectiveActivities(
         objectiveId,
-        session,
+        ctx,
         page,
         pageSize,
       );

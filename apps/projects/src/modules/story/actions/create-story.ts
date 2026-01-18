@@ -6,13 +6,17 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 import type { DetailedStory, NewStory } from "../types";
 
-export const createStoryAction = async (newStory: NewStory) => {
+export const createStoryAction = async (
+  newStory: NewStory,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const story = await post<NewStory, ApiResponse<DetailedStory>>(
       "stories",
       newStory,
-      session!,
+      ctx,
     );
     return story;
   } catch (error) {

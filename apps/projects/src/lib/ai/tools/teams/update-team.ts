@@ -20,7 +20,7 @@ export const updateTeam = tool({
     isPrivate: z.boolean().optional().describe("Updated privacy setting"),
   }),
 
-  execute: async ({ teamId, name, color, code, isPrivate }) => {
+  execute: async ({ teamId, name, color, code, isPrivate }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -31,7 +31,11 @@ export const updateTeam = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Only admins can update teams for now
@@ -49,7 +53,7 @@ export const updateTeam = tool({
         isPrivate,
       };
 
-      const result = await updateTeamAction(teamId, updateData);
+      const result = await updateTeamAction(teamId, updateData, workspaceSlug);
 
       if (result.error) {
         return {

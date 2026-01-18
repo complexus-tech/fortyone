@@ -1,11 +1,11 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse, PrioritySummary } from "@/types";
 
-export const getPrioritySummary = async (session: Session) => {
+export const getPrioritySummary = async (ctx: WorkspaceCtx) => {
   const summary = await get<ApiResponse<PrioritySummary[]>>(
     "analytics/priority",
-    session,
+    ctx,
   );
   return summary.data!;
 };

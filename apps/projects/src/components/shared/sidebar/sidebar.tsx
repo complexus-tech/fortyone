@@ -6,7 +6,7 @@ import { addHours, differenceInHours } from "date-fns";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { Commands } from "../commands";
 import { CommandBar } from "../command-bar";
@@ -20,6 +20,7 @@ export const Sidebar = () => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
+  const { withWorkspace } = useWorkspacePath();
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -64,7 +65,7 @@ export const Sidebar = () => {
                 <Button
                   className="mt-3 px-3"
                   color="warning"
-                  href="/settings"
+                  href={withWorkspace("/settings")}
                   prefetch
                   size="sm"
                 >
@@ -86,7 +87,7 @@ export const Sidebar = () => {
                     <Button
                       className="mt-3 px-3"
                       color="tertiary"
-                      href="/settings/workspace/billing"
+                      href={withWorkspace("/settings/workspace/billing")}
                       prefetch
                       size="sm"
                     >
@@ -105,7 +106,7 @@ export const Sidebar = () => {
                       className="text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 mt-3 px-3"
                       href={
                         userRole === "admin"
-                          ? "/settings/workspace/billing"
+                          ? withWorkspace("/settings/workspace/billing")
                           : undefined
                       }
                       prefetch

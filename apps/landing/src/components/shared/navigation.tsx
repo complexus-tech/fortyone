@@ -6,11 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
-import { useSession } from "next-auth/react";
 import { Logo, Container } from "@/components/ui";
-import type { Workspace } from "@/types";
-import { useWorkspaces } from "@/lib/hooks/workspaces";
-import { useProfile } from "@/lib/hooks/profile";
 import { MobileNavigation } from "./mobile-navigation";
 
 const MenuItem = ({
@@ -37,10 +33,7 @@ const MenuItem = ({
   </Link>
 );
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const Navigation = () => {
-  const { data: session } = useSession();
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
@@ -90,26 +83,7 @@ export const Navigation = () => {
   ];
 
   const pathname = usePathname();
-  const { data: workspaces = [] } = useWorkspaces();
-  const { data: profile } = useProfile();
-
-  const getNextUrl = () => {
-    let workspace: Workspace | undefined;
-    if (session) {
-      if (workspaces.length === 0) {
-        return "/onboarding/create";
-      }
-      if (profile?.lastUsedWorkspaceId) {
-        workspace = workspaces.find(
-          (w) => w.id === profile.lastUsedWorkspaceId,
-        );
-      } else {
-        workspace = workspaces[0];
-      }
-      return `https://${workspace!.slug}.${domain}/maya`;
-    }
-    return "/login";
-  };
+  const getNextUrl = () => "https://cloud.fortyone.app/";
 
   return (
     <Box className="border-border/70 d/80 fixed left-0 z-15 w-screen border-b bg-white/20 backdrop-blur-xl dark:bg-black/40">
@@ -136,39 +110,22 @@ export const Navigation = () => {
         <Flex align="center" className="ml-4 gap-2">
           {/* <RequestDemo /> */}
           <Button
-            className={cn("hidden px-5 text-[0.93rem] md:flex", {
-              flex: session,
-            })}
-            color={session ? "invert" : "tertiary"}
+            className="hidden px-5 text-[0.93rem] md:flex"
+            color="tertiary"
             href={getNextUrl()}
             rounded="lg"
-            variant={session ? "solid" : "naked"}
+            variant="naked"
           >
-            {session ? (
-              <>
-                {getNextUrl().includes("onboarding") ? (
-                  "Create workspace"
-                ) : (
-                  <>
-                    <span className="md:hidden">Open app</span>
-                    <span className="hidden md:block">Open workspace</span>
-                  </>
-                )}
-              </>
-            ) : (
-              "Login"
-            )}
+            Login
           </Button>
-          {!session && (
-            <Button
-              className="px-5 text-[0.93rem]"
-              color="invert"
-              href="/signup"
-              rounded="lg"
-            >
-              Sign up
-            </Button>
-          )}
+          <Button
+            className="px-5 text-[0.93rem]"
+            color="invert"
+            href="https://cloud.fortyone.app/signup"
+            rounded="lg"
+          >
+            Sign up
+          </Button>
 
           <MobileNavigation />
         </Flex>

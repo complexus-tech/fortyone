@@ -11,18 +11,23 @@ export const deleteKeyResultTool = tool({
     keyResultId: z.string().describe("Key result ID to delete"),
   }),
 
-  execute: async ({ keyResultId }) => {
+  execute: async ({ keyResultId }, { experimental_context }) => {
     const session = await auth();
 
     if (!session) {
+
       return {
         success: false,
         error: "Authentication required",
       };
     }
 
+    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+    const ctx = { session, workspaceSlug };
+
     // Get user's workspace and role for permissions
-    const workspace = await getWorkspace(session);
+    const workspace = await getWorkspace(ctx);
     const userRole = workspace.userRole;
 
     if (userRole === "guest") {
@@ -32,7 +37,7 @@ export const deleteKeyResultTool = tool({
       };
     }
 
-    const result = await deleteKeyResult(keyResultId);
+    const result = await deleteKeyResult(keyResultId, workspaceSlug);
 
     if (result.error) {
       return {

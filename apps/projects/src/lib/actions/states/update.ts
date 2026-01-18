@@ -14,13 +14,15 @@ export type UpdateState = {
 export const updateStateAction = async (
   stateId: string,
   payload: UpdateState,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await put<UpdateState, ApiResponse<State>>(
       `states/${stateId}`,
       payload,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

@@ -9,15 +9,19 @@ type Payload = {
   storyIds: string[];
 };
 
-export const bulkUnarchiveAction = async (storyIds: string[]) => {
+export const bulkUnarchiveAction = async (
+  storyIds: string[],
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const stories = await post<Payload, ApiResponse<Payload>>(
       "stories/unarchive",
       {
         storyIds,
       },
-      session!,
+      ctx,
     );
 
     return stories;

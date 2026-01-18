@@ -9,7 +9,7 @@ export const getSprintAnalyticsTool = tool({
   inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get analytics for (required)"),
   }),
-  execute: async ({ sprintId }) => {
+  execute: async ({ sprintId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -20,7 +20,11 @@ export const getSprintAnalyticsTool = tool({
         };
       }
 
-      const analytics = await getSprintAnalytics(sprintId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const analytics = await getSprintAnalytics(sprintId, ctx);
 
       return {
         success: true,

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { userKeys } from "@/constants/keys";
 import { updateAutomationPreferencesAction } from "@/lib/actions/users/update-automation-preferences";
 import type {
@@ -9,27 +10,28 @@ import type {
 
 export const useUpdateAutomationPreferencesMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: (payload: UpdateAutomationPreferences) =>
-      updateAutomationPreferencesAction(payload),
+      updateAutomationPreferencesAction(payload, workspaceSlug),
 
     onMutate: async (payload) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({
-        queryKey: userKeys.automationPreferences(),
+        queryKey: userKeys.automationPreferences(workspaceSlug),
       });
 
       // Get the previous data
       const previousPreferences =
         queryClient.getQueryData<AutomationPreferences>(
-          userKeys.automationPreferences(),
+          userKeys.automationPreferences(workspaceSlug),
         );
 
       // Optimistically update to the new value
       if (previousPreferences) {
         queryClient.setQueryData<AutomationPreferences>(
-          userKeys.automationPreferences(),
+          userKeys.automationPreferences(workspaceSlug),
           {
             ...previousPreferences,
             ...payload,
@@ -44,7 +46,7 @@ export const useUpdateAutomationPreferencesMutation = () => {
       // Revert to the previous value
       if (context?.previousPreferences) {
         queryClient.setQueryData(
-          userKeys.automationPreferences(),
+          userKeys.automationPreferences(workspaceSlug),
           context.previousPreferences,
         );
       }
@@ -66,7 +68,7 @@ export const useUpdateAutomationPreferencesMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: userKeys.automationPreferences(),
+        queryKey: userKeys.automationPreferences(workspaceSlug),
       });
     },
   });

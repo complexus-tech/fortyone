@@ -12,7 +12,7 @@ const packages = [
   {
     name: "Hobby",
     cta: "Start for free",
-    href: "/signup",
+    href: "https://cloud.fortyone.app/signup",
     overview: "Plan and track personal work with essential features.",
     price: 0,
     features: [
@@ -27,7 +27,7 @@ const packages = [
   {
     name: "Professional",
     cta: "Try Professional",
-    href: "/signup",
+    href: "https://cloud.fortyone.app/signup",
     overview: "Everything in Hobby, plus collaboration and OKR tracking.",
     price: 7,
     features: [
@@ -42,7 +42,7 @@ const packages = [
   {
     name: "Business",
     cta: "Try Business",
-    href: "/signup",
+    href: "https://cloud.fortyone.app/signup",
     overview: "Everything in Professional, with advanced controls and support.",
     price: 10,
     features: [

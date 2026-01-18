@@ -10,7 +10,7 @@ export const getTeamDetails = tool({
     teamId: z.string().describe("Team ID to get details for (required)"),
   }),
 
-  execute: async ({ teamId }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -21,7 +21,11 @@ export const getTeamDetails = tool({
         };
       }
 
-      const teams = await getTeams(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const teams = await getTeams(ctx);
       const team = teams.find((t) => t.id === teamId);
 
       if (!team) {

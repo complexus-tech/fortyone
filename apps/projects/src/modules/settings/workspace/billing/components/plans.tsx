@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { checkout } from "@/lib/actions/billing/checkout";
 import { changePlan } from "@/lib/actions/billing/change-plan";
+import { useWorkspacePath } from "@/hooks";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { Plan } from "@/lib/actions/billing/types";
 import { ConfirmDialog } from "@/components/ui";
@@ -116,6 +117,7 @@ const getBusinessButtonState = (
 
 export const Plans = () => {
   const { tier, billingInterval } = useSubscriptionFeatures();
+  const { workspaceSlug } = useWorkspacePath();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isProLoading, setIsProLoading] = useState(false);
@@ -149,6 +151,7 @@ export const Plans = () => {
           plan,
           successUrl,
           cancelUrl,
+          workspaceSlug,
         });
         if (response.error?.message) {
           toast.error("Failed to upgrade plan", {
@@ -161,7 +164,7 @@ export const Plans = () => {
         const toastId = toast.loading("Processing plan change...", {
           description: "Please wait while we process your request.",
         });
-        const response = await changePlan(plan);
+        const response = await changePlan(plan, workspaceSlug);
         if (response.error?.message) {
           toast.error("Failed to process plan change", {
             description: response.error.message,

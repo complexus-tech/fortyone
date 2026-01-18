@@ -6,7 +6,7 @@ import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 
 export const logOut = async () => {
   await signOut();
-  redirect("https://www.fortyone.app?signedOut=true");
+  redirect("/?signedOut=true");
 };
 
 export const changeWorkspace = async (workspaceId: string) => {

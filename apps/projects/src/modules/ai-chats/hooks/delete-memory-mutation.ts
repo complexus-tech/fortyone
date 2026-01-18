@@ -1,14 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { aiChatKeys } from "../constants";
 import { deleteMemoryAction } from "../actions/delete-memory";
 import type { Memory } from "../types";
 
 export const useDeleteMemory = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (id: string) => deleteMemoryAction(id),
+    mutationFn: (id: string) => deleteMemoryAction(id, workspaceSlug),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
 

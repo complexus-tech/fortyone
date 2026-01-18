@@ -1,5 +1,5 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { GroupedStoriesResponse, GroupedStoryParams } from "../types";
 import {
@@ -8,7 +8,7 @@ import {
 } from "../utils/query-builders";
 
 export const getGroupedStories = async (
-  session: Session,
+  ctx: WorkspaceCtx,
   params: GroupedStoryParams,
 ) => {
   const query = buildGroupedStoriesQuery(params);
@@ -16,7 +16,7 @@ export const getGroupedStories = async (
 
   const response = await get<ApiResponse<GroupedStoriesResponse>>(
     `${url}${query}`,
-    session,
+    ctx,
   );
 
   return response.data!;

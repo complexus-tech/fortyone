@@ -4,7 +4,7 @@ import { SprintsIcon, GitIcon } from "icons";
 import { useParams } from "next/navigation";
 import { BodyContainer } from "@/components/shared";
 import { NewSprintButton } from "@/components/ui";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { SprintsHeader } from "./components/header";
 import { SprintRow } from "./components/row";
 import { SprintsSkeleton } from "./components/sprints-skeleton";
@@ -16,6 +16,7 @@ export const SprintsList = () => {
   }>();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
 
   const { data: sprints = [], isPending } = useTeamSprints(teamId);
   if (isPending) {
@@ -48,7 +49,7 @@ export const SprintsList = () => {
                 {userRole === "admin" && (
                   <Button
                     color="tertiary"
-                    href={`/settings/workspace/teams/${teamId}?tab=automations`}
+                    href={withWorkspace(`/settings/workspace/teams/${teamId}?tab=automations`)}
                     leftIcon={<GitIcon />}
                     size="sm"
                   >

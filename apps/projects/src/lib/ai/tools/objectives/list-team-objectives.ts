@@ -10,7 +10,7 @@ export const listTeamObjectivesTool = tool({
     teamId: z.string().describe("Team ID to get objectives from (required)"),
   }),
 
-  execute: async ({ teamId }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -21,7 +21,11 @@ export const listTeamObjectivesTool = tool({
         };
       }
 
-      const objectives = await getTeamObjectives(teamId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const objectives = await getTeamObjectives(teamId, ctx);
 
       return {
         success: true,

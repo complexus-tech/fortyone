@@ -13,7 +13,7 @@ import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useUserRole, useMediaQuery } from "@/hooks";
+import { useUserRole, useMediaQuery, useWorkspacePath } from "@/hooks";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -49,6 +49,7 @@ export const StoryRow = ({
   const { data: teams = [] } = useTeams();
   const { data: members = [] } = useTeamMembers(story.teamId);
   const { userRole } = useUserRole();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: story.id,
@@ -82,19 +83,22 @@ export const StoryRow = ({
   return (
     <Box
       onMouseEnter={() => {
-        queryClient.prefetchQuery({
-          queryKey: storyKeys.detail(story.id),
-          queryFn: () => getStory(story.id, session!),
-        });
-        queryClient.prefetchQuery({
-          queryKey: storyKeys.attachments(story.id),
-          queryFn: () => getStoryAttachments(story.id, session!),
-        });
-        queryClient.prefetchQuery({
-          queryKey: linkKeys.story(story.id),
-          queryFn: () => getLinks(story.id, session!),
-        });
-        router.prefetch(`/story/${story.id}/${slugify(story.title)}`);
+        if (session) {
+          const ctx = { session, workspaceSlug };
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.detail(workspaceSlug, story.id),
+            queryFn: () => getStory(story.id, ctx),
+          });
+          queryClient.prefetchQuery({
+            queryKey: storyKeys.attachments(workspaceSlug, story.id),
+            queryFn: () => getStoryAttachments(story.id, ctx),
+          });
+          queryClient.prefetchQuery({
+            queryKey: linkKeys.story(story.id),
+            queryFn: () => getLinks(story.id, ctx),
+          });
+        }
+        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
       }}
     >
       <div ref={setNodeRef}>
@@ -165,7 +169,7 @@ export const StoryRow = ({
 
               <Link
                 className="flex items-center gap-1.5"
-                href={`/story/${story.id}/${slugify(story.title)}`}
+                href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
                 onClick={(e) => {
                   if (isDesktop && openStoryInDialog) {
                     e.preventDefault();

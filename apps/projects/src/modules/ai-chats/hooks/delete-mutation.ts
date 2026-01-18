@@ -1,14 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { aiChatKeys } from "../constants";
 import { deleteAiChatAction } from "../actions/delete-ai-chat";
 import type { AiChatSession } from "../types";
 
 export const useDeleteAiChat = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (id: string) => deleteAiChatAction(id),
+    mutationFn: (id: string) => deleteAiChatAction(id, workspaceSlug),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: aiChatKeys.lists() });
       const previousChats = queryClient.getQueryData<AiChatSession[]>(

@@ -17,7 +17,7 @@ import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages
 import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messages";
 import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { useProfile } from "@/lib/hooks/profile";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
@@ -38,6 +38,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: totalMessages = 0 } = useTotalMessages();
   const { getLimit, displayTier } = useSubscriptionFeatures();
   const { workspace } = useCurrentWorkspace();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -70,7 +71,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     // Fetch messages for the new chat ID directly
     const newMessages = await queryClient.fetchQuery({
       queryKey: aiChatKeys.messages(chatId),
-      queryFn: () => getAiChatMessages(session!, chatId),
+      queryFn: () => getAiChatMessages({ session: session!, workspaceSlug }, chatId),
     });
     setMessages(newMessages);
     setInput("");
@@ -123,7 +124,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         ) {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
-              queryKey: teamKeys.all,
+              queryKey: teamKeys.all(workspaceSlug),
             });
           }
         } else if (
@@ -139,7 +140,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         ) {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
-              queryKey: storyKeys.all,
+              queryKey: storyKeys.all(workspaceSlug),
             });
           }
         } else if (
@@ -152,13 +153,13 @@ export const useMayaChat = (config: MayaChatConfig) => {
         ) {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
-              queryKey: objectiveKeys.all,
+              queryKey: objectiveKeys.all(workspaceSlug),
             });
           }
         } else if (part.type === "tool-notifications") {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
-              queryKey: notificationKeys.all,
+              queryKey: notificationKeys.all(workspaceSlug),
             });
           }
         } else if (
@@ -174,7 +175,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         } else if (part.type === "tool-objectiveStatuses") {
           if (part.state === "output-available") {
             queryClient.invalidateQueries({
-              queryKey: objectiveKeys.statuses(),
+              queryKey: objectiveKeys.statuses(workspaceSlug),
             });
           }
         }
@@ -229,7 +230,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
         action: {
           label: "Upgrade",
           onClick: () => {
-            router.push("/settings/workspace/billing");
+            router.push(withWorkspace("/settings/workspace/billing"));
           },
         },
         duration: 4000,

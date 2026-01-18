@@ -6,6 +6,7 @@ import { HistoryDialog } from "@/components/ui/chat/history-dialog";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { useWorkspacePath } from "@/hooks";
 
 type MayaHeaderProps = {
   currentChatId: string;
@@ -21,6 +22,7 @@ export const Header = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: totalMessages = 0 } = useTotalMessages();
   const { remaining, getLimit, tier } = useSubscriptionFeatures();
+  const { withWorkspace } = useWorkspacePath();
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -52,7 +54,7 @@ export const Header = ({
                   </Text>
                   <Button
                     color="invert"
-                    href="/settings/workspace/billing"
+                    href={withWorkspace("/settings/workspace/billing")}
                     fullWidth
                     align="center"
                   >

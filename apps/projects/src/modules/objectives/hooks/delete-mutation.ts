@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { deleteObjective } from "../actions/delete-objective";
@@ -9,10 +10,11 @@ export const useDeleteObjectiveMutation = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: deleteObjective,
+    mutationFn: (objectiveId: string) => deleteObjective(objectiveId, workspaceSlug),
     onError: (error, objectiveId) => {
       toast.error("Failed to delete objective", {
         description:
@@ -39,13 +41,13 @@ export const useDeleteObjectiveMutation = () => {
         description: "Objective deleted successfully",
       });
       queryClient.removeQueries({
-        queryKey: objectiveKeys.objective(objectiveId),
+        queryKey: objectiveKeys.objective(workspaceSlug, objectiveId),
       });
-      queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
+      queryClient.invalidateQueries({ queryKey: objectiveKeys.list(workspaceSlug) });
       if (!teamId) {
-        router.replace("/objectives");
+        router.replace(withWorkspace("/objectives"));
       } else {
-        router.replace(`/teams/${teamId}/objectives`);
+        router.replace(withWorkspace(`/teams/${teamId}/objectives`));
       }
     },
   });

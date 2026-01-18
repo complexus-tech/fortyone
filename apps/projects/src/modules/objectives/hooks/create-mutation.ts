@@ -1,17 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { createObjective } from "../actions/create-objective";
-import type { Objective } from "../types";
+import type { Objective, NewObjective } from "../types";
 
 export const useCreateObjectiveMutation = () => {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: createObjective,
+    mutationFn: (newObjective: NewObjective) =>
+      createObjective(newObjective, workspaceSlug),
 
     onMutate: (newObjective) => {
       const optimisticObjective: Objective = {

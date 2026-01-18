@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import type { SearchResponse } from "@/modules/search/types";
 import { objectiveKeys } from "../constants";
@@ -13,24 +14,25 @@ export type UpdateObjectiveVariables = {
 
 export const useUpdateObjectiveMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
     mutationFn: ({ objectiveId, data }: UpdateObjectiveVariables) =>
-      updateObjective(objectiveId, data),
+      updateObjective(objectiveId, data, workspaceSlug),
 
     onMutate: ({ objectiveId, data }) => {
       const prevObjective = queryClient.getQueryData<Objective>(
-        objectiveKeys.objective(objectiveId),
+        objectiveKeys.objective(workspaceSlug, objectiveId),
       );
 
       const prevTeamObjectives = queryClient.getQueryData<Objective[]>(
-        objectiveKeys.list(),
+        objectiveKeys.list(workspaceSlug),
       );
 
       if (prevObjective) {
         queryClient.setQueryData<Objective>(
-          objectiveKeys.objective(objectiveId),
+          objectiveKeys.objective(workspaceSlug, objectiveId),
           {
             ...prevObjective,
             name: data.name ?? prevObjective.name,
@@ -46,7 +48,7 @@ export const useUpdateObjectiveMutation = () => {
 
       if (prevTeamObjectives) {
         queryClient.setQueryData<Objective[]>(
-          objectiveKeys.list(),
+          objectiveKeys.list(workspaceSlug),
           prevTeamObjectives.map((objective) =>
             objective.id === objectiveId
               ? {
@@ -94,11 +96,11 @@ export const useUpdateObjectiveMutation = () => {
     onError: (error, variables, context) => {
       if (context) {
         queryClient.setQueryData(
-          objectiveKeys.objective(variables.objectiveId),
+          objectiveKeys.objective(workspaceSlug, variables.objectiveId),
           context.prevObjective,
         );
         queryClient.setQueryData(
-          objectiveKeys.list(),
+          objectiveKeys.list(workspaceSlug),
           context.prevTeamObjectives,
         );
       }
@@ -123,11 +125,11 @@ export const useUpdateObjectiveMutation = () => {
       });
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.objective(objectiveId),
+        queryKey: objectiveKeys.objective(workspaceSlug, objectiveId),
       });
-      queryClient.invalidateQueries({ queryKey: objectiveKeys.list() });
+      queryClient.invalidateQueries({ queryKey: objectiveKeys.list(workspaceSlug) });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.activitiesInfinite(objectiveId),
+        queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
       });
     },
   });

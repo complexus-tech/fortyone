@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import { updateStoryAutomationSettingsAction } from "../actions/update-story-automation-settings";
 import type {
@@ -9,33 +10,37 @@ import type {
 
 export const useUpdateStoryAutomationSettingsMutation = (teamId: string) => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: (input: UpdateStoryAutomationSettingsInput) =>
-      updateStoryAutomationSettingsAction(teamId, input),
+      updateStoryAutomationSettingsAction(teamId, input, workspaceSlug),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
-        queryKey: teamKeys.settings(teamId),
+        queryKey: teamKeys.settings(workspaceSlug, teamId),
       });
       const previousSettings = queryClient.getQueryData<TeamSettings>(
-        teamKeys.settings(teamId),
+        teamKeys.settings(workspaceSlug, teamId),
       );
 
       if (previousSettings) {
-        queryClient.setQueryData<TeamSettings>(teamKeys.settings(teamId), {
-          ...previousSettings,
-          storyAutomationSettings: {
-            ...previousSettings.storyAutomationSettings,
-            ...input,
+        queryClient.setQueryData<TeamSettings>(
+          teamKeys.settings(workspaceSlug, teamId),
+          {
+            ...previousSettings,
+            storyAutomationSettings: {
+              ...previousSettings.storyAutomationSettings,
+              ...input,
+            },
           },
-        });
+        );
       }
 
       return { previousSettings };
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        teamKeys.settings(teamId),
+        teamKeys.settings(workspaceSlug, teamId),
         context?.previousSettings,
       );
       toast.error("Error", {
@@ -54,7 +59,7 @@ export const useUpdateStoryAutomationSettingsMutation = (teamId: string) => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
-        queryKey: teamKeys.settings(teamId),
+        queryKey: teamKeys.settings(workspaceSlug, teamId),
       });
     },
   });

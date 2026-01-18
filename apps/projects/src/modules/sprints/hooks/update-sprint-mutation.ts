@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { Sprint, UpdateSprint } from "../types";
@@ -7,6 +8,7 @@ import { updateSprintAction } from "../actions/update-sprint";
 
 export const useUpdateSprintMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
@@ -16,17 +18,19 @@ export const useUpdateSprintMutation = () => {
     }: {
       sprintId: string;
       updates: UpdateSprint;
-    }) => updateSprintAction(sprintId, updates),
+    }) => updateSprintAction(sprintId, updates, workspaceSlug),
     onMutate: async ({ sprintId, updates }) => {
-      await queryClient.cancelQueries({ queryKey: sprintKeys.lists() });
+      await queryClient.cancelQueries({
+        queryKey: sprintKeys.lists(workspaceSlug),
+      });
 
       const previousSprints = queryClient.getQueryData<Sprint[]>(
-        sprintKeys.lists(),
+        sprintKeys.lists(workspaceSlug),
       );
 
       if (previousSprints) {
         queryClient.setQueryData<Sprint[]>(
-          sprintKeys.lists(),
+          sprintKeys.lists(workspaceSlug),
           previousSprints.map((s) =>
             s.id === sprintId
               ? {
@@ -46,7 +50,10 @@ export const useUpdateSprintMutation = () => {
     },
     onError: (error, variables, context) => {
       if (context?.previousSprints) {
-        queryClient.setQueryData(sprintKeys.lists(), context.previousSprints);
+        queryClient.setQueryData(
+          sprintKeys.lists(workspaceSlug),
+          context.previousSprints,
+        );
       }
       toast.error("Failed to update sprint", {
         description: error.message || "Your changes were not saved",
@@ -68,7 +75,9 @@ export const useUpdateSprintMutation = () => {
         sprintId,
         ...updates,
       });
-      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.lists(workspaceSlug),
+      });
 
       toast.success("Success", {
         description: "Sprint updated successfully",

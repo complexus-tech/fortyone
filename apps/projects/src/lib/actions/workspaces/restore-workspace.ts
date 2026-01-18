@@ -5,10 +5,13 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
-export const restoreWorkspaceAction = async (): Promise<void> => {
+export const restoreWorkspaceAction = async (
+  workspaceSlug: string,
+): Promise<void> => {
   try {
     const session = await auth();
-    await remove<ApiResponse<void>>("restore", session!);
+    const ctx = { session: session!, workspaceSlug };
+    await remove<ApiResponse<void>>("restore", ctx);
   } catch (error) {
     const res = getApiError(error);
     throw new Error(res.error?.message || "Failed to restore workspace");

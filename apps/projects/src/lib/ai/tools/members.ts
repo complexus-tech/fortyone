@@ -33,7 +33,7 @@ export const membersTool = tool({
       .describe("Member ID for specific member operations"),
   }),
 
-  execute: async ({ action, teamId, searchQuery, memberId }) => {
+  execute: async ({ action, teamId, searchQuery, memberId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -44,9 +44,13 @@ export const membersTool = tool({
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       switch (action) {
         case "list-all-members": {
-          const members = await getMembers(session);
+          const members = await getMembers(ctx);
 
           return {
             success: true,
@@ -71,8 +75,8 @@ export const membersTool = tool({
           }
 
           const [members, teams] = await Promise.all([
-            getTeamMembers(teamId, session),
-            getTeams(session),
+            getTeamMembers(teamId, ctx),
+            getTeams(ctx),
           ]);
 
           const team = teams.find((t) => t.id === teamId);
@@ -102,7 +106,7 @@ export const membersTool = tool({
             };
           }
 
-          const allMembers = await getMembers(session);
+          const allMembers = await getMembers(ctx);
           const query = searchQuery.toLowerCase();
 
           const matchingMembers = allMembers.filter(
@@ -134,7 +138,7 @@ export const membersTool = tool({
             };
           }
 
-          const allMembers = await getMembers(session);
+          const allMembers = await getMembers(ctx);
           const member = allMembers.find((m) => m.id === memberId);
 
           if (!member) {

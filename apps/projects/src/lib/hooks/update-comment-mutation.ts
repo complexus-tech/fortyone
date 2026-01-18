@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
 import type { UpdateComment } from "../actions/comments/update-comment";
@@ -20,6 +21,7 @@ type InfiniteCommentsData = {
 
 export const useUpdateCommentMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -29,11 +31,11 @@ export const useUpdateCommentMutation = () => {
       commentId: string;
       payload: UpdateComment;
       storyId: string;
-    }) => updateCommentAction(commentId, payload),
+    }) => updateCommentAction(commentId, payload, workspaceSlug),
 
     onMutate: (newComment) => {
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(newComment.storyId),
+        storyKeys.commentsInfinite(workspaceSlug, newComment.storyId),
       );
 
       if (previousData) {
@@ -50,7 +52,7 @@ export const useUpdateCommentMutation = () => {
         };
 
         queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(newComment.storyId),
+          storyKeys.commentsInfinite(workspaceSlug, newComment.storyId),
           updatedData,
         );
       }
@@ -59,7 +61,7 @@ export const useUpdateCommentMutation = () => {
     onError: (error, variables, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(
-          storyKeys.commentsInfinite(variables.storyId),
+          storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
           context.previousData,
         );
       }
@@ -73,7 +75,7 @@ export const useUpdateCommentMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(variables.storyId),
+        queryKey: storyKeys.commentsInfinite(workspaceSlug, variables.storyId),
       });
     },
     onSuccess: (res, { storyId }) => {
@@ -82,7 +84,7 @@ export const useUpdateCommentMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(storyId),
+        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
       });
     },
   });

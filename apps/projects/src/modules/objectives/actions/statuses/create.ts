@@ -15,13 +15,15 @@ export type NewObjectiveStatus = {
 
 export const createObjectiveStatusAction = async (
   newStatus: NewObjectiveStatus,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const response = await post<
       NewObjectiveStatus,
       ApiResponse<ObjectiveStatus>
-    >("objective-statuses", newStatus, session!);
+    >("objective-statuses", newStatus, ctx);
     return response;
   } catch (error) {
     return getApiError(error);

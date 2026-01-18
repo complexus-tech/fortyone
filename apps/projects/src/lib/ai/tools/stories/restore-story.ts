@@ -11,7 +11,7 @@ export const restoreStory = tool({
     storyId: z.string().describe("Story ID to restore (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async ({ storyId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -22,7 +22,11 @@ export const restoreStory = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Only admins can restore stories
@@ -33,7 +37,7 @@ export const restoreStory = tool({
         };
       }
 
-      const result = await restoreStoryAction(storyId);
+      const result = await restoreStoryAction(storyId, workspaceSlug);
 
       if (result.error) {
         return {

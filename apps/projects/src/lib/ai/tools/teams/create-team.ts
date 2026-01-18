@@ -23,7 +23,7 @@ export const createTeamTool = tool({
       .describe("Whether team is private (default: false)"),
   }),
 
-  execute: async ({ name, code, color, isPrivate = false }) => {
+  execute: async ({ name, code, color, isPrivate = false }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -34,7 +34,11 @@ export const createTeamTool = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole === "guest") {
@@ -51,7 +55,7 @@ export const createTeamTool = tool({
         isPrivate,
       };
 
-      const result = await createTeam(teamData);
+      const result = await createTeam(teamData, workspaceSlug);
 
       if (result.error) {
         return {

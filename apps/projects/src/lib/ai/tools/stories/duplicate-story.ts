@@ -11,7 +11,7 @@ export const duplicateStory = tool({
     storyId: z.string().describe("Story ID to duplicate (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async ({ storyId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -22,7 +22,11 @@ export const duplicateStory = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole === "guest") {
@@ -33,7 +37,7 @@ export const duplicateStory = tool({
         };
       }
 
-      const result = await duplicateStoryAction(storyId);
+      const result = await duplicateStoryAction(storyId, workspaceSlug);
 
       if (result.error) {
         return {

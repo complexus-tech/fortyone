@@ -11,7 +11,7 @@ import { StoryStatusIcon } from "@/components/ui";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStories } from "@/modules/stories/queries/get-stories";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 
 type SprintStatus = "completed" | "in progress" | "upcoming";
 
@@ -32,6 +32,7 @@ export const SprintRow = ({
   const { getTermDisplay } = useTerminology();
   const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
   const { data: session } = useSession();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = new QueryClient();
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
@@ -49,13 +50,16 @@ export const SprintRow = ({
     <RowWrapper className="gap-3 py-2">
       <Link
         className="flex flex-1 items-center gap-4"
-        href={`/teams/${teamId}/sprints/${id}/stories`}
+        href={withWorkspace(`/teams/${teamId}/sprints/${id}/stories`)}
         onMouseEnter={() => {
-          queryClient.prefetchQuery({
-            queryKey: storyKeys.sprint(id),
-            queryFn: () => getStories(session!, { sprintId: id }),
-            staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
-          });
+          if (session) {
+            queryClient.prefetchQuery({
+              queryKey: storyKeys.sprint(workspaceSlug, id),
+              queryFn: () =>
+                getStories({ session, workspaceSlug }, { sprintId: id }),
+              staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 3,
+            });
+          }
         }}
         prefetch
       >

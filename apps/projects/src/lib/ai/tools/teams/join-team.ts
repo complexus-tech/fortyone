@@ -10,7 +10,7 @@ export const joinTeam = tool({
     teamId: z.string().describe("Team ID to join (required)"),
   }),
 
-  execute: async ({ teamId }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -21,9 +21,11 @@ export const joinTeam = tool({
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
       const userId = session.user!.id!;
 
-      const result = await addTeamMemberAction(teamId, userId);
+      const result = await addTeamMemberAction(teamId, userId, workspaceSlug);
 
       if (result.error) {
         return {

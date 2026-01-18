@@ -13,13 +13,15 @@ export type UpdateComment = {
 export const updateCommentAction = async (
   commentId: string,
   payload: UpdateComment,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await put<UpdateComment, ApiResponse<null>>(
       `comments/${commentId}`,
       payload,
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

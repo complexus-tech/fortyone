@@ -1,11 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ok for now */
-
-import Credentials from "next-auth/providers/credentials";
 import NextAuth, { CredentialsSignin } from "next-auth";
-import { authenticateWithToken } from "./lib/actions/users/sigin-in";
+import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import {
+  authenticateGoogleUser,
+  authenticateWithToken,
+} from "./lib/actions/auth";
 import { DURATION_FROM_SECONDS } from "./constants/time";
 
-const domain = `.${process.env.NEXT_PUBLIC_DOMAIN!}`;
+const domain = process.env.NEXT_PUBLIC_DOMAIN ? `.${process.env.NEXT_PUBLIC_DOMAIN}` : undefined;
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
@@ -18,6 +20,8 @@ declare module "next-auth" {
   }
 }
 
+const errorMessage = "There was an error logging in. Please try again.";
+
 export const {
   handlers,
   auth,
@@ -26,10 +30,12 @@ export const {
   unstable_update: updateSession,
 } = NextAuth({
   providers: [
+    Google,
     Credentials({
       name: "Credentials",
+      id: "credentials",
       credentials: {},
-      async authorize(credentials) {
+      async authorize(credentials, _request) {
         const { email, token } = credentials as {
           email: string;
           token: string;
@@ -40,34 +46,74 @@ export const {
           error.message = res.error.message;
           throw error;
         }
-        return res.data!;
+        return res.data ?? null;
+      },
+    }),
+    Credentials({
+      name: "One Tap",
+      id: "one-tap",
+      credentials: {},
+      async authorize(credentials, _request) {
+        const { idToken } = credentials as { idToken: string };
+        const googleUser = await authenticateGoogleUser({ idToken });
+        if (!googleUser) {
+          throw new Error("Failed to authenticate Google user");
+        }
+        return googleUser ?? null;
       },
     }),
   ],
 
-  cookies: {
-    sessionToken: {
-      name: "__Secure-next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        domain,
-        secure: true,
+  ...(domain && {
+    cookies: {
+      sessionToken: {
+        name: "__Secure-next-auth.session-token",
+        options: {
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+          domain,
+          secure: true,
+        },
       },
     },
-  },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        return {
-          ...token,
-          id: user.id,
-          accessToken: user.token,
-          lastUsedWorkspaceId: user.lastUsedWorkspaceId,
-        };
-      }
+  }),
 
+  callbacks: {
+    async jwt({ token, user, account }) {
+      if (account && user) {
+        if (
+          account.provider === "credentials" ||
+          account.provider === "one-tap"
+        ) {
+          return {
+            ...token,
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            picture: user.image,
+            accessToken: user.token,
+            lastUsedWorkspaceId: user.lastUsedWorkspaceId,
+          };
+        }
+        if (account.provider === "google") {
+          const googleUser = await authenticateGoogleUser({
+            idToken: account.id_token!,
+          });
+          if (!googleUser) {
+            throw new Error("Failed to authenticate Google user");
+          }
+          return {
+            ...token,
+            id: googleUser.id,
+            picture: googleUser.image,
+            name: googleUser.name,
+            email: googleUser.email,
+            accessToken: googleUser.token,
+            lastUsedWorkspaceId: googleUser.lastUsedWorkspaceId,
+          };
+        }
+      }
       return token;
     },
     session({ session, token }) {
@@ -93,8 +139,9 @@ export const {
     maxAge: DURATION_FROM_SECONDS.DAY * 30,
   },
   pages: {
-    signIn: "/logout",
-    signOut: "/logout",
+    signIn: "/",
+    signOut: "/",
+    error: `/?error=${encodeURIComponent(errorMessage)}`,
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true,
 });

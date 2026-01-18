@@ -3,7 +3,6 @@ import { Button, Flex, Text, Box } from "ui";
 import { motion } from "framer-motion";
 import { cn } from "lib";
 import { Container, GoogleIcon } from "@/components/ui";
-import { signInWithGoogle } from "@/lib/actions/sign-in";
 
 export const Hero = () => {
   return (
@@ -24,7 +23,7 @@ export const Hero = () => {
             <Button
               className="dark:bg-surface-elevated/70 dark:hover:bg-surface-elevated/90 border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl md:text-[0.95rem]"
               color="tertiary"
-              href="/signup"
+              href="https://cloud.fortyone.app/signup"
               rounded="md"
               size="sm"
             >
@@ -83,7 +82,7 @@ export const Hero = () => {
               <Button
                 className="px-3 md:pr-4 md:pl-5"
                 color="invert"
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 rounded="lg"
                 size="lg"
               >
@@ -102,10 +101,8 @@ export const Hero = () => {
               <Button
                 className="px-3 md:pr-4 md:pl-3.5"
                 color="tertiary"
+                href="https://cloud.fortyone.app/signup"
                 leftIcon={<GoogleIcon />}
-                onClick={async () => {
-                  await signInWithGoogle();
-                }}
                 rounded="lg"
                 size="lg"
                 variant="naked"

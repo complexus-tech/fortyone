@@ -54,7 +54,7 @@ export const objectiveStatusesTool = tool({
       .optional()
       .describe("Whether this should be the default objective status"),
   }),
-  execute: async ({ action, statusId, name, color, category, isDefault }) => {
+  execute: async ({ action, statusId, name, color, category, isDefault }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -64,12 +64,16 @@ export const objectiveStatusesTool = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       switch (action) {
         case "list-objective-statuses": {
-          const statuses = await getObjectiveStatuses(session);
+          const statuses = await getObjectiveStatuses(ctx);
           return {
             success: true,
             data: statuses.map((status) => ({
@@ -96,7 +100,7 @@ export const objectiveStatusesTool = tool({
             };
           }
 
-          const allStatuses = await getObjectiveStatuses(session);
+          const allStatuses = await getObjectiveStatuses(ctx);
           const status = allStatuses.find((s) => s.id === statusId);
 
           if (!status) {
@@ -145,7 +149,7 @@ export const objectiveStatusesTool = tool({
             category,
           };
 
-          const result = await createObjectiveStatusAction(newStatus);
+          const result = await createObjectiveStatusAction(newStatus, workspaceSlug);
 
           if (result.error) {
             return {
@@ -193,6 +197,7 @@ export const objectiveStatusesTool = tool({
           const result = await updateObjectiveStatusAction(
             statusId,
             updateData,
+            workspaceSlug,
           );
 
           if (result.error) {
@@ -227,7 +232,7 @@ export const objectiveStatusesTool = tool({
 
           const result = await updateObjectiveStatusAction(statusId, {
             isDefault: true,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {
@@ -260,7 +265,7 @@ export const objectiveStatusesTool = tool({
             };
           }
 
-          const result = await deleteObjectiveStatusAction(statusId);
+          const result = await deleteObjectiveStatusAction(statusId, workspaceSlug);
 
           if (result.error) {
             return {

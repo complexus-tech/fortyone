@@ -36,12 +36,12 @@ export const ComparePlans = () => {
     <Container className="max-w-332 md:py-36">
       <Box className="hidden overflow-x-auto md:block">
         <Box>
-          <Flex className="border-b border-border">
+          <Flex className="border-border border-b">
             <Box className="w-1/3 p-6" />
             {plans.map((plan) => (
               <Box
                 className={cn("w-1/6 px-4 py-5", {
-                  "rounded-t-2xl border border-b-0 border-border bg-surface-muted d dark:bg-surface-elevated":
+                  "border-border bg-surface-muted d dark:bg-surface-elevated rounded-t-2xl border border-b-0":
                     plan.highlighted,
                 })}
                 key={plan.name}
@@ -53,21 +53,21 @@ export const ComparePlans = () => {
 
           {/* Limits section */}
           <Box>
-            <Flex className="border-b border-border">
+            <Flex className="border-border border-b">
               <Box className="w-1/3 px-4 py-3">
                 <Text fontWeight="semibold">Limits</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-border bg-surface-muted":
+                    "border-border bg-surface-muted border-x":
                       plan.name === "Business",
                   })}
                   key={plan.name}
                 />
               ))}
             </Flex>
-            <Flex className="border-b border-border">
+            <Flex className="border-border border-b">
               <Box className="w-1/3 px-4 py-3">
                 <Text>Members</Text>
               </Box>
@@ -76,7 +76,7 @@ export const ComparePlans = () => {
                   className={cn(
                     "w-1/6 px-4 py-3",
                     plan.highlighted &&
-                      "border-x border-border bg-surface-muted",
+                      "border-border bg-surface-muted border-x",
                   )}
                   key={`${plan.name}-members`}
                 >
@@ -85,15 +85,14 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-border">
+            <Flex className="border-border border-b">
               <Box className="w-1/3 px-4 py-3">
                 <Text>File uploads</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-border bg-surface-muted":
-                      plan.highlighted,
+                    "border-border bg-surface-muted border-x": plan.highlighted,
                   })}
                   key={`${plan.name}-files`}
                 >
@@ -102,15 +101,14 @@ export const ComparePlans = () => {
               ))}
             </Flex>
 
-            <Flex className="border-b border-border">
+            <Flex className="border-border border-b">
               <Box className="w-1/3 px-4 py-3">
                 <Text>Stories</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-border bg-surface-muted":
-                      plan.highlighted,
+                    "border-border bg-surface-muted border-x": plan.highlighted,
                   })}
                   key={`${plan.name}stories`}
                 >
@@ -122,14 +120,14 @@ export const ComparePlans = () => {
 
           {/* Features section */}
           <Box>
-            <Flex className="border-b border-border">
-              <Box className="w-1/3 px-4 pb-3 pt-8">
+            <Flex className="border-border border-b">
+              <Box className="w-1/3 px-4 pt-8 pb-3">
                 <Text fontWeight="semibold">Features</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
-                    "border-x border-border bg-surface-muted":
+                    "border-border bg-surface-muted border-x":
                       plan.name === "Business",
                   })}
                   key={plan.name}
@@ -146,11 +144,7 @@ export const ComparePlans = () => {
 
                 return (
                   <Flex
-                    className={
-                      !isLastItem
-                        ? "border-b border-border"
-                        : ""
-                    }
+                    className={!isLastItem ? "border-border border-b" : ""}
                     key={featureKey}
                   >
                     <Box className="w-1/3 px-4 py-3">
@@ -163,7 +157,7 @@ export const ComparePlans = () => {
                       return (
                         <Box
                           className={cn("w-1/6 px-4 py-3", {
-                            "border-x border-border bg-surface-muted":
+                            "border-border bg-surface-muted border-x":
                               isHighlighted,
                           })}
                           key={`${plan.name}-${featureKey}`}
@@ -177,14 +171,14 @@ export const ComparePlans = () => {
               },
             )}
           </Box>
-          <Flex className="border-t border-border">
+          <Flex className="border-border border-t">
             <Box className="w-1/3" />
             <Box className="w-1/6 px-4 py-3">
               <Button
                 align="center"
                 color="tertiary"
                 fullWidth
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 variant="outline"
               >
                 Start for free
@@ -195,18 +189,18 @@ export const ComparePlans = () => {
                 align="center"
                 color="tertiary"
                 fullWidth
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 variant="outline"
               >
                 Try Proffesional
               </Button>
             </Box>
-            <Box className="w-1/6 rounded-b-2xl border border-t-0 border-border bg-surface-muted px-4 py-3 d dark:bg-surface-elevated">
+            <Box className="border-border bg-surface-muted d dark:bg-surface-elevated w-1/6 rounded-b-2xl border border-t-0 px-4 py-3">
               <Button
                 align="center"
                 color="invert"
                 fullWidth
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 variant="outline"
               >
                 Try Business
@@ -217,7 +211,7 @@ export const ComparePlans = () => {
                 align="center"
                 color="tertiary"
                 fullWidth
-                href="/signup"
+                href="mailto:info@complexus.app"
                 variant="outline"
               >
                 Contact sales

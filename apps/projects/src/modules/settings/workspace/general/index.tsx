@@ -14,8 +14,6 @@ import { WorkspaceForm } from "./components/form";
 import { WorkspaceFeatures } from "./components/features";
 import { Logo } from "./components/logo";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN!;
-
 export const WorkspaceGeneralSettings = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
@@ -34,7 +32,7 @@ export const WorkspaceGeneralSettings = () => {
       analytics.logout(true);
     } finally {
       clearAllStorage();
-      window.location.href = `https://www.${domain}?signedOut=true`;
+      window.location.href = "/?signedOut=true";
     }
   };
 
@@ -55,7 +53,7 @@ export const WorkspaceGeneralSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Settings
       </Text>
-      <Box className="mb-6 rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface mb-6 rounded-2xl border">
         <SectionHeader
           action={<Logo />}
           description="Basic information about your workspace."
@@ -68,7 +66,7 @@ export const WorkspaceGeneralSettings = () => {
         <WorkspaceFeatures />
       </Box>
 
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
             <Button

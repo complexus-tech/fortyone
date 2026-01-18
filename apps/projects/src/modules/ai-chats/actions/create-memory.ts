@@ -6,13 +6,17 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { CreateMemoryPayload, Memory } from "../types";
 
-export const createMemoryAction = async (payload: CreateMemoryPayload) => {
+export const createMemoryAction = async (
+  payload: CreateMemoryPayload,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const result = await post<CreateMemoryPayload, ApiResponse<Memory>>(
       "users/memory",
       payload,
-      session!,
+      ctx,
     );
     return result;
   } catch (error) {

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { NewSprint, Sprint } from "../types";
@@ -7,21 +8,25 @@ import { createSprintAction } from "../actions/create-sprint";
 
 export const useCreateSprintMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (newSprint: NewSprint) => createSprintAction(newSprint),
+    mutationFn: (newSprint: NewSprint) =>
+      createSprintAction(newSprint, workspaceSlug),
     onMutate: async (newSprint) => {
       await queryClient.cancelQueries({
-        queryKey: sprintKeys.team(newSprint.teamId),
+        queryKey: sprintKeys.team(workspaceSlug, newSprint.teamId),
       });
-      await queryClient.cancelQueries({ queryKey: sprintKeys.lists() });
+      await queryClient.cancelQueries({
+        queryKey: sprintKeys.lists(workspaceSlug),
+      });
 
       const previousTeamSprints = queryClient.getQueryData<Sprint[]>(
-        sprintKeys.team(newSprint.teamId),
+        sprintKeys.team(workspaceSlug, newSprint.teamId),
       );
       const previousSprints = queryClient.getQueryData<Sprint[]>(
-        sprintKeys.lists(),
+        sprintKeys.lists(workspaceSlug),
       );
 
       const optimisticSprint: Sprint = {
@@ -46,14 +51,14 @@ export const useCreateSprintMutation = () => {
       };
 
       if (previousTeamSprints) {
-        queryClient.setQueryData<Sprint[]>(sprintKeys.team(newSprint.teamId), [
-          optimisticSprint,
-          ...previousTeamSprints,
-        ]);
+        queryClient.setQueryData<Sprint[]>(
+          sprintKeys.team(workspaceSlug, newSprint.teamId),
+          [optimisticSprint, ...previousTeamSprints],
+        );
       }
 
       if (previousSprints) {
-        queryClient.setQueryData<Sprint[]>(sprintKeys.lists(), [
+        queryClient.setQueryData<Sprint[]>(sprintKeys.lists(workspaceSlug), [
           optimisticSprint,
           ...previousSprints,
         ]);
@@ -64,12 +69,15 @@ export const useCreateSprintMutation = () => {
     onError: (error, newSprint, context) => {
       if (context?.previousTeamSprints) {
         queryClient.setQueryData(
-          sprintKeys.team(newSprint.teamId),
+          sprintKeys.team(workspaceSlug, newSprint.teamId),
           context.previousTeamSprints,
         );
       }
       if (context?.previousSprints) {
-        queryClient.setQueryData(sprintKeys.lists(), context.previousSprints);
+        queryClient.setQueryData(
+          sprintKeys.lists(workspaceSlug),
+          context.previousSprints,
+        );
       }
 
       toast.error("Failed to create sprint", {
@@ -101,9 +109,11 @@ export const useCreateSprintMutation = () => {
         },
       });
 
-      queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: sprintKeys.team(newSprint.teamId),
+        queryKey: sprintKeys.lists(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.team(workspaceSlug, newSprint.teamId),
       });
 
       toast.success("Success", {

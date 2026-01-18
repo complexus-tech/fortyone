@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { linkKeys } from "@/constants/keys";
 import type { Link } from "@/types";
 import type { NewLink } from "../actions/links/create-link";
@@ -7,9 +8,10 @@ import { createLinkAction } from "../actions/links/create-link";
 
 export const useCreateLinkMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (newLink: NewLink) => createLinkAction(newLink),
+    mutationFn: (newLink: NewLink) => createLinkAction(newLink, workspaceSlug),
 
     onMutate: (newLink) => {
       const optimisticLink: Link = {

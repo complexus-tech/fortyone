@@ -18,7 +18,7 @@ import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { StateRow } from "./state-row";
 
 const categories: {
@@ -71,6 +71,7 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 export const WorkflowSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: groupedStories } = useGroupedStories({
     groupBy: "status",
@@ -276,7 +277,7 @@ export const WorkflowSettings = () => {
             </Text>
           </Flex>
           {userRole === "admin" && (
-            <Button color="warning" href="/settings/workspace/billing">
+            <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
               Upgrade now
             </Button>
           )}

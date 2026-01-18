@@ -36,18 +36,24 @@ export const updateStory = tool({
     objectiveId,
     startDate,
     endDate,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to update stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole === "guest") {
@@ -70,7 +76,7 @@ export const updateStory = tool({
         endDate,
       };
 
-      const result = await updateStoryAction(storyId, updateData);
+      const result = await updateStoryAction(storyId, updateData, workspaceSlug);
 
       if (result.error?.message) {
         return {

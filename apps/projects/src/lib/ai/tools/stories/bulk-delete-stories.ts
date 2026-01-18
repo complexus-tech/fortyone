@@ -13,7 +13,7 @@ export const bulkDeleteStories = tool({
       .describe("Array of story IDs to delete (required)"),
   }),
 
-  execute: async ({ storyIds }) => {
+  execute: async ({ storyIds }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -23,7 +23,11 @@ export const bulkDeleteStories = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole === "guest") {
@@ -33,7 +37,7 @@ export const bulkDeleteStories = tool({
         };
       }
 
-      const result = await bulkDeleteAction({ storyIds });
+      const result = await bulkDeleteAction({ storyIds }, workspaceSlug);
 
       if (result.error?.message) {
         return {

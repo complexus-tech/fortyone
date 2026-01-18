@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
 import { commentStoryAction } from "../actions/comment-story";
@@ -19,6 +20,7 @@ type InfiniteCommentsData = {
 
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -32,11 +34,15 @@ export const useCommentStoryMutation = () => {
         mentions: string[];
       };
     }) =>
-      commentStoryAction(storyId, {
-        comment: payload.comment,
-        mentions: payload.mentions,
-        parentId: payload.parentId,
-      }),
+      commentStoryAction(
+        storyId,
+        {
+          comment: payload.comment,
+          mentions: payload.mentions,
+          parentId: payload.parentId,
+        },
+        workspaceSlug,
+      ),
     onError: (error, variables) => {
       toast.error("Failed to comment story", {
         description: error.message || "Your comment was not saved",
@@ -50,7 +56,7 @@ export const useCommentStoryMutation = () => {
     },
     onMutate: ({ storyId, payload }) => {
       const previousData = queryClient.getQueryData<InfiniteCommentsData>(
-        storyKeys.commentsInfinite(storyId),
+        storyKeys.commentsInfinite(workspaceSlug, storyId),
       );
 
       if (previousData) {
@@ -94,7 +100,7 @@ export const useCommentStoryMutation = () => {
         };
 
         queryClient.setQueryData<InfiniteCommentsData>(
-          storyKeys.commentsInfinite(storyId),
+          storyKeys.commentsInfinite(workspaceSlug, storyId),
           updatedData,
         );
       }
@@ -106,7 +112,7 @@ export const useCommentStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: storyKeys.commentsInfinite(storyId),
+        queryKey: storyKeys.commentsInfinite(workspaceSlug, storyId),
       });
     },
   });

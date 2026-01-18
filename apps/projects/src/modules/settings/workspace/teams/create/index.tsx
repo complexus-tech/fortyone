@@ -19,7 +19,7 @@ import { SectionHeader } from "@/modules/settings/components";
 import type { CreateTeamInput } from "@/modules/teams/types";
 import { useCreateTeamMutation } from "@/modules/teams/hooks/use-create-team";
 import { FeatureGuard } from "@/components/ui";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 
 const formatCode = (name: string) => {
   return name
@@ -38,6 +38,7 @@ const initialForm = {
 export const CreateTeam = () => {
   const { data: teams = [] } = useTeams();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
   const [form, setForm] = useState<CreateTeamInput>(initialForm);
   const [hasCodeBlurred, setHasCodeBlurred] = useState(false);
   const createTeam = useCreateTeamMutation();
@@ -91,7 +92,7 @@ export const CreateTeam = () => {
               </Text>
             </Flex>
             {userRole === "admin" && (
-              <Button color="warning" href="/settings/workspace/billing">
+              <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
                 Upgrade now
               </Button>
             )}
@@ -177,7 +178,7 @@ export const CreateTeam = () => {
                     {userRole === "admin" && (
                       <Button
                         color="warning"
-                        href="/settings/workspace/billing"
+                        href={withWorkspace("/settings/workspace/billing")}
                       >
                         Upgrade now
                       </Button>

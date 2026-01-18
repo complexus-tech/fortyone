@@ -1,16 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "../../constants";
 import type { NewObjectiveStatus } from "../../actions/statuses/create";
 import { createObjectiveStatusAction } from "../../actions/statuses/create";
 
 export const useCreateObjectiveStatusMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const toastId = "create-objective-status";
 
   const mutation = useMutation({
     mutationFn: (newStatus: NewObjectiveStatus) =>
-      createObjectiveStatusAction(newStatus),
+      createObjectiveStatusAction(newStatus, workspaceSlug),
 
     onMutate: () => {
       toast.loading("Please wait...", {
@@ -30,7 +32,7 @@ export const useCreateObjectiveStatusMutation = () => {
         },
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
     onSuccess: (res) => {
@@ -43,7 +45,7 @@ export const useCreateObjectiveStatusMutation = () => {
         description: "Your status has been created",
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.statuses(),
+        queryKey: objectiveKeys.statuses(workspaceSlug),
       });
     },
   });

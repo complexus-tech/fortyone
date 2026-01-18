@@ -1,5 +1,5 @@
-import type { Session } from "next-auth";
 import { get } from "@/lib/http";
+import type { WorkspaceCtx } from "@/lib/http";
 import type { Comment, ApiResponse } from "@/types";
 
 type CommentsResponse = {
@@ -14,12 +14,12 @@ type CommentsResponse = {
 
 export const getStoryComments = async (
   id: string,
-  session: Session,
+  ctx: WorkspaceCtx,
   page = 1,
 ) => {
   const response = await get<ApiResponse<CommentsResponse>>(
     `stories/${id}/comments?page=${page}`,
-    session,
+    ctx,
   );
   return response.data!;
 };

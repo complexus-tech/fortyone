@@ -9,13 +9,15 @@ import type { UpdateAiChatPayload } from "../types";
 export const updateAiChatAction = async (
   id: string,
   payload: UpdateAiChatPayload,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const result = await put<UpdateAiChatPayload, ApiResponse<null>>(
       `chat-sessions/${id}`,
       payload,
-      session!,
+      ctx,
     );
     return result;
   } catch (error) {

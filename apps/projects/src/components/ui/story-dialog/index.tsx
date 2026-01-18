@@ -10,6 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -33,6 +34,7 @@ export const StoryDialog = ({
   const { data: story } = useStoryById(storyId);
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
 
   // Memoized navigation state
   const navigationState = useMemo(() => {
@@ -50,13 +52,16 @@ export const StoryDialog = ({
   useEffect(() => {
     if (!session || !isOpen) return;
 
+    const ctx = { session, workspaceSlug };
     const prefetchStory = async (storyId: string) => {
       // Only prefetch if the story isn't already cached
-      const cachedStory = queryClient.getQueryData(storyKeys.detail(storyId));
+      const cachedStory = queryClient.getQueryData(
+        storyKeys.detail(workspaceSlug, storyId),
+      );
       if (!cachedStory) {
         await queryClient.prefetchQuery({
-          queryKey: storyKeys.detail(storyId),
-          queryFn: () => getStory(storyId, session),
+          queryKey: storyKeys.detail(workspaceSlug, storyId),
+          queryFn: () => getStory(storyId, ctx),
           staleTime: 3 * 60 * 1000, // 3 minutes
         });
       }
@@ -71,7 +76,7 @@ export const StoryDialog = ({
     if (nextStoryId) {
       prefetchStory(nextStoryId);
     }
-  }, [queryClient, session, isOpen, prevStoryId, nextStoryId]);
+  }, [queryClient, session, workspaceSlug, isOpen, prevStoryId, nextStoryId]);
 
   const handlePrev = () => {
     if (hasPrev && onNavigate && prevStoryId) {
@@ -177,7 +182,7 @@ export const StoryDialog = ({
                       <Button
                         asIcon
                         color="tertiary"
-                        href={`/story/${story?.id}/${slugify(story?.title)}`}
+                        href={withWorkspace(`/story/${story?.id}/${slugify(story?.title)}`)}
                         leftIcon={
                           <MaximizeIcon
                             className="h-[1.15rem]"

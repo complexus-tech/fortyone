@@ -17,13 +17,15 @@ export type UpdateObjectiveStatus = {
 export const updateObjectiveStatusAction = async (
   statusId: string,
   payload: UpdateObjectiveStatus,
+  workspaceSlug: string,
 ) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const response = await put<
       UpdateObjectiveStatus,
       ApiResponse<ObjectiveStatus>
-    >(`objective-statuses/${statusId}`, payload, session!);
+    >(`objective-statuses/${statusId}`, payload, ctx);
     return response;
   } catch (error) {
     return getApiError(error);

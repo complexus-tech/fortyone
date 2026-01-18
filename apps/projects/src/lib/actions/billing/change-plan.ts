@@ -6,15 +6,16 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { Plan } from "./types";
 
-export const changePlan = async (plan: Plan) => {
+export const changePlan = async (plan: Plan, workspaceSlug: string) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const res = await post<{ newLookupKey: Plan }, ApiResponse<null>>(
       "subscriptions/change-plan",
       {
         newLookupKey: plan,
       },
-      session!,
+      ctx,
     );
     return res;
   } catch (error) {

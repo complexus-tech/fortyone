@@ -1,0 +1,114 @@
+package tasks
+
+import (
+	"context"
+	"time"
+
+	"github.com/hibiken/asynq"
+)
+
+// Team settings automation task types
+const (
+	TypeSprintAutoCreation        = "automation:sprints:create"
+	TypeStoryAutoArchive          = "automation:stories:archive"
+	TypeStoryAutoClose            = "automation:stories:close"
+	TypeSprintStoryMigration      = "automation:sprints:migrate_stories"
+	TypeDisableInactiveAutomation = "automation:disable:inactive"
+)
+
+// EnqueueSprintAutoCreation enqueues a task to auto-create sprints for teams.
+func (s *Service) EnqueueSprintAutoCreation(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue SprintAutoCreation task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.MaxRetry(3),
+		asynq.TaskID("sprint_auto_creation"),
+		asynq.ProcessIn(30 * time.Second),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeSprintAutoCreation, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue SprintAutoCreation task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued SprintAutoCreation task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}
+
+// EnqueueStoryAutoArchive enqueues a task to auto-archive completed stories.
+func (s *Service) EnqueueStoryAutoArchive(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue StoryAutoArchive task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.TaskID("story_auto_archive"),
+		asynq.MaxRetry(3),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeStoryAutoArchive, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue StoryAutoArchive task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued StoryAutoArchive task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}
+
+// EnqueueStoryAutoClose enqueues a task to auto-close inactive stories.
+func (s *Service) EnqueueStoryAutoClose(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue StoryAutoClose task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.TaskID("story_auto_close"),
+		asynq.MaxRetry(3),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeStoryAutoClose, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue StoryAutoClose task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued StoryAutoClose task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}
+
+// EnqueueSprintStoryMigration enqueues a task to migrate incomplete stories from ended sprints to next sprints.
+func (s *Service) EnqueueSprintStoryMigration(opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue SprintStoryMigration task")
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("automation"),
+		asynq.TaskID("sprint_story_migration"),
+		asynq.MaxRetry(3),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeSprintStoryMigration, nil, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue SprintStoryMigration task", "error", err)
+		return nil, err
+	}
+
+	s.log.Info(ctx, "Successfully enqueued SprintStoryMigration task", "task_id", info.ID, "queue", info.Queue)
+	return info, nil
+}

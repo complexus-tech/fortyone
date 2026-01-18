@@ -12,7 +12,7 @@ export const deleteStory = tool({
     storyId: z.string().describe("Story ID to delete (required)"),
   }),
 
-  execute: async ({ storyId }) => {
+  execute: async ({ storyId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -23,12 +23,16 @@ export const deleteStory = tool({
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       const userId = session.user!.id;
 
       // Check if user can delete this story
-      const story = await getStory(storyId, session);
+      const story = await getStory(storyId, ctx);
       if (!story) {
         return {
           success: false,
@@ -46,7 +50,7 @@ export const deleteStory = tool({
         };
       }
 
-      const result = await deleteStoryAction(storyId);
+      const result = await deleteStoryAction(storyId, workspaceSlug);
 
       if (result.error?.message) {
         return {

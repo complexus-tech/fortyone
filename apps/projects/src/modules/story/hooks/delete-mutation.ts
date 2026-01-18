@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
+import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -70,20 +71,24 @@ const updateListQuery = (
 
 export const useDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const { mutateAsync } = useRestoreStoryMutation();
 
   const mutation = useMutation({
-    mutationFn: deleteStoryAction,
+    mutationFn: (storyId: string) => deleteStoryAction(storyId, workspaceSlug),
 
     onMutate: (storyId) => {
       const previousStory = queryClient.getQueryData<DetailedStory>(
-        storyKeys.detail(storyId),
+        storyKeys.detail(workspaceSlug, storyId),
       );
       if (previousStory) {
-        queryClient.setQueryData<DetailedStory>(storyKeys.detail(storyId), {
-          ...previousStory,
-          deletedAt: new Date().toISOString(),
-        });
+        queryClient.setQueryData<DetailedStory>(
+          storyKeys.detail(workspaceSlug, storyId),
+          {
+            ...previousStory,
+            deletedAt: new Date().toISOString(),
+          },
+        );
       }
 
       const queryCache = queryClient.getQueryCache();
@@ -106,12 +111,12 @@ export const useDeleteStoryMutation = () => {
     onError: (error, storyId, context) => {
       if (context?.previousStory) {
         queryClient.setQueryData<DetailedStory>(
-          storyKeys.detail(storyId),
+          storyKeys.detail(workspaceSlug, storyId),
           context.previousStory,
         );
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
       toast.error("Failed to delete story", {
         description:
@@ -130,7 +135,7 @@ export const useDeleteStoryMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all });
+      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       toast.success("Success", {
         description: "Story deleted successfully",
         cancel: {

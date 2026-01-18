@@ -16,7 +16,7 @@ import type { WorkspaceSettings } from "@/types";
 import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useUserRole } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 
 type TermOption = {
   label: string;
@@ -48,6 +48,7 @@ export const TerminologyPreferences = () => {
   const { hasFeature } = useSubscriptionFeatures();
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
 
   const entities: TermEntity[] = useMemo(
     () => [
@@ -145,7 +146,7 @@ export const TerminologyPreferences = () => {
               </Text>
             </Flex>
             {userRole === "admin" && (
-              <Button color="warning" href="/settings/workspace/billing">
+              <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
                 Upgrade now
               </Button>
             )}

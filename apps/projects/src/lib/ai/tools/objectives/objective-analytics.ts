@@ -12,7 +12,7 @@ export const objectiveAnalyticsTool = tool({
       .describe("Objective ID to get analytics for (required)"),
   }),
 
-  execute: async ({ objectiveId }) => {
+  execute: async ({ objectiveId }, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -23,7 +23,11 @@ export const objectiveAnalyticsTool = tool({
         };
       }
 
-      const analytics = await getObjectiveAnalytics(objectiveId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const analytics = await getObjectiveAnalytics(objectiveId, ctx);
 
       return {
         success: true,

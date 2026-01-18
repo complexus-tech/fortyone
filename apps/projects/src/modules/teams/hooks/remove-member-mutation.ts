@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
+import { useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
@@ -12,6 +13,7 @@ export const useRemoveMemberMutation = () => {
   const queryClient = useQueryClient();
   const { teamId: teamIdParam } = useParams<{ teamId?: string }>();
   const { data: session } = useSession();
+  const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const router = useRouter();
   const currentUserId = session?.user?.id ?? "";
   const toastId = "remove-member-mutation";
@@ -19,7 +21,7 @@ export const useRemoveMemberMutation = () => {
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      removeTeamMemberAction(teamId, memberId),
+      removeTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Leaving team..." : "Removing member...",
@@ -28,12 +30,12 @@ export const useRemoveMemberMutation = () => {
           description: "Please wait...",
         },
       );
-      await queryClient.cancelQueries({ queryKey: memberKeys.team(teamId) });
+      await queryClient.cancelQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
       const previousMembers = queryClient.getQueryData<Member[]>(
-        memberKeys.team(teamId),
+        memberKeys.team(workspaceSlug, teamId),
       );
       if (previousMembers) {
-        queryClient.setQueryData(memberKeys.team(teamId), (old: Member[]) =>
+        queryClient.setQueryData(memberKeys.team(workspaceSlug, teamId), (old: Member[]) =>
           old.filter((member) => member.id !== memberId),
         );
       }
@@ -42,7 +44,7 @@ export const useRemoveMemberMutation = () => {
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        memberKeys.team(variables.teamId),
+        memberKeys.team(workspaceSlug, variables.teamId),
         context?.previousMembers,
       );
       toast.error(
@@ -86,14 +88,14 @@ export const useRemoveMemberMutation = () => {
           },
         },
       );
-      queryClient.invalidateQueries({ queryKey: memberKeys.team(teamId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
       if (memberId === session?.user?.id) {
-        queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: teamKeys.public() });
-        queryClient.invalidateQueries({ queryKey: storyKeys.mine() });
-        queryClient.invalidateQueries({ queryKey: statusKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
+        queryClient.invalidateQueries({ queryKey: teamKeys.public(workspaceSlug) });
+        queryClient.invalidateQueries({ queryKey: storyKeys.mine(workspaceSlug) });
+        queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
         if (teamIdParam === teamId) {
-          router.push("/my-work");
+          router.push(withWorkspace("/my-work"));
         }
       }
     },

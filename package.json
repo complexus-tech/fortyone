@@ -2,7 +2,7 @@
   "private": false,
   "scripts": {
     "build": "turbo run build",
-    "dev:caddy": "turbo run dev",
+    "dev:old": "turbo run dev",
     "dev": "concurrently \"turbo run dev\" \"caddy run\" --names \"turbo,caddy\" --prefix-colors \"blue,green\"",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
@@ -15,7 +15,7 @@
     "turbo": "^2.7.2"
   },
   "packageManager": "pnpm@9.3.0",
-  "name": "fortyone.tech",
+  "name": "fortyone.app",
   "pnpm": {
     "overrides": {
       "@types/react": "19.1.9",

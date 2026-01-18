@@ -7,11 +7,7 @@
 
 A modern, open-source web platform for project management and collaboration. FortyOne provides a comprehensive suite of tools for teams to organize, track, and deliver projects efficiently.
 
-The Frontend for [FortyOne API](https://github.com/complexus-tech/api.fortyone.app) - The Open Source Agentic Project Management Platform.
-
-## Related Repositories
-
-- **[Backend Application](https://github.com/complexus-tech/api.fortyone.app)**: Golang backend application for this project
+A full-stack, open-source platform for project management and collaboration, with a Go API and multi-app web/mobile clients.
 
 ## ✨ Features
 
@@ -60,13 +56,14 @@ pnpm install
 cp apps/landing/.env.example apps/landing/.env
 cp apps/projects/.env.example apps/projects/.env
 cp apps/mobile/.env.example apps/mobile/.env
+cp apps/server/.env.example apps/server/.env
 # Edit .env files with your actual values
 
 # Start development server
 pnpm dev
 ```
 
-Visit [https://fortyone.lc](https://fortyone.lc) to see the application.
+Visit [https://fortyone.lc](https://fortyone.lc) to see the application. Access workspaces at paths like `https://fortyone.lc/{workspace-slug}/my-work`.
 
 ## 📖 Documentation
 
@@ -81,9 +78,10 @@ FortyOne is built as a monorepo using Turborepo with the following structure:
 ```
 fortyone/
 ├── apps/                    # Applications
-│   ├── landing/            # Marketing & authentication
-│   ├── docs/               # Documentation site
-│   ├── projects/           # Main project management app
+│   ├── landing/            # Marketing & authentication (fortyone.lc)
+│   ├── docs/               # Documentation site (docs.fortyone.lc)
+│   ├── projects/           # Main project management app (fortyone.lc/{workspace})
+│   ├── server/             # Go backend API
 │   └── mobile/             # React Native mobile app
 ├── packages/               # Shared packages
 │   ├── ui/                 # Component library
@@ -142,29 +140,8 @@ Before setting up the development environment, ensure you have the following ins
 
 - **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
 - **pnpm** (v9.3.0 or higher) - Install with `npm install -g pnpm`
-- **Caddy** (v2 or higher) - [Installation guide](https://caddyserver.com/docs/install)
+- **Go** (v1.23 or higher) - [Install Go](https://go.dev/doc/install)
 
-### Caddy Installation
-
-Caddy is **required** for local development as it handles subdomain routing and SSL termination.
-
-**macOS (Homebrew):**
-
-```bash
-brew install caddy
-```
-
-**Linux (Ubuntu/Debian):**
-
-```bash
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update
-sudo apt install caddy
-```
-
-**Other platforms:** See [Caddy's official installation docs](https://caddyserver.com/docs/install)
 
 ## Local Development Setup
 
@@ -176,15 +153,9 @@ cd fortyone
 pnpm install
 ```
 
-### 2. Configure Local Domains
+### 2. Optional: Configure Local Domains (for OAuth testing)
 
-**Important:** We use `.lc` domains for local development instead of `.local` because `.local` domains cannot be added to OAuth providers (like Google) as valid redirect URIs. This allows us to test authentication flows locally with real OAuth providers.
-
-#### Domain Strategy
-
-- **`.local`**: Cannot be used for OAuth redirects, but Caddy supports automatic wildcard routing
-- **`.localhost`**: Caddy supports automatic wildcard routing, but limited OAuth provider support
-- **`.lc`**: Valid TLD for OAuth redirects, but requires manual subdomain configuration
+If you want to test OAuth flows locally, you can configure local domains that can be registered as valid redirect URIs with OAuth providers like Google.
 
 Add the following entries to your `/etc/hosts` file:
 
@@ -198,20 +169,13 @@ Add these lines:
 127.0.0.1   fortyone.lc
 127.0.0.1   docs.fortyone.lc
 127.0.0.1   www.fortyone.lc
-127.0.0.1   qa.fortyone.lc
-127.0.0.1   payments.fortyone.lc
-127.0.0.1   growth.fortyone.lc
 ```
 
-**Note:** Unlike `.local` or `.localhost` domains, each subdomain must be manually added to both `/etc/hosts` and the `Caddyfile`. When adding new workspaces or subdomains, you'll need to:
-
-1. Add the subdomain to `/etc/hosts`
-2. Add a corresponding entry in the `Caddyfile`
-3. Restart Caddy
+**Note:** Without these entries, applications will run on `localhost:3000`, `localhost:3001`, etc.
 
 ### 3. Start Development Environment
 
-The project includes a unified development command that starts both Turbo and Caddy:
+The project includes a unified development command that starts all applications:
 
 ```bash
 pnpm dev
@@ -220,33 +184,32 @@ pnpm dev
 This command will:
 
 - Start all Next.js applications in development mode
-- Launch Caddy server with SSL/TLS termination
 - Enable hot reloading across all apps
-- Serve apps with HTTPS (using Caddy's internal CA)
 
 ### 4. Access Applications
 
 Once running, access your applications at:
 
-- **Landing Page**: https://fortyone.lc (port 3000)
-- **Documentation**: https://docs.fortyone.lc (port 3002)
-- **Projects App**: https://\*.fortyone.lc (port 3001)
-  - QA workspace: https://qa.fortyone.lc
-  - Payments workspace: https://payments.fortyone.lc
-  - Growth workspace: https://growth.fortyone.lc
+- **Landing Page**: http://localhost:3000
+- **Documentation**: http://localhost:3002
+- **Projects App**: http://localhost:3001/{workspace-slug}/...
+  - Example workspace: http://localhost:3001/my-workspace/my-work
 
-**Note:** All local domains use HTTPS with Caddy's internal CA. You may need to accept the security certificate in your browser on first visit.
+**Note:** If you configured local domains in step 2, you can also access applications at:
+- **Landing Page**: https://fortyone.lc
+- **Documentation**: https://docs.fortyone.lc
+- **Projects App**: https://fortyone.lc/{workspace-slug}/...
 
 ## Code Structure
 
 This is a Turborepo monorepo with the following structure:
 
 ```
-fortyone.tech/
+fortyone/
 ├── apps/                    # Applications
-│   ├── landing/            # Main landing page (fortyone.lc)
-│   ├── docs/               # Documentation site (docs.fortyone.lc)
-│   └── projects/           # Projects management app (*.fortyone.lc)
+│   ├── landing/            # Main landing page (localhost:3000)
+│   ├── docs/               # Documentation site (localhost:3002)
+│   └── projects/           # Projects management app (localhost:3001/{workspace})
 ├── packages/               # Shared packages
 │   ├── ui/                 # Shared React components
 │   ├── icons/              # Icon library
@@ -254,7 +217,6 @@ fortyone.tech/
 │   ├── tailwind-config/    # Shared Tailwind configuration
 │   ├── eslint-config-custom/ # ESLint configuration
 │   └── tsconfig/           # TypeScript configurations
-├── Caddyfile              # Caddy server configuration
 └── package.json           # Root package.json with scripts
 ```
 
@@ -286,14 +248,14 @@ fortyone.tech/
 #### 🚀 Projects App (`apps/projects/`)
 
 - **Purpose**: Main application for project management
-- **URL**: https://\*.fortyone.lc (handles workspace-specific subdomain routing)
+- **URL**: https://fortyone.lc/{workspace-slug}/... (path-based workspace routing)
 - **Port**: 3001
 - **Tech Stack**: Next.js 16, React 19, TanStack Query, Tiptap
 - **Features**:
   - Rich text editing with Tiptap
   - Drag and drop functionality
   - Real-time collaboration
-  - Workspace-based subdomain routing
+  - Path-based workspace routing (`/[workspaceSlug]/...`)
   - Jest testing setup
   - Docker support
 
@@ -353,86 +315,42 @@ cd apps/projects
 pnpm test
 ```
 
-### Adding New Subdomains
-
-When adding a new workspace or subdomain:
-
-1. **Add to `/etc/hosts`:**
-
-   ```bash
-   sudo nano /etc/hosts
-   # Add: 127.0.0.1   newworkspace.fortyone.lc
-   ```
-
-2. **Update `Caddyfile`:**
-
-   ```caddy
-   newworkspace.fortyone.lc {
-       tls internal
-       reverse_proxy localhost:3001
-   }
-   ```
-
-3. **Restart Caddy:**
-   ```bash
-    # Stop current dev process (Ctrl+C) and restart
-   pnpm dev
-   ```
 
 ## Networking Architecture
 
-The development environment uses Caddy as a reverse proxy to route subdomain traffic:
+Applications run on separate ports for development:
 
-- `fortyone.lc` → `localhost:3000` (landing)
-- `docs.fortyone.lc` → `localhost:3002` (docs)
-- `*.fortyone.lc` → `localhost:3001` (projects - workspace-specific routing)
+- `localhost:3000` (landing)
+- `localhost:3001` (projects)
+- `localhost:3002` (docs)
 
 This setup allows for:
 
-- **OAuth compatibility**: `.lc` domains work with Google OAuth and other providers
-- **SSL/TLS in development**: Caddy provides HTTPS with internal certificates
-- **Realistic subdomain testing**: Production-like routing behavior
 - **Clean application separation**: Each app runs independently
+- **Simplified routing**: Path-based workspace navigation within the projects app
+- **Easy development**: No complex proxy configuration needed
 
-### Why .lc domains?
+### Optional: Custom Domains for OAuth
 
-- **OAuth Support**: Unlike `.local`, `.lc` domains can be registered as valid redirect URIs with OAuth providers like Google, enabling full authentication testing in development
+If you want to test OAuth flows locally, you can configure `.lc` domains that can be registered as valid redirect URIs with OAuth providers like Google.
+
+- **OAuth Support**: `.lc` domains can be registered as valid redirect URIs with OAuth providers, enabling full authentication testing in development
 - **Valid TLD**: `.lc` is Saint Lucia's country code TLD, making it a legitimate domain for authentication services
-- **Manual Control**: While requiring manual configuration, this gives explicit control over which subdomains are available
 
 ## Troubleshooting
 
 ### Common Issues
-
-**Subdomain not resolving:**
-
-- Verify `/etc/hosts` entries are correct
-- Ensure the subdomain is added to the `Caddyfile`
-- Clear DNS cache: `sudo dscacheutil -flushcache` (macOS) or `sudo systemctl restart systemd-resolved` (Linux)
-- Restart Caddy: Stop with `Ctrl+C` and run `pnpm dev` again
-
-**SSL Certificate warnings:**
-
-- Accept Caddy's internal CA certificate in your browser
-- The warning is expected on first visit to each subdomain
-- Consider installing Caddy's root certificate for seamless development
 
 **Port conflicts:**
 
 - Check if ports 3000, 3001, 3002 are available
 - Kill conflicting processes: `lsof -ti:3000 | xargs kill`
 
-**Caddy not starting:**
-
-- Verify Caddy installation: `caddy version`
-- Check Caddyfile syntax: `caddy validate --config Caddyfile`
-- Ensure no other web servers are running on port 80/443
-
 **OAuth authentication issues:**
 
-- Verify the subdomain is registered in your OAuth provider's console
-- Ensure redirect URIs include the full `https://subdomain.fortyone.lc` format
-- Check that the subdomain resolves correctly before testing auth
+- If using custom domains, verify they are registered in your OAuth provider's console
+- Ensure redirect URIs include the correct domain in the allowed domains
+- Check that the domain resolves correctly before testing auth
 
 **Dependencies issues:**
 

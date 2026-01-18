@@ -17,7 +17,7 @@ export default function NotFound() {
         <Button
           className="gap-1 pl-2"
           color="tertiary"
-          href="/my-work"
+          href="/"
           leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
         >
           Go to my work

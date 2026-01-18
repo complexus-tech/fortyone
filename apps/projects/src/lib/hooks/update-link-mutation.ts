@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { linkKeys } from "@/constants/keys";
 import type { Link } from "@/types";
 import type { UpdateLink } from "../actions/links/update-link";
@@ -7,6 +8,7 @@ import { updateLinkAction } from "../actions/links/update-link";
 
 export const useUpdateLinkMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -16,7 +18,7 @@ export const useUpdateLinkMutation = () => {
       linkId: string;
       payload: UpdateLink;
       storyId: string;
-    }) => updateLinkAction(linkId, payload),
+    }) => updateLinkAction(linkId, payload, workspaceSlug),
 
     onMutate: (newLink) => {
       const previousLinks = queryClient.getQueryData<Link[]>(

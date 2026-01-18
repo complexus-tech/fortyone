@@ -1,25 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { invitationKeys } from "@/constants/keys";
+import { useWorkspacePath } from "@/hooks";
 import { revokeInvitation } from "../actions/revoke";
 import type { Invitation } from "../types";
 
 export const useRevokeInvitationMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
   const toastId = "revoke-invitation";
 
   const mutation = useMutation({
-    mutationFn: (invitationId: string) => revokeInvitation(invitationId),
+    mutationFn: (invitationId: string) =>
+      revokeInvitation(invitationId, workspaceSlug),
     onMutate: async (invitationId) => {
       await queryClient.cancelQueries({
-        queryKey: invitationKeys.pending,
+        queryKey: invitationKeys.pending(workspaceSlug),
       });
       await queryClient.cancelQueries({
         queryKey: invitationKeys.mine,
       });
 
       const previousInvitations = queryClient.getQueryData<Invitation[]>(
-        invitationKeys.pending,
+        invitationKeys.pending(workspaceSlug),
       );
       const previousMineInvitations = queryClient.getQueryData<Invitation[]>(
         invitationKeys.mine,
@@ -27,7 +30,7 @@ export const useRevokeInvitationMutation = () => {
 
       // Optimistically remove the invitation from the cache
       queryClient.setQueryData(
-        invitationKeys.pending,
+        invitationKeys.pending(workspaceSlug),
         (old: Invitation[] = []) =>
           old.filter((invitation) => invitation.id !== invitationId),
       );
@@ -45,7 +48,7 @@ export const useRevokeInvitationMutation = () => {
     onError: (error, variables, context) => {
       // Restore the previous data
       queryClient.setQueryData(
-        invitationKeys.pending,
+        invitationKeys.pending(workspaceSlug),
         context?.previousInvitations,
       );
       queryClient.setQueryData(
@@ -73,7 +76,7 @@ export const useRevokeInvitationMutation = () => {
         description: "Invitation revoked successfully",
         id: toastId,
       });
-      queryClient.invalidateQueries({ queryKey: invitationKeys.pending });
+      queryClient.invalidateQueries({ queryKey: invitationKeys.pending(workspaceSlug) });
       queryClient.invalidateQueries({ queryKey: invitationKeys.mine });
     },
   });

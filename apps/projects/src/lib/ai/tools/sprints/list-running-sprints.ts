@@ -8,7 +8,7 @@ export const listRunningSprints = tool({
     "List all currently running sprints. Returns active sprints with their details.",
   inputSchema: z.object({}),
 
-  execute: async () => {
+  execute: async ({}, { experimental_context }) => {
     try {
       const session = await auth();
 
@@ -19,7 +19,11 @@ export const listRunningSprints = tool({
         };
       }
 
-      const sprints = await getRunningSprints(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const sprints = await getRunningSprints(ctx);
 
       return {
         success: true,

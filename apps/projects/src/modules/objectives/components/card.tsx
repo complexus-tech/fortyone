@@ -33,7 +33,7 @@ import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { hexToRgba } from "@/utils";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useUpdateObjectiveMutation } from "../hooks";
 import type { Objective, ObjectiveUpdate, ObjectiveHealth } from "../types";
 
@@ -59,6 +59,7 @@ export const ObjectiveCard = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
   const canUpdate = isAdminOrOwner || session?.user?.id === leadUser;
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   const [comment, setComment] = useState("");
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [pendingHealth, setPendingHealth] = useState<ObjectiveHealth | null>(
@@ -115,7 +116,7 @@ export const ObjectiveCard = ({
         >
           <Link
             className="flex w-full items-center gap-2 hover:opacity-90"
-            href={`/teams/${teamId}/objectives/${id}`}
+            href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
             prefetch
           >
             <Flex

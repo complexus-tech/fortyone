@@ -108,6 +108,9 @@ export async function POST(req: NextRequest) {
         delayInMs: 20,
         chunking: "word",
       }),
+      experimental_context: {
+        workspaceSlug: workspace?.slug,
+      },
       providerOptions: {
         openai: {
           reasoningEffort: "low",
@@ -127,7 +130,7 @@ export async function POST(req: NextRequest) {
       sendSources: true,
       originalMessages: messagesFromRequest,
       onFinish: async ({ messages }) => {
-        await saveChat({ id, messages });
+        await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });
       },
     });
   } catch {

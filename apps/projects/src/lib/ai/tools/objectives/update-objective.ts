@@ -45,23 +45,29 @@ export const updateObjectiveTool = tool({
     statusId,
     priority,
     health,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to update objectives",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       const userId = session.user!.id;
 
       // Check if user can update this objective
-      const objective = await getObjective(objectiveId, session);
+      const objective = await getObjective(objectiveId, ctx);
       if (!objective) {
         return {
           success: false,
@@ -90,7 +96,7 @@ export const updateObjectiveTool = tool({
         statusId,
         priority,
         health,
-      });
+      }, workspaceSlug);
 
       if (result.error) {
         return {

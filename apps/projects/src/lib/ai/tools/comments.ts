@@ -51,23 +51,29 @@ export const commentsTool = tool({
     mentions = [],
     includeReplies = true,
     limit = 20,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
+
+
         return {
           success: false,
           error: "Authentication required to access comments",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       // Get user's workspace and role for permissions
-      const workspace = await getWorkspace(session);
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Get members for mention resolution and commenter info
-      const members = await getMembers(session);
+      const members = await getMembers(ctx);
       const memberMap = new Map(members.map((m) => [m.id, m]));
 
       switch (action) {
@@ -79,7 +85,7 @@ export const commentsTool = tool({
             };
           }
 
-          const response = await getStoryComments(storyId, session);
+          const response = await getStoryComments(storyId, ctx);
           const comments = response.comments;
 
           // Filter and limit comments
@@ -155,7 +161,7 @@ export const commentsTool = tool({
             comment: content,
             parentId: parentId ?? null,
             mentions,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {
@@ -210,7 +216,7 @@ export const commentsTool = tool({
             comment: content,
             parentId,
             mentions,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {

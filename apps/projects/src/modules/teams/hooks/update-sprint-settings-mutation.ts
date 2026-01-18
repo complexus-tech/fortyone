@@ -1,38 +1,43 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { sprintKeys, teamKeys } from "@/constants/keys";
 import { updateSprintSettingsAction } from "../actions/update-sprint-settings";
 import type { UpdateSprintSettingsInput, TeamSettings } from "../types";
 
 export const useUpdateSprintSettingsMutation = (teamId: string) => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
     mutationFn: (input: UpdateSprintSettingsInput) =>
-      updateSprintSettingsAction(teamId, input),
+      updateSprintSettingsAction(teamId, input, workspaceSlug),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
-        queryKey: teamKeys.settings(teamId),
+        queryKey: teamKeys.settings(workspaceSlug, teamId),
       });
       const previousSettings = queryClient.getQueryData<TeamSettings>(
-        teamKeys.settings(teamId),
+        teamKeys.settings(workspaceSlug, teamId),
       );
 
       if (previousSettings) {
-        queryClient.setQueryData<TeamSettings>(teamKeys.settings(teamId), {
-          ...previousSettings,
-          sprintSettings: {
-            ...previousSettings.sprintSettings,
-            ...input,
+        queryClient.setQueryData<TeamSettings>(
+          teamKeys.settings(workspaceSlug, teamId),
+          {
+            ...previousSettings,
+            sprintSettings: {
+              ...previousSettings.sprintSettings,
+              ...input,
+            },
           },
-        });
+        );
       }
 
       return { previousSettings };
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(
-        teamKeys.settings(teamId),
+        teamKeys.settings(workspaceSlug, teamId),
         context?.previousSettings,
       );
       toast.error("Error", {
@@ -50,13 +55,13 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
-        queryKey: teamKeys.settings(teamId),
+        queryKey: teamKeys.settings(workspaceSlug, teamId),
       });
       queryClient.invalidateQueries({
-        queryKey: teamKeys.lists(),
+        queryKey: teamKeys.lists(workspaceSlug),
       });
       queryClient.invalidateQueries({
-        queryKey: sprintKeys.running(),
+        queryKey: sprintKeys.running(workspaceSlug),
       });
     },
   });

@@ -6,13 +6,17 @@ import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import type { CreateAiChatPayload, AiChatSession } from "../types";
 
-export const createAiChatAction = async (payload: CreateAiChatPayload) => {
+export const createAiChatAction = async (
+  payload: CreateAiChatPayload,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const chat = await post<CreateAiChatPayload, ApiResponse<AiChatSession>>(
       "chat-sessions",
       payload,
-      session!,
+      ctx,
     );
     return chat;
   } catch (error) {

@@ -1,20 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useWorkspacePath } from "@/hooks";
 import { notificationKeys } from "@/constants/keys";
 import { deleteNotification } from "../actions/delete";
 import type { AppNotification } from "../types";
 
 export const useDeleteMutation = () => {
   const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) => deleteNotification(notificationId),
+    mutationFn: (notificationId: string) => deleteNotification(notificationId, workspaceSlug),
 
     onMutate: async (notificationId) => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
 
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
-        notificationKeys.all,
+        notificationKeys.all(workspaceSlug),
       );
 
       // Check if the notification to be deleted is unread
@@ -27,13 +29,13 @@ export const useDeleteMutation = () => {
       }
 
       const previousUnreadCount = queryClient.getQueryData<number>(
-        notificationKeys.unread(),
+        notificationKeys.unread(workspaceSlug),
       );
 
       // Optimistically remove the notification
       if (previousNotifications) {
         queryClient.setQueryData<AppNotification[]>(
-          notificationKeys.all,
+          notificationKeys.all(workspaceSlug),
           previousNotifications.filter(
             (notification) => notification.id !== notificationId,
           ),
@@ -47,7 +49,7 @@ export const useDeleteMutation = () => {
         previousUnreadCount > 0
       ) {
         queryClient.setQueryData<number>(
-          notificationKeys.unread(),
+          notificationKeys.unread(workspaceSlug),
           previousUnreadCount - 1,
         );
       }
@@ -58,14 +60,14 @@ export const useDeleteMutation = () => {
     onError: (error, notificationId, context) => {
       if (context?.previousNotifications) {
         queryClient.setQueryData(
-          notificationKeys.all,
+          notificationKeys.all(workspaceSlug),
           context.previousNotifications,
         );
       }
 
       if (context?.previousUnreadCount !== undefined) {
         queryClient.setQueryData<number>(
-          notificationKeys.unread(),
+          notificationKeys.unread(workspaceSlug),
           context.previousUnreadCount,
         );
       }
@@ -86,8 +88,8 @@ export const useDeleteMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
     },
   });
 

@@ -1,7 +1,7 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
 import { useSummary } from "@/lib/hooks/summary";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { OverviewSkeleton } from "./overview-skeleton";
 import Link from "next/link";
 
@@ -13,8 +13,10 @@ const Card = ({
   title: string;
   count?: number;
   link: string;
-}) => (
-  <Link href={link}>
+}) => {
+  
+  return (
+    <Link href={link}>
     <Wrapper className="px-3 py-3 md:px-5 md:py-4">
       <Flex justify="between">
         <Text className="mb-1.5 text-2xl antialiased" fontWeight="semibold">
@@ -41,10 +43,12 @@ const Card = ({
       </Text>
     </Wrapper>
   </Link>
-);
+  );
+};
 
 export const Overview = () => {
   const { data: summary, isPending } = useSummary();
+  const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   if (isPending) {
     return <OverviewSkeleton />;
@@ -53,27 +57,27 @@ export const Overview = () => {
     {
       count: summary?.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
-      link: "/my-work?category=closed",
+      link: withWorkspace("/my-work?category=closed"),
     },
     {
       count: summary?.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
-      link: "/my-work?category=overdue",
+      link: withWorkspace("/my-work?category=overdue"),
     },
     {
       count: summary?.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
-      link: "/my-work?category=started",
+      link: withWorkspace("/my-work?category=started"),
     },
     {
       count: summary?.created,
       title: "Created by you",
-      link: "/my-work?tab=created",
+      link: withWorkspace("/my-work?tab=created"),
     },
     {
       count: summary?.assigned,
       title: "Assigned to you",
-      link: "/my-work?tab=assigned",
+      link: withWorkspace("/my-work?tab=assigned"),
     },
   ];
 

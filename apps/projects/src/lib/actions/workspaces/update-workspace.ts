@@ -10,13 +10,17 @@ export type UpdateWorkspaceInput = {
   avatarUrl?: string;
 };
 
-export const updateWorkspaceAction = async (input: UpdateWorkspaceInput) => {
+export const updateWorkspaceAction = async (
+  input: UpdateWorkspaceInput,
+  workspaceSlug: string,
+) => {
   try {
     const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
     const workspace = await put<UpdateWorkspaceInput, ApiResponse<Workspace>>(
       "",
       input,
-      session!,
+      ctx,
     );
     return workspace;
   } catch (error) {
