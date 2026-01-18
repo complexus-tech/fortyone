@@ -5,7 +5,7 @@ const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|tel:)/i;
 const isFortyOneSubdomain = () => {
   if (typeof window === "undefined") return false;
   const hostname = window.location.hostname;
-  return hostname.endsWith(".fortyone.app");
+  return hostname.endsWith(".fortyone.app") && hostname !== "cloud.fortyone.app";
 };
 
 export const useWorkspacePath = () => {
