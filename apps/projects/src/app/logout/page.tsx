@@ -32,7 +32,11 @@ export default function Page() {
         // console.error("Error during logout process:", error);
       } finally {
         clearClientStorage();
-        window.location.href = "/?signedOut=true";
+        // Redirect to main domain after logout to break out of subdomain context
+        const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+          ? "https://fortyone.app"
+          : "/";
+        window.location.href = `${mainDomain}?signedOut=true`;
       }
     };
 
