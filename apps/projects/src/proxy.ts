@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-const CLOUD_HOST = "cloud.fortyone.app";
+const AUTH_HOST = "auth.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
-const RESERVED_SUBDOMAINS = new Set(["cloud"]);
-const CLOUD_ONLY_PREFIXES = new Set([
+const RESERVED_SUBDOMAINS = new Set(["auth"]);
+const AUTH_ONLY_PREFIXES = new Set([
   "/signup",
   "/auth-callback",
   "/verify",
@@ -12,7 +12,7 @@ const CLOUD_ONLY_PREFIXES = new Set([
   "/unauthorized",
   "/api/auth",
 ]);
-const CLOUD_ONLY_SEGMENTS = new Set([
+const AUTH_ONLY_SEGMENTS = new Set([
   "signup",
   "auth-callback",
   "verify",
@@ -26,29 +26,29 @@ const getHost = (req: Request) => req.headers.get("host")?.split(":")[0];
 const getSubdomain = (host?: string) =>
   host?.endsWith(DOMAIN_SUFFIX) ? host.replace(DOMAIN_SUFFIX, "") : undefined;
 
-const isCloudOnlyPath = (pathname: string) =>
+const isAuthOnlyPath = (pathname: string) =>
   pathname === "/" ||
-  Array.from(CLOUD_ONLY_PREFIXES).some((prefix) => pathname.startsWith(prefix));
+  Array.from(AUTH_ONLY_PREFIXES).some((prefix) => pathname.startsWith(prefix));
 
 const getPathSegments = (pathname: string) =>
   pathname.split("/").filter(Boolean);
 
-const getCloudWorkspaceSlug = (host: string, pathSegments: string[]) => {
-  if (host !== CLOUD_HOST || pathSegments.length === 0) {
+const getAuthWorkspaceSlug = (host: string, pathSegments: string[]) => {
+  if (host !== AUTH_HOST || pathSegments.length === 0) {
     return undefined;
   }
 
-  return CLOUD_ONLY_SEGMENTS.has(pathSegments[0]) ? undefined : pathSegments[0];
+  return AUTH_ONLY_SEGMENTS.has(pathSegments[0]) ? undefined : pathSegments[0];
 };
 
-const buildCloudUrl = (pathname: string, searchParams: string) => {
-  const url = new URL(pathname, `https://${CLOUD_HOST}`);
+const buildAuthUrl = (pathname: string, searchParams: string) => {
+  const url = new URL(pathname, `https://${AUTH_HOST}`);
   url.search = searchParams;
   return url;
 };
 
-const buildCloudRedirect = (callbackUrl: string) => {
-  const url = new URL("/", `https://${CLOUD_HOST}`);
+const buildAuthRedirect = (callbackUrl: string) => {
+  const url = new URL("/", `https://${AUTH_HOST}`);
   url.searchParams.set("callbackUrl", callbackUrl);
   return NextResponse.redirect(url);
 };
@@ -80,8 +80,8 @@ export default auth((req) => {
   const host = getHost(req);
 
   if (!host || !host.endsWith(DOMAIN_SUFFIX)) {
-    if (!req.auth && !isCloudOnlyPath(pathname)) {
-      const redirectHost = host ?? CLOUD_HOST;
+    if (!req.auth && !isAuthOnlyPath(pathname)) {
+      const redirectHost = host ?? AUTH_HOST;
       return buildHostRedirect(
         req.nextUrl.protocol,
         redirectHost,
@@ -93,29 +93,29 @@ export default auth((req) => {
   }
 
   const subdomain = getSubdomain(host);
-  const isCloudHost = host === CLOUD_HOST;
+  const isAuthHost = host === AUTH_HOST;
   const isSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
   const pathSegments = getPathSegments(pathname);
-  const cloudWorkspaceSlug = getCloudWorkspaceSlug(host, pathSegments);
+  const authWorkspaceSlug = getAuthWorkspaceSlug(host, pathSegments);
 
-  if (isCloudHost && cloudWorkspaceSlug) {
-    const restPath = pathname.replace(`/${cloudWorkspaceSlug}`, "") || "/";
+  if (isAuthHost && authWorkspaceSlug) {
+    const restPath = pathname.replace(`/${authWorkspaceSlug}`, "") || "/";
     const subdomainUrl = buildSubdomainUrl(
-      cloudWorkspaceSlug,
+      authWorkspaceSlug,
       restPath,
       searchParams,
     );
 
     if (!req.auth) {
-      const callbackUrl = `https://${cloudWorkspaceSlug}${DOMAIN_SUFFIX}${restPath}${searchParams}`;
-      return buildCloudRedirect(callbackUrl);
+      const callbackUrl = `https://${authWorkspaceSlug}${DOMAIN_SUFFIX}${restPath}${searchParams}`;
+      return buildAuthRedirect(callbackUrl);
     }
 
     return NextResponse.redirect(subdomainUrl);
   }
 
-  if (isSubdomain && isCloudOnlyPath(pathname)) {
-    const redirectUrl = buildCloudUrl(pathname, searchParams);
+  if (isSubdomain && isAuthOnlyPath(pathname)) {
+    const redirectUrl = buildAuthUrl(pathname, searchParams);
 
     if (pathname === "/") {
       redirectUrl.searchParams.set(
@@ -130,7 +130,7 @@ export default auth((req) => {
   if (isSubdomain && !pathname.startsWith(`/${subdomain}`)) {
     if (!req.auth) {
       const callbackUrl = `https://${subdomain}${DOMAIN_SUFFIX}${pathname}${searchParams}`;
-      return buildCloudRedirect(callbackUrl);
+      return buildAuthRedirect(callbackUrl);
     }
 
     const nextPath =
@@ -140,8 +140,8 @@ export default auth((req) => {
     return NextResponse.rewrite(rewriteUrl);
   }
 
-  if (!req.auth && !isCloudOnlyPath(pathname)) {
-    return buildCloudRedirect(`${pathname}${searchParams}`);
+  if (!req.auth && !isAuthOnlyPath(pathname)) {
+    return buildAuthRedirect(`${pathname}${searchParams}`);
   }
 
   return NextResponse.next();
