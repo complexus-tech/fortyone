@@ -44,6 +44,21 @@ A full-stack, open-source platform for project management and collaboration, wit
 
 ## 🚀 Quick Start
 
+### Self-host with Docker
+
+```bash
+curl -fsSL https://fortyone.app/install.sh | sh -
+```
+
+### Local Docker build
+
+```bash
+./install.sh
+# choose "Dev Build (local source)"
+```
+
+### Developer setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/complexus/fortyone.git

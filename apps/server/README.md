@@ -38,6 +38,14 @@ The backend API for FortyOne — a Go service that powers the web and mobile app
    make worker
    ```
 
+### Docker self-host
+
+If you just want to run the API, worker, and projects app, use the hosted installer:
+
+```bash
+curl -fsSL https://fortyone.app/install.sh | sh -
+```
+
 ## Database Migrations
 
 This project uses [golang-migrate](https://github.com/golang-migrate/migrate) for database schema management.

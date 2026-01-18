@@ -1,0 +1,20 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile.worker
+
+  migrations:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.migrations
+
+  projects:
+    build:
+      context: ..
+      dockerfile: apps/projects/Dockerfile

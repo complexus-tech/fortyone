@@ -1,0 +1,14 @@
+services:
+  proxy:
+    image: nginx:alpine
+    networks:
+      - fortyone
+    depends_on:
+      projects:
+        condition: service_started
+      api:
+        condition: service_started
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
