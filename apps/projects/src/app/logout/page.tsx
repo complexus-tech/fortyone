@@ -6,12 +6,6 @@ import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 
 const clearClientStorage = () => {
-  // Clear NextAuth session cookies with proper domain configuration
-  const domain = process.env.NEXT_PUBLIC_DOMAIN ? `.${process.env.NEXT_PUBLIC_DOMAIN}` : "";
-  if (domain) {
-    document.cookie = "__Secure-next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + domain + "; secure;";
-  }
-
   // Clear other client-side cookies
   document.cookie.split(";").forEach((c) => {
     document.cookie = c
@@ -41,9 +35,10 @@ export default function Page() {
       } finally {
         clearClientStorage();
         // Redirect to main domain after logout to break out of subdomain context
-        const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
-          ? "https://fortyone.app"
-          : "/";
+        const mainDomain =
+          process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+            ? "https://fortyone.app"
+            : "/";
         window.location.href = `${mainDomain}?signedOut=true`;
       }
     };
