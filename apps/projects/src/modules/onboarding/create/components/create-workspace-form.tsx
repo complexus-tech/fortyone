@@ -207,7 +207,7 @@ export const CreateWorkspaceForm = () => {
       </Box>
       <Button
         align="center"
-        className="mt-4"
+        className="mt-4 md:py-3"
         color="invert"
         size="lg"
         fullWidth

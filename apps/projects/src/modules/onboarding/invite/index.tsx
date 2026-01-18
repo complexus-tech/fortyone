@@ -73,9 +73,8 @@ export const InviteTeam = ({
       <InviteForm onFormChange={setMembers} />
       <Button
         align="center"
-        className="mt-4 md:h-[2.7rem]"
-        color="tertiary"
-        variant="naked"
+        className="mt-4 md:py-3"
+        color="invert"
         disabled={!isValid}
         fullWidth
         loading={isLoading}
@@ -86,8 +85,9 @@ export const InviteTeam = ({
       </Button>
       <Button
         align="center"
-        className="mt-2"
-        color="invert"
+        color="tertiary"
+        className="mt-2 md:py-3"
+        variant="naked"
         fullWidth
         size="lg"
         href="/onboarding/welcome"
