@@ -16,7 +16,9 @@ export default auth((req) => {
       !reservedSubdomains.has(subdomain) &&
       !pathname.startsWith(`/${subdomain}`)
     ) {
-      const rewriteUrl = new URL(`/${subdomain}${pathname}`, req.nextUrl);
+      const nextPath =
+        pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
+      const rewriteUrl = new URL(nextPath, req.nextUrl);
       rewriteUrl.search = searchParams;
       return NextResponse.rewrite(rewriteUrl);
     }
