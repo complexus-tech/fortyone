@@ -1,10 +1,10 @@
 # Main landing app (fortyone.lc)
 fortyone.lc {
 	tls internal
-	reverse_proxy localhost:3001
+	reverse_proxy localhost:3000
 }
 
-cloud.fortyone.lc {
+complexus.fortyone.lc {
 	tls internal
 	reverse_proxy localhost:3000
 }
