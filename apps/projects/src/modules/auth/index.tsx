@@ -152,7 +152,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             />
             <Button
               align="center"
-              className="mt-4"
+              className="mt-4 md:py-3"
               color="invert"
               fullWidth
               loading={loading}
@@ -169,7 +169,7 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
             </Flex>
             <Button
               align="center"
-              className="mb-3"
+              className="mb-3 md:py-2.5"
               color="tertiary"
               fullWidth
               leftIcon={<GoogleIcon />}
