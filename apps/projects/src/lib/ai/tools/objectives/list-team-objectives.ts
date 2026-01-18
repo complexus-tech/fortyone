@@ -10,23 +10,22 @@ export const listTeamObjectivesTool = tool({
     teamId: z.string().describe("Team ID to get objectives from (required)"),
   }),
 
-  execute: async (({ teamId }), { experimental_context }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access team objectives",
         };
       }
 
-      const objectives = await getTeamObjectives(teamId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const objectives = await getTeamObjectives(teamId, ctx);
 
       return {
         success: true,

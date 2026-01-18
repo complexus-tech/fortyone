@@ -59,21 +59,20 @@ export const storyActivitiesTool = tool({
       ),
   }),
 
-  execute: async (({ action, storyId, limit = 20 }), { experimental_context }) => {
+  execute: async ({ action, storyId, limit = 20 }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access story activities",
         };
       }
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
 
       switch (action) {
         case "list-activities": {
@@ -84,7 +83,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           return {
@@ -103,7 +102,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           // Sort by creation date (oldest first for timeline)
@@ -148,7 +147,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, session);
+          const response = await getStoryActivities(storyId, ctx);
           const activities = response.activities;
 
           // Sort by creation date (newest first)

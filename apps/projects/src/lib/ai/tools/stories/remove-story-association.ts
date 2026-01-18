@@ -9,7 +9,7 @@ export const removeStoryAssociation = tool({
   inputSchema: z.object({
     associationId: z.string().describe("The ID of the association to remove"),
   }),
-  execute: async (({ associationId }), { experimental_context }) => {
+  execute: async ({ associationId }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
@@ -17,12 +17,11 @@ export const removeStoryAssociation = tool({
 
       const ctx = { session, workspaceSlug };
 
-
-      const workspace = await getWorkspace(session);
+      const workspace = await getWorkspace(ctx);
       if (workspace.userRole === "guest")
         return { success: false, error: "Unauthorized" };
 
-      const result = await removeAssociationAction(associationId);
+      const result = await removeAssociationAction(associationId, workspaceSlug);
       if (result.error) return { success: false, error: result.error.message };
 
       return { success: true, message: "Association removed successfully" };

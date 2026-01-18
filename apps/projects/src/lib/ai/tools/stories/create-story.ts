@@ -64,20 +64,22 @@ export const createStory = tool({
     parentId,
     startDate,
     endDate,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to create stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Check permissions for guests
@@ -102,7 +104,7 @@ export const createStory = tool({
         startDate,
         endDate,
       };
-      const result = await createStoryAction(storyData);
+      const result = await createStoryAction(storyData, workspaceSlug);
       if (result.error?.message) {
         return {
           success: false,

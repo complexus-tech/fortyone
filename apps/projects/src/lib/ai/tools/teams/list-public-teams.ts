@@ -9,25 +9,24 @@ export const listPublicTeams = tool({
     "List all public teams that the current user can join. Returns teams that are not private and that the user is not already a member of.",
   inputSchema: z.object({}),
 
-  execute: async ((), { experimental_context }) => {
+  execute: async ({}, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access teams",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       const [publicTeams, userTeams] = await Promise.all([
-        getPublicTeams(session),
-        getTeams(session),
+        getPublicTeams(ctx),
+        getTeams(ctx),
       ]);
 
       const userTeamIds = userTeams.map((t) => t.id);

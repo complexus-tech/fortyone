@@ -17,25 +17,24 @@ export const getObjectiveActivitiesTool = tool({
       .describe("Number of activities per page"),
   }),
 
-  execute: async (({ objectiveId, page = 1, pageSize = 20 }), { experimental_context }) => {
+  execute: async ({ objectiveId, page = 1, pageSize = 20 }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access objective activities",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       const response = await getObjectiveActivities(
         objectiveId,
-        session,
+        ctx,
         page,
         pageSize,
       );

@@ -99,18 +99,20 @@ export const notificationsTool = tool({
     emailEnabled,
     inAppEnabled,
     includeDetails = false,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to access notifications",
         };
       }
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
 
       // Helper function to format notification
       const formatNotification = (notification: AppNotification) => {
@@ -138,7 +140,7 @@ export const notificationsTool = tool({
 
       switch (action) {
         case "list-notifications": {
-          let notifications = await getNotifications(session);
+          let notifications = await getNotifications(ctx);
 
           // Apply filters
           if (filterType) {
@@ -166,7 +168,7 @@ export const notificationsTool = tool({
         }
 
         case "get-unread-count": {
-          const notifications = await getNotifications(session);
+          const notifications = await getNotifications(ctx);
           const unreadCount = notifications.filter((n) => !n.readAt).length;
 
           return {
@@ -185,7 +187,7 @@ export const notificationsTool = tool({
             };
           }
 
-          const result = await readNotification(notificationId);
+          const result = await readNotification(notificationId, workspaceSlug);
 
           if (result?.error) {
             return {
@@ -202,7 +204,7 @@ export const notificationsTool = tool({
         }
 
         case "mark-all-as-read": {
-          const result = await readAllNotifications();
+          const result = await readAllNotifications(workspaceSlug);
 
           if (result?.error) {
             return {
@@ -227,7 +229,7 @@ export const notificationsTool = tool({
             };
           }
 
-          const result = await markUnread(notificationId);
+          const result = await markUnread(notificationId, workspaceSlug);
 
           if (result?.error) {
             return {
@@ -252,7 +254,7 @@ export const notificationsTool = tool({
             };
           }
 
-          const result = await deleteNotification(notificationId);
+          const result = await deleteNotification(notificationId, workspaceSlug);
 
           if (result?.error) {
             return {
@@ -268,7 +270,7 @@ export const notificationsTool = tool({
         }
 
         case "delete-all-notifications": {
-          const result = await deleteAllNotifications();
+          const result = await deleteAllNotifications(workspaceSlug);
 
           if (result?.error) {
             return {
@@ -285,7 +287,7 @@ export const notificationsTool = tool({
         }
 
         case "delete-read-notifications": {
-          const result = await deleteReadNotifications();
+          const result = await deleteReadNotifications(workspaceSlug);
 
           if (result?.error) {
             return {
@@ -302,7 +304,7 @@ export const notificationsTool = tool({
         }
 
         case "filter-notifications": {
-          let notifications = await getNotifications(session);
+          let notifications = await getNotifications(ctx);
 
           // Apply filters
           if (filterType) {
@@ -365,6 +367,7 @@ export const notificationsTool = tool({
           const result = await updateNotificationPreferences(
             preferences,
             preferenceType,
+            workspaceSlug,
           );
 
           if (result?.error) {

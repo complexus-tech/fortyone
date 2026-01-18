@@ -67,20 +67,22 @@ export const createObjectiveTool = tool({
     priority,
     statusId,
     keyResults,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to create objectives",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       if (userRole === "guest") {
@@ -104,7 +106,7 @@ export const createObjectiveTool = tool({
             ...kr,
             currentValue: kr.startValue,
           })) || [],
-      });
+      }, workspaceSlug);
 
       if (result.error) {
         return {

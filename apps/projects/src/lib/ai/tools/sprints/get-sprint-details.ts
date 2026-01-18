@@ -11,23 +11,22 @@ export const getSprintDetailsTool = tool({
     sprintId: z.string().describe("Sprint ID to get details for (required)"),
   }),
 
-  execute: async (({ sprintId }), { experimental_context }) => {
+  execute: async ({ sprintId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access sprint details",
         };
       }
 
-      const sprint = await getSprint(sprintId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const sprint = await getSprint(sprintId, ctx);
 
       return {
         success: true,

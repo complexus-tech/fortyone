@@ -11,21 +11,21 @@ import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 export const listMemories = tool({
   description: "List all memories about the user.",
   inputSchema: z.object({}),
-  execute: async ((), { experimental_context }) => {
+  execute: async ({}, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required",
         };
       }
-      const memories = await getMemories(session);
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const memories = await getMemories(ctx);
       return {
         success: true,
         memories,
@@ -50,24 +50,23 @@ export const createMemory = tool({
         "The content of the memory to save (e.g., 'The user is a senior frontend engineer') max length 200 words",
       ),
   }),
-  execute: async (({ content }), { experimental_context }) => {
+  execute: async ({ content }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       const [memories, subscription] = await Promise.all([
-        getMemories(session),
-        getSubscription(session),
+        getMemories(ctx),
+        getSubscription(ctx),
       ]);
 
       const tier = subscription?.tier || "free";
@@ -81,7 +80,7 @@ export const createMemory = tool({
         };
       }
 
-      const result = await createMemoryAction({ content });
+      const result = await createMemoryAction({ content }, workspaceSlug);
       if (result.error?.message) {
         return {
           success: false,
@@ -110,9 +109,11 @@ export const updateMemory = tool({
       .string()
       .describe("The new content of the memory. max length 200 words"),
   }),
-  execute: async (({ id, content }), { experimental_context }) => {
+  execute: async ({ id, content }, { experimental_context }) => {
     try {
-      const result = await updateMemoryAction(id, { content });
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const result = await updateMemoryAction(id, { content }, workspaceSlug);
       if (result.error?.message) {
         return {
           success: false,
@@ -138,9 +139,11 @@ export const deleteMemory = tool({
   inputSchema: z.object({
     id: z.string().describe("The ID of the memory to delete"),
   }),
-  execute: async (({ id }), { experimental_context }) => {
+  execute: async ({ id }, { experimental_context }) => {
     try {
-      const result = await deleteMemoryAction(id);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const result = await deleteMemoryAction(id, workspaceSlug);
       if (result.error?.message) {
         return {
           success: false,

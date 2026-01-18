@@ -12,28 +12,27 @@ export const listSprints = tool({
     teamId: z.string().optional().describe("Team ID to filter sprints by team"),
   }),
 
-  execute: async (({ teamId }), { experimental_context }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access sprints",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       let sprints = [];
       if (teamId) {
-        sprints = await getTeamSprints(teamId, session);
+        sprints = await getTeamSprints(teamId, ctx);
       } else {
-        sprints = await getSprints(session);
+        sprints = await getSprints(ctx);
       }
 
       return {

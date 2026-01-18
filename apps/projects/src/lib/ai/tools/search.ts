@@ -74,18 +74,20 @@ export const searchTool = tool({
     page = 1,
     pageSize = 20,
     includeDetails = false,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to perform search",
         };
       }
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
 
       // Build search parameters based on action
       let searchParams: SearchQueryParams;
@@ -154,13 +156,13 @@ export const searchTool = tool({
       }
 
       // Perform the search
-      const searchResults = await searchQuery(session, searchParams);
+      const searchResults = await searchQuery(ctx, searchParams);
 
       // Get lookup data for enriching results
       const [allStatuses, allTeams, allMembers] = await Promise.all([
-        getStatuses(session),
-        getTeams(session),
-        getMembers(session),
+        getStatuses(ctx),
+        getTeams(ctx),
+        getMembers(ctx),
       ]);
 
       // Create lookup maps

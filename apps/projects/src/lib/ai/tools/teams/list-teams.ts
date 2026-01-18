@@ -8,23 +8,22 @@ export const listTeams = tool({
     "List all teams that the current user is a member of. Returns team details including member count and privacy settings.",
   inputSchema: z.object({}),
 
-  execute: async ((), { experimental_context }) => {
+  execute: async ({}, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access teams",
         };
       }
 
-      const teams = await getTeams(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const teams = await getTeams(ctx);
 
       return {
         success: true,

@@ -9,25 +9,22 @@ export const leaveTeam = tool({
     teamId: z.string().describe("Team ID to leave (required)"),
   }),
 
-  execute: async (({ teamId }), { experimental_context }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to leave teams",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
       const userId = session.user!.id!;
 
-      const result = await removeTeamMemberAction(teamId, userId);
+      const result = await removeTeamMemberAction(teamId, userId, workspaceSlug);
 
       if (result.error) {
         return {

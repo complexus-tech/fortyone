@@ -8,22 +8,22 @@ export const listObjectivesTool = tool({
     "List all objectives accessible to the user. For guests, shows only objectives from teams they belong to. For members and admins, shows all objectives in the workspace.",
   inputSchema: z.object({}),
 
-  execute: async ((), { experimental_context }) => {
+  execute: async ({}, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access objectives",
         };
       }
-      const objectives = await getObjectives(session);
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const objectives = await getObjectives(ctx);
 
       return {
         success: true,

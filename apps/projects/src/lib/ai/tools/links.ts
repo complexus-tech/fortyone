@@ -34,24 +34,23 @@ export const linksTool = tool({
       .describe("Limit number of links returned (default: 20, max: 100)"),
   }),
 
-  execute: async (({ action, storyId, linkId, url, title, limit = 20 }), { experimental_context }) => {
+  execute: async ({ action, storyId, linkId, url, title, limit = 20 }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access links",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
       // Get user's workspace and role for permissions
-      const workspace = await getWorkspace(session);
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       switch (action) {
@@ -63,7 +62,7 @@ export const linksTool = tool({
             };
           }
 
-          const links = await getLinks(storyId, session);
+          const links = await getLinks(storyId, ctx);
 
           // Limit results
           const limitedLinks = links.slice(0, limit);
@@ -104,7 +103,7 @@ export const linksTool = tool({
             url,
             title: title || "",
             storyId,
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {
@@ -146,7 +145,7 @@ export const linksTool = tool({
           const result = await updateLinkAction(linkId, {
             url,
             title: title || "",
-          });
+          }, workspaceSlug);
 
           if (result.error) {
             return {
@@ -176,7 +175,7 @@ export const linksTool = tool({
             };
           }
 
-          const result = await deleteLinkAction(linkId);
+          const result = await deleteLinkAction(linkId, workspaceSlug);
 
           if (result.error) {
             return {

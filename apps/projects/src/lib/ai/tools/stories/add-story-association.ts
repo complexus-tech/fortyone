@@ -16,7 +16,7 @@ export const addStoryAssociation = tool({
       .enum(["related", "blocking", "duplicate"])
       .describe("The type of association"),
   }),
-  execute: async (({ fromStoryId, toStoryId, type }), { experimental_context }) => {
+  execute: async ({ fromStoryId, toStoryId, type }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
@@ -24,15 +24,14 @@ export const addStoryAssociation = tool({
 
       const ctx = { session, workspaceSlug };
 
-
-      const workspace = await getWorkspace(session);
+      const workspace = await getWorkspace(ctx);
       if (workspace.userRole === "guest")
         return { success: false, error: "Unauthorized" };
 
       const result = await addAssociationAction(fromStoryId, {
         toStoryId,
         type,
-      });
+      }, workspaceSlug);
       if (result.error) return { success: false, error: result.error.message };
 
       return { success: true, message: "Association added successfully" };

@@ -45,23 +45,22 @@ export const bulkCreateStories = tool({
       .describe("Array of story data for bulk creation (required)"),
   }),
 
-  execute: async (({ storiesData }), { experimental_context }) => {
+  execute: async ({ storiesData }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to create stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Only admins can perform bulk operations
@@ -73,7 +72,7 @@ export const bulkCreateStories = tool({
       }
 
       const results = await Promise.all(
-        storiesData.map((storyData) => createStoryAction(storyData)),
+        storiesData.map((storyData) => createStoryAction(storyData, workspaceSlug)),
       );
 
       const successCount = results.filter((r) => !r.error).length;

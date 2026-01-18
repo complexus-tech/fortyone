@@ -12,23 +12,22 @@ export const objectiveAnalyticsTool = tool({
       .describe("Objective ID to get analytics for (required)"),
   }),
 
-  execute: async (({ objectiveId }), { experimental_context }) => {
+  execute: async ({ objectiveId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access objective analytics",
         };
       }
 
-      const analytics = await getObjectiveAnalytics(objectiveId, session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const analytics = await getObjectiveAnalytics(objectiveId, ctx);
 
       return {
         success: true,

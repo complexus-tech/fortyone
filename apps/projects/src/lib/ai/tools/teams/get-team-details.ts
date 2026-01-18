@@ -10,23 +10,22 @@ export const getTeamDetails = tool({
     teamId: z.string().describe("Team ID to get details for (required)"),
   }),
 
-  execute: async (({ teamId }), { experimental_context }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access team details",
         };
       }
 
-      const teams = await getTeams(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const teams = await getTeams(ctx);
       const team = teams.find((t) => t.id === teamId);
 
       if (!team) {

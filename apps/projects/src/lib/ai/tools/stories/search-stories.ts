@@ -41,20 +41,22 @@ export const searchStories = tool({
     assigneeId,
     priority,
     limit = 20,
-  }) => {
+  }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to search stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       const searchParams: SearchQueryParams = {
@@ -67,7 +69,7 @@ export const searchStories = tool({
         type: "stories",
       };
 
-      const result = await searchQuery(session, searchParams);
+      const result = await searchQuery(ctx, searchParams);
 
       return {
         success: true,

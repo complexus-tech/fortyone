@@ -127,23 +127,22 @@ export const listTeamStories = tool({
       .describe("Group by status, assignee, or priority"),
   }),
 
-  execute: async (({ teamId, filters, groupBy }), { experimental_context }) => {
+  execute: async ({ teamId, filters, groupBy }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       const params: GroupedStoryParams = {
@@ -152,7 +151,7 @@ export const listTeamStories = tool({
         ...filters,
       };
 
-      const result = await getGroupedStories(session, params);
+      const result = await getGroupedStories(ctx, params);
 
       return {
         success: true,

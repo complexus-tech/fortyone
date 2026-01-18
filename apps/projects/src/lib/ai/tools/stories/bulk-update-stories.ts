@@ -49,22 +49,21 @@ export const bulkUpdateStories = tool({
       .describe("Update data to apply to all stories (required)"),
   }),
 
-  execute: async (({ storyIds, updateData }), { experimental_context }) => {
+  execute: async ({ storyIds, updateData }, { experimental_context }) => {
     try {
       const session = await auth();
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to bulk update stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
       // Only admins can perform bulk operations
@@ -78,7 +77,7 @@ export const bulkUpdateStories = tool({
       const result = await bulkUpdateAction({
         storyIds,
         updates: updateData,
-      });
+      }, workspaceSlug);
 
       if (result.error?.message) {
         return {

@@ -10,25 +10,22 @@ export const joinTeam = tool({
     teamId: z.string().describe("Team ID to join (required)"),
   }),
 
-  execute: async (({ teamId }), { experimental_context }) => {
+  execute: async ({ teamId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to join teams",
         };
       }
 
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
       const userId = session.user!.id!;
 
-      const result = await addTeamMemberAction(teamId, userId);
+      const result = await addTeamMemberAction(teamId, userId, workspaceSlug);
 
       if (result.error) {
         return {

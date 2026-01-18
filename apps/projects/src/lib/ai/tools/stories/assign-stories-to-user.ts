@@ -14,23 +14,22 @@ export const assignStoriesToUser = tool({
     assigneeId: z.string().describe("User ID to assign stories to (required)"),
   }),
 
-  execute: async (({ storyIds, assigneeId }), { experimental_context }) => {
+  execute: async ({ storyIds, assigneeId }, { experimental_context }) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to assign stories",
         };
       }
 
-      const workspace = await getWorkspace(session);
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
+
+      const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
       if (userRole === "guest") {
         return {
@@ -42,7 +41,7 @@ export const assignStoriesToUser = tool({
       const results = await bulkUpdateAction({
         storyIds,
         updates: { assigneeId },
-      });
+      }, workspaceSlug);
 
       if (results.error?.message) {
         return {

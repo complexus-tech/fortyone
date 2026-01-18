@@ -22,7 +22,7 @@ export const getStoryDetails = tool({
       ),
   }),
 
-  execute: async (({ storyId, storyRef }), { experimental_context }) => {
+  execute: async ({ storyId, storyRef }, { experimental_context }) => {
     if (!storyId && !storyRef) {
       return {
         success: false,
@@ -33,21 +33,20 @@ export const getStoryDetails = tool({
       const session = await auth();
 
       if (!session) {
-
-
         return {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
           success: false,
           error: "Authentication required to access story details",
         };
       }
+
+      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+
+      const ctx = { session, workspaceSlug };
       let story: DetailedStory | null | undefined = null;
       if (storyId) {
-        story = await getStory(storyId, session);
+        story = await getStory(storyId, ctx);
       } else if (storyRef) {
-        story = await getStoryRef(storyRef, session);
+        story = await getStoryRef(storyRef, ctx);
       }
 
       if (!story) {
