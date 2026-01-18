@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/"],
-        disallow: ["/api/*", "/auth-callback/*", "/onboarding/*", "/verify/*"],
+        disallow: ["/api/*"],
       },
     ],
     sitemap: "https://www.fortyone.app/sitemap.xml",

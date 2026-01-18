@@ -2,21 +2,18 @@
 
 import { Box, Container, Flex, Text, Button } from "ui";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
-import { signInWithGoogle } from "@/lib/actions/sign-in";
 import kanbanImg from "../../../../public/images/product/kanban.webp";
 import kanbanImgLight from "../../../../public/images/product/kanban-light.webp";
 
 export const Hero = () => {
-  const { data: session } = useSession();
   return (
     <Box>
       <Container className="pt-12 md:pt-16">
         <Flex
           align="center"
-          className="mb-8 mt-20 text-center"
+          className="mt-20 mb-8 text-center"
           direction="column"
         >
           <motion.span
@@ -89,9 +86,9 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 md:pl-5 md:pr-4"
+                className="px-3 md:pr-4 md:pl-5"
                 color="invert"
-                href="/signup"
+                href="https://cloud.fortyone.app/signup"
                 rounded="lg"
                 size="lg"
               >
@@ -111,16 +108,14 @@ export const Hero = () => {
               whileInView={{ y: 0, opacity: 1 }}
             >
               <Button
-                className="px-3 md:pl-3.5 md:pr-4"
+                className="px-3 md:pr-4 md:pl-3.5"
                 color="tertiary"
+                href="https://cloud.fortyone.app/signup"
                 leftIcon={<GoogleIcon />}
-                onClick={async () => {
-                  await signInWithGoogle();
-                }}
                 rounded="lg"
                 size="lg"
               >
-                {session ? "Continue with Google" : "Sign up with Google"}
+                Continue with Google
               </Button>
             </motion.span>
           </Flex>
@@ -128,7 +123,7 @@ export const Hero = () => {
         <Box className="relative mx-auto mt-16 max-w-6xl dark:hidden">
           <Image
             alt="Kanban"
-            className="rounded border-[6px] border-border md:rounded-2xl"
+            className="border-border rounded border-[6px] md:rounded-2xl"
             placeholder="blur"
             src={kanbanImgLight}
           />
@@ -137,7 +132,7 @@ export const Hero = () => {
         <Box className="relative mx-auto mt-16 hidden max-w-6xl dark:block">
           <Image
             alt="Kanban"
-            className="rounded border-[6px] d md:rounded-2xl"
+            className="d rounded border-[6px] md:rounded-2xl"
             placeholder="blur"
             src={kanbanImg}
           />

@@ -38,6 +38,31 @@ const nextConfig = {
         destination: "/features/:path*",
         permanent: true,
       },
+      {
+        source: "/login",
+        destination: "https://cloud.fortyone.app/",
+        permanent: true,
+      },
+      {
+        source: "/signup",
+        destination: "https://cloud.fortyone.app/signup",
+        permanent: true,
+      },
+      {
+        source: "/auth-callback",
+        destination: "https://cloud.fortyone.app/auth-callback",
+        permanent: true,
+      },
+      {
+        source: "/verify/:email/:token",
+        destination: "https://cloud.fortyone.app/verify/:email/:token",
+        permanent: true,
+      },
+      {
+        source: "/onboarding/:path*",
+        destination: "https://cloud.fortyone.app/onboarding/:path*",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {
