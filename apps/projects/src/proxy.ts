@@ -63,9 +63,9 @@ export default auth((req) => {
   }
 
   const subdomain = getSubdomain(host);
-  const isSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
+  const isWorkspaceSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
 
-  if (isSubdomain && isAuthOnlyPath(pathname)) {
+  if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
     if (pathname === "/" && req.auth) {
       const rewriteUrl = new URL(`/${subdomain}/my-work`, req.nextUrl);
       rewriteUrl.search = searchParams;
@@ -84,12 +84,12 @@ export default auth((req) => {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isSubdomain && !req.auth) {
+  if (isWorkspaceSubdomain && !req.auth) {
     const callbackUrl = `https://${subdomain}${DOMAIN_SUFFIX}${pathname}${searchParams}`;
     return buildAuthRedirect(callbackUrl);
   }
 
-  if (isSubdomain && !pathname.startsWith(`/${subdomain}`)) {
+  if (isWorkspaceSubdomain && !pathname.startsWith(`/${subdomain}`)) {
     const nextPath =
       pathname === "/" ? `/${subdomain}/my-work` : `/${subdomain}${pathname}`;
     const rewriteUrl = new URL(nextPath, req.nextUrl);
