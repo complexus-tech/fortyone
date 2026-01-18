@@ -62,10 +62,18 @@ export const Header = () => {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = "/?signedOut=true";
+      // Redirect to main domain after logout to break out of subdomain context
+      const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+        ? "https://fortyone.app"
+        : "/";
+      window.location.href = `${mainDomain}?signedOut=true`;
     } finally {
       clearAllStorage();
-      window.location.href = "/?signedOut=true";
+      // Redirect to main domain after logout to break out of subdomain context
+      const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+        ? "https://fortyone.app"
+        : "/";
+      window.location.href = `${mainDomain}?signedOut=true`;
     }
   };
 
