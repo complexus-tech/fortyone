@@ -4,7 +4,7 @@ import { ProductImage } from "@/components/onboarding/product-image";
 
 export const OnboardingLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <Box className="relative grid h-dvh md:grid-cols-[48%_auto]">
+    <Box className="relative grid h-dvh md:grid-cols-[48%_auto] onboarding-layout">
       <ProductImage />
       <Flex align="center" className="relative z-3" justify="center">
         {children}

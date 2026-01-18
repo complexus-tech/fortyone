@@ -12,15 +12,22 @@
 
 :root {
   --nprogress-color: #ea6060;
+  --body-font-size: 13px;
+
+  @media (min-width: 96rem) {
+    --body-font-size: 13.5px;
+  }
 }
 
 body,
 html {
-  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
+  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-(length:--body-font-size) font-medium antialiased;
 }
 
+
+
 @media not all and (min-resolution: 0.001dpcm) {
-  @supports (-webkit-appearance: none) {
+  @supports (-webkit-appearance: none) {  
     body {
       @apply border-border border-t-[0.5px];
     }

@@ -11,7 +11,7 @@ export const ProductImage = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="relative hidden p-4 md:block">
+    <Box className="relative hidden p-4 md:block ">
       <BlurImage
         alt="Login"
         className="h-full w-full rounded-2xl object-cover"
