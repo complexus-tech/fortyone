@@ -26,7 +26,7 @@ export default auth((req) => {
 
   if (!req.auth && pathname !== "/") {
     const callBackUrl = `${pathname}${searchParams}`;
-    const newUrl = new URL("/", req.nextUrl.origin);
+    const newUrl = new URL("/", "https://cloud.fortyone.app");
     newUrl.searchParams.set("callbackUrl", callBackUrl);
     return NextResponse.redirect(newUrl);
   }
