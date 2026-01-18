@@ -2,6 +2,8 @@ import { ApiError } from "@/lib/http/error";
 import type { ApiResponse, Workspace } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 export const getRedirectUrl = (
   workspaces: Workspace[],
   invitations: Invitation[] = [],
@@ -16,15 +18,25 @@ export const getRedirectUrl = (
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
     workspaces[0];
+
+  
+  if (isFortyOneApp) {
+    return `https://${activeWorkspace.slug}.fortyone.app/my-work`;
+  }
+
   return `/${activeWorkspace.slug}/my-work`;
 };
 
 export const buildWorkspaceUrl = (slug: string) => {
+  if (isFortyOneApp) {
+    return `https://${slug}.fortyone.app/my-work`;
+  }
+
   return `/${slug}/my-work`;
 };
 
 export const withWorkspacePath = (path: string, slug?: string) => {
-  if (!slug) {
+  if (!slug || isFortyOneApp) {
     return path;
   }
 
