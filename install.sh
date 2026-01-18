@@ -176,23 +176,19 @@ down_stack() {
 dev_build() {
   require_docker
   ensure_dir
-  if [ ! -f "$ENV_FILE" ]; then
-    if [ ! -f "$(pwd)/docker/fortyone.env" ]; then
-      printf "Local docker/fortyone.env not found.\n"
-      exit 1
-    fi
-    printf "Using local template at docker/fortyone.env\n"
-    cp "$(pwd)/docker/fortyone.env" "$ENV_FILE"
-    configure_env
+  if [ ! -f "$(pwd)/docker/fortyone.env" ]; then
+    printf "Local docker/fortyone.env not found.\n"
+    exit 1
   fi
-  if [ ! -f "$COMPOSE_FILE" ]; then
-    if [ ! -f "$(pwd)/docker/compose.yml" ]; then
-      printf "Local docker/compose.yml not found.\n"
-      exit 1
-    fi
-    cp "$(pwd)/docker/compose.yml" "$COMPOSE_FILE"
+  printf "Using local template at docker/fortyone.env\n"
+  cp "$(pwd)/docker/fortyone.env" "$ENV_FILE"
+  configure_env
+  if [ ! -f "$(pwd)/docker/compose.yml" ]; then
+    printf "Local docker/compose.yml not found.\n"
+    exit 1
   fi
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$(pwd)/docker/compose.dev.yml" up -d --build
+  cp "$(pwd)/docker/compose.yml" "$COMPOSE_FILE"
+  FORTYONE_ENV_FILE="$ENV_FILE" docker compose --env-file "$ENV_FILE" --project-directory "$(pwd)" -f "$COMPOSE_FILE" -f "$(pwd)/docker/compose.dev.yml" -f "$(pwd)/docker/compose.override.yml" up -d --build
 }
 
 show_menu() {

@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # This Dockerfile is copy-pasted into our main docs at /docs/handbook/deploying-with-docker.
 # Make sure you update both files!
@@ -19,6 +19,8 @@ FROM base AS installer
 RUN apk add --no-cache libc6-compat
 RUN apk update
 WORKDIR /app
+RUN npm install pnpm --global
+RUN pnpm config set store-dir ~/.pnpm-store
 
 # First install the dependencies (as they change less often)
 COPY .gitignore .gitignore

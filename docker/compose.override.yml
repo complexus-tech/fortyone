@@ -1,0 +1,12 @@
+services:
+  api:
+    env_file:
+      - ${FORTYONE_ENV_FILE:-./fortyone.env}
+
+  worker:
+    env_file:
+      - ${FORTYONE_ENV_FILE:-./fortyone.env}
+
+  projects:
+    env_file:
+      - ${FORTYONE_ENV_FILE:-./fortyone.env}

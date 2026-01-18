@@ -6,11 +6,11 @@ WORKDIR /app
 RUN apk add --no-cache git ca-certificates tzdata
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY apps/server/go.mod apps/server/go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY apps/server/ .
 
 # Build the application
 RUN CGO_ENABLED=0 go build -o /app/bin/api ./cmd/api
@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=builder /app/bin/api /app/api
 
 # Copy templates directory
-COPY templates/ /app/templates/
+COPY apps/server/templates/ /app/templates/
 
 # Expose the API port
 EXPOSE 8000
