@@ -454,6 +454,15 @@ func (s *Service) getContainerName(fileType string) (string, error) {
 		case "workspace-logos":
 			return s.config.AWS.WorkspaceLogosBucket, nil
 		}
+	case "minio":
+		switch fileType {
+		case "attachments":
+			return s.config.MinIO.AttachmentsBucket, nil
+		case "profile-images":
+			return s.config.MinIO.ProfileImagesBucket, nil
+		case "workspace-logos":
+			return s.config.MinIO.WorkspaceLogosBucket, nil
+		}
 	default:
 		return "", fmt.Errorf("unsupported storage provider: %s", s.config.Provider)
 	}
@@ -478,6 +487,13 @@ func (s *Service) getObjectNameFromURL(fileURL, container string) (string, error
 			return "", fmt.Errorf("invalid file URL format")
 		}
 		return strings.TrimPrefix(path, prefix), nil
+	}
+
+	if s.config.Provider == "aws" || s.config.Provider == "minio" {
+		prefix := container + "/"
+		if strings.HasPrefix(path, prefix) {
+			return strings.TrimPrefix(path, prefix), nil
+		}
 	}
 
 	return path, nil

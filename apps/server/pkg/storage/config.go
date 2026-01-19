@@ -10,4 +10,5 @@ type Config struct {
 	Provider string
 	Azure    azure.Config
 	AWS      aws.Config
+	MinIO    aws.Config
 }

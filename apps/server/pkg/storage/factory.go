@@ -15,6 +15,8 @@ func NewStorageService(cfg Config, log *logger.Logger) (StorageService, error) {
 		return azure.NewStorageService(cfg.Azure, log)
 	case "aws":
 		return aws.NewS3Service(cfg.AWS, log)
+	case "minio":
+		return aws.NewS3Service(cfg.MinIO, log)
 	case "":
 		return nil, fmt.Errorf("storage provider is required")
 	default:

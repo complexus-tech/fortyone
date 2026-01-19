@@ -41,41 +41,36 @@ fetch_artifacts() {
   fi
 }
 
-prompt_value() {
-  local label="$1"
-  local key="$2"
-  local default="$3"
-  local value
-  read -r -p "$label [$default]: " value
-  value=${value:-$default}
-  if grep -q "^${key}=" "$ENV_FILE"; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      sed -i '' "s#^${key}=.*#${key}=${value}#" "$ENV_FILE"
-    else
-      sed -i "s#^${key}=.*#${key}=${value}#" "$ENV_FILE"
-    fi
-  else
-    printf "\n%s=%s\n" "$key" "$value" >> "$ENV_FILE"
-  fi
-}
-
-warn_placeholder() {
+ensure_value() {
   local key="$1"
-  local default="$2"
-  if grep -q "^${key}=${default}$" "$ENV_FILE"; then
-    printf "Warning: %s is still set to the default placeholder.\n" "$key"
+  local value=""
+
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    value=$(grep "^${key}=" "$ENV_FILE" | tail -n 1 | cut -d= -f2-)
+    value=${value%$'\r'}
+  fi
+
+  if [ -z "$value" ]; then
+    printf "Error: %s must be set in %s.\n" "$key" "$ENV_FILE"
+    exit 1
   fi
 }
 
 configure_env() {
-  printf "\nConfigure runtime values (press Enter to accept defaults).\n"
-  prompt_value "Web URL" "AUTH_URL" "http://localhost:3000"
-  prompt_value "API URL" "NEXT_PUBLIC_API_URL" "http://localhost:8000"
-  prompt_value "Website URL" "APP_WEBSITE_URL" "http://localhost:3000"
-  prompt_value "API secret (APP_AUTH_SECRET_KEY)" "APP_AUTH_SECRET_KEY" "change-me"
-  prompt_value "Projects auth secret (AUTH_SECRET)" "AUTH_SECRET" "change-me"
-  warn_placeholder "APP_AUTH_SECRET_KEY" "change-me"
-  warn_placeholder "AUTH_SECRET" "change-me"
+  printf "\nValidating required runtime values.\n"
+  ensure_value "AUTH_URL"
+  ensure_value "NEXT_PUBLIC_API_URL"
+  ensure_value "APP_WEBSITE_URL"
+  ensure_value "APP_AUTH_SECRET_KEY"
+  ensure_value "AUTH_SECRET"
+  ensure_value "APP_API_HOST"
+
+  if grep -q "^APP_AUTH_SECRET_KEY=change-me$" "$ENV_FILE"; then
+    printf "Warning: APP_AUTH_SECRET_KEY is set to the default placeholder.\n"
+  fi
+  if grep -q "^AUTH_SECRET=change-me$" "$ENV_FILE"; then
+    printf "Warning: AUTH_SECRET is set to the default placeholder.\n"
+  fi
 }
 
 compose_cmd() {

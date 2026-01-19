@@ -124,9 +124,23 @@ type Config struct {
 		AccessKeyID          string `env:"APP_AWS_ACCESS_KEY_ID"`
 		SecretAccessKey      string `env:"APP_AWS_SECRET_ACCESS_KEY"`
 		Region               string `env:"APP_AWS_REGION"`
+		Endpoint             string `env:"APP_AWS_ENDPOINT"`
+		PublicURL            string `env:"APP_AWS_PUBLIC_URL"`
+		ForcePathStyle       bool   `env:"APP_AWS_FORCE_PATH_STYLE"`
 		ProfileImagesBucket  string `env:"APP_AWS_PROFILE_IMAGES_BUCKET"`
 		WorkspaceLogosBucket string `env:"APP_AWS_WORKSPACE_LOGOS_BUCKET"`
 		AttachmentsBucket    string `env:"APP_AWS_ATTACHMENTS_BUCKET"`
+	}
+	MinIO struct {
+		AccessKeyID          string `env:"APP_MINIO_ACCESS_KEY_ID"`
+		SecretAccessKey      string `env:"APP_MINIO_SECRET_ACCESS_KEY"`
+		Region               string `env:"APP_MINIO_REGION"`
+		Endpoint             string `env:"APP_MINIO_ENDPOINT"`
+		PublicURL            string `env:"APP_MINIO_PUBLIC_URL"`
+		ForcePathStyle       bool   `env:"APP_MINIO_FORCE_PATH_STYLE"`
+		ProfileImagesBucket  string `env:"APP_MINIO_PROFILE_IMAGES_BUCKET"`
+		WorkspaceLogosBucket string `env:"APP_MINIO_WORKSPACE_LOGOS_BUCKET"`
+		AttachmentsBucket    string `env:"APP_MINIO_ATTACHMENTS_BUCKET"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -232,15 +246,31 @@ func run(ctx context.Context, log *logger.Logger) error {
 		AccessKeyID:          cfg.AWS.AccessKeyID,
 		SecretAccessKey:      cfg.AWS.SecretAccessKey,
 		Region:               cfg.AWS.Region,
+		Endpoint:             cfg.AWS.Endpoint,
+		PublicURL:            cfg.AWS.PublicURL,
+		ForcePathStyle:       cfg.AWS.ForcePathStyle,
 		ProfileImagesBucket:  cfg.AWS.ProfileImagesBucket,
 		WorkspaceLogosBucket: cfg.AWS.WorkspaceLogosBucket,
 		AttachmentsBucket:    cfg.AWS.AttachmentsBucket,
+	}
+
+	minioConfig := aws.Config{
+		AccessKeyID:          cfg.MinIO.AccessKeyID,
+		SecretAccessKey:      cfg.MinIO.SecretAccessKey,
+		Region:               cfg.MinIO.Region,
+		Endpoint:             cfg.MinIO.Endpoint,
+		PublicURL:            cfg.MinIO.PublicURL,
+		ForcePathStyle:       cfg.MinIO.ForcePathStyle,
+		ProfileImagesBucket:  cfg.MinIO.ProfileImagesBucket,
+		WorkspaceLogosBucket: cfg.MinIO.WorkspaceLogosBucket,
+		AttachmentsBucket:    cfg.MinIO.AttachmentsBucket,
 	}
 
 	storageConfig := storage.Config{
 		Provider: cfg.Storage.Provider,
 		Azure:    azureConfig,
 		AWS:      awsConfig,
+		MinIO:    minioConfig,
 	}
 
 	storageService, err := storage.NewStorageService(storageConfig, log)

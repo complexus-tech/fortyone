@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	sdkaws "github.com/aws/aws-sdk-go-v2/aws"
@@ -34,7 +35,12 @@ func NewS3Service(cfg Config, log *logger.Logger) (*S3Service, error) {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	client := s3.NewFromConfig(awsCfg)
+	client := s3.NewFromConfig(awsCfg, func(options *s3.Options) {
+		if cfg.Endpoint != "" {
+			options.BaseEndpoint = sdkaws.String(cfg.Endpoint)
+			options.UsePathStyle = cfg.ForcePathStyle
+		}
+	})
 
 	return &S3Service{
 		client: client,
@@ -92,5 +98,13 @@ func (s *S3Service) DeleteFile(ctx context.Context, bucket, key string) error {
 
 // GetPublicURL implements storage.StorageService.
 func (s *S3Service) GetPublicURL(ctx context.Context, bucket, key string) (string, error) {
+	if s.config.PublicURL != "" {
+		return fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.config.PublicURL, "/"), bucket, key), nil
+	}
+
+	if s.config.Endpoint != "" {
+		return fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.config.Endpoint, "/"), bucket, key), nil
+	}
+
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, s.config.Region, key), nil
 }

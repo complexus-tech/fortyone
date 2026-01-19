@@ -31,6 +31,25 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    networks:
+      - fortyone
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${APP_MINIO_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${APP_MINIO_SECRET_ACCESS_KEY:-minioadmin}
+    ports:
+      - "${APP_MINIO_PORT:-9000}:9000"
+      - "${APP_MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   migrations:
     image: fortyone/migrations:${FORTYONE_VERSION:-latest}
     networks:
@@ -60,6 +79,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
@@ -92,6 +113,7 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
   fortyone:
