@@ -31,14 +31,18 @@ export const ProfileMenu = () => {
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
 
   const handleLogout = async () => {
+    const mainDomain =
+      process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+        ? "https://fortyone.app"
+        : "/";
     try {
       await logOut();
       analytics.logout(true);
       clearAllStorage();
-      window.location.href = "/?signedOut=true";
+      window.location.href = `${mainDomain}?signedOut=true`;
     } finally {
       clearAllStorage();
-      window.location.href = "/?signedOut=true";
+      window.location.href = `${mainDomain}?signedOut=true`;
     }
   };
 
