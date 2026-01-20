@@ -97,7 +97,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl pl-1 text-lg opacity-60 leading-relaxed">
+          <Text className="mb-10 max-w-3xl text-lg opacity-60 leading-relaxed">
             {item.answer}
           </Text>
         </Box>
