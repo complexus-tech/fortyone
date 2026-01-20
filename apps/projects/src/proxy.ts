@@ -45,6 +45,11 @@ const buildHostRedirect = (
 };
 
 export default auth((req) => {
+  // Skip Server Actions - they handle their own auth and must not be redirected
+  if (req.headers.get("Next-Action")) {
+    return NextResponse.next();
+  }
+
   const pathname = req.nextUrl.pathname;
   const searchParams = req.nextUrl.search;
   const host = getHost(req);
