@@ -97,7 +97,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl pl-1 text-lg opacity-60 md:text-xl">
+          <Text className="mb-10 max-w-3xl pl-1 text-lg opacity-60 leading-relaxed">
             {item.answer}
           </Text>
         </Box>
@@ -115,7 +115,7 @@ export const Faqs = () => {
 
   return (
     <Box className="py-16 md:pt-24">
-      <Container>
+      <Container className="max-w-4xl">
         <motion.div
           initial="hidden"
           variants={fadeUp}
