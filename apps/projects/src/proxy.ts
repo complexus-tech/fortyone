@@ -63,7 +63,8 @@ export default auth((req) => {
   }
 
   const subdomain = getSubdomain(host);
-  const isWorkspaceSubdomain = !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
+  const isWorkspaceSubdomain =
+    !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
 
   if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
     if (pathname === "/" && req.auth) {
@@ -106,6 +107,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|images|_next/image|favicon*|ingest|manifest*|apple-icon*).*)",
+    "/((?!api|_next/static|images|_next/image|favicon*|ingest|manifest*|apple-icon*).*)",
   ],
 };
