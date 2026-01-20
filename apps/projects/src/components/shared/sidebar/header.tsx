@@ -21,7 +21,7 @@ import { useUserRole } from "@/hooks/role";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { clearAllStorage } from "./utils";
 import { WorkspacesMenu } from "./workspaces-menu";
-import { logOut } from "./actions";
+import { signOut } from "next-auth/react";
 
 export const Header = () => {
   const { getTermDisplay } = useTerminology();
@@ -58,21 +58,17 @@ export const Header = () => {
   });
 
   const handleLogout = async () => {
+    const mainDomain =
+      process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
+        ? "https://fortyone.app"
+        : "/";
     try {
-      await logOut();
+      await signOut({ redirect: false });
       analytics.logout(true);
       clearAllStorage();
-      // Redirect to main domain after logout to break out of subdomain context
-      const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
-        ? "https://fortyone.app"
-        : "/";
       window.location.href = `${mainDomain}?signedOut=true`;
-    } finally {
+    } catch {
       clearAllStorage();
-      // Redirect to main domain after logout to break out of subdomain context
-      const mainDomain = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
-        ? "https://fortyone.app"
-        : "/";
       window.location.href = `${mainDomain}?signedOut=true`;
     }
   };
