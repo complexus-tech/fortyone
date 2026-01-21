@@ -58,9 +58,9 @@ export const OptionsHeader = ({
 
   const getStoryUrl = () => {
     if (isFortyOneApp) {
-      return `${window.location.hostname}/story/${id}`;
+      return `${window.location.origin}/story/${id}`;
     }
-    return `${window.location.hostname}/${workspaceSlug}/story/${id}`;
+    return `${window.location.origin}/${workspaceSlug}/story/${id}`;
   }
 
   const copyBranchName = async () => {

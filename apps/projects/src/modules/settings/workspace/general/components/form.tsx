@@ -13,7 +13,7 @@ const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 export const WorkspaceForm = () => {
   const { mutateAsync: updateWorkspace } = useUpdateWorkspaceMutation();
   const { workspace } = useCurrentWorkspace();
-  const [host, setHost] = useState("");
+  const [origin, setOrigin] = useState("");
   const [_, copy] = useCopyToClipboard();
   const [form, setForm] = useState({
     name: workspace?.name || "",
@@ -21,9 +21,9 @@ export const WorkspaceForm = () => {
 
   const getWorkspaceUrl = () => {
     if (isFortyOneApp) {
-      return host;
+      return origin;
     }
-    return `${host}/${workspace?.slug}`;
+    return `${origin}/${workspace?.slug}`;
   }
 
   const hasChanges = useMemo(() => {
@@ -43,7 +43,7 @@ export const WorkspaceForm = () => {
   useEffect(() => {
     if (workspace) {
       setForm({ name: workspace.name });
-      setHost(window.location.hostname);
+      setOrigin(window.location.origin);
     }
   }, [workspace]);
 
