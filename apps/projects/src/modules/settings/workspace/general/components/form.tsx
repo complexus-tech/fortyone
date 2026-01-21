@@ -7,6 +7,9 @@ import { useUpdateWorkspaceMutation } from "@/lib/hooks/update-workspace-mutatio
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useCopyToClipboard } from "@/hooks";
 
+
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 export const WorkspaceForm = () => {
   const { mutateAsync: updateWorkspace } = useUpdateWorkspaceMutation();
   const { workspace } = useCurrentWorkspace();
@@ -15,6 +18,13 @@ export const WorkspaceForm = () => {
   const [form, setForm] = useState({
     name: workspace?.name || "",
   });
+
+  const getWorkspaceUrl = () => {
+    if (isFortyOneApp) {
+      return host;
+    }
+    return `${host}/${workspace?.slug}`;
+  }
 
   const hasChanges = useMemo(() => {
     return workspace?.name !== form.name;
@@ -52,12 +62,12 @@ export const WorkspaceForm = () => {
           label="URL (read-only)"
           name="slug"
           onClick={() => {
-            copy(`https://${host}/${workspace?.slug}`);
+            copy(getWorkspaceUrl());
             toast.success("Copied to clipboard");
           }}
           readOnly
           rightIcon={<CopyIcon />}
-          value={`https://${host}/${workspace?.slug}`}
+          value={getWorkspaceUrl()}
         />
       </Box>
       {hasChanges ? (

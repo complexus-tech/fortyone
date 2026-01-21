@@ -16,6 +16,8 @@ import { MobileMenuButton } from "@/components/shared";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 
+const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 export const OptionsHeader = ({
   isAdminOrOwner,
   storyId,
@@ -44,7 +46,7 @@ export const OptionsHeader = ({
   const { getTermDisplay } = useTerminology();
   const { data: automationPreferences } = useAutomationPreferences();
   const { userRole } = useUserRole();
-  const { withWorkspace } = useWorkspacePath();
+  const { withWorkspace, workspaceSlug } = useWorkspacePath();
 
   const generateGitBranchName = () => {
     const branchName =
@@ -53,6 +55,13 @@ export const OptionsHeader = ({
       )}`.toLowerCase();
     return branchName.replace(/-$/, "");
   };
+
+  const getStoryUrl = () => {
+    if (isFortyOneApp) {
+      return `${window.location.hostname}/story/${id}`;
+    }
+    return `${window.location.hostname}/${workspaceSlug}/story/${id}`;
+  }
 
   const copyBranchName = async () => {
     await copyText(generateGitBranchName());
@@ -137,7 +146,7 @@ export const OptionsHeader = ({
               color="tertiary"
               leftIcon={<CopyIcon />}
               onClick={async () => {
-                await copyText(window.location.href);
+                await copyText(getStoryUrl());
                 toast.info("Success", {
                   description: `${getTermDisplay("storyTerm", { capitalize: true })} link copied to clipboard`,
                 });
@@ -171,8 +180,8 @@ export const OptionsHeader = ({
                   title={
                     isAdminOrOwner
                       ? `Restore ${getTermDisplay("storyTerm", {
-                          capitalize: true,
-                        })}`
+                        capitalize: true,
+                      })}`
                       : `You are not allowed to restore this ${getTermDisplay("storyTerm")}`
                   }
                 >
@@ -200,8 +209,8 @@ export const OptionsHeader = ({
                   title={
                     isAdminOrOwner
                       ? `Delete ${getTermDisplay("storyTerm", {
-                          capitalize: true,
-                        })}`
+                        capitalize: true,
+                      })}`
                       : `You are not allowed to delete this ${getTermDisplay("storyTerm")}`
                   }
                 >
