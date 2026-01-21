@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/events"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 )
 
 // handleWorkspaceDeletionScheduledConfirmation processes workspace deletion confirmation events
@@ -26,33 +26,26 @@ func (c *Consumer) handleWorkspaceDeletionScheduledConfirmation(ctx context.Cont
 		"workspace_name", payload.WorkspaceName,
 		"actor_email", payload.ActorEmail)
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_SLUG": payload.WorkspaceSlug,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
-		"RESTORE_URL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
-		"DELETION_TIME":  "48 hours",
+	data := map[string]any{
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceSlug": payload.WorkspaceSlug,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"RestoreURL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
+		"DeletionTime":  "48 hours",
 	}
 
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateWorkspaceDeletionScheduledConfirmation,
-		To: []brevo.EmailRecipient{
-			{
-				Email: payload.ActorEmail,
-			},
-		},
-		Subject: fmt.Sprintf("You have scheduled workspace %s for deletion", payload.WorkspaceName),
-		Params:  brevoParams,
+	subject := fmt.Sprintf("You have scheduled workspace %s for deletion", payload.WorkspaceName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.ActorEmail},
+		Template: "workspaces/deletion_scheduled_confirmation",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send workspace deletion confirmation email", "error", err, "email", payload.ActorEmail)
+		return fmt.Errorf("failed to send workspace deletion confirmation email: %w", err)
 	}
 
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send workspace deletion confirmation email via Brevo", "error", err, "email", payload.ActorEmail)
-		return fmt.Errorf("failed to send workspace deletion confirmation email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent workspace deletion confirmation email via Brevo", "email", payload.ActorEmail)
+	c.log.Info(ctx, "successfully sent workspace deletion confirmation email", "email", payload.ActorEmail)
 	return nil
 }
 
@@ -79,35 +72,28 @@ func (c *Consumer) handleWorkspaceDeletionScheduledNotification(ctx context.Cont
 		return nil
 	}
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"ACTOR_NAME":     payload.ActorName,
-		"ACTOR_EMAIL":    payload.ActorEmail,
-		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_SLUG": payload.WorkspaceSlug,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
-		"RESTORE_URL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
-		"DELETION_TIME":  "48 hours",
+	data := map[string]any{
+		"ActorName":     payload.ActorName,
+		"ActorEmail":    payload.ActorEmail,
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceSlug": payload.WorkspaceSlug,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"RestoreURL":    fmt.Sprintf("https://%s.fortyone.app/settings", payload.WorkspaceSlug),
+		"DeletionTime":  "48 hours",
 	}
 
-	// Send templated email to all workspace admins
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateWorkspaceDeletionScheduledNotification,
-		To:         make([]brevo.EmailRecipient, len(payload.AdminEmails)),
-		Subject:    fmt.Sprintf("%s has scheduled your %s workspace for deletion", payload.ActorName, payload.WorkspaceName),
-		Params:     brevoParams,
+	subject := fmt.Sprintf("%s has scheduled your %s workspace for deletion", payload.ActorName, payload.WorkspaceName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       payload.AdminEmails,
+		Template: "workspaces/deletion_scheduled_notification",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send workspace deletion notification email", "error", err, "workspace_id", payload.WorkspaceID)
+		return fmt.Errorf("failed to send workspace deletion notification email: %w", err)
 	}
 
-	for i, email := range payload.AdminEmails {
-		req.To[i] = brevo.EmailRecipient{Email: email}
-	}
-
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send workspace deletion notification email via Brevo", "error", err, "workspace_id", payload.WorkspaceID)
-		return fmt.Errorf("failed to send workspace deletion notification email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent workspace deletion notification email via Brevo", "workspace_id", payload.WorkspaceID, "admin_count", len(payload.AdminEmails))
+	c.log.Info(ctx, "successfully sent workspace deletion notification email", "workspace_id", payload.WorkspaceID, "admin_count", len(payload.AdminEmails))
 	return nil
 }
 
@@ -128,33 +114,26 @@ func (c *Consumer) handleWorkspaceRestoredConfirmation(ctx context.Context, even
 		"workspace_name", payload.WorkspaceName,
 		"actor_email", payload.ActorEmail)
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
-		"ACTOR_NAME":     payload.ActorName,
-		"ACTOR_EMAIL":    payload.ActorEmail,
-		"WORKSPACE_SLUG": payload.WorkspaceSlug,
+	data := map[string]any{
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"ActorName":     payload.ActorName,
+		"ActorEmail":    payload.ActorEmail,
+		"WorkspaceSlug": payload.WorkspaceSlug,
 	}
 
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateWorkspaceRestoredConfirmation,
-		To: []brevo.EmailRecipient{
-			{
-				Email: payload.ActorEmail,
-			},
-		},
-		Subject: fmt.Sprintf("You have restored workspace %s", payload.WorkspaceName),
-		Params:  brevoParams,
+	subject := fmt.Sprintf("You have restored workspace %s", payload.WorkspaceName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.ActorEmail},
+		Template: "workspaces/restored_confirmation",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send workspace restore confirmation email", "error", err, "email", payload.ActorEmail)
+		return fmt.Errorf("failed to send workspace restore confirmation email: %w", err)
 	}
 
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send workspace restore confirmation email via Brevo", "error", err, "email", payload.ActorEmail)
-		return fmt.Errorf("failed to send workspace restore confirmation email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent workspace restore confirmation email via Brevo", "email", payload.ActorEmail)
+	c.log.Info(ctx, "successfully sent workspace restore confirmation email", "email", payload.ActorEmail)
 	return nil
 }
 
@@ -181,32 +160,25 @@ func (c *Consumer) handleWorkspaceRestoredNotification(ctx context.Context, even
 		return nil
 	}
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
-		"ACTOR_NAME":     payload.ActorName,
-		"ACTOR_EMAIL":    payload.ActorEmail,
-		"WORKSPACE_SLUG": payload.WorkspaceSlug,
+	data := map[string]any{
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"ActorName":     payload.ActorName,
+		"ActorEmail":    payload.ActorEmail,
+		"WorkspaceSlug": payload.WorkspaceSlug,
 	}
 
-	// Send templated email to all workspace admins
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateWorkspaceRestoredNotification,
-		To:         make([]brevo.EmailRecipient, len(payload.AdminEmails)),
-		Subject:    fmt.Sprintf("%s has restored your %s workspace", payload.ActorName, payload.WorkspaceName),
-		Params:     brevoParams,
+	subject := fmt.Sprintf("%s has restored your %s workspace", payload.ActorName, payload.WorkspaceName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       payload.AdminEmails,
+		Template: "workspaces/restored_notification",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send workspace restore notification email", "error", err, "workspace_id", payload.WorkspaceID)
+		return fmt.Errorf("failed to send workspace restore notification email: %w", err)
 	}
 
-	for i, email := range payload.AdminEmails {
-		req.To[i] = brevo.EmailRecipient{Email: email}
-	}
-
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send workspace restore notification email via Brevo", "error", err, "workspace_id", payload.WorkspaceID)
-		return fmt.Errorf("failed to send workspace restore notification email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent workspace restore notification email via Brevo", "workspace_id", payload.WorkspaceID, "admin_count", len(payload.AdminEmails))
+	c.log.Info(ctx, "successfully sent workspace restore notification email", "workspace_id", payload.WorkspaceID, "admin_count", len(payload.AdminEmails))
 	return nil
 }

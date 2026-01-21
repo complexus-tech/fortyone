@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,7 +14,7 @@ import (
 )
 
 // ProcessUserInactivityWarning sends warning emails to users inactive for 8+ months
-func ProcessUserInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.Logger, brevoService *brevo.Service) error {
+func ProcessUserInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessUserInactivityWarning")
 	defer span.End()
 
@@ -43,7 +43,7 @@ func ProcessUserInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.
 
 		// Process each user in this batch
 		for _, user := range users {
-			if err := sendUserInactivityWarning(ctx, db, brevoService, user); err != nil {
+			if err := sendUserInactivityWarning(ctx, db, mailerService, user); err != nil {
 				log.Error(ctx, "Failed to send user inactivity warning", "error", err, "user_id", user.UserID, "email", user.Email)
 				continue
 			}
@@ -126,22 +126,19 @@ func getInactiveUsersBatch(ctx context.Context, db *sqlx.DB, batchSize int, offs
 }
 
 // sendUserInactivityWarning sends a warning email to inactive user
-func sendUserInactivityWarning(ctx context.Context, db *sqlx.DB, brevoService *brevo.Service, user InactiveUser) error {
-	// Email template parameters (no dynamic variables needed)
-	brevoParams := map[string]any{}
-
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateUserInactivityWarning,
-		To: []brevo.EmailRecipient{
-			{
-				Email: user.Email,
-			},
-		},
-		Params: brevoParams,
+func sendUserInactivityWarning(ctx context.Context, db *sqlx.DB, mailerService mailer.Service, user InactiveUser) error {
+	data := map[string]any{
+		"UserName": user.FullName,
+		"LoginURL": "https://fortyone.app/login",
 	}
 
-	if err := brevoService.SendTemplatedEmail(ctx, req); err != nil {
+	subject := "We miss you at FortyOne"
+	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{user.Email},
+		Template: "users/inactivity_warning",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
 		return fmt.Errorf("failed to send user inactivity warning email: %w", err)
 	}
 

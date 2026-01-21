@@ -13,10 +13,9 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/states"
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/pkg/brevo"
-	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -34,8 +33,7 @@ type Consumer struct {
 	log               *logger.Logger
 	notifications     *notifications.Service
 	notificationRules *notifications.Rules
-	emailService      email.Service
-	brevoService      *brevo.Service
+	mailerService     mailer.Service
 	stories           *stories.Service
 	objectives        *objectives.Service
 	users             *users.Service
@@ -43,7 +41,7 @@ type Consumer struct {
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, emailService email.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, brevoService *brevo.Service) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
@@ -51,9 +49,8 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		log:               log,
 		notifications:     notificationsService,
 		notificationRules: notificationRules,
-		emailService:      emailService,
+		mailerService:     mailerService,
 		stories:           stories,
-		brevoService:      brevoService,
 		objectives:        objectives,
 		users:             users,
 		statuses:          statuses,
@@ -488,36 +485,25 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 
 	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email)
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"VERIFICATION_URL": verificationURL,
-		"EXPIRES_IN":       "10 minutes",
-		"IS_MOBILE":        payload.IsMobile,
-		"OTP":              payload.Token,
+	data := map[string]any{
+		"VerificationURL": verificationURL,
+		"ExpiresIn":       "10 minutes",
+		"IsMobile":        payload.IsMobile,
+		"OTP":             payload.Token,
 	}
 
-	var templateID int64 = brevo.TemplateLogin
-	if payload.IsMobile {
-		templateID = brevo.TemplateLoginMobile
+	subject := "Your login link for FortyOne"
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "auth/verification",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send verification email", "error", err, "email", payload.Email)
+		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: templateID,
-		To: []brevo.EmailRecipient{
-			{
-				Email: payload.Email,
-			},
-		},
-		Params: brevoParams,
-	}
-
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send verification email via Brevo", "error", err, "email", payload.Email)
-		return fmt.Errorf("failed to send verification email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent verification email via Brevo", "email", payload.Email)
+	c.log.Info(ctx, "successfully sent verification email", "email", payload.Email)
 	return nil
 }
 
@@ -548,33 +534,26 @@ func (c *Consumer) handleInvitationEmail(ctx context.Context, event events.Event
 		expiresInStr = fmt.Sprintf("%d hours", int(expiresIn.Hours()))
 	}
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"INVITER_NAME":     payload.InviterName,
-		"WORKSPACE_NAME":   payload.WorkspaceName,
-		"ROLE":             payload.Role,
-		"EXPIRES_IN":       expiresInStr,
-		"VERIFICATION_URL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
+	data := map[string]any{
+		"InviterName":     payload.InviterName,
+		"WorkspaceName":   payload.WorkspaceName,
+		"Role":            payload.Role,
+		"ExpiresIn":       expiresInStr,
+		"VerificationURL": fmt.Sprintf("%s/onboarding/join?token=%s", c.websiteURL, payload.Token),
 	}
 
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateInvitation,
-		To: []brevo.EmailRecipient{
-			{
-				Email: payload.Email,
-			},
-		},
-		Subject: fmt.Sprintf("%s invited you to work with them in FortyOne", payload.InviterName),
-		Params:  brevoParams,
+	subject := fmt.Sprintf("%s invited you to work with them in FortyOne", payload.InviterName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "invites/invitation",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send invitation email", "error", err, "email", payload.Email)
+		return fmt.Errorf("failed to send invitation email: %w", err)
 	}
 
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send invitation email via Brevo", "error", err, "email", payload.Email)
-		return fmt.Errorf("failed to send invitation email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent invitation email via Brevo", "email", payload.Email)
+	c.log.Info(ctx, "successfully sent invitation email", "email", payload.Email)
 	return nil
 }
 
@@ -594,34 +573,27 @@ func (c *Consumer) handleInvitationAccepted(ctx context.Context, event events.Ev
 		"invitee_email", payload.InviteeEmail,
 		"workspace_id", payload.WorkspaceID)
 
-	// Prepare Brevo template parameters
-	brevoParams := map[string]any{
-		"INVITER_NAME":   payload.InviterName,
-		"INVITEE_NAME":   payload.InviteeName,
-		"WORKSPACE_NAME": payload.WorkspaceName,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
-		"ROLE":           payload.Role,
-		"LOGIN_URL":      fmt.Sprintf("%s/login", c.websiteURL),
+	data := map[string]any{
+		"InviterName":   payload.InviterName,
+		"InviteeName":   payload.InviteeName,
+		"WorkspaceName": payload.WorkspaceName,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", payload.WorkspaceSlug),
+		"Role":          payload.Role,
+		"LoginURL":      fmt.Sprintf("%s/login", c.websiteURL),
 	}
 
-	// Send templated email via Brevo service
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateInvitationAccepted,
-		To: []brevo.EmailRecipient{
-			{
-				Email: payload.InviterEmail,
-			},
-		},
-		Subject: fmt.Sprintf("Great news! %s has joined %s.", payload.InviteeName, payload.WorkspaceName),
-		Params:  brevoParams,
+	subject := fmt.Sprintf("Great news! %s has joined %s.", payload.InviteeName, payload.WorkspaceName)
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.InviterEmail},
+		Template: "invites/acceptance",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
+		c.log.Error(ctx, "failed to send invitation accepted email", "error", err, "email", payload.InviterEmail)
+		return fmt.Errorf("failed to send invitation accepted email: %w", err)
 	}
 
-	if err := c.brevoService.SendTemplatedEmail(ctx, req); err != nil {
-		c.log.Error(ctx, "failed to send invitation accepted email via Brevo", "error", err, "email", payload.InviterEmail)
-		return fmt.Errorf("failed to send invitation accepted email via Brevo: %w", err)
-	}
-
-	c.log.Info(ctx, "successfully sent invitation accepted email via Brevo", "email", payload.InviterEmail)
+	c.log.Info(ctx, "successfully sent invitation accepted email", "email", payload.InviterEmail)
 	return nil
 }
 

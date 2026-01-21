@@ -1,0 +1,17 @@
+{{ define "content" }}
+<p class="eyebrow">{{ .NotificationType }}</p>
+<h1 class="heading">{{ .NotificationTitle }}</h1>
+<p class="text">Hi {{ .UserName }}, here is the latest update.</p>
+<div class="highlight">
+  {{ safeHTML .NotificationMessage }}
+</div>
+{{ if .WorkspaceName }}
+<p class="meta">Workspace</p>
+<p class="text">{{ .WorkspaceName }}</p>
+{{ end }}
+{{ if .WorkspaceURL }}
+<div class="button-container">
+  <a href="{{ .WorkspaceURL }}" class="button button-subtle">View workspace</a>
+</div>
+{{ end }}
+{{ end }}

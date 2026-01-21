@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -16,7 +16,7 @@ import (
 )
 
 // ProcessObjectiveOverdue processes overdue objectives and sends emails directly
-func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, brevoService *brevo.Service) error {
+func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessObjectiveOverdue")
 	defer span.End()
 
@@ -54,7 +54,7 @@ func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logge
 
 			if len(objectives) > 0 {
 				// Send email directly for this lead
-				err := sendObjectiveOverdueEmailForLead(ctx, log, brevoService, objectives)
+				err := sendObjectiveOverdueEmailForLead(ctx, log, mailerService, objectives)
 				if err != nil {
 					log.Error(ctx, "Failed to send email", "lead_id", lead.LeadUserID, "error", err)
 					continue
@@ -325,7 +325,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 }
 
 // sendObjectiveOverdueEmailForLead sends an email to a lead about their overdue objectives
-func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, brevoService *brevo.Service, objectives []OverdueObjective) error {
+func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, mailerService mailer.Service, objectives []OverdueObjective) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendObjectiveOverdueEmailForLead")
 	defer span.End()
 
@@ -373,18 +373,22 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, b
 	}
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
-	params := brevo.EmailNotificationParams{
-		Subject:             title,
-		UserName:            firstObjective.LeadName,
-		UserEmail:           firstObjective.LeadEmail,
-		WorkspaceName:       firstObjective.WorkspaceName,
-		WorkspaceURL:        workspaceURL,
-		NotificationTitle:   title,
-		NotificationMessage: emailContent,
-		NotificationType:    "reminders",
+	data := map[string]any{
+		"UserName":            firstObjective.LeadName,
+		"UserEmail":           firstObjective.LeadEmail,
+		"WorkspaceName":       firstObjective.WorkspaceName,
+		"WorkspaceURL":        workspaceURL,
+		"NotificationTitle":   title,
+		"NotificationMessage": emailContent,
+		"NotificationType":    "reminders",
 	}
 
-	if err := brevoService.SendEmailNotification(ctx, brevo.TemplateObjectiveOverdue, params); err != nil {
+	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{firstObjective.LeadEmail},
+		Template: "notifications/notification",
+		Subject:  title,
+		Data:     data,
+	}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to send objective overdue email: %w", err)
 	}

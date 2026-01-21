@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessOverdueStoriesEmail processes overdue stories and sends emails directly
-func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, brevoService *brevo.Service) error {
+func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessOverdueStoriesEmail")
 	defer span.End()
 
@@ -53,7 +53,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 
 			if len(stories) > 0 {
 				// Send email directly for this assignee
-				err := sendOverdueStoriesEmailForAssignee(ctx, log, brevoService, stories)
+				err := sendOverdueStoriesEmailForAssignee(ctx, log, mailerService, stories)
 				if err != nil {
 					log.Error(ctx, "Failed to send email", "assignee_id", assignee.AssigneeID, "error", err)
 					continue
@@ -233,7 +233,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 }
 
 // sendOverdueStoriesEmailForAssignee sends email directly for a specific assignee
-func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, brevoService *brevo.Service, stories []OverdueStory) error {
+func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, mailerService mailer.Service, stories []OverdueStory) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendOverdueStoriesEmailForAssignee")
 	defer span.End()
 
@@ -270,18 +270,22 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	}
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
-	params := brevo.EmailNotificationParams{
-		Subject:             title,
-		UserName:            firstStory.AssigneeName,
-		UserEmail:           firstStory.AssigneeEmail,
-		WorkspaceName:       firstStory.WorkspaceName,
-		WorkspaceURL:        workspaceURL,
-		NotificationTitle:   title,
-		NotificationMessage: emailContent,
-		NotificationType:    "reminders",
+	data := map[string]any{
+		"UserName":            firstStory.AssigneeName,
+		"UserEmail":           firstStory.AssigneeEmail,
+		"WorkspaceName":       firstStory.WorkspaceName,
+		"WorkspaceURL":        workspaceURL,
+		"NotificationTitle":   title,
+		"NotificationMessage": emailContent,
+		"NotificationType":    "reminders",
 	}
 
-	if err := brevoService.SendEmailNotification(ctx, brevo.TemplateOverdueStories, params); err != nil {
+	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{firstStory.AssigneeEmail},
+		Template: "notifications/notification",
+		Subject:  title,
+		Data:     data,
+	}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to send overdue stories email: %w", err)
 	}

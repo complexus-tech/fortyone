@@ -1,0 +1,15 @@
+{{ define "content" }}
+<p class="eyebrow">Workspace status</p>
+<h1 class="heading">Deletion scheduled for {{ .WorkspaceName }}</h1>
+<p class="text">
+  Your workspace is set to be deleted in {{ .DeletionTime }}. If this was a
+  mistake, you can restore the workspace from settings at any time before the
+  schedule completes.
+</p>
+<div class="button-container">
+  <a href="{{ .RestoreURL }}" class="button">Review workspace settings</a>
+</div>
+<div class="divider"></div>
+<p class="meta">Workspace link</p>
+<p class="text"><a href="{{ .WorkspaceURL }}">{{ .WorkspaceURL }}</a></p>
+{{ end }}

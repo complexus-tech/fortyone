@@ -1,17 +1,20 @@
 {{ define "content" }}
-<div>
-  <h1 class="heading">Your login link for {{ .CompanyName }}</h1>
-  <p class="text">
-    Click the button below to securely log in to your account. This link will
-    expire in {{ .ExpiresIn }}.
-  </p>
-  <div class="button-container">
-    <a href="{{ .VerificationURL }}" class="button" style="color: white">
-      Login to {{ .CompanyName }}
-    </a>
-  </div>
-  <p class="text">
-    If you didn't request this login link, you can safely ignore this email.
-  </p>
+<p class="eyebrow">Secure login</p>
+<h1 class="heading">Your sign-in link is ready</h1>
+<p class="text">
+  Use the button below to securely access your {{ .CompanyName }} workspace.
+  This link expires in {{ .ExpiresIn }}.
+</p>
+<div class="button-container">
+  <a href="{{ .VerificationURL }}" class="button">Continue to {{ .CompanyName }}</a>
 </div>
+{{ if .OTP }}
+<div class="highlight">
+  <p class="meta">One-time code</p>
+  <p class="heading" style="font-size: 22px; margin-bottom: 0">{{ .OTP }}</p>
+</div>
+{{ end }}
+<p class="text">
+  If you did not request this login link, you can ignore this message.
+</p>
 {{ end }}

@@ -35,9 +35,9 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
-	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -248,8 +248,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error initializing storage service: %w", err)
 	}
 
-	// Initialize email service
-	emailService, err := email.NewService(email.Config{
+	// Initialize mailer service
+	mailerService, err := mailer.NewService(mailer.Config{
 		Host:        cfg.Email.Host,
 		Port:        cfg.Email.Port,
 		Username:    cfg.Email.Username,
@@ -260,9 +260,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 		BaseDir:     cfg.Email.BaseDir,
 	}, log)
 	if err != nil {
-		return fmt.Errorf("error initializing email service: %w", err)
+		return fmt.Errorf("error initializing mailer service: %w", err)
 	}
-	log.Info(ctx, "email service initialized")
+	log.Info(ctx, "mailer service initialized")
 
 	// Initialize Brevo service
 	brevoService, err := brevo.NewService(brevo.Config{
@@ -300,7 +300,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	statusesService := states.New(log, statesrepo.New(log, db))
 
 	// Create consumer using Redis Streams
-	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, emailService, storiesService, objectivesService, usersService, statusesService, brevoService)
+	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, mailerService, storiesService, objectivesService, usersService, statusesService)
 
 	// Start consumer in a goroutine
 	go func() {
@@ -360,7 +360,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Log:            log,
 		Tracer:         tracer,
 		SecretKey:      cfg.Auth.SecretKey,
-		EmailService:   emailService,
+		EmailService:   mailerService,
 		BrevoService:   brevoService,
 		GoogleService:  googleService,
 		Validate:       validate,

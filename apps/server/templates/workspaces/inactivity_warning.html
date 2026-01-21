@@ -1,0 +1,12 @@
+{{ define "content" }}
+<p class="eyebrow">Workspace check-in</p>
+<h1 class="heading">{{ .WorkspaceName }} has been quiet</h1>
+<p class="text">
+  We noticed there has not been recent activity in {{ .WorkspaceName }}. If
+  you are still working on goals, jump back in to keep your workspace active.
+</p>
+<div class="button-container">
+  <a href="{{ .WorkspaceURL }}" class="button">Open workspace</a>
+</div>
+<p class="text">No action is required if you are no longer using this workspace.</p>
+{{ end }}

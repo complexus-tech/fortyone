@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -16,7 +16,7 @@ import (
 )
 
 // ProcessWorkspaceInactivityWarning sends warning emails to workspace admins for workspaces inactive for 6+ months
-func ProcessWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.Logger, brevoService *brevo.Service) error {
+func ProcessWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessWorkspaceInactivityWarning")
 	defer span.End()
 
@@ -45,7 +45,7 @@ func ProcessWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, log *lo
 
 		// Process each workspace in this batch
 		for _, ws := range workspaces {
-			if err := sendWorkspaceInactivityWarning(ctx, db, brevoService, ws); err != nil {
+			if err := sendWorkspaceInactivityWarning(ctx, db, mailerService, ws); err != nil {
 				log.Error(ctx, "Failed to send workspace inactivity warning", "error", err, "workspace_id", ws.WorkspaceID, "workspace_name", ws.Name)
 				continue
 			}
@@ -138,7 +138,7 @@ func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int,
 }
 
 // sendWorkspaceInactivityWarning sends a warning email to all workspace admins
-func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, brevoService *brevo.Service, ws InactiveWorkspace) error {
+func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, mailerService mailer.Service, ws InactiveWorkspace) error {
 	// Parse admin emails from JSON
 	var adminEmails []string
 	if err := json.Unmarshal(ws.AdminEmails, &adminEmails); err != nil {
@@ -150,26 +150,18 @@ func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, brevoServi
 		return fmt.Errorf("no admin emails found for workspace %s", ws.Name)
 	}
 
-	// Email template parameters
-	brevoParams := map[string]any{
-		"WORKSPACE_NAME": ws.Name,
-		"WORKSPACE_URL":  fmt.Sprintf("https://%s.fortyone.app", ws.Slug),
+	data := map[string]any{
+		"WorkspaceName": ws.Name,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", ws.Slug),
 	}
 
-	// Create email recipients for all admins
-	recipients := make([]brevo.EmailRecipient, len(adminEmails))
-	for i, email := range adminEmails {
-		recipients[i] = brevo.EmailRecipient{Email: email}
-	}
-
-	// Send templated email to all admins
-	req := brevo.SendTemplatedEmailRequest{
-		TemplateID: brevo.TemplateWorkspaceInactivityWarning,
-		To:         recipients,
-		Params:     brevoParams,
-	}
-
-	if err := brevoService.SendTemplatedEmail(ctx, req); err != nil {
+	subject := fmt.Sprintf("Your %s workspace has been quiet", ws.Name)
+	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       adminEmails,
+		Template: "workspaces/inactivity_warning",
+		Subject:  subject,
+		Data:     data,
+	}); err != nil {
 		return fmt.Errorf("failed to send workspace inactivity warning email: %w", err)
 	}
 

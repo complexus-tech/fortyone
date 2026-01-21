@@ -1,0 +1,15 @@
+{{ define "content" }}
+<p class="eyebrow">We miss you</p>
+<h1 class="heading">Come back to FortyOne</h1>
+<p class="text">
+  Hi {{ .UserName }}, your workspace has moved forward while you have been
+  away. Log back in to catch up on progress and updates.
+</p>
+<div class="button-container">
+  <a href="{{ .LoginURL }}" class="button">Sign back in</a>
+</div>
+<p class="text">
+  If you no longer want these reminders, you can update your notification
+  preferences in settings.
+</p>
+{{ end }}

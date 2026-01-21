@@ -8,7 +8,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -178,15 +178,22 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	// Send email with real data
 	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
 
-	if err := h.brevoService.SendEmailNotification(ctx, brevo.TemplateNotification, brevo.EmailNotificationParams{
-		UserName:            data.UserName,
-		ActorName:           data.ActorName,
-		UserEmail:           data.UserEmail,
-		WorkspaceName:       data.WorkspaceName,
-		WorkspaceURL:        workspaceURL,
-		NotificationTitle:   data.Title,
-		NotificationMessage: parsedMessage.HTML,
-		NotificationType:    data.NotificationType,
+	mailData := map[string]any{
+		"UserName":            data.UserName,
+		"ActorName":           data.ActorName,
+		"UserEmail":           data.UserEmail,
+		"WorkspaceName":       data.WorkspaceName,
+		"WorkspaceURL":        workspaceURL,
+		"NotificationTitle":   data.Title,
+		"NotificationMessage": parsedMessage.HTML,
+		"NotificationType":    data.NotificationType,
+	}
+
+	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{data.UserEmail},
+		Template: "notifications/notification",
+		Subject:  data.Title,
+		Data:     mailData,
 	}); err != nil {
 		h.log.Error(ctx, "Failed to send notification email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return err
