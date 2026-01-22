@@ -31,7 +31,7 @@ export const Hero = () => {
               rounded="lg"
               size="sm"
             >
-              Stories
+              Tasks
             </Button>
           </motion.span>
           <motion.span
@@ -47,8 +47,8 @@ export const Hero = () => {
               as="h1"
               className="mt-6 pb-2 text-5xl font-semibold md:max-w-3xl md:text-7xl md:leading-[1.1]"
             >
-              <span className="text-stroke-white">Manage</span> Tasks with User
-              Stories
+              <span className="text-stroke-white">Manage</span> Tasks with
+              Clarity
             </Text>
           </motion.span>
 
@@ -65,7 +65,7 @@ export const Hero = () => {
               className="mt-8 max-w-3xl text-lg opacity-80 md:text-2xl"
               fontWeight="normal"
             >
-              Transform your project management with our intuitive story-based
+              Transform your project management with our intuitive task-based
               workflow system. Create, track, and manage tasks efficiently while
               keeping your team aligned and productive.
             </Text>
@@ -92,9 +92,7 @@ export const Hero = () => {
                 rounded="lg"
                 size="lg"
               >
-                <span className="hidden md:inline">
-                  Create Your First Story
-                </span>
+                <span className="hidden md:inline">Create Your First Task</span>
                 <span className="md:hidden">Get Started</span>
               </Button>
             </motion.span>

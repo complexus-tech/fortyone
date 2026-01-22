@@ -59,9 +59,9 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Maya, your AI project manager, drafts stories, plans sprints,
-              tracks OKRs, and surfaces risks so your team can focus on
-              building, not managing.
+              Maya, your AI project manager, drafts tasks, plans sprints, tracks
+              OKRs, and surfaces risks so your team can focus on building, not
+              managing.
             </Text>
           </motion.span>
 

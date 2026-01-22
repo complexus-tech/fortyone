@@ -7,7 +7,7 @@ Sprints in FortyOne are fixed-length iterations during which a specific amount o
 
 ## Understanding Sprints
 
-Sprints help teams focus, predict upcoming work, and improve continuously. Each Sprint typically has a defined goal, a start and end date, and a collection of Stories (work items) that the team commits to completing.
+Sprints help teams focus, predict upcoming work, and improve continuously. Each Sprint typically has a defined goal, a start and end date, and a collection of Tasks (work items) that the team commits to completing.
 
 ## Creating a New FortyOne Sprint
 
@@ -41,23 +41,23 @@ For each Sprint in the list, you'll typically see:
 - **Name**: The Sprint's name.
 - **Dates**: The start and end dates of the Sprint.
 - **Status**: A badge indicating if the Sprint is "Upcoming", "In Progress", or "Completed" (calculated based on current date and Sprint dates).
-- **Progress**: A progress bar and percentage showing the proportion of completed Stories out of the total Stories in the Sprint.
-- **Story Statistics**: Counts of Stories in different states (e.g., Done, Active, Todo, Backlog) within that Sprint.
+- **Progress**: A progress bar and percentage showing the proportion of completed Tasks out of the total Tasks in the Sprint.
+- **Task Statistics**: Counts of Tasks in different states (e.g., Done, Active, Todo, Backlog) within that Sprint.
 
 Clicking on a Sprint name in this list will navigate you to its detailed view, often referred to as the Sprint Board.
 
 ## The Sprint Board
 
-The detailed view for a specific Sprint is where you manage and track its progress. This view typically opens by default to the "Stories" associated with that Sprint.
+The detailed view for a specific Sprint is where you manage and track its progress. This view typically opens by default to the "Tasks" associated with that Sprint.
 
 This view is composed of several key areas:
 
-### 1. Main Panel: Sprint Stories
+### 1. Main Panel: Sprint Tasks
 
-This is where the Stories committed to the Sprint are displayed, either as a list or a Kanban board with columns representing different statuses.
+This is where the Tasks committed to the Sprint are displayed, either as a list or a Kanban board with columns representing different statuses.
 
-- **Adding Stories**: Stories are typically added to Sprints during a planning phase or dragged from a backlog.
-- **Managing Stories**: In the Kanban view, you can drag and drop Stories between status columns to update their progress.
+- **Adding Tasks**: Tasks are typically added to Sprints during a planning phase or dragged from a backlog.
+- **Managing Tasks**: In the Kanban view, you can drag and drop Tasks between status columns to update their progress.
 
 ### 2. Sprint Sidebar
 
@@ -70,18 +70,18 @@ The sidebar offers a comprehensive overview and management options for the activ
     - **Favorite**: Mark the Sprint as a favorite.
     - **Delete sprint**: Remove the Sprint (use with caution).
 - **Sprint Status & Dates**: Shows the calculated status (e.g., "In Progress") and the date range of the Sprint as badges.
-- **Sprint Progress**: A progress bar and percentage indicating the overall completion of the Sprint based on its Stories.
-- **Stories Overview Tabs**: A set of tabs providing insights into the Sprint's composition:
-  - **Assignees**: Breakdown of Stories by who is assigned, with progress and counts for each user and for unassigned Stories.
-  - **Status**: Breakdown of Stories by their current status (e.g., To Do, In Progress, Done), with progress and counts.
-  - **Labels**: Breakdown of Stories by applied labels.
-  - **Priority**: Breakdown of Stories by their priority level.
+- **Sprint Progress**: A progress bar and percentage indicating the overall completion of the Sprint based on its Tasks.
+- **Tasks Overview Tabs**: A set of tabs providing insights into the Sprint's composition:
+  - **Assignees**: Breakdown of Tasks by who is assigned, with progress and counts for each user and for unassigned Tasks.
+  - **Status**: Breakdown of Tasks by their current status (e.g., To Do, In Progress, Done), with progress and counts.
+  - **Labels**: Breakdown of Tasks by applied labels.
+  - **Priority**: Breakdown of Tasks by their priority level.
 
 ## Sprint Lifecycle Management
 
-- **Planning Sprints**: Before a Sprint begins, teams typically hold a planning session to select Stories from the backlog and add them to the upcoming Sprint, ensuring the scope is achievable within the iteration timeframe.
+- **Planning Sprints**: Before a Sprint begins, teams typically hold a planning session to select Tasks from the backlog and add them to the upcoming Sprint, ensuring the scope is achievable within the iteration timeframe.
 - **Starting a Sprint**: While not explicitly detailed as a button in the explored code, a Sprint becomes "Active" or "In Progress" automatically when its `startDate` is reached.
 - **Completing a Sprint**: A Sprint is considered "Completed" automatically when its `endDate` passes. Teams often hold a Sprint Review to demonstrate completed work and a Sprint Retrospective to discuss what went well and what could be improved.
-  - **Handling Incomplete Work**: At the end of a Sprint, any unfinished Stories are typically moved back to the backlog or into the next Sprint, based on team discussion and prioritization.
+  - **Handling Incomplete Work**: At the end of a Sprint, any unfinished Tasks are typically moved back to the backlog or into the next Sprint, based on team discussion and prioritization.
 
 Sprints in FortyOne provide a robust framework for agile teams to deliver work incrementally and consistently.

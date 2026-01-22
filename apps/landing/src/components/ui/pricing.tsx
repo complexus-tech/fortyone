@@ -18,7 +18,7 @@ const packages = [
     features: [
       "1 team",
       "Up to 5 members",
-      "Up to 200 stories",
+      "Up to 200 tasks",
       "Single Sign-On (SSO)",
       "Kanban & list views",
       "Email support",
@@ -34,7 +34,7 @@ const packages = [
       "Up to 3 teams",
       "Up to 20 objectives",
       "Track OKRs",
-      "Unlimited stories",
+      "Unlimited tasks",
       "Unlimited guests",
       "Custom workflows",
     ],

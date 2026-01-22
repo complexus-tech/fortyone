@@ -103,14 +103,14 @@ export const ComparePlans = () => {
 
             <Flex className="border-border border-b">
               <Box className="w-1/3 px-4 py-3">
-                <Text>Stories</Text>
+                <Text>Tasks</Text>
               </Box>
               {plans.map((plan) => (
                 <Box
                   className={cn("w-1/6 px-4 py-3", {
                     "border-border bg-surface-muted border-x": plan.highlighted,
                   })}
-                  key={`${plan.name}stories`}
+                  key={`${plan.name}tasks`}
                 >
                   <Text>{plan.limits.issues}</Text>
                 </Box>

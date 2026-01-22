@@ -9,7 +9,7 @@ const routes: MetadataRoute.Sitemap = [
     priority: 1,
   },
   {
-    url: "https://www.fortyone.app/product/stories",
+    url: "https://www.fortyone.app/product/tasks",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,

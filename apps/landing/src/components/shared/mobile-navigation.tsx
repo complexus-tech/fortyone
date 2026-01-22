@@ -49,7 +49,7 @@ export const MobileNavigation = () => {
     {
       label: "Product",
       items: [
-        { label: "Stories", href: "/features/stories" },
+        { label: "Tasks", href: "/features/tasks" },
         { label: "Objectives", href: "/features/objectives" },
         { label: "OKRs", href: "/features/okrs" },
         { label: "Sprints", href: "/features/sprints" },
