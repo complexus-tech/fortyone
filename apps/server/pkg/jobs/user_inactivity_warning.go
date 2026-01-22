@@ -132,7 +132,7 @@ func sendUserInactivityWarning(ctx context.Context, db *sqlx.DB, mailerService m
 		"LoginURL": "https://fortyone.app/login",
 	}
 
-	subject := "We miss you at FortyOne"
+	subject := "Your account is scheduled for deactivation"
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
 		To:       []string{user.Email},
 		Template: "users/inactivity_warning",

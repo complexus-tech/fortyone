@@ -264,9 +264,9 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 
 	// Send email via Brevo service
 	totalCount := len(dueSoonStories) + len(dueTodayStories) + len(overdueStories)
-	itemText := "item"
+	itemText := "task"
 	if totalCount > 1 {
-		itemText = "items"
+		itemText = "tasks"
 	}
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
@@ -312,9 +312,9 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 // formatOverdueStoriesEmailContent formats the email content
 func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, dueTodayStories, overdueStories []OverdueStory, workspaceURL string) string {
 	totalItems := len(dueSoonStories) + len(dueTodayStories) + len(overdueStories)
-	itemText := "item"
+	itemText := "task"
 	if totalItems > 1 {
-		itemText = "items"
+		itemText = "tasks"
 	}
 	content := fmt.Sprintf(`
 		<div style="font-size: 15px;">
@@ -323,9 +323,9 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	`, totalItems, itemText)
 
 	if len(dueSoonStories) > 0 {
-		itemText := "item"
+		itemText := "task"
 		if len(dueSoonStories) > 1 {
-			itemText = "items"
+			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
 			<p><strong>Due soon (%d %s)</strong></p>
@@ -340,9 +340,9 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	}
 
 	if len(dueTodayStories) > 0 {
-		itemText := "item"
+		itemText := "task"
 		if len(dueTodayStories) > 1 {
-			itemText = "items"
+			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
 			<p><strong>Due today (%d %s)</strong></p>
@@ -357,9 +357,9 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	}
 
 	if len(overdueStories) > 0 {
-		itemText := "item"
+		itemText := "task"
 		if len(overdueStories) > 1 {
-			itemText = "items"
+			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
 			<p><strong>Overdue (%d %s)</strong></p>

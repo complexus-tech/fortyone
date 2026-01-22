@@ -155,7 +155,7 @@ func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, mailerServ
 		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", ws.Slug),
 	}
 
-	subject := fmt.Sprintf("Your %s workspace has been quiet", ws.Name)
+	subject := fmt.Sprintf("%s workspace scheduled for deletion", ws.Name)
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
 		To:       adminEmails,
 		Template: "workspaces/inactivity_warning",
