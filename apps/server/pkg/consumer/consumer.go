@@ -492,10 +492,16 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 		"OTP":             payload.Token,
 	}
 
+	templateName := "auth/verification"
 	subject := "Your login link for FortyOne"
+	if payload.IsMobile {
+		templateName = "auth/verification_mobile"
+		subject = "Your verification code for FortyOne"
+	}
+
 	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
 		To:       []string{payload.Email},
-		Template: "auth/verification",
+		Template: templateName,
 		Subject:  subject,
 		Data:     data,
 	}); err != nil {

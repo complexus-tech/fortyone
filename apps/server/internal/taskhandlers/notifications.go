@@ -179,14 +179,17 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
 
 	mailData := map[string]any{
-		"UserName":            data.UserName,
-		"ActorName":           data.ActorName,
-		"UserEmail":           data.UserEmail,
-		"WorkspaceName":       data.WorkspaceName,
-		"WorkspaceURL":        workspaceURL,
-		"NotificationTitle":   data.Title,
-		"NotificationMessage": parsedMessage.HTML,
-		"NotificationType":    data.NotificationType,
+		"UserName":                 data.UserName,
+		"ActorName":                data.ActorName,
+		"UserEmail":                data.UserEmail,
+		"WorkspaceName":            data.WorkspaceName,
+		"WorkspaceURL":             workspaceURL,
+		"NotificationTitle":        data.Title,
+		"NotificationMessage":      parsedMessage.HTML,
+		"NotificationType":         data.NotificationType,
+		"NotificationCTAURL":       fmt.Sprintf("%s/notifications", workspaceURL),
+		"NotificationCTALabel":     "Open notifications",
+		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
 
 	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{

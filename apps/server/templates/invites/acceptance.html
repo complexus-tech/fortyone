@@ -2,10 +2,10 @@
 <p class="eyebrow">Invitation accepted</p>
 <h1 class="heading">{{ .InviteeName }} joined {{ .WorkspaceName }}</h1>
 <p class="text">
-  {{ .InviteeName }} accepted your invitation and joined as {{ .Role }}. You can
-  jump back in to welcome them and keep momentum going.
+  Great news. {{ .InviteeName }} accepted your invitation to join
+  {{ .WorkspaceName }} and has joined as {{ .Role }}.
 </p>
 <div class="button-container">
-  <a href="{{ .LoginURL }}" class="button">Open workspace</a>
+  <a href="{{ .LoginURL }}" class="button">Go to {{ .WorkspaceName }}</a>
 </div>
 {{ end }}

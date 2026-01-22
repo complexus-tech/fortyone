@@ -374,13 +374,16 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
 	data := map[string]any{
-		"UserName":            firstObjective.LeadName,
-		"UserEmail":           firstObjective.LeadEmail,
-		"WorkspaceName":       firstObjective.WorkspaceName,
-		"WorkspaceURL":        workspaceURL,
-		"NotificationTitle":   title,
-		"NotificationMessage": emailContent,
-		"NotificationType":    "reminders",
+		"UserName":                 firstObjective.LeadName,
+		"UserEmail":                firstObjective.LeadEmail,
+		"WorkspaceName":            firstObjective.WorkspaceName,
+		"WorkspaceURL":             workspaceURL,
+		"NotificationTitle":        title,
+		"NotificationMessage":      emailContent,
+		"NotificationType":         "reminders",
+		"NotificationCTAURL":       fmt.Sprintf("%s/roadmap", workspaceURL),
+		"NotificationCTALabel":     "View objectives",
+		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{

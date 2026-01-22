@@ -1,10 +1,11 @@
 {{ define "content" }}
 <p class="eyebrow">Workspace status</p>
-<h1 class="heading">{{ .WorkspaceName }} has been restored</h1>
+<h1 class="heading">{{ .ActorName }} has restored {{ .WorkspaceName }}</h1>
 <p class="text">
-  {{ .ActorName }} ({{ .ActorEmail }}) restored your workspace. Everything is
-  available again.
+  Your workspace has been restored by {{ .ActorName }} ({{ .ActorEmail }}). All
+  workspace data is accessible again.
 </p>
+<p class="text">You can now continue working with your team as usual.</p>
 <div class="button-container">
   <a href="{{ .WorkspaceURL }}" class="button">Open workspace</a>
 </div>

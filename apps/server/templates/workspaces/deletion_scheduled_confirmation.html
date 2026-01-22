@@ -1,13 +1,17 @@
 {{ define "content" }}
 <p class="eyebrow">Workspace status</p>
-<h1 class="heading">Deletion scheduled for {{ .WorkspaceName }}</h1>
+<h1 class="heading">You have scheduled {{ .WorkspaceName }} for deletion</h1>
 <p class="text">
-  Your workspace is set to be deleted in {{ .DeletionTime }}. If this was a
-  mistake, you can restore the workspace from settings at any time before the
-  schedule completes.
+  Your workspace has been scheduled for deletion. All data will be permanently
+  deleted in {{ .DeletionTime }}.
 </p>
+<p class="text">
+  If you change your mind, log in and cancel the scheduled deletion within
+  {{ .DeletionTime }} to prevent permanent data loss.
+</p>
+<p class="text">FortyOne will not be able to recover your data after deletion.</p>
 <div class="button-container">
-  <a href="{{ .RestoreURL }}" class="button">Review workspace settings</a>
+  <a href="{{ .RestoreURL }}" class="button">Open workspace</a>
 </div>
 <div class="divider"></div>
 <p class="meta">Workspace link</p>

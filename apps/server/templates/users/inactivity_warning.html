@@ -1,15 +1,15 @@
 {{ define "content" }}
 <p class="eyebrow">We miss you</p>
-<h1 class="heading">Come back to FortyOne</h1>
+<h1 class="heading">Your account is scheduled for deactivation</h1>
 <p class="text">
-  Hi {{ .UserName }}, your workspace has moved forward while you have been
-  away. Log back in to catch up on progress and updates.
+  Hi {{ .UserName }}, it's been a while since you last logged in. To keep our
+  platform secure and efficient, accounts that remain inactive are scheduled
+  for deactivation in 30 days.
 </p>
+<p class="text">To keep your account active, please log in before then.</p>
+<p class="text">Once deactivated, you'll need to sign up again to use FortyOne.</p>
 <div class="button-container">
-  <a href="{{ .LoginURL }}" class="button">Sign back in</a>
+  <a href="{{ .LoginURL }}" class="button">Keep my account</a>
 </div>
-<p class="text">
-  If you no longer want these reminders, you can update your notification
-  preferences in settings.
-</p>
+<p class="text">If you no longer want these reminders, you can ignore this email.</p>
 {{ end }}

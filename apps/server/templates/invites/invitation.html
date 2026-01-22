@@ -1,18 +1,20 @@
 {{ define "content" }}
 <p class="eyebrow">Workspace invitation</p>
-<h1 class="heading">{{ .InviterName }} invited you to join {{ .WorkspaceName }}</h1>
+<h1 class="heading">You're invited to join {{ .WorkspaceName }}</h1>
 <p class="text">
-  Step into your team's workspace and start collaborating on goals, outcomes,
-  and OKRs. This invitation expires in {{ .ExpiresIn }}.
+  Join your team to align on goals, track OKRs, and drive measurable outcomes
+  together. This invitation expires in {{ .ExpiresIn }}.
 </p>
 <div class="highlight">
-  <p class="meta">Your role</p>
-  <p class="heading" style="font-size: 20px; margin-bottom: 0">{{ .Role }}</p>
+  <p class="meta">Invitation details</p>
+  <p class="text" style="margin: 6px 0 0">
+    Workspace: {{ .WorkspaceName }}
+  </p>
+  <p class="text" style="margin: 6px 0 0">Your role: {{ .Role }}</p>
+  <p class="text" style="margin: 6px 0 0">Invited by: {{ .InviterName }}</p>
 </div>
 <div class="button-container">
-  <a href="{{ .VerificationURL }}" class="button">Accept invitation</a>
+  <a href="{{ .VerificationURL }}" class="button">Join {{ .WorkspaceName }}</a>
 </div>
-<p class="text">
-  If you were not expecting this invitation, you can safely ignore this email.
-</p>
+<p class="text">If you were not expecting this invitation, you can ignore it.</p>
 {{ end }}

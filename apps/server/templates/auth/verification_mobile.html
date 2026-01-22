@@ -1,0 +1,18 @@
+{{ define "content" }}
+<p class="eyebrow">Secure login</p>
+<h1 class="heading">Your verification code for {{ .CompanyName }}</h1>
+<p class="text">
+  Use the code below to securely log in to your account. This code expires in
+  {{ .ExpiresIn }}.
+</p>
+{{ if .OTP }}
+<div class="highlight" style="text-align: center">
+  <p class="meta">Your verification code</p>
+  <p class="heading" style="font-size: 22px; margin-bottom: 0; letter-spacing: 6px">
+    {{ .OTP }}
+  </p>
+  <p class="text" style="margin: 8px 0 0">Enter this code in the app to log in.</p>
+</div>
+{{ end }}
+<p class="text">If you did not request this login code, you can ignore it.</p>
+{{ end }}

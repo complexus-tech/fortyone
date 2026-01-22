@@ -1,7 +1,7 @@
 {{ define "content" }}
-<p class="eyebrow">{{ .NotificationType }}</p>
+<p class="eyebrow">Notification</p>
 <h1 class="heading">{{ .NotificationTitle }}</h1>
-<p class="text">Hi {{ .UserName }}, here is the latest update.</p>
+<p class="text">Hi {{ .UserName }},</p>
 <div class="highlight">
   {{ safeHTML .NotificationMessage }}
 </div>
@@ -9,9 +9,14 @@
 <p class="meta">Workspace</p>
 <p class="text">{{ .WorkspaceName }}</p>
 {{ end }}
-{{ if .WorkspaceURL }}
+{{ if .NotificationCTAURL }}
 <div class="button-container">
-  <a href="{{ .WorkspaceURL }}" class="button button-subtle">View workspace</a>
+  <a href="{{ .NotificationCTAURL }}" class="button">{{ .NotificationCTALabel }}</a>
 </div>
+{{ end }}
+{{ if .NotificationsSettingsURL }}
+<p class="text" style="margin-top: 0">
+  <a href="{{ .NotificationsSettingsURL }}">Manage notifications</a>
+</p>
 {{ end }}
 {{ end }}

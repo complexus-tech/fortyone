@@ -271,13 +271,16 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 
 	data := map[string]any{
-		"UserName":            firstStory.AssigneeName,
-		"UserEmail":           firstStory.AssigneeEmail,
-		"WorkspaceName":       firstStory.WorkspaceName,
-		"WorkspaceURL":        workspaceURL,
-		"NotificationTitle":   title,
-		"NotificationMessage": emailContent,
-		"NotificationType":    "reminders",
+		"UserName":                 firstStory.AssigneeName,
+		"UserEmail":                firstStory.AssigneeEmail,
+		"WorkspaceName":            firstStory.WorkspaceName,
+		"WorkspaceURL":             workspaceURL,
+		"NotificationTitle":        title,
+		"NotificationMessage":      emailContent,
+		"NotificationType":         "reminders",
+		"NotificationCTAURL":       fmt.Sprintf("%s/my-work?tab=assigned", workspaceURL),
+		"NotificationCTALabel":     "View my work",
+		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
