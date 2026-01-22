@@ -947,7 +947,7 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 		)
 		VALUES (
 			:workspace_id,
-			'story',
+			'task',
 			'sprint',
 			'objective',
 			'key result',

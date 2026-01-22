@@ -1,7 +1,7 @@
 -- 000031_workspace_settings.up.sql
 CREATE TABLE "public"."workspace_settings" (
     "workspace_id" uuid NOT NULL,
-    "story_term" varchar(50) NOT NULL DEFAULT 'story'::character varying,
+    "story_term" varchar(50) NOT NULL DEFAULT 'task'::character varying,
     "sprint_term" varchar(50) NOT NULL DEFAULT 'sprint'::character varying,
     "objective_term" varchar(50) NOT NULL DEFAULT 'objective'::character varying,
     "key_result_term" varchar(50) NOT NULL DEFAULT 'key result'::character varying,
