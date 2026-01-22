@@ -1,8 +1,12 @@
 {{ define "content" }}
+{{ if .ActorName }}
+<p class="eyebrow">Notification from {{ .ActorName }}</p>
+{{ else }}
 <p class="eyebrow">Notification</p>
+{{ end }}
 <h1 class="heading">{{ .NotificationTitle }}</h1>
 <p class="text">Hi {{ .UserName }},</p>
-<div class="highlight">
+<div class="highlight notification-message">
   {{ safeHTML .NotificationMessage }}
 </div>
 {{ if .WorkspaceName }}
@@ -16,7 +20,9 @@
 {{ end }}
 {{ if .NotificationsSettingsURL }}
 <p class="text" style="margin-top: 0">
-  <a href="{{ .NotificationsSettingsURL }}">Manage notifications</a>
+  <a href="{{ .NotificationsSettingsURL }}" style="color: #555555; font-size: 14px">
+    Manage notifications
+  </a>
 </p>
 {{ end }}
 {{ end }}

@@ -62,7 +62,7 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 		case "field":
 			htmlValue = fmt.Sprintf("<em>%s</em>", html.EscapeString(value))
 		case "value", "date":
-			htmlValue = fmt.Sprintf("<strong style='color: #f43f5e;'>%s</strong>", html.EscapeString(value))
+			htmlValue = fmt.Sprintf("<strong>%s</strong>", html.EscapeString(value))
 		default:
 			htmlValue = html.EscapeString(value)
 		}

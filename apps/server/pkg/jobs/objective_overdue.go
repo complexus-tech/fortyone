@@ -420,9 +420,10 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		itemText = "objectives"
 	}
 	content := fmt.Sprintf(`
-		<h3>Hi %s,</h3>
-		<p>You have %d %s that need attention</p>
-	`, firstObjective.LeadName, totalItems, itemText)
+		<div style="font-size: 15px;">
+			<h3>What's coming up</h3>
+			<p>You have %d %s that need attention</p>
+	`, totalItems, itemText)
 
 	if len(dueSoonObjectives) > 0 {
 		itemText := "objective"
@@ -446,19 +447,19 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 
 		content += fmt.Sprintf(`
 			<p><strong>%s (%d %s)</strong></p>
-			<ul>
+			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
 		`, sectionTitle, len(dueSoonObjectives), itemText)
 		for _, objective := range dueSoonObjectives {
 			// Check if this objective is actually due soon or just has key results
 			if objective.DeadlineStatus == "future" {
 				// Objective is on schedule but has key results
 				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - On schedule (key results need attention)</li>
+					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - On schedule (key results need attention)</li>
 				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
 			} else {
 				// Objective is actually due soon
 				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due %s</li>
+					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due %s</li>
 				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
 			}
 
@@ -477,11 +478,11 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		}
 		content += fmt.Sprintf(`
 			<p><strong>Due today (%d %s)</strong></p>
-			<ul>
+			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
 		`, len(dueTodayObjectives), itemText)
 		for _, objective := range dueTodayObjectives {
 			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - Due today</li>
+				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due today</li>
 			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
 
 			// Add key results if any
@@ -499,7 +500,7 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		}
 		content += fmt.Sprintf(`
 			<p><strong>Overdue (%d %s)</strong></p>
-			<ul>
+			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
 		`, len(overdueObjectives), itemText)
 		for _, objective := range overdueObjectives {
 			daysText := "day"
@@ -507,7 +508,7 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> - %d %s overdue</li>
+				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - %d %s overdue</li>
 			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
 
 			// Add key results if any
@@ -518,7 +519,7 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		content += "</ul>"
 	}
 
-	return content
+	return content + "</div>"
 }
 
 // parseKeyResults parses the JSON string of key results
@@ -536,7 +537,7 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 		return ""
 	}
 
-	content := "<ul style=\"margin-left: 10px; list-style-type: none;\">"
+	content := "<ul class=\"notification-sublist\">"
 	for _, kr := range keyResults {
 		// Parse the date string to format it properly
 		endDateStr := kr.EndDate // Default to raw string
@@ -566,10 +567,10 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 		}
 
 		content += fmt.Sprintf(`
-			<li style="margin-bottom: 8px;">
-				<span style="font-weight: bold; color: #666;">Key Result:</span> 
-				<a href="%s/teams/%s/objectives/%s" style="color: #000000; text-decoration: underline;">%s</a> 
-				<span style="color: #666;">- %s</span>
+			<li class="notification-subitem">
+				<span>Key result:</span>
+				<a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a>
+				<span>- %s</span>
 			</li>
 		`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
 	}
