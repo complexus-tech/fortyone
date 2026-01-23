@@ -27,11 +27,11 @@ export const SummaryPage = () => {
       <Header />
       <BodyContainer>
         <Container className="pt-3 pb-4">
-          <Flex align="end" justify="between">
+          <Flex align="center" justify="between">
             <Box>
               <Text
                 as="h2"
-                className="mb-1 text-2xl md:mb-2 md:text-3xl"
+                className="mb-1 text-2xl md:text-3xl"
                 fontWeight="medium"
               >
                 Good {timeOfDay()}, {session?.user?.name}.

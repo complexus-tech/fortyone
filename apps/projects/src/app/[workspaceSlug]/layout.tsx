@@ -85,7 +85,7 @@ export default async function RootLayout({
       queryFn: () => getProfile(ctx.session),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
-    switchWorkspace(workspace.id),
+    // switchWorkspace(workspace.id),
   ]);
 
   return (

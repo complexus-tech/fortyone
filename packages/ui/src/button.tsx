@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "border-border bg-surface-muted hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+          "border-border bg-surface hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
@@ -133,7 +133,7 @@ export const buttonVariants = cva(
       rounded: "md",
       align: "left",
     },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -187,7 +187,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         fullWidth,
         align,
       }),
-      className
+      className,
     );
 
     return (
@@ -226,7 +226,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";
