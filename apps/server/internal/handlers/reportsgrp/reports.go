@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 
 var (
 	ErrInvalidWorkspaceID = errors.New("invalid workspace id")
-	ErrInvalidDays        = errors.New("invalid days parameter")
 	ErrInvalidDate        = errors.New("invalid date parameter")
 )
 
@@ -68,21 +66,12 @@ func (h *Handlers) GetContributionStats(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppFilters
-	filters, err := web.GetFilters(r.URL.Query(), &af)
+	startDate, endDate, err := date.RangeFromQuery(r.URL.Query(), 30)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
 	}
 
-	days := 6 // Default to 7 days
-	if filters["days"] != nil {
-		days, err = strconv.Atoi(filters["days"].(string))
-		if err != nil || days <= 0 {
-			return web.RespondError(ctx, w, ErrInvalidDays, http.StatusBadRequest)
-		}
-	}
-
-	stats, err := h.reports.GetContributionStats(ctx, userID, workspace.ID, days)
+	stats, err := h.reports.GetContributionStats(ctx, userID, workspace.ID, startDate, endDate)
 	if err != nil {
 		return err
 	}
@@ -144,6 +133,13 @@ func (h *Handlers) GetStatusStats(ctx context.Context, w http.ResponseWriter, r 
 		}
 	}
 
+	startDate, endDate, err := date.RangeFromQuery(r.URL.Query(), 30)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+	}
+	coreFilters.StartDate = startDate
+	coreFilters.EndDate = endDate
+
 	stats, err := h.reports.GetStatusStats(ctx, workspace.ID, coreFilters)
 	if err != nil {
 		return fmt.Errorf("getting status stats: %w", err)
@@ -186,6 +182,13 @@ func (h *Handlers) GetPriorityStats(ctx context.Context, w http.ResponseWriter, 
 			coreFilters.ObjectiveID = &objectiveID
 		}
 	}
+
+	startDate, endDate, err := date.RangeFromQuery(r.URL.Query(), 30)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+	}
+	coreFilters.StartDate = startDate
+	coreFilters.EndDate = endDate
 
 	stats, err := h.reports.GetPriorityStats(ctx, workspace.ID, coreFilters)
 	if err != nil {

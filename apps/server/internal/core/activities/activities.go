@@ -12,7 +12,7 @@ import (
 // Repository provides access to the activities storage.
 type Repository interface {
 	Create(ctx context.Context, na CoreNewActivity) error
-	GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID) ([]CoreActivity, error)
+	GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID, filters ActivityFilters) ([]CoreActivity, error)
 }
 
 // Service manages the activities operations.
@@ -44,12 +44,12 @@ func (s *Service) Create(ctx context.Context, na CoreNewActivity) error {
 }
 
 // GetActivities retrieves activities for a user.
-func (s *Service) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID) ([]CoreActivity, error) {
+func (s *Service) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID, filters ActivityFilters) ([]CoreActivity, error) {
 	s.log.Info(ctx, "getting activities")
 	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivities")
 	defer span.End()
 
-	activities, err := s.repo.GetActivities(ctx, userID, limit, workspaceId)
+	activities, err := s.repo.GetActivities(ctx, userID, limit, workspaceId, filters)
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("getting activities: %w", err)

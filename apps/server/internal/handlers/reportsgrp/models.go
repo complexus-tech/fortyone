@@ -25,10 +25,6 @@ type AppUserStats struct {
 	CreatedByMe  int `json:"createdByMe"`
 }
 
-type AppFilters struct {
-	Days string `json:"days"`
-}
-
 type AppStatusStats struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`

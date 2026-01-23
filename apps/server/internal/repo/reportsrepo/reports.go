@@ -106,14 +106,10 @@ func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters
 }
 
 // GetContributionStats gets contribution statistics for a user.
-func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, days int) ([]reports.CoreContributionStats, error) {
+func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, startDate time.Time, endDate time.Time) ([]reports.CoreContributionStats, error) {
 	const query = `
-		WITH RECURSIVE dates AS (
-			SELECT CURRENT_DATE - make_interval(days => :days) as date
-			UNION ALL
-			SELECT date + INTERVAL '1 day'
-			FROM dates
-			WHERE date < CURRENT_DATE
+		WITH dates AS (
+			SELECT CAST(generate_series(CAST(:start_date AS date), CAST(:end_date AS date), INTERVAL '1 day') AS date) as date
 		),
 		activity_counts AS (
 			SELECT 
@@ -122,7 +118,8 @@ func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, works
 			FROM story_activities
 			WHERE user_id = :user_id
 			AND workspace_id = :workspace_id
-			AND created_at >= CURRENT_DATE - make_interval(days => :days)
+			AND created_at >= :start_date
+			AND created_at <= :end_date
 			GROUP BY DATE(created_at)
 		)
 		SELECT 
@@ -135,7 +132,8 @@ func (r *repo) GetContributionStats(ctx context.Context, userID uuid.UUID, works
 	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
-		"days":         days,
+		"start_date":   startDate,
+		"end_date":     endDate,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -198,7 +196,7 @@ func (r *repo) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filter
 		WITH user_teams AS (
 			SELECT team_id 
 			FROM team_members 
-			WHERE user_id = $2
+			WHERE user_id = :user_id
 		),
 		story_stats AS (
 			SELECT 
@@ -210,7 +208,9 @@ func (r *repo) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filter
 				AND st.deleted_at IS NULL
 				AND st.is_draft = false
 				AND st.team_id IN (SELECT team_id FROM user_teams)
-			WHERE s.workspace_id = $1
+			WHERE s.workspace_id = :workspace_id
+				AND st.created_at >= :start_date
+				AND st.created_at <= :end_date
 			GROUP BY s.status_id, s.name, s.order_index
 			ORDER BY s.order_index
 		)
@@ -219,26 +219,24 @@ func (r *repo) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filter
 			CAST(count AS integer)
 		FROM story_stats`
 
-	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
-	if err != nil {
-		r.log.Error(ctx, "failed to execute query", "error", err)
-		return nil, fmt.Errorf("executing query: %w", err)
+	params := map[string]any{
+		"workspace_id": workspaceID,
+		"user_id":      userID,
+		"start_date":   filters.StartDate,
+		"end_date":     filters.EndDate,
 	}
-	defer rows.Close()
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare named statement", "error", err)
+		return nil, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
 
 	var stats []dbStatusStats
-	for rows.Next() {
-		var stat dbStatusStats
-		if err := rows.Scan(&stat.Name, &stat.Count); err != nil {
-			r.log.Error(ctx, "failed to scan row", "error", err)
-			return nil, fmt.Errorf("scanning row: %w", err)
-		}
-		stats = append(stats, stat)
-	}
-
-	if err := rows.Err(); err != nil {
-		r.log.Error(ctx, "error iterating rows", "error", err)
-		return nil, fmt.Errorf("iterating rows: %w", err)
+	if err := stmt.SelectContext(ctx, &stats, params); err != nil {
+		r.log.Error(ctx, "failed to get status stats", "error", err)
+		return nil, fmt.Errorf("selecting status stats: %w", err)
 	}
 
 	return toCoreStatusStats(stats), nil
@@ -255,17 +253,19 @@ func (r *repo) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filt
 		WITH user_teams AS (
 			SELECT team_id 
 			FROM team_members 
-			WHERE user_id = $2
+			WHERE user_id = :user_id
 		),
 		priority_stats AS (
 			SELECT 
 				st.priority,
 				COUNT(st.id) as count
 			FROM stories st
-			WHERE st.workspace_id = $1
+			WHERE st.workspace_id = :workspace_id
 				AND st.deleted_at IS NULL
 				AND st.is_draft = false
 				AND st.team_id IN (SELECT team_id FROM user_teams)
+				AND st.created_at >= :start_date
+				AND st.created_at <= :end_date
 			GROUP BY st.priority
 			ORDER BY 
 				CASE st.priority
@@ -282,26 +282,24 @@ func (r *repo) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filt
 			CAST(count AS integer)
 		FROM priority_stats`
 
-	rows, err := r.db.QueryContext(ctx, query, workspaceID, userID)
-	if err != nil {
-		r.log.Error(ctx, "failed to execute query", "error", err)
-		return nil, fmt.Errorf("executing query: %w", err)
+	params := map[string]any{
+		"workspace_id": workspaceID,
+		"user_id":      userID,
+		"start_date":   filters.StartDate,
+		"end_date":     filters.EndDate,
 	}
-	defer rows.Close()
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare named statement", "error", err)
+		return nil, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
 
 	var stats []dbPriorityStats
-	for rows.Next() {
-		var stat dbPriorityStats
-		if err := rows.Scan(&stat.Priority, &stat.Count); err != nil {
-			r.log.Error(ctx, "failed to scan row", "error", err)
-			return nil, fmt.Errorf("scanning row: %w", err)
-		}
-		stats = append(stats, stat)
-	}
-
-	if err := rows.Err(); err != nil {
-		r.log.Error(ctx, "error iterating rows", "error", err)
-		return nil, fmt.Errorf("iterating rows: %w", err)
+	if err := stmt.SelectContext(ctx, &stats, params); err != nil {
+		r.log.Error(ctx, "failed to get priority stats", "error", err)
+		return nil, fmt.Errorf("selecting priority stats: %w", err)
 	}
 
 	return toCorePriorityStats(stats), nil

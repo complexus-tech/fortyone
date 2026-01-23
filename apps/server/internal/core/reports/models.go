@@ -46,6 +46,8 @@ type StatsFilters struct {
 	TeamID      *uuid.UUID
 	SprintID    *uuid.UUID
 	ObjectiveID *uuid.UUID
+	StartDate   time.Time
+	EndDate     time.Time
 }
 
 // Workspace Reports Models

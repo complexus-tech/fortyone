@@ -8,12 +8,14 @@ import (
 
 	"github.com/complexus-tech/projects-api/internal/core/activities"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
 var ErrInvalidWorkspaceID = errors.New("invalid workspace id")
 var ErrInvalidLimit = errors.New("invalid limit")
+var ErrInvalidDate = errors.New("invalid date")
 
 type Handlers struct {
 	activities *activities.Service
@@ -56,7 +58,15 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		}
 	}
 
-	acts, err := h.activities.GetActivities(ctx, userID, limit, workspace.ID)
+	startDate, endDate, err := date.RangeFromQuery(r.URL.Query(), 30)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+	}
+
+	acts, err := h.activities.GetActivities(ctx, userID, limit, workspace.ID, activities.ActivityFilters{
+		StartDate: startDate,
+		EndDate:   endDate,
+	})
 	if err != nil {
 		return err
 	}

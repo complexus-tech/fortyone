@@ -56,7 +56,7 @@ func (r *repo) Create(ctx context.Context, na activities.CoreNewActivity) error 
 }
 
 // GetActivities gets activities for a user.
-func (r *repo) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID) ([]activities.CoreActivity, error) {
+func (r *repo) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID, filters activities.ActivityFilters) ([]activities.CoreActivity, error) {
 	const query = `
 SELECT
 		sa.activity_id, sa.story_id, sa.user_id, sa.activity_type, sa.field_changed, sa.current_value, sa.created_at, sa.workspace_id,
@@ -65,14 +65,18 @@ SELECT
 		JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.user_id = :user_id
 		AND sa.workspace_id = :workspace_id
+		AND sa.created_at >= :start_date
+		AND sa.created_at <= :end_date
 		AND u.is_active = true
 		ORDER BY sa.created_at DESC
 		LIMIT :limit`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceId,
 		"limit":        limit,
+		"start_date":   filters.StartDate,
+		"end_date":     filters.EndDate,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

@@ -3,6 +3,7 @@ package reports
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -14,7 +15,7 @@ import (
 // Repository provides access to the reports storage.
 type Repository interface {
 	GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters StoryStatsFilters) (CoreStoryStats, error)
-	GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, days int) ([]CoreContributionStats, error)
+	GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, startDate time.Time, endDate time.Time) ([]CoreContributionStats, error)
 	GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (CoreUserStats, error)
 	GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CoreStatusStats, error)
 	GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CorePriorityStats, error)
@@ -58,12 +59,12 @@ func (s *Service) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filt
 }
 
 // GetContributionStats retrieves contribution statistics for a user.
-func (s *Service) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, days int) ([]CoreContributionStats, error) {
+func (s *Service) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, startDate time.Time, endDate time.Time) ([]CoreContributionStats, error) {
 	s.log.Info(ctx, "getting contribution stats")
 	ctx, span := web.AddSpan(ctx, "business.core.reports.GetContributionStats")
 	defer span.End()
 
-	stats, err := s.repo.GetContributionStats(ctx, userID, workspaceID, days)
+	stats, err := s.repo.GetContributionStats(ctx, userID, workspaceID, startDate, endDate)
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("getting contribution stats: %w", err)
