@@ -52,11 +52,11 @@ export const Overview = () => {
   const { data: summary, isPending } = useSummary(filters);
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
-  const dateQuery = stringify(filters, {
-    skipNulls: true,
-    addQueryPrefix: true,
-    encodeValuesOnly: true,
-  });
+  // const dateQuery = stringify(filters, {
+  //   skipNulls: true,
+  //   addQueryPrefix: true,
+  //   encodeValuesOnly: true,
+  // });
   if (isPending) {
     return <OverviewSkeleton />;
   }
@@ -64,27 +64,27 @@ export const Overview = () => {
     {
       count: summary?.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
-      link: withWorkspace(`/my-work${dateQuery}&category=completed`),
+      link: withWorkspace(`/my-work?category=completed`),
     },
     {
       count: summary?.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
-      link: withWorkspace(`/my-work${dateQuery}&overdue=true`),
+      link: withWorkspace(`/my-work?overdue=true`),
     },
     {
       count: summary?.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
-      link: withWorkspace(`/my-work${dateQuery}&category=started`),
+      link: withWorkspace(`/my-work?category=started`),
     },
     {
       count: summary?.created,
       title: "Created by you",
-      link: withWorkspace(`/my-work${dateQuery}&tab=created`),
+      link: withWorkspace(`/my-work?tab=created`),
     },
     {
       count: summary?.assigned,
       title: "Assigned to you",
-      link: withWorkspace(`/my-work${dateQuery}&tab=assigned`),
+      link: withWorkspace(`/my-work?tab=assigned`),
     },
   ];
 
