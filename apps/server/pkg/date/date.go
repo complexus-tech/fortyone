@@ -2,6 +2,7 @@ package date
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -35,4 +36,54 @@ func (d *Date) TimePtr() *time.Time {
 	}
 	t := d.Time()
 	return &t
+}
+
+func ParseDateOnly(value string) (time.Time, error) {
+	datePart := strings.SplitN(value, "T", 2)[0]
+	datePart = strings.SplitN(datePart, " ", 2)[0]
+
+	parsedDate, err := time.Parse("2006-01-02", datePart)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.UTC), nil
+}
+
+func EndOfDay(date time.Time) time.Time {
+	return date.Add(24*time.Hour - time.Nanosecond)
+}
+
+func RangeFromQuery(query url.Values, defaultDays int) (time.Time, time.Time, error) {
+	now := time.Now().UTC()
+	defaultEndDate := EndOfDay(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC))
+	defaultStartDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	defaultStartDate = defaultStartDate.AddDate(0, 0, -defaultDays)
+
+	startDate := defaultStartDate
+	endDate := defaultEndDate
+
+	startDateParam := query.Get("startDate")
+	if startDateParam != "" {
+		parsedStartDate, err := ParseDateOnly(startDateParam)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		startDate = parsedStartDate
+	}
+
+	endDateParam := query.Get("endDate")
+	if endDateParam != "" {
+		parsedEndDate, err := ParseDateOnly(endDateParam)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		endDate = EndOfDay(parsedEndDate)
+	}
+
+	if endDate.Before(startDate) {
+		return time.Time{}, time.Time{}, fmt.Errorf("endDate before startDate")
+	}
+
+	return startDate, endDate, nil
 }
