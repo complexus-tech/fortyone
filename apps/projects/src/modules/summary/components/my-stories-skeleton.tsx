@@ -4,7 +4,7 @@ import { RowWrapper } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 
 const StoryRowSkeleton = () => (
-  <RowWrapper className="gap-4 px-0 last-of-type:border-b-0">
+  <RowWrapper className="gap-4 px-0 last-of-type:border-b-0 md:px-0">
     <Flex align="center" className="relative" gap={2}>
       <Skeleton className="h-4 w-14 rounded" />
       <Skeleton className="h-4 w-4 rounded-full" />
@@ -38,7 +38,7 @@ export const MyStoriesSkeleton = () => {
           <Tabs.Tab value="due">Overdue</Tabs.Tab>
         </Tabs.List>
 
-        <Box className="mt-2.5 border-t border-border">
+        <Box className="border-border mt-2.5 border-t">
           {Array.from({ length: 9 }).map((_, index) => (
             <StoryRowSkeleton key={index} />
           ))}
