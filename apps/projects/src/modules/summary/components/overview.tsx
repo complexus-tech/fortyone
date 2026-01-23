@@ -5,6 +5,7 @@ import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filt
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { OverviewSkeleton } from "./overview-skeleton";
 import Link from "next/link";
+import { stringify } from "qs";
 
 const Card = ({
   title,
@@ -51,6 +52,11 @@ export const Overview = () => {
   const { data: summary, isPending } = useSummary(filters);
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
+  const dateQuery = stringify(filters, {
+    skipNulls: true,
+    addQueryPrefix: true,
+    encodeValuesOnly: true,
+  });
   if (isPending) {
     return <OverviewSkeleton />;
   }
@@ -58,27 +64,27 @@ export const Overview = () => {
     {
       count: summary?.closed,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} closed`,
-      link: withWorkspace("/my-work?category=closed"),
+      link: withWorkspace(`/my-work${dateQuery}&category=completed`),
     },
     {
       count: summary?.overdue,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} overdue`,
-      link: withWorkspace("/my-work?category=overdue"),
+      link: withWorkspace(`/my-work${dateQuery}&overdue=true`),
     },
     {
       count: summary?.inProgress,
       title: `${getTermDisplay("storyTerm", { variant: "plural", capitalize: true })} in progress`,
-      link: withWorkspace("/my-work?category=started"),
+      link: withWorkspace(`/my-work${dateQuery}&category=started`),
     },
     {
       count: summary?.created,
       title: "Created by you",
-      link: withWorkspace("/my-work?tab=created"),
+      link: withWorkspace(`/my-work${dateQuery}&tab=created`),
     },
     {
       count: summary?.assigned,
       title: "Assigned to you",
-      link: withWorkspace("/my-work?tab=assigned"),
+      link: withWorkspace(`/my-work${dateQuery}&tab=assigned`),
     },
   ];
 
