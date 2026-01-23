@@ -49,7 +49,7 @@ func buildFilters(filters reports.ReportFilters, namedParams map[string]any) (te
 }
 
 // GetStoryStats gets story statistics for a workspace.
-func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (reports.CoreStoryStats, error) {
+func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters reports.StoryStatsFilters) (reports.CoreStoryStats, error) {
 	const query = `
 		WITH story_stats AS (
 			SELECT 
@@ -71,6 +71,8 @@ func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (report
 			JOIN statuses s ON st.status_id = s.status_id
 			WHERE st.workspace_id = :workspace_id
 			AND st.deleted_at IS NULL
+			AND st.created_at >= :start_date
+			AND st.created_at <= :end_date
 		)
 		SELECT * FROM story_stats`
 
@@ -83,6 +85,8 @@ func (r *repo) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (report
 	params := map[string]any{
 		"workspace_id": workspaceID,
 		"user_id":      userID,
+		"start_date":   filters.StartDate,
+		"end_date":     filters.EndDate,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)

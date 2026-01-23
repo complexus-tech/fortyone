@@ -19,6 +19,7 @@ import (
 var (
 	ErrInvalidWorkspaceID = errors.New("invalid workspace id")
 	ErrInvalidDays        = errors.New("invalid days parameter")
+	ErrInvalidDate        = errors.New("invalid date parameter")
 )
 
 type Handlers struct {
@@ -39,7 +40,41 @@ func (h *Handlers) GetStoryStats(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	stats, err := h.reports.GetStoryStats(ctx, workspace.ID)
+	now := time.Now().UTC()
+	defaultEndDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	defaultEndDate = endOfDay(defaultEndDate)
+	defaultStartDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	defaultStartDate = defaultStartDate.AddDate(0, 0, -30)
+
+	startDate := defaultStartDate
+	endDate := defaultEndDate
+
+	startDateParam := r.URL.Query().Get("startDate")
+	if startDateParam != "" {
+		parsedStartDate, err := parseDateOnly(startDateParam)
+		if err != nil {
+			return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+		}
+		startDate = parsedStartDate
+	}
+
+	endDateParam := r.URL.Query().Get("endDate")
+	if endDateParam != "" {
+		parsedEndDate, err := parseDateOnly(endDateParam)
+		if err != nil {
+			return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+		}
+		endDate = endOfDay(parsedEndDate)
+	}
+
+	if endDate.Before(startDate) {
+		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
+	}
+
+	stats, err := h.reports.GetStoryStats(ctx, workspace.ID, reports.StoryStatsFilters{
+		StartDate: startDate,
+		EndDate:   endDate,
+	})
 	if err != nil {
 		return err
 	}
@@ -259,6 +294,22 @@ func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, er
 	}
 
 	return filters, nil
+}
+
+func parseDateOnly(value string) (time.Time, error) {
+	datePart := strings.SplitN(value, "T", 2)[0]
+	datePart = strings.SplitN(datePart, " ", 2)[0]
+
+	parsedDate, err := time.Parse("2006-01-02", datePart)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.UTC), nil
+}
+
+func endOfDay(date time.Time) time.Time {
+	return date.Add(24*time.Hour - time.Nanosecond)
 }
 
 func (h *Handlers) GetWorkspaceOverview(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

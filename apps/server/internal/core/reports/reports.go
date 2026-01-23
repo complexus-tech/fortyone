@@ -13,7 +13,7 @@ import (
 
 // Repository provides access to the reports storage.
 type Repository interface {
-	GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (CoreStoryStats, error)
+	GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters StoryStatsFilters) (CoreStoryStats, error)
 	GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, days int) ([]CoreContributionStats, error)
 	GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (CoreUserStats, error)
 	GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CoreStatusStats, error)
@@ -43,12 +43,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 }
 
 // GetStoryStats retrieves story statistics for a workspace.
-func (s *Service) GetStoryStats(ctx context.Context, workspaceID uuid.UUID) (CoreStoryStats, error) {
+func (s *Service) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters StoryStatsFilters) (CoreStoryStats, error) {
 	s.log.Info(ctx, "getting story stats")
 	ctx, span := web.AddSpan(ctx, "business.core.reports.GetStoryStats")
 	defer span.End()
 
-	stats, err := s.repo.GetStoryStats(ctx, workspaceID)
+	stats, err := s.repo.GetStoryStats(ctx, workspaceID, filters)
 	if err != nil {
 		span.RecordError(err)
 		return CoreStoryStats{}, fmt.Errorf("getting story stats: %w", err)
