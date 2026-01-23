@@ -17,6 +17,7 @@ import type { PrioritySummary } from "@/types";
 import { PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useTerminology } from "@/hooks";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { PrioritySkeleton } from "./priority-skeleton";
 
 type ChartDataItem = {
@@ -35,7 +36,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-[0.6rem] border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-[0.6rem] border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-1 pl-0.5">
         {payload[0].value}{" "}
         {getTermDisplay("storyTerm", {
@@ -52,7 +53,8 @@ const CustomTooltip = ({
 
 export const Priority = () => {
   const { resolvedTheme } = useTheme();
-  const { data: prioritySummary = [], isLoading } = usePrioritySummary();
+  const filters = useSummaryDateFilters();
+  const { data: prioritySummary = [], isLoading } = usePrioritySummary(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

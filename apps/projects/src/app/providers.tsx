@@ -7,6 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { getQueryClient } from "./get-query-client";
 import { PostHogProvider } from "./posthog";
 import GoogleOneTap from "./one-tap";
@@ -20,9 +21,11 @@ export const Providers = ({ children }: { children: ReactNode }) => {
   return (
     <QueryClientProvider client={getQueryClient()}>
       <PostHogProvider>
-        <ThemeProvider attribute="class" enableSystem>
-          {children}
-        </ThemeProvider>
+        <NuqsAdapter>
+          <ThemeProvider attribute="class" enableSystem>
+            {children}
+          </ThemeProvider>
+        </NuqsAdapter>
         <Suspense>
           {isProduction ? (
             <>
