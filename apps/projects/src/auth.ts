@@ -7,7 +7,9 @@ import {
 } from "./lib/actions/auth";
 import { DURATION_FROM_SECONDS } from "./constants/time";
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN ? `.${process.env.NEXT_PUBLIC_DOMAIN}` : undefined;
+const domain = process.env.NEXT_PUBLIC_DOMAIN
+  ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
+  : undefined;
 
 class InvalidLoginError extends CredentialsSignin {}
 declare module "next-auth" {
@@ -143,5 +145,5 @@ export const {
     signOut: "/",
     error: `/?error=${encodeURIComponent(errorMessage)}`,
   },
-  debug: true,
+  debug: false,
 });
