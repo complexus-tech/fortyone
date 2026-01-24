@@ -6,6 +6,7 @@ import type { TooltipProps } from "recharts";
 import { useStatusSummary } from "@/lib/hooks/analytics-summaries";
 import type { StatusSummary } from "@/types";
 import { useTerminology } from "@/hooks";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { StatusSkeleton } from "./status-skeleton";
 
 // Define colors for different statuses
@@ -26,7 +27,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   }
 
   return (
-    <Box className="relative z-50 min-w-28 rounded-[0.6rem] border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-[0.6rem] border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {payload[0].name}
       </Flex>
@@ -42,7 +43,8 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
 
 export const Status = () => {
   const { getTermDisplay } = useTerminology();
-  const { data: statusSummary = [], isLoading } = useStatusSummary();
+  const filters = useSummaryDateFilters();
+  const { data: statusSummary = [], isLoading } = useStatusSummary(filters);
   const [chartData, setChartData] = useState<StatusSummary[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -70,7 +72,7 @@ export const Status = () => {
 
       <Box>
         <Box className="relative isolate">
-          <Box className="absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
+          <Box className="absolute top-1/2 left-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
             <Text fontSize="3xl">{totalCount}</Text>
             <Text color="muted">
               Total{" "}

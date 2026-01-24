@@ -61,7 +61,7 @@
     "next-auth": "5.0.0-beta.28",
     "next-themes": "^0.4.6",
     "nprogress": "^0.2.0",
-    "nuqs": "^1.17.6",
+    "nuqs": "^2.8.6",
     "openai": "^6.15.0",
     "player.style": "^0.1.7",
     "posthog-js": "^1.310.1",

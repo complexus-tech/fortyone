@@ -31,39 +31,28 @@ function AiIcon({ className, ...props }: Icon) {
 
 const capabilities = [
   {
-    icon: (
-      <OKRIcon
-        className="h-7 text-foreground md:h-9"
-        strokeWidth={1.8}
-      />
-    ),
+    icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
     title: "Goal Management",
     description:
       "Transform strategic objectives into actionable tasks with integrated OKR tracking and progress monitoring.",
   },
   {
     icon: (
-      <SprintsIcon
-        className="h-7 text-foreground md:h-10"
-        strokeWidth={1.6}
-      />
+      <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
     title: "Sprint Velocity",
     description:
-      "Accelerate project delivery with agile sprint planning, story prioritization, and velocity tracking.",
+      "Accelerate project delivery with agile sprint planning, task prioritization, and velocity tracking.",
   },
   {
-    icon: <AiIcon className="h-7 w-auto text-foreground md:h-10" />,
+    icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
     title: "AI-Powered Insights",
     description:
       "Work smarter with Maya, your AI assistant for project management, automated summaries, and predictive insights.",
   },
   {
     icon: (
-      <HistoryIcon
-        className="h-7 text-foreground md:h-10"
-        strokeWidth={1.6}
-      />
+      <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
     title: "Real-Time Collaboration",
     description:
@@ -71,22 +60,14 @@ const capabilities = [
   },
   {
     icon: (
-      <SettingsIcon
-        className="h-7 text-foreground md:h-10"
-        strokeWidth={1.6}
-      />
+      <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
     title: "Custom Workflows",
     description:
       "Adapt the project management platform to your team's needs with custom terminology, statuses, and workflow configurations.",
   },
   {
-    icon: (
-      <GitIcon
-        className="h-7 text-foreground md:h-10"
-        strokeWidth={1.6}
-      />
-    ),
+    icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
     title: "Tool Integrations",
     description:
       "Connect your project management workflow with GitHub, email notifications, Slack, and custom webhooks.",

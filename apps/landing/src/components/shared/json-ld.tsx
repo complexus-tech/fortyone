@@ -51,7 +51,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "Sprint Planning",
     "Kanban Boards",
     "Analytics & Insights",
-    "User Stories",
+    "Tasks",
   ],
   description:
     "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
@@ -130,7 +130,7 @@ const faq: WithContext<FAQPage> = {
       name: "What features does FortyOne offer?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FortyOne offers a complete suite of project management features including OKR management, sprint planning, kanban boards, user stories, strategic roadmapping, real-time team collaboration tools, customizable dashboards, progress tracking, and in-depth analytics & insights to drive team performance.",
+        text: "FortyOne offers a complete suite of project management features including OKR management, sprint planning, kanban boards, task management, strategic roadmapping, real-time team collaboration tools, customizable dashboards, progress tracking, and in-depth analytics & insights to drive team performance.",
       },
     },
     {

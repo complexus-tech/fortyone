@@ -8,9 +8,9 @@ import (
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
-	"github.com/complexus-tech/projects-api/pkg/email"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -37,7 +37,7 @@ type Config struct {
 	Log            *logger.Logger
 	Tracer         trace.Tracer
 	SecretKey      string
-	EmailService   email.Service
+	EmailService   mailer.Service
 	BrevoService   *brevo.Service
 	GoogleService  *google.Service
 	Validate       *validator.Validate

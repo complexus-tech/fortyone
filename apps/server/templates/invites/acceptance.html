@@ -1,15 +1,11 @@
 {{ define "content" }}
-<div>
-  <h1 class="heading">{{ .InviteeName }} has accepted your invitation</h1>
-  <p class="text">
-    Great news 🎉! {{ .InviteeName }} has accepted your invitation to join
-    <strong>{{ .WorkspaceName }}</strong> with the role of
-    <strong>{{ .Role }}</strong>.
-  </p>
-  <div class="button-container">
-    <a href="{{ .LoginURL }}" class="button" style="color: white">
-      Go to your workspace
-    </a>
-  </div>
+<p class="eyebrow">Invitation accepted</p>
+<h1 class="heading">{{ .InviteeName }} joined {{ .WorkspaceName }}</h1>
+<p class="text">
+  Great news. {{ .InviteeName }} accepted your invitation to join
+  {{ .WorkspaceName }} and has joined as {{ .Role }}.
+</p>
+<div class="button-container">
+  <a href="{{ .LoginURL }}" class="button">Go to {{ .WorkspaceName }}</a>
 </div>
 {{ end }}

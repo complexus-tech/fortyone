@@ -22,13 +22,13 @@ const faqItems: FaqItem[] = [
   {
     question: "How does AI improve project management workflows?",
     answer:
-      "Maya accelerates planning and execution by drafting stories from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
+      "Maya accelerates planning and execution by drafting tasks from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
   },
   {
     question:
       "How does your project management platform connect OKRs to daily tasks?",
     answer:
-      "Objectives and key results are first class. You can link stories and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
+      "Objectives and key results are first class. You can link tasks and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
   },
   {
     question: "How is FortyOne priced? Is there a free plan?",
@@ -62,7 +62,7 @@ const AccordionItem = ({
   const buttonId = `faq-trigger-${index}`;
   const panelId = `faq-panel-${index}`;
   return (
-    <Box className="border-b border-border last:border-b-0 d">
+    <Box className="border-border d border-b last:border-b-0">
       <button
         aria-controls={panelId}
         aria-expanded={isOpen}
@@ -77,7 +77,7 @@ const AccordionItem = ({
 
         <ArrowRight2Icon
           className={cn(
-            "h-6 shrink-0 text-foreground transition-transform duration-300 dark:text-text-secondary",
+            "text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300",
             {
               "rotate-90": isOpen,
             },
@@ -97,7 +97,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl text-lg opacity-60 leading-relaxed">
+          <Text className="mb-10 max-w-3xl text-lg leading-relaxed opacity-60">
             {item.answer}
           </Text>
         </Box>
@@ -124,7 +124,7 @@ export const Faqs = () => {
         >
           <Text
             as="h2"
-            className="mb-6 text-4xl font-semibold leading-[1.1] md:mb-12 md:text-5xl"
+            className="mb-6 text-4xl leading-[1.1] font-semibold md:mb-12 md:text-5xl"
           >
             Frequently Asked Questions
           </Text>

@@ -39,3 +39,8 @@ type CoreNewActivity struct {
 	CurrentValue string
 	WorkspaceID  uuid.UUID
 }
+
+type ActivityFilters struct {
+	StartDate time.Time
+	EndDate   time.Time
+}

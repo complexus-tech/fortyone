@@ -1,3 +1,5 @@
 /* Component-level styles for the UI package */
 @import "tailwindcss";
 @import "tailwind-config";
+
+@custom-variant dark (&:where(.dark, .dark *));

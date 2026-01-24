@@ -40,7 +40,7 @@ const Intro = () => (
       >
         <Text className="mt-6 max-w-xl md:mt-1" color="muted" fontSize="xl">
           FortyOne puts an AI assistant at the heart of your workflow helping
-          you create stories, plan sprints, track OKRs, and keep everything
+          you create tasks, plan sprints, track OKRs, and keep everything
           moving, so your team stays aligned and delivers without the chaos.
         </Text>
       </motion.div>
@@ -81,7 +81,7 @@ const Card = ({
         >
           <Image
             alt={alt}
-            className="aspect-square overflow-hidden rounded-3xl border border-border bg-surface-muted object-cover dark:hidden"
+            className="border-border bg-surface-muted aspect-square overflow-hidden rounded-3xl border object-cover dark:hidden"
             onMouseEnter={() => {
               setIsActive(true);
             }}
@@ -165,7 +165,7 @@ export const Features = () => {
   ];
 
   return (
-    <Box className="pb-20 dark:bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] dark:from-surface-elevated dark:via-background dark:to-background md:pb-36">
+    <Box className="dark:from-surface-elevated dark:via-background dark:to-background pb-20 md:pb-36 dark:bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))]">
       <Container as="section">
         <Intro />
         <Box className="mx-auto grid grid-cols-1 gap-8 md:grid-cols-3">

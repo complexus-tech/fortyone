@@ -52,7 +52,7 @@ export const CallToAction = () => {
               className="mt-4 max-w-[650px] text-lg md:mt-5 md:text-lg"
               color="muted"
             >
-              Plan with Maya, turn ideas into shippable stories, and watch
+              Plan with Maya, turn ideas into shippable tasks, and watch
               progress roll into OKRs automatically.
             </Text>
           </motion.div>

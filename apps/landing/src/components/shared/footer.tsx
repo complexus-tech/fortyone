@@ -93,8 +93,8 @@ export const Footer = () => {
   const { theme, setTheme } = useTheme();
   const product = [
     {
-      href: "/product/stories",
-      title: "Stories",
+      href: "/product/tasks",
+      title: "Tasks",
     },
     {
       title: "Objectives",

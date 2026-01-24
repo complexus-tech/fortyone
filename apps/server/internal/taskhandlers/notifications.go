@@ -8,7 +8,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -62,7 +62,7 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 		case "field":
 			htmlValue = fmt.Sprintf("<em>%s</em>", html.EscapeString(value))
 		case "value", "date":
-			htmlValue = fmt.Sprintf("<strong style='color: #f43f5e;'>%s</strong>", html.EscapeString(value))
+			htmlValue = fmt.Sprintf("<strong>%s</strong>", html.EscapeString(value))
 		default:
 			htmlValue = html.EscapeString(value)
 		}
@@ -178,15 +178,25 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	// Send email with real data
 	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
 
-	if err := h.brevoService.SendEmailNotification(ctx, brevo.TemplateNotification, brevo.EmailNotificationParams{
-		UserName:            data.UserName,
-		ActorName:           data.ActorName,
-		UserEmail:           data.UserEmail,
-		WorkspaceName:       data.WorkspaceName,
-		WorkspaceURL:        workspaceURL,
-		NotificationTitle:   data.Title,
-		NotificationMessage: parsedMessage.HTML,
-		NotificationType:    data.NotificationType,
+	mailData := map[string]any{
+		"UserName":                 data.UserName,
+		"ActorName":                data.ActorName,
+		"UserEmail":                data.UserEmail,
+		"WorkspaceName":            data.WorkspaceName,
+		"WorkspaceURL":             workspaceURL,
+		"NotificationTitle":        data.Title,
+		"NotificationMessage":      parsedMessage.HTML,
+		"NotificationType":         data.NotificationType,
+		"NotificationCTAURL":       fmt.Sprintf("%s/notifications", workspaceURL),
+		"NotificationCTALabel":     "Open notifications",
+		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
+	}
+
+	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{data.UserEmail},
+		Template: "notifications/notification",
+		Subject:  data.Title,
+		Data:     mailData,
 	}); err != nil {
 		h.log.Error(ctx, "Failed to send notification email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return err

@@ -13,6 +13,7 @@ import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { MyStoriesSkeleton } from "./my-stories-skeleton";
 import { useState } from "react";
 
@@ -127,6 +128,7 @@ export const MyStories = () => {
   const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
   const [activeTab, setActiveTab] = useState("inProgress");
+  const dateFilters = useSummaryDateFilters();
 
   const now = formatISO(new Date(), { representation: "date" });
   const sevenDaysLater = formatISO(addDays(new Date(), 7), {
@@ -137,6 +139,8 @@ export const MyStories = () => {
     useMyStoriesGrouped("none", {
       categories: ["started"],
       assignedToMe: true,
+      createdAfter: dateFilters.startDate,
+      createdBefore: dateFilters.endDate,
       storiesPerGroup: 9,
     });
 
@@ -144,6 +148,8 @@ export const MyStories = () => {
     useMyStoriesGrouped("none", {
       assignedToMe: true,
       categories: ["backlog", "unstarted", "started"],
+      createdAfter: dateFilters.startDate,
+      createdBefore: dateFilters.endDate,
       deadlineAfter: now,
       deadlineBefore: sevenDaysLater,
       storiesPerGroup: 9,
@@ -153,6 +159,8 @@ export const MyStories = () => {
     useMyStoriesGrouped("none", {
       assignedToMe: true,
       categories: ["backlog", "unstarted", "started"],
+      createdAfter: dateFilters.startDate,
+      createdBefore: dateFilters.endDate,
       deadlineBefore: now,
       storiesPerGroup: 9,
     });

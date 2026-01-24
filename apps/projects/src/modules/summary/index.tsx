@@ -1,9 +1,10 @@
 "use client";
-import { Box, Container, Text } from "ui";
+import { Box, Container, Flex, Text } from "ui";
 import { useSession } from "next-auth/react";
 import { BodyContainer } from "@/components/shared/body";
 import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
+// import { DateRangeFilter } from "@/modules/analytics/components/filters/date-range-filter";
 import { Overview } from "./components/overview";
 import { Activities } from "./components/activities";
 import { MyStories } from "./components/my-stories";
@@ -25,18 +26,23 @@ export const SummaryPage = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pb-4 pt-3">
-          <Text
-            as="h2"
-            className="mb-1 text-2xl md:mb-2 md:text-3xl"
-            fontWeight="medium"
-          >
-            Good {timeOfDay()}, {session?.user?.name}.
-          </Text>
-          <Text color="muted" fontSize="lg">
-            Here&rsquo;s what&rsquo;s happening with your{" "}
-            {getTermDisplay("storyTerm", { variant: "plural" })}.
-          </Text>
+        <Container className="pt-3 pb-4">
+          <Flex align="center" justify="between">
+            <Box>
+              <Text
+                as="h2"
+                className="mb-1 text-2xl md:text-3xl"
+                fontWeight="medium"
+              >
+                Good {timeOfDay()}, {session?.user?.name}.
+              </Text>
+              <Text color="muted" fontSize="lg">
+                Here&rsquo;s what&rsquo;s happening with your{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })}.
+              </Text>
+            </Box>
+            {/* <DateRangeFilter /> */}
+          </Flex>
           <Overview />
           <Box className="my-4 grid gap-4 md:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading priority</div>}>

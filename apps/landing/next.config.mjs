@@ -30,7 +30,17 @@ const nextConfig = {
     return [
       {
         source: "/features",
-        destination: "/features/stories",
+        destination: "/features/tasks",
+        permanent: true,
+      },
+      {
+        source: "/features/stories",
+        destination: "/features/tasks",
+        permanent: true,
+      },
+      {
+        source: "/product/stories",
+        destination: "/features/tasks",
         permanent: true,
       },
       {

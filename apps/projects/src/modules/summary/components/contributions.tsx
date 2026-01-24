@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import type { Contribution } from "@/types";
 import { useContributions } from "@/lib/hooks/contributions";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { ContributionsSkeleton } from "./contributions-skeleton";
 
 type ChartDataItem = {
@@ -31,7 +32,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-[0.6rem] border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-[0.6rem] border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -50,7 +51,8 @@ const formatDate = (date: string) => {
 
 export const Contributions = () => {
   const { resolvedTheme } = useTheme();
-  const { data: contributions = [], isLoading } = useContributions();
+  const filters = useSummaryDateFilters();
+  const { data: contributions = [], isLoading } = useContributions(filters);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {

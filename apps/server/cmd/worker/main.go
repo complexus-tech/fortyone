@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 
@@ -40,6 +41,16 @@ type WorkerConfig struct {
 		Port     string `default:"6379" env:"APP_REDIS_PORT"`
 		Password string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name     int    `default:"0" env:"APP_REDIS_DB"`
+	}
+	Email struct {
+		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
+		Port        int    `default:"587" env:"APP_EMAIL_PORT"`
+		Username    string `env:"APP_EMAIL_USERNAME"`
+		Password    string `env:"APP_EMAIL_PASSWORD"`
+		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
+		FromName    string `default:"FortyOne" env:"APP_EMAIL_FROM_NAME"`
+		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
+		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
 	System struct {
 		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
@@ -263,14 +274,29 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error initializing brevo service: %w", err)
 	}
 
+	// Initialize mailer service
+	mailerService, err := mailer.NewService(mailer.Config{
+		Host:        cfg.Email.Host,
+		Port:        cfg.Email.Port,
+		Username:    cfg.Email.Username,
+		Password:    cfg.Email.Password,
+		FromAddress: cfg.Email.FromAddress,
+		FromName:    cfg.Email.FromName,
+		Environment: cfg.Email.Environment,
+		BaseDir:     cfg.Email.BaseDir,
+	}, log)
+	if err != nil {
+		return fmt.Errorf("error initializing mailer service: %w", err)
+	}
+
 	systemUserID, err := uuid.Parse(cfg.System.UserID)
 	if err != nil {
 		return fmt.Errorf("invalid system user ID: %w", err)
 	}
 
 	// Set up task handlers
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, brevoService, systemUserID)
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID)
 
 	mux := asynq.NewServeMux()
 	// Register existing handlers

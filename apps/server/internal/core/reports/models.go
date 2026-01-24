@@ -15,6 +15,11 @@ type CoreStoryStats struct {
 	Assigned   int `json:"assigned"`
 }
 
+type StoryStatsFilters struct {
+	StartDate time.Time
+	EndDate   time.Time
+}
+
 // CoreContributionStats represents contribution statistics
 type CoreContributionStats struct {
 	Date          time.Time `db:"date"`
@@ -41,6 +46,8 @@ type StatsFilters struct {
 	TeamID      *uuid.UUID
 	SprintID    *uuid.UUID
 	ObjectiveID *uuid.UUID
+	StartDate   time.Time
+	EndDate     time.Time
 }
 
 // Workspace Reports Models

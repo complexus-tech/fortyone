@@ -3,10 +3,12 @@ import { Flex, Text, Wrapper } from "ui";
 import { ClockIcon } from "icons";
 import { useActivities } from "@/lib/hooks/activities";
 import { Activity } from "@/components/ui/activity";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { ActivitiesSkeleton } from "./activities-skeleton";
 
 export const Activities = () => {
-  const { data: activities = [], isPending } = useActivities();
+  const filters = useSummaryDateFilters();
+  const { data: activities = [], isPending } = useActivities(filters);
   if (isPending) {
     return <ActivitiesSkeleton />;
   }

@@ -24,11 +24,11 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "List stories",
+      title: "List tasks",
       image: {
         src: listImg,
         srcLight: listImgLight,
-        alt: "Project management list view - story tracking",
+        alt: "Project management list view - task tracking",
       },
     },
     {
@@ -54,7 +54,7 @@ export const HeroCards = () => {
   return (
     <Box className="relative">
       <Container className="relative mt-12">
-        <Blur className="absolute -top-[12%] left-1/2 right-1/2 h-[100px] -translate-x-1/2 dark:bg-white/15 md:h-[600px] md:w-[800px]" />
+        <Blur className="absolute -top-[12%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px] dark:bg-white/15" />
         <Box
           className="relative"
           onMouseEnter={() => {
@@ -84,32 +84,32 @@ export const HeroCards = () => {
           >
             {cards.map((card) => (
               <SwiperSlide
-                className="relative rounded-lg border border-border bg-background/5 p-0.5 backdrop-blur d md:rounded-2xl md:p-[0.35rem]"
+                className="border-border bg-background/5 d relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
                 key={card.id}
               >
                 <Flex
                   align="center"
-                  className="mb-2 mt-1 px-1.5"
+                  className="mt-1 mb-2 px-1.5"
                   justify="between"
                 >
                   <Flex className="gap-1.5">
-                    <Dot className="size-2.5 text-primary" />
-                    <Dot className="size-2.5 text-warning" />
-                    <Dot className="size-2.5 text-success" />
+                    <Dot className="text-primary size-2.5" />
+                    <Dot className="text-warning size-2.5" />
+                    <Dot className="text-success size-2.5" />
                   </Flex>
                   <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
                 </Flex>
                 <Box className="relative">
                   <Image
                     alt={card.title}
-                    className="relative hidden rounded-[0.4rem] border border-border/70 dark:block md:rounded-[0.7rem]"
+                    className="border-border/70 relative hidden rounded-[0.4rem] border md:rounded-[0.7rem] dark:block"
                     placeholder="blur"
                     priority
                     src={card.image.src}
                   />
                   <Image
                     alt={card.title}
-                    className="relative rounded-[0.4rem] border border-border dark:hidden md:rounded-[0.7rem]"
+                    className="border-border relative rounded-[0.4rem] border md:rounded-[0.7rem] dark:hidden"
                     placeholder="blur"
                     priority
                     src={card.image.srcLight}

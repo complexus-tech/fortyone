@@ -1,0 +1,16 @@
+{{ define "content" }}
+<p class="eyebrow">Workspace check-in</p>
+<h1 class="heading">{{ .WorkspaceName }} is scheduled for deletion</h1>
+<p class="text">
+  We noticed your workspace has not been active for a while. To keep things
+  tidy, it is scheduled for deletion in 30 days.
+</p>
+<p class="text">
+  If you want to keep this workspace, log in before then and it will remain
+  active. If no action is taken, the workspace and all data will be deleted.
+</p>
+<div class="button-container">
+  <a href="{{ .WorkspaceURL }}" class="button">Keep my workspace</a>
+</div>
+<p class="text">If you are no longer using this workspace, no action is needed.</p>
+{{ end }}

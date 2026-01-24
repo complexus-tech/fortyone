@@ -14,7 +14,7 @@ export const FilterButton = ({
 
   return (
     <Box>
-      <Text className="mb-1 text-[0.95rem]" color="muted">
+      <Text className="mb-1" color="muted">
         {label}
       </Text>
       <Popover onOpenChange={setIsOpen} open={isOpen}>
@@ -32,8 +32,8 @@ export const FilterButton = ({
           </Button>
         </Popover.Trigger>
         <Popover.Content
-          align="start"
-          className="w-92 bg-opacity-80 pb-2.5 dark:bg-opacity-80"
+          align="end"
+          className="bg-opacity-80 dark:bg-opacity-80 mr-0 w-92 pb-2.5"
         >
           {popover}
         </Popover.Content>

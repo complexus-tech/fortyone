@@ -7,73 +7,163 @@
     <title>{{ .Subject }}</title>
     <style>
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+          Arial, sans-serif;
         line-height: 1.6;
+        font-size: 15px;
         margin: 0;
         padding: 0;
-        color: #1a1a1a;
-        background-color: #f5f5f5;
+        color: #333333;
+        background-color: #ffffff;
       }
       .email-container {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
-        max-width: 600px;
+        max-width: 520px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 32px 20px 48px;
       }
-      .logo-section {
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
         margin-bottom: 24px;
       }
       .logo {
-        height: 32px;
+        height: 40px;
         width: auto;
+        border-radius: 6px;
+      }
+      .content-card {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 32px 32px 28px;
+        border: 1px solid #efefef;
       }
       .heading {
-        color: #222;
+        color: #111111;
         font-size: 26px;
-        font-weight: 500;
-        margin-bottom: 24px;
+        font-weight: 600;
+        margin: 0 0 18px;
+      }
+      .eyebrow {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #111111;
+        margin: 0 0 12px;
       }
       .text {
-        color: #666666;
-        font-size: 16px;
-        line-height: 24px;
-        margin-bottom: 24px;
+        color: #333333;
+        font-size: 15px;
+        line-height: 1.7;
+        margin: 0 0 18px;
       }
       .button {
-        background-color: #f43f5e;
-        color: white;
-        padding: 12px 24px;
+        background-color: #111111;
+        color: #ffffff !important;
+        padding: 12px 22px;
         text-decoration: none;
         border-radius: 6px;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 15px;
         display: inline-block;
       }
-
+      .button:visited,
+      .button:hover,
+      .button:active {
+        color: #ffffff !important;
+      }
+      .button-subtle {
+        background-color: #111111;
+      }
       .button-container {
-        margin: 32px 0;
+        margin: 26px 0 24px;
+      }
+      .highlight {
+        background: #fbfafa;
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin: 18px 0 20px;
+      }
+      .notification-message h3 {
+        margin: 0 0 12px;
+        font-size: 17px;
+        font-weight: 600;
+        color: #111111;
+      }
+      .notification-message p {
+        margin: 0 0 12px;
+        font-size: 15px;
+        color: #333333;
+      }
+      .notification-message p:last-child {
+        margin-bottom: 0;
+      }
+      .notification-message strong {
+        font-weight: 600;
+        color: #111111;
+      }
+      .notification-message ul {
+        margin: 0 0 12px;
+        padding: 0;
+        list-style: none;
+      }
+      .notification-message ul.notification-sublist {
+        margin: 6px 0 12px;
+        padding: 0;
+      }
+      .notification-message li {
+        padding: 10px 0;
+        color: #333333;
+      }
+      .notification-message li.notification-subitem {
+        padding: 8px 0;
+        border-bottom: none;
+        color: #555555;
+      }
+      .notification-message li:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .notification-message a {
+        color: #111111;
+        text-decoration: underline;
+      }
+      .meta {
+        font-size: 15px;
+        color: #555555;
+        margin: 0 0 6px;
+      }
+      .list {
+        color: #333333;
+        margin: 0 0 16px;
+      }
+      .divider {
+        height: 1px;
+        background: #ededed;
+        margin: 24px 0;
       }
       .footer {
-        margin-top: 28px;
-        margin-bottom: 24px;
-        padding-top: 6px;
-        color: #666;
-        font-size: 15px;
-        border-top: 1px solid #dfe1e4;
+        margin-top: 24px;
+        color: #666666;
+        font-size: 14px;
+        text-align: center;
+      }
+      .footer a {
+        color: #666666;
       }
     </style>
   </head>
   <body>
     <div class="email-container">
-      <div class="logo-section">
+      <div class="header">
         <img src="{{ .LogoURL }}" alt="Logo" class="logo" />
       </div>
-      {{ template "content" . }}
+      <div class="content-card">
+        {{ template "content" . }}
+      </div>
       <div class="footer">
-        <p>
-          &copy; {{ .Year }} &bull; Complexus LLC &bull; All Rights Reserved.
-        </p>
+        <p>&copy; {{ .Year }} Complexus LLC. All Rights Reserved.</p>
       </div>
     </div>
   </body>

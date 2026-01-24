@@ -45,8 +45,8 @@ export const Navigation = () => {
   const features = [
     {
       id: 1,
-      name: "Stories",
-      href: "/features/stories",
+      name: "Tasks",
+      href: "/features/tasks",
       description: "Turn ideas into clear, actionable work.",
       icon: (
         <StoryIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />

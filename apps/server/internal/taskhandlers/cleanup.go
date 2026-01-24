@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
@@ -14,19 +14,19 @@ import (
 
 // CleanupHandlers handles cleanup tasks with database access
 type CleanupHandlers struct {
-	log          *logger.Logger
-	db           *sqlx.DB
-	brevoService *brevo.Service
-	systemUserID uuid.UUID
+	log           *logger.Logger
+	db            *sqlx.DB
+	mailerService mailer.Service
+	systemUserID  uuid.UUID
 }
 
 // NewCleanupHandlers creates a new CleanupHandlers instance
-func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, systemUserID uuid.UUID) *CleanupHandlers {
+func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, mailerService mailer.Service, systemUserID uuid.UUID) *CleanupHandlers {
 	return &CleanupHandlers{
-		log:          log,
-		db:           db,
-		brevoService: brevoService,
-		systemUserID: systemUserID,
+		log:           log,
+		db:            db,
+		mailerService: mailerService,
+		systemUserID:  systemUserID,
 	}
 }
 
@@ -151,7 +151,7 @@ func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asy
 func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log, c.brevoService); err != nil {
+	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log, c.mailerService); err != nil {
 		c.log.Error(ctx, "Failed to process overdue stories email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("overdue stories email failed: %w", err)
 	}
@@ -164,7 +164,7 @@ func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asyn
 func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing ObjectiveOverdueEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessObjectiveOverdue(ctx, c.db, c.log, c.brevoService); err != nil {
+	if err := jobs.ProcessObjectiveOverdue(ctx, c.db, c.log, c.mailerService); err != nil {
 		c.log.Error(ctx, "Failed to process objective overdue email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("objective overdue email failed: %w", err)
 	}
@@ -177,7 +177,7 @@ func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *as
 func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessWorkspaceInactivityWarning(ctx, c.db, c.log, c.brevoService); err != nil {
+	if err := jobs.ProcessWorkspaceInactivityWarning(ctx, c.db, c.log, c.mailerService); err != nil {
 		c.log.Error(ctx, "Failed to process workspace inactivity warning", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("workspace inactivity warning failed: %w", err)
 	}
@@ -190,7 +190,7 @@ func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, 
 func (c *CleanupHandlers) HandleUserInactivityWarning(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing UserInactivityWarning task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessUserInactivityWarning(ctx, c.db, c.log, c.brevoService); err != nil {
+	if err := jobs.ProcessUserInactivityWarning(ctx, c.db, c.log, c.mailerService); err != nil {
 		c.log.Error(ctx, "Failed to process user inactivity warning", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("user inactivity warning failed: %w", err)
 	}
