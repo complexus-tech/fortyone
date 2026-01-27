@@ -2,23 +2,22 @@ FROM node:22-alpine AS base
 
 FROM base AS builder
 RUN apk add --no-cache libc6-compat
-RUN apk update
 
 WORKDIR /app
-RUN npm install pnpm turbo --global
-RUN pnpm config set store-dir ~/.pnpm-store
+RUN corepack enable
+RUN corepack prepare pnpm@9.3.0 --activate
 COPY . .
-RUN turbo prune projects --docker
+RUN pnpm dlx turbo prune projects --docker
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat
-RUN apk update
 WORKDIR /app
 
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install
+RUN corepack enable
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile
 
 # Build the project
 COPY --from=builder /app/out/full/ .
@@ -35,6 +34,7 @@ RUN pnpm turbo build --filter=projects
 
 FROM base AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
@@ -50,4 +50,4 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/projects/.next/standalone 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/projects/.next/static ./apps/projects/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/projects/public ./apps/projects/public
 
-CMD node apps/projects/server.js
+CMD ["node", "apps/projects/server.js"]
