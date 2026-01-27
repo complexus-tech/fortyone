@@ -66,7 +66,7 @@ const DateRangeSelector = () => {
       <Text className="mb-1" color="muted" fontWeight="medium">
         Custom Range
       </Text>
-      <Flex gap={2} wrap>
+      <Flex gap={2} wrap align="center">
         <DatePicker>
           <DatePicker.Trigger>
             <Button
@@ -87,7 +87,7 @@ const DateRangeSelector = () => {
             selected={filters.startDate}
           />
         </DatePicker>
-
+        <Text color="muted">—</Text>
         <DatePicker>
           <DatePicker.Trigger>
             <Button
