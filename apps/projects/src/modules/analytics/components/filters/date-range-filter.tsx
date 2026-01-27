@@ -42,10 +42,13 @@ const DateRangeSelector = () => {
       <Flex className="mb-4" gap={2} wrap>
         {datePresets.map((preset) => (
           <Button
-            className={cn({
-              "ring-2 dark:ring-white/30":
-                currentPreset?.value === preset.value,
-            })}
+            className={cn(
+              "dark:bg-surface-elevated dark:border-border-strong/80",
+              {
+                "ring-border-strong ring-2":
+                  currentPreset?.value === preset.value,
+              },
+            )}
             color="tertiary"
             key={preset.value}
             onClick={() => {
@@ -67,7 +70,7 @@ const DateRangeSelector = () => {
         <DatePicker>
           <DatePicker.Trigger>
             <Button
-              className="gap-2 px-2"
+              className="dark:bg-surface-elevated dark:border-border-strong/80 gap-2 px-2"
               color="tertiary"
               leftIcon={<CalendarIcon className="h-4 w-auto" />}
               size="sm"
@@ -87,7 +90,7 @@ const DateRangeSelector = () => {
         <DatePicker>
           <DatePicker.Trigger>
             <Button
-              className="gap-2 px-2"
+              className="dark:bg-surface-elevated dark:border-border-strong/80 gap-2 px-2"
               color="tertiary"
               leftIcon={<CalendarIcon className="h-4 w-auto" />}
               size="sm"
