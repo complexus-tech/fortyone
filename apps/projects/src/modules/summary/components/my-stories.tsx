@@ -191,7 +191,11 @@ export const MyStories = () => {
     <Wrapper className="min-h-100 md:min-h-120">
       <Flex align="center" className="mb-2 md:mb-0" justify="between">
         <Text className="mb-2" fontSize="lg">
-          Recent {getTermDisplay("storyTerm", { variant: "plural" })}
+          {getTermDisplay("storyTerm", {
+            variant: "plural",
+            capitalize: true,
+          })}{" "}
+          for the period
         </Text>
         <Button
           color="tertiary"
