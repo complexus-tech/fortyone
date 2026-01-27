@@ -52,9 +52,6 @@ const DateRangeSelector = () => {
               handlePresetSelect(preset);
             }}
             size="sm"
-            variant={
-              currentPreset?.value === preset.value ? "solid" : "outline"
-            }
           >
             {preset.label}
           </Button>
@@ -74,7 +71,6 @@ const DateRangeSelector = () => {
               color="tertiary"
               leftIcon={<CalendarIcon className="h-4 w-auto" />}
               size="sm"
-              variant="outline"
             >
               {format(filters.startDate, "MMM d, yyyy")}
             </Button>
@@ -95,7 +91,6 @@ const DateRangeSelector = () => {
               color="tertiary"
               leftIcon={<CalendarIcon className="h-4 w-auto" />}
               size="sm"
-              variant="outline"
             >
               {format(filters.endDate, "MMM d, yyyy")}
             </Button>
