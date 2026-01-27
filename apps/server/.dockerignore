@@ -5,6 +5,8 @@
 # Build artifacts
 tmp/
 bin/
+dist/
+coverage/
 
 # Docker files
 Dockerfile
@@ -20,6 +22,7 @@ docker-compose.yml
 
 # Dependency directories
 vendor/
+node_modules/
 
 # Logs
 *.log
@@ -27,6 +30,10 @@ vendor/
 # Temporary files
 *.tmp
 *.swp
+.DS_Store
+*.out
+*.prof
+*_test.go
 
 # Local environment files (don't include sensitive data)
 .env
