@@ -54,7 +54,7 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 	// Only notify the new assignee if they're not the actor
 	if shouldNotify(*newAssigneeID, actorID) {
 		message := NotificationMessage{
-			Template: "{actor} assigned you a story",
+			Template: "{actor} assigned you a task",
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},
@@ -84,9 +84,9 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 
 	// Notify old assignee about who the story went to (only if they're not the actor)
 	if shouldNotify(*oldAssigneeID, actorID) {
-		template := "{actor} reassigned story to {assignee}"
+		template := "{actor} reassigned task to {assignee}"
 		if actorName == newAssigneeName {
-			template = "{actor} reassigned story to themself"
+			template = "{actor} reassigned task to themself"
 		}
 
 		message := NotificationMessage{
@@ -103,7 +103,7 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 	// Notify new assignee that they received the story (only if they're not the actor)
 	if shouldNotify(*newAssigneeID, actorID) {
 		message := NotificationMessage{
-			Template: "{actor} assigned you a story",
+			Template: "{actor} assigned you a task",
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},
@@ -217,7 +217,7 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 
 	// Default case
 	return NotificationMessage{
-		Template: "{actor} updated the story",
+		Template: "{actor} updated the task",
 		Variables: map[string]Variable{
 			"actor": {Value: actorName, Type: "actor"},
 		},

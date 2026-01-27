@@ -39,7 +39,7 @@ func (r *Rules) ProcessStoryCreated(ctx context.Context, payload events.StoryCre
 		actorName := r.getUserName(ctx, actorID)
 
 		message := NotificationMessage{
-			Template: "{actor} assigned you a new story",
+			Template: "{actor} assigned you a new task",
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},
