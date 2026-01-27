@@ -67,7 +67,7 @@ export const Status = () => {
     <Wrapper>
       <Box className="mb-6">
         <Text fontSize="lg">Status overview</Text>
-        <Text color="muted">See how your work is progressing.</Text>
+        <Text color="muted">Breakdown of work by status.</Text>
       </Box>
 
       <Box>

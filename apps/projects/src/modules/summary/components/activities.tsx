@@ -15,7 +15,7 @@ export const Activities = () => {
   return (
     <Wrapper className="min-h-100 md:min-h-120">
       <Flex align="center" className="mb-5" justify="between">
-        <Text fontSize="lg">Recent activities</Text>
+        <Text fontSize="lg">Your Activities</Text>
       </Flex>
       {activities.length === 0 ? (
         <Flex

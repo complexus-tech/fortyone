@@ -75,7 +75,7 @@ export const Contributions = () => {
         <Text className="mb-1" fontSize="lg">
           Daily contributions
         </Text>
-        <Text color="muted">Your contributions in the last 7 days.</Text>
+        <Text color="muted">Your contribution activity.</Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">
