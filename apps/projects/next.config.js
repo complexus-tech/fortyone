@@ -2,6 +2,7 @@
 module.exports = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
+  output: "standalone",
   transpilePackages: ["ui", "icons"],
   devIndicators: false,
   reactCompiler: true,
