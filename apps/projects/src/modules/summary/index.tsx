@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { BodyContainer } from "@/components/shared/body";
 import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";
-// import { DateRangeFilter } from "@/modules/analytics/components/filters/date-range-filter";
+import { DateRangeFilter } from "@/modules/analytics/components/filters/date-range-filter";
 import { Overview } from "./components/overview";
 import { Activities } from "./components/activities";
 import { MyStories } from "./components/my-stories";
@@ -41,7 +41,7 @@ export const SummaryPage = () => {
                 {getTermDisplay("storyTerm", { variant: "plural" })}.
               </Text>
             </Box>
-            {/* <DateRangeFilter /> */}
+            <DateRangeFilter />
           </Flex>
           <Overview />
           <Box className="my-4 grid gap-4 md:grid-cols-3">
