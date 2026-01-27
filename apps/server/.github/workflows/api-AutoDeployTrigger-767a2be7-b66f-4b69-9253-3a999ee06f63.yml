@@ -35,7 +35,7 @@ jobs:
         with:
           appSourcePath: ${{ github.workspace }}
           # _dockerfilePathKey_: _dockerfilePath_
-          dockerfilePath: Dockerfile
+          dockerfilePath: deployments/docker/dockerfile.server
           registryUrl: complexus.azurecr.io
           registryUsername: ${{ secrets.API_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.API_REGISTRY_PASSWORD }}
@@ -67,7 +67,7 @@ jobs:
         with:
           appSourcePath: ${{ github.workspace }}
           # _dockerfilePathKey_: _dockerfilePath_
-          dockerfilePath: Dockerfile.worker
+          dockerfilePath: deployments/docker/dockerfile.worker
           registryUrl: complexus.azurecr.io
           registryUsername: ${{ secrets.API_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.API_REGISTRY_PASSWORD }}
