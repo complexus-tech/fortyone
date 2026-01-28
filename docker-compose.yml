@@ -2,7 +2,8 @@ services:
   web:
     image: fortyoneapp/web:latest
     environment:
-      NEXT_PUBLIC_API_URL: http://server:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      INTERNAL_API_URL: http://server:8000
       NEXT_PUBLIC_DOMAIN: localhost
       AUTH_SECRET: qb6QD31Kp/8GejaNiVIcOunNNf0X28cLgscA8oMS3jM=
     ports:
