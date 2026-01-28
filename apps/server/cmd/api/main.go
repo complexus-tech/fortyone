@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -20,6 +21,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/handlers"
+	"github.com/complexus-tech/projects-api/internal/migrations"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
@@ -135,6 +137,9 @@ type Config struct {
 }
 
 func main() {
+	migrateOnly := flag.Bool("migrate", false, "Run database migrations and exit")
+	flag.Parse()
+
 	var logLevel slog.Level
 
 	switch environ {
@@ -148,6 +153,15 @@ func main() {
 
 	log := logger.NewWithJSON(os.Stdout, logLevel, service)
 	ctx := context.Background()
+
+	if *migrateOnly {
+		if err := runMigrations(ctx, log); err != nil {
+			log.Error(ctx, fmt.Sprintf("migrations failed: %s", err))
+			os.Exit(1)
+		}
+		log.Info(ctx, "migrations completed")
+		return
+	}
 
 	if err := run(ctx, log); err != nil {
 		log.Error(ctx, fmt.Sprintf("error shutting down: %s", err))
@@ -438,4 +452,24 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}
 	return nil
+}
+
+func runMigrations(ctx context.Context, log *logger.Logger) error {
+	var cfg Config
+
+	if err := config.Parse("app", &cfg); err != nil {
+		return fmt.Errorf("error parsing config: %s", err)
+	}
+
+	log.Info(ctx, "running database migrations")
+	return migrations.Run(database.Config{
+		Host:         cfg.DB.Host,
+		Port:         cfg.DB.Port,
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Name:         cfg.DB.Name,
+		MaxIdleConns: cfg.DB.MaxIdleConns,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		DisableTLS:   cfg.DB.DisableTLS,
+	})
 }

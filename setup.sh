@@ -132,19 +132,6 @@ compose() {
 
 run_migrations() {
   load_env
-  sslmode="require"
-  if [ "${APP_DB_DISABLE_TLS:-true}" = "true" ]; then
-    sslmode="disable"
-  fi
-
-  db_url="postgresql://${APP_DB_USER}:${APP_DB_PASSWORD}@${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}?sslmode=${sslmode}"
-  migrations_dir="$PWD/apps/server/internal/migrations"
-
-  if [ ! -d "$migrations_dir" ]; then
-    echo "WARNING: migrations directory not found: $migrations_dir"
-    echo "Skipping migrations. Provide migrations or run them separately."
-    return
-  fi
 
   if [ "${APP_DB_HOST}" = "postgres" ]; then
     if ! has_profile "postgres"; then
@@ -169,10 +156,7 @@ run_migrations() {
   fi
 
   echo "Running migrations..."
-  docker compose --env-file "$ENV_FILE" --profile migrations run --rm --no-deps migrations \
-    -path /migrations \
-    -database "$db_url" \
-    up
+  compose run --rm --no-deps server --migrate
 }
 
 install_env() {
@@ -461,6 +445,7 @@ case "$action" in
     load_env
     compose pull
     compose up -d
+    run_migrations
     ;;
   *)
     echo "Usage: ./setup.sh [install|start|stop|upgrade] [--non-interactive]"
