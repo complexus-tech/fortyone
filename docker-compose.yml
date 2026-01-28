@@ -1,0 +1,166 @@
+services:
+  web:
+    image: fortyoneapp/web:latest
+    environment:
+      NEXT_PUBLIC_API_URL: http://server:8000
+      NEXT_PUBLIC_DOMAIN: localhost
+      AUTH_SECRET: qb6QD31Kp/8GejaNiVIcOunNNf0X28cLgscA8oMS3jM=
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+
+  server:
+    image: fortyoneapp/server:latest
+    environment:
+      APP_DB_HOST: postgres
+      APP_DB_PORT: 5432
+      APP_DB_USER: postgres
+      APP_DB_PASSWORD: postgres
+      APP_DB_NAME: fortyone
+      APP_DB_DISABLE_TLS: "true"
+      APP_REDIS_HOST: redis
+      APP_REDIS_PORT: 6379
+      APP_REDIS_PASSWORD: ""
+      APP_REDIS_DISABLE_TLS: "true"
+      APP_API_HOST: 0.0.0.0:8000
+      APP_WEBSITE_URL: http://localhost:3000
+      APP_TRACING_HOST: jaeger:4318
+      APP_EMAIL_HOST: mailpit
+      APP_EMAIL_PORT: 1025
+      APP_EMAIL_FROM_ADDRESS: notifications@fortyone.local
+      APP_EMAIL_FROM_NAME: FortyOne
+      APP_EMAIL_ENVIRONMENT: development
+      APP_STORAGE_PROVIDER: aws
+      APP_AWS_ACCESS_KEY_ID: minioadmin
+      APP_AWS_SECRET_ACCESS_KEY: minioadmin
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ENDPOINT: http://minio:9000
+      APP_AWS_PUBLIC_URL: http://localhost:9000
+      APP_AWS_FORCE_PATH_STYLE: "true"
+      APP_AWS_PROFILE_IMAGES_BUCKET: profile-images
+      APP_AWS_WORKSPACE_LOGOS_BUCKET: workspace-logos
+      APP_AWS_ATTACHMENTS_BUCKET: attachments
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      jaeger:
+        condition: service_started
+
+  worker:
+    image: fortyoneapp/worker:latest
+    environment:
+      APP_DB_HOST: postgres
+      APP_DB_PORT: 5432
+      APP_DB_USER: postgres
+      APP_DB_PASSWORD: postgres
+      APP_DB_NAME: fortyone
+      APP_DB_DISABLE_TLS: "true"
+      APP_REDIS_HOST: redis
+      APP_REDIS_PORT: 6379
+      APP_REDIS_PASSWORD: ""
+      APP_REDIS_DISABLE_TLS: "true"
+      APP_WEBSITE_URL: http://localhost:3000
+      APP_TRACING_HOST: jaeger:4318
+      APP_EMAIL_HOST: mailpit
+      APP_EMAIL_PORT: 1025
+      APP_EMAIL_FROM_ADDRESS: notifications@fortyone.local
+      APP_EMAIL_FROM_NAME: FortyOne
+      APP_EMAIL_ENVIRONMENT: development
+      APP_STORAGE_PROVIDER: aws
+      APP_AWS_ACCESS_KEY_ID: minioadmin
+      APP_AWS_SECRET_ACCESS_KEY: minioadmin
+      APP_AWS_REGION: us-east-1
+      APP_AWS_ENDPOINT: http://minio:9000
+      APP_AWS_PUBLIC_URL: http://localhost:9000
+      APP_AWS_FORCE_PATH_STYLE: "true"
+      APP_AWS_PROFILE_IMAGES_BUCKET: profile-images
+      APP_AWS_WORKSPACE_LOGOS_BUCKET: workspace-logos
+      APP_AWS_ATTACHMENTS_BUCKET: attachments
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      jaeger:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fortyone
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fortyone"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mc alias set local http://minio:9000 minioadmin minioadmin
+        mc mb --ignore-existing local/profile-images
+        mc mb --ignore-existing local/workspace-logos
+        mc mb --ignore-existing local/attachments
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

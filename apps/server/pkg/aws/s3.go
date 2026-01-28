@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	sdkaws "github.com/aws/aws-sdk-go-v2/aws"
@@ -29,12 +30,25 @@ func NewS3Service(cfg Config, log *logger.Logger) (*S3Service, error) {
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(cfg.Region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")),
+		config.WithEndpointResolverWithOptions(sdkaws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (sdkaws.Endpoint, error) {
+			if cfg.Endpoint == "" || service != s3.ServiceID {
+				return sdkaws.Endpoint{}, &sdkaws.EndpointNotFoundError{}
+			}
+
+			return sdkaws.Endpoint{
+				URL:               cfg.Endpoint,
+				SigningRegion:     cfg.Region,
+				HostnameImmutable: true,
+			}, nil
+		})),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	client := s3.NewFromConfig(awsCfg)
+	client := s3.NewFromConfig(awsCfg, func(options *s3.Options) {
+		options.UsePathStyle = cfg.ForcePathStyle
+	})
 
 	return &S3Service{
 		client: client,
@@ -92,5 +106,10 @@ func (s *S3Service) DeleteFile(ctx context.Context, bucket, key string) error {
 
 // GetPublicURL implements storage.StorageService.
 func (s *S3Service) GetPublicURL(ctx context.Context, bucket, key string) (string, error) {
+	if s.config.PublicURL != "" {
+		baseURL := strings.TrimSuffix(s.config.PublicURL, "/")
+		return fmt.Sprintf("%s/%s/%s", baseURL, bucket, key), nil
+	}
+
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, s.config.Region, key), nil
 }
