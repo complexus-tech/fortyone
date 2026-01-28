@@ -3,7 +3,11 @@ set -eu
 
 ENV_FILE="fortyone.env"
 EXAMPLE_FILE="fortyone.env.example"
+COMPOSE_FILE="docker-compose.yml"
 NON_INTERACTIVE=false
+REPO="${FORTYONE_REPO:-complexus-tech/fortyone}"
+RELEASE_TAG="${FORTYONE_RELEASE_TAG:-latest}"
+ASSET_BASE_URL="${FORTYONE_ASSET_BASE_URL:-}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -49,6 +53,43 @@ prompt_yes_no() {
   esac
 }
 
+asset_base_url() {
+  if [ -n "$ASSET_BASE_URL" ]; then
+    printf "%s" "$ASSET_BASE_URL"
+    return
+  fi
+
+  if [ "$RELEASE_TAG" = "latest" ]; then
+    printf "https://github.com/%s/releases/latest/download" "$REPO"
+    return
+  fi
+
+  printf "https://github.com/%s/releases/download/%s" "$REPO" "$RELEASE_TAG"
+}
+
+download_asset() {
+  asset_name="$1"
+  destination="$2"
+  url="$(asset_base_url)/$asset_name"
+
+  echo "Downloading $asset_name..."
+  if ! curl -fsSL -o "$destination" "$url"; then
+    echo "ERROR: Failed to download $asset_name from $url"
+    echo "Check FORTYONE_REPO or FORTYONE_ASSET_BASE_URL."
+    exit 1
+  fi
+}
+
+ensure_assets() {
+  if [ ! -f "$COMPOSE_FILE" ]; then
+    download_asset "$COMPOSE_FILE" "$COMPOSE_FILE"
+  fi
+
+  if [ ! -f "$EXAMPLE_FILE" ]; then
+    download_asset "$EXAMPLE_FILE" "$EXAMPLE_FILE"
+  fi
+}
+
 load_env() {
   if [ ! -f "$ENV_FILE" ]; then
     echo "ERROR: $ENV_FILE not found. Run install first."
@@ -81,6 +122,10 @@ has_profile() {
 }
 
 compose() {
+  if [ ! -f "$COMPOSE_FILE" ]; then
+    echo "ERROR: $COMPOSE_FILE not found. Run install to download it."
+    exit 1
+  fi
   args=$(profiles_args)
   docker compose --env-file "$ENV_FILE" $args "$@"
 }
@@ -96,8 +141,9 @@ run_migrations() {
   migrations_dir="$PWD/apps/server/internal/migrations"
 
   if [ ! -d "$migrations_dir" ]; then
-    echo "ERROR: migrations directory not found: $migrations_dir"
-    exit 1
+    echo "WARNING: migrations directory not found: $migrations_dir"
+    echo "Skipping migrations. Provide migrations or run them separately."
+    return
   fi
 
   if [ "${APP_DB_HOST}" = "postgres" ]; then
@@ -130,6 +176,7 @@ run_migrations() {
 }
 
 install_env() {
+  ensure_assets
   if [ "$NON_INTERACTIVE" = "true" ]; then
     if [ ! -f "$ENV_FILE" ]; then
       if [ -f "$EXAMPLE_FILE" ]; then
