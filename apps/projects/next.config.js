@@ -20,7 +20,18 @@ module.exports = {
     removeConsole: process.env.NODE_ENV === "production",
   },
   images: {
+    dangerouslyAllowLocalIP: true,
     remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "minio",
+        port: "9000",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+      },
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
