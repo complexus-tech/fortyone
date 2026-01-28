@@ -65,6 +65,36 @@ pnpm dev
 
 Visit the marketing site locally or in production to explore the product. Workspace access and authentication now live in the projects app.
 
+## Self Hosting
+
+Use the installer to run FortyOne with Docker Compose (no repo clone required).
+
+### Install
+
+1. Create a folder and enter it (keeps self-hosting files isolated):
+
+   ```bash
+   mkdir fortyone-selfhost
+   cd fortyone-selfhost
+   ```
+
+2. Download the installer (latest release asset):
+
+   ```bash
+   curl -fsSL -o setup.sh https://github.com/complexus-tech/fortyone/releases/latest/download/setup.sh
+   ```
+
+3. Make it executable:
+
+   ```bash
+   chmod +x setup.sh
+   ```
+
+4. Run the installer:
+   ```bash
+   ./setup.sh
+   ```
+
 ## 📖 Documentation
 
 - **[📚 User Guide](https://docs.fortyone.app)** - Complete documentation
