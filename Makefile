@@ -13,10 +13,22 @@ build-worker:
 build-all: build-web build-server build-worker
 	@echo "All images built with tag: $(TAG)"
 
+push-web:
+	docker push fortyoneapp/web:$(TAG)
+
+push-server:
+	docker push fortyoneapp/server:$(TAG)
+
+push-worker:
+	docker push fortyoneapp/worker:$(TAG)
+
+push-all: push-web push-server push-worker
+	@echo "All images pushed with tag: $(TAG)"
+
 up:
 	docker compose up -d
 
 down:
 	docker compose down
 
-.PHONY: build-web build-server build-worker build-all up down
+.PHONY: build-web build-server build-worker build-all push-web push-server push-worker push-all up down
