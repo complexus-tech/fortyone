@@ -110,23 +110,23 @@ type Config struct {
 		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	Storage struct {
-		Provider string `env:"APP_STORAGE_PROVIDER" default:"azure"`
+		Provider          string `env:"APP_STORAGE_PROVIDER" default:"azure"`
+		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profile-images"`
+		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"workspace-logos"`
+		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"attachments"`
 	}
 	Azure struct {
 		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
 		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
 		StorageAccountKey       string `env:"APP_AZURE_STORAGE_ACCOUNT_KEY"`
-		ProfileImagesContainer  string `default:"profile-images" env:"APP_AZURE_CONTAINER_PROFILE_IMAGES"`
-		WorkspaceLogosContainer string `default:"workspace-logos" env:"APP_AZURE_CONTAINER_WORKSPACE_LOGOS"`
-		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
 	}
 	AWS struct {
-		AccessKeyID          string `env:"APP_AWS_ACCESS_KEY_ID"`
-		SecretAccessKey      string `env:"APP_AWS_SECRET_ACCESS_KEY"`
-		Region               string `env:"APP_AWS_REGION"`
-		ProfileImagesBucket  string `env:"APP_AWS_PROFILE_IMAGES_BUCKET"`
-		WorkspaceLogosBucket string `env:"APP_AWS_WORKSPACE_LOGOS_BUCKET"`
-		AttachmentsBucket    string `env:"APP_AWS_ATTACHMENTS_BUCKET"`
+		AccessKeyID     string `env:"APP_AWS_ACCESS_KEY_ID"`
+		SecretAccessKey string `env:"APP_AWS_SECRET_ACCESS_KEY"`
+		Region          string `env:"APP_AWS_REGION"`
+		Endpoint        string `env:"APP_AWS_ENDPOINT"`
+		PublicURL       string `env:"APP_AWS_PUBLIC_URL"`
+		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -220,27 +220,27 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Initialize Azure configuration
 	azureConfig := azure.Config{
-		ConnectionString:        cfg.Azure.StorageConnectionString,
-		StorageAccountName:      cfg.Azure.StorageAccountName,
-		AccountKey:              cfg.Azure.StorageAccountKey,
-		ProfileImagesContainer:  cfg.Azure.ProfileImagesContainer,
-		WorkspaceLogosContainer: cfg.Azure.WorkspaceLogosContainer,
-		AttachmentsContainer:    cfg.Azure.AttachmentsContainer,
+		ConnectionString:   cfg.Azure.StorageConnectionString,
+		StorageAccountName: cfg.Azure.StorageAccountName,
+		AccountKey:         cfg.Azure.StorageAccountKey,
 	}
 
 	awsConfig := aws.Config{
-		AccessKeyID:          cfg.AWS.AccessKeyID,
-		SecretAccessKey:      cfg.AWS.SecretAccessKey,
-		Region:               cfg.AWS.Region,
-		ProfileImagesBucket:  cfg.AWS.ProfileImagesBucket,
-		WorkspaceLogosBucket: cfg.AWS.WorkspaceLogosBucket,
-		AttachmentsBucket:    cfg.AWS.AttachmentsBucket,
+		AccessKeyID:     cfg.AWS.AccessKeyID,
+		SecretAccessKey: cfg.AWS.SecretAccessKey,
+		Region:          cfg.AWS.Region,
+		Endpoint:        cfg.AWS.Endpoint,
+		PublicURL:       cfg.AWS.PublicURL,
+		ForcePathStyle:  cfg.AWS.ForcePathStyle,
 	}
 
 	storageConfig := storage.Config{
-		Provider: cfg.Storage.Provider,
-		Azure:    azureConfig,
-		AWS:      awsConfig,
+		Provider:          cfg.Storage.Provider,
+		ProfilesBucket:    cfg.Storage.ProfilesBucket,
+		LogosBucket:       cfg.Storage.LogosBucket,
+		AttachmentsBucket: cfg.Storage.AttachmentsBucket,
+		Azure:             azureConfig,
+		AWS:               awsConfig,
 	}
 
 	storageService, err := storage.NewStorageService(storageConfig, log)

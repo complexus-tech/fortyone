@@ -1,9 +1,10 @@
 "use server";
 
 import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { requestError } from "../fetch-error";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export async function requestMagicEmail(email: string, isMobileApp: boolean) {
   try {

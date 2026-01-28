@@ -1,9 +1,11 @@
 "use server";
-import ky from "ky";
+
 import type { ApiResponse, UserRole } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { getApiError } from "@/utils";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 type LoginResponse = {
   id: string;

@@ -1,9 +1,10 @@
-import ky from "ky";
 import type { ApiResponse } from "@/types";
 import type { Team } from "@/modules/teams/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { auth } from "@/auth";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export const getTeams = async (workspace: string): Promise<Team[]> => {
   if (!workspace) {

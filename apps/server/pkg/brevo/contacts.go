@@ -25,6 +25,13 @@ type CreateOrUpdateContactResponse struct {
 
 // CreateOrUpdateContact creates a new contact or updates an existing one in Brevo.
 func (s *Service) CreateOrUpdateContact(ctx context.Context, req CreateOrUpdateContactRequest) (*CreateOrUpdateContactResponse, error) {
+	if !s.isEnabled(ctx) {
+		return &CreateOrUpdateContactResponse{
+			ID:    0,
+			Email: req.Email,
+		}, nil
+	}
+
 	s.log.Info(ctx, "Creating or updating contact in Brevo", "email", req.Email)
 	// Prepare the contact data
 	contactData := brevo.CreateContact{
@@ -61,6 +68,10 @@ type AddContactToListRequest struct {
 
 // AddContactsToList adds existing contacts to a specific list in Brevo.
 func (s *Service) AddContactsToList(ctx context.Context, listID int64, req AddContactToListRequest) error {
+	if !s.isEnabled(ctx) {
+		return nil
+	}
+
 	s.log.Info(ctx, "Adding contacts to list in Brevo",
 		"list_id", listID,
 		"contact_count", len(req.ContactEmails))
@@ -100,6 +111,10 @@ type DeleteContactRequest struct {
 
 // DeleteContact deletes a contact from Brevo.
 func (s *Service) DeleteContact(ctx context.Context, req DeleteContactRequest) error {
+	if !s.isEnabled(ctx) {
+		return nil
+	}
+
 	s.log.Info(ctx, "Deleting contact in Brevo", "email", req.Email)
 
 	if req.Email == "" {
@@ -122,6 +137,10 @@ func (s *Service) DeleteContact(ctx context.Context, req DeleteContactRequest) e
 
 // RemoveContactFromList removes a contact from a specific list in Brevo.
 func (s *Service) RemoveContactFromList(ctx context.Context, listID int64, email string) error {
+	if !s.isEnabled(ctx) {
+		return nil
+	}
+
 	s.log.Info(ctx, "Removing contact from list in Brevo", "list_id", listID, "email", email)
 
 	if email == "" {

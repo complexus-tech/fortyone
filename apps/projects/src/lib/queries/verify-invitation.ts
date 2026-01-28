@@ -1,9 +1,10 @@
-import ky from "ky";
 import type { ApiResponse } from "@/types";
-import { requestError } from "../fetch-error";
 import type { Invitation } from "@/modules/invitations/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
+import { requestError } from "../fetch-error";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = getApiUrl();
 
 export async function verifyInvitation(token: string) {
   try {
