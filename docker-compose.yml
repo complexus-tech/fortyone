@@ -4,7 +4,6 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://server:8000}
-      NEXT_PUBLIC_DOMAIN: ${NEXT_PUBLIC_DOMAIN:-localhost}
       AUTH_SECRET: ${AUTH_SECRET:-changeme}
     ports:
       - "${WEB_PORT:-3000}:3000"

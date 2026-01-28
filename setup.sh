@@ -125,15 +125,14 @@ install_env() {
   echo "This will generate $ENV_FILE. Press Enter to accept defaults."
   echo ""
 
-  prompt "NEXT_PUBLIC_API_URL" "Public API URL" "http://localhost:8000"
-  prompt "INTERNAL_API_URL" "Internal API URL" "http://server:8000"
-  prompt "NEXT_PUBLIC_DOMAIN" "Public domain" "localhost"
-
   prompt "WEB_PORT" "Web host port" "3000"
-  prompt "SERVER_PORT" "Server host port" "8000"
-  prompt "WORKER_PORT" "Worker host port" "8080"
-  APP_API_HOST="0.0.0.0:$SERVER_PORT"
-  prompt "APP_API_HOST" "Server bind address" "$APP_API_HOST"
+  default_website_url="http://localhost:${WEB_PORT}"
+  prompt "APP_WEBSITE_URL" "Website URL (public domain for links/emails)" "$default_website_url"
+  SERVER_PORT="8000"
+  WORKER_PORT="8080"
+  INTERNAL_API_URL="http://server:8000"
+  NEXT_PUBLIC_API_URL="http://localhost:8000"
+  APP_API_HOST="0.0.0.0:8000"
 
   prompt_yes_no "USE_POSTGRES" "Use local Postgres container" "true"
   if [ "$USE_POSTGRES" = "true" ]; then
@@ -175,8 +174,7 @@ install_env() {
     REDIS_HOST_PORT="6380"
   fi
 
-  prompt "APP_WEBSITE_URL" "Website URL" "http://localhost:3000"
-  prompt "APP_TRACING_HOST" "Tracing host" "jaeger:4318"
+  APP_TRACING_HOST="jaeger:4318"
 
   prompt_yes_no "USE_MAILPIT" "Use local Mailpit (SMTP)" "true"
   if [ "$USE_MAILPIT" = "true" ]; then
@@ -197,15 +195,14 @@ install_env() {
     MAILPIT_SMTP_PORT="1025"
   fi
 
-  prompt_yes_no "USE_JAEGER" "Use local Jaeger" "true"
+  prompt "APP_STORAGE_PROVIDER" "Storage provider (aws/azure)" "aws"
+  STORAGE_PROFILE_IMAGES_NAME="profile-images"
+  STORAGE_WORKSPACE_LOGOS_NAME="workspace-logos"
+  STORAGE_ATTACHMENTS_NAME="attachments"
+  USE_JAEGER=true
   JAEGER_UI_PORT="16686"
   JAEGER_GRPC_PORT="4317"
   JAEGER_HTTP_PORT="4318"
-
-  prompt "APP_STORAGE_PROVIDER" "Storage provider (aws/azure)" "aws"
-  prompt "STORAGE_PROFILE_IMAGES_NAME" "Storage name: profile images" "profile-images"
-  prompt "STORAGE_WORKSPACE_LOGOS_NAME" "Storage name: workspace logos" "workspace-logos"
-  prompt "STORAGE_ATTACHMENTS_NAME" "Storage name: attachments" "attachments"
   if [ "$APP_STORAGE_PROVIDER" = "azure" ]; then
     APP_AWS_ACCESS_KEY_ID=""
     APP_AWS_SECRET_ACCESS_KEY=""
@@ -268,7 +265,6 @@ install_env() {
   cat > "$ENV_FILE" <<EOF
 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 INTERNAL_API_URL=$INTERNAL_API_URL
-NEXT_PUBLIC_DOMAIN=$NEXT_PUBLIC_DOMAIN
 AUTH_SECRET=$AUTH_SECRET
 WEB_PORT=$WEB_PORT
 
