@@ -156,7 +156,7 @@ run_migrations() {
   fi
 
   echo "Running migrations..."
-  compose run --rm --no-deps server --migrate
+  compose run --rm --no-deps server /app/api --migrate
 }
 
 install_env() {
