@@ -1,11 +1,12 @@
 "use server";
 
-import ky from "ky";
-import { auth } from "@/auth";
 import type { ApiResponse } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
+import { auth } from "@/auth";
 import { getApiError } from "@/utils";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = getApiUrl();
 
 export async function acceptInvitation(inviteToken: string) {
   const session = await auth();

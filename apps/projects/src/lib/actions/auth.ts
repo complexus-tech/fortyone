@@ -1,11 +1,12 @@
 "use server";
 
-import ky from "ky";
 import type { User } from "next-auth";
 import type { ApiResponse, UserRole } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { requestError } from "../fetch-error";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 type LoginResponse = {
   id: string;

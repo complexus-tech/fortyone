@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import { type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
+import { PublicEnv } from "@/public-env";
 import { cn } from "lib";
 import { auth } from "@/auth";
 import { Providers } from "./providers";
@@ -53,6 +54,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body>
+        <PublicEnv />
         <SessionProvider session={session}>
           <Providers>
             {children}

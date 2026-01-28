@@ -1,9 +1,11 @@
 "use server";
-import ky from "ky";
-import { auth } from "@/auth";
-import type { ApiResponse, User } from "@/types";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import type { ApiResponse, User } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
+import { auth } from "@/auth";
+
+const apiUrl = getApiUrl();
 
 export async function switchWorkspace(workspaceId: string) {
   const session = await auth();
