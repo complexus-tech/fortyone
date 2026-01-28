@@ -6,7 +6,7 @@ export type MentionItem = {
   id: string;
   label: string;
   username: string;
-  avatar?: string;
+  avatar?: string | null;
 };
 
 type MentionListProps = {

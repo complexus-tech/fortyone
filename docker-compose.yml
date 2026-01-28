@@ -78,7 +78,7 @@ services:
       - "${WORKER_PORT:-8080}:8080"
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     profiles:
       - postgres
     environment:
@@ -160,10 +160,18 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        mc alias set local "$MINIO_ENDPOINT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
-        mc mb --ignore-existing "local/$STORAGE_PROFILE_IMAGES_NAME"
-        mc mb --ignore-existing "local/$STORAGE_WORKSPACE_LOGOS_NAME"
-        mc mb --ignore-existing "local/$STORAGE_ATTACHMENTS_NAME"
+        mc alias set local "$$MINIO_ENDPOINT" "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$STORAGE_PROFILE_IMAGES_NAME"
+        mc mb --ignore-existing "local/$$STORAGE_WORKSPACE_LOGOS_NAME"
+        mc mb --ignore-existing "local/$$STORAGE_ATTACHMENTS_NAME"
+
+  migrations:
+    image: migrate/migrate
+    profiles:
+      - migrations
+    volumes:
+      - ./apps/server/internal/migrations:/migrations
+    entrypoint: ["migrate"]
 
 volumes:
   postgres-data:

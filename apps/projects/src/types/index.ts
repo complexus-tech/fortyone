@@ -27,7 +27,7 @@ export type Member = {
   email: string;
   role: UserRole;
   fullName: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -72,6 +72,14 @@ profiles_args() {
   printf "%s" "$args"
 }
 
+has_profile() {
+  profile="$1"
+  case ",${COMPOSE_PROFILES:-}," in
+    *",${profile},"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 compose() {
   args=$(profiles_args)
   docker compose --env-file "$ENV_FILE" $args "$@"
@@ -92,14 +100,30 @@ run_migrations() {
     exit 1
   fi
 
-  project_name="${COMPOSE_PROJECT_NAME:-$(basename "$PWD")}";
-  network_name="${project_name}_default"
+  if [ "${APP_DB_HOST}" = "postgres" ]; then
+    if ! has_profile "postgres"; then
+      echo "ERROR: APP_DB_HOST is 'postgres' but the postgres profile is not enabled."
+      echo "Add 'postgres' to COMPOSE_PROFILES in $ENV_FILE or use an external DB host."
+      exit 1
+    fi
+    compose up -d postgres
+    echo "Waiting for postgres..."
+    attempts=30
+    while [ $attempts -gt 0 ]; do
+      if docker compose --env-file "$ENV_FILE" --profile postgres exec -T postgres pg_isready -U "$APP_DB_USER" -d "$APP_DB_NAME" >/dev/null 2>&1; then
+        break
+      fi
+      attempts=$((attempts - 1))
+      sleep 2
+    done
+    if [ $attempts -eq 0 ]; then
+      echo "ERROR: Postgres is not ready."
+      exit 1
+    fi
+  fi
 
   echo "Running migrations..."
-  docker run --rm \
-    --network "$network_name" \
-    -v "$migrations_dir:/migrations" \
-    migrate/migrate \
+  docker compose --env-file "$ENV_FILE" --profile migrations run --rm --no-deps migrations \
     -path /migrations \
     -database "$db_url" \
     up
@@ -304,9 +328,6 @@ JAEGER_GRPC_PORT=$JAEGER_GRPC_PORT
 JAEGER_HTTP_PORT=$JAEGER_HTTP_PORT
 
 APP_STORAGE_PROVIDER=$APP_STORAGE_PROVIDER
-STORAGE_PROFILE_IMAGES_NAME=$STORAGE_PROFILE_IMAGES_NAME
-STORAGE_WORKSPACE_LOGOS_NAME=$STORAGE_WORKSPACE_LOGOS_NAME
-STORAGE_ATTACHMENTS_NAME=$STORAGE_ATTACHMENTS_NAME
 
 APP_AWS_ACCESS_KEY_ID=$APP_AWS_ACCESS_KEY_ID
 APP_AWS_SECRET_ACCESS_KEY=$APP_AWS_SECRET_ACCESS_KEY
