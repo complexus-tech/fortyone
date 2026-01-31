@@ -103,7 +103,8 @@ type Config struct {
 		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
 	}
 	Tracing struct {
-		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
+		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
+		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
 	}
 	Google struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
@@ -332,12 +333,12 @@ func run(ctx context.Context, log *logger.Logger) error {
 	shutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
-	t := tracing.New(service, version, environ, cfg.Tracing.Host)
+	t := tracing.New(service, version, environ, cfg.Tracing.Endpoint, cfg.Tracing.Headers)
 	tp, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
 	}
-	log.Info(ctx, fmt.Sprintf("started open telemetry tracing on %s", cfg.Tracing.Host))
+	log.Info(ctx, fmt.Sprintf("started open telemetry tracing on %s", cfg.Tracing.Endpoint))
 
 	// Graceful shutdown of tracing if server is stopped
 	defer func() {

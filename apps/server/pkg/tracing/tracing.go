@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -15,29 +16,48 @@ import (
 // config holds the configuration for tracing. This is used to initialize the
 // tracing provider.
 type config struct {
-	service string
-	version string
-	environ string
-	host    string
+	service  string
+	version  string
+	environ  string
+	endpoint string
+	headers  map[string]string
 }
 
 // New returns a new config instance. This is used to initialize the tracing
 // provider.
-func New(service, version, environ, host string) *config {
+func New(service, version, environ, endpoint string, headers map[string]string) *config {
 	return &config{
-		service: service,
-		version: version,
-		environ: environ,
-		host:    host,
+		service:  service,
+		version:  version,
+		environ:  environ,
+		endpoint: endpoint,
+		headers:  headers,
 	}
 }
 
 // StartTracing starts the tracing provider and returns the tracer provider.
 func (c *config) StartTracing() (*sdktrace.TracerProvider, error) {
-	exporter, err := otlptracehttp.New(context.Background(),
-		otlptracehttp.WithInsecure(),
-		otlptracehttp.WithEndpoint(c.host),
-	)
+	opts := []otlptracehttp.Option{}
+
+	// Determine if TLS should be used based on endpoint prefix
+	endpoint := c.endpoint
+	if after, ok := strings.CutPrefix(endpoint, "https://"); ok {
+		endpoint = after
+	} else if after, ok := strings.CutPrefix(endpoint, "http://"); ok {
+		endpoint = after
+		opts = append(opts, otlptracehttp.WithInsecure())
+	} else {
+		// No protocol prefix - assume insecure
+		opts = append(opts, otlptracehttp.WithInsecure())
+	}
+
+	opts = append(opts, otlptracehttp.WithEndpoint(endpoint))
+
+	if len(c.headers) > 0 {
+		opts = append(opts, otlptracehttp.WithHeaders(c.headers))
+	}
+
+	exporter, err := otlptracehttp.New(context.Background(), opts...)
 	if err != nil {
 		return nil, err
 	}
