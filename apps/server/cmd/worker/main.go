@@ -58,7 +58,7 @@ type WorkerConfig struct {
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	Queues map[string]int `default:"critical:6,default:3,low:1,onboarding:5,cleanup:2,notifications:4,automation:3"`
+	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
 }
 
 func main() {
