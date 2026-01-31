@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/josemukorivo/config v1.0.3
+	github.com/josemukorivo/config v1.0.4
 	github.com/mailerlite/mailerlite-go v1.1.0
 	github.com/redis/go-redis/v9 v9.7.0
 	go.opentelemetry.io/otel v1.34.0
