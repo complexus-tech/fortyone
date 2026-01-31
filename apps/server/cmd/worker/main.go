@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net"
@@ -37,10 +38,11 @@ type WorkerConfig struct {
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Redis struct {
-		Host     string `default:"localhost" env:"APP_REDIS_HOST"`
-		Port     string `default:"6379" env:"APP_REDIS_PORT"`
-		Password string `default:"" env:"APP_REDIS_PASSWORD"`
-		Name     int    `default:"0" env:"APP_REDIS_DB"`
+		Host       string `default:"localhost" env:"APP_REDIS_HOST"`
+		Port       string `default:"6379" env:"APP_REDIS_PORT"`
+		Password   string `default:"" env:"APP_REDIS_PASSWORD"`
+		Name       int    `default:"0" env:"APP_REDIS_DB"`
+		DisableTLS bool   `default:"false" env:"APP_REDIS_DISABLE_TLS"`
 	}
 	Email struct {
 		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
@@ -104,10 +106,17 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	log.Info(ctx, "database connection established")
 
+	// Connect to redis connection
+	var tlsConfig *tls.Config
+	if !cfg.Redis.DisableTLS {
+		tlsConfig = &tls.Config{}
+	}
+
 	rdbConn := asynq.RedisClientOpt{
-		Addr:     net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.Name,
+		Addr:      net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
+		Password:  cfg.Redis.Password,
+		DB:        cfg.Redis.Name,
+		TLSConfig: tlsConfig,
 	}
 
 	// Set up scheduler for periodic cleanup tasks
