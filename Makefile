@@ -8,15 +8,15 @@ build:
 # Build individual images
 build-web:
 	@if [ -z "$(tag)" ]; then echo "ERROR: tag required. Usage: make build-web tag=v1.2.3"; exit 1; fi
-	docker build -f deployments/docker/dockerfile.web -t fortyoneapp/web:$(tag) -t fortyoneapp/web:latest .
+	docker build --platform linux/amd64,linux/arm64 -f deployments/docker/dockerfile.web -t fortyoneapp/web:$(tag) -t fortyoneapp/web:latest .
 
 build-server:
 	@if [ -z "$(tag)" ]; then echo "ERROR: tag required. Usage: make build-server tag=v1.2.3"; exit 1; fi
-	docker build -f deployments/docker/dockerfile.server -t fortyoneapp/server:$(tag) -t fortyoneapp/server:latest .
+	docker build --platform linux/amd64,linux/arm64 -f deployments/docker/dockerfile.server -t fortyoneapp/server:$(tag) -t fortyoneapp/server:latest .
 
 build-worker:
 	@if [ -z "$(tag)" ]; then echo "ERROR: tag required. Usage: make build-worker tag=v1.2.3"; exit 1; fi
-	docker build -f deployments/docker/dockerfile.worker -t fortyoneapp/worker:$(tag) -t fortyoneapp/worker:latest .
+	docker build --platform linux/amd64,linux/arm64 -f deployments/docker/dockerfile.worker -t fortyoneapp/worker:$(tag) -t fortyoneapp/worker:latest .
 
 # Push all images
 push:
