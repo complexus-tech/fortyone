@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
@@ -38,11 +39,16 @@ type WorkerConfig struct {
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Redis struct {
-		Host       string `default:"localhost" env:"APP_REDIS_HOST"`
-		Port       string `default:"6379" env:"APP_REDIS_PORT"`
-		Password   string `default:"" env:"APP_REDIS_PASSWORD"`
-		Name       int    `default:"0" env:"APP_REDIS_DB"`
-		DisableTLS bool   `default:"false" env:"APP_REDIS_DISABLE_TLS"`
+		Host               string        `default:"localhost" env:"APP_REDIS_HOST"`
+		Port               string        `default:"6379" env:"APP_REDIS_PORT"`
+		Password           string        `default:"" env:"APP_REDIS_PASSWORD"`
+		Name               int           `default:"0" env:"APP_REDIS_DB"`
+		DisableTLS         bool          `default:"false" env:"APP_REDIS_DISABLE_TLS"`
+		InsecureSkipVerify bool          `default:"false" env:"APP_REDIS_INSECURE_SKIP_VERIFY"`
+		DialTimeout        time.Duration `default:"10s" env:"APP_REDIS_DIAL_TIMEOUT"`
+		ReadTimeout        time.Duration `default:"30s" env:"APP_REDIS_READ_TIMEOUT"`
+		WriteTimeout       time.Duration `default:"30s" env:"APP_REDIS_WRITE_TIMEOUT"`
+		PoolSize           int           `default:"30" env:"APP_REDIS_POOL_SIZE"`
 	}
 	Email struct {
 		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
@@ -109,14 +115,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Connect to redis connection
 	var tlsConfig *tls.Config
 	if !cfg.Redis.DisableTLS {
-		tlsConfig = &tls.Config{}
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: cfg.Redis.InsecureSkipVerify,
+		}
 	}
 
 	rdbConn := asynq.RedisClientOpt{
-		Addr:      net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
-		Password:  cfg.Redis.Password,
-		DB:        cfg.Redis.Name,
-		TLSConfig: tlsConfig,
+		Addr:         net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
+		Password:     cfg.Redis.Password,
+		DB:           cfg.Redis.Name,
+		TLSConfig:    tlsConfig,
+		DialTimeout:  cfg.Redis.DialTimeout,
+		ReadTimeout:  cfg.Redis.ReadTimeout,
+		WriteTimeout: cfg.Redis.WriteTimeout,
+		PoolSize:     cfg.Redis.PoolSize,
 	}
 
 	// Set up scheduler for periodic cleanup tasks
