@@ -38,6 +38,10 @@ module.exports = {
       },
       {
         protocol: "https",
+        hostname: "fortyone.s3.us-east-1.amazonaws.com",
+      },
+      {
+        protocol: "https",
         hostname: "images.unsplash.com",
       },
       {
