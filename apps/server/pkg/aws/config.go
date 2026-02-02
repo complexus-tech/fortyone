@@ -8,4 +8,5 @@ type Config struct {
 	Endpoint        string
 	PublicURL       string
 	ForcePathStyle  bool
+	Bucket          string
 }

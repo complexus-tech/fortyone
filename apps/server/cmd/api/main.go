@@ -131,10 +131,11 @@ type Config struct {
 	AWS struct {
 		AccessKeyID     string `env:"APP_AWS_ACCESS_KEY_ID"`
 		SecretAccessKey string `env:"APP_AWS_SECRET_ACCESS_KEY"`
-		Region          string `env:"APP_AWS_REGION"`
+		Region          string `env:"APP_AWS_REGION" default:"us-east-1"`
 		Endpoint        string `env:"APP_AWS_ENDPOINT"`
 		PublicURL       string `env:"APP_AWS_PUBLIC_URL"`
 		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
+		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -258,6 +259,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Endpoint:        cfg.AWS.Endpoint,
 		PublicURL:       cfg.AWS.PublicURL,
 		ForcePathStyle:  cfg.AWS.ForcePathStyle,
+		Bucket:          cfg.AWS.Bucket,
 	}
 
 	storageConfig := storage.Config{

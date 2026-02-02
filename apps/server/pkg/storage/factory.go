@@ -14,7 +14,14 @@ func NewStorageService(cfg Config, log *logger.Logger) (StorageService, error) {
 	case "azure":
 		return azure.NewStorageService(cfg.Azure, log)
 	case "aws":
-		return aws.NewS3Service(cfg.AWS, log)
+		service, err := aws.NewS3Service(cfg.AWS, log)
+		if err != nil {
+			return nil, err
+		}
+		if cfg.AWS.Bucket != "" {
+			return newPrefixedStorageService(service, cfg.AWS.Bucket), nil
+		}
+		return service, nil
 	case "":
 		return nil, fmt.Errorf("storage provider is required")
 	default:
