@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/sprints"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -12,17 +14,30 @@ import (
 )
 
 type Handlers struct {
-	sprints *sprints.Service
+	sprints     *sprints.Service
+	attachments *attachments.Service
 }
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 )
 
-func New(sprints *sprints.Service) *Handlers {
+func New(sprints *sprints.Service, attachments *attachments.Service) *Handlers {
 	return &Handlers{
-		sprints: sprints,
+		sprints:     sprints,
+		attachments: attachments,
 	}
+}
+
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, 24*time.Hour)
+	if err != nil {
+		return ""
+	}
+	return resolved
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -100,6 +115,10 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 	analytics, err := h.sprints.GetAnalytics(ctx, sprintId, workspace.ID)
 	if err != nil {
 		return err
+	}
+
+	for i := range analytics.TeamAllocation {
+		analytics.TeamAllocation[i].AvatarURL = h.resolveUserAvatarURL(ctx, analytics.TeamAllocation[i].AvatarURL)
 	}
 
 	web.Respond(ctx, w, toAppSprintAnalytics(analytics), http.StatusOK)

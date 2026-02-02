@@ -69,7 +69,9 @@ type Repository interface {
 // AttachmentsService interface for profile image operations
 type AttachmentsService interface {
 	UploadProfileImage(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID) (string, error)
+	UploadProfileImageFromURL(ctx context.Context, imageURL string, userID uuid.UUID) (string, error)
 	DeleteProfileImage(ctx context.Context, avatarURL string) error
+	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
 // Service provides user-related operations.
@@ -429,7 +431,7 @@ func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file
 	}
 
 	// Upload new image
-	imageURL, err := attachmentsService.UploadProfileImage(ctx, file, fileHeader, userID)
+	blobName, err := attachmentsService.UploadProfileImage(ctx, file, fileHeader, userID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -442,20 +444,20 @@ func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file
 
 	// Update user's avatar URL using pointer-based update
 	updates := CoreUpdateUser{
-		AvatarURL: &imageURL,
+		AvatarURL: &blobName,
 	}
 
 	_, err = s.repo.UpdateUser(ctx, userID, updates)
 	if err != nil {
 		span.RecordError(err)
 		// Try to cleanup uploaded image since DB update failed
-		_ = attachmentsService.DeleteProfileImage(ctx, imageURL)
+		_ = attachmentsService.DeleteProfileImage(ctx, blobName)
 		return err
 	}
 
 	span.AddEvent("profile image updated", trace.WithAttributes(
 		attribute.String("user_id", userID.String()),
-		attribute.String("image_url", imageURL),
+		attribute.String("blob_name", blobName),
 	))
 
 	return nil

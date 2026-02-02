@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"slices"
 
@@ -28,8 +29,9 @@ import (
 )
 
 var (
-	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
-	restrictedSlugs       = []string{"admin", "internal", "qa", "staging", "ops", "team", "complexus", "dev", "test", "prod", "staging", "development", "testing", "production", "staff", "hr", "finance", "legal", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "auth", "fortyone", "forty-one"}
+	ErrInvalidWorkspaceID        = errors.New("workspace id is not in its proper form")
+	restrictedSlugs              = []string{"admin", "internal", "qa", "staging", "ops", "team", "complexus", "dev", "test", "prod", "staging", "development", "testing", "production", "staff", "hr", "finance", "legal", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "marketing", "sales", "support", "it", "security", "engineering", "design", "product", "auth", "fortyone", "forty-one"}
+	workspaceLogoAccessURLExpiry = 24 * time.Hour
 )
 
 type Handlers struct {
@@ -52,6 +54,23 @@ func New(workspaces *workspaces.Service, teams *teams.Service, stories *stories.
 	}
 }
 
+func (h *Handlers) resolveWorkspaceLogoURL(ctx context.Context, avatarURL *string) *string {
+	if avatarURL == nil || *avatarURL == "" || h.attachments == nil {
+		return avatarURL
+	}
+	resolved, err := h.attachments.ResolveWorkspaceLogoURL(ctx, *avatarURL, workspaceLogoAccessURLExpiry)
+	if err != nil || resolved == "" {
+		return nil
+	}
+	return &resolved
+}
+
+func (h *Handlers) resolveWorkspaceLogos(ctx context.Context, workspacesList []workspaces.CoreWorkspace) {
+	for i := range workspacesList {
+		workspacesList[i].AvatarURL = h.resolveWorkspaceLogoURL(ctx, workspacesList[i].AvatarURL)
+	}
+}
+
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "workspacesgrp.handlers.List")
 	defer span.End()
@@ -66,6 +85,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveWorkspaceLogos(ctx, workspacesList)
 	web.Respond(ctx, w, toAppWorkspaces(workspacesList), http.StatusOK)
 	return nil
 }
@@ -109,6 +129,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		attribute.String("userId", userID.String()),
 	))
 	workspace.UserRole = "admin"
+	workspace.AvatarURL = h.resolveWorkspaceLogoURL(ctx, workspace.AvatarURL)
 	return web.Respond(ctx, w, toAppWorkspace(workspace), http.StatusCreated)
 }
 
@@ -155,6 +176,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		attribute.String("workspaceId", workspace.ID.String()),
 	))
 
+	result.AvatarURL = h.resolveWorkspaceLogoURL(ctx, result.AvatarURL)
 	return web.Respond(ctx, w, toAppWorkspace(result), http.StatusOK)
 }
 
@@ -323,6 +345,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	ws.AvatarURL = h.resolveWorkspaceLogoURL(ctx, ws.AvatarURL)
 	web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 	return nil
 }
@@ -560,6 +583,7 @@ func (h *Handlers) UploadWorkspaceLogo(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	ws.AvatarURL = h.resolveWorkspaceLogoURL(ctx, ws.AvatarURL)
 	return web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 }
 
@@ -587,5 +611,6 @@ func (h *Handlers) DeleteWorkspaceLogo(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	ws.AvatarURL = h.resolveWorkspaceLogoURL(ctx, ws.AvatarURL)
 	return web.Respond(ctx, w, toAppWorkspace(ws), http.StatusOK)
 }

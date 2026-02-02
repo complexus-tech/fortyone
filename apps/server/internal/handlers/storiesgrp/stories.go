@@ -48,6 +48,17 @@ func New(stories *stories.Service, comments *comments.Service, links *links.Serv
 	}
 }
 
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, 24*time.Hour)
+	if err != nil {
+		return ""
+	}
+	return resolved
+}
+
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storiesgrp.handlers.Get")
 	defer span.End()
@@ -697,6 +708,10 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
+	}
+
+	for i := range activitiesList {
+		activitiesList[i].User.AvatarURL = h.resolveUserAvatarURL(ctx, activitiesList[i].User.AvatarURL)
 	}
 
 	appActivities := toAppActivitiesWithUser(activitiesList)

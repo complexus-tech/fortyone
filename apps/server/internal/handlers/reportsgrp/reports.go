@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/reports"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/date"
@@ -19,18 +20,32 @@ import (
 var (
 	ErrInvalidWorkspaceID = errors.New("invalid workspace id")
 	ErrInvalidDate        = errors.New("invalid date parameter")
+	avatarAccessURLExpiry = 24 * time.Hour
 )
 
 type Handlers struct {
-	reports *reports.Service
-	log     *logger.Logger
+	reports     *reports.Service
+	log         *logger.Logger
+	attachments *attachments.Service
 }
 
-func New(log *logger.Logger, reports *reports.Service) *Handlers {
+func New(log *logger.Logger, reports *reports.Service, attachments *attachments.Service) *Handlers {
 	return &Handlers{
-		reports: reports,
-		log:     log,
+		reports:     reports,
+		log:         log,
+		attachments: attachments,
 	}
+}
+
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, avatarAccessURLExpiry)
+	if err != nil {
+		return ""
+	}
+	return resolved
 }
 
 func (h *Handlers) GetStoryStats(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -381,6 +396,10 @@ func (h *Handlers) GetTeamPerformance(ctx context.Context, w http.ResponseWriter
 	performance, err := h.reports.GetTeamPerformance(ctx, workspace.ID, filters)
 	if err != nil {
 		return fmt.Errorf("getting team performance: %w", err)
+	}
+
+	for i := range performance.MemberContributions {
+		performance.MemberContributions[i].AvatarURL = h.resolveUserAvatarURL(ctx, performance.MemberContributions[i].AvatarURL)
 	}
 
 	return web.Respond(ctx, w, toAppTeamPerformance(performance), http.StatusOK)

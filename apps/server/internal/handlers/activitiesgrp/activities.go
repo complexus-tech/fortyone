@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/activities"
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -16,17 +18,31 @@ import (
 var ErrInvalidWorkspaceID = errors.New("invalid workspace id")
 var ErrInvalidLimit = errors.New("invalid limit")
 var ErrInvalidDate = errors.New("invalid date")
+var avatarAccessURLExpiry = 24 * time.Hour
 
 type Handlers struct {
-	activities *activities.Service
-	log        *logger.Logger
+	activities  *activities.Service
+	log         *logger.Logger
+	attachments *attachments.Service
 }
 
-func New(log *logger.Logger, activities *activities.Service) *Handlers {
+func New(log *logger.Logger, activities *activities.Service, attachments *attachments.Service) *Handlers {
 	return &Handlers{
-		activities: activities,
-		log:        log,
+		activities:  activities,
+		log:         log,
+		attachments: attachments,
 	}
+}
+
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, avatarAccessURLExpiry)
+	if err != nil {
+		return ""
+	}
+	return resolved
 }
 
 // GetActivities returns a list of activities for the logged-in user.
@@ -69,6 +85,10 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	})
 	if err != nil {
 		return err
+	}
+
+	for i := range acts {
+		acts[i].User.AvatarURL = h.resolveUserAvatarURL(ctx, acts[i].User.AvatarURL)
 	}
 
 	return web.Respond(ctx, w, toAppActivities(acts), http.StatusOK)
