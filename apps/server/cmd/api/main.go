@@ -118,10 +118,10 @@ type Config struct {
 		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	Storage struct {
-		Provider          string `env:"APP_STORAGE_PROVIDER" default:"azure"`
-		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profile-images"`
-		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"workspace-logos"`
-		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"story-attachments"`
+		Provider          string `env:"APP_STORAGE_PROVIDER" default:"aws"`
+		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profiles"`
+		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"logos"`
+		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"attachments"`
 	}
 	Azure struct {
 		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
