@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
 	"github.com/complexus-tech/projects-api/internal/repo/keyresultsrepo"
@@ -27,17 +28,30 @@ var (
 type Handlers struct {
 	keyResults    *keyresults.Service
 	okrActivities *okractivities.Service
+	attachments   *attachments.Service
 	log           *logger.Logger
 	cache         *cache.Service
 }
 
-func New(keyResults *keyresults.Service, okrActivities *okractivities.Service, cache *cache.Service, log *logger.Logger) *Handlers {
+func New(keyResults *keyresults.Service, okrActivities *okractivities.Service, attachments *attachments.Service, cache *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		keyResults:    keyResults,
 		okrActivities: okrActivities,
+		attachments:   attachments,
 		log:           log,
 		cache:         cache,
 	}
+}
+
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, 24*time.Hour)
+	if err != nil {
+		return ""
+	}
+	return resolved
 }
 
 func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
@@ -317,6 +331,10 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
+	}
+
+	for i := range activities {
+		activities[i].User.AvatarURL = h.resolveUserAvatarURL(ctx, activities[i].User.AvatarURL)
 	}
 
 	response := map[string]any{

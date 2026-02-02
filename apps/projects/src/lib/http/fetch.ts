@@ -1,9 +1,10 @@
 import type { Options } from "ky";
 import ky from "ky";
 import type { Session } from "next-auth";
+import { getApiUrl } from "@/lib/api-url";
 import { ApiError } from "./error";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export type WorkspaceCtx = {
   session: Session;

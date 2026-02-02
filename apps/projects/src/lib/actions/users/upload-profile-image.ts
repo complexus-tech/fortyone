@@ -1,11 +1,12 @@
 "use server";
 
-import ky from "ky";
 import type { ApiResponse, User } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export const uploadProfileImageAction = async (file: File) => {
   try {

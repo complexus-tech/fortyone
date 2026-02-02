@@ -11,12 +11,12 @@ type dbUser struct {
 	ID                  uuid.UUID  `db:"user_id"`
 	Username            string     `db:"username"`
 	Email               string     `db:"email"`
-	FullName            string     `db:"full_name"`
-	AvatarURL           string     `db:"avatar_url"`
+	FullName            *string    `db:"full_name"`
+	AvatarURL           *string    `db:"avatar_url"`
 	IsActive            bool       `db:"is_active"`
 	HasSeenWalkthrough  bool       `db:"has_seen_walkthrough"`
 	Timezone            string     `db:"timezone"`
-	LastLoginAt         time.Time  `db:"last_login_at"`
+	LastLoginAt         *time.Time `db:"last_login_at"`
 	LastUsedWorkspaceID *uuid.UUID `db:"last_used_workspace_id"`
 	CreatedAt           time.Time  `db:"created_at"`
 	UpdatedAt           time.Time  `db:"updated_at"`
@@ -53,17 +53,31 @@ func toCoreUser(p dbUser) users.CoreUser {
 		ID:                  p.ID,
 		Username:            p.Username,
 		Email:               p.Email,
-		FullName:            p.FullName,
-		AvatarURL:           p.AvatarURL,
+		FullName:            derefString(p.FullName),
+		AvatarURL:           derefString(p.AvatarURL),
 		IsActive:            p.IsActive,
 		HasSeenWalkthrough:  p.HasSeenWalkthrough,
 		Timezone:            p.Timezone,
-		LastLoginAt:         p.LastLoginAt,
+		LastLoginAt:         derefTime(p.LastLoginAt),
 		LastUsedWorkspaceID: p.LastUsedWorkspaceID,
 		CreatedAt:           p.CreatedAt,
 		UpdatedAt:           p.UpdatedAt,
 		Role:                p.Role,
 	}
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func derefTime(value *time.Time) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return *value
 }
 
 func toCoreUsers(du []dbUser) []users.CoreUser {

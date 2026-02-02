@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
 import { useCallback, useEffect } from "react";
+import { getApiUrl } from "@/lib/api-url";
 import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { notificationKeys } from "@/constants/keys";
@@ -12,7 +13,7 @@ import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import type { Story } from "@/modules/stories/types";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL!;
+const apiURL = getApiUrl();
 
 // NEW: Type for workspace updates
 type WorkspaceUpdate = {

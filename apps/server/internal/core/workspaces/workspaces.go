@@ -47,6 +47,7 @@ var restrictedSlugs = []string{
 type AttachmentsService interface {
 	UploadWorkspaceLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, workspaceID uuid.UUID) (string, error)
 	DeleteWorkspaceLogo(ctx context.Context, logoURL string) error
+	ResolveWorkspaceLogoURL(ctx context.Context, logo string, expiry time.Duration) (string, error)
 }
 
 // Repository provides access to the users storage.
@@ -706,7 +707,7 @@ func (s *Service) UploadWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID
 	}
 
 	// Upload new logo
-	logoURL, err := attachmentsService.UploadWorkspaceLogo(ctx, file, fileHeader, workspaceID)
+	blobName, err := attachmentsService.UploadWorkspaceLogo(ctx, file, fileHeader, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -719,20 +720,20 @@ func (s *Service) UploadWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID
 
 	// Update workspace's avatar URL using pointer-based update
 	updates := CoreWorkspace{
-		AvatarURL: &logoURL,
+		AvatarURL: &blobName,
 	}
 
 	_, err = s.repo.Update(ctx, workspaceID, updates)
 	if err != nil {
 		span.RecordError(err)
 		// Try to cleanup uploaded logo since DB update failed
-		_ = attachmentsService.DeleteWorkspaceLogo(ctx, logoURL)
+		_ = attachmentsService.DeleteWorkspaceLogo(ctx, blobName)
 		return err
 	}
 
 	span.AddEvent("workspace logo updated", trace.WithAttributes(
 		attribute.String("workspace_id", workspaceID.String()),
-		attribute.String("logo_url", logoURL),
+		attribute.String("blob_name", blobName),
 	))
 
 	return nil

@@ -54,10 +54,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	objectivesgrp.Routes(objectivesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Cache:          cfg.Cache,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	objectivestatusgrp.Routes(objectivestatusgrp.Config{
@@ -82,10 +84,12 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	sprintsgrp.Routes(sprintsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Cache:          cfg.Cache,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	epicsgrp.Routes(epicsgrp.Config{
@@ -150,24 +154,30 @@ func (handlers) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	activitiesgrp.Routes(activitiesgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Cache:          cfg.Cache,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	reportsgrp.Routes(reportsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Cache:          cfg.Cache,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	keyresultsgrp.Routes(keyresultsgrp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
+		DB:             cfg.DB,
+		Log:            cfg.Log,
+		SecretKey:      cfg.SecretKey,
+		Cache:          cfg.Cache,
+		StorageConfig:  cfg.StorageConfig,
+		StorageService: cfg.StorageService,
 	}, app)
 
 	notificationsgrp.Routes(notificationsgrp.Config{

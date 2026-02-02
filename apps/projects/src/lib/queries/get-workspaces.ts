@@ -1,7 +1,8 @@
-import ky from "ky";
 import type { ApiResponse, Workspace } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export async function getWorkspaces(token: string): Promise<Workspace[]> {
   const res = await ky

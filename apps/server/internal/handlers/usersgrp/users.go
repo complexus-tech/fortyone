@@ -21,6 +21,7 @@ import (
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 	SessionDuration       = time.Hour * 24 * 40
+	avatarAccessURLExpiry = 24 * time.Hour
 )
 
 type Handlers struct {
@@ -41,6 +42,30 @@ func New(users *users.Service, attachments users.AttachmentsService, secretKey s
 	}
 }
 
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, avatarAccessURLExpiry)
+	if err != nil {
+		return ""
+	}
+	return resolved
+}
+
+func (h *Handlers) resolveUserAvatar(ctx context.Context, user *users.CoreUser) {
+	if user == nil {
+		return
+	}
+	user.AvatarURL = h.resolveUserAvatarURL(ctx, user.AvatarURL)
+}
+
+func (h *Handlers) resolveUserAvatars(ctx context.Context, usersList []users.CoreUser) {
+	for i := range usersList {
+		usersList[i].AvatarURL = h.resolveUserAvatarURL(ctx, usersList[i].AvatarURL)
+	}
+}
+
 func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -55,6 +80,7 @@ func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *htt
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -99,6 +125,7 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -141,6 +168,7 @@ func (h *Handlers) SwitchWorkspace(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -164,6 +192,8 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
+
+	h.resolveUserAvatars(ctx, users)
 	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
 	return nil
 }
@@ -195,14 +225,22 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 
 	if errors.Is(err, users.ErrNotFound) {
 		newUser := users.CoreNewUser{
-			Email:     payload.Claims["email"].(string),
-			FullName:  payload.Claims["name"].(string),
-			AvatarURL: payload.Claims["picture"].(string),
-			Timezone:  "Antarctica/Troll", // Default timezone for new users
+			Email:    payload.Claims["email"].(string),
+			FullName: payload.Claims["name"].(string),
+			Timezone: "Antarctica/Troll", // Default timezone for new users
 		}
 		user, err = h.users.Register(ctx, newUser)
 		if err != nil {
 			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	if picture, ok := payload.Claims["picture"].(string); ok && picture != "" && user.AvatarURL == "" {
+		if blobName, err := h.attachments.UploadProfileImageFromURL(ctx, picture, user.ID); err == nil {
+			updates := users.CoreUpdateUser{AvatarURL: &blobName}
+			if err := h.users.UpdateUser(ctx, user.ID, updates); err == nil {
+				user.AvatarURL = blobName
+			}
 		}
 	}
 
@@ -219,6 +257,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	user.Token = &tokenString
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -338,6 +377,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	user.Token = &tokenString
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -428,6 +468,7 @@ func (h *Handlers) UploadProfileImage(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
@@ -450,6 +491,7 @@ func (h *Handlers) DeleteProfileImage(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
+	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

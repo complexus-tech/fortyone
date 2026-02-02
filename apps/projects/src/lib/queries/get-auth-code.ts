@@ -1,9 +1,10 @@
 import ky from "ky";
 import type { Session } from "next-auth";
+import { getApiUrl } from "@/lib/api-url";
 import type { ApiResponse } from "@/types";
 import { requestError } from "../fetch-error";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export async function getAuthCode(session: Session) {
   try {

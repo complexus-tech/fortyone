@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -20,6 +21,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/core/stories"
 	"github.com/complexus-tech/projects-api/internal/core/users"
 	"github.com/complexus-tech/projects-api/internal/handlers"
+	"github.com/complexus-tech/projects-api/internal/migrations"
 	"github.com/complexus-tech/projects-api/internal/mux"
 	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
 	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
@@ -78,11 +80,16 @@ type Config struct {
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Cache struct {
-		Host       string `default:"localhost" env:"APP_REDIS_HOST"`
-		Port       string `default:"6379" env:"APP_REDIS_PORT"`
-		Password   string `default:"" env:"APP_REDIS_PASSWORD"`
-		Name       int    `default:"0" env:"APP_REDIS_DB"`
-		DisableTLS bool   `default:"false" env:"APP_REDIS_DISABLE_TLS"`
+		Host               string        `default:"localhost" env:"APP_REDIS_HOST"`
+		Port               string        `default:"6379" env:"APP_REDIS_PORT"`
+		Password           string        `default:"" env:"APP_REDIS_PASSWORD"`
+		Name               int           `default:"0" env:"APP_REDIS_DB"`
+		DisableTLS         bool          `default:"false" env:"APP_REDIS_DISABLE_TLS"`
+		InsecureSkipVerify bool          `default:"false" env:"APP_REDIS_INSECURE_SKIP_VERIFY"`
+		DialTimeout        time.Duration `default:"10s" env:"APP_REDIS_DIAL_TIMEOUT"`
+		ReadTimeout        time.Duration `default:"30s" env:"APP_REDIS_READ_TIMEOUT"`
+		WriteTimeout       time.Duration `default:"30s" env:"APP_REDIS_WRITE_TIMEOUT"`
+		PoolSize           int           `default:"100" env:"APP_REDIS_POOL_SIZE"`
 	}
 	Email struct {
 		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
@@ -101,7 +108,8 @@ type Config struct {
 		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
 	}
 	Tracing struct {
-		Host string `default:"localhost:4318" env:"APP_TRACING_HOST"`
+		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
+		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
 	}
 	Google struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
@@ -110,23 +118,24 @@ type Config struct {
 		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	Storage struct {
-		Provider string `env:"APP_STORAGE_PROVIDER" default:"azure"`
+		Provider          string `env:"APP_STORAGE_PROVIDER" default:"aws"`
+		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profiles"`
+		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"logos"`
+		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"attachments"`
 	}
 	Azure struct {
 		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
 		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
 		StorageAccountKey       string `env:"APP_AZURE_STORAGE_ACCOUNT_KEY"`
-		ProfileImagesContainer  string `default:"profile-images" env:"APP_AZURE_CONTAINER_PROFILE_IMAGES"`
-		WorkspaceLogosContainer string `default:"workspace-logos" env:"APP_AZURE_CONTAINER_WORKSPACE_LOGOS"`
-		AttachmentsContainer    string `default:"attachments" env:"APP_AZURE_CONTAINER_ATTACHMENTS"`
 	}
 	AWS struct {
-		AccessKeyID          string `env:"APP_AWS_ACCESS_KEY_ID"`
-		SecretAccessKey      string `env:"APP_AWS_SECRET_ACCESS_KEY"`
-		Region               string `env:"APP_AWS_REGION"`
-		ProfileImagesBucket  string `env:"APP_AWS_PROFILE_IMAGES_BUCKET"`
-		WorkspaceLogosBucket string `env:"APP_AWS_WORKSPACE_LOGOS_BUCKET"`
-		AttachmentsBucket    string `env:"APP_AWS_ATTACHMENTS_BUCKET"`
+		AccessKeyID     string `env:"APP_AWS_ACCESS_KEY_ID"`
+		SecretAccessKey string `env:"APP_AWS_SECRET_ACCESS_KEY"`
+		Region          string `env:"APP_AWS_REGION" default:"us-east-1"`
+		Endpoint        string `env:"APP_AWS_ENDPOINT"`
+		PublicURL       string `env:"APP_AWS_PUBLIC_URL"`
+		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
+		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -135,6 +144,9 @@ type Config struct {
 }
 
 func main() {
+	migrateOnly := flag.Bool("migrate", false, "Run database migrations and exit")
+	flag.Parse()
+
 	var logLevel slog.Level
 
 	switch environ {
@@ -148,6 +160,15 @@ func main() {
 
 	log := logger.NewWithJSON(os.Stdout, logLevel, service)
 	ctx := context.Background()
+
+	if *migrateOnly {
+		if err := runMigrations(ctx, log); err != nil {
+			log.Error(ctx, fmt.Sprintf("migrations failed: %s", err))
+			os.Exit(1)
+		}
+		log.Info(ctx, "migrations completed")
+		return
+	}
 
 	if err := run(ctx, log); err != nil {
 		log.Error(ctx, fmt.Sprintf("error shutting down: %s", err))
@@ -194,13 +215,19 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Connect to redis client
 	var tlsConfig *tls.Config
 	if !cfg.Cache.DisableTLS {
-		tlsConfig = &tls.Config{}
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: cfg.Cache.InsecureSkipVerify,
+		}
 	}
 	rdb := redis.NewClient(&redis.Options{
-		Addr:      net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
-		Password:  cfg.Cache.Password,
-		DB:        cfg.Cache.Name,
-		TLSConfig: tlsConfig,
+		Addr:         net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
+		Password:     cfg.Cache.Password,
+		DB:           cfg.Cache.Name,
+		TLSConfig:    tlsConfig,
+		DialTimeout:  cfg.Cache.DialTimeout,
+		ReadTimeout:  cfg.Cache.ReadTimeout,
+		WriteTimeout: cfg.Cache.WriteTimeout,
+		PoolSize:     cfg.Cache.PoolSize,
 	})
 
 	// Close the redis connection when the main function returns
@@ -220,27 +247,28 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Initialize Azure configuration
 	azureConfig := azure.Config{
-		ConnectionString:        cfg.Azure.StorageConnectionString,
-		StorageAccountName:      cfg.Azure.StorageAccountName,
-		AccountKey:              cfg.Azure.StorageAccountKey,
-		ProfileImagesContainer:  cfg.Azure.ProfileImagesContainer,
-		WorkspaceLogosContainer: cfg.Azure.WorkspaceLogosContainer,
-		AttachmentsContainer:    cfg.Azure.AttachmentsContainer,
+		ConnectionString:   cfg.Azure.StorageConnectionString,
+		StorageAccountName: cfg.Azure.StorageAccountName,
+		AccountKey:         cfg.Azure.StorageAccountKey,
 	}
 
 	awsConfig := aws.Config{
-		AccessKeyID:          cfg.AWS.AccessKeyID,
-		SecretAccessKey:      cfg.AWS.SecretAccessKey,
-		Region:               cfg.AWS.Region,
-		ProfileImagesBucket:  cfg.AWS.ProfileImagesBucket,
-		WorkspaceLogosBucket: cfg.AWS.WorkspaceLogosBucket,
-		AttachmentsBucket:    cfg.AWS.AttachmentsBucket,
+		AccessKeyID:     cfg.AWS.AccessKeyID,
+		SecretAccessKey: cfg.AWS.SecretAccessKey,
+		Region:          cfg.AWS.Region,
+		Endpoint:        cfg.AWS.Endpoint,
+		PublicURL:       cfg.AWS.PublicURL,
+		ForcePathStyle:  cfg.AWS.ForcePathStyle,
+		Bucket:          cfg.AWS.Bucket,
 	}
 
 	storageConfig := storage.Config{
-		Provider: cfg.Storage.Provider,
-		Azure:    azureConfig,
-		AWS:      awsConfig,
+		Provider:          cfg.Storage.Provider,
+		ProfilesBucket:    cfg.Storage.ProfilesBucket,
+		LogosBucket:       cfg.Storage.LogosBucket,
+		AttachmentsBucket: cfg.Storage.AttachmentsBucket,
+		Azure:             azureConfig,
+		AWS:               awsConfig,
 	}
 
 	storageService, err := storage.NewStorageService(storageConfig, log)
@@ -318,12 +346,12 @@ func run(ctx context.Context, log *logger.Logger) error {
 	shutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
-	t := tracing.New(service, version, environ, cfg.Tracing.Host)
+	t := tracing.New(service, version, environ, cfg.Tracing.Endpoint, cfg.Tracing.Headers)
 	tp, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
 	}
-	log.Info(ctx, fmt.Sprintf("started open telemetry tracing on %s", cfg.Tracing.Host))
+	log.Info(ctx, fmt.Sprintf("started open telemetry tracing on %s", cfg.Tracing.Endpoint))
 
 	// Graceful shutdown of tracing if server is stopped
 	defer func() {
@@ -438,4 +466,24 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}
 	return nil
+}
+
+func runMigrations(ctx context.Context, log *logger.Logger) error {
+	var cfg Config
+
+	if err := config.Parse("app", &cfg); err != nil {
+		return fmt.Errorf("error parsing config: %s", err)
+	}
+
+	log.Info(ctx, "running database migrations")
+	return migrations.Run(database.Config{
+		Host:         cfg.DB.Host,
+		Port:         cfg.DB.Port,
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Name:         cfg.DB.Name,
+		MaxIdleConns: cfg.DB.MaxIdleConns,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		DisableTLS:   cfg.DB.DisableTLS,
+	})
 }

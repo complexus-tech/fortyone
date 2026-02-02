@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/complexus-tech/projects-api/internal/core/attachments"
 	"github.com/complexus-tech/projects-api/internal/core/keyresults"
 	"github.com/complexus-tech/projects-api/internal/core/objectives"
 	"github.com/complexus-tech/projects-api/internal/core/okractivities"
@@ -23,6 +25,7 @@ type Handlers struct {
 	objectives    *objectives.Service
 	keyResults    *keyresults.Service
 	okrActivities *okractivities.Service
+	attachments   *attachments.Service
 	cache         *cache.Service
 	log           *logger.Logger
 }
@@ -32,14 +35,26 @@ var (
 	ErrInvalidObjectiveID = errors.New("objective id is not in its proper form")
 )
 
-func New(objectives *objectives.Service, keyResults *keyresults.Service, okrActivities *okractivities.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
+func New(objectives *objectives.Service, keyResults *keyresults.Service, okrActivities *okractivities.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		objectives:    objectives,
 		keyResults:    keyResults,
 		okrActivities: okrActivities,
+		attachments:   attachments,
 		cache:         cacheService,
 		log:           log,
 	}
+}
+
+func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) string {
+	if h.attachments == nil {
+		return avatar
+	}
+	resolved, err := h.attachments.ResolveProfileImageURL(ctx, avatar, 24*time.Hour)
+	if err != nil {
+		return ""
+	}
+	return resolved
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -385,6 +400,17 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
+	for i := range analytics.TeamAllocation {
+		if analytics.TeamAllocation[i].AvatarURL != nil {
+			resolved := h.resolveUserAvatarURL(ctx, *analytics.TeamAllocation[i].AvatarURL)
+			if resolved == "" {
+				analytics.TeamAllocation[i].AvatarURL = nil
+			} else {
+				analytics.TeamAllocation[i].AvatarURL = &resolved
+			}
+		}
+	}
+
 	web.Respond(ctx, w, toAppObjectiveAnalytics(analytics), http.StatusOK)
 	return nil
 }
@@ -420,6 +446,10 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
+	}
+
+	for i := range activities {
+		activities[i].User.AvatarURL = h.resolveUserAvatarURL(ctx, activities[i].User.AvatarURL)
 	}
 
 	response := map[string]any{

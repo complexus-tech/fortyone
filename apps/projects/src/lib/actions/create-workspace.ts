@@ -1,8 +1,9 @@
 "use server";
 
-import ky from "ky";
-import { auth } from "@/auth";
 import type { ApiResponse, Workspace } from "@/types";
+import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
+import { auth } from "@/auth";
 import { requestError } from "../fetch-error";
 
 type NewWorkspace = {
@@ -11,7 +12,7 @@ type NewWorkspace = {
   teamSize: string;
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = getApiUrl();
 
 export async function createWorkspaceAction(newWorkspace: NewWorkspace) {
   const session = await auth();

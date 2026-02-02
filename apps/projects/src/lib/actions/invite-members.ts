@@ -1,10 +1,11 @@
 "use server";
 
 import ky from "ky";
+import { getApiUrl } from "@/lib/api-url";
 import { auth } from "@/auth";
 import { requestError } from "../fetch-error";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
+const apiURL = getApiUrl();
 
 export async function inviteMembers(
   emails: string[],

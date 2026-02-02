@@ -42,6 +42,10 @@ type SendTransactionalEmailRequest struct {
 
 // SendTransactionalEmail sends a transactional email using Brevo.
 func (s *Service) SendTransactionalEmail(ctx context.Context, req SendTransactionalEmailRequest) error {
+	if !s.isEnabled(ctx) {
+		return nil
+	}
+
 	s.log.Info(ctx, "Sending transactional email via Brevo",
 		"subject", req.Subject,
 		"recipient_count", len(req.To))
@@ -154,6 +158,10 @@ type SendTemplatedEmailRequest struct {
 
 // SendTemplatedEmail sends a transactional email using a Brevo template with dynamic parameters.
 func (s *Service) SendTemplatedEmail(ctx context.Context, req SendTemplatedEmailRequest) error {
+	if !s.isEnabled(ctx) {
+		return nil
+	}
+
 	s.log.Info(ctx, "Sending templated email via Brevo",
 		"template_id", req.TemplateID,
 		"recipient_count", len(req.To))
