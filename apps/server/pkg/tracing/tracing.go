@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"go.opentelemetry.io/otel"
@@ -39,19 +40,39 @@ func New(service, version, environ, endpoint string, headers map[string]string) 
 func (c *config) StartTracing() (*sdktrace.TracerProvider, error) {
 	opts := []otlptracehttp.Option{}
 
-	// Determine if TLS should be used based on endpoint prefix
-	endpoint := c.endpoint
-	if after, ok := strings.CutPrefix(endpoint, "https://"); ok {
-		endpoint = after
-	} else if after, ok := strings.CutPrefix(endpoint, "http://"); ok {
-		endpoint = after
-		opts = append(opts, otlptracehttp.WithInsecure())
-	} else {
-		// No protocol prefix - assume insecure
-		opts = append(opts, otlptracehttp.WithInsecure())
+	endpoint := strings.TrimSpace(c.endpoint)
+	if strings.Contains(endpoint, "%2F") || strings.Contains(endpoint, "%2f") {
+		if decoded, err := url.PathUnescape(endpoint); err == nil {
+			endpoint = decoded
+		}
 	}
 
-	opts = append(opts, otlptracehttp.WithEndpoint(endpoint))
+	switch {
+	case strings.HasPrefix(endpoint, "https://") || strings.HasPrefix(endpoint, "http://"):
+		parsed, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+		if parsed.Scheme == "http" {
+			opts = append(opts, otlptracehttp.WithInsecure())
+		}
+		opts = append(opts, otlptracehttp.WithEndpoint(parsed.Host))
+		if parsed.Path != "" && parsed.Path != "/" {
+			opts = append(opts, otlptracehttp.WithURLPath(parsed.Path))
+		}
+	default:
+		opts = append(opts, otlptracehttp.WithInsecure())
+		host := endpoint
+		path := ""
+		if idx := strings.Index(host, "/"); idx != -1 {
+			path = host[idx:]
+			host = host[:idx]
+		}
+		opts = append(opts, otlptracehttp.WithEndpoint(host))
+		if path != "" {
+			opts = append(opts, otlptracehttp.WithURLPath(path))
+		}
+	}
 
 	if len(c.headers) > 0 {
 		opts = append(opts, otlptracehttp.WithHeaders(c.headers))
