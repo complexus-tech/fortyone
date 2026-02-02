@@ -6,7 +6,12 @@ import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "lib";
-import { useLocalStorage, useUserRole, useTerminology, useWorkspacePath } from "@/hooks";
+import {
+  useLocalStorage,
+  useUserRole,
+  useTerminology,
+  useWorkspacePath,
+} from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { BodyContainer, MobileMenuButton } from "../shared";
@@ -37,8 +42,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const accountItems = [
     { title: "Profile", href: withWorkspace("/settings/account") },
-    { title: "Preferences", href: withWorkspace("/settings/account/preferences") },
-    { title: "Notifications", href: withWorkspace("/settings/account/notifications") },
+    {
+      title: "Preferences",
+      href: withWorkspace("/settings/account/preferences"),
+    },
+    {
+      title: "Notifications",
+      href: withWorkspace("/settings/account/notifications"),
+    },
     { title: "Security", href: withWorkspace("/settings/account/security") },
     ...(myInvitations.length > 0
       ? [{ title: "Invitations", href: withWorkspace("/settings/invitations") }]
@@ -49,8 +60,14 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
     ...(isAdmin
       ? [
           { title: "General", href: withWorkspace("/settings") },
-          { title: "Members", href: withWorkspace("/settings/workspace/members") },
-          { title: "Billing & plans", href: withWorkspace("/settings/workspace/billing") },
+          {
+            title: "Members",
+            href: withWorkspace("/settings/workspace/members"),
+          },
+          {
+            title: "Billing & plans",
+            href: withWorkspace("/settings/workspace/billing"),
+          },
           ...(hasFeature("customTerminology")
             ? [
                 {
@@ -68,7 +85,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const featureItems = [
     ...(isAdmin || isMember
       ? [
-          { title: "Labels", href: withWorkspace("/settings/workspace/labels") },
+          {
+            title: "Labels",
+            href: withWorkspace("/settings/workspace/labels"),
+          },
           {
             title: getTermDisplay("objectiveTerm", {
               variant: "plural",
@@ -154,73 +174,63 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           <Container>{children}</Container>
         </Box>
       </Box>
-      <Box className="hidden md:block">
-        <ResizablePanel autoSaveId="settings:layout" direction="horizontal">
-          <ResizablePanel.Panel
-            className="from-sidebar to-sidebar/50 bg-linear-to-br"
-            defaultSize={15}
-            maxSize={20}
-            minSize={12}
+      <Box className="hidden md:flex">
+        <Box className="from-sidebar border-border to-sidebar/50 w-(--sidebar-width) shrink-0 border-r bg-linear-to-br">
+          <Box className="flex h-16 items-center px-4">
+            <Tooltip
+              title={
+                <span className="flex items-center gap-1">
+                  Close Settings
+                  <Badge color="tertiary" rounded="sm" size="sm">
+                    Esc
+                  </Badge>
+                </span>
+              }
+            >
+              <button
+                className="group flex items-center gap-1.5 text-lg font-medium"
+                onClick={goBack}
+                type="button"
+              >
+                <ArrowLeft2Icon strokeWidth={2.8} />
+                Settings
+              </button>
+            </Tooltip>
+          </Box>
+          <BodyContainer className="px-4">
+            <Flex className="mt-6" direction="column" gap={4}>
+              {navigation.map(({ category, items, icon }) => (
+                <Box className="mb-3" key={category}>
+                  <Flex align="center" className="mb-2" gap={4}>
+                    {icon}
+                    <Text color="muted">{category}</Text>
+                  </Flex>
+                  <Flex className="ml-8" direction="column" gap={1}>
+                    {items.map(({ href, title }) => (
+                      <NavLink
+                        active={pathname === href}
+                        className="relative -left-1 py-1.5"
+                        href={href}
+                        key={href}
+                      >
+                        {title}
+                      </NavLink>
+                    ))}
+                  </Flex>
+                </Box>
+              ))}
+            </Flex>
+          </BodyContainer>
+        </Box>
+        <Box className="h-dvh flex-1 overflow-y-auto">
+          <Container
+            className={cn("max-w-216 py-12", {
+              "max-w-[80rem]": pathname.includes("billing"),
+            })}
           >
-            <Box className="flex h-16 items-center px-4">
-              <Tooltip
-                title={
-                  <span className="flex items-center gap-1">
-                    Close Settings
-                    <Badge color="tertiary" rounded="sm" size="sm">
-                      Esc
-                    </Badge>
-                  </span>
-                }
-              >
-                <button
-                  className="group flex items-center gap-1.5 text-lg font-medium"
-                  onClick={goBack}
-                  type="button"
-                >
-                  <ArrowLeft2Icon strokeWidth={2.8} />
-                  Settings
-                </button>
-              </Tooltip>
-            </Box>
-            <BodyContainer className="px-4">
-              <Flex className="mt-6" direction="column" gap={4}>
-                {navigation.map(({ category, items, icon }) => (
-                  <Box className="mb-3" key={category}>
-                    <Flex align="center" className="mb-2" gap={4}>
-                      {icon}
-                      <Text color="muted">{category}</Text>
-                    </Flex>
-                    <Flex className="ml-8" direction="column" gap={1}>
-                      {items.map(({ href, title }) => (
-                        <NavLink
-                          active={pathname === href}
-                          className="relative -left-1 py-1.5"
-                          href={href}
-                          key={href}
-                        >
-                          {title}
-                        </NavLink>
-                      ))}
-                    </Flex>
-                  </Box>
-                ))}
-              </Flex>
-            </BodyContainer>
-          </ResizablePanel.Panel>
-          <ResizablePanel.Handle />
-          <ResizablePanel.Panel defaultSize={85}>
-            <Box className="h-dvh overflow-y-auto">
-              <Container
-                className={cn("max-w-216 py-12", {
-                  "max-w-[80rem]": pathname.includes("billing"),
-                })}
-              >
-                {children}
-              </Container>
-            </Box>
-          </ResizablePanel.Panel>
-        </ResizablePanel>
+            {children}
+          </Container>
+        </Box>
       </Box>
       <Commands />
     </>
