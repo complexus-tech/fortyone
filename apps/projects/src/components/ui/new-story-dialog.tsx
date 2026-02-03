@@ -47,6 +47,7 @@ import {
   ObjectiveIcon,
   SprintsIcon,
   CrownIcon,
+  ArrowRight2Icon,
 } from "icons";
 import { toast } from "sonner";
 import { addDays, format, formatISO } from "date-fns";
@@ -420,10 +421,10 @@ export const NewStoryDialog = ({
               <Menu>
                 <Menu.Button>
                   <Button
-                    className="gap-1.5 font-semibold tracking-wide"
+                    className="dark:bg-surface-elevated/90 gap-1.5 text-[0.95rem] font-semibold tracking-wide"
                     color="tertiary"
                     leftIcon={<TeamColor color={currentTeam?.color} />}
-                    size="xs"
+                    size="sm"
                   >
                     {currentTeam?.code}
                   </Button>
@@ -451,8 +452,8 @@ export const NewStoryDialog = ({
                   </Menu.Group>
                 </Menu.Items>
               </Menu>
-              <ArrowRightIcon
-                className="h-4 w-auto opacity-30"
+              <ArrowRight2Icon
+                className="h-4.5 w-auto opacity-30"
                 strokeWidth={3}
               />
               <Text className="opacity-80" color="muted">
@@ -507,6 +508,7 @@ export const NewStoryDialog = ({
                       />
                     }
                     size="sm"
+                    className="dark:bg-surface-elevated/90"
                     type="button"
                     variant="outline"
                   >
@@ -540,6 +542,7 @@ export const NewStoryDialog = ({
                       />
                     }
                     size="sm"
+                    className="dark:bg-surface-elevated/90"
                     type="button"
                     variant="outline"
                   >
@@ -560,9 +563,9 @@ export const NewStoryDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="px-2"
+                    className="dark:bg-surface-elevated/90 px-2"
                     color="tertiary"
-                    leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                    leftIcon={<CalendarIcon className="h-4.5 w-auto" />}
                     rightIcon={
                       storyForm.startDate ? (
                         <CloseIcon
@@ -600,7 +603,7 @@ export const NewStoryDialog = ({
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className={cn("px-2", {
+                    className={cn("dark:bg-surface-elevated/90 px-2", {
                       "text-primary dark:text-primary": storyForm.endDate
                         ? new Date(storyForm.endDate) < new Date()
                         : false,
@@ -611,7 +614,7 @@ export const NewStoryDialog = ({
                         : false,
                     })}
                     color="tertiary"
-                    leftIcon={<CalendarIcon className="h-4 w-auto" />}
+                    leftIcon={<CalendarIcon className="h-4.5 w-auto" />}
                     rightIcon={
                       storyForm.endDate ? (
                         <CloseIcon
@@ -654,7 +657,7 @@ export const NewStoryDialog = ({
               <AssigneesMenu>
                 <AssigneesMenu.Trigger>
                   <Button
-                    className="gap-1.5 px-2"
+                    className="dark:bg-surface-elevated/90 gap-1.5 px-2"
                     color="tertiary"
                     leftIcon={
                       <Avatar
@@ -687,9 +690,9 @@ export const NewStoryDialog = ({
                 <ObjectivesMenu>
                   <ObjectivesMenu.Trigger>
                     <Button
-                      className="gap-1 px-2"
+                      className="dark:bg-surface-elevated/90 gap-1 px-2"
                       color="tertiary"
-                      leftIcon={<ObjectiveIcon className="h-4 w-auto" />}
+                      leftIcon={<ObjectiveIcon />}
                       size="sm"
                       variant="outline"
                     >
@@ -716,9 +719,9 @@ export const NewStoryDialog = ({
                 <SprintsMenu>
                   <SprintsMenu.Trigger>
                     <Button
-                      className="gap-1 px-2"
+                      className="dark:bg-surface-elevated/90 gap-1 px-2"
                       color="tertiary"
-                      leftIcon={<SprintsIcon className="h-4 w-auto" />}
+                      leftIcon={<SprintsIcon />}
                       size="sm"
                       variant="outline"
                     >

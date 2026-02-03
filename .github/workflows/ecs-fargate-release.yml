@@ -1,0 +1,120 @@
+name: Release Server Images and Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Docker image tag (e.g. v1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  DOCKERHUB_SERVER_IMAGE: fortyoneapp/server
+  DOCKERHUB_WORKER_IMAGE: fortyoneapp/worker
+  IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deployments/docker/dockerfile.server
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.DOCKERHUB_SERVER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deployments/docker/dockerfile.worker
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.DOCKERHUB_WORKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Download server task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ vars.ECS_SERVER_TASK_DEFINITION }}" \
+            --query taskDefinition > task-definition-server.json
+
+      - name: Render server task definition
+        id: render-server
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-server.json
+          container-name: ${{ vars.ECS_SERVER_CONTAINER }}
+          image: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy server service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-server.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVER_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Download worker task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ vars.ECS_WORKER_TASK_DEFINITION }}" \
+            --query taskDefinition > task-definition-worker.json
+
+      - name: Render worker task definition
+        id: render-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-worker.json
+          container-name: ${{ vars.ECS_WORKER_CONTAINER }}
+          image: ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy worker service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-worker.outputs.task-definition }}
+          service: ${{ vars.ECS_WORKER_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
