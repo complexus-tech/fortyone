@@ -21,18 +21,16 @@ import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import {
-  OptionsHeader,
-  Activities,
-  Attachments,
-  Associations,
-} from "@/modules/story/components";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
+import { Activities } from "./activities";
+import { Associations } from "./associations";
+import { Attachments } from "./attachments";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { LinksSkeleton } from "./links-skeleton";
+import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay

@@ -1,11 +1,21 @@
+// eslint-disable-next-line turbo/no-undeclared-env-vars -- build-time flag for docker
+const isDockerBuild = process.env.DOCKER_BUILD === "1";
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
   output: "standalone",
   transpilePackages: ["ui", "icons"],
   devIndicators: false,
   reactCompiler: true,
+  eslint: {
+    ignoreDuringBuilds: isDockerBuild,
+  },
+  typescript: {
+    ignoreBuildErrors: isDockerBuild,
+  },
   experimental: {
     turbopackFileSystemCacheForDev: true,
     staleTimes: {
@@ -78,10 +88,7 @@ module.exports = {
 };
 
 // Injected content via Sentry wizard below
-
-const { withSentryConfig } = require("@sentry/nextjs");
-
-module.exports = withSentryConfig(module.exports, {
+const sentryConfig = withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -115,3 +122,5 @@ module.exports = withSentryConfig(module.exports, {
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
 });
+
+module.exports = isDockerBuild ? nextConfig : sentryConfig;

@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/build
+**/.cache
+**/.pnpm-store
+**/coverage
+**/*.log
+**/.DS_Store
+**/tmp
+**/temp
+**/.env*
+**/.idea
+**/.vscode
+**/.git

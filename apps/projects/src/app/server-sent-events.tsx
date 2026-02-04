@@ -54,34 +54,31 @@ export const ServerSentEvents = () => {
 
   const handleWorkspaceUpdate = useCallback(
     (workspaceUpdate: WorkspaceUpdate) => {
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
-
-      queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        // Only target story list queries that are active
-        if (
-          queryKey.toLowerCase().includes("stories") &&
-          !queryKey.toLowerCase().includes("detail") &&
-          query.isActive()
-        ) {
-          queryClient.setQueriesData(
-            { queryKey: query.queryKey },
-            (oldData: Story[] | undefined) => {
-              if (!oldData) return oldData;
-              // Find and update the specific story
-              return oldData.map((story) =>
-                story.id === workspaceUpdate.storyId
-                  ? {
-                      ...story,
-                      ...workspaceUpdate.changes,
-                    }
-                  : story,
-              );
-            },
+      queryClient.setQueriesData(
+        {
+          predicate: (query) => {
+            const queryKey = query.queryKey;
+            return (
+              Array.isArray(queryKey) &&
+              queryKey[0] === "stories" &&
+              !queryKey.includes("detail") &&
+              query.isActive()
+            );
+          },
+        },
+        (oldData: Story[] | undefined) => {
+          if (!oldData) return oldData;
+          // Find and update the specific story
+          return oldData.map((story) =>
+            story.id === workspaceUpdate.storyId
+              ? {
+                  ...story,
+                  ...workspaceUpdate.changes,
+                }
+              : story,
           );
-        }
-      });
+        },
+      );
 
       queryClient.setQueryData(
         storyKeys.detail(workspaceSlug, workspaceUpdate.storyId),
@@ -98,7 +95,9 @@ export const ServerSentEvents = () => {
   );
 
   useEffect(() => {
-    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace?.slug}/notifications/subscribe?token=${session?.token}`;
+    if (!session?.token || !workspace?.slug) return;
+
+    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace.slug}/notifications/subscribe?token=${session.token}`;
     const eventSource = new EventSource(SSE_ENDPOINT);
 
     eventSource.onmessage = (event) => {
@@ -127,8 +126,7 @@ export const ServerSentEvents = () => {
   }, [
     posthog,
     session?.token,
-    workspace,
-    queryClient,
+    workspace?.slug,
     handleNotification,
     handleWorkspaceUpdate,
   ]);
