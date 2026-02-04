@@ -2,12 +2,21 @@
 import { Box, ResizablePanel, Button, Text } from "ui";
 import { cn } from "lib";
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
-import { MainDetails } from "./components/main-details";
+import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
 import { StorySkeleton } from "./components/story-skeleton";
 import { useWorkspacePath } from "@/hooks";
+
+const MainDetails = dynamic(
+  () => import("./components/main-details").then((mod) => mod.MainDetails),
+  {
+    ssr: false,
+    loading: () => <MainDetailsSkeleton />,
+  },
+);
 
 export const StoryPage = ({
   storyId,

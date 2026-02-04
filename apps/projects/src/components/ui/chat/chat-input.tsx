@@ -279,7 +279,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="rounded-[1.25rem] border border-border py-2">
+      <Box className="border-border rounded-[1.25rem] border py-2">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (
@@ -327,13 +327,15 @@ export const ChatInput = ({
 
         <Box className="relative dark:antialiased">
           <textarea
-            autoFocus
+            aria-label="Chat message"
+            autoFocus={Boolean(isOnPage)}
             className={cn(
-              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus:outline-none focus:ring-0 dark:text-white",
+              "focus-visible:ring-border max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:ring-2 focus-visible:outline-none dark:text-white",
               {
                 "md:min-h-[3.7rem]": isOnPage,
               },
             )}
+            name="message"
             onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder=""
@@ -343,8 +345,9 @@ export const ChatInput = ({
           />
           {!value && (
             <Box
+              aria-hidden="true"
               className={cn(
-                "pointer-events-none absolute left-5 top-2 text-[1.1rem] text-text-muted transition-all duration-200 ease-in-out",
+                "text-text-muted pointer-events-none absolute top-2 left-5 text-[1.1rem] transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
                 {
                   "translate-y-1 opacity-0 first-letter:uppercase": isAnimating,
                 },
@@ -406,6 +409,13 @@ export const ChatInput = ({
             </Button>
             <Button
               asIcon
+              aria-label={
+                isRecording
+                  ? "Send recording"
+                  : status === "submitted" || status === "streaming"
+                    ? "Stop response"
+                    : "Send message"
+              }
               className=""
               color="invert"
               onClick={() => {
