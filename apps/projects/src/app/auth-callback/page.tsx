@@ -5,6 +5,7 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { ClientPage } from "./client";
 import { getAuthCode } from "@/lib/queries/get-auth-code";
+import { getCookieHeader } from "@/lib/http/header";
 
 export default async function AuthCallback({
   searchParams,
@@ -15,6 +16,7 @@ export default async function AuthCallback({
   const isMobileApp = params?.mobileApp === "true";
 
   const session = await auth();
+  const cookieHeader = await getCookieHeader();
 
   if (!session) {
     redirect("/");
@@ -22,12 +24,15 @@ export default async function AuthCallback({
 
   const [invitations, workspaces, profile] = await Promise.all([
     getMyInvitations(),
-    getWorkspaces(session.token),
-    getProfile(session),
+    getWorkspaces(session.token, cookieHeader),
+    getProfile({ token: session.token, cookieHeader }),
   ]);
 
   if (isMobileApp && workspaces.length > 0) {
-    const authCodeResponse = await getAuthCode(session);
+    const authCodeResponse = await getAuthCode({
+      token: session.token,
+      cookieHeader,
+    });
     if (authCodeResponse.error || !authCodeResponse.data) {
       redirect("/?mobileApp=true&error=Failed to generate auth code");
     } else {

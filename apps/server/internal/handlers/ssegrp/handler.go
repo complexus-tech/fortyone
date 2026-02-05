@@ -10,6 +10,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/internal/web/mid"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
 type Handler struct {
@@ -57,10 +58,15 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 	headers.WriteString("Content-Type: text/event-stream\r\n")
 	headers.WriteString("Cache-Control: no-cache\r\n")
 	headers.WriteString("Connection: keep-alive\r\n")
-	if h.CorsOrigin != "" {
+	allowedOrigin := web.AllowedOrigin(r)
+	if allowedOrigin != "" {
+		headers.WriteString(fmt.Sprintf("Access-Control-Allow-Origin: %s\r\n", allowedOrigin))
+		headers.WriteString("Access-Control-Allow-Credentials: true\r\n")
+		headers.WriteString("Vary: Origin\r\n")
+	} else if h.CorsOrigin != "" && h.CorsOrigin != "*" {
 		headers.WriteString(fmt.Sprintf("Access-Control-Allow-Origin: %s\r\n", h.CorsOrigin))
-	} else {
-		headers.WriteString("Access-Control-Allow-Origin: *\r\n")
+		headers.WriteString("Access-Control-Allow-Credentials: true\r\n")
+		headers.WriteString("Vary: Origin\r\n")
 	}
 	headers.WriteString("X-Accel-Buffering: no\r\n")
 	headers.WriteString("\r\n")

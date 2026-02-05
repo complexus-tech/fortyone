@@ -2,20 +2,26 @@
 
 import type { ApiResponse, User } from "@/types";
 import ky from "ky";
-import { getApiUrl } from "@/lib/api-url";
-import { getApiError } from "@/utils";
 import { auth } from "@/auth";
+import { getApiUrl } from "@/lib/api-url";
+import { buildAuthHeaders } from "@/lib/http/auth-headers";
+import { getCookieHeader } from "@/lib/http/header";
+import { getApiError } from "@/utils";
 
 const apiURL = getApiUrl();
 
 export const deleteProfileImageAction = async () => {
   try {
     const session = await auth();
+    const cookieHeader = await getCookieHeader();
+    const headers = buildAuthHeaders({
+      token: session?.token,
+      cookieHeader,
+    });
     const res = await ky
       .delete(`${apiURL}/users/profile/image`, {
-        headers: {
-          Authorization: `Bearer ${session?.token}`,
-        },
+        credentials: "include",
+        headers,
       })
       .json<ApiResponse<User>>();
     return res;

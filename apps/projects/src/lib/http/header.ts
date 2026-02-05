@@ -6,3 +6,8 @@ export const getHeaders = async () => {
   const headersList = await headers();
   return headersList;
 };
+
+export const getCookieHeader = async () => {
+  const headersList = await headers();
+  return headersList.get("cookie") ?? "";
+};

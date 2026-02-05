@@ -21,6 +21,7 @@ import { Chat } from "@/components/ui/chat";
 import { ChatProvider } from "@/context/chat-context";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 import { getProfile } from "@/lib/queries/users/profile";
+import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { ServerSentEvents } from "../server-sent-events";
 import { fetchNonCriticalImportantQueries } from "./non-critical-important-queries";
@@ -34,13 +35,14 @@ export default async function RootLayout({
   params: Promise<{ workspaceSlug: string }>;
 }) {
   const session = await auth();
+  const cookieHeader = await getCookieHeader();
 
   if (!session) {
     redirect("/");
   }
   const { workspaceSlug } = await params;
-  const ctx = { session: session!, workspaceSlug };
-  const workspaces = await getWorkspaces(session?.token);
+  const ctx = { session: session!, workspaceSlug, cookieHeader };
+  const workspaces = await getWorkspaces(session?.token, cookieHeader);
 
   if (workspaces.length === 0) {
     redirect("/onboarding/create");
@@ -74,7 +76,7 @@ export default async function RootLayout({
     }),
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
-      queryFn: () => getWorkspaces(ctx.session.token),
+      queryFn: () => getWorkspaces(ctx.session.token, ctx.cookieHeader),
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(workspaceSlug),
@@ -82,7 +84,11 @@ export default async function RootLayout({
     }),
     queryClient.prefetchQuery({
       queryKey: userKeys.profile(),
-      queryFn: () => getProfile(ctx.session),
+      queryFn: () =>
+        getProfile({
+          token: ctx.session.token,
+          cookieHeader: ctx.cookieHeader,
+        }),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
     }),
     // switchWorkspace(workspace.id),

@@ -12,6 +12,7 @@ import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { getSession } from "./verify/[email]/[token]/actions";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
+import { exchangeSessionToken } from "@/lib/http/exchange-session";
 
 const AUTH_GOOGLE_ID = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID;
 
@@ -43,9 +44,10 @@ export default function GoogleOneTap() {
       const newSession = await getSession();
 
       if (newSession) {
+        await exchangeSessionToken(newSession.token);
         const [workspaces, profile, invitations] = await Promise.all([
           getWorkspaces(newSession?.token || ""),
-          getProfile(newSession),
+          getProfile({ token: newSession?.token }),
           getMyInvitations(),
         ]);
         window.location.href = getRedirectUrl(

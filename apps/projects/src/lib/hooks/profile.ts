@@ -8,7 +8,7 @@ export const useProfile = () => {
   const { data: session } = useSession();
   return useQuery({
     queryKey: userKeys.profile(),
-    queryFn: () => getProfile(session!),
+    queryFn: () => getProfile({ token: session?.token }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/core/users"
@@ -23,6 +24,8 @@ var (
 	SessionDuration       = time.Hour * 24 * 40
 	avatarAccessURLExpiry = 24 * time.Hour
 )
+
+const sessionCookieName = "fortyone_session"
 
 type Handlers struct {
 	users         *users.Service
@@ -64,6 +67,78 @@ func (h *Handlers) resolveUserAvatars(ctx context.Context, usersList []users.Cor
 	for i := range usersList {
 		usersList[i].AvatarURL = h.resolveUserAvatarURL(ctx, usersList[i].AvatarURL)
 	}
+}
+
+func (h *Handlers) createSessionToken(userID uuid.UUID) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Subject:   userID.String(),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(h.secretKey))
+}
+
+func (h *Handlers) setSessionCookie(w http.ResponseWriter, r *http.Request, value string, expires time.Time) {
+	secure := isSecureRequest(r)
+	cookie := http.Cookie{
+		Name:     sessionCookieName,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  expires,
+		MaxAge:   int(time.Until(expires).Seconds()),
+	}
+
+	if domain := cookieDomainForRequest(r); domain != "" {
+		cookie.Domain = domain
+	}
+
+	http.SetCookie(w, &cookie)
+}
+
+func (h *Handlers) clearSessionCookie(w http.ResponseWriter, r *http.Request) {
+	expires := time.Unix(0, 0)
+	cookie := http.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isSecureRequest(r),
+		SameSite: http.SameSiteLaxMode,
+		Expires:  expires,
+		MaxAge:   -1,
+	}
+
+	if domain := cookieDomainForRequest(r); domain != "" {
+		cookie.Domain = domain
+	}
+
+	http.SetCookie(w, &cookie)
+}
+
+func cookieDomainForRequest(r *http.Request) string {
+	host := r.Host
+	if host == "" {
+		return ""
+	}
+	if strings.Contains(host, ":") {
+		host = strings.Split(host, ":")[0]
+	}
+	if strings.HasSuffix(host, ".fortyone.app") {
+		return ".fortyone.app"
+	}
+	return ""
+}
+
+func isSecureRequest(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -244,14 +319,7 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	claims := jwt.RegisteredClaims{
-		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		NotBefore: jwt.NewNumericDate(time.Now()),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(h.secretKey))
+	tokenString, err := h.createSessionToken(user.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -364,14 +432,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	claims := jwt.RegisteredClaims{
-		Subject:   user.ID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		NotBefore: jwt.NewNumericDate(time.Now()),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(h.secretKey))
+	tokenString, err := h.createSessionToken(user.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -528,6 +589,30 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+// CreateSession exchanges a valid auth token for a secure session cookie.
+func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	tokenString, err := h.createSessionToken(userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	expires := time.Now().Add(SessionDuration)
+	h.setSessionCookie(w, r, tokenString, expires)
+
+	return web.Respond(ctx, w, map[string]bool{"ok": true}, http.StatusOK)
+}
+
+// ClearSession clears the auth session cookie.
+func (h *Handlers) ClearSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	h.clearSessionCookie(w, r)
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 // AddUserMemory adds a new memory item for the user.

@@ -3,24 +3,30 @@
 import type { ApiResponse } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 import ky from "ky";
-import { getApiUrl } from "@/lib/api-url";
 import { auth } from "@/auth";
+import { getApiUrl } from "@/lib/api-url";
+import { buildAuthHeaders } from "@/lib/http/auth-headers";
+import { getCookieHeader } from "@/lib/http/header";
 import { requestError } from "../fetch-error";
 
 const apiUrl = getApiUrl();
 
 export async function getMyInvitations() {
   const session = await auth();
+  const cookieHeader = await getCookieHeader();
   if (!session) {
     return {
       data: [],
     } as ApiResponse<Invitation[]>;
   }
   try {
+    const headers = buildAuthHeaders({
+      token: session?.token,
+      cookieHeader,
+    });
     const response = await ky.get(`${apiUrl}/users/me/invitations`, {
-      headers: {
-        Authorization: `Bearer ${session?.token}`,
-      },
+      credentials: "include",
+      headers,
     });
     const data = await response.json<ApiResponse<Invitation[]>>();
     return data;

@@ -14,7 +14,10 @@ import (
 
 type ctxKey string
 
-const userIDKey ctxKey = "userID"
+const (
+	userIDKey      ctxKey = "userID"
+	authCookieName        = "fortyone_session"
+)
 
 func GetUserID(ctx context.Context) (uuid.UUID, error) {
 	id, ok := ctx.Value(userIDKey).(uuid.UUID)
@@ -28,13 +31,17 @@ func Auth(log *logger.Logger, secretKey string) web.Middleware {
 	m := func(next web.Handler) web.Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			tokenString := ""
-			queryToken := r.URL.Query().Get("token")
-			if queryToken != "" {
-				tokenString = queryToken
+			if cookie, err := r.Cookie(authCookieName); err == nil && cookie.Value != "" {
+				tokenString = cookie.Value
 			} else {
 				authHeader := r.Header.Get("Authorization")
 				if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
 					tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+				} else {
+					queryToken := r.URL.Query().Get("token")
+					if queryToken != "" {
+						tokenString = queryToken
+					}
 				}
 			}
 

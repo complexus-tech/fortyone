@@ -8,7 +8,7 @@ export const useMyInvitations = () => {
   const { data: session } = useSession();
   return useQuery({
     queryKey: invitationKeys.mine,
-    queryFn: () => getMyInvitations(session!),
+    queryFn: () => getMyInvitations({ token: session?.token }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

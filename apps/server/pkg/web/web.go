@@ -42,8 +42,11 @@ func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
 // ServeHTTP implements the http.Handler interface so that App can be used as a Mux.
 // It then calls the ServeHTTP method on the embedded Mux.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// extract this into a confiurable middleware
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// extract this into a configurable middleware
+	if origin := AllowedOrigin(r); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Add("Vary", "Origin")
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
