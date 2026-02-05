@@ -8,6 +8,7 @@ import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
+import { exchangeSessionToken } from "@/lib/http/exchange-session";
 import type { Invitation } from "@/modules/invitations/types";
 import type { User, Workspace } from "@/types";
 
@@ -25,18 +26,23 @@ export const ClientPage = ({
   const { analytics } = useAnalytics();
 
   useEffect(() => {
-    nProgress.done();
-    if (session) {
-      analytics.identify(session.user!.email!, {
-        email: session.user!.email!,
-        name: session.user!.name!,
-      });
-      window.location.href = getRedirectUrl(
-        workspaces,
-        invitations,
-        profile.lastUsedWorkspaceId,
-      );
-    }
+    const finalize = async () => {
+      nProgress.done();
+      if (session) {
+        analytics.identify(session.user!.email!, {
+          email: session.user!.email!,
+          name: session.user!.name!,
+        });
+        await exchangeSessionToken(session.token);
+        window.location.href = getRedirectUrl(
+          workspaces,
+          invitations,
+          profile.lastUsedWorkspaceId,
+        );
+      }
+    };
+
+    void finalize();
   }, [analytics, session, invitations, workspaces, profile]);
 
   return (

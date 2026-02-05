@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { withWorkspacePath } from "@/utils";
+import { getCookieHeader } from "@/lib/http/header";
 
 export default async function RootLayout({
   children,
@@ -13,8 +14,9 @@ export default async function RootLayout({
 }) {
   const { workspaceSlug } = await params;
   const session = await auth();
+  const cookieHeader = await getCookieHeader();
 
-  const workspaces = await getWorkspaces(session!.token);
+  const workspaces = await getWorkspaces(session?.token, cookieHeader);
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === workspaceSlug.toLowerCase(),
   );

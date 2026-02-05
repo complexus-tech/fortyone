@@ -1,15 +1,32 @@
 "use server";
 
 import { cookies } from "next/headers";
+import ky from "ky";
 import { signOut } from "@/auth";
+import { getApiUrl } from "@/lib/api-url";
+import { buildAuthHeaders } from "@/lib/http/auth-headers";
+import { getCookieHeader } from "@/lib/http/header";
 import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 
 const SESSION_COOKIE_NAMES = [
   "__Secure-next-auth.session-token",
   "next-auth.session-token",
+  "fortyone_session",
 ];
 
 export const logOut = async () => {
+  const apiUrl = getApiUrl();
+  const cookieHeader = await getCookieHeader();
+
+  try {
+    await ky.delete(`${apiUrl}/users/session`, {
+      credentials: "include",
+      headers: buildAuthHeaders({ cookieHeader }),
+    });
+  } catch {
+    // Best-effort cookie clearing; continue logout flow.
+  }
+
   await signOut({ redirect: false });
 
   const cookieStore = await cookies();

@@ -9,6 +9,7 @@ import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { useAnalytics } from "@/hooks";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
+import { exchangeSessionToken } from "@/lib/http/exchange-session";
 import { logIn, getSession } from "./actions";
 import { getAuthCode } from "@/lib/queries/get-auth-code";
 
@@ -31,12 +32,15 @@ export const EmailVerificationCallback = () => {
       if (res?.error) {
         const session = await getSession();
         if (session) {
+          await exchangeSessionToken(session.token);
           const [workspaces, profile] = await Promise.all([
             getWorkspaces(session?.token || ""),
-            getProfile(session!),
+            getProfile({ token: session?.token }),
           ]);
           if (isMobileApp && workspaces.length > 0) {
-            const authCodeResponse = await getAuthCode(session);
+            const authCodeResponse = await getAuthCode({
+              token: session?.token,
+            });
             if (authCodeResponse.error || !authCodeResponse.data) {
               redirect("/?mobileApp=true&error=Failed to generate auth code");
               return;
@@ -61,13 +65,18 @@ export const EmailVerificationCallback = () => {
         redirect(`/?error=${res.error}`);
       } else {
         const session = await getSession();
+        if (session) {
+          await exchangeSessionToken(session.token);
+        }
         const [workspaces, profile] = await Promise.all([
           getWorkspaces(session?.token || ""),
-          getProfile(session!),
+          getProfile({ token: session?.token }),
         ]);
         if (session) {
           if (isMobileApp && workspaces.length > 0) {
-            const authCodeResponse = await getAuthCode(session);
+            const authCodeResponse = await getAuthCode({
+              token: session?.token,
+            });
             if (authCodeResponse.error || !authCodeResponse.data) {
               redirect("/?mobileApp=true&error=Failed to generate auth code");
             } else {

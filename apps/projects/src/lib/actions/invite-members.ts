@@ -1,8 +1,10 @@
 "use server";
 
 import ky from "ky";
-import { getApiUrl } from "@/lib/api-url";
 import { auth } from "@/auth";
+import { getApiUrl } from "@/lib/api-url";
+import { buildAuthHeaders } from "@/lib/http/auth-headers";
+import { getCookieHeader } from "@/lib/http/header";
 import { requestError } from "../fetch-error";
 
 const apiURL = getApiUrl();
@@ -14,6 +16,11 @@ export async function inviteMembers(
 ) {
   try {
     const session = await auth();
+    const cookieHeader = await getCookieHeader();
+    const headers = buildAuthHeaders({
+      token: session?.token,
+      cookieHeader,
+    });
 
     await ky.post(`${apiURL}/workspaces/${workspaceSlug}/invitations`, {
       json: {
@@ -23,9 +30,8 @@ export async function inviteMembers(
           teamIds,
         })),
       },
-      headers: {
-        Authorization: `Bearer ${session?.token}`,
-      },
+      credentials: "include",
+      headers,
     });
 
     return {

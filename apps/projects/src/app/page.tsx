@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getRedirectUrl } from "@/utils";
+import { getCookieHeader } from "@/lib/http/header";
 
 export const metadata: Metadata = {
   title: "Login - FortyOne",
@@ -22,12 +23,13 @@ export default async function Page({
   const isMobileApp = params?.mobileApp === "true";
 
   const session = await auth();
+  const cookieHeader = await getCookieHeader();
 
   // Only redirect web users if they're already logged in
   if (session && !isMobileApp) {
     const [workspaces, profile] = await Promise.all([
-      getWorkspaces(session?.token || ""),
-      getProfile(session),
+      getWorkspaces(session?.token || "", cookieHeader),
+      getProfile({ token: session?.token, cookieHeader }),
     ]);
     redirect(getRedirectUrl(workspaces, [], profile?.lastUsedWorkspaceId));
   }

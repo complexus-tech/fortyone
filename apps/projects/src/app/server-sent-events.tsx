@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import { usePostHog } from "posthog-js/react";
 import { useCallback, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-url";
@@ -33,7 +32,6 @@ type WorkspaceUpdate = {
 
 export const ServerSentEvents = () => {
   const posthog = usePostHog();
-  const { data: session } = useSession();
   const { workspace } = useCurrentWorkspace();
   const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
@@ -95,10 +93,12 @@ export const ServerSentEvents = () => {
   );
 
   useEffect(() => {
-    if (!session?.token || !workspace?.slug) return;
+    if (!workspace?.slug) return;
 
-    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace.slug}/notifications/subscribe?token=${session.token}`;
-    const eventSource = new EventSource(SSE_ENDPOINT);
+    const SSE_ENDPOINT = `${apiURL}/workspaces/${workspace.slug}/notifications/subscribe`;
+    const eventSource = new EventSource(SSE_ENDPOINT, {
+      withCredentials: true,
+    });
 
     eventSource.onmessage = (event) => {
       try {
@@ -123,13 +123,7 @@ export const ServerSentEvents = () => {
     return () => {
       eventSource.close();
     };
-  }, [
-    posthog,
-    session?.token,
-    workspace?.slug,
-    handleNotification,
-    handleWorkspaceUpdate,
-  ]);
+  }, [posthog, workspace?.slug, handleNotification, handleWorkspaceUpdate]);
 
   return null;
 };

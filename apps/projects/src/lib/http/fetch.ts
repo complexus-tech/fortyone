@@ -2,6 +2,7 @@ import type { Options } from "ky";
 import ky from "ky";
 import type { Session } from "next-auth";
 import { getApiUrl } from "@/lib/api-url";
+import { buildAuthHeaders } from "@/lib/http/auth-headers";
 import { ApiError } from "./error";
 
 const apiURL = getApiUrl();
@@ -9,16 +10,21 @@ const apiURL = getApiUrl();
 export type WorkspaceCtx = {
   session: Session;
   workspaceSlug: string;
+  cookieHeader?: string;
 };
 
 const createClient = (ctx: WorkspaceCtx) => {
   const prefixUrl = `${apiURL}/workspaces/${ctx.workspaceSlug}/`;
 
+  const headers = buildAuthHeaders({
+    token: ctx.session?.token,
+    cookieHeader: ctx.cookieHeader,
+  });
+
   const client = ky.create({
     prefixUrl,
-    headers: {
-      Authorization: `Bearer ${ctx.session.token}`,
-    },
+    credentials: "include",
+    headers,
     hooks: {
       beforeError: [
         async (error) => {
