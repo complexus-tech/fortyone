@@ -236,21 +236,21 @@ export const ChatInput = ({
   const placeholderTexts =
     messagesCount > 2
       ? [
-          "Tell Maya what to do next...",
-          "Continue the conversation...",
-          "Ask me anything...",
-          "Tell Maya what to do next...",
-          "Continue the conversation...",
-          "Ask me anything...",
-        ]
+        "Tell Maya what to do next...",
+        "Continue the conversation...",
+        "Ask me anything...",
+        "Tell Maya what to do next...",
+        "Continue the conversation...",
+        "Ask me anything...",
+      ]
       : [
-          "Take me to my work...",
-          "Show me the current sprint...",
-          "Open my objectives...",
-          "Navigate to the roadmap...",
-          "Find stories in progress...",
-          "Show my key results...",
-        ];
+        "Take me to my work...",
+        "Show me the current sprint...",
+        "Open my objectives...",
+        "Navigate to the roadmap...",
+        "Find stories in progress...",
+        "Show my key results...",
+      ];
 
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
@@ -330,7 +330,7 @@ export const ChatInput = ({
             aria-label="Chat message"
             autoFocus={Boolean(isOnPage)}
             className={cn(
-              "focus-visible:ring-border max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:ring-2 focus-visible:outline-none dark:text-white",
+              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:ring-2 focus-visible:outline-none dark:text-white",
               {
                 "md:min-h-[3.7rem]": isOnPage,
               },
@@ -355,10 +355,9 @@ export const ChatInput = ({
             >
               {recordingState === "idle"
                 ? placeholderTexts[currentPlaceholderIndex]
-                : `${
-                    recordingState.charAt(0).toUpperCase() +
-                    recordingState.slice(1)
-                  }...`}
+                : `${recordingState.charAt(0).toUpperCase() +
+                recordingState.slice(1)
+                }...`}
             </Box>
           )}
         </Box>
