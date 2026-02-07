@@ -16,26 +16,12 @@ import (
 
 	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
 	"github.com/complexus-tech/projects-api/internal/migrations"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
-	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
-	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
-	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
-	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
-	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
-	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
-	"github.com/complexus-tech/projects-api/pkg/consumer"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -318,26 +304,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}()
 
-	// Create services
-	notificationService := notifications.New(log, notificationsrepository.New(log, db), rdb, tasksService)
-	mentionsRepo := mentionsrepository.New(log, db)
-	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, publisher)
-	okrActivitiesService := okractivities.New(log, okractivitiesrepository.New(log, db))
-	objectivesService := objectives.New(log, objectivesrepository.New(log, db), okrActivitiesService)
-	usersService := users.New(log, usersrepository.New(log, db), tasksService)
-	statusesService := states.New(log, statesrepository.New(log, db))
-
-	// Create consumer using Redis Streams
-	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, mailerService, storiesService, objectivesService, usersService, statusesService)
-
-	// Start consumer in a goroutine
-	go func() {
-		log.Info(ctx, "starting redis stream consumer")
-		if err := consumer.Start(ctx); err != nil {
-			log.Error(ctx, "failed to start consumer", "error", err)
-		}
-	}()
-
 	systemUserID, err := uuid.Parse(cfg.System.UserID)
 	if err != nil {
 		return fmt.Errorf("invalid system user ID: %w", err)
@@ -403,8 +369,20 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SystemUserID:   systemUserID,
 	}
 
+	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)
+	if err != nil {
+		return fmt.Errorf("error building bootstrap runtime: %w", err)
+	}
+
+	go func() {
+		log.Info(ctx, "starting redis stream consumer")
+		if err := runtime.Consumer.Start(ctx); err != nil {
+			log.Error(ctx, "failed to start consumer", "error", err)
+		}
+	}()
+
 	// Create the mux
-	routeAdder := bootstrapapi.New()
+	routeAdder := runtime.RouteAdder
 	handler := mux.New(muxConfig, routeAdder)
 
 	server := http.Server{

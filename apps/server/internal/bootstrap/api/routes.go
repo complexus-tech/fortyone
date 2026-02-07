@@ -29,14 +29,26 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
-type routes struct{}
+type routes struct {
+	services *services
+}
 
 func New() routes {
 	return routes{}
 }
 
-func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
-	svcs := buildServices(cfg)
+func NewWithServices(svcs services) routes { return routes{services: &svcs} }
+
+func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
+	svcs := services{}
+	if r.services == nil {
+		svcs = buildServices(cfg)
+	} else {
+		svcs = *r.services
+	}
+	if err := svcs.validate(); err != nil {
+		panic("bootstrap service validation failed: " + err.Error())
+	}
 
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,
