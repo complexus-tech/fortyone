@@ -14,9 +14,8 @@ import { usePathname } from "next/navigation";
 import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
-import { changeWorkspace } from "@/components/shared/sidebar/actions";
+import { changeWorkspace, logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
-import { signOut } from "next-auth/react";
 import { cn, getReadableTextColor } from "lib";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
@@ -40,7 +39,7 @@ export const WorkspacesMenu = () => {
   const handleLogout = async () => {
     const mainDomain = isFortyOneApp ? "https://fortyone.app" : "/";
     try {
-      await signOut({ redirect: false });
+      await logOut();
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;

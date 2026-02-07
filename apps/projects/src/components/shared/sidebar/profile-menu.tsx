@@ -17,7 +17,7 @@ import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useProfile } from "@/lib/hooks/profile";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useLocalStorage, useAnalytics, useWorkspacePath } from "@/hooks";
-import { signOut } from "next-auth/react";
+import { logOut } from "./actions";
 import { clearAllStorage } from "./utils";
 
 export const ProfileMenu = () => {
@@ -36,7 +36,7 @@ export const ProfileMenu = () => {
         ? "https://fortyone.app"
         : "/";
     try {
-      await signOut({ redirect: false });
+      await logOut();
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;

@@ -1,16 +1,7 @@
-import { getApiUrl } from "@/lib/api-url";
-
-const apiURL = getApiUrl();
-
-export const exchangeSessionToken = async (token?: string) => {
-  if (!token) return;
-
+export const exchangeSessionToken = async () => {
   try {
-    await fetch(`${apiURL}/users/session`, {
+    await fetch("/api/session/finalize", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       credentials: "include",
     });
   } catch {
