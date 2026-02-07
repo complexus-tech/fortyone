@@ -3,7 +3,6 @@ package invitations
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -23,12 +23,13 @@ import (
 // Repository provides access to the invitations storage
 type Repository interface {
 	// Transaction support
-	BeginTx(ctx context.Context) (*sql.Tx, error)
-	CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invitations []CoreWorkspaceInvitation) ([]CoreWorkspaceInvitation, error)
+	BeginTx(ctx context.Context) (*sqlx.Tx, error)
+	CreateBulkInvitations(ctx context.Context, tx *sqlx.Tx, invitations []CoreWorkspaceInvitation) ([]CoreWorkspaceInvitation, error)
 	GetInvitation(ctx context.Context, token string) (CoreWorkspaceInvitation, error)
 	ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitation, error)
 	RevokeInvitation(ctx context.Context, invitationID uuid.UUID) error
 	MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) error
+	MarkInvitationUsedTx(ctx context.Context, tx *sqlx.Tx, invitationID uuid.UUID) error
 	ListInvitationsByEmail(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error)
 }
 
@@ -262,13 +263,18 @@ func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uui
 	}
 	defer tx.Rollback()
 
-	// Add member to workspace with specified role
-	if err := s.workspaces.AddMember(ctx, invitation.WorkspaceID, userID, invitation.Role); err != nil {
+	// Add member to workspace with specified role.
+	if err := s.workspaces.AddMemberTx(ctx, tx, invitation.WorkspaceID, userID, invitation.Role); err != nil {
 		s.logger.Error(ctx, "failed to add member to workspace", "err", err)
 		if err == workspaces.ErrAlreadyWorkspaceMember {
-			// Mark invitation as used if the user is already a member
-			if markErr := s.repo.MarkInvitationUsed(ctx, invitation.ID); markErr != nil {
+			// Mark invitation as used if the user is already a member.
+			if markErr := s.repo.MarkInvitationUsedTx(ctx, tx, invitation.ID); markErr != nil {
 				s.logger.Error(ctx, "failed to mark invitation as used", "err", markErr)
+				return fmt.Errorf("failed to mark invitation as used: %w", markErr)
+			}
+			if commitErr := tx.Commit(); commitErr != nil {
+				s.logger.Error(ctx, "failed to commit transaction", "err", commitErr)
+				return commitErr
 			}
 			return ErrAlreadyWorkspaceMember
 		}
@@ -277,19 +283,20 @@ func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uui
 
 	// Add member to teams
 	for _, teamID := range invitation.TeamIDs {
-		if err := s.teams.AddMember(ctx, teamID, userID); err != nil {
+		if err := s.teams.AddMemberTx(ctx, tx, teamID, userID); err != nil {
 			s.logger.Error(ctx, "failed to add member to team", "err", err)
 			return fmt.Errorf("failed to add member to team: %w", err)
 		}
 	}
 
 	// Update user's last used workspace
-	if err := s.users.UpdateUserWorkspace(ctx, userID, invitation.WorkspaceID); err != nil {
-		s.logger.Error(ctx, "failed to update user's last used workspace", err)
+	if err := s.users.UpdateUserWorkspaceWithTx(ctx, tx, userID, invitation.WorkspaceID); err != nil {
+		s.logger.Error(ctx, "failed to update user's last used workspace", "err", err)
+		return fmt.Errorf("failed to update user workspace: %w", err)
 	}
 
 	// Mark invitation as used
-	if err := s.repo.MarkInvitationUsed(ctx, invitation.ID); err != nil {
+	if err := s.repo.MarkInvitationUsedTx(ctx, tx, invitation.ID); err != nil {
 		s.logger.Error(ctx, "failed to mark invitation as used", "err", err)
 		return fmt.Errorf("failed to mark invitation as used: %w", err)
 	}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -250,10 +249,10 @@ func (h *Handlers) ListPaginated(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyresultsrepository.CoreKeyResultFilters {
+func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyresults.CoreKeyResultFilters {
 	query := r.URL.Query()
 
-	filters := keyresultsrepository.CoreKeyResultFilters{
+	filters := keyresults.CoreKeyResultFilters{
 		WorkspaceID:    workspaceID,
 		CurrentUserID:  userID,
 		Page:           getIntParam(query, "page", 1),

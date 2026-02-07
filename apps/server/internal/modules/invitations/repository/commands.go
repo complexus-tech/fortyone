@@ -2,7 +2,6 @@ package invitationsrepository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -10,13 +9,14 @@ import (
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // CreateBulkInvitations creates multiple workspace invitations in a transaction
-func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invites []invitations.CoreWorkspaceInvitation) ([]invitations.CoreWorkspaceInvitation, error) {
+func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sqlx.Tx, invites []invitations.CoreWorkspaceInvitation) ([]invitations.CoreWorkspaceInvitation, error) {
 	// Revoke any existing pending invitations
 	revokeQuery := `
 		UPDATE workspace_invitations
@@ -28,7 +28,7 @@ func (r *repo) CreateBulkInvitations(ctx context.Context, tx *sql.Tx, invites []
 		AND used_at IS NULL 
 		AND expires_at > NOW()`
 
-	revokeStmt, err := r.db.PrepareNamedContext(ctx, revokeQuery)
+	revokeStmt, err := tx.PrepareNamedContext(ctx, revokeQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare revoke statement: %w", err)
 	}
@@ -160,6 +160,19 @@ func (r *repo) MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) e
 	ctx, span := web.AddSpan(ctx, "business.repository.invitations.MarkInvitationUsed")
 	defer span.End()
 
+	return r.markInvitationUsedWithExecutor(ctx, span, r.db, invitationID)
+}
+
+// MarkInvitationUsedTx marks an invitation as used using an existing transaction.
+func (r *repo) MarkInvitationUsedTx(ctx context.Context, tx *sqlx.Tx, invitationID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.invitations.MarkInvitationUsedTx")
+	defer span.End()
+
+	return r.markInvitationUsedWithExecutor(ctx, span, tx, invitationID)
+}
+
+func (r *repo) markInvitationUsedWithExecutor(ctx context.Context, span trace.Span, executor sqlx.ExtContext, invitationID uuid.UUID) error {
+
 	query := `
 		UPDATE workspace_invitations
 		SET 
@@ -173,7 +186,20 @@ func (r *repo) MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) e
 		"invitation_id": invitationID,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	var (
+		stmt *sqlx.NamedStmt
+		err  error
+	)
+
+	switch exec := executor.(type) {
+	case *sqlx.DB:
+		stmt, err = exec.PrepareNamedContext(ctx, query)
+	case *sqlx.Tx:
+		stmt, err = exec.PrepareNamedContext(ctx, query)
+	default:
+		return fmt.Errorf("unsupported executor type: %T", executor)
+	}
+
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)

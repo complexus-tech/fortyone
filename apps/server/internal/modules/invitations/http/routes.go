@@ -38,7 +38,19 @@ func Routes(cfg Config, app *web.App) {
 	repo := invitationsrepository.New(cfg.Log, cfg.DB)
 	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
 	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepository.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.StripeSecret, cfg.TasksService)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepository.New(cfg.Log, cfg.DB), cfg.DB, nil, nil, nil, usersService, nil, subscriptionsService, nil, cfg.Cache, cfg.SystemUserID, cfg.Publisher, cfg.TasksService)
+	workspacesService := workspaces.New(
+		cfg.Log,
+		workspacesrepository.New(cfg.Log, cfg.DB),
+		cfg.DB,
+		workspaces.Dependencies{
+			Users:         usersService,
+			Subscriptions: subscriptionsService,
+			Cache:         cfg.Cache,
+			SystemUserID:  cfg.SystemUserID,
+			Publisher:     cfg.Publisher,
+			TasksService:  cfg.TasksService,
+		},
+	)
 	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
 	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService, workspacesService, teamsService)
 	h := New(invitationsService, usersService)

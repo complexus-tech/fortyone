@@ -89,23 +89,38 @@ type Service struct {
 	tasksService    *tasks.Service
 }
 
-// New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, db *sqlx.DB, teams *teams.Service, stories *stories.Service, statuses *states.Service, users *users.Service, objectivestatus *objectivestatus.Service, subscriptions *subscriptions.Service, attachments AttachmentsService, cache *cache.Service, systemUserID uuid.UUID, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
+// Dependencies groups cross-module services required by the workspace service.
+type Dependencies struct {
+	Teams           *teams.Service
+	Stories         *stories.Service
+	Statuses        *states.Service
+	Users           *users.Service
+	ObjectiveStatus *objectivestatus.Service
+	Subscriptions   *subscriptions.Service
+	Attachments     AttachmentsService
+	Cache           *cache.Service
+	SystemUserID    uuid.UUID
+	Publisher       *publisher.Publisher
+	TasksService    *tasks.Service
+}
+
+// New constructs a new workspace service instance with the provided repository.
+func New(log *logger.Logger, repo Repository, db *sqlx.DB, deps Dependencies) *Service {
 	return &Service{
 		repo:            repo,
 		log:             log,
 		db:              db,
-		teams:           teams,
-		stories:         stories,
-		statuses:        statuses,
-		users:           users,
-		objectivestatus: objectivestatus,
-		subscriptions:   subscriptions,
-		attachments:     attachments,
-		cache:           cache,
-		systemUserID:    systemUserID,
-		publisher:       publisher,
-		tasksService:    tasksService,
+		teams:           deps.Teams,
+		stories:         deps.Stories,
+		statuses:        deps.Statuses,
+		users:           deps.Users,
+		objectivestatus: deps.ObjectiveStatus,
+		subscriptions:   deps.Subscriptions,
+		attachments:     deps.Attachments,
+		cache:           deps.Cache,
+		systemUserID:    deps.SystemUserID,
+		publisher:       deps.Publisher,
+		tasksService:    deps.TasksService,
 	}
 }
 
@@ -456,6 +471,28 @@ func (s *Service) AddMember(ctx context.Context, workspaceID, userID uuid.UUID, 
 	if err := s.subscriptions.UpdateSubscriptionSeats(ctx, workspaceID); err != nil {
 		s.log.Error(ctx, "failed to update subscription seats", err)
 		// no need to return error this is not a critical operation
+	}
+
+	span.AddEvent("workspace member added.", trace.WithAttributes(
+		attribute.String("workspace_id", workspaceID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("role", role),
+	))
+	return nil
+}
+
+func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, workspaceID, userID uuid.UUID, role string) error {
+	s.log.Info(ctx, "business.core.workspaces.addMemberTx")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.AddMemberTx")
+	defer span.End()
+
+	if role == "" {
+		role = "member"
+	}
+
+	if err := s.repo.AddMemberTx(ctx, tx, workspaceID, userID, role); err != nil {
+		span.RecordError(err)
+		return err
 	}
 
 	span.AddEvent("workspace member added.", trace.WithAttributes(

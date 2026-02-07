@@ -9,6 +9,7 @@ import (
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -134,8 +135,8 @@ func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]in
 }
 
 // Add BeginTx method
-func (r *repo) BeginTx(ctx context.Context) (*sql.Tx, error) {
-	return r.db.BeginTx(ctx, nil)
+func (r *repo) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
+	return r.db.BeginTxx(ctx, nil)
 }
 
 // ListInvitationsByEmail returns all pending invitations for a user's email

@@ -60,7 +60,24 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepository.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subscriptionsService, attachmentsService, cfg.Cache, cfg.SystemUserID, cfg.Publisher, cfg.TasksService)
+	workspacesService := workspaces.New(
+		cfg.Log,
+		workspacesrepository.New(cfg.Log, cfg.DB),
+		cfg.DB,
+		workspaces.Dependencies{
+			Teams:           teamsService,
+			Stories:         storiesService,
+			Statuses:        statusesService,
+			Users:           usersService,
+			ObjectiveStatus: objectivestatusService,
+			Subscriptions:   subscriptionsService,
+			Attachments:     attachmentsService,
+			Cache:           cfg.Cache,
+			SystemUserID:    cfg.SystemUserID,
+			Publisher:       cfg.Publisher,
+			TasksService:    cfg.TasksService,
+		},
+	)
 
 	h := New(workspacesService, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,

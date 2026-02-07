@@ -166,17 +166,19 @@ func main() {
 		log,
 		workspaceRepo,
 		db,
-		teamsService,
-		storiesService,
-		statesService,
-		usersService,
-		objStatusService,
-		subService,
-		nil, // attachments (not needed for seed)
-		cacheService,
-		systemUserID,
-		publisher,
-		tasksService,
+		workspaces.Dependencies{
+			Teams:           teamsService,
+			Stories:         storiesService,
+			Statuses:        statesService,
+			Users:           usersService,
+			ObjectiveStatus: objStatusService,
+			Subscriptions:   subService,
+			Cache:           cacheService,
+			SystemUserID:    systemUserID,
+			Publisher:       publisher,
+			TasksService:    tasksService,
+			// Attachments are not needed for seed.
+		},
 	)
 
 	// Create Seeder and Run

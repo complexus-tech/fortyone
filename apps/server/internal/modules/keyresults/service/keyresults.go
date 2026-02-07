@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -21,15 +20,28 @@ var (
 	ErrNotFound = errors.New("key result not found")
 )
 
+// Repository defines the storage contract for key results.
+type Repository interface {
+	Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error)
+	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
+	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
+	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
+	List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]CoreKeyResult, error)
+	ListPaginated(ctx context.Context, filters CoreKeyResultFilters) (CoreKeyResultListResponse, error)
+	AddContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
+	UpdateContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
+	GetContributors(ctx context.Context, keyResultID uuid.UUID) ([]uuid.UUID, error)
+}
+
 // Service manages the key result operations
 type Service struct {
-	repo          keyresultsrepository.Repository
+	repo          Repository
 	okrActivities *okractivities.Service
 	log           *logger.Logger
 }
 
 // New creates a new key result service
-func New(log *logger.Logger, repo keyresultsrepository.Repository, okrActivities *okractivities.Service) *Service {
+func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service) *Service {
 	return &Service{
 		repo:          repo,
 		okrActivities: okrActivities,
@@ -40,7 +52,7 @@ func New(log *logger.Logger, repo keyresultsrepository.Repository, okrActivities
 // Create inserts a new key result into the system
 func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID uuid.UUID) (CoreKeyResult, error) {
 
-	kr := keyresultsrepository.CoreKeyResult{
+	kr := CoreKeyResult{
 		ObjectiveID:     nkr.ObjectiveID,
 		Name:            nkr.Name,
 		MeasurementType: nkr.MeasurementType,
@@ -110,7 +122,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	// Get the current key result before updating to capture its details
 	previousKR, err := s.repo.Get(ctx, id, workspaceId)
 	if err != nil {
-		if errors.Is(err, keyresultsrepository.ErrNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return ErrNotFound
 		}
 		return err
@@ -129,7 +141,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	// Filter updates to only include fields that have actually changed
 	changedUpdates := make(map[string]any)
-	currentKR := CoreKeyResult(previousKR) // Convert to core type for comparison
+	currentKR := previousKR
 	for field, value := range updates {
 		if s.hasFieldChanged(field, value, currentKR) {
 			changedUpdates[field] = value
@@ -146,7 +158,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	// Only update if there are actual changes
 	if len(changedUpdates) > 0 {
 		if err := s.repo.Update(ctx, id, workspaceId, changedUpdates); err != nil {
-			if errors.Is(err, keyresultsrepository.ErrNotFound) {
+			if errors.Is(err, ErrNotFound) {
 				return ErrNotFound
 			}
 			return err
@@ -230,7 +242,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	// Get the current key result before deletion to capture its details
 	currentKR, err := s.repo.Get(ctx, id, workspaceId)
 	if err != nil {
-		if errors.Is(err, keyresultsrepository.ErrNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return ErrNotFound
 		}
 		return err
@@ -240,7 +252,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	// Delete the key result
 	if err := s.repo.Delete(ctx, id, workspaceId); err != nil {
-		if errors.Is(err, keyresultsrepository.ErrNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return ErrNotFound
 		}
 		return err
@@ -277,13 +289,13 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 
 	kr, err := s.repo.Get(ctx, id, workspaceId)
 	if err != nil {
-		if errors.Is(err, keyresultsrepository.ErrNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return CoreKeyResult{}, ErrNotFound
 		}
 		return CoreKeyResult{}, err
 	}
 
-	return CoreKeyResult(kr), nil
+	return kr, nil
 }
 
 // List retrieves all key results for an objective
@@ -298,20 +310,20 @@ func (s *Service) List(ctx context.Context, objectiveId uuid.UUID, workspaceId u
 
 	results := make([]CoreKeyResult, len(krs))
 	for i, kr := range krs {
-		results[i] = CoreKeyResult(kr)
+		results[i] = kr
 	}
 
 	return results, nil
 }
 
 // ListPaginated retrieves paginated key results with filters
-func (s *Service) ListPaginated(ctx context.Context, filters keyresultsrepository.CoreKeyResultFilters) (keyresultsrepository.CoreKeyResultListResponse, error) {
+func (s *Service) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) (CoreKeyResultListResponse, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.keyresults.ListPaginated")
 	defer span.End()
 
 	response, err := s.repo.ListPaginated(ctx, filters)
 	if err != nil {
-		return keyresultsrepository.CoreKeyResultListResponse{}, fmt.Errorf("listing paginated key results: %w", err)
+		return CoreKeyResultListResponse{}, fmt.Errorf("listing paginated key results: %w", err)
 	}
 
 	return response, nil

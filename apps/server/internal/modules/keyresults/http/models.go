@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	"github.com/complexus-tech/projects-api/pkg/date"
@@ -266,9 +265,9 @@ func toAppKeyResultActivities(acts []okractivities.CoreActivity) []AppKeyResultA
 }
 
 // toAppKeyResultWithObjective converts a CoreKeyResultWithObjective to an AppKeyResultWithObjective
-func toAppKeyResultWithObjective(kr keyresultsrepository.CoreKeyResultWithObjective) AppKeyResultWithObjective {
+func toAppKeyResultWithObjective(kr keyresults.CoreKeyResultWithObjective) AppKeyResultWithObjective {
 	return AppKeyResultWithObjective{
-		AppKeyResult:  toAppKeyResult(keyresults.CoreKeyResult(kr.CoreKeyResult)),
+		AppKeyResult:  toAppKeyResult(kr.CoreKeyResult),
 		ObjectiveName: kr.ObjectiveName,
 		ObjectiveID:   kr.ObjectiveID,
 		TeamID:        kr.TeamID,
@@ -278,7 +277,7 @@ func toAppKeyResultWithObjective(kr keyresultsrepository.CoreKeyResultWithObject
 }
 
 // toAppKeyResultListResponse converts a CoreKeyResultListResponse to an AppKeyResultListResponse
-func toAppKeyResultListResponse(response keyresultsrepository.CoreKeyResultListResponse) AppKeyResultListResponse {
+func toAppKeyResultListResponse(response keyresults.CoreKeyResultListResponse) AppKeyResultListResponse {
 	keyResults := make([]AppKeyResultWithObjective, len(response.KeyResults))
 	for i, kr := range response.KeyResults {
 		keyResults[i] = toAppKeyResultWithObjective(kr)

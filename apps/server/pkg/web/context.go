@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -60,14 +61,11 @@ func GetTime(ctx context.Context) time.Time {
 // AddSpan adds a span to the context and returns the new context and span.
 func AddSpan(ctx context.Context, spanName string, keyValues ...attribute.KeyValue) (context.Context, trace.Span) {
 	v, ok := ctx.Value(key).(*Values)
-	if !ok || v.Tracer == nil {
+	if !ok {
 		return ctx, trace.SpanFromContext(ctx)
 	}
-	ctx, span := v.Tracer.Start(ctx, spanName)
-	for _, kv := range keyValues {
-		span.SetAttributes(kv)
-	}
-	return ctx, span
+
+	return apptracing.AddSpan(ctx, v.Tracer, spanName, keyValues...)
 }
 
 // SetStatusCode sets the status code on the web values.

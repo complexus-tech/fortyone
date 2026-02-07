@@ -2,8 +2,8 @@ package keyresultsrepository
 
 import (
 	"context"
-	"errors"
 
+	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -11,17 +11,17 @@ import (
 
 // Repository errors
 var (
-	ErrNotFound = errors.New("key result not found")
+	ErrNotFound = keyresults.ErrNotFound
 )
 
 // Repository defines the repository for key results
 type Repository interface {
-	Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error)
+	Create(ctx context.Context, kr *keyresults.CoreKeyResult) (uuid.UUID, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
-	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
-	List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]CoreKeyResult, error)
-	ListPaginated(ctx context.Context, filters CoreKeyResultFilters) (CoreKeyResultListResponse, error)
+	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (keyresults.CoreKeyResult, error)
+	List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]keyresults.CoreKeyResult, error)
+	ListPaginated(ctx context.Context, filters keyresults.CoreKeyResultFilters) (keyresults.CoreKeyResultListResponse, error)
 	AddContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
 	UpdateContributors(ctx context.Context, keyResultID uuid.UUID, contributorIDs []uuid.UUID) error
 	GetContributors(ctx context.Context, keyResultID uuid.UUID) ([]uuid.UUID, error)

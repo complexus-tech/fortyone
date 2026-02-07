@@ -56,7 +56,23 @@ func Routes(cfg Config, app *web.App) {
 	statusesService := states.New(cfg.Log, statesrepository.New(cfg.Log, cfg.DB))
 	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepository.New(cfg.Log, cfg.DB))
 	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
-	workspacesService := workspaces.New(cfg.Log, workspacesrepository.New(cfg.Log, cfg.DB), cfg.DB, teamsService, storiesService, statusesService, usersService, objectivestatusService, subsService, nil, cfg.Cache, cfg.SystemUserID, cfg.Publisher, cfg.TasksService)
+	workspacesService := workspaces.New(
+		cfg.Log,
+		workspacesrepository.New(cfg.Log, cfg.DB),
+		cfg.DB,
+		workspaces.Dependencies{
+			Teams:           teamsService,
+			Stories:         storiesService,
+			Statuses:        statusesService,
+			Users:           usersService,
+			ObjectiveStatus: objectivestatusService,
+			Subscriptions:   subsService,
+			Cache:           cfg.Cache,
+			SystemUserID:    cfg.SystemUserID,
+			Publisher:       cfg.Publisher,
+			TasksService:    cfg.TasksService,
+		},
+	)
 
 	h := New(subsService, usersService, workspacesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
