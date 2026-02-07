@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/teamsettings"
-	"github.com/complexus-tech/projects-api/internal/repo/teamsettingsrepo"
+	"github.com/complexus-tech/projects-api/internal/modules/teamsettings/repository"
+	"github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ func ProcessSprintAutoCreation(ctx context.Context, db *sqlx.DB, log *logger.Log
 	log.Info(ctx, "Processing sprint auto-creation for teams")
 
 	// Initialize the team settings service
-	teamsettingsRepo := teamsettingsrepo.New(log, db)
+	teamsettingsRepo := teamsettingsrepository.New(log, db)
 	teamsettingsService := teamsettings.New(log, teamsettingsRepo, nil)
 
 	// Get teams that have auto sprint creation enabled

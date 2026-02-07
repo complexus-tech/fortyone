@@ -14,22 +14,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/notifications"
-	"github.com/complexus-tech/projects-api/internal/core/objectives"
-	"github.com/complexus-tech/projects-api/internal/core/okractivities"
-	"github.com/complexus-tech/projects-api/internal/core/states"
-	"github.com/complexus-tech/projects-api/internal/core/stories"
-	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/handlers"
+	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
 	"github.com/complexus-tech/projects-api/internal/migrations"
-	"github.com/complexus-tech/projects-api/internal/mux"
-	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/okractivitiesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
+	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
+	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
+	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
+	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
+	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
+	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
@@ -319,13 +319,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}()
 
 	// Create services
-	notificationService := notifications.New(log, notificationsrepo.New(log, db), rdb, tasksService)
-	mentionsRepo := mentionsrepo.New(log, db)
-	storiesService := stories.New(log, storiesrepo.New(log, db), mentionsRepo, publisher)
-	okrActivitiesService := okractivities.New(log, okractivitiesrepo.New(log, db))
-	objectivesService := objectives.New(log, objectivesrepo.New(log, db), okrActivitiesService)
-	usersService := users.New(log, usersrepo.New(log, db), tasksService)
-	statusesService := states.New(log, statesrepo.New(log, db))
+	notificationService := notifications.New(log, notificationsrepository.New(log, db), rdb, tasksService)
+	mentionsRepo := mentionsrepository.New(log, db)
+	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, publisher)
+	okrActivitiesService := okractivities.New(log, okractivitiesrepository.New(log, db))
+	objectivesService := objectives.New(log, objectivesrepository.New(log, db), okrActivitiesService)
+	usersService := users.New(log, usersrepository.New(log, db), tasksService)
+	statusesService := states.New(log, statesrepository.New(log, db))
 
 	// Create consumer using Redis Streams
 	consumer := consumer.New(rdb, db, log, cfg.Website.URL, notificationService, mailerService, storiesService, objectivesService, usersService, statusesService)
@@ -404,7 +404,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	// Create the mux
-	routeAdder := handlers.New()
+	routeAdder := bootstrapapi.New()
 	handler := mux.New(muxConfig, routeAdder)
 
 	server := http.Server{

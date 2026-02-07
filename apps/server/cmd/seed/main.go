@@ -7,27 +7,27 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/complexus-tech/projects-api/internal/core/notifications"
-	"github.com/complexus-tech/projects-api/internal/core/objectives"
-	"github.com/complexus-tech/projects-api/internal/core/objectivestatus"
-	"github.com/complexus-tech/projects-api/internal/core/okractivities"
-	"github.com/complexus-tech/projects-api/internal/core/states"
-	"github.com/complexus-tech/projects-api/internal/core/stories"
-	"github.com/complexus-tech/projects-api/internal/core/subscriptions"
-	"github.com/complexus-tech/projects-api/internal/core/teams"
-	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/core/workspaces"
-	"github.com/complexus-tech/projects-api/internal/repo/mentionsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/notificationsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/objectivesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/objectivestatusrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/okractivitiesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/statesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/storiesrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/subscriptionsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/teamsrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/usersrepo"
-	"github.com/complexus-tech/projects-api/internal/repo/workspacesrepo"
+	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
+	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
+	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
+	objectivestatusrepository "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/repository"
+	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
+	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
+	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
+	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	subscriptionsrepository "github.com/complexus-tech/projects-api/internal/modules/subscriptions/repository"
+	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
+	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
+	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
+	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	"github.com/complexus-tech/projects-api/internal/seeding"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/database"
@@ -128,28 +128,28 @@ func main() {
 	systemUserID, _ := uuid.Parse(cfg.System.UserID)
 
 	// Dependency Tree
-	usersRepo := usersrepo.New(log, db)
+	usersRepo := usersrepository.New(log, db)
 	usersService := users.New(log, usersRepo, tasksService)
 
-	teamsRepo := teamsrepo.New(log, db)
+	teamsRepo := teamsrepository.New(log, db)
 	teamsService := teams.New(log, teamsRepo)
 
-	statesRepo := statesrepo.New(log, db)
+	statesRepo := statesrepository.New(log, db)
 	statesService := states.New(log, statesRepo)
 
-	mentionsRepo := mentionsrepo.New(log, db)
-	storiesRepo := storiesrepo.New(log, db)
+	mentionsRepo := mentionsrepository.New(log, db)
+	storiesRepo := storiesrepository.New(log, db)
 	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher)
 
-	okrActivitiesRepo := okractivitiesrepo.New(log, db)
+	okrActivitiesRepo := okractivitiesrepository.New(log, db)
 	okrActivitiesService := okractivities.New(log, okrActivitiesRepo)
-	objectivesRepo := objectivesrepo.New(log, db)
+	objectivesRepo := objectivesrepository.New(log, db)
 	_ = objectives.New(log, objectivesRepo, okrActivitiesService)
 
-	notificationRepo := notificationsrepo.New(log, db)
+	notificationRepo := notificationsrepository.New(log, db)
 	_ = notifications.New(log, notificationRepo, rdb, tasksService)
 
-	objStatusRepo := objectivestatusrepo.New(log, db)
+	objStatusRepo := objectivestatusrepository.New(log, db)
 	objStatusService := objectivestatus.New(log, objStatusRepo)
 
 	// Initialize Stripe client (required by subscriptions service)
@@ -158,10 +158,10 @@ func main() {
 		stripeClient = client.New(cfg.Stripe.SecretKey, nil)
 	}
 
-	subRepo := subscriptionsrepo.New(log, db)
+	subRepo := subscriptionsrepository.New(log, db)
 	subService := subscriptions.New(log, subRepo, stripeClient, cfg.Stripe.WebhookSecret, tasksService)
 
-	workspaceRepo := workspacesrepo.New(log, db)
+	workspaceRepo := workspacesrepository.New(log, db)
 	workspacesService := workspaces.New(
 		log,
 		workspaceRepo,

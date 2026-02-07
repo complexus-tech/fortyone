@@ -1,0 +1,49 @@
+package activitiesrepository
+
+import (
+	"context"
+	"fmt"
+
+	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
+	"github.com/google/uuid"
+)
+
+// GetActivities gets activities for a user.
+func (r *repo) GetActivities(ctx context.Context, userID uuid.UUID, limit int, workspaceId uuid.UUID, filters activities.ActivityFilters) ([]activities.CoreActivity, error) {
+	const query = `
+SELECT
+		sa.activity_id, sa.story_id, sa.user_id, sa.activity_type, sa.field_changed, sa.current_value, sa.created_at, sa.workspace_id,
+		u.username, u.full_name, u.avatar_url, u.is_active
+		FROM story_activities sa
+		JOIN users u ON sa.user_id = u.user_id
+		WHERE sa.user_id = :user_id
+		AND sa.workspace_id = :workspace_id
+		AND sa.created_at >= :start_date
+		AND sa.created_at <= :end_date
+		AND u.is_active = true
+		ORDER BY sa.created_at DESC
+		LIMIT :limit`
+
+	params := map[string]any{
+		"user_id":      userID,
+		"workspace_id": workspaceId,
+		"limit":        limit,
+		"start_date":   filters.StartDate,
+		"end_date":     filters.EndDate,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare named statement", "error", err)
+		return nil, fmt.Errorf("preparing statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var dbActs []dbActivity
+	if err := stmt.SelectContext(ctx, &dbActs, params); err != nil {
+		r.log.Error(ctx, "failed to get activities", "error", err)
+		return nil, fmt.Errorf("selecting activities: %w", err)
+	}
+
+	return toCoreActivities(dbActs), nil
+}
