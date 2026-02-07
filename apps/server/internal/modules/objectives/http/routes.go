@@ -1,13 +1,9 @@
 package objectiveshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
-	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -24,13 +20,20 @@ type Config struct {
 	Cache          *cache.Service
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
+	Objectives     *objectives.Service
+	KeyResults     *keyresults.Service
+	OKRActivities  *okractivities.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
-	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	attachmentsService := attachments.New(cfg.Log, attachmentsrepository.New(cfg.Log, cfg.DB), cfg.StorageService, cfg.StorageConfig)
+	okrActivitiesService := cfg.OKRActivities
+
+	objectivesService := cfg.Objectives
+
+	keyResultsService := cfg.KeyResults
+
+	attachmentsService := cfg.Attachments
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)

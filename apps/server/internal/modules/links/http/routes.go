@@ -1,7 +1,6 @@
 package linkshttp
 
 import (
-	linksrepository "github.com/complexus-tech/projects-api/internal/modules/links/repository"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,10 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *links.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
+	linksService := cfg.Service
 	h := New(cfg.Log, linksService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

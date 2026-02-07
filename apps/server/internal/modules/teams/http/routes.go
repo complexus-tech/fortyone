@@ -1,7 +1,6 @@
 package teamshttp
 
 import (
-	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,10 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *teams.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
+	teamsService := cfg.Service
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

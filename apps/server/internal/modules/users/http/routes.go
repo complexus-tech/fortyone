@@ -1,9 +1,7 @@
 package usershttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -26,15 +24,13 @@ type Config struct {
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
 	Cache          *cache.Service
+	Users          *users.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	usersRepo := usersrepository.New(cfg.Log, cfg.DB)
-	usersService := users.New(cfg.Log, usersRepo, cfg.TasksService)
-
-	// Create attachments service for profile images
-	attachmentsRepo := attachmentsrepository.New(cfg.Log, cfg.DB)
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
+	usersService := cfg.Users
+	attachmentsService := cfg.Attachments
 
 	h := New(usersService, attachmentsService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)

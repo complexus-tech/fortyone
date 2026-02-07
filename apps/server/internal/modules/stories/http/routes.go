@@ -1,14 +1,9 @@
 package storieshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
-	linksrepository "github.com/complexus-tech/projects-api/internal/modules/links/repository"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
-	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -29,16 +24,17 @@ type Config struct {
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
 	Cache          *cache.Service
+	Stories        *stories.Service
+	Comments       *comments.Service
+	Links          *links.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	mentionsRepo := mentionsrepository.New(cfg.Log, cfg.DB)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
-	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
-	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
-
-	attachmentsRepo := attachmentsrepository.New(cfg.Log, cfg.DB)
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
+	storiesService := cfg.Stories
+	commentsService := cfg.Comments
+	linksService := cfg.Links
+	attachmentsService := cfg.Attachments
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)

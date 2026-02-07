@@ -1,7 +1,6 @@
 package teamsettingshttp
 
 import (
-	teamsettingsrepository "github.com/complexus-tech/projects-api/internal/modules/teamsettings/repository"
 	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -17,10 +16,11 @@ type Config struct {
 	SecretKey    string
 	TasksService *tasks.Service
 	Cache        *cache.Service
+	Service      *teamsettings.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	teamsettingsService := teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
+	teamsettingsService := cfg.Service
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 

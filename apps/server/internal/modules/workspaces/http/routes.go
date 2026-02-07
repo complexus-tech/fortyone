@@ -1,22 +1,13 @@
 package workspaceshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
-	objectivestatusrepository "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/repository"
 	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
-	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	subscriptionsrepository "github.com/complexus-tech/projects-api/internal/modules/subscriptions/repository"
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
-	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
-	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -31,55 +22,41 @@ import (
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	Publisher      *publisher.Publisher
-	Cache          *cache.Service
-	StripeClient   *client.API
-	WebhookSecret  string
-	TasksService   *tasks.Service
-	SystemUserID   uuid.UUID
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
+	DB              *sqlx.DB
+	Log             *logger.Logger
+	SecretKey       string
+	Publisher       *publisher.Publisher
+	Cache           *cache.Service
+	StripeClient    *client.API
+	WebhookSecret   string
+	TasksService    *tasks.Service
+	SystemUserID    uuid.UUID
+	StorageConfig   storage.Config
+	StorageService  storage.StorageService
+	Workspaces      *workspaces.Service
+	Teams           *teams.Service
+	Stories         *stories.Service
+	Statuses        *states.Service
+	Users           *users.Service
+	ObjectiveStatus *objectivestatus.Service
+	Subscriptions   *subscriptions.Service
+	Attachments     *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
-	mentionsRepo := mentionsrepository.New(cfg.Log, cfg.DB)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
-	statusesService := states.New(cfg.Log, statesrepository.New(cfg.Log, cfg.DB))
-	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepository.New(cfg.Log, cfg.DB))
-	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
-	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepository.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.WebhookSecret, cfg.TasksService)
-
-	// Create attachments service for workspace logos
-	attachmentsRepo := attachmentsrepository.New(cfg.Log, cfg.DB)
-	attachmentsService := attachments.New(cfg.Log, attachmentsRepo, cfg.StorageService, cfg.StorageConfig)
+	teamsService := cfg.Teams
+	storiesService := cfg.Stories
+	statusesService := cfg.Statuses
+	objectivestatusService := cfg.ObjectiveStatus
+	usersService := cfg.Users
+	subscriptionsService := cfg.Subscriptions
+	attachmentsService := cfg.Attachments
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
-	workspacesService := workspaces.New(
-		cfg.Log,
-		workspacesrepository.New(cfg.Log, cfg.DB),
-		cfg.DB,
-		workspaces.Dependencies{
-			Teams:           teamsService,
-			Stories:         storiesService,
-			Statuses:        statusesService,
-			Users:           usersService,
-			ObjectiveStatus: objectivestatusService,
-			Subscriptions:   subscriptionsService,
-			Attachments:     attachmentsService,
-			Cache:           cfg.Cache,
-			SystemUserID:    cfg.SystemUserID,
-			Publisher:       cfg.Publisher,
-			TasksService:    cfg.TasksService,
-		},
-	)
 
-	h := New(workspacesService, teamsService,
+	h := New(cfg.Workspaces, teamsService,
 		storiesService, statusesService, usersService, objectivestatusService, subscriptionsService,
 		cfg.Cache, cfg.Log, cfg.SecretKey, attachmentsService)
 

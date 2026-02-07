@@ -1,7 +1,6 @@
 package labelshttp
 
 import (
-	labelsrepository "github.com/complexus-tech/projects-api/internal/modules/labels/repository"
 	labels "github.com/complexus-tech/projects-api/internal/modules/labels/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,10 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *labels.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	labelsService := labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB))
+	labelsService := cfg.Service
 	h := New(labelsService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

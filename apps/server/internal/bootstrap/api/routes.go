@@ -36,6 +36,7 @@ func New() routes {
 }
 
 func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
+	svcs := buildServices(cfg)
 
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,
@@ -51,6 +52,10 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StorageService: cfg.StorageService,
 		Validate:       cfg.Validate,
 		Cache:          cfg.Cache,
+		Stories:        svcs.stories,
+		Comments:       svcs.comments,
+		Links:          svcs.links,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	objectiveshttp.Routes(objectiveshttp.Config{
@@ -60,6 +65,10 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:          cfg.Cache,
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
+		Objectives:     svcs.objectives,
+		KeyResults:     svcs.keyResults,
+		OKRActivities:  svcs.okrActivities,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	objectivestatushttp.Routes(objectivestatushttp.Config{
@@ -67,6 +76,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.objectiveStats,
 	}, app)
 
 	labelshttp.Routes(labelshttp.Config{
@@ -74,6 +84,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.labels,
 	}, app)
 
 	linkshttp.Routes(linkshttp.Config{
@@ -81,6 +92,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.links,
 	}, app)
 
 	sprintshttp.Routes(sprintshttp.Config{
@@ -90,6 +102,8 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:          cfg.Cache,
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
+		Sprints:        svcs.sprints,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	epicshttp.Routes(epicshttp.Config{
@@ -97,6 +111,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.epics,
 	}, app)
 
 	documentshttp.Routes(documentshttp.Config{
@@ -104,6 +119,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.documents,
 	}, app)
 
 	stateshttp.Routes(stateshttp.Config{
@@ -111,6 +127,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.states,
 	}, app)
 
 	teamshttp.Routes(teamshttp.Config{
@@ -118,6 +135,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.teams,
 	}, app)
 
 	usershttp.Routes(usershttp.Config{
@@ -130,20 +148,30 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
 		Cache:          cfg.Cache,
+		Users:          svcs.users,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	workspaceshttp.Routes(workspaceshttp.Config{
-		DB:             cfg.DB,
-		Log:            cfg.Log,
-		SecretKey:      cfg.SecretKey,
-		Publisher:      cfg.Publisher,
-		Cache:          cfg.Cache,
-		StripeClient:   cfg.StripeClient,
-		WebhookSecret:  cfg.WebhookSecret,
-		TasksService:   cfg.TasksService,
-		SystemUserID:   cfg.SystemUserID,
-		StorageConfig:  cfg.StorageConfig,
-		StorageService: cfg.StorageService,
+		DB:              cfg.DB,
+		Log:             cfg.Log,
+		SecretKey:       cfg.SecretKey,
+		Publisher:       cfg.Publisher,
+		Cache:           cfg.Cache,
+		StripeClient:    cfg.StripeClient,
+		WebhookSecret:   cfg.WebhookSecret,
+		TasksService:    cfg.TasksService,
+		SystemUserID:    cfg.SystemUserID,
+		StorageConfig:   cfg.StorageConfig,
+		StorageService:  cfg.StorageService,
+		Workspaces:      svcs.workspaces,
+		Teams:           svcs.teams,
+		Stories:         svcs.stories,
+		Statuses:        svcs.states,
+		Users:           svcs.users,
+		ObjectiveStatus: svcs.objectiveStats,
+		Subscriptions:   svcs.subscriptions,
+		Attachments:     svcs.attachments,
 	}, app)
 
 	commentshttp.Routes(commentshttp.Config{
@@ -151,6 +179,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.comments,
 	}, app)
 
 	activitieshttp.Routes(activitieshttp.Config{
@@ -160,6 +189,8 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:          cfg.Cache,
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
+		Activities:     svcs.activities,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	reportshttp.Routes(reportshttp.Config{
@@ -169,6 +200,8 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:          cfg.Cache,
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
+		Reports:        svcs.reports,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	keyresultshttp.Routes(keyresultshttp.Config{
@@ -178,6 +211,9 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:          cfg.Cache,
 		StorageConfig:  cfg.StorageConfig,
 		StorageService: cfg.StorageService,
+		KeyResults:     svcs.keyResults,
+		OKRActivities:  svcs.okrActivities,
+		Attachments:    svcs.attachments,
 	}, app)
 
 	notificationshttp.Routes(notificationshttp.Config{
@@ -187,6 +223,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Redis:        cfg.Redis,
 		TasksService: cfg.TasksService,
 		Cache:        cfg.Cache,
+		Service:      svcs.notifications,
 	}, app)
 
 	invitationshttp.Routes(invitationshttp.Config{
@@ -199,6 +236,8 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		TasksService: cfg.TasksService,
 		SystemUserID: cfg.SystemUserID,
 		Cache:        cfg.Cache,
+		Invitations:  svcs.invitations,
+		UsersService: svcs.users,
 	}, app)
 
 	searchhttp.Routes(searchhttp.Config{
@@ -206,6 +245,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.search,
 	}, app)
 
 	subscriptionshttp.Routes(subscriptionshttp.Config{
@@ -218,6 +258,9 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		TasksService:  cfg.TasksService,
 		SystemUserID:  cfg.SystemUserID,
 		Cache:         cfg.Cache,
+		Subscriptions: svcs.subscriptions,
+		Users:         svcs.users,
+		Workspaces:    svcs.workspaces,
 	}, app)
 
 	ssehttp.Routes(ssehttp.Config{
@@ -235,6 +278,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:    cfg.SecretKey,
 		TasksService: cfg.TasksService,
 		Cache:        cfg.Cache,
+		Service:      svcs.teamSettings,
 	}, app)
 
 	chatsessionshttp.Routes(chatsessionshttp.Config{
@@ -242,6 +286,7 @@ func (routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log:       cfg.Log,
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
+		Service:   svcs.chatSessions,
 	}, app)
 
 }

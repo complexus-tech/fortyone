@@ -1,7 +1,6 @@
 package objectivestatushttp
 
 import (
-	objectivestatusrepository "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/repository"
 	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,10 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *objectivestatus.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	objectiveStatusService := objectivestatus.New(cfg.Log, objectivestatusrepository.New(cfg.Log, cfg.DB))
+	objectiveStatusService := cfg.Service
 	h := New(objectiveStatusService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

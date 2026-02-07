@@ -1,9 +1,7 @@
 package reportshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -20,11 +18,13 @@ type Config struct {
 	Cache          *cache.Service
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
+	Reports        *reports.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB))
-	attachmentsService := attachments.New(cfg.Log, attachmentsrepository.New(cfg.Log, cfg.DB), cfg.StorageService, cfg.StorageConfig)
+	reportsService := cfg.Reports
+	attachmentsService := cfg.Attachments
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 

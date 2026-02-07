@@ -1,16 +1,8 @@
 package invitationshttp
 
 import (
-	invitationsrepository "github.com/complexus-tech/projects-api/internal/modules/invitations/repository"
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
-	subscriptionsrepository "github.com/complexus-tech/projects-api/internal/modules/subscriptions/repository"
-	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
-	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
-	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
-	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -32,27 +24,14 @@ type Config struct {
 	StripeSecret string
 	TasksService *tasks.Service
 	SystemUserID uuid.UUID
+	Invitations  *invitations.Service
+	UsersService *users.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	repo := invitationsrepository.New(cfg.Log, cfg.DB)
-	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
-	subscriptionsService := subscriptions.New(cfg.Log, subscriptionsrepository.New(cfg.Log, cfg.DB), cfg.StripeClient, cfg.StripeSecret, cfg.TasksService)
-	workspacesService := workspaces.New(
-		cfg.Log,
-		workspacesrepository.New(cfg.Log, cfg.DB),
-		cfg.DB,
-		workspaces.Dependencies{
-			Users:         usersService,
-			Subscriptions: subscriptionsService,
-			Cache:         cfg.Cache,
-			SystemUserID:  cfg.SystemUserID,
-			Publisher:     cfg.Publisher,
-			TasksService:  cfg.TasksService,
-		},
-	)
-	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
-	invitationsService := invitations.New(repo, cfg.Log, cfg.Publisher, usersService, workspacesService, teamsService)
+	usersService := cfg.UsersService
+	invitationsService := cfg.Invitations
+
 	h := New(invitationsService, usersService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

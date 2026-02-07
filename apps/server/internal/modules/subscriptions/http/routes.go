@@ -1,20 +1,8 @@
 package subscriptionshttp
 
 import (
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
-	objectivestatusrepository "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/repository"
-	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
-	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	subscriptionsrepository "github.com/complexus-tech/projects-api/internal/modules/subscriptions/repository"
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
-	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
-	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -37,42 +25,15 @@ type Config struct {
 	TasksService  *tasks.Service
 	SystemUserID  uuid.UUID
 	Cache         *cache.Service
+	Subscriptions *subscriptions.Service
+	Users         *users.Service
+	Workspaces    *workspaces.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	// Initialize repository and service
-	subsRepo := subscriptionsrepository.New(cfg.Log, cfg.DB)
-	subsService := subscriptions.New(
-		cfg.Log,
-		subsRepo,
-		cfg.StripeClient,
-		cfg.WebhookSecret,
-		cfg.TasksService,
-	)
-
-	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
-	mentionsRepo := mentionsrepository.New(cfg.Log, cfg.DB)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
-	statusesService := states.New(cfg.Log, statesrepository.New(cfg.Log, cfg.DB))
-	objectivestatusService := objectivestatus.New(cfg.Log, objectivestatusrepository.New(cfg.Log, cfg.DB))
-	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
-	workspacesService := workspaces.New(
-		cfg.Log,
-		workspacesrepository.New(cfg.Log, cfg.DB),
-		cfg.DB,
-		workspaces.Dependencies{
-			Teams:           teamsService,
-			Stories:         storiesService,
-			Statuses:        statusesService,
-			Users:           usersService,
-			ObjectiveStatus: objectivestatusService,
-			Subscriptions:   subsService,
-			Cache:           cfg.Cache,
-			SystemUserID:    cfg.SystemUserID,
-			Publisher:       cfg.Publisher,
-			TasksService:    cfg.TasksService,
-		},
-	)
+	subsService := cfg.Subscriptions
+	usersService := cfg.Users
+	workspacesService := cfg.Workspaces
 
 	h := New(subsService, usersService, workspacesService, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)

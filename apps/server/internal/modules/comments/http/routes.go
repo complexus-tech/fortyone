@@ -1,9 +1,7 @@
 package commentshttp
 
 import (
-	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -16,11 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *comments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	mentionsRepo := mentionsrepository.New(cfg.Log, cfg.DB)
-	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
+	commentsService := cfg.Service
 	h := New(cfg.Log, commentsService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

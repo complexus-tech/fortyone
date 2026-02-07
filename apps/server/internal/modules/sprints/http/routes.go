@@ -1,9 +1,7 @@
 package sprintshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	sprintsrepository "github.com/complexus-tech/projects-api/internal/modules/sprints/repository"
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -20,12 +18,13 @@ type Config struct {
 	Cache          *cache.Service
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
+	Sprints        *sprints.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-
-	sprintsService := sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB))
-	attachmentsService := attachments.New(cfg.Log, attachmentsrepository.New(cfg.Log, cfg.DB), cfg.StorageService, cfg.StorageConfig)
+	sprintsService := cfg.Sprints
+	attachmentsService := cfg.Attachments
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 

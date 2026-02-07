@@ -1,9 +1,7 @@
 package activitieshttp
 
 import (
-	activitiesrepository "github.com/complexus-tech/projects-api/internal/modules/activities/repository"
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -20,11 +18,13 @@ type Config struct {
 	SecretKey      string
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
+	Activities     *activities.Service
+	Attachments    *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	activitiesService := activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB))
-	attachmentsService := attachments.New(cfg.Log, attachmentsrepository.New(cfg.Log, cfg.DB), cfg.StorageService, cfg.StorageConfig)
+	activitiesService := cfg.Activities
+	attachmentsService := cfg.Attachments
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 

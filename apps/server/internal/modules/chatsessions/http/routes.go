@@ -1,7 +1,6 @@
 package chatsessionshttp
 
 import (
-	chatsessionsrepository "github.com/complexus-tech/projects-api/internal/modules/chatsessions/repository"
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -17,11 +16,11 @@ type Config struct {
 	SecretKey string
 	Validate  *validator.Validate
 	Cache     *cache.Service
+	Service   *chatsessions.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	chatsessionsRepo := chatsessionsrepository.New(cfg.Log, cfg.DB)
-	chatsessionsService := chatsessions.New(cfg.Log, chatsessionsRepo)
+	chatsessionsService := cfg.Service
 
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)

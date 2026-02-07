@@ -1,7 +1,6 @@
 package stateshttp
 
 import (
-	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,10 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *states.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	statesService := states.New(cfg.Log, statesrepository.New(cfg.Log, cfg.DB))
+	statesService := cfg.Service
 	h := New(statesService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)

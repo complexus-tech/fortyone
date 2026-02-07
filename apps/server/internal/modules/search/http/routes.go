@@ -1,7 +1,6 @@
 package searchhttp
 
 import (
-	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,11 +14,11 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *search.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	searchRepo := searchrepository.New(cfg.Log, cfg.DB)
-	searchService := search.New(cfg.Log, searchRepo)
+	searchService := cfg.Service
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 

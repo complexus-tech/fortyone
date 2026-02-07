@@ -1,7 +1,6 @@
 package documentshttp
 
 import (
-	documentsrepository "github.com/complexus-tech/projects-api/internal/modules/documents/repository"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -15,16 +14,15 @@ type Config struct {
 	Log       *logger.Logger
 	SecretKey string
 	Cache     *cache.Service
+	Service   *documents.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-
-	documentsService := documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB))
+	documentsService := cfg.Service
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
 	h := New(documentsService)
 
 	app.Get("/workspaces/{workspaceSlug}/documents", h.List, auth, workspace)
-
 }

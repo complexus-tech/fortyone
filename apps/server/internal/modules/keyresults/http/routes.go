@@ -1,11 +1,8 @@
 package keyresultshttp
 
 import (
-	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -23,13 +20,18 @@ type Config struct {
 	Cache          *cache.Service
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
+	KeyResults     *keyresults.Service
+	OKRActivities  *okractivities.Service
+	Attachments    *attachments.Service
 }
 
 // Routes sets up all the key results routes
 func Routes(cfg Config, app *web.App) {
-	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
-	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	attachmentsService := attachments.New(cfg.Log, attachmentsrepository.New(cfg.Log, cfg.DB), cfg.StorageService, cfg.StorageConfig)
+	okrActivitiesService := cfg.OKRActivities
+
+	keyResultsService := cfg.KeyResults
+
+	attachmentsService := cfg.Attachments
 	h := New(keyResultsService, okrActivitiesService, attachmentsService, cfg.Cache, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
