@@ -7,12 +7,6 @@ import { useSession } from "next-auth/react";
 import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { signInWithGoogleOneTap } from "@/lib/actions/sign-in";
-import { getRedirectUrl } from "@/utils";
-import { getMyInvitations } from "@/lib/queries/get-invitations";
-import { getSession } from "./verify/[email]/[token]/actions";
-import { getProfile } from "@/lib/queries/profile";
-import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { exchangeSessionToken } from "@/lib/http/exchange-session";
 
 const AUTH_GOOGLE_ID = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID;
 
@@ -41,21 +35,7 @@ export default function GoogleOneTap() {
   const handleCredentialResponse = useCallback(async (response: any) => {
     try {
       await signInWithGoogleOneTap(response?.credential as string);
-      const newSession = await getSession();
-
-      if (newSession) {
-        await exchangeSessionToken(newSession.token);
-        const [workspaces, profile, invitations] = await Promise.all([
-          getWorkspaces(newSession?.token || ""),
-          getProfile({ token: newSession?.token }),
-          getMyInvitations(),
-        ]);
-        window.location.href = getRedirectUrl(
-          workspaces,
-          invitations.data || [],
-          profile?.lastUsedWorkspaceId,
-        );
-      }
+      window.location.href = "/auth-callback";
     } catch (error) {
       console.error("Error signing in:", error);
     }

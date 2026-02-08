@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -21,7 +22,7 @@ type Response struct {
 func RespondError(ctx context.Context, w http.ResponseWriter, err error, statusCode int) error {
 	errResponse := Response{
 		Error: &ErrorDetail{
-			Message: err.Error(),
+			Message: sanitizeErrorMessage(err, statusCode),
 		},
 	}
 	return respond(ctx, w, errResponse, statusCode)
@@ -61,4 +62,56 @@ func respond(ctx context.Context, w http.ResponseWriter, data any, statusCode in
 
 	span.SetStatus(codes.Ok, "Response sent successfully")
 	return nil
+}
+
+func sanitizeErrorMessage(err error, statusCode int) string {
+	if statusCode >= http.StatusInternalServerError {
+		return "internal server error"
+	}
+
+	if err == nil {
+		return defaultErrorMessage(statusCode)
+	}
+
+	message := strings.TrimSpace(err.Error())
+	if message == "" {
+		return defaultErrorMessage(statusCode)
+	}
+
+	if looksLikeDatabaseError(message) {
+		return defaultErrorMessage(statusCode)
+	}
+
+	return message
+}
+
+func defaultErrorMessage(statusCode int) string {
+	statusText := strings.ToLower(strings.TrimSpace(http.StatusText(statusCode)))
+	if statusText == "" {
+		return "request failed"
+	}
+	return statusText
+}
+
+func looksLikeDatabaseError(message string) bool {
+	lower := strings.ToLower(message)
+
+	dbMarkers := []string{
+		"sql:",
+		"pq:",
+		"database",
+		"no rows in result set",
+		"duplicate key value",
+		"violates unique constraint",
+		"violates foreign key constraint",
+		"violates check constraint",
+	}
+
+	for _, marker := range dbMarkers {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+
+	return false
 }

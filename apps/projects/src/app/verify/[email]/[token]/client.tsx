@@ -1,17 +1,10 @@
 "use client";
 
 import { Text, Flex } from "ui";
-import { redirect, useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
-import { getRedirectUrl } from "@/utils";
-import { getMyInvitations } from "@/lib/queries/get-invitations";
-import { useAnalytics } from "@/hooks";
-import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { getProfile } from "@/lib/queries/profile";
-import { exchangeSessionToken } from "@/lib/http/exchange-session";
 import { logIn, getSession } from "./actions";
-import { getAuthCode } from "@/lib/queries/get-auth-code";
 
 export const EmailVerificationCallback = () => {
   const params = useParams<{ email: string; token: string }>();
@@ -19,7 +12,6 @@ export const EmailVerificationCallback = () => {
   const isMobileApp = searchParams?.get("mobileApp") === "true";
   const validatedEmail = decodeURIComponent(params?.email || "");
   const validatedToken = decodeURIComponent(params?.token || "");
-  const { analytics } = useAnalytics();
   const hasValidated = useRef(false);
 
   useEffect(() => {
@@ -29,78 +21,27 @@ export const EmailVerificationCallback = () => {
       }
       hasValidated.current = true;
       const res = await logIn(validatedEmail, validatedToken);
+
       if (res?.error) {
         const session = await getSession();
         if (session) {
-          await exchangeSessionToken(session.token);
-          const [workspaces, profile] = await Promise.all([
-            getWorkspaces(session?.token || ""),
-            getProfile({ token: session?.token }),
-          ]);
-          if (isMobileApp && workspaces.length > 0) {
-            const authCodeResponse = await getAuthCode({
-              token: session?.token,
-            });
-            if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/?mobileApp=true&error=Failed to generate auth code");
-              return;
-            }
-            redirect(
-              `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
-            );
-            return;
-          }
-          analytics.identify(session.user!.email!, {
-            email: session.user!.email!,
-            name: session.user!.name!,
-          });
-          const invitations = await getMyInvitations();
-          window.location.href = getRedirectUrl(
-            workspaces,
-            invitations.data || [],
-            profile?.lastUsedWorkspaceId,
-          );
+          window.location.href = isMobileApp
+            ? "/auth-callback?mobileApp=true"
+            : "/auth-callback";
           return;
         }
-        redirect(`/?error=${res.error}`);
-      } else {
-        const session = await getSession();
-        if (session) {
-          await exchangeSessionToken(session.token);
-        }
-        const [workspaces, profile] = await Promise.all([
-          getWorkspaces(session?.token || ""),
-          getProfile({ token: session?.token }),
-        ]);
-        if (session) {
-          if (isMobileApp && workspaces.length > 0) {
-            const authCodeResponse = await getAuthCode({
-              token: session?.token,
-            });
-            if (authCodeResponse.error || !authCodeResponse.data) {
-              redirect("/?mobileApp=true&error=Failed to generate auth code");
-            } else {
-              redirect(
-                `fortyone://login?code=${authCodeResponse.data.code}&email=${authCodeResponse.data.email}`,
-              );
-            }
-          }
-          analytics.identify(session.user!.email!, {
-            email: session.user!.email!,
-            name: session.user!.name!,
-          });
-          const invitations = await getMyInvitations();
-          window.location.href = getRedirectUrl(
-            workspaces,
-            invitations.data || [],
-            profile?.lastUsedWorkspaceId,
-          );
-        }
+
+        window.location.href = `/?error=${encodeURIComponent(res.error)}`;
+        return;
       }
+
+      window.location.href = isMobileApp
+        ? "/auth-callback?mobileApp=true"
+        : "/auth-callback";
     };
 
     void validate();
-  }, [validatedEmail, validatedToken, analytics, isMobileApp]);
+  }, [validatedEmail, validatedToken, isMobileApp]);
 
   return (
     <Flex

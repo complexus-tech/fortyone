@@ -110,26 +110,27 @@ APP_BREVO_API_KEY=your_brevo_api_key_here
 
 ## Architecture
 
-The Projects API follows a **Hexagonal (or Layered) Architecture** pattern, designed for modularity, testability, and clear separation of concerns.
+The Projects API follows a **domain-first architecture** with clear boundaries between HTTP, domain services, and data access.
 
 ### System Overview
 
-The system is structured into concentric layers:
+The system is organized around domains:
 
-1.  **Transport Layer (`cmd`, `internal/mux`, `internal/handlers`)**: Handles HTTP requests, routing, and input validation.
-2.  **Domain Layer (`internal/core`)**: Contains pure business logic and interfaces.
-3.  **Data Layer (`internal/repo`)**: Implements storage interfaces using SQLx (PostgreSQL).
-4.  **Platform/Pkg (`pkg`)**: Shared utilities and third-party integrations (Brevo, AWS, etc.).
+1.  **Entrypoints (`cmd`)**: Starts API, worker, seed, and metrics processes.
+2.  **App Wiring (`internal/bootstrap`, `internal/platform/http`)**: Router setup and route registration.
+3.  **Domain Modules (`internal/modules/<domain>`)**: Each domain owns `service`, `repository`, and `http` packages.
+4.  **Shared Libraries (`pkg`)**: Cross-cutting utilities and third-party integrations.
 
 ### Directory Structure
 
 ```mermaid
 graph TD
-    cmd[cmd/] --> mux[internal/mux]
-    mux --> handlers[internal/handlers]
-    handlers --> core[internal/core]
-    core --> repo[internal/repo]
-    core --> pkg[pkg/]
+    cmd[cmd/] --> app[internal/bootstrap/api]
+    app --> mux[internal/platform/http/mux]
+    mux --> http[internal/modules/<domain>/http]
+    http --> service[internal/modules/<domain>/service]
+    service --> repo[internal/modules/<domain>/repository]
+    service --> pkg[pkg/]
     repo --> pkg
 ```
 
@@ -138,22 +139,21 @@ graph TD
 - **`cmd/`**: Application entry points.
   - `api/`: The main REST API server.
   - `worker/`: Background job processor (using Asynq).
-- **`internal/mux`**: Router setup, middleware configuration, and dependency injection root.
-- **`internal/handlers`**: HTTP handlers grouped by domain (e.g., `storiesgrp`, `usersgrp`). Responsible for parsing requests and sending responses.
-- **`internal/core`**: The heart of the application.
-  - Defines domain models (structs).
-  - Defines interfaces for Repositories and Services.
-  - Implements business logic (Services).
-- **`internal/repo`**: Database implementations of the interfaces defined in `core`. Uses `sqlx` for explicitly managed SQL queries.
+- **`internal/bootstrap/api`**: API route composition and top-level route registration.
+- **`internal/platform/http/mux`**: Router setup and middleware registration.
+- **`internal/modules/<domain>/http`**: Domain HTTP handlers (request parsing, validation, response writing).
+- **`internal/modules/<domain>/service`**: Domain business logic.
+- **`internal/modules/<domain>/repository`**: SQLx-backed persistence for each domain.
+  - Repository methods are split into `commands.go` (writes) and `queries.go` (reads) where applicable.
 - **`pkg/`**: Library code that is not specific to the application's business domain (e.g., `logger`, `database`, `brevo`, `azure`).
 
 ### Data Flow
 
-1.  **Request**: An HTTP request hits `cmd/api`, is routed by `internal/mux` to a specific handler in `internal/handlers`.
-2.  **Handler**: The handler parses the request payload, validates input, and calls a Service method in `internal/core`.
-3.  **Core**: The Service executes business logic (e.g., calculation, permission checks) and calls the Repository interface.
-4.  **Repo**: The Repository implementation (`internal/repo`) constructs a SQL query and executes it against PostgreSQL.
-5.  **Response**: Data bubbles back up: Repo → Core → Handler → HTTP Response.
+1.  **Request**: An HTTP request hits `cmd/api`, then passes through `internal/platform/http/mux`.
+2.  **Handler**: The domain handler in `internal/modules/<domain>/http` validates input and calls the domain service.
+3.  **Service**: The service in `internal/modules/<domain>/service` executes business rules.
+4.  **Repository**: The repository in `internal/modules/<domain>/repository` executes SQL queries via SQLx.
+5.  **Response**: Data flows back up: Repository → Service → Handler → HTTP response.
 
 ### Technology Stack
 
@@ -174,3 +174,5 @@ graph TD
 - **Dependency Injection**: Dependencies are created in `main.go` and passed down explicitly (no global state).
 - **Tracing**: Key operations are wrapped in `web.AddSpan` for observability.
 - **Transactions**: Explicit transaction management (`BeginTxx`) in repositories for multi-step writes.
+- **Boundaries**: `internal/modules/<domain>/service` and `internal/modules/<domain>/repository` must not import HTTP-layer packages.
+- **Package Naming**: Domain adapters use explicit package names like `<domain>http` and `<domain>repository`.

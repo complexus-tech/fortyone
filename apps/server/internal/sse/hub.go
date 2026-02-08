@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/core/notifications"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
