@@ -25,9 +25,16 @@ type AppTeamStoryAutomationSettings struct {
 	UpdatedAt                time.Time `json:"updatedAt"`
 }
 
+type AppTeamEstimationSettings struct {
+	Scheme    string    `json:"scheme"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 type AppTeamSettings struct {
 	SprintSettings          AppTeamSprintSettings          `json:"sprintSettings"`
 	StoryAutomationSettings AppTeamStoryAutomationSettings `json:"storyAutomationSettings"`
+	EstimationSettings      AppTeamEstimationSettings      `json:"estimationSettings"`
 }
 
 type AppUpdateTeamSprintSettings struct {
@@ -43,6 +50,10 @@ type AppUpdateTeamStoryAutomationSettings struct {
 	AutoCloseInactiveMonths  *int  `json:"autoCloseInactiveMonths,omitempty"`
 	AutoArchiveEnabled       *bool `json:"autoArchiveEnabled,omitempty"`
 	AutoArchiveMonths        *int  `json:"autoArchiveMonths,omitempty"`
+}
+
+type AppUpdateTeamEstimationSettings struct {
+	Scheme *string `json:"scheme,omitempty"`
 }
 
 // Conversion functions
@@ -73,6 +84,7 @@ func toAppTeamSettings(settings teamsettings.CoreTeamSettings) AppTeamSettings {
 	return AppTeamSettings{
 		SprintSettings:          toAppTeamSprintSettings(settings.SprintSettings),
 		StoryAutomationSettings: toAppTeamStoryAutomationSettings(settings.StoryAutomationSettings),
+		EstimationSettings:      toAppTeamEstimationSettings(settings.EstimationSettings),
 	}
 }
 
@@ -92,5 +104,19 @@ func toCoreUpdateTeamStoryAutomationSettings(app AppUpdateTeamStoryAutomationSet
 		AutoCloseInactiveMonths:  app.AutoCloseInactiveMonths,
 		AutoArchiveEnabled:       app.AutoArchiveEnabled,
 		AutoArchiveMonths:        app.AutoArchiveMonths,
+	}
+}
+
+func toAppTeamEstimationSettings(settings teamsettings.CoreTeamEstimationSettings) AppTeamEstimationSettings {
+	return AppTeamEstimationSettings{
+		Scheme:    settings.Scheme,
+		CreatedAt: settings.CreatedAt,
+		UpdatedAt: settings.UpdatedAt,
+	}
+}
+
+func toCoreUpdateTeamEstimationSettings(app AppUpdateTeamEstimationSettings) teamsettings.CoreUpdateTeamEstimationSettings {
+	return teamsettings.CoreUpdateTeamEstimationSettings{
+		Scheme: app.Scheme,
 	}
 }

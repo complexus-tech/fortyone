@@ -11,10 +11,14 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
+// contextKey is a private type for context keys to avoid collisions.
 type contextKey int
 
+// key is the context key for storing web values.
 const key contextKey = 1
 
+// Values stores request-scoped values that are passed through the context.
+// These values include tracing information, timing, and response status.
 type Values struct {
 	TraceID    string
 	Tracer     trace.Tracer

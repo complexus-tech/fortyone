@@ -30,9 +30,18 @@ type CoreTeamStoryAutomationSettings struct {
 	UpdatedAt                time.Time
 }
 
+type CoreTeamEstimationSettings struct {
+	TeamID      uuid.UUID
+	WorkspaceID uuid.UUID
+	Scheme      string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type CoreTeamSettings struct {
 	SprintSettings          CoreTeamSprintSettings
 	StoryAutomationSettings CoreTeamStoryAutomationSettings
+	EstimationSettings      CoreTeamEstimationSettings
 }
 
 type CoreUpdateTeamSprintSettings struct {
@@ -48,4 +57,8 @@ type CoreUpdateTeamStoryAutomationSettings struct {
 	AutoCloseInactiveMonths  *int
 	AutoArchiveEnabled       *bool
 	AutoArchiveMonths        *int
+}
+
+type CoreUpdateTeamEstimationSettings struct {
+	Scheme *string
 }

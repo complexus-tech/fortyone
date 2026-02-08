@@ -18,38 +18,49 @@ export const updateStory = tool({
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .optional()
       .describe("Updated priority"),
+    estimateValue: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "Updated canonical estimate value (allowed: 1, 2, 3, 5, 8). Set null to clear estimate",
+      ),
     sprintId: z.string().optional().describe("Updated sprint ID"),
     objectiveId: z.string().optional().describe("Updated objective ID"),
     startDate: z.string().optional().describe("Updated start date"),
     endDate: z.string().optional().describe("Updated end date"),
   }),
 
-  execute: async ({
-    storyId,
-    title,
-    description,
-    descriptionHTML,
-    statusId,
-    assigneeId,
-    priority,
-    sprintId,
-    objectiveId,
-    startDate,
-    endDate,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      storyId,
+      title,
+      description,
+      descriptionHTML,
+      statusId,
+      assigneeId,
+      priority,
+      estimateValue,
+      sprintId,
+      objectiveId,
+      startDate,
+      endDate,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to update stories",
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -70,13 +81,18 @@ export const updateStory = tool({
         statusId,
         assigneeId,
         priority,
+        estimateValue,
         sprintId,
         objectiveId,
         startDate,
         endDate,
       };
 
-      const result = await updateStoryAction(storyId, updateData, workspaceSlug);
+      const result = await updateStoryAction(
+        storyId,
+        updateData,
+        workspaceSlug,
+      );
 
       if (result.error?.message) {
         return {

@@ -57,6 +57,7 @@ type Repository interface {
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error
+	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -96,12 +97,30 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 	defer span.End()
 
 	story := toCoreSingleStory(ns, workspaceId)
+	estimateScheme, err := s.repo.GetTeamEstimateScheme(ctx, ns.Team, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
+
+	story.EstimateScheme = estimateScheme
+	if err := ValidateEstimateValue(estimateScheme, ns.EstimateValue); err != nil {
+		span.RecordError(err)
+		if ns.EstimateValue != nil {
+			return CoreSingleStory{}, fmt.Errorf("%w. If this work is larger than the max estimate, split it into smaller stories", err)
+		}
+		return CoreSingleStory{}, err
+	}
+	story.EstimateValue = ns.EstimateValue
+	story.EstimateLabel = EstimateLabelFromValue(estimateScheme, ns.EstimateValue)
 
 	cs, err := s.repo.Create(ctx, &story)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	cs.EstimateScheme = estimateScheme
+	cs.EstimateLabel = EstimateLabelFromValue(estimateScheme, cs.EstimateValue)
 
 	// Record in the activity log
 	ca := CoreActivity{
@@ -187,6 +206,10 @@ func (s *Service) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreS
 		span.RecordError(err)
 		return nil, err
 	}
+	if err := s.enrichStoryListEstimates(ctx, workspaceId, stories); err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
 
 	span.AddEvent("stories retrieved.", trace.WithAttributes(
 		attribute.Int("story.count", len(stories)),
@@ -207,6 +230,10 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	if err := s.enrichSingleStoryEstimate(ctx, workspaceId, &story); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	return story, nil
 }
@@ -219,6 +246,10 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[s
 
 	stories, err := s.repo.List(ctx, workspaceId, filters)
 	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	if err := s.enrichStoryListEstimates(ctx, workspaceId, stories); err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
@@ -247,6 +278,13 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
 
+	// Copy updates to avoid mutating shared maps in bulk updates.
+	normalizedUpdates := make(map[string]any, len(updates))
+	for field, value := range updates {
+		normalizedUpdates[field] = value
+	}
+	updates = normalizedUpdates
+
 	// Get the actor ID from context
 	actorID, _ := auth.GetUserID(ctx)
 
@@ -254,6 +292,11 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	if err != nil {
 		span.RecordError(err)
 		s.log.Error(ctx, "failed to get story", "error", err)
+		return err
+	}
+
+	if err := s.applyEstimateUpdate(ctx, workspaceID, story, updates); err != nil {
+		span.RecordError(err)
 		return err
 	}
 
@@ -687,6 +730,10 @@ func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID,
 		span.RecordError(err)
 		return CoreSingleStory{}, fmt.Errorf("failed to duplicate story: %w", err)
 	}
+	if err := s.enrichSingleStoryEstimate(ctx, workspaceId, &duplicatedStory); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	span.AddEvent("Story duplicated.", trace.WithAttributes(
 		attribute.String("original_story.id", originalStoryID.String()),
@@ -718,6 +765,11 @@ func (s *Service) ListGroupedStories(ctx context.Context, query CoreStoryQuery) 
 	if err != nil {
 		return nil, fmt.Errorf("listing grouped stories: %w", err)
 	}
+	for i := range groups {
+		if err := s.enrichStoryListEstimates(ctx, query.Filters.WorkspaceID, groups[i].Stories); err != nil {
+			return nil, err
+		}
+	}
 
 	return groups, nil
 }
@@ -731,6 +783,9 @@ func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query C
 	if err != nil {
 		return nil, false, fmt.Errorf("listing group stories: %w", err)
 	}
+	if err := s.enrichStoryListEstimates(ctx, query.Filters.WorkspaceID, stories); err != nil {
+		return nil, false, err
+	}
 
 	return stories, hasMore, nil
 }
@@ -743,6 +798,9 @@ func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamI
 	stories, hasMore, err := s.repo.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
 	if err != nil {
 		return nil, false, fmt.Errorf("listing stories by category: %w", err)
+	}
+	if err := s.enrichStoryListEstimates(ctx, workspaceId, stories); err != nil {
+		return nil, false, err
 	}
 
 	span.AddEvent("category stories retrieved.", trace.WithAttributes(
@@ -761,6 +819,13 @@ func (s *Service) formatValue(value any) string {
 		return "nil"
 	}
 	switch v := value.(type) {
+	case *int16:
+		if v != nil {
+			return fmt.Sprintf("%d", *v)
+		}
+		return "nil"
+	case int16:
+		return fmt.Sprintf("%d", v)
 	case *float64:
 		if v != nil {
 			return fmt.Sprintf("%.2f", *v)
@@ -800,6 +865,10 @@ func (s *Service) QueryByRef(ctx context.Context, workspaceId uuid.UUID, storyRe
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	if err := s.enrichSingleStoryEstimate(ctx, workspaceId, &story); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	return story, nil
 }
@@ -829,6 +898,72 @@ func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
 	}
 
 	return teamCode, seqID, nil
+}
+
+func (s *Service) enrichSingleStoryEstimate(ctx context.Context, workspaceID uuid.UUID, story *CoreSingleStory) error {
+	schemeCache := map[uuid.UUID]string{}
+	scheme, err := s.getEstimateSchemeForTeam(ctx, workspaceID, story.Team, schemeCache)
+	if err != nil {
+		return err
+	}
+
+	story.EstimateScheme = scheme
+	story.EstimateLabel = EstimateLabelFromValue(scheme, story.EstimateValue)
+
+	for i := range story.SubStories {
+		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &story.SubStories[i], schemeCache); err != nil {
+			return err
+		}
+	}
+
+	for i := range story.Associations {
+		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &story.Associations[i].Story, schemeCache); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) enrichStoryListEstimates(ctx context.Context, workspaceID uuid.UUID, stories []CoreStoryList) error {
+	schemeCache := map[uuid.UUID]string{}
+	for i := range stories {
+		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &stories[i], schemeCache); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) enrichStoryListItemEstimate(ctx context.Context, workspaceID uuid.UUID, story *CoreStoryList, schemeCache map[uuid.UUID]string) error {
+	scheme, err := s.getEstimateSchemeForTeam(ctx, workspaceID, story.Team, schemeCache)
+	if err != nil {
+		return err
+	}
+
+	story.EstimateScheme = scheme
+	story.EstimateLabel = EstimateLabelFromValue(scheme, story.EstimateValue)
+
+	for i := range story.SubStories {
+		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &story.SubStories[i], schemeCache); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) getEstimateSchemeForTeam(ctx context.Context, workspaceID, teamID uuid.UUID, schemeCache map[uuid.UUID]string) (string, error) {
+	if scheme, ok := schemeCache[teamID]; ok {
+		return scheme, nil
+	}
+
+	scheme, err := s.repo.GetTeamEstimateScheme(ctx, teamID, workspaceID)
+	if err != nil {
+		return "", err
+	}
+	schemeCache[teamID] = scheme
+	return scheme, nil
 }
 
 // AddAssociation adds an association between two stories.
@@ -894,7 +1029,52 @@ func (s *Service) getOldValue(story CoreSingleStory, field string) any {
 		return story.EndDate
 	case "completed_at":
 		return story.CompletedAt
+	case "estimate_unit":
+		return story.EstimateValue
 	default:
 		return nil
 	}
+}
+
+func (s *Service) applyEstimateUpdate(ctx context.Context, workspaceID uuid.UUID, story CoreSingleStory, updates map[string]any) error {
+	estimateRaw, hasEstimateUpdate := updates["estimate_unit"]
+	if !hasEstimateUpdate {
+		return nil
+	}
+
+	estimateScheme, err := s.repo.GetTeamEstimateScheme(ctx, story.Team, workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var estimateValue *int16
+	switch value := estimateRaw.(type) {
+	case nil:
+		estimateValue = nil
+	case *int16:
+		estimateValue = value
+	case int16:
+		estimateValue = &value
+	case int:
+		normalized := int16(value)
+		estimateValue = &normalized
+	case float64:
+		normalized := int16(value)
+		if float64(normalized) != value {
+			return fmt.Errorf("invalid estimate value type: %T", estimateRaw)
+		}
+		estimateValue = &normalized
+	default:
+		return fmt.Errorf("invalid estimate value type: %T", estimateRaw)
+	}
+
+	if err := ValidateEstimateValue(estimateScheme, estimateValue); err != nil {
+		if estimateValue != nil {
+			return fmt.Errorf("%w. If this work is larger than the max estimate, split it into smaller stories", err)
+		}
+		return err
+	}
+
+	updates["estimate_unit"] = estimateValue
+	return nil
 }

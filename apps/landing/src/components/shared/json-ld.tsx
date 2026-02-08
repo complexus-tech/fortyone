@@ -16,7 +16,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "8",
+    highPrice: "10",
     offerCount: "3",
     offers: [
       {
@@ -28,13 +28,13 @@ const softwareApplication: WithContext<WebApplication> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "5.60",
+        price: "7",
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "8",
+        price: "10",
         priceCurrency: "USD",
       },
     ],
@@ -61,10 +61,14 @@ const organization: WithContext<Organization> = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "FortyOne",
-  url: "https://fortyone.app",
-  logo: "https://fortyone.app/images/logo.png",
-  image: "https://fortyone.app/images/logo.png",
-  sameAs: ["https://x.com/fortyoneapp"],
+  url: "https://www.fortyone.app",
+  logo: "https://www.fortyone.app/images/logo.png",
+  image: "https://www.fortyone.app/images/logo.png",
+  sameAs: [
+    "https://x.com/fortyoneapp",
+    "https://www.linkedin.com/company/complexus-app/",
+    "https://github.com/complexus-tech/fortyone",
+  ],
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
@@ -82,13 +86,13 @@ const product: WithContext<Product> = {
   brand: {
     "@type": "Brand",
     name: "FortyOne",
-    logo: "https://fortyone.app/images/logo.png",
+    logo: "https://www.fortyone.app/images/logo.png",
   },
   offers: {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "8",
+    highPrice: "10",
     offerCount: "3",
     offers: [
       {
@@ -100,13 +104,13 @@ const product: WithContext<Product> = {
       {
         "@type": "Offer",
         name: "Professional",
-        price: "5.60",
+        price: "7",
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "Business",
-        price: "8",
+        price: "10",
         priceCurrency: "USD",
       },
     ],
@@ -119,42 +123,42 @@ const faq: WithContext<FAQPage> = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is FortyOne?",
+      name: "How does AI improve project management workflows?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+        text: "Maya accelerates planning and execution by drafting tasks from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
       },
     },
     {
       "@type": "Question",
-      name: "What features does FortyOne offer?",
+      name: "How does your project management platform connect OKRs to daily tasks?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FortyOne offers a complete suite of project management features including OKR management, sprint planning, kanban boards, task management, strategic roadmapping, real-time team collaboration tools, customizable dashboards, progress tracking, and in-depth analytics & insights to drive team performance.",
+        text: "Objectives and key results are first class. You can link tasks and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
       },
     },
     {
       "@type": "Question",
-      name: "How does FortyOne help with team alignment?",
+      name: "How is FortyOne priced? Is there a free plan?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FortyOne helps teams align by connecting high-level objectives with tactical work through its integrated OKR framework. Teams benefit from shared objectives, real-time progress updates, integrated workspaces, and visual tracking tools that ensure everyone understands how their work contributes to organizational goals.",
+        text: "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members to get started quickly. Paid plans are per user with monthly or annual billing, and annual saves 20%. Higher tiers unlock advanced workflows, custom terminology and permissions, unlimited teams, and priority support. You can upgrade, downgrade, or cancel at any time.",
       },
     },
     {
       "@type": "Question",
-      name: "Can FortyOne integrate with other tools my team uses?",
+      name: "How does FortyOne handle security and privacy? Is private cloud available?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, FortyOne integrates seamlessly with popular collaboration, development, and productivity tools including Slack, Microsoft Teams, GitHub, GitLab, Jira, Figma, and Google Workspace, allowing teams to maintain their existing workflows while gaining the benefits of centralized project management.",
+        text: "We use industry standard encryption in transit and at rest, support SSO with Google, and provide role based permissions and private teams to control access. Audit friendly activity history and fine grained visibility help maintain compliance practices. For organizations with stricter controls, the Enterprise plan offers private cloud or on premise deployment with tailored onboarding.",
       },
     },
     {
       "@type": "Question",
-      name: "Is FortyOne suitable for remote or distributed teams?",
+      name: "Can FortyOne adapt to our workflow?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Absolutely. FortyOne is built with remote and distributed teams in mind, offering real-time collaboration features, asynchronous communication tools, transparent goal tracking, and centralized documentation that keeps everyone aligned regardless of time zone or location.",
+        text: "Yes. Teams can customize statuses and workflows, define their own terminology, and set granular permissions by role or team. Automations help reduce repetitive work, and you can structure backlogs and boards to mirror how your org plans and executes. As needs evolve, you can adjust configurations without breaking historical data or reports.",
       },
     },
   ],

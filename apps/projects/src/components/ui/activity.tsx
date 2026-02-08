@@ -29,7 +29,9 @@ const DisplaySprint = ({
       ) : (
         <Link
           className="flex items-center gap-1"
-          href={withWorkspace(`/teams/${sprint?.teamId}/sprints/${sprintId}/stories`)}
+          href={withWorkspace(
+            `/teams/${sprint?.teamId}/sprints/${sprintId}/stories`,
+          )}
         >
           <SprintsIcon className="h-5" />
           {sprint?.name}
@@ -53,7 +55,11 @@ const DisplayObjective = ({
       {!objectiveId || objectiveId.includes("nil") ? (
         <span>No objective</span>
       ) : (
-        <Link href={withWorkspace(`/teams/${objective?.teamId}/objectives/${objectiveId}`)}>
+        <Link
+          href={withWorkspace(
+            `/teams/${objective?.teamId}/objectives/${objectiveId}`,
+          )}
+        >
           {objective?.name}
         </Link>
       )}
@@ -107,6 +113,10 @@ export const Activity = ({
         </span>
       ),
     },
+    estimate_unit: {
+      label: "Estimate",
+      render: (value: string) => <span>{value || "No estimate"}</span>,
+    },
     assignee_id: {
       label: "Assignee",
       render: (value: string) => (
@@ -116,7 +126,9 @@ export const Activity = ({
           ) : (
             <Link
               className="flex items-center gap-1.5 pb-0.5"
-              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
+              href={withWorkspace(
+                `/profile/${members.find((m) => m.id === value)?.id}`,
+              )}
             >
               <Avatar
                 className="relative top-px"
@@ -191,7 +203,7 @@ export const Activity = ({
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
       <Box
         className={cn(
-          "pointer-events-none absolute left-4 top-0 z-0 h-full border-l border-dashed border-border",
+          "border-border pointer-events-none absolute top-0 left-4 z-0 h-full border-l border-dashed",
         )}
       />
       <Flex align="center" className="z-1" gap={1}>
@@ -243,7 +255,7 @@ export const Activity = ({
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="relative left-px flex aspect-square items-center rounded-full bg-surface p-[0.3rem]">
+            <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
               <Avatar
                 name={member?.fullName}
                 size="xs"
@@ -251,7 +263,7 @@ export const Activity = ({
               />
             </Box>
             <Text
-              className="relative ml-1 text-sm text-black dark:text-white md:text-[0.95rem]"
+              className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
               fontWeight="medium"
             >
               {member?.username}
@@ -266,7 +278,7 @@ export const Activity = ({
             <>
               <Text
                 as="span"
-                className="shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
+                className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
                 fontWeight="medium"
               >
                 {fieldMap[field].label}
@@ -282,7 +294,7 @@ export const Activity = ({
                   </Text>
                   <Text
                     as="span"
-                    className="inline-block shrink-0 text-sm text-black dark:text-white md:text-[0.95rem]"
+                    className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
                     fontWeight="medium"
                   >
                     {fieldMap[field].render(currentValue)}

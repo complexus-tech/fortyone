@@ -29,6 +29,13 @@ export const createStory = tool({
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .default("No Priority")
       .describe("Story priority (required)"),
+    estimateValue: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        "Canonical estimate value (allowed: 1, 2, 3, 5, 8) for the team's estimation scheme",
+      ),
     sprintId: z
       .string()
       .optional()
@@ -51,20 +58,24 @@ export const createStory = tool({
       .describe("Story end date (ISO date string e.g 2005-06-13)"),
   }),
 
-  execute: async ({
-    title,
-    description,
-    descriptionHTML,
-    teamId,
-    statusId,
-    assigneeId,
-    priority,
-    sprintId,
-    objectiveId,
-    parentId,
-    startDate,
-    endDate,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      title,
+      description,
+      descriptionHTML,
+      teamId,
+      statusId,
+      assigneeId,
+      priority,
+      estimateValue,
+      sprintId,
+      objectiveId,
+      parentId,
+      startDate,
+      endDate,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -75,7 +86,8 @@ export const createStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -98,6 +110,7 @@ export const createStory = tool({
         statusId,
         assigneeId,
         priority,
+        estimateValue,
         sprintId,
         objectiveId,
         parentId,

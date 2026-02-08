@@ -10,7 +10,7 @@ const pricingPage: WithContext<Product> = {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
     lowPrice: "0",
-    highPrice: "8",
+    highPrice: "10",
     offerCount: "3",
     offers: [
       {
@@ -36,7 +36,7 @@ const pricingPage: WithContext<Product> = {
         "@type": "Offer",
         name: "Professional",
         description: "For small teams",
-        price: "5.60",
+        price: "7",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         itemOffered: {
@@ -55,7 +55,7 @@ const pricingPage: WithContext<Product> = {
         "@type": "Offer",
         name: "Business",
         description: "For mid-sized teams",
-        price: "8",
+        price: "10",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         itemOffered: {
@@ -75,7 +75,7 @@ const pricingPage: WithContext<Product> = {
   brand: {
     "@type": "Brand",
     name: "FortyOne",
-    logo: "https://fortyone.app/images/logo.png",
+    logo: "https://www.fortyone.app/images/logo.png",
   },
 };
 

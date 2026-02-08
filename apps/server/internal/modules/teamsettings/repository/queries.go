@@ -129,6 +129,46 @@ func (r *repo) GetStoryAutomationSettings(ctx context.Context, teamID, workspace
 	return toCoreTeamStoryAutomationSettings(settings), nil
 }
 
+func (r *repo) GetEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamEstimationSettings, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.GetEstimationSettings")
+	defer span.End()
+
+	var settings dbTeamEstimationSettings
+	query := `
+		SELECT
+			team_id,
+			workspace_id,
+			scheme,
+			created_at,
+			updated_at
+		FROM
+			team_estimation_settings
+		WHERE
+			team_id = :team_id
+			AND workspace_id = :workspace_id
+	`
+
+	params := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &settings, params); err != nil {
+		if err == sql.ErrNoRows {
+			return r.createDefaultEstimationSettings(ctx, teamID, workspaceID)
+		}
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+
+	return toCoreTeamEstimationSettings(settings), nil
+}
+
 func (r *repo) GetTeamsWithAutoSprintCreation(ctx context.Context) ([]teamsettings.CoreTeamSprintSettings, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.GetTeamsWithAutoSprintCreation")
 	defer span.End()

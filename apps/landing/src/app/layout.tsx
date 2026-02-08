@@ -6,14 +6,13 @@ import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
 import Script from "next/script";
 import { body, heading, mono } from "@/styles/fonts";
-import { JsonLd } from "@/components/shared";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne - The Open Source Agentic Project Management Platform",
+  title: "FortyOne | Open Source AI Project Management Platform",
   description:
-    "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Better than Jira, Notion, and Monday. Try free today.",
+    "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -41,9 +40,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne - The Open Source Agentic Project Management Platform",
+    title: "FortyOne | Open Source AI Project Management Platform",
     description:
-      "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
+      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -51,9 +50,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne - The Open Source Agentic Project Management Platform",
+    title: "FortyOne | Open Source AI Project Management Platform",
     description:
-      "FortyOne is the leading open source project management platform with AI-powered OKRs, sprint planning, and team collaboration. Open source alternative to Jira, Notion, and Monday. Try free today.",
+      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
   },
   alternates: {
     canonical: "https://www.fortyone.app",
@@ -82,15 +81,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         })(document, window, 'BrevoConversations');
       `}
       </Script>
-      <head>
-        <JsonLd />
-      </head>
       <body
         className={cn(
           body.variable,
           heading.variable,
           mono.variable,
-          heading.variable,
         )}
       >
         <Providers>

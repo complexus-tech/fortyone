@@ -14,6 +14,9 @@ export type DetailedStory = {
   id: string;
   sequenceId: number;
   title: string;
+  estimateLabel: string | null;
+  estimateValue: number | null;
+  estimateScheme: "points" | "hours" | "tshirt" | "ideal_days";
   description: string;
   descriptionHTML: string;
   parentId: string;
