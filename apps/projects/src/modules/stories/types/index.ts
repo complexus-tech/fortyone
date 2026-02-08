@@ -10,6 +10,9 @@ export type StoryPriority =
 export type Story = {
   id: string;
   title: string;
+  estimateLabel: string | null;
+  estimateValue: number | null;
+  estimateScheme: "points" | "hours" | "tshirt" | "ideal_days";
   description?: string;
   statusId: string;
   sprintId: string | null;
