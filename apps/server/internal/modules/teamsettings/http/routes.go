@@ -29,4 +29,5 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/teams/{teamId}/settings", h.GetSettings, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/sprints", h.UpdateSprintSettings, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/story-automation", h.UpdateStoryAutomationSettings, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/estimation", h.UpdateEstimationSettings, auth, workspace)
 }

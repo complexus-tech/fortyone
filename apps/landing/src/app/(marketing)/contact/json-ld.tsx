@@ -9,8 +9,8 @@ const contactPage: WithContext<ContactPage> = {
   mainEntity: {
     "@type": "Organization",
     name: "FortyOne",
-    url: "https://fortyone.app",
-    logo: "https://fortyone.app/images/logo.png",
+    url: "https://www.fortyone.app",
+    logo: "https://www.fortyone.app/images/logo.png",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",

@@ -18,6 +18,8 @@ type Repository interface {
 	UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamSprintSettings) (CoreTeamSprintSettings, error)
 	GetStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamStoryAutomationSettings, error)
 	UpdateStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamStoryAutomationSettings) (CoreTeamStoryAutomationSettings, error)
+	GetEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamEstimationSettings, error)
+	UpdateEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamEstimationSettings) (CoreTeamEstimationSettings, error)
 	GetTeamsWithAutoSprintCreation(ctx context.Context) ([]CoreTeamSprintSettings, error)
 	IncrementAutoSprintNumber(ctx context.Context, teamID, workspaceID uuid.UUID) error
 }
@@ -29,6 +31,7 @@ var (
 	ErrInvalidUpcomingCount  = errors.New("upcoming sprints count must be between 0 and 10")
 	ErrInvalidCloseMonths    = errors.New("auto-close inactive months must be between 1 and 24")
 	ErrInvalidArchiveMonths  = errors.New("auto-archive months must be between 1 and 24")
+	ErrInvalidEstimateScheme = errors.New("estimate scheme must be one of: points, hours, tshirt, ideal_days")
 )
 
 // Service provides team settings-related operations.
@@ -65,9 +68,16 @@ func (s *Service) GetSettings(ctx context.Context, teamID, workspaceID uuid.UUID
 		return CoreTeamSettings{}, err
 	}
 
+	estimationSettings, err := s.repo.GetEstimationSettings(ctx, teamID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeamSettings{}, err
+	}
+
 	result := CoreTeamSettings{
 		SprintSettings:          sprintSettings,
 		StoryAutomationSettings: storySettings,
+		EstimationSettings:      estimationSettings,
 	}
 
 	span.AddEvent("team settings retrieved.", trace.WithAttributes(
@@ -75,6 +85,21 @@ func (s *Service) GetSettings(ctx context.Context, teamID, workspaceID uuid.UUID
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 	return result, nil
+}
+
+// GetEstimationSettings returns the estimation settings for a team.
+func (s *Service) GetEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamEstimationSettings, error) {
+	s.log.Info(ctx, "business.core.teamsettings.getEstimationSettings")
+	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.GetEstimationSettings")
+	defer span.End()
+
+	settings, err := s.repo.GetEstimationSettings(ctx, teamID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeamEstimationSettings{}, err
+	}
+
+	return settings, nil
 }
 
 // GetSprintSettings returns the sprint settings for a team.
@@ -186,6 +211,26 @@ func (s *Service) UpdateStoryAutomationSettings(ctx context.Context, teamID, wor
 	return result, nil
 }
 
+// UpdateEstimationSettings updates the estimation settings for a team.
+func (s *Service) UpdateEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamEstimationSettings) (CoreTeamEstimationSettings, error) {
+	s.log.Info(ctx, "business.core.teamsettings.updateEstimationSettings")
+	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.UpdateEstimationSettings")
+	defer span.End()
+
+	if err := s.validateEstimationSettingsUpdate(updates); err != nil {
+		span.RecordError(err)
+		return CoreTeamEstimationSettings{}, err
+	}
+
+	result, err := s.repo.UpdateEstimationSettings(ctx, teamID, workspaceID, updates)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeamEstimationSettings{}, err
+	}
+
+	return result, nil
+}
+
 // validateSprintSettingsUpdate validates sprint settings updates
 func (s *Service) validateSprintSettingsUpdate(updates CoreUpdateTeamSprintSettings) error {
 	validDays := map[string]bool{
@@ -224,6 +269,19 @@ func (s *Service) validateStoryAutomationSettingsUpdate(updates CoreUpdateTeamSt
 	}
 
 	return nil
+}
+
+func (s *Service) validateEstimationSettingsUpdate(updates CoreUpdateTeamEstimationSettings) error {
+	if updates.Scheme == nil {
+		return nil
+	}
+
+	switch *updates.Scheme {
+	case "points", "hours", "tshirt", "ideal_days":
+		return nil
+	default:
+		return ErrInvalidEstimateScheme
+	}
 }
 
 // GetTeamsWithAutoSprintCreation returns teams that have auto sprint creation enabled.

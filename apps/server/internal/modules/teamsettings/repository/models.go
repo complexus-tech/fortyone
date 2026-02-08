@@ -31,6 +31,14 @@ type dbTeamStoryAutomationSettings struct {
 	UpdatedAt                time.Time `db:"updated_at"`
 }
 
+type dbTeamEstimationSettings struct {
+	TeamID      uuid.UUID `db:"team_id"`
+	WorkspaceID uuid.UUID `db:"workspace_id"`
+	Scheme      string    `db:"scheme"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+}
+
 func toCoreTeamSprintSettings(s dbTeamSprintSettings) teamsettings.CoreTeamSprintSettings {
 	return teamsettings.CoreTeamSprintSettings{
 		TeamID:                       s.TeamID,
@@ -64,5 +72,15 @@ func toCoreTeamStoryAutomationSettings(s dbTeamStoryAutomationSettings) teamsett
 		AutoArchiveMonths:        s.AutoArchiveMonths,
 		CreatedAt:                s.CreatedAt,
 		UpdatedAt:                s.UpdatedAt,
+	}
+}
+
+func toCoreTeamEstimationSettings(s dbTeamEstimationSettings) teamsettings.CoreTeamEstimationSettings {
+	return teamsettings.CoreTeamEstimationSettings{
+		TeamID:      s.TeamID,
+		WorkspaceID: s.WorkspaceID,
+		Scheme:      s.Scheme,
+		CreatedAt:   s.CreatedAt,
+		UpdatedAt:   s.UpdatedAt,
 	}
 }

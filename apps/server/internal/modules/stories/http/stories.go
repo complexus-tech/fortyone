@@ -1,5 +1,22 @@
 package storieshttp
 
+// Package storieshttp provides HTTP handlers for story management.
+//
+// This file contains HTTP handlers organized by functionality:
+//   1. Story CRUD Operations (Get, Create, Update, Delete)
+//   2. Bulk Operations (BulkDelete, BulkRestore, BulkArchive, BulkUnarchive, BulkUpdate)
+//   3. Story Queries (List, ListGrouped, ListByCategory, QueryByRef, MyStories)
+//   4. Comments & Activities (GetComments, CreateComment, GetActivities)
+//   5. Attachments (GetAttachmentsForStory, UploadStoryAttachment, DeleteAttachment)
+//   6. Story Relationships (GetStoryLinks, DuplicateStory)
+//
+// Each handler follows the pattern of parsing request parameters, calling the appropriate
+// service method, and returning a standardized response. All handlers support OpenTelemetry
+// tracing and structured logging.
+//
+// Note: This file is large due to the number of story-related endpoints. When adding new
+// handlers, consider grouping related functionality and reusing helper functions.
+
 import (
 	"context"
 	"encoding/json"
@@ -25,9 +42,11 @@ import (
 )
 
 var (
+	// ErrInvalidStoryID is returned when a story ID is not in proper UUID format.
 	ErrInvalidStoryID = errors.New("story id is not in its proper form")
 )
 
+// Handlers provides HTTP handlers for story operations.
 type Handlers struct {
 	stories     *stories.Service
 	comments    *comments.Service
@@ -37,6 +56,7 @@ type Handlers struct {
 	log         *logger.Logger
 }
 
+// New creates a new Handlers instance with the required dependencies.
 func New(stories *stories.Service, comments *comments.Service, links *links.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		stories:     stories,

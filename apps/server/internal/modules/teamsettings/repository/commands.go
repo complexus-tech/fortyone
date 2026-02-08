@@ -164,6 +164,50 @@ func (r *repo) UpdateStoryAutomationSettings(ctx context.Context, teamID, worksp
 	return updatedSettings, nil
 }
 
+func (r *repo) UpdateEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates teamsettings.CoreUpdateTeamEstimationSettings) (teamsettings.CoreTeamEstimationSettings, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.UpdateEstimationSettings")
+	defer span.End()
+
+	scheme := "points"
+	if updates.Scheme != nil {
+		scheme = *updates.Scheme
+	}
+
+	query := `
+		INSERT INTO team_estimation_settings (
+			team_id,
+			workspace_id,
+			scheme
+		) VALUES (
+			:team_id,
+			:workspace_id,
+			:scheme
+		)
+		ON CONFLICT (team_id) DO UPDATE SET
+			workspace_id = EXCLUDED.workspace_id,
+			scheme = EXCLUDED.scheme,
+			updated_at = NOW()
+	`
+
+	params := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+		"scheme":       scheme,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, params); err != nil {
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+
+	return r.GetEstimationSettings(ctx, teamID, workspaceID)
+}
+
 func (r *repo) IncrementAutoSprintNumber(ctx context.Context, teamID, workspaceID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.IncrementAutoSprintNumber")
 	defer span.End()
@@ -316,4 +360,48 @@ func (r *repo) createDefaultStoryAutomationSettings(ctx context.Context, teamID,
 
 	span.AddEvent("default story automation settings created")
 	return toCoreTeamStoryAutomationSettings(settings), nil
+}
+
+func (r *repo) createDefaultEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamEstimationSettings, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.createDefaultEstimationSettings")
+	defer span.End()
+
+	query := `
+		INSERT INTO team_estimation_settings (
+			team_id,
+			workspace_id,
+			scheme
+		) VALUES (
+			:team_id,
+			:workspace_id,
+			'points'
+		)
+		ON CONFLICT (team_id) DO UPDATE SET
+			workspace_id = EXCLUDED.workspace_id,
+			updated_at = NOW()
+		RETURNING
+			team_id,
+			workspace_id,
+			scheme,
+			created_at,
+			updated_at
+	`
+
+	params := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+	defer stmt.Close()
+
+	var settings dbTeamEstimationSettings
+	if err := stmt.GetContext(ctx, &settings, params); err != nil {
+		return teamsettings.CoreTeamEstimationSettings{}, err
+	}
+
+	return toCoreTeamEstimationSettings(settings), nil
 }

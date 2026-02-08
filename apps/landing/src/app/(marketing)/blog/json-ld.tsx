@@ -9,7 +9,7 @@ const blogSchema: WithContext<Blog> = {
   publisher: {
     "@type": "Organization",
     name: "FortyOne",
-    logo: "https://fortyone.app/images/logo.png",
+    logo: "https://www.fortyone.app/images/logo.png",
   },
 };
 
@@ -21,7 +21,7 @@ const breadcrumbSchema: WithContext<BreadcrumbList> = {
       "@type": "ListItem",
       position: 1,
       item: {
-        "@id": "https://fortyone.app",
+        "@id": "https://www.fortyone.app",
         name: "Home",
       },
     },
@@ -29,7 +29,7 @@ const breadcrumbSchema: WithContext<BreadcrumbList> = {
       "@type": "ListItem",
       position: 2,
       item: {
-        "@id": "https://fortyone.app/blog",
+        "@id": "https://www.fortyone.app/blog",
         name: "Blog",
       },
     },

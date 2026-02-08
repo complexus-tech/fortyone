@@ -1,4 +1,4 @@
-import { CallToAction } from "@/components/shared";
+import { CallToAction, JsonLd } from "@/components/shared";
 import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
 import {
@@ -14,6 +14,7 @@ import {
 export default function Page() {
   return (
     <>
+      <JsonLd />
       <Hero />
       <SampleClients />
       <HeroCards />

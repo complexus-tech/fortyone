@@ -17,6 +17,9 @@ import (
 // Handler is the signature used by all application handlers in this service.
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
+// App is the main application handler that manages routing, middleware, and shutdown.
+// It wraps the standard http.ServeMux with additional functionality for middleware
+// composition, graceful shutdown, and OpenTelemetry tracing.
 type App struct {
 	mux         *http.ServeMux
 	mw          []Middleware

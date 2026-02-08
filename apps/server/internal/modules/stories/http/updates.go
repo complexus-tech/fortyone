@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"time"
+
+	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
 // getUpdates returns a map of database field names and their values from the given request data.
@@ -21,7 +23,7 @@ func getUpdates(requestData map[string]json.RawMessage) (map[string]any, error) 
 		if rawValue, ok := requestData[jsonTag]; ok {
 			err := json.Unmarshal(rawValue, field.Addr().Interface())
 			if err != nil {
-				return nil, err
+				return nil, web.HumanizeJSONFieldDecodeError(err, jsonTag, field.Type())
 			}
 
 			// Handle date.Date fields specially - convert to *time.Time

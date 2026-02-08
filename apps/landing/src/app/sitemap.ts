@@ -9,25 +9,25 @@ const routes: MetadataRoute.Sitemap = [
     priority: 1,
   },
   {
-    url: "https://www.fortyone.app/product/tasks",
+    url: "https://www.fortyone.app/features/tasks",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
   },
   {
-    url: "https://www.fortyone.app/product/objectives",
+    url: "https://www.fortyone.app/features/objectives",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
   },
   {
-    url: "https://www.fortyone.app/product/okrs",
+    url: "https://www.fortyone.app/features/okrs",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
   },
   {
-    url: "https://www.fortyone.app/product/sprints",
+    url: "https://www.fortyone.app/features/sprints",
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.8,
@@ -43,12 +43,6 @@ const routes: MetadataRoute.Sitemap = [
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.8,
-  },
-  {
-    url: "https://www.fortyone.app/developers",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.7,
   },
   {
     url: "https://www.fortyone.app/contact",

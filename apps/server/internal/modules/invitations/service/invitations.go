@@ -33,7 +33,9 @@ type Repository interface {
 	ListInvitationsByEmail(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error)
 }
 
-// Service provides invitation operations
+// Service provides business logic for workspace invitation operations.
+// It coordinates between the repository layer and other domain services
+// to handle invitation creation, validation, acceptance, and revocation.
 type Service struct {
 	repo       Repository
 	logger     *logger.Logger
@@ -43,7 +45,8 @@ type Service struct {
 	teams      *teams.Service
 }
 
-// New constructs a new invitations service instance
+// New creates a new invitations Service with the provided dependencies.
+// All dependencies are required and must not be nil.
 func New(repo Repository, logger *logger.Logger, publisher *publisher.Publisher, users *users.Service, workspaces *workspaces.Service, teams *teams.Service) *Service {
 	return &Service{
 		repo:       repo,
@@ -65,7 +68,10 @@ func generateToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-// CreateBulkInvitations creates multiple workspace invitations
+// CreateBulkInvitations creates multiple workspace invitations in a single transaction.
+// It generates secure tokens for each invitation, revokes any existing pending invitations
+// for the same emails, and publishes invitation email events.
+// Returns the created invitations with their generated IDs and tokens.
 func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, inviterID uuid.UUID, requests []InvitationRequest) ([]CoreWorkspaceInvitation, error) {
 	s.logger.Info(ctx, "creating bulk invitations",
 		"workspace_id", workspaceID.String(),
@@ -158,7 +164,9 @@ func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, invite
 	return results, nil
 }
 
-// GetInvitation retrieves a workspace invitation by token
+// GetInvitation retrieves a workspace invitation by its unique token.
+// It validates that the invitation exists, has not expired, and has not been used.
+// Returns ErrInvitationNotFound, ErrInvitationExpired, or ErrInvitationUsed if validation fails.
 func (s *Service) GetInvitation(ctx context.Context, token string) (CoreWorkspaceInvitation, error) {
 	s.logger.Info(ctx, "business.core.invitations.GetInvitation")
 	ctx, span := web.AddSpan(ctx, "business.core.invitations.GetInvitation")
@@ -183,7 +191,8 @@ func (s *Service) GetInvitation(ctx context.Context, token string) (CoreWorkspac
 	return invitation, nil
 }
 
-// ListInvitations returns all pending invitations for a workspace
+// ListInvitations returns all pending (non-expired, non-used) invitations for a workspace.
+// Results are ordered by creation date in descending order (newest first).
 func (s *Service) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitation, error) {
 	s.logger.Info(ctx, "business.core.invitations.ListInvitations")
 	ctx, span := web.AddSpan(ctx, "business.core.invitations.ListInvitations")
@@ -198,7 +207,8 @@ func (s *Service) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([
 	return invitations, nil
 }
 
-// RevokeInvitation revokes a workspace invitation
+// RevokeInvitation marks an invitation as used, effectively revoking it.
+// Returns ErrInvitationNotFound if the invitation does not exist or has already been used.
 func (s *Service) RevokeInvitation(ctx context.Context, invitationID uuid.UUID) error {
 	s.logger.Info(ctx, "business.core.invitations.RevokeInvitation")
 	ctx, span := web.AddSpan(ctx, "business.core.invitations.RevokeInvitation")
@@ -216,7 +226,9 @@ func (s *Service) RevokeInvitation(ctx context.Context, invitationID uuid.UUID) 
 	return nil
 }
 
-// ListUserInvitations returns all pending invitations for a user's email
+// ListUserInvitations returns all pending invitations for a specific email address.
+// This is typically used to show a user all workspaces they have been invited to.
+// Results are ordered by creation date in descending order (newest first).
 func (s *Service) ListUserInvitations(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error) {
 	s.logger.Info(ctx, "listing user invitations", "email", email)
 
@@ -229,7 +241,11 @@ func (s *Service) ListUserInvitations(ctx context.Context, email string) ([]Core
 	return invitations, nil
 }
 
-// AcceptInvitation accepts an invitation and adds the user to the workspace and teams
+// AcceptInvitation accepts an invitation and adds the user to the workspace and specified teams.
+// It validates the invitation token, verifies the user's email matches the invitation,
+// and performs all operations within a transaction. If the user is already a workspace member,
+// it marks the invitation as used and returns ErrAlreadyWorkspaceMember.
+// On success, it publishes an InvitationAccepted event for notifications.
 func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uuid.UUID) error {
 	s.logger.Info(ctx, "accepting invitation", "token", token, "user_id", userID)
 

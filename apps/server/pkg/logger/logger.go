@@ -10,7 +10,9 @@ import (
 	"time"
 )
 
-// Logger is a wrapper around slog.Handler.
+// Logger provides structured logging with support for context propagation,
+// source location tracking, and multiple output formats (JSON and text).
+// It wraps the standard library's slog.Handler with additional convenience methods.
 type Logger struct {
 	handler slog.Handler
 }
