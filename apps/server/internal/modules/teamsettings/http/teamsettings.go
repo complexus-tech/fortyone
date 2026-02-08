@@ -123,3 +123,32 @@ func (h *Handlers) UpdateStoryAutomationSettings(ctx context.Context, w http.Res
 
 	return web.Respond(ctx, w, toAppTeamStoryAutomationSettings(result), http.StatusOK)
 }
+
+func (h *Handlers) UpdateEstimationSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teamsettings.UpdateEstimationSettings")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamIDParam := web.Params(r, "teamId")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	var input AppUpdateTeamEstimationSettings
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	updates := toCoreUpdateTeamEstimationSettings(input)
+	result, err := h.teamsettings.UpdateEstimationSettings(ctx, teamID, workspace.ID, updates)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppTeamEstimationSettings(result), http.StatusOK)
+}

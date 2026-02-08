@@ -27,6 +27,8 @@ type dbStory struct {
 	Status          *uuid.UUID       `db:"status_id"`
 	Assignee        *uuid.UUID       `db:"assignee_id"`
 	Estimate        *float32         `db:"estimate"`
+	EstimateUnit    *int16           `db:"estimate_unit"`
+	EstimateScheme  string           `db:"estimate_scheme"`
 	IsDraft         bool             `db:"is_draft"`
 	BlockedBy       *uuid.UUID       `db:"blocked_by_id"`
 	Blocking        *uuid.UUID       `db:"blocking_id"`
@@ -80,6 +82,9 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Title:           i.Title,
 		TeamCode:        i.TeamCode,
 		Description:     i.Description,
+		EstimateUnit:    i.EstimateUnit,
+		EstimateScheme:  i.EstimateScheme,
+		Estimate:        stories.EstimateValueFromUnit(i.EstimateScheme, i.EstimateUnit),
 		Parent:          i.Parent,
 		Objective:       i.Objective,
 		Team:            i.Team,
@@ -131,29 +136,32 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 		}
 
 		cl[i] = stories.CoreStoryList{
-			ID:          story.ID,
-			SequenceID:  story.SequenceID,
-			Title:       story.Title,
-			Parent:      story.Parent,
-			Objective:   story.Objective,
-			Sprint:      story.Sprint,
-			Epic:        story.Epic,
-			Team:        story.Team,
-			Workspace:   story.Workspace,
-			Status:      story.Status,
-			Assignee:    story.Assignee,
-			Reporter:    story.Reporter,
-			KeyResult:   story.KeyResult,
-			StartDate:   story.StartDate,
-			EndDate:     story.EndDate,
-			Priority:    story.Priority,
-			CreatedAt:   story.CreatedAt,
-			UpdatedAt:   story.UpdatedAt,
-			CompletedAt: story.CompletedAt,
-			DeletedAt:   story.DeletedAt,
-			ArchivedAt:  story.ArchivedAt,
-			Labels:      labels,
-			SubStories:  subStories,
+			ID:             story.ID,
+			SequenceID:     story.SequenceID,
+			Title:          story.Title,
+			EstimateUnit:   story.EstimateUnit,
+			EstimateScheme: story.EstimateScheme,
+			Estimate:       stories.EstimateValueFromUnit(story.EstimateScheme, story.EstimateUnit),
+			Parent:         story.Parent,
+			Objective:      story.Objective,
+			Sprint:         story.Sprint,
+			Epic:           story.Epic,
+			Team:           story.Team,
+			Workspace:      story.Workspace,
+			Status:         story.Status,
+			Assignee:       story.Assignee,
+			Reporter:       story.Reporter,
+			KeyResult:      story.KeyResult,
+			StartDate:      story.StartDate,
+			EndDate:        story.EndDate,
+			Priority:       story.Priority,
+			CreatedAt:      story.CreatedAt,
+			UpdatedAt:      story.UpdatedAt,
+			CompletedAt:    story.CompletedAt,
+			DeletedAt:      story.DeletedAt,
+			ArchivedAt:     story.ArchivedAt,
+			Labels:         labels,
+			SubStories:     subStories,
 		}
 	}
 	return cl
@@ -165,6 +173,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		SequenceID:      i.SequenceID,
 		Title:           i.Title,
 		Description:     i.Description,
+		EstimateUnit:    i.EstimateUnit,
 		Parent:          i.Parent,
 		Objective:       i.Objective,
 		Workspace:       i.Workspace,

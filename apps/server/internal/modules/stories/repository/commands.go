@@ -185,14 +185,14 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 					sequence_id, title, description, description_html,
 					parent_id, objective_id, status_id, assignee_id, 
 					blocked_by_id, blocking_id, related_id, reporter_id,
-					priority, sprint_id, key_result_id, team_id, workspace_id, start_date, 
+					priority, estimate_unit, sprint_id, key_result_id, team_id, workspace_id, start_date, 
 					end_date, created_at, updated_at
 			) VALUES (
 					:sequence_id, :title, :description, :description_html,
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
-					:blocking_id, :related_id, :reporter_id, :priority, :sprint_id,
+					:blocking_id, :related_id, :reporter_id, :priority, :estimate_unit, :sprint_id,
 					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
-			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 		`
 
 	var cs dbStory
@@ -841,6 +841,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			status_id,
 			assignee_id,
 			priority,
+			estimate_unit,
 			sprint_id,
 			workspace_id,
 			reporter_id,
@@ -856,12 +857,13 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			:status_id,
 			:assignee_id,
 			:priority,
+			:estimate_unit,
 			:sprint_id,
 			:workspace_id,
 			:reporter_id,
 			NOW(),
 			NOW()
-		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 	`
 
 	// Prepare parameters for the new story
@@ -875,6 +877,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 		"status_id":        originalStory.Status,
 		"assignee_id":      originalStory.Assignee,
 		"priority":         originalStory.Priority,
+		"estimate_unit":    originalStory.EstimateUnit,
 		"sprint_id":        originalStory.Sprint,
 		"workspace_id":     workspaceId,
 		"reporter_id":      userID,
@@ -939,9 +942,9 @@ func (r *repo) CreateStoryFromIssue(ctx context.Context, workspaceID, teamID uui
 	// 3) Insert story
 	insertQuery := `
 		INSERT INTO stories (
-			sequence_id, title, description, description_html, status_id, priority, team_id, workspace_id, reporter_id, created_at, updated_at
+			sequence_id, title, description, description_html, status_id, priority, estimate_unit, team_id, workspace_id, reporter_id, created_at, updated_at
 		) VALUES (
-			:sequence_id, :title, :description, :description_html, :status_id, :priority, :team_id, :workspace_id, :reporter_id, NOW(), NOW()
+			:sequence_id, :title, :description, :description_html, :status_id, :priority, :estimate_unit, :team_id, :workspace_id, :reporter_id, NOW(), NOW()
 		) RETURNING id`
 
 	params := map[string]any{
@@ -950,6 +953,7 @@ func (r *repo) CreateStoryFromIssue(ctx context.Context, workspaceID, teamID uui
 		"description":      description,
 		"description_html": description,
 		"status_id":        statusID,
+		"estimate_unit":    nil,
 		"team_id":          teamID,
 		"workspace_id":     workspaceID,
 		"reporter_id":      reporterID,

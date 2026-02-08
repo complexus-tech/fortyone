@@ -142,6 +142,9 @@ type AppSingleStory struct {
 	ID              uuid.UUID             `json:"id"`
 	SequenceID      int                   `json:"sequenceId"`
 	Title           string                `json:"title"`
+	Estimate        *string               `json:"estimate"`
+	EstimateUnit    *int16                `json:"estimateUnit"`
+	EstimateScheme  string                `json:"estimateScheme"`
 	TeamCode        string                `json:"teamCode"`
 	Description     *string               `json:"description"`
 	DescriptionHTML *string               `json:"descriptionHTML"`
@@ -181,33 +184,39 @@ type AppStoryAssociation struct {
 
 // AppStoryList represents a single story in the list of stories in the application.
 type AppStoryList struct {
-	ID          uuid.UUID      `json:"id"`
-	SequenceID  int            `json:"sequenceId"`
-	Title       string         `json:"title"`
-	Objective   *uuid.UUID     `json:"objectiveId"`
-	Status      *uuid.UUID     `json:"statusId"`
-	Assignee    *uuid.UUID     `json:"assigneeId"`
-	Reporter    *uuid.UUID     `json:"reporterId"`
-	Priority    string         `json:"priority"`
-	Sprint      *uuid.UUID     `json:"sprintId"`
-	KeyResult   *uuid.UUID     `json:"keyResultId"`
-	Workspace   uuid.UUID      `json:"workspaceId"`
-	Team        uuid.UUID      `json:"teamId"`
-	StartDate   *time.Time     `json:"startDate"`
-	EndDate     *time.Time     `json:"endDate"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	CompletedAt *time.Time     `json:"completedAt"`
-	DeletedAt   *time.Time     `json:"deletedAt"`
-	ArchivedAt  *time.Time     `json:"archivedAt"`
-	Labels      []uuid.UUID    `json:"labels"`
-	SubStories  []AppStoryList `json:"subStories"`
+	ID             uuid.UUID      `json:"id"`
+	SequenceID     int            `json:"sequenceId"`
+	Title          string         `json:"title"`
+	Estimate       *string        `json:"estimate"`
+	EstimateUnit   *int16         `json:"estimateUnit"`
+	EstimateScheme string         `json:"estimateScheme"`
+	Objective      *uuid.UUID     `json:"objectiveId"`
+	Status         *uuid.UUID     `json:"statusId"`
+	Assignee       *uuid.UUID     `json:"assigneeId"`
+	Reporter       *uuid.UUID     `json:"reporterId"`
+	Priority       string         `json:"priority"`
+	Sprint         *uuid.UUID     `json:"sprintId"`
+	KeyResult      *uuid.UUID     `json:"keyResultId"`
+	Workspace      uuid.UUID      `json:"workspaceId"`
+	Team           uuid.UUID      `json:"teamId"`
+	StartDate      *time.Time     `json:"startDate"`
+	EndDate        *time.Time     `json:"endDate"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	CompletedAt    *time.Time     `json:"completedAt"`
+	DeletedAt      *time.Time     `json:"deletedAt"`
+	ArchivedAt     *time.Time     `json:"archivedAt"`
+	Labels         []uuid.UUID    `json:"labels"`
+	SubStories     []AppStoryList `json:"subStories"`
 }
 
 func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 	return AppSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
+		Estimate:        i.Estimate,
+		EstimateUnit:    i.EstimateUnit,
+		EstimateScheme:  i.EstimateScheme,
 		TeamCode:        i.TeamCode,
 		Description:     i.Description,
 		DescriptionHTML: i.DescriptionHTML,
@@ -248,27 +257,30 @@ func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppSt
 			ToStoryID:   association.ToStoryID,
 			Type:        association.Type,
 			Story: AppStoryList{
-				ID:          association.Story.ID,
-				SequenceID:  association.Story.SequenceID,
-				Title:       association.Story.Title,
-				Objective:   association.Story.Objective,
-				Team:        association.Story.Team,
-				Workspace:   association.Story.Workspace,
-				Status:      association.Story.Status,
-				Assignee:    association.Story.Assignee,
-				Reporter:    association.Story.Reporter,
-				Priority:    association.Story.Priority,
-				Sprint:      association.Story.Sprint,
-				KeyResult:   association.Story.KeyResult,
-				StartDate:   association.Story.StartDate,
-				EndDate:     association.Story.EndDate,
-				CreatedAt:   association.Story.CreatedAt,
-				UpdatedAt:   association.Story.UpdatedAt,
-				CompletedAt: association.Story.CompletedAt,
-				DeletedAt:   association.Story.DeletedAt,
-				ArchivedAt:  association.Story.ArchivedAt,
-				Labels:      association.Story.Labels,
-				SubStories:  toAppStories(association.Story.SubStories),
+				ID:             association.Story.ID,
+				SequenceID:     association.Story.SequenceID,
+				Title:          association.Story.Title,
+				Estimate:       association.Story.Estimate,
+				EstimateUnit:   association.Story.EstimateUnit,
+				EstimateScheme: association.Story.EstimateScheme,
+				Objective:      association.Story.Objective,
+				Team:           association.Story.Team,
+				Workspace:      association.Story.Workspace,
+				Status:         association.Story.Status,
+				Assignee:       association.Story.Assignee,
+				Reporter:       association.Story.Reporter,
+				Priority:       association.Story.Priority,
+				Sprint:         association.Story.Sprint,
+				KeyResult:      association.Story.KeyResult,
+				StartDate:      association.Story.StartDate,
+				EndDate:        association.Story.EndDate,
+				CreatedAt:      association.Story.CreatedAt,
+				UpdatedAt:      association.Story.UpdatedAt,
+				CompletedAt:    association.Story.CompletedAt,
+				DeletedAt:      association.Story.DeletedAt,
+				ArchivedAt:     association.Story.ArchivedAt,
+				Labels:         association.Story.Labels,
+				SubStories:     toAppStories(association.Story.SubStories),
 			},
 		}
 	}
@@ -286,33 +298,37 @@ func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
 
 func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
 	return AppStoryList{
-		ID:          story.ID,
-		SequenceID:  story.SequenceID,
-		Title:       story.Title,
-		Objective:   story.Objective,
-		Team:        story.Team,
-		Workspace:   story.Workspace,
-		Status:      story.Status,
-		Assignee:    story.Assignee,
-		Reporter:    story.Reporter,
-		Priority:    story.Priority,
-		Sprint:      story.Sprint,
-		KeyResult:   story.KeyResult,
-		StartDate:   story.StartDate,
-		EndDate:     story.EndDate,
-		CreatedAt:   story.CreatedAt,
-		UpdatedAt:   story.UpdatedAt,
-		CompletedAt: story.CompletedAt,
-		DeletedAt:   story.DeletedAt,
-		ArchivedAt:  story.ArchivedAt,
-		Labels:      story.Labels,
-		SubStories:  toAppStories(story.SubStories),
+		ID:             story.ID,
+		SequenceID:     story.SequenceID,
+		Title:          story.Title,
+		Estimate:       story.Estimate,
+		EstimateUnit:   story.EstimateUnit,
+		EstimateScheme: story.EstimateScheme,
+		Objective:      story.Objective,
+		Team:           story.Team,
+		Workspace:      story.Workspace,
+		Status:         story.Status,
+		Assignee:       story.Assignee,
+		Reporter:       story.Reporter,
+		Priority:       story.Priority,
+		Sprint:         story.Sprint,
+		KeyResult:      story.KeyResult,
+		StartDate:      story.StartDate,
+		EndDate:        story.EndDate,
+		CreatedAt:      story.CreatedAt,
+		UpdatedAt:      story.UpdatedAt,
+		CompletedAt:    story.CompletedAt,
+		DeletedAt:      story.DeletedAt,
+		ArchivedAt:     story.ArchivedAt,
+		Labels:         story.Labels,
+		SubStories:     toAppStories(story.SubStories),
 	}
 }
 
 // AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
 type AppUpdateStory struct {
 	Title           string     `json:"title" db:"title"`
+	Estimate        *string    `json:"estimate" db:"estimate"`
 	Description     string     `json:"description" db:"description"`
 	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
 	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
@@ -328,6 +344,7 @@ type AppUpdateStory struct {
 
 type AppNewStory struct {
 	Title           string     `json:"title" validate:"required"`
+	Estimate        *string    `json:"estimate"`
 	Description     *string    `json:"description"`
 	DescriptionHTML *string    `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
@@ -510,6 +527,7 @@ func toAppComments(i []comments.CoreComment) []AppComment {
 func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 	return stories.CoreNewStory{
 		Title:           a.Title,
+		Estimate:        a.Estimate,
 		Description:     a.Description,
 		DescriptionHTML: a.DescriptionHTML,
 		Parent:          a.Parent,

@@ -22,6 +22,43 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+func (r *repo) GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetTeamEstimateScheme")
+	defer span.End()
+
+	const query = `
+		SELECT scheme
+		FROM team_estimation_settings
+		WHERE team_id = :team_id
+		AND workspace_id = :workspace_id
+	`
+
+	params := map[string]any{
+		"team_id":      teamID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return stories.DefaultEstimateScheme, err
+	}
+	defer stmt.Close()
+
+	var scheme string
+	if err := stmt.GetContext(ctx, &scheme, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return stories.DefaultEstimateScheme, nil
+		}
+		return stories.DefaultEstimateScheme, err
+	}
+
+	if err := stories.ValidateEstimateScheme(scheme); err != nil {
+		return stories.DefaultEstimateScheme, nil
+	}
+
+	return scheme, nil
+}
+
 func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
 	r.log.Info(ctx, "business.repository.stories.GetStoryLinks")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetStoryLinks")
@@ -80,6 +117,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.sequence_id,
 			s.title,
 			s.priority,
+			s.estimate_unit,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -102,6 +140,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 								'sequence_id', sub.sequence_id,
 								'title', sub.title,
 								'priority', sub.priority,
+								'estimate_unit', sub.estimate_unit,
 								'status_id', sub.status_id,
 								'start_date', sub.start_date,
 								'end_date', sub.end_date,
@@ -195,6 +234,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.title,
 					t.code AS team_code,
 					s.priority,
+					s.estimate_unit,
 					s.sequence_id,
 					s.status_id,
 					s.description,
@@ -249,6 +289,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 												'sequence_id', other.sequence_id,
 												'title', other.title,
 												'priority', other.priority,
+												'estimate_unit', other.estimate_unit,
 												'status_id', other.status_id,
                         'parent_id', other.parent_id,
 												'sprint_id', other.sprint_id,
@@ -375,6 +416,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.sequence_id,
 			s.title,
 			s.priority,
+			s.estimate_unit,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -398,6 +440,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 								'sequence_id', sub.sequence_id,
 								'title', sub.title,
 								'priority', sub.priority,
+								'estimate_unit', sub.estimate_unit,
 								'status_id', sub.status_id,
 								'start_date', sub.start_date,
 								'end_date', sub.end_date,
@@ -923,6 +966,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.sequence_id,
 				s.title,
 				s.priority,
+				s.estimate_unit,
 				s.status_id,
 				s.start_date,
 				s.end_date,
@@ -959,6 +1003,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'sequence_id', ls.sequence_id,
 						'title', ls.title,
 						'priority', ls.priority,
+						'estimate_unit', ls.estimate_unit,
 						'status_id', ls.status_id,
 						'start_date', ls.start_date,
 						'end_date', ls.end_date,
@@ -982,6 +1027,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 											'sequence_id', sub.sequence_id,
 											'title', sub.title,
 											'priority', sub.priority,
+											'estimate_unit', sub.estimate_unit,
 											'status_id', sub.status_id,
 											'start_date', sub.start_date,
 											'end_date', sub.end_date,
@@ -1343,6 +1389,11 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 
 	if priority, ok := storyMap["priority"].(string); ok {
 		story.Priority = priority
+	}
+
+	if estimateUnit, ok := storyMap["estimate_unit"].(float64); ok {
+		unit := int16(estimateUnit)
+		story.EstimateUnit = &unit
 	}
 
 	if statusID, ok := storyMap["status_id"].(string); ok {
@@ -1712,6 +1763,7 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.sequence_id,
 			s.title,
 			s.priority,
+			s.estimate_unit,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -1735,6 +1787,7 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 								'sequence_id', sub.sequence_id,
 								'title', sub.title,
 								'priority', sub.priority,
+								'estimate_unit', sub.estimate_unit,
 								'status_id', sub.status_id,
 								'start_date', sub.start_date,
 								'end_date', sub.end_date,
@@ -2230,6 +2283,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.sequence_id,
 			s.title,
 			s.priority,
+			s.estimate_unit,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -2253,6 +2307,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 								'sequence_id', sub.sequence_id,
 								'title', sub.title,
 								'priority', sub.priority,
+								'estimate_unit', sub.estimate_unit,
 								'status_id', sub.status_id,
 								'start_date', sub.start_date,
 								'end_date', sub.end_date,
@@ -2452,6 +2507,7 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.sequence_id,
 			s.title,
 			s.priority,
+			s.estimate_unit,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -2475,6 +2531,7 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 								'sequence_id', sub.sequence_id,
 								'title', sub.title,
 								'priority', sub.priority,
+								'estimate_unit', sub.estimate_unit,
 								'status_id', sub.status_id,
 								'start_date', sub.start_date,
 								'end_date', sub.end_date,
@@ -2588,6 +2645,7 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 					s.title,
 					t.code AS team_code,
 					s.priority,
+					s.estimate_unit,
 					s.sequence_id,
 					s.status_id,
 					s.description,
@@ -2642,6 +2700,7 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 												'sequence_id', other.sequence_id,
 												'title', other.title,
 												'priority', other.priority,
+												'estimate_unit', other.estimate_unit,
 												'status_id', other.status_id,
                         'parent_id', other.parent_id,	
 												'sprint_id', other.sprint_id,
