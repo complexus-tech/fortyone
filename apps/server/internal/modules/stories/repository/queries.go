@@ -1391,9 +1391,9 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		story.Priority = priority
 	}
 
-	if estimateUnit, ok := storyMap["estimate_unit"].(float64); ok {
-		unit := int16(estimateUnit)
-		story.EstimateUnit = &unit
+	if estimateValue, ok := storyMap["estimate_unit"].(float64); ok {
+		value := int16(estimateValue)
+		story.EstimateValue = &value
 	}
 
 	if statusID, ok := storyMap["status_id"].(string); ok {

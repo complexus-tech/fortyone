@@ -22,7 +22,7 @@ func Decode(r *http.Request, v any) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(v); err != nil {
-		return err
+		return HumanizeJSONDecodeError(err)
 	}
 	if val, ok := v.(validator); ok {
 		if err := val.Validate(); err != nil {

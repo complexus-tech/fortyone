@@ -104,16 +104,15 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 	}
 
 	story.EstimateScheme = estimateScheme
-	estimateUnit, err := NormalizeEstimateValue(estimateScheme, ns.Estimate)
-	if err != nil {
+	if err := ValidateEstimateValue(estimateScheme, ns.EstimateValue); err != nil {
 		span.RecordError(err)
-		if ns.Estimate != nil {
+		if ns.EstimateValue != nil {
 			return CoreSingleStory{}, fmt.Errorf("%w. If this work is larger than the max estimate, split it into smaller stories", err)
 		}
 		return CoreSingleStory{}, err
 	}
-	story.EstimateUnit = estimateUnit
-	story.Estimate = EstimateValueFromUnit(estimateScheme, estimateUnit)
+	story.EstimateValue = ns.EstimateValue
+	story.EstimateLabel = EstimateLabelFromValue(estimateScheme, ns.EstimateValue)
 
 	cs, err := s.repo.Create(ctx, &story)
 	if err != nil {
@@ -121,7 +120,7 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		return CoreSingleStory{}, err
 	}
 	cs.EstimateScheme = estimateScheme
-	cs.Estimate = EstimateValueFromUnit(estimateScheme, cs.EstimateUnit)
+	cs.EstimateLabel = EstimateLabelFromValue(estimateScheme, cs.EstimateValue)
 
 	// Record in the activity log
 	ca := CoreActivity{
@@ -909,7 +908,7 @@ func (s *Service) enrichSingleStoryEstimate(ctx context.Context, workspaceID uui
 	}
 
 	story.EstimateScheme = scheme
-	story.Estimate = EstimateValueFromUnit(scheme, story.EstimateUnit)
+	story.EstimateLabel = EstimateLabelFromValue(scheme, story.EstimateValue)
 
 	for i := range story.SubStories {
 		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &story.SubStories[i], schemeCache); err != nil {
@@ -943,7 +942,7 @@ func (s *Service) enrichStoryListItemEstimate(ctx context.Context, workspaceID u
 	}
 
 	story.EstimateScheme = scheme
-	story.Estimate = EstimateValueFromUnit(scheme, story.EstimateUnit)
+	story.EstimateLabel = EstimateLabelFromValue(scheme, story.EstimateValue)
 
 	for i := range story.SubStories {
 		if err := s.enrichStoryListItemEstimate(ctx, workspaceID, &story.SubStories[i], schemeCache); err != nil {
@@ -1031,14 +1030,14 @@ func (s *Service) getOldValue(story CoreSingleStory, field string) any {
 	case "completed_at":
 		return story.CompletedAt
 	case "estimate_unit":
-		return story.EstimateUnit
+		return story.EstimateValue
 	default:
 		return nil
 	}
 }
 
 func (s *Service) applyEstimateUpdate(ctx context.Context, workspaceID uuid.UUID, story CoreSingleStory, updates map[string]any) error {
-	estimateRaw, hasEstimateUpdate := updates["estimate"]
+	estimateRaw, hasEstimateUpdate := updates["estimate_unit"]
 	if !hasEstimateUpdate {
 		return nil
 	}
@@ -1048,27 +1047,34 @@ func (s *Service) applyEstimateUpdate(ctx context.Context, workspaceID uuid.UUID
 		return err
 	}
 
-	var estimateInput *string
-	switch estimateValue := estimateRaw.(type) {
+	var estimateValue *int16
+	switch value := estimateRaw.(type) {
 	case nil:
-		estimateInput = nil
-	case *string:
-		estimateInput = estimateValue
-	case string:
-		estimateInput = &estimateValue
+		estimateValue = nil
+	case *int16:
+		estimateValue = value
+	case int16:
+		estimateValue = &value
+	case int:
+		normalized := int16(value)
+		estimateValue = &normalized
+	case float64:
+		normalized := int16(value)
+		if float64(normalized) != value {
+			return fmt.Errorf("invalid estimate value type: %T", estimateRaw)
+		}
+		estimateValue = &normalized
 	default:
-		return fmt.Errorf("invalid estimate type: %T", estimateRaw)
+		return fmt.Errorf("invalid estimate value type: %T", estimateRaw)
 	}
 
-	estimateUnit, err := NormalizeEstimateValue(estimateScheme, estimateInput)
-	if err != nil {
-		if estimateInput != nil {
+	if err := ValidateEstimateValue(estimateScheme, estimateValue); err != nil {
+		if estimateValue != nil {
 			return fmt.Errorf("%w. If this work is larger than the max estimate, split it into smaller stories", err)
 		}
 		return err
 	}
 
-	updates["estimate_unit"] = estimateUnit
-	delete(updates, "estimate")
+	updates["estimate_unit"] = estimateValue
 	return nil
 }

@@ -27,7 +27,7 @@ type dbStory struct {
 	Status          *uuid.UUID       `db:"status_id"`
 	Assignee        *uuid.UUID       `db:"assignee_id"`
 	Estimate        *float32         `db:"estimate"`
-	EstimateUnit    *int16           `db:"estimate_unit"`
+	EstimateValue   *int16           `db:"estimate_unit"`
 	EstimateScheme  string           `db:"estimate_scheme"`
 	IsDraft         bool             `db:"is_draft"`
 	BlockedBy       *uuid.UUID       `db:"blocked_by_id"`
@@ -82,9 +82,9 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Title:           i.Title,
 		TeamCode:        i.TeamCode,
 		Description:     i.Description,
-		EstimateUnit:    i.EstimateUnit,
+		EstimateValue:   i.EstimateValue,
 		EstimateScheme:  i.EstimateScheme,
-		Estimate:        stories.EstimateValueFromUnit(i.EstimateScheme, i.EstimateUnit),
+		EstimateLabel:   stories.EstimateLabelFromValue(i.EstimateScheme, i.EstimateValue),
 		Parent:          i.Parent,
 		Objective:       i.Objective,
 		Team:            i.Team,
@@ -139,9 +139,9 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			ID:             story.ID,
 			SequenceID:     story.SequenceID,
 			Title:          story.Title,
-			EstimateUnit:   story.EstimateUnit,
+			EstimateValue:  story.EstimateValue,
 			EstimateScheme: story.EstimateScheme,
-			Estimate:       stories.EstimateValueFromUnit(story.EstimateScheme, story.EstimateUnit),
+			EstimateLabel:  stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
 			Parent:         story.Parent,
 			Objective:      story.Objective,
 			Sprint:         story.Sprint,
@@ -173,7 +173,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		SequenceID:      i.SequenceID,
 		Title:           i.Title,
 		Description:     i.Description,
-		EstimateUnit:    i.EstimateUnit,
+		EstimateValue:   i.EstimateValue,
 		Parent:          i.Parent,
 		Objective:       i.Objective,
 		Workspace:       i.Workspace,

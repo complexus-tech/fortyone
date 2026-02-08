@@ -79,7 +79,7 @@ func (h *Handlers) UpdateSprintSettings(ctx context.Context, w http.ResponseWrit
 	updates := toCoreUpdateTeamSprintSettings(input)
 	result, err := h.teamsettings.UpdateSprintSettings(ctx, teamID, workspace.ID, updates)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, teamSettingsErrorStatus(err))
 	}
 
 	span.AddEvent("sprint settings updated.", trace.WithAttributes(
@@ -113,7 +113,7 @@ func (h *Handlers) UpdateStoryAutomationSettings(ctx context.Context, w http.Res
 	updates := toCoreUpdateTeamStoryAutomationSettings(input)
 	result, err := h.teamsettings.UpdateStoryAutomationSettings(ctx, teamID, workspace.ID, updates)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, teamSettingsErrorStatus(err))
 	}
 
 	span.AddEvent("story automation settings updated.", trace.WithAttributes(
@@ -147,8 +147,27 @@ func (h *Handlers) UpdateEstimationSettings(ctx context.Context, w http.Response
 	updates := toCoreUpdateTeamEstimationSettings(input)
 	result, err := h.teamsettings.UpdateEstimationSettings(ctx, teamID, workspace.ID, updates)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, teamSettingsErrorStatus(err))
 	}
 
 	return web.Respond(ctx, w, toAppTeamEstimationSettings(result), http.StatusOK)
+}
+
+func teamSettingsErrorStatus(err error) int {
+	switch {
+	case errors.Is(err, teamsettings.ErrInvalidSprintStartDay):
+		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidSprintDuration):
+		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidUpcomingCount):
+		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidCloseMonths):
+		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidArchiveMonths):
+		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidEstimateScheme):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
 }

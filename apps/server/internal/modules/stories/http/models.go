@@ -142,8 +142,8 @@ type AppSingleStory struct {
 	ID              uuid.UUID             `json:"id"`
 	SequenceID      int                   `json:"sequenceId"`
 	Title           string                `json:"title"`
-	Estimate        *string               `json:"estimate"`
-	EstimateUnit    *int16                `json:"estimateUnit"`
+	EstimateLabel   *string               `json:"estimateLabel"`
+	EstimateValue   *int16                `json:"estimateValue"`
 	EstimateScheme  string                `json:"estimateScheme"`
 	TeamCode        string                `json:"teamCode"`
 	Description     *string               `json:"description"`
@@ -187,8 +187,8 @@ type AppStoryList struct {
 	ID             uuid.UUID      `json:"id"`
 	SequenceID     int            `json:"sequenceId"`
 	Title          string         `json:"title"`
-	Estimate       *string        `json:"estimate"`
-	EstimateUnit   *int16         `json:"estimateUnit"`
+	EstimateLabel  *string        `json:"estimateLabel"`
+	EstimateValue  *int16         `json:"estimateValue"`
 	EstimateScheme string         `json:"estimateScheme"`
 	Objective      *uuid.UUID     `json:"objectiveId"`
 	Status         *uuid.UUID     `json:"statusId"`
@@ -214,8 +214,8 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 	return AppSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
-		Estimate:        i.Estimate,
-		EstimateUnit:    i.EstimateUnit,
+		EstimateLabel:   i.EstimateLabel,
+		EstimateValue:   i.EstimateValue,
 		EstimateScheme:  i.EstimateScheme,
 		TeamCode:        i.TeamCode,
 		Description:     i.Description,
@@ -260,8 +260,8 @@ func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppSt
 				ID:             association.Story.ID,
 				SequenceID:     association.Story.SequenceID,
 				Title:          association.Story.Title,
-				Estimate:       association.Story.Estimate,
-				EstimateUnit:   association.Story.EstimateUnit,
+				EstimateLabel:  association.Story.EstimateLabel,
+				EstimateValue:  association.Story.EstimateValue,
 				EstimateScheme: association.Story.EstimateScheme,
 				Objective:      association.Story.Objective,
 				Team:           association.Story.Team,
@@ -301,8 +301,8 @@ func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
 		ID:             story.ID,
 		SequenceID:     story.SequenceID,
 		Title:          story.Title,
-		Estimate:       story.Estimate,
-		EstimateUnit:   story.EstimateUnit,
+		EstimateLabel:  story.EstimateLabel,
+		EstimateValue:  story.EstimateValue,
 		EstimateScheme: story.EstimateScheme,
 		Objective:      story.Objective,
 		Team:           story.Team,
@@ -328,7 +328,7 @@ func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
 // AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
 type AppUpdateStory struct {
 	Title           string     `json:"title" db:"title"`
-	Estimate        *string    `json:"estimate" db:"estimate"`
+	EstimateValue   *int16     `json:"estimateValue" db:"estimate_unit"`
 	Description     string     `json:"description" db:"description"`
 	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
 	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
@@ -344,7 +344,7 @@ type AppUpdateStory struct {
 
 type AppNewStory struct {
 	Title           string     `json:"title" validate:"required"`
-	Estimate        *string    `json:"estimate"`
+	EstimateValue   *int16     `json:"estimateValue"`
 	Description     *string    `json:"description"`
 	DescriptionHTML *string    `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
@@ -527,7 +527,7 @@ func toAppComments(i []comments.CoreComment) []AppComment {
 func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 	return stories.CoreNewStory{
 		Title:           a.Title,
-		Estimate:        a.Estimate,
+		EstimateValue:   a.EstimateValue,
 		Description:     a.Description,
 		DescriptionHTML: a.DescriptionHTML,
 		Parent:          a.Parent,

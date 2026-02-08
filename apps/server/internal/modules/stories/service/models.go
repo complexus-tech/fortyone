@@ -22,8 +22,8 @@ type CoreStoryList struct {
 	ID             uuid.UUID       `json:"id"`
 	SequenceID     int             `json:"sequence_id"`
 	Title          string          `json:"title"`
-	Estimate       *string         `json:"estimate"`
-	EstimateUnit   *int16          `json:"estimate_unit"`
+	EstimateLabel  *string         `json:"estimate_label"`
+	EstimateValue  *int16          `json:"estimate_value"`
 	EstimateScheme string          `json:"estimate_scheme"`
 	Parent         *uuid.UUID      `json:"parent_id"`
 	Objective      *uuid.UUID      `json:"objective_id"`
@@ -52,8 +52,8 @@ type CoreSingleStory struct {
 	ID              uuid.UUID
 	SequenceID      int
 	Title           string
-	Estimate        *string
-	EstimateUnit    *int16
+	EstimateLabel   *string
+	EstimateValue   *int16
 	EstimateScheme  string
 	TeamCode        string
 	Description     *string
@@ -86,7 +86,7 @@ type CoreSingleStory struct {
 
 type CoreNewStory struct {
 	Title           string     `json:"title"`
-	Estimate        *string    `json:"estimate"`
+	EstimateValue   *int16     `json:"estimateValue"`
 	Description     *string    `json:"description"`
 	DescriptionHTML *string    `json:"descriptionHTML"`
 	Parent          *uuid.UUID `json:"parentId"`
@@ -107,7 +107,7 @@ type CoreNewStory struct {
 
 type CoreUpdateStory struct {
 	Title           *string
-	Estimate        *string
+	EstimateValue   *int16
 	Description     *string
 	DescriptionHTML *string
 	Parent          *uuid.UUID
@@ -131,7 +131,7 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 	return CoreSingleStory{
 		Workspace:       workspaceId,
 		Title:           ns.Title,
-		Estimate:        ns.Estimate,
+		EstimateValue:   ns.EstimateValue,
 		Description:     ns.Description,
 		DescriptionHTML: ns.DescriptionHTML,
 		Parent:          ns.Parent,

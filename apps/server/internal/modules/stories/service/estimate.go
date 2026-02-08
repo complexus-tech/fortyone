@@ -40,7 +40,7 @@ var allowedEstimateSchemes = map[string]map[string]int16{
 	},
 }
 
-var estimateUnitToValue = map[string]map[int16]string{
+var estimateValueToLabel = map[string]map[int16]string{
 	"points": {
 		1: "1",
 		2: "2",
@@ -87,48 +87,37 @@ func ValidateEstimateScheme(scheme string) error {
 	return nil
 }
 
-func NormalizeEstimateValue(scheme string, value *string) (*int16, error) {
-	if value == nil {
-		return nil, nil
-	}
-
-	normalizedScheme := normalizeEstimateScheme(scheme)
-	allowedValues, ok := allowedEstimateSchemes[normalizedScheme]
-	if !ok {
-		return nil, fmt.Errorf("invalid estimate scheme: %s", scheme)
-	}
-
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil, nil
-	}
-
-	// Only tshirt keeps uppercase semantics.
-	if normalizedScheme == "tshirt" {
-		trimmed = strings.ToUpper(trimmed)
-	}
-
-	normalizedUnit, ok := allowedValues[trimmed]
-	if !ok {
-		return nil, fmt.Errorf("invalid estimate '%s' for scheme '%s'. Allowed values only", trimmed, normalizedScheme)
-	}
-
-	return &normalizedUnit, nil
-}
-
-func EstimateValueFromUnit(scheme string, estimateUnit *int16) *string {
-	if estimateUnit == nil {
+func ValidateEstimateValue(scheme string, estimateValue *int16) error {
+	if estimateValue == nil {
 		return nil
 	}
 
 	normalizedScheme := normalizeEstimateScheme(scheme)
-	valuesByUnit, ok := estimateUnitToValue[normalizedScheme]
+	labelsByValue, ok := estimateValueToLabel[normalizedScheme]
 	if !ok {
-		normalizedScheme = DefaultEstimateScheme
-		valuesByUnit = estimateUnitToValue[normalizedScheme]
+		return fmt.Errorf("invalid estimate scheme: %s", scheme)
 	}
 
-	value, ok := valuesByUnit[*estimateUnit]
+	if _, ok := labelsByValue[*estimateValue]; !ok {
+		return fmt.Errorf("invalid estimate value '%d' for scheme '%s'. Allowed values only", *estimateValue, normalizedScheme)
+	}
+
+	return nil
+}
+
+func EstimateLabelFromValue(scheme string, estimateValue *int16) *string {
+	if estimateValue == nil {
+		return nil
+	}
+
+	normalizedScheme := normalizeEstimateScheme(scheme)
+	labelsByValue, ok := estimateValueToLabel[normalizedScheme]
+	if !ok {
+		normalizedScheme = DefaultEstimateScheme
+		labelsByValue = estimateValueToLabel[normalizedScheme]
+	}
+
+	value, ok := labelsByValue[*estimateValue]
 	if !ok {
 		return nil
 	}

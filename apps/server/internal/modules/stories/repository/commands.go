@@ -877,7 +877,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 		"status_id":        originalStory.Status,
 		"assignee_id":      originalStory.Assignee,
 		"priority":         originalStory.Priority,
-		"estimate_unit":    originalStory.EstimateUnit,
+		"estimate_unit":    originalStory.EstimateValue,
 		"sprint_id":        originalStory.Sprint,
 		"workspace_id":     workspaceId,
 		"reporter_id":      userID,
