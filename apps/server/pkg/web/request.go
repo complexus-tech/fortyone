@@ -15,7 +15,9 @@ func Params(r *http.Request, key string) string {
 	return r.PathValue(key)
 }
 
-// Decode decodes the body of a request into a given interface.
+// Decode reads and decodes the JSON body of a request into the provided value.
+// It returns an error if the body contains unknown fields or if validation fails
+// (when the value implements the validator interface).
 func Decode(r *http.Request, v any) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
