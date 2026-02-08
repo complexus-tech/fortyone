@@ -48,8 +48,8 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
             ${{ env.DOCKERHUB_SERVER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=server-image
+          cache-to: type=gha,mode=max,scope=server-image
 
       - name: Build and push worker image
         uses: docker/build-push-action@v6
@@ -61,8 +61,8 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
             ${{ env.DOCKERHUB_WORKER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=worker-image
+          cache-to: type=gha,mode=max,scope=worker-image
 
   deploy:
     runs-on: ubuntu-latest
