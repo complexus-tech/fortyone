@@ -21,7 +21,7 @@ import { useUserRole } from "@/hooks/role";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { clearAllStorage } from "./utils";
 import { WorkspacesMenu } from "./workspaces-menu";
-import { signOut } from "next-auth/react";
+import { logOut } from "./actions";
 
 export const Header = () => {
   const { getTermDisplay } = useTerminology();
@@ -63,7 +63,7 @@ export const Header = () => {
         ? "https://fortyone.app"
         : "/";
     try {
-      await signOut({ redirect: false });
+      await logOut();
       analytics.logout(true);
       clearAllStorage();
       window.location.href = `${mainDomain}?signedOut=true`;

@@ -12,7 +12,7 @@ export const SessionExchange = () => {
     if (!session?.token) return;
     if (lastTokenRef.current === session.token) return;
     lastTokenRef.current = session.token;
-    void exchangeSessionToken(session.token);
+    void exchangeSessionToken();
   }, [session?.token]);
 
   return null;

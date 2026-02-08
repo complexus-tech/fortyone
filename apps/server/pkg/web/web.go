@@ -10,10 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // Handler is the signature used by all application handlers in this service.
@@ -23,12 +21,12 @@ type App struct {
 	mux         *http.ServeMux
 	mw          []Middleware
 	shutdown    chan os.Signal
-	tracer      trace.Tracer
+	tracer      oteltrace.Tracer
 	strictSlash bool
 }
 
 // New creates an application struct that will handle all requests to the application.
-func New(shutdown chan os.Signal, tracer trace.Tracer, mw ...Middleware) *App {
+func New(shutdown chan os.Signal, tracer oteltrace.Tracer, mw ...Middleware) *App {
 	mux := http.NewServeMux()
 	return &App{
 		mux:         mux,
@@ -140,18 +138,10 @@ func (a *App) Shutdown() {
 }
 
 // startSpan will start a span for the request and add it to the context.
-func (a *App) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, trace.Span) {
+func (a *App) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, oteltrace.Span) {
 	ctx := r.Context()
 
-	span := trace.SpanFromContext(ctx)
-
-	if a.tracer != nil {
-		ctx, span = a.tracer.Start(ctx, "pkg.web.handle")
-		span.SetAttributes(
-			attribute.String("http.method", r.Method),
-			attribute.String("http.endpoint", r.RequestURI))
-	}
-	// Inject the span context into the request header.
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(w.Header()))
+	ctx, span := apptracing.StartHTTPSpan(ctx, a.tracer, "pkg.web.handle", r.Method, r.RequestURI)
+	apptracing.InjectTraceHeaders(ctx, w.Header())
 	return ctx, span
 }

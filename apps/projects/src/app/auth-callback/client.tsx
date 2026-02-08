@@ -8,7 +8,6 @@ import type { Session } from "next-auth";
 import { Logo } from "@/components/ui";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
-import { exchangeSessionToken } from "@/lib/http/exchange-session";
 import type { Invitation } from "@/modules/invitations/types";
 import type { User, Workspace } from "@/types";
 
@@ -33,7 +32,6 @@ export const ClientPage = ({
           email: session.user!.email!,
           name: session.user!.name!,
         });
-        await exchangeSessionToken(session.token);
         window.location.href = getRedirectUrl(
           workspaces,
           invitations,

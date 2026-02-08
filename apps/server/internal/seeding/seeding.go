@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/complexus-tech/projects-api/internal/core/users"
-	"github.com/complexus-tech/projects-api/internal/core/workspaces"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 )
 
 // Seeder manages the database seeding process.
