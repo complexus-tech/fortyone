@@ -59,6 +59,9 @@ const updateInfiniteQuery = (
       const newStory: Story = {
         id: "123",
         title: story.title || "Untitled",
+        estimateLabel: story.estimateLabel || null,
+        estimateValue: story.estimateValue || null,
+        estimateScheme: story.estimateScheme || "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -115,6 +118,9 @@ const updateGroupedQuery = (
       const newStory: Story = {
         id: "123",
         title: story.title || "Untitled",
+        estimateLabel: story.estimateLabel || null,
+        estimateValue: story.estimateValue || null,
+        estimateScheme: story.estimateScheme || "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -319,7 +325,9 @@ export const useCreateStoryMutation = () => {
             label: "View story",
             onClick: () => {
               router.push(
-                withWorkspace(`/story/${createdStory.id}/${slugify(createdStory.title)}`),
+                withWorkspace(
+                  `/story/${createdStory.id}/${slugify(createdStory.title)}`,
+                ),
               );
             },
           },

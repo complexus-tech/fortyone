@@ -58,6 +58,9 @@ const updateInfiniteQuery = (
       const newStory: Story = {
         id: "123",
         title: `${story.title || "Untitled"} (Copy)`,
+        estimateLabel: story.estimateLabel || null,
+        estimateValue: story.estimateValue || null,
+        estimateScheme: story.estimateScheme || "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -114,6 +117,9 @@ const updateGroupedQuery = (
       const newStory: Story = {
         id: "123",
         title: `${story.title || "Untitled"} (Copy)`,
+        estimateLabel: story.estimateLabel || null,
+        estimateValue: story.estimateValue || null,
+        estimateScheme: story.estimateScheme || "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -327,7 +333,9 @@ export const useDuplicateStoryMutation = () => {
           label: "View story",
           onClick: () => {
             router.push(
-              withWorkspace(`/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`),
+              withWorkspace(
+                `/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`,
+              ),
             );
           },
         },

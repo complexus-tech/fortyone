@@ -39,9 +39,16 @@ export type TeamStoryAutomationSettings = {
   updatedAt: string;
 };
 
+export type TeamEstimationSettings = {
+  scheme: "points" | "hours" | "tshirt" | "ideal_days";
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TeamSettings = {
   sprintSettings: TeamSprintSettings;
   storyAutomationSettings: TeamStoryAutomationSettings;
+  estimationSettings: TeamEstimationSettings;
 };
 
 export type UpdateSprintSettingsInput = Partial<
@@ -50,6 +57,10 @@ export type UpdateSprintSettingsInput = Partial<
 
 export type UpdateStoryAutomationSettingsInput = Partial<
   Omit<TeamStoryAutomationSettings, "createdAt" | "updatedAt">
+>;
+
+export type UpdateEstimationSettingsInput = Partial<
+  Pick<TeamEstimationSettings, "scheme">
 >;
 
 export type ReorderTeamsInput = {
