@@ -30,6 +30,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     deadlineAfter: meta.filters.deadlineAfter ?? undefined,
     deadlineBefore: meta.filters.deadlineBefore ?? undefined,
     includeArchived: meta.filters.includeArchived ?? undefined,
+    showSubStories: meta.filters.showSubStories ?? undefined,
     completedAfter: meta.filters.completedAfter ?? undefined,
     completedBefore: meta.filters.completedBefore ?? undefined,
     includeDeleted: meta.filters.includeDeleted ?? undefined,
