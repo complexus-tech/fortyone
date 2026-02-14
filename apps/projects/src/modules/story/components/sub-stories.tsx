@@ -320,6 +320,7 @@ export const SubStories = ({
             groupBy: "none",
             orderBy: "priority",
             showEmptyGroups: false,
+            showSubStories: false,
             displayColumns: ["ID", "Status", "Priority", "Assignee"],
           }}
         />

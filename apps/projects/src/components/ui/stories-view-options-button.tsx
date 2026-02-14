@@ -28,6 +28,7 @@ export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
   showEmptyGroups: boolean;
+  showSubStories: boolean;
   displayColumns: DisplayColumn[];
 };
 
@@ -35,6 +36,7 @@ const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "priority",
   showEmptyGroups: true,
+  showSubStories: false,
   displayColumns: [
     "ID",
     "Status",
@@ -70,7 +72,8 @@ export const StoriesViewOptionsButton = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
-  const { groupBy, orderBy, showEmptyGroups, displayColumns } = viewOptions;
+  const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
+    viewOptions;
 
   const allColumns: DisplayColumn[] = [
     "ID",
@@ -130,6 +133,10 @@ export const StoriesViewOptionsButton = ({
         return column;
     }
   };
+
+  const subStoriesLabel = `Show sub ${getTermDisplay("storyTerm", {
+    variant: "plural",
+  })}`;
 
   return (
     <Popover>
@@ -217,16 +224,34 @@ export const StoriesViewOptionsButton = ({
           <Text className="mb-4" color="muted">
             <label
               className="flex select-none items-center justify-between gap-2"
-              htmlFor="more"
+              htmlFor="show-empty-groups"
             >
               Show empty groups
               <Switch
                 checked={showEmptyGroups}
-                id="more"
+                id="show-empty-groups"
                 onCheckedChange={(checked) => {
                   setViewOptions({
                     ...viewOptions,
                     showEmptyGroups: checked,
+                  });
+                }}
+              />
+            </label>
+          </Text>
+          <Text className="mb-4" color="muted">
+            <label
+              className="flex select-none items-center justify-between gap-2"
+              htmlFor="show-sub-stories"
+            >
+              {subStoriesLabel}
+              <Switch
+                checked={showSubStories}
+                id="show-sub-stories"
+                onCheckedChange={(checked) => {
+                  setViewOptions({
+                    ...viewOptions,
+                    showSubStories: checked,
                   });
                 }}
               />

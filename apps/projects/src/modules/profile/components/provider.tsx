@@ -23,6 +23,7 @@ export const ProfileProvider = ({
     groupBy: "status",
     orderBy: "created",
     showEmptyGroups: false,
+    showSubStories: true,
     displayColumns: [
       "Status",
       "Assignee",

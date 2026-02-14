@@ -29,6 +29,7 @@ export const AllStories = ({
     assigneeIds: tab === "assigned" ? [userId] : undefined,
     reporterIds: tab === "created" ? [userId] : undefined,
     orderBy: viewOptions.orderBy,
+    showSubStories: viewOptions.showSubStories ? true : undefined,
   });
 
   if (isPending) return <Skeleton layout={layout} />;
