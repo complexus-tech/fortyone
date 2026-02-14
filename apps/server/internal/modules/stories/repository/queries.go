@@ -371,7 +371,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 		if key == "created_after" || key == "created_before" || key == "updated_after" ||
 			key == "updated_before" || key == "deadline_after" || key == "deadline_before" ||
 			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
-			key == "current_user_id" {
+			key == "current_user_id" || key == "show_sub_stories" {
 			hasComplexFilters = true
 			break
 		}
@@ -410,9 +410,10 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	}
 
 	// Legacy simple filtering approach for backwards compatibility
-	query := `
-		SELECT
-			s.id,
+	subStoriesSelect := r.buildSubStoriesSelect("s", true)
+	query := fmt.Sprintf(`
+			SELECT
+				s.id,
 			s.sequence_id,
 			s.title,
 			s.priority,
@@ -427,47 +428,14 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.assignee_id,
 			s.reporter_id,
 			s.created_at,
-			s.updated_at,
-			s.completed_at,
-			s.deleted_at,
-			s.archived_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'estimate_unit', sub.estimate_unit,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at,
-								'deleted_at', sub.deleted_at,
-								'archived_at', sub.archived_at,
-								'labels', '[]'
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id 
-						AND sub.deleted_at IS NULL
-				), '[]'
-			) AS sub_stories,
-			COALESCE(
-				(
-					SELECT
+				s.updated_at,
+				s.completed_at,
+				s.deleted_at,
+				s.archived_at,
+				%s,
+				COALESCE(
+					(
+						SELECT
 						json_agg(l.label_id)
 					FROM
 						labels l
@@ -475,10 +443,10 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 					WHERE
 						sl.story_id = s.id
 				), '[]'
-			) AS labels
-		FROM
-			stories s
-	`
+				) AS labels
+			FROM
+				stories s
+		`, subStoriesSelect)
 	var setClauses []string
 
 	for field := range filters {
@@ -572,6 +540,12 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if createdByMe, ok := filters["created_by_me"].(bool); ok {
 		coreFilters.CreatedByMe = &createdByMe
+	}
+	if showSubStories, ok := filters["show_sub_stories"].(bool); ok {
+		coreFilters.ShowSubStories = &showSubStories
+	}
+	if showSubStories, ok := filters["show_sub_stories"].(*bool); ok {
+		coreFilters.ShowSubStories = showSubStories
 	}
 	if createdAfter, ok := filters["created_after"].(time.Time); ok {
 		coreFilters.CreatedAfter = &createdAfter
@@ -954,6 +928,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	if len(query.Filters.Categories) > 0 {
 		joinClauses = "INNER JOIN statuses stat ON s.status_id = stat.status_id"
 	}
+	subStoriesJSONExpr := r.buildSubStoriesJSONExpr("ls", true)
 
 	// Simplified query that includes all possible groups
 	sqlQuery := fmt.Sprintf(`
@@ -1014,47 +989,14 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'assignee_id', ls.assignee_id,
 						'reporter_id', ls.reporter_id,
 						'created_at', ls.created_at,
-						'updated_at', ls.updated_at,
-						'completed_at', ls.completed_at,
-						'deleted_at', ls.deleted_at,
-						'archived_at', ls.archived_at,
-						'sub_stories', COALESCE(
-							(
-								SELECT
-									json_agg(
-										json_build_object(
-											'id', sub.id,
-											'sequence_id', sub.sequence_id,
-											'title', sub.title,
-											'priority', sub.priority,
-											'estimate_unit', sub.estimate_unit,
-											'status_id', sub.status_id,
-											'start_date', sub.start_date,
-											'end_date', sub.end_date,
-											'sprint_id', sub.sprint_id,
-											'team_id', sub.team_id,
-											'objective_id', sub.objective_id,
-											'workspace_id', sub.workspace_id,
-											'assignee_id', sub.assignee_id,
-											'reporter_id', sub.reporter_id,
-											'created_at', sub.created_at,
-											'updated_at', sub.updated_at,
-											'completed_at', sub.completed_at,
-											'deleted_at', sub.deleted_at,
-											'archived_at', sub.archived_at,
-											'labels', '[]'
-										)
-									)
-								FROM
-									stories sub
-								WHERE
-									sub.parent_id = ls.id 
-									AND sub.deleted_at IS NULL
-							), '[]'
-						),
-						'labels', COALESCE(
-							(
-								SELECT
+							'updated_at', ls.updated_at,
+							'completed_at', ls.completed_at,
+							'deleted_at', ls.deleted_at,
+							'archived_at', ls.archived_at,
+							'sub_stories', %s,
+							'labels', COALESCE(
+								(
+									SELECT
 									json_agg(l.label_id)
 								FROM
 									labels l
@@ -1075,7 +1017,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 		groupColumn, groupColumn, groupColumn, rowNumberOrder,
 		joinClauses,
 		r.buildSimpleWhereClause(query.Filters),
-		limit, jsonAggOrder)
+		limit, subStoriesJSONExpr, jsonAggOrder)
 
 	params := r.buildQueryParams(query.Filters)
 
@@ -1249,7 +1191,6 @@ func (r *repo) listGroupedStoriesNone(ctx context.Context, query stories.CoreSto
 func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.parent_id IS NULL",
 	}
 
 	// Archived filtering: If includeArchived=true return ONLY archived stories,
@@ -1270,7 +1211,7 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	// Handle parent filtering
 	if filters.Parent != nil {
 		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
-	} else {
+	} else if filters.ShowSubStories == nil || !*filters.ShowSubStories {
 		// Default: only show top-level stories (no parent)
 		whereClauses = append(whereClauses, "s.parent_id IS NULL")
 	}
@@ -1755,12 +1696,60 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	return params
 }
 
+func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories bool) string {
+	if !includeSubStories {
+		return "CAST('[]' AS json)"
+	}
+
+	return fmt.Sprintf(`
+		COALESCE(
+			(
+				SELECT
+					json_agg(
+						json_build_object(
+							'id', sub.id,
+							'sequence_id', sub.sequence_id,
+							'title', sub.title,
+							'priority', sub.priority,
+							'estimate_unit', sub.estimate_unit,
+							'status_id', sub.status_id,
+							'start_date', sub.start_date,
+							'end_date', sub.end_date,
+							'sprint_id', sub.sprint_id,
+							'team_id', sub.team_id,
+							'objective_id', sub.objective_id,
+							'workspace_id', sub.workspace_id,
+							'assignee_id', sub.assignee_id,
+							'reporter_id', sub.reporter_id,
+							'created_at', sub.created_at,
+							'updated_at', sub.updated_at,
+							'completed_at', sub.completed_at,
+							'deleted_at', sub.deleted_at,
+							'archived_at', sub.archived_at,
+							'labels', '[]'
+						)
+					)
+				FROM
+					stories sub
+				WHERE
+					sub.parent_id = %s.id
+					AND sub.deleted_at IS NULL
+			), CAST('[]' AS json)
+		)
+	`, parentAlias)
+}
+
+func (r *repo) buildSubStoriesSelect(parentAlias string, includeSubStories bool) string {
+	return fmt.Sprintf("%s AS sub_stories", r.buildSubStoriesJSONExpr(parentAlias, includeSubStories))
+}
+
 // buildStoriesQuery builds the base SQL query for stories with filters
 func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
-	query := `
-		SELECT
-			s.id,
-			s.sequence_id,
+	subStoriesSelect := r.buildSubStoriesSelect("s", true)
+	query := fmt.Sprintf(`
+			SELECT
+				s.id,
+				s.sequence_id,
 			s.title,
 			s.priority,
 			s.estimate_unit,
@@ -1774,46 +1763,14 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.assignee_id,
 			s.reporter_id,
 			s.created_at,
-			s.updated_at,
-			s.completed_at,
-			s.deleted_at,
-			s.archived_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'estimate_unit', sub.estimate_unit,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at,
-								'deleted_at', sub.deleted_at,
-								'archived_at', sub.archived_at
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id
-						AND sub.deleted_at IS NULL
-				), CAST('[]' AS json)
-			) AS sub_stories,
-			COALESCE(
-				(
-					SELECT
+				s.updated_at,
+				s.completed_at,
+				s.deleted_at,
+				s.archived_at,
+				%s,
+				COALESCE(
+					(
+						SELECT
 						json_agg(l.label_id)
 					FROM
 						labels l
@@ -1821,10 +1778,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 					WHERE
 						sl.story_id = s.id
 				), CAST('[]' AS json)
-			) AS labels
-		FROM
-			stories s
-	`
+				) AS labels
+			FROM
+				stories s
+		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters
 	needsTeamJoin := filters.AssignedToMe != nil || filters.CreatedByMe != nil
@@ -1846,7 +1803,14 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	// Build WHERE clauses
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.parent_id IS NULL",
+	}
+
+	// Handle parent filtering
+	if filters.Parent != nil {
+		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	} else if filters.ShowSubStories == nil || !*filters.ShowSubStories {
+		// Default: only show top-level stories (no parent)
+		whereClauses = append(whereClauses, "s.parent_id IS NULL")
 	}
 
 	// Exclude archived unless explicitly included
@@ -1900,10 +1864,6 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			INNER JOIN story_labels sl_filter ON sl_filter.story_id = s.id
 		`
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
-	}
-
-	if filters.Parent != nil {
-		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
 	}
 
 	if filters.Objective != nil {
@@ -2277,9 +2237,10 @@ func (r *repo) ListGroupStories(ctx context.Context, groupKey string, query stor
 
 // buildSimpleStoriesQuery builds a simplified query for list views without N+1 subqueries
 func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string {
-	query := `
-		SELECT
-			s.id,
+	subStoriesSelect := r.buildSubStoriesSelect("s", true)
+	query := fmt.Sprintf(`
+			SELECT
+				s.id,
 			s.sequence_id,
 			s.title,
 			s.priority,
@@ -2294,47 +2255,14 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.assignee_id,
 			s.reporter_id,
 			s.created_at,
-			s.updated_at,
-			s.completed_at,
-			s.deleted_at,
-			s.archived_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'estimate_unit', sub.estimate_unit,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at,
-								'deleted_at', sub.deleted_at,
-								'archived_at', sub.archived_at,
-								'labels', '[]'
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id 
-						AND sub.deleted_at IS NULL
-				), '[]'
-			) AS sub_stories,
-			COALESCE(
-				(
-					SELECT
+				s.updated_at,
+				s.completed_at,
+				s.deleted_at,
+				s.archived_at,
+				%s,
+				COALESCE(
+					(
+						SELECT
 						json_agg(l.label_id)
 					FROM
 						labels l
@@ -2342,10 +2270,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 					WHERE
 						sl.story_id = s.id
 				), '[]'
-			) AS labels
-		FROM
-			stories s
-	`
+				) AS labels
+			FROM
+				stories s
+		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters
 	needsTeamJoin := filters.AssignedToMe != nil || filters.CreatedByMe != nil
@@ -2374,7 +2302,6 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	// Build WHERE clauses (same as buildStoriesQuery)
 	whereClauses := []string{
 		"s.workspace_id = :workspace_id",
-		"s.parent_id IS NULL",
 	}
 
 	// Exclude archived unless explicitly included
@@ -2429,6 +2356,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.Parent != nil {
 		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
+	} else if filters.ShowSubStories == nil || !*filters.ShowSubStories {
+		// Default: only show top-level stories (no parent)
+		whereClauses = append(whereClauses, "s.parent_id IS NULL")
 	}
 
 	if filters.Objective != nil {
@@ -2496,14 +2426,19 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 }
 
 // ListByCategory returns stories filtered by category with pagination
-func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]stories.CoreStoryList, bool, error) {
+func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int, showSubStories bool) ([]stories.CoreStoryList, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.ListByCategory")
 	defer span.End()
 
 	// Build simplified query with status join for category filtering
-	query := `
-		SELECT
-			s.id,
+	subStoriesSelect := r.buildSubStoriesSelect("s", true)
+	parentFilterClause := "AND s.parent_id IS NULL"
+	if showSubStories {
+		parentFilterClause = ""
+	}
+	query := fmt.Sprintf(`
+			SELECT
+				s.id,
 			s.sequence_id,
 			s.title,
 			s.priority,
@@ -2518,47 +2453,14 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.assignee_id,
 			s.reporter_id,
 			s.created_at,
-			s.updated_at,
-			s.completed_at,
-			s.deleted_at,
-			s.archived_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'estimate_unit', sub.estimate_unit,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at,
-								'deleted_at', sub.deleted_at,
-								'archived_at', sub.archived_at,
-								'labels', '[]'
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id 
-						AND sub.deleted_at IS NULL
-				), '[]'
-			) AS sub_stories,
-			COALESCE(
-				(
-					SELECT
+				s.updated_at,
+				s.completed_at,
+				s.deleted_at,
+				s.archived_at,
+				%s,
+				COALESCE(
+					(
+						SELECT
 						json_agg(l.label_id)
 					FROM
 						labels l
@@ -2570,16 +2472,16 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 		FROM
 			stories s
 		INNER JOIN statuses stat ON s.status_id = stat.status_id
-		WHERE
-			s.workspace_id = :workspace_id
-			AND s.team_id = :team_id
-			AND s.deleted_at IS NULL
-			AND s.archived_at IS NULL
-			AND s.parent_id IS NULL
-			AND stat.category = :category
-		ORDER BY s.created_at DESC
-		LIMIT :limit OFFSET :offset
-	`
+			WHERE
+				s.workspace_id = :workspace_id
+				AND s.team_id = :team_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+				%s
+					AND stat.category = :category
+				ORDER BY s.created_at DESC
+				LIMIT :limit OFFSET :offset
+		`, subStoriesSelect, parentFilterClause)
 
 	// Calculate offset and fetch one extra to check if there are more
 	offset := (page - 1) * pageSize

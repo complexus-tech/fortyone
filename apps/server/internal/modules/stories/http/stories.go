@@ -142,6 +142,10 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
 		return nil
 	}
+	showSubStories := parseBoolParam(r, "showSubStories")
+	if showSubStories != nil {
+		filters["show_sub_stories"] = *showSubStories
+	}
 
 	filtersStr := ""
 	if filters != nil {
@@ -1020,7 +1024,6 @@ func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *ht
 	if query.StoriesPerGroup == 0 {
 		query.StoriesPerGroup = 15
 	}
-
 	coreQuery := toCoreStoryQuery(query)
 	coreQuery.Filters.CurrentUserID = userID
 	coreQuery.Filters.WorkspaceID = workspace.ID
@@ -1074,7 +1077,6 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 	if query.PageSize == 0 {
 		query.PageSize = 15
 	}
-
 	groupKey := r.URL.Query().Get("groupKey")
 	if groupKey == "" {
 		web.RespondError(ctx, w, fmt.Errorf("groupKey is required"), http.StatusBadRequest)
@@ -1158,8 +1160,10 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
+	showSubStories := parseBoolParam(r, "showSubStories")
+	includeSubStories := showSubStories != nil && *showSubStories
 
-	stories, hasMore, err := h.stories.ListByCategory(ctx, workspace.ID, userID, teamId, category, page, pageSize)
+	stories, hasMore, err := h.stories.ListByCategory(ctx, workspace.ID, userID, teamId, category, page, pageSize, includeSubStories)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -1233,6 +1237,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
+	query.Filters.ShowSubStories = parseBoolParam(r, "showSubStories")
 	query.Filters.IncludeArchived = parseBoolParam(r, "includeArchived")
 	query.Filters.IncludeDeleted = parseBoolParam(r, "includeDeleted")
 
@@ -1381,6 +1386,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			HasNoAssignee:   query.Filters.HasNoAssignee,
 			AssignedToMe:    query.Filters.AssignedToMe,
 			CreatedByMe:     query.Filters.CreatedByMe,
+			ShowSubStories:  query.Filters.ShowSubStories,
 			IncludeArchived: query.Filters.IncludeArchived,
 			IncludeDeleted:  query.Filters.IncludeDeleted,
 			CreatedAfter:    query.Filters.CreatedAfter,
@@ -1448,6 +1454,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.CreatedByMe != nil {
 		result["created_by_me"] = *filters.CreatedByMe
+	}
+	if filters.ShowSubStories != nil {
+		result["show_sub_stories"] = *filters.ShowSubStories
 	}
 	if filters.IncludeArchived != nil {
 		result["include_archived"] = *filters.IncludeArchived
@@ -1554,7 +1563,7 @@ func (h *Handlers) AddAssociation(ctx context.Context, w http.ResponseWriter, r 
 		FromStoryID: assoc.FromStoryID,
 		ToStoryID:   assoc.ToStoryID,
 		Type:        assoc.Type,
-		Story:       toAppStoryListItem(assoc.Story), // We need to check if toAppStoryList exists, otherwise update models
+		Story:       toAppStoryListItem(assoc.Story),
 	}
 
 	web.Respond(ctx, w, appAssoc, http.StatusCreated)

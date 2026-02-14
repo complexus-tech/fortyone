@@ -28,6 +28,7 @@ export const TeamOptionsProvider = ({
     groupBy: "status",
     orderBy: "deadline",
     showEmptyGroups: true,
+    showSubStories: false,
     displayColumns: [
       "ID",
       "Status",

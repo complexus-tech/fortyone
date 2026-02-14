@@ -14,6 +14,7 @@ export const getStories = async (
     objectiveId?: string;
     epicId?: string;
     assigneeId?: string;
+    showSubStories?: boolean;
   } = {},
   options?: Options,
 ) => {

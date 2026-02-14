@@ -52,7 +52,7 @@ type Repository interface {
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
 	ListGroupedStories(ctx context.Context, query CoreStoryQuery) ([]CoreStoryGroup, error)
 	ListGroupStories(ctx context.Context, groupKey string, query CoreStoryQuery) ([]CoreStoryList, bool, error)
-	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error)
+	ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int, showSubStories bool) ([]CoreStoryList, bool, error)
 	GetStatusCategory(ctx context.Context, statusID string) (string, error)
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
@@ -791,11 +791,11 @@ func (s *Service) ListGroupStories(ctx context.Context, groupKey string, query C
 }
 
 // ListByCategory returns stories filtered by category with pagination
-func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int) ([]CoreStoryList, bool, error) {
+func (s *Service) ListByCategory(ctx context.Context, workspaceId, userID, teamId uuid.UUID, category string, page, pageSize int, showSubStories bool) ([]CoreStoryList, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.services.stories.ListByCategory")
 	defer span.End()
 
-	stories, hasMore, err := s.repo.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize)
+	stories, hasMore, err := s.repo.ListByCategory(ctx, workspaceId, userID, teamId, category, page, pageSize, showSubStories)
 	if err != nil {
 		return nil, false, fmt.Errorf("listing stories by category: %w", err)
 	}

@@ -117,6 +117,7 @@ export const SearchPage = () => {
                     groupBy: "none",
                     orderBy: "priority",
                     showEmptyGroups: true,
+                    showSubStories: false,
                     displayColumns,
                   }}
                 />
@@ -161,6 +162,7 @@ export const SearchPage = () => {
                     groupBy: "none",
                     orderBy: "priority",
                     showEmptyGroups: true,
+                    showSubStories: false,
                     displayColumns,
                   }}
                 />

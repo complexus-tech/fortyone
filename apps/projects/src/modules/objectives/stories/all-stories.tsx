@@ -49,6 +49,7 @@ export const AllStories = ({
       assignedToMe: filters.assignedToMe ? true : undefined,
       hasNoAssignee: filters.hasNoAssignee ? true : undefined,
       createdByMe: filters.createdByMe ? true : undefined,
+      showSubStories: viewOptions.showSubStories ? true : undefined,
       sprintIds: filters.sprintIds ?? undefined,
     });
 

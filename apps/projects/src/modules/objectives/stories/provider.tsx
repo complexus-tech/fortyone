@@ -29,6 +29,7 @@ export const ObjectiveOptionsProvider = ({
     groupBy: "status",
     orderBy: "created",
     showEmptyGroups: true,
+    showSubStories: false,
     displayColumns: [
       "ID",
       "Status",
