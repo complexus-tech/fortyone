@@ -383,21 +383,22 @@ type AppNewAssociation struct {
 
 // StoryFilters represents filtering options for stories at the handler level
 type StoryFilters struct {
-	StatusIDs     []uuid.UUID `json:"statusIds"`
-	AssigneeIDs   []uuid.UUID `json:"assigneeIds"`
-	ReporterIDs   []uuid.UUID `json:"reporterIds"`
-	Priorities    []string    `json:"priorities"`
-	Categories    []string    `json:"categories"`
-	TeamIDs       []uuid.UUID `json:"teamIds"`
-	SprintIDs     []uuid.UUID `json:"sprintIds"`
-	LabelIDs      []uuid.UUID `json:"labelIds"`
-	Parent        *uuid.UUID  `json:"parentId"`
-	Objective     *uuid.UUID  `json:"objectiveId"`
-	Epic          *uuid.UUID  `json:"epicId"`
-	KeyResult     *uuid.UUID  `json:"keyResultId"`
-	HasNoAssignee *bool       `json:"hasNoAssignee"`
-	AssignedToMe  *bool       `json:"assignedToMe"`
-	CreatedByMe   *bool       `json:"createdByMe"`
+	StatusIDs      []uuid.UUID `json:"statusIds"`
+	AssigneeIDs    []uuid.UUID `json:"assigneeIds"`
+	ReporterIDs    []uuid.UUID `json:"reporterIds"`
+	Priorities     []string    `json:"priorities"`
+	Categories     []string    `json:"categories"`
+	TeamIDs        []uuid.UUID `json:"teamIds"`
+	SprintIDs      []uuid.UUID `json:"sprintIds"`
+	LabelIDs       []uuid.UUID `json:"labelIds"`
+	Parent         *uuid.UUID  `json:"parentId"`
+	Objective      *uuid.UUID  `json:"objectiveId"`
+	Epic           *uuid.UUID  `json:"epicId"`
+	KeyResult      *uuid.UUID  `json:"keyResultId"`
+	HasNoAssignee  *bool       `json:"hasNoAssignee"`
+	AssignedToMe   *bool       `json:"assignedToMe"`
+	CreatedByMe    *bool       `json:"createdByMe"`
+	ShowSubStories *bool       `json:"showSubStories"`
 	// Date range filters
 	CreatedAfter    *time.Time `json:"createdAfter"`
 	CreatedBefore   *time.Time `json:"createdBefore"`

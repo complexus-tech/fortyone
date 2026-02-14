@@ -23,6 +23,7 @@ export const MyWorkProvider = ({
     groupBy: "status",
     orderBy: "created",
     showEmptyGroups: true,
+    showSubStories: true,
     displayColumns: [
       "ID",
       "Status",

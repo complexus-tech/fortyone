@@ -28,6 +28,7 @@ export const SprintStoriesProvider = ({
     groupBy: "status",
     orderBy: "created",
     showEmptyGroups: true,
+    showSubStories: false,
     displayColumns: [
       "ID",
       "Status",

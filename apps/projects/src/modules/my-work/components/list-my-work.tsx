@@ -64,6 +64,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       createdBefore,
       deadlineBefore: overdueDeadline,
       orderBy: viewOptions.orderBy,
+      showSubStories: viewOptions.showSubStories ? true : undefined,
     },
   );
 
