@@ -285,7 +285,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="border-border rounded-[1.25rem] border py-2">
+      <Box className="border-border rounded-2xl border py-2">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment, idx) => (

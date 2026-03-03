@@ -37,7 +37,7 @@ const RenderValue = ({
   if (measurementType === "boolean") {
     return (
       <Badge
-        className="rounded-[0.35rem] px-1"
+        className="rounded px-1"
         color={value ? "success" : "warning"}
       >
         {value ? "Complete" : "Incomplete"}
@@ -61,7 +61,7 @@ const Okr = ({
   onRemove: (index: number) => void;
 }) => {
   return (
-    <Wrapper className="flex items-center justify-between gap-2 rounded-[0.65rem] py-2.5 bg-surface/40">
+    <Wrapper className="flex items-center justify-between gap-2 rounded-lg py-2.5 bg-surface/40">
       <Flex align="center" gap={3}>
         <Badge
           className="aspect-square h-8 border-opacity-50 dark:border-opacity-50"

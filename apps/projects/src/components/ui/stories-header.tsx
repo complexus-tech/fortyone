@@ -57,7 +57,7 @@ export const StoriesHeader = ({
               groupedStories.every((s) => selectedStories.includes(s)) &&
               groupedStories.length > 0
             }
-            className="absolute -left-[1.6rem] hidden rounded-[0.35rem] md:inline"
+            className="absolute -left-[1.6rem] hidden rounded md:inline"
             disabled={userRole === "guest"}
             onCheckedChange={(checked) => {
               if (checked) {

@@ -89,7 +89,7 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
             onBlur={() => setFocusedIndex(null)}
             disabled={disabled}
             className={cn(
-              "size-12 rounded-[0.6rem] border text-center text-lg font-semibold transition-all duration-200",
+              "size-12 rounded-lg border text-center text-lg font-semibold transition-all duration-200",
               "border-border bg-surface/70",
               "focus:outline-0 focus:ring-[2.5px] focus:ring-border focus:ring-offset-1 dark:focus:ring-border",
               "disabled:cursor-not-allowed disabled:opacity-50",

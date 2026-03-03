@@ -302,7 +302,7 @@ export const CommandBar = ({
                   >
                     {command.items.map((item) => (
                       <Command.Item
-                        className="justify-between rounded-[0.6rem] p-3 text-[1.1rem] opacity-85"
+                        className="justify-between rounded-lg p-3 text-[1.1rem] opacity-85"
                         disabled={item.disabled}
                         key={item.label}
                         onSelect={item.action}

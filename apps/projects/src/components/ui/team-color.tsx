@@ -9,7 +9,7 @@ export const TeamColor = ({
 }) => {
   return (
     <div
-      className={cn("size-[0.95rem] rounded-[0.35rem]", className)}
+      className={cn("size-[0.95rem] rounded", className)}
       style={{ backgroundColor: color }}
     />
   );

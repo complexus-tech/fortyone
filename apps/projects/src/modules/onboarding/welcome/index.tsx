@@ -43,7 +43,7 @@ export const Welcome = ({
       <Text className="mb-6" color="muted">
         Your workspace is ready. Create your first story by pressing{" "}
         <Badge
-          className="inline-flex rounded-[0.4rem] font-semibold"
+          className="inline-flex rounded-md font-semibold"
           color="tertiary"
         >
           shift+n
@@ -68,7 +68,7 @@ export const Welcome = ({
             <>
               Boost your productivity with keyboard shortcuts (press{" "}
               <Badge
-                className="text-muted dark:text-text-secondary inline-flex gap-0 rounded-[0.4rem] font-semibold"
+                className="text-muted dark:text-text-secondary inline-flex gap-0 rounded-md font-semibold"
                 color="tertiary"
               >
                 <CommandIcon className="h-3" strokeWidth={3} />

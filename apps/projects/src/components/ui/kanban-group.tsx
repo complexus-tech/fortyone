@@ -44,7 +44,7 @@ const List = ({
     >
       <div
         className={cn(
-          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-[0.45rem] pb-6 transition",
+          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-md pb-6 transition",
           {
             "bg-surface-muted/50": totalStories === 0,
             "bg-surface-muted": isOver,

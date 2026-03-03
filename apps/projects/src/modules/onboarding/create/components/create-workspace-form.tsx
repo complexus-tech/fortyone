@@ -111,7 +111,7 @@ export const CreateWorkspaceForm = () => {
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
-        className="rounded-[0.6rem]"
+        className="rounded-lg"
         label="Your Workspace"
         name="name"
         onBlur={() => {
@@ -123,7 +123,7 @@ export const CreateWorkspaceForm = () => {
         value={form.name}
       />
       <Input
-        className="rounded-[0.6rem]"
+        className="rounded-lg"
         hasError={!isAvailable}
         helpText={
           !isAvailable
@@ -166,37 +166,37 @@ export const CreateWorkspaceForm = () => {
           }}
           value={form.teamSize}
         >
-          <Select.Trigger className="border-border bg-surface/70 h-[2.7rem] w-full rounded-[0.6rem]">
+          <Select.Trigger className="border-border bg-surface/70 h-[2.7rem] w-full rounded-lg">
             <Select.Input />
           </Select.Trigger>
           <Select.Content>
             <Select.Group>
               <Select.Option
-                className="h-10 rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-lg text-[0.9rem]"
                 value="1-5"
               >
                 1-5
               </Select.Option>
               <Select.Option
-                className="h-10 rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-lg text-[0.9rem]"
                 value="6-10"
               >
                 6-10
               </Select.Option>
               <Select.Option
-                className="h-10 rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-lg text-[0.9rem]"
                 value="51-200"
               >
                 51-200
               </Select.Option>
               <Select.Option
-                className="h-10 rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-lg text-[0.9rem]"
                 value="201-500"
               >
                 201-500
               </Select.Option>
               <Select.Option
-                className="h-10 rounded-[0.6rem] text-[0.9rem]"
+                className="h-10 rounded-lg text-[0.9rem]"
                 value="500+"
               >
                 500+

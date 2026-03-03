@@ -78,7 +78,7 @@ svg {
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply bg-border-strong rounded-[3px];
+  @apply bg-border-strong rounded-xs;
 }
 
 * {

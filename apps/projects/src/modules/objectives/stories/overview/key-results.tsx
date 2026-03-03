@@ -72,7 +72,7 @@ const RenderValue = ({
   if (measurementType === "boolean") {
     return (
       <Badge
-        className="h-[1.6rem] rounded-[0.35rem] px-1 text-[0.95rem] leading-[1.6rem]"
+        className="h-[1.6rem] rounded px-1 text-[0.95rem] leading-[1.6rem]"
         color={value ? "success" : "tertiary"}
       >
         {value ? "Complete" : "Incomplete"}

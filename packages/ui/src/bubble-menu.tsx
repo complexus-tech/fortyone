@@ -295,7 +295,7 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-[0.6rem] border border-border bg-surface-elevated/80 px-2 py-[0.2rem] backdrop-blur",
+          "w-max rounded-lg border border-border bg-surface-elevated/80 px-2 py-[0.2rem] backdrop-blur",
           {
             hidden: !isLinkOpen,
           }

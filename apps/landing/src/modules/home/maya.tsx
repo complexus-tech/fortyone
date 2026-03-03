@@ -42,7 +42,7 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="rounded-[0.6rem] border border-b-0 border-border bg-background/5 p-0.5 shadow-2xl shadow-shadow md:rounded-2xl md:p-1.5">
+        <Box className="rounded-lg border border-b-0 border-border bg-background/5 p-0.5 shadow-2xl shadow-shadow md:rounded-2xl md:p-1.5">
           <Flex
             align="center"
             className="mb-2 mt-1 px-1.5 dark:mb-2.5"
@@ -57,14 +57,14 @@ export const Maya = () => {
           </Flex>
           <video
             autoPlay
-            className="hidden aspect-[6/3.9] h-full w-full object-cover dark:block md:rounded-[0.7rem]"
+            className="hidden aspect-[6/3.9] h-full w-full object-cover dark:block md:rounded-xl"
             loop
             muted
             src="/videos/intro-dark.mp4"
           />
           <video
             autoPlay
-            className="aspect-[6/3.9] h-full w-full object-cover dark:hidden md:rounded-[0.7rem]"
+            className="aspect-[6/3.9] h-full w-full object-cover dark:hidden md:rounded-xl"
             loop
             muted
             src="/videos/intro-light.mp4"

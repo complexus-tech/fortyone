@@ -517,7 +517,7 @@ const Bar = <T extends GanttItem>({
   return (
     <Box
       className={cn(
-        "group absolute z-0 h-10 rounded-[0.7rem] border-[0.5px] border-border bg-surface-muted backdrop-blur transition-colors",
+        "group absolute z-0 h-10 rounded-xl border-[0.5px] border-border bg-surface-muted backdrop-blur transition-colors",
         {
           "shadow-lg": isDragging,
           "cursor-pointer hover:border-border-strong hover:bg-state-hover":

@@ -8,7 +8,7 @@ export const Skeleton = ({
 }: HTMLAttributes<HTMLDivElement>) => {
   return (
     <Box
-      className={cn("animate-pulse rounded-[0.6rem] bg-skeleton", className)}
+      className={cn("animate-pulse rounded-lg bg-skeleton", className)}
       {...rest}
     />
   );

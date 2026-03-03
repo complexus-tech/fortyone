@@ -134,12 +134,12 @@ export const KeyResultEditor = ({
           <Box>
             <Text className="mb-1.5 font-medium">Current status</Text>
             <Flex
-              className="rounded-[0.6rem] border border-border p-1 bg-surface-muted"
+              className="rounded-lg border border-border p-1 bg-surface-muted"
               gap={1}
             >
               <Button
                 align="center"
-                className={cn("rounded-[0.4rem] border-0", {
+                className={cn("rounded-md border-0", {
                   "bg-transparent dark:bg-transparent":
                     keyResult.startValue !== 0,
                 })}
@@ -156,7 +156,7 @@ export const KeyResultEditor = ({
               </Button>
               <Button
                 align="center"
-                className={cn("rounded-[0.4rem] border-0", {
+                className={cn("rounded-md border-0", {
                   "bg-transparent dark:bg-transparent":
                     keyResult.startValue !== 1,
                 })}

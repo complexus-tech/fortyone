@@ -206,12 +206,12 @@ export const NewKeyResultButton = ({
                       {isMobile ? "Current" : "Current Value"}
                     </Text>
                     <Flex
-                      className="rounded-[0.45rem] border bg-surface/70"
+                      className="rounded-md border bg-surface/70"
                       gap={1}
                     >
                       <Button
                         align="center"
-                        className={cn("rounded-[0.35rem] border-0", {
+                        className={cn("rounded border-0", {
                           "bg-transparent dark:bg-transparent":
                             form.startValue !== 0,
                         })}
@@ -228,7 +228,7 @@ export const NewKeyResultButton = ({
                       </Button>
                       <Button
                         align="center"
-                        className={cn("rounded-[0.35rem] border-0", {
+                        className={cn("rounded border-0", {
                           "bg-transparent dark:bg-transparent":
                             form.startValue !== 1,
                         })}

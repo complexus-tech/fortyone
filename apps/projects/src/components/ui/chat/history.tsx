@@ -110,7 +110,7 @@ const Row = ({
           <Dialog.Body>
             <Input
               autoFocus
-              className="rounded-[0.6rem]"
+              className="rounded-lg"
               onChange={(e) => {
                 setTitle(e.target.value);
               }}
