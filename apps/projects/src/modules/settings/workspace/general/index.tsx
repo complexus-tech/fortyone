@@ -30,10 +30,11 @@ export const WorkspaceGeneralSettings = () => {
     try {
       await logOut();
       analytics.logout(true);
-    } finally {
-      clearAllStorage();
-      window.location.href = "/?signedOut=true";
+    } catch {
+      // continue with local sign-out cleanup
     }
+    clearAllStorage();
+    window.location.href = "/?signedOut=true";
   };
 
   const handleConfirmDelete = () => {

@@ -270,7 +270,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     (story: Story) => {
       router.push(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
     },
-    [router],
+    [router, withWorkspace],
   );
 
   const handleUpdate = useCallback(

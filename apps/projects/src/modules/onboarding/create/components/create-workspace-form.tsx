@@ -37,12 +37,10 @@ export const CreateWorkspaceForm = () => {
   const checkAvailability = useDebounce(async (slugToCheck: string) => {
     if (slugToCheck.length > 3) {
       setIsAvailable(true); // Reset availability while checking
-      try {
-        const res = await checkWorkspaceAvailability(slugToCheck);
-        setIsAvailable(res.data?.available || false);
-      } catch (error) {
-        setIsAvailable(false);
-      }
+      const res = await checkWorkspaceAvailability(slugToCheck).catch(
+        () => null,
+      );
+      setIsAvailable(Boolean(res?.data?.available));
     }
   }, 1000);
 

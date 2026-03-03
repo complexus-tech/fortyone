@@ -1,51 +1,43 @@
 import { Box, Input, Button } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CopyIcon } from "icons";
 import { useUpdateWorkspaceMutation } from "@/lib/hooks/update-workspace-mutation";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useCopyToClipboard } from "@/hooks";
 
-
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 export const WorkspaceForm = () => {
   const { mutateAsync: updateWorkspace } = useUpdateWorkspaceMutation();
   const { workspace } = useCurrentWorkspace();
-  const [origin, setOrigin] = useState("");
-  const [_, copy] = useCopyToClipboard();
-  const [form, setForm] = useState({
-    name: workspace?.name || "",
-  });
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const [, copy] = useCopyToClipboard();
+  const [name, setName] = useState<string | undefined>(undefined);
+  const workspaceName = workspace?.name ?? "";
+  const currentName = name ?? workspaceName;
 
   const getWorkspaceUrl = () => {
     if (isFortyOneApp) {
       return origin;
     }
     return `${origin}/${workspace?.slug}`;
-  }
+  };
 
   const hasChanges = useMemo(() => {
-    return workspace?.name !== form.name;
-  }, [workspace, form]);
+    return workspaceName !== currentName;
+  }, [workspaceName, currentName]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setName(e.target.value);
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updateWorkspace({ name: form.name.trim() });
+    await updateWorkspace({ name: currentName.trim() });
     toast.success("Success", { description: "Workspace updated" });
   };
-
-  useEffect(() => {
-    if (workspace) {
-      setForm({ name: workspace.name });
-      setOrigin(window.location.origin);
-    }
-  }, [workspace]);
 
   return (
     <form className="p-6" onSubmit={handleSubmit}>
@@ -55,7 +47,7 @@ export const WorkspaceForm = () => {
           name="name"
           onChange={handleChange}
           placeholder="Enter workspace name"
-          value={form.name}
+          value={currentName}
         />
         <Input
           className="cursor-default lowercase opacity-80"

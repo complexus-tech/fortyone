@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { usePrioritySummary } from "@/lib/hooks/analytics-summaries";
 import type { PrioritySummary } from "@/types";
@@ -55,16 +55,11 @@ export const Priority = () => {
   const { resolvedTheme } = useTheme();
   const filters = useSummaryDateFilters();
   const { data: prioritySummary = [], isLoading } = usePrioritySummary(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (prioritySummary.length > 0) {
-      const formattedData = prioritySummary.map((item: PrioritySummary) => ({
-        priority: item.priority,
-        count: item.count,
-      }));
-      setChartData(formattedData);
-    }
+  const chartData = useMemo(() => {
+    return prioritySummary.map((item: PrioritySummary) => ({
+      priority: item.priority,
+      count: item.count,
+    }));
   }, [prioritySummary]);
 
   if (isLoading) {

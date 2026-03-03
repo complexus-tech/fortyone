@@ -7,7 +7,7 @@ import {
   AiIcon,
   InfoIcon,
 } from "icons";
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
@@ -34,9 +34,12 @@ export const SubStories = ({
   const { getTermDisplay } = useTerminology();
   const mutation = useCreateStoryMutation();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
-  const [selectedSubstories, setSelectedSubstories] = useState<Set<string>>(
+  const [manualSelectedSubstories, setManualSelectedSubstories] = useState<
+    Set<string>
+  >(
     new Set(),
   );
+  const [hasCustomSelection, setHasCustomSelection] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { data: teams = [] } = useTeams();
@@ -54,24 +57,30 @@ export const SubStories = ({
     schema: substoryGenerationSchema,
   });
 
-  // Set all substories as selected by default when they're loaded
-  useEffect(() => {
-    if (object?.substories && object.substories.length > 0) {
-      const titles = object.substories
-        .map((s) => s?.title)
-        .filter((title): title is string => Boolean(title));
-      setSelectedSubstories(new Set(titles));
-      setShowSuggestions(true);
+  const suggestedTitles = useMemo(
+    () =>
+      (object?.substories ?? [])
+        .map((substory) => substory?.title)
+        .filter((title): title is string => Boolean(title)),
+    [object?.substories],
+  );
+
+  const selectedSubstories = useMemo(() => {
+    if (hasCustomSelection) {
+      return manualSelectedSubstories;
     }
-  }, [object?.substories]);
+    return new Set(suggestedTitles);
+  }, [hasCustomSelection, manualSelectedSubstories, suggestedTitles]);
 
   const completedStories = parent.subStories.filter(
     (story) => story.statusId === completedStatus?.id,
   ).length;
 
   const toggleSelection = (substoryTitle: string) => {
-    setSelectedSubstories((prev) => {
-      const newSet = new Set(prev);
+    setHasCustomSelection(true);
+    setManualSelectedSubstories((prev) => {
+      const baseSelection = hasCustomSelection ? prev : new Set(suggestedTitles);
+      const newSet = new Set(baseSelection);
       if (newSet.has(substoryTitle)) {
         newSet.delete(substoryTitle);
       } else {
@@ -82,7 +91,8 @@ export const SubStories = ({
   };
 
   const clearSelection = () => {
-    setSelectedSubstories(new Set());
+    setHasCustomSelection(true);
+    setManualSelectedSubstories(new Set());
   };
 
   const handleAddSelected = () => {
@@ -169,6 +179,9 @@ export const SubStories = ({
               disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
+                setHasCustomSelection(false);
+                setManualSelectedSubstories(new Set());
+                setShowSuggestions(true);
                 submit(parent);
               }}
               size="sm"
@@ -282,6 +295,9 @@ export const SubStories = ({
               <Button
                 color="warning"
                 onClick={() => {
+                  setHasCustomSelection(false);
+                  setManualSelectedSubstories(new Set());
+                  setShowSuggestions(true);
                   submit(parent);
                 }}
               >

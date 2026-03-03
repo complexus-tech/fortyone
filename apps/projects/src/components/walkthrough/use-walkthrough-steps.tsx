@@ -247,6 +247,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           },
         },
       ] as WalkthroughStep[],
-    [session?.user?.name, userRole],
+    [session?.user?.name, userRole, pathname],
   );
 };

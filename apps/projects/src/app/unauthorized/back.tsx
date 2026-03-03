@@ -10,9 +10,10 @@ export const Back = () => {
     try {
       await logOut();
       analytics.logout(true);
-    } finally {
-      window.location.href = "/?signedOut=true";
+    } catch {
+      // continue with redirect
     }
+    window.location.href = "/?signedOut=true";
   };
 
   return (

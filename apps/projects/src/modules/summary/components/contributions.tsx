@@ -10,7 +10,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import type { Contribution } from "@/types";
 import { useContributions } from "@/lib/hooks/contributions";
@@ -53,16 +53,11 @@ export const Contributions = () => {
   const { resolvedTheme } = useTheme();
   const filters = useSummaryDateFilters();
   const { data: contributions = [], isLoading } = useContributions(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (contributions.length > 0) {
-      const formattedData = contributions.map((item: Contribution) => ({
-        date: formatDate(item.date),
-        count: item.contributions,
-      }));
-      setChartData(formattedData);
-    }
+  const chartData = useMemo(() => {
+    return contributions.map((item: Contribution) => ({
+      date: formatDate(item.date),
+      count: item.contributions,
+    }));
   }, [contributions]);
 
   if (isLoading) {

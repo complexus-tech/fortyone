@@ -1,5 +1,5 @@
 import { useSession } from "next-auth/react";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { Avatar, Box, Text } from "ui";
 
 export type MentionItem = {
@@ -22,29 +22,38 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
   (props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { data: session } = useSession();
+    const activeIndex =
+      props.items.length > 0
+        ? Math.min(selectedIndex, props.items.length - 1)
+        : selectedIndex;
 
     const selectItem = (index: number) => {
       const item = props.items[index];
+      if (!item) {
+        return;
+      }
       props.command(item);
     };
 
     const upHandler = () => {
+      if (props.items.length === 0) {
+        return;
+      }
       setSelectedIndex(
-        (selectedIndex + props.items.length - 1) % props.items.length,
+        (activeIndex + props.items.length - 1) % props.items.length,
       );
     };
 
     const downHandler = () => {
-      setSelectedIndex((selectedIndex + 1) % props.items.length);
+      if (props.items.length === 0) {
+        return;
+      }
+      setSelectedIndex((activeIndex + 1) % props.items.length);
     };
 
     const enterHandler = () => {
-      selectItem(selectedIndex);
+      selectItem(activeIndex);
     };
-
-    useEffect(() => {
-      setSelectedIndex(0);
-    }, [props.items]);
 
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ key }: KeyboardEvent) => {

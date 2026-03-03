@@ -41,7 +41,7 @@ export default function GoogleOneTap() {
     }
   }, []);
 
-  const initializeGoogleOneTap = useCallback(() => {
+  const initializeGoogleOneTap = useCallback(function initializeGoogleOneTap() {
     if (window?.google && !session) {
       try {
         window.google.accounts.id.initialize({
@@ -92,7 +92,7 @@ export default function GoogleOneTap() {
         }
       }
     }
-  }, [session, handleCredentialResponse]);
+  }, [session, handleCredentialResponse, searchParams]);
 
   useEffect(() => {
     if (isGoogleScriptLoaded) {

@@ -76,6 +76,21 @@ export const useWalkthrough = () => {
   return context;
 };
 
+const isCooldownComplete = (walkthroughClosedAt: string | null) => {
+  if (!walkthroughClosedAt) {
+    return true;
+  }
+
+  try {
+    const closedTimestamp = new Date(walkthroughClosedAt).getTime();
+    const now = new Date().getTime();
+    const fourHours = 4 * 60 * 60 * 1000;
+    return now - closedTimestamp > fourHours;
+  } catch {
+    return true;
+  }
+};
+
 interface WalkthroughProviderProps {
   children: ReactNode;
   version?: string;
@@ -97,24 +112,16 @@ export const WalkthroughProvider = ({
     isActive: false,
     currentStep: 0,
     totalSteps: 0,
-    hasSeenWalkthrough: profile?.hasSeenWalkthrough || true,
+    hasSeenWalkthrough: Boolean(profile?.hasSeenWalkthrough),
     walkthroughVersion: version,
   });
 
-  const [steps, setSteps] = useState<WalkthroughStep[]>([]);
+  const [steps, setStepsState] = useState<WalkthroughStep[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const hasSeenWalkthrough =
+    state.hasSeenWalkthrough || Boolean(profile?.hasSeenWalkthrough);
 
   const currentStepData = steps[state.currentStep] || null;
-
-  // Update state when profile changes
-  useEffect(() => {
-    if (profile) {
-      setState((prev) => ({
-        ...prev,
-        hasSeenWalkthrough: profile.hasSeenWalkthrough,
-      }));
-    }
-  }, [profile, updateProfile]);
 
   const markWalkthroughComplete = useCallback(() => {
     updateProfile({ hasSeenWalkthrough: true });
@@ -182,43 +189,32 @@ export const WalkthroughProvider = ({
     }));
   }, [setWalkthroughClosedAt]);
 
-  // Check if walkthrough should be shown based on close timestamp
-  const shouldShowWalkthrough = useCallback(() => {
-    if (state.hasSeenWalkthrough || isMobile) {
-      return false; // Already completed permanently or on mobile
-    }
+  const canShowWalkthrough =
+    !hasSeenWalkthrough &&
+    !isMobile &&
+    isCooldownComplete(walkthroughClosedAt);
 
-    if (!walkthroughClosedAt) {
-      return true; // Never closed before
-    }
+  const setSteps = useCallback(
+    (nextSteps: WalkthroughStep[]) => {
+      setStepsState(nextSteps);
+      setState((prev) => {
+        const totalSteps = nextSteps.length;
+        const boundedCurrentStep = totalSteps
+          ? Math.min(prev.currentStep, totalSteps - 1)
+          : 0;
+        const shouldAutoStart =
+          autoStart && canShowWalkthrough && totalSteps > 0 && !prev.isActive;
 
-    try {
-      const closedTimestamp = new Date(walkthroughClosedAt).getTime();
-      const now = new Date().getTime();
-      const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
-
-      // Show if more than 4 hours have passed since last close
-      return now - closedTimestamp > fourHours;
-    } catch (error) {
-      // If timestamp parsing fails, default to showing
-      return true;
-    }
-  }, [state.hasSeenWalkthrough, walkthroughClosedAt, isMobile]);
-
-  // Calculate if should show - this will update when dependencies change
-  const canShowWalkthrough = shouldShowWalkthrough();
-
-  // Handle auto-start logic
-  useEffect(() => {
-    if (canShowWalkthrough && autoStart && steps.length > 0) {
-      startWalkthrough();
-    }
-
-    setState((prev) => ({
-      ...prev,
-      totalSteps: steps.length,
-    }));
-  }, [canShowWalkthrough, autoStart, steps.length, startWalkthrough]);
+        return {
+          ...prev,
+          currentStep: shouldAutoStart ? 0 : boundedCurrentStep,
+          totalSteps,
+          isActive: shouldAutoStart ? true : prev.isActive,
+        };
+      });
+    },
+    [autoStart, canShowWalkthrough],
+  );
 
   // Execute step action when current step changes
   useEffect(() => {
@@ -228,7 +224,10 @@ export const WalkthroughProvider = ({
   }, [state.isActive, state.currentStep, currentStepData]);
 
   const contextValue: WalkthroughContextType = {
-    state,
+    state: {
+      ...state,
+      hasSeenWalkthrough,
+    },
     steps,
     currentStepData,
     nextStep,

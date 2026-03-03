@@ -24,14 +24,14 @@ export const CreateAccountForm = () => {
       });
       return;
     }
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       await updateProfile({ fullName, timezone: currentTimezone });
-    } catch (error) {
-      setIsLoading(false);
-    } finally {
-      router.push("/onboarding/invite");
+    } catch {
+      // ignore and continue to onboarding flow
     }
+    setIsLoading(false);
+    router.push("/onboarding/invite");
   };
 
   return (
