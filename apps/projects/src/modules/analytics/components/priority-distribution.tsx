@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -36,7 +36,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-1 pl-0.5">
         {payload[0].value}{" "}
         {getTermDisplay("storyTerm", {
@@ -55,18 +55,17 @@ export const PriorityDistribution = () => {
   const { resolvedTheme } = useTheme();
   const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (storyAnalytics?.priorityDistribution.length) {
-      const formattedData = storyAnalytics.priorityDistribution.map(
-        (item: PriorityDistributionItem) => ({
-          priority: item.priority,
-          count: item.count,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!storyAnalytics?.priorityDistribution.length) {
+      return [];
     }
+
+    return storyAnalytics.priorityDistribution.map(
+      (item: PriorityDistributionItem) => ({
+        priority: item.priority,
+        count: item.count,
+      }),
+    );
   }, [storyAnalytics]);
 
   if (isPending) {

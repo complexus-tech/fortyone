@@ -182,34 +182,40 @@ const Bar = <T extends GanttItem>({
     endDate: string;
   } | null>(null);
 
+  const effectiveOptimisticDates = useMemo(() => {
+    if (!optimisticDates || !item.startDate || !item.endDate) {
+      return optimisticDates;
+    }
+
+    const propsStartISO = formatISO(new Date(item.startDate), {
+      representation: "date",
+    });
+    const propsEndISO = formatISO(new Date(item.endDate), {
+      representation: "date",
+    });
+    if (
+      propsStartISO === optimisticDates.startDate &&
+      propsEndISO === optimisticDates.endDate
+    ) {
+      return null;
+    }
+
+    return optimisticDates;
+  }, [item.startDate, item.endDate, optimisticDates]);
+
   const startDate = useMemo(() => {
-    const dateStr = optimisticDates?.startDate || item.startDate;
+    const dateStr = effectiveOptimisticDates?.startDate || item.startDate;
     const date = dateStr ? new Date(dateStr) : new Date();
     date.setHours(0, 0, 0, 0);
     return date;
-  }, [item.startDate, optimisticDates?.startDate]);
+  }, [item.startDate, effectiveOptimisticDates?.startDate]);
 
   const endDate = useMemo(() => {
-    const dateStr = optimisticDates?.endDate || item.endDate;
+    const dateStr = effectiveOptimisticDates?.endDate || item.endDate;
     const date = dateStr ? new Date(dateStr) : addDays(startDate, 1);
     date.setHours(0, 0, 0, 0);
     return date;
-  }, [item.endDate, optimisticDates?.endDate, startDate]);
-
-  // Clear optimistic state when props actually update to match
-  useEffect(() => {
-    if (optimisticDates && item.startDate && item.endDate) {
-      const propsStartISO = formatISO(new Date(item.startDate));
-      const propsEndISO = formatISO(new Date(item.endDate));
-
-      if (
-        propsStartISO === optimisticDates.startDate &&
-        propsEndISO === optimisticDates.endDate
-      ) {
-        setOptimisticDates(null);
-      }
-    }
-  }, [item.startDate, item.endDate, optimisticDates]);
+  }, [item.endDate, effectiveOptimisticDates?.endDate, startDate]);
 
   const columnWidth = getColumnWidth(zoomLevel);
 
@@ -517,10 +523,10 @@ const Bar = <T extends GanttItem>({
   return (
     <Box
       className={cn(
-        "group absolute z-0 h-10 rounded-xl border-[0.5px] border-border bg-surface-muted backdrop-blur transition-colors",
+        "group border-border bg-surface-muted absolute z-0 h-10 rounded-xl border-[0.5px] backdrop-blur transition-colors",
         {
           "shadow-lg": isDragging,
-          "cursor-pointer hover:border-border-strong hover:bg-state-hover":
+          "hover:border-border-strong hover:bg-state-hover cursor-pointer":
             onBarClick,
         },
       )}
@@ -543,7 +549,7 @@ const Bar = <T extends GanttItem>({
       tabIndex={-1}
     >
       <Box
-        className="absolute -left-1 bottom-1/2 top-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors group-hover:bg-border-strong"
+        className="group-hover:bg-border-strong absolute top-1/2 bottom-1/2 -left-1 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-start");
@@ -551,7 +557,7 @@ const Bar = <T extends GanttItem>({
       />
 
       <Box
-        className="absolute -right-1 bottom-1/2 top-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors group-hover:bg-border-strong"
+        className="group-hover:bg-border-strong absolute top-1/2 -right-1 bottom-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-end");
@@ -585,36 +591,38 @@ const TimelineHeader = ({
       case "weeks":
         return (
           <>
-            <Box className="border-b-[0.5px] border-border">
+            <Box className="border-border border-b-[0.5px]">
               <Flex>
-                {getWeekSpans(periods).map(({ week, month, span }, index) => (
-                  <Box
-                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
-                    key={`${month}-${week}-${index}`}
-                    style={{ width: `${(span / periods.length) * 100}%` }}
-                  >
-                    <Flex
-                      align="center"
-                      className="h-5 min-h-0"
-                      justify="between"
+                {getWeekSpans(periods).map(
+                  ({ week, month, span, startIndex }) => (
+                    <Box
+                      className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
+                      key={`${month}-${week}-${startIndex}`}
+                      style={{ width: `${(span / periods.length) * 100}%` }}
                     >
-                      <Text
-                        className="text-[0.9rem]"
-                        color="muted"
-                        fontWeight="semibold"
+                      <Flex
+                        align="center"
+                        className="h-5 min-h-0"
+                        justify="between"
                       >
-                        {month}
-                      </Text>
-                      <Text
-                        className="text-[0.9rem] opacity-60"
-                        color="muted"
-                        fontWeight="semibold"
-                      >
-                        {week}
-                      </Text>
-                    </Flex>
-                  </Box>
-                ))}
+                        <Text
+                          className="text-[0.9rem]"
+                          color="muted"
+                          fontWeight="semibold"
+                        >
+                          {month}
+                        </Text>
+                        <Text
+                          className="text-[0.9rem] opacity-60"
+                          color="muted"
+                          fontWeight="semibold"
+                        >
+                          {week}
+                        </Text>
+                      </Flex>
+                    </Box>
+                  ),
+                )}
               </Flex>
             </Box>
 
@@ -625,10 +633,9 @@ const TimelineHeader = ({
                 return (
                   <Box
                     className={cn(
-                      "h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center",
+                      "border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center",
                       {
-                        "bg-surface-muted":
-                          isWeekend(day) && !isToday,
+                        "bg-surface-muted": isWeekend(day) && !isToday,
                         "border-primary bg-primary dark:border-primary":
                           isToday,
                       },
@@ -661,11 +668,11 @@ const TimelineHeader = ({
       case "months":
         return (
           <>
-            <Box className="border-b-[0.5px] border-border">
+            <Box className="border-border border-b-[0.5px]">
               <Flex>
                 {periods.map((month) => (
                   <Box
-                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
+                    className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
                     key={month.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -697,7 +704,7 @@ const TimelineHeader = ({
             <Flex>
               {periods.map((month) => (
                 <Box
-                  className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center"
+                  className="border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
                   key={month.getTime()}
                   style={{ minWidth: `${columnWidth}px` }}
                 >
@@ -717,11 +724,11 @@ const TimelineHeader = ({
       case "quarters":
         return (
           <>
-            <Box className="border-b-[0.5px] border-border">
+            <Box className="border-border border-b-[0.5px]">
               <Flex>
                 {periods.map((quarter) => (
                   <Box
-                    className="border-r-[0.5px] border-border px-2 py-1.5 text-left"
+                    className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -757,7 +764,7 @@ const TimelineHeader = ({
 
                 return (
                   <Box
-                    className="h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] border-border px-1 py-1 text-center"
+                    className="border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -782,7 +789,7 @@ const TimelineHeader = ({
 
   return (
     <Box
-      className="sticky top-0 z-10 h-16 border-b-[0.5px] border-border bg-background"
+      className="border-border bg-background sticky top-0 z-10 h-16 border-b-[0.5px]"
       style={{ minWidth: `${timelineMinWidth}px` }}
     >
       <Box className="h-8 w-full">{renderPeriodHeader()}</Box>
@@ -814,7 +821,7 @@ export const GanttHeader = ({
   };
 
   return (
-    <Box className="sticky top-0 z-10 hidden h-16 items-center justify-between border-b-[0.5px] border-border bg-background px-6 py-2.5 md:flex">
+    <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 items-center justify-between border-b-[0.5px] px-6 py-2.5 md:flex">
       <Button color="tertiary" onClick={onReset} size="sm">
         Today
       </Button>
@@ -896,7 +903,7 @@ const Chart = <T extends GanttItem>({
       <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
       {items.map((item, idx) => (
         <Box
-          className="relative h-14 border-border hover:border-y-[0.5px] hover:bg-state-hover"
+          className="border-border hover:bg-state-hover relative h-14 hover:border-y-[0.5px]"
           key={item.id}
         >
           <Flex className="absolute inset-0">
@@ -912,7 +919,7 @@ const Chart = <T extends GanttItem>({
               return (
                 <Box
                   className={cn(
-                    "min-w-16 flex-1 border-r-[0.5px] border-border",
+                    "border-border min-w-16 flex-1 border-r-[0.5px]",
                     {
                       "bg-surface-muted":
                         zoomLevel === "weeks" && isWeekend(period) && !isToday,
@@ -935,7 +942,7 @@ const Chart = <T extends GanttItem>({
             })}
           </Flex>
 
-          <Box className="z-5 relative h-full px-2">
+          <Box className="relative z-5 h-full px-2">
             <Bar
               dateRange={dateRange}
               item={item}
@@ -969,6 +976,7 @@ export const BaseGantt = <T extends GanttItem>({
     defaultZoomLevel,
   );
   const [isContainerScrollable, setIsContainerScrollable] = useState(false);
+  const [scrollToTodayRequests, setScrollToTodayRequests] = useState(0);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -1011,7 +1019,11 @@ export const BaseGantt = <T extends GanttItem>({
     };
   }, [items.length]);
 
-  const scrollToToday = useCallback(() => {
+  const requestScrollToToday = useCallback(() => {
+    setScrollToTodayRequests((current) => current + 1);
+  }, []);
+
+  const scrollToTodayNow = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -1057,11 +1069,16 @@ export const BaseGantt = <T extends GanttItem>({
   }, [dateRange, zoomLevel]);
 
   useEffect(() => {
+    if (scrollToTodayRequests === 0) return;
+    scrollToTodayNow();
+  }, [scrollToTodayNow, scrollToTodayRequests]);
+
+  useEffect(() => {
     if (!hasScrolledRef.current) {
-      scrollToToday();
+      scrollToTodayNow();
       hasScrolledRef.current = true;
     }
-  }, [scrollToToday]);
+  }, [scrollToTodayNow]);
 
   return (
     <div
@@ -1072,7 +1089,7 @@ export const BaseGantt = <T extends GanttItem>({
       ref={containerRef}
     >
       <Flex className="min-h-full min-w-max">
-        {renderSidebar(items, scrollToToday, zoomLevel, setZoomLevel)}
+        {renderSidebar(items, requestScrollToToday, zoomLevel, setZoomLevel)}
         <Chart
           dateRange={dateRange}
           isContainerScrollable={isContainerScrollable}

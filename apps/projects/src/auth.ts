@@ -51,19 +51,6 @@ export const {
         return res.data ?? null;
       },
     }),
-    Credentials({
-      name: "One Tap",
-      id: "one-tap",
-      credentials: {},
-      async authorize(credentials, _request) {
-        const { idToken } = credentials as { idToken: string };
-        const googleUser = await authenticateGoogleUser({ idToken });
-        if (!googleUser) {
-          throw new Error("Failed to authenticate Google user");
-        }
-        return googleUser ?? null;
-      },
-    }),
   ],
 
   ...(domain && {
@@ -84,10 +71,7 @@ export const {
   callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
-        if (
-          account.provider === "credentials" ||
-          account.provider === "one-tap"
-        ) {
+        if (account.provider === "credentials") {
           return {
             ...token,
             id: user.id,

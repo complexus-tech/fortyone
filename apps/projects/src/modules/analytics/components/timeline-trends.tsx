@@ -11,7 +11,7 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useTimelineTrends } from "../hooks/timeline-trends";
 import type { StoryCompletionPoint, ObjectiveProgressPoint } from "../types";
@@ -34,10 +34,10 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-32 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-2 font-medium">{label}</Text>
-      {payload.map((entry, index) => (
-        <Flex align="center" gap={2} key={index}>
+      {payload.map((entry) => (
+        <Flex align="center" gap={2} key={String(entry.dataKey)}>
           <Box
             className="h-3 w-3 rounded"
             style={{ backgroundColor: entry.color }}
@@ -62,54 +62,54 @@ const formatDate = (date: string) => {
 export const TimelineTrends = () => {
   const { resolvedTheme } = useTheme();
   const { data: timelineTrends, isPending } = useTimelineTrends();
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (
-      timelineTrends?.storyCompletion.length &&
-      timelineTrends.objectiveProgress.length
-    ) {
-      // Combine the story and objective data by date
-      const dateMap = new Map<string, ChartDataItem>();
-
-      // Add story completion data
-      timelineTrends.storyCompletion.forEach((item: StoryCompletionPoint) => {
-        const formattedDate = formatDate(item.date);
-        dateMap.set(formattedDate, {
-          date: formattedDate,
-          storiesCompleted: item.completed,
-          storiesCreated: item.created,
-          objectivesCompleted: 0,
-          totalObjectives: 0,
-        });
-      });
-
-      // Add objective progress data
-      timelineTrends.objectiveProgress.forEach(
-        (item: ObjectiveProgressPoint) => {
-          const formattedDate = formatDate(item.date);
-          const existing = dateMap.get(formattedDate);
-          if (existing) {
-            existing.objectivesCompleted = item.completedObjectives;
-            existing.totalObjectives = item.totalObjectives;
-          } else {
-            dateMap.set(formattedDate, {
-              date: formattedDate,
-              storiesCompleted: 0,
-              storiesCreated: 0,
-              objectivesCompleted: item.completedObjectives,
-              totalObjectives: item.totalObjectives,
-            });
-          }
-        },
-      );
-
-      setChartData(
-        Array.from(dateMap.values()).sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        ),
-      );
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!timelineTrends) {
+      return [];
     }
+
+    const dateMap = new Map<string, ChartDataItem & { sortDate: string }>();
+
+    timelineTrends.storyCompletion.forEach((item: StoryCompletionPoint) => {
+      dateMap.set(item.date, {
+        date: formatDate(item.date),
+        sortDate: item.date,
+        storiesCompleted: item.completed,
+        storiesCreated: item.created,
+        objectivesCompleted: 0,
+        totalObjectives: 0,
+      });
+    });
+
+    timelineTrends.objectiveProgress.forEach((item: ObjectiveProgressPoint) => {
+      const existing = dateMap.get(item.date);
+      if (existing) {
+        existing.objectivesCompleted = item.completedObjectives;
+        existing.totalObjectives = item.totalObjectives;
+        return;
+      }
+
+      dateMap.set(item.date, {
+        date: formatDate(item.date),
+        sortDate: item.date,
+        storiesCompleted: 0,
+        storiesCreated: 0,
+        objectivesCompleted: item.completedObjectives,
+        totalObjectives: item.totalObjectives,
+      });
+    });
+
+    return Array.from(dateMap.values())
+      .sort(
+        (a, b) =>
+          new Date(a.sortDate).getTime() - new Date(b.sortDate).getTime(),
+      )
+      .map((dataPoint) => ({
+        date: dataPoint.date,
+        storiesCompleted: dataPoint.storiesCompleted,
+        storiesCreated: dataPoint.storiesCreated,
+        objectivesCompleted: dataPoint.objectivesCompleted,
+        totalObjectives: dataPoint.totalObjectives,
+      }));
   }, [timelineTrends]);
 
   if (isPending) {
@@ -123,7 +123,7 @@ export const TimelineTrends = () => {
             Historical trends for stories and objectives.
           </Text>
         </Box>
-        <Box className="h-[380px] animate-pulse rounded bg-skeleton" />
+        <Box className="bg-skeleton h-[380px] animate-pulse rounded" />
       </Wrapper>
     );
   }

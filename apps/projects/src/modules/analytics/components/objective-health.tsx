@@ -1,7 +1,7 @@
 "use client";
 import { Flex, Text, Wrapper, Box } from "ui";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import type { TooltipProps } from "recharts";
 import { useObjectiveProgress } from "../hooks/objective-progress";
 import type { HealthDistributionItem } from "../types";
@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   }
 
   return (
-    <Box className="relative z-50 min-w-28 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {payload[0].name}
       </Flex>
@@ -50,19 +50,15 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
 export const ObjectiveHealth = () => {
   const filters = useAppliedFilters();
   const { data: objectiveProgress, isPending } = useObjectiveProgress(filters);
-  const [chartData, setChartData] = useState<HealthDistributionItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-
-  useEffect(() => {
-    if (objectiveProgress?.healthDistribution.length) {
-      setChartData(objectiveProgress.healthDistribution);
-      const total = objectiveProgress.healthDistribution.reduce(
+  const chartData = objectiveProgress?.healthDistribution ?? [];
+  const totalCount = useMemo(
+    () =>
+      chartData.reduce(
         (sum: number, health: HealthDistributionItem) => sum + health.count,
         0,
-      );
-      setTotalCount(total);
-    }
-  }, [objectiveProgress]);
+      ),
+    [chartData],
+  );
 
   if (isPending) {
     return <ObjectiveHealthSkeleton />;
@@ -84,7 +80,7 @@ export const ObjectiveHealth = () => {
 
       <Box>
         <Box className="relative isolate">
-          <Box className="absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
+          <Box className="absolute top-1/2 left-1/2 z-0 -translate-x-1/2 -translate-y-1/2 transform text-center">
             <Text fontSize="3xl">{totalCount}</Text>
             <Text color="muted">Total objectives</Text>
           </Box>
@@ -107,7 +103,7 @@ export const ObjectiveHealth = () => {
                 {chartData.map((entry, index) => (
                   <Cell
                     fill={getColor(entry.status, index)}
-                    key={`cell-${index}`}
+                    key={`cell-${entry.status}`}
                     stroke="none"
                   />
                 ))}
@@ -118,7 +114,7 @@ export const ObjectiveHealth = () => {
         </Box>
         <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
           {chartData.map((entry, index) => (
-            <Flex align="center" gap={1} key={`${entry.status}-${index}`}>
+            <Flex align="center" gap={1} key={entry.status}>
               <Box
                 className="size-4 rounded"
                 style={{ backgroundColor: getColor(entry.status, index) }}

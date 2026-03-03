@@ -1,6 +1,6 @@
 import { Box, Input, Button } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { CopyIcon } from "icons";
 import { useUpdateWorkspaceMutation } from "@/lib/hooks/update-workspace-mutation";
@@ -25,9 +25,7 @@ export const WorkspaceForm = () => {
     return `${origin}/${workspace?.slug}`;
   };
 
-  const hasChanges = useMemo(() => {
-    return workspaceName !== currentName;
-  }, [workspaceName, currentName]);
+  const hasChanges = workspaceName !== currentName;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);

@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useTeamPerformance } from "../hooks/team-performance";
 import type { VelocityByTeamItem } from "../types";
@@ -32,7 +32,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -45,18 +45,15 @@ export const TeamVelocity = () => {
   const { resolvedTheme } = useTheme();
   const filters = useAppliedFilters();
   const { data: teamPerformance, isPending } = useTeamPerformance(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (teamPerformance?.velocityByTeam.length) {
-      const formattedData = teamPerformance.velocityByTeam.map(
-        (item: VelocityByTeamItem) => ({
-          teamName: item.teamName,
-          average: item.average,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!teamPerformance?.velocityByTeam.length) {
+      return [];
     }
+
+    return teamPerformance.velocityByTeam.map((item: VelocityByTeamItem) => ({
+      teamName: item.teamName,
+      average: item.average,
+    }));
   }, [teamPerformance]);
 
   if (isPending) {

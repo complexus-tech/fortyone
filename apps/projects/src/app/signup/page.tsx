@@ -33,5 +33,5 @@ export default async function Page({
   }
 
   // Mobile app users always see signup form (even if already logged in on web)
-  return <AuthLayout page="signup" />;
+  return <AuthLayout isMobileApp={isMobileApp} page="signup" />;
 }

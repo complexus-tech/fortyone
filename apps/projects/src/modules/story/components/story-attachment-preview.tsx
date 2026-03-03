@@ -68,11 +68,11 @@ export const StoryAttachmentPreview = ({
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const renderThumbnail = () => {
-    if (children) return children;
+  let thumbnail: ReactNode = children;
 
+  if (!thumbnail) {
     if (isImage || isVideo) {
-      return (
+      thumbnail = (
         <Box
           className="group border-border bg-surface-muted ring-accent relative h-24 overflow-hidden rounded-xl border hover:ring-2 md:h-28 2xl:h-36 dark:shadow-none"
           onClick={() => {
@@ -117,109 +117,109 @@ export const StoryAttachmentPreview = ({
           ) : null}
         </Box>
       );
-    }
-
-    return (
-      <Wrapper className="ring-accent px-3 py-2 transition-all duration-300 hover:ring-2 md:px-4 md:py-2.5">
-        <Flex align="center" className="gap-3 md:gap-6" justify="between">
-          <Flex
-            align="center"
-            className="flex-1"
-            gap={3}
-            onClick={() => {
-              if (isUploading) return;
-              setIsOpen(true);
-            }}
-          >
-            <Box className="bg-surface-muted rounded-lg">
-              {isUploading ? (
-                <LoadingIcon className="h-5 animate-spin md:h-6" />
-              ) : (
-                <DocsIcon className="h-5 md:h-6" />
-              )}
-            </Box>
-            <Box>
-              <Text className="mb-0.5 line-clamp-1 first-letter:uppercase">
-                {isUploading ? "Uploading..." : file.filename}
-              </Text>
-              <Text className="text-[0.95rem]" color="muted">
-                {file.size > 0 ? formatFileSize(file.size) : "PDF file"}
-              </Text>
-            </Box>
-          </Flex>
-          {isInChat && onDelete ? (
-            <Button
-              asIcon
-              color="invert"
-              onClick={onDelete}
-              rounded="full"
-              size="sm"
+    } else {
+      thumbnail = (
+        <Wrapper className="ring-accent px-3 py-2 transition-all duration-300 hover:ring-2 md:px-4 md:py-2.5">
+          <Flex align="center" className="gap-3 md:gap-6" justify="between">
+            <Flex
+              align="center"
+              className="flex-1"
+              gap={3}
+              onClick={() => {
+                if (isUploading) return;
+                setIsOpen(true);
+              }}
             >
-              <CloseIcon
-                className="dark:text-dark h-4 text-white"
-                strokeWidth={3}
-              />
-            </Button>
-          ) : null}
-          {!isInChat && (
-            <Flex align="center" gap={1}>
-              {isPdf ? (
+              <Box className="bg-surface-muted rounded-lg">
+                {isUploading ? (
+                  <LoadingIcon className="h-5 animate-spin md:h-6" />
+                ) : (
+                  <DocsIcon className="h-5 md:h-6" />
+                )}
+              </Box>
+              <Box>
+                <Text className="mb-0.5 line-clamp-1 first-letter:uppercase">
+                  {isUploading ? "Uploading..." : file.filename}
+                </Text>
+                <Text className="text-[0.95rem]" color="muted">
+                  {file.size > 0 ? formatFileSize(file.size) : "PDF file"}
+                </Text>
+              </Box>
+            </Flex>
+            {isInChat && onDelete ? (
+              <Button
+                asIcon
+                color="invert"
+                onClick={onDelete}
+                rounded="full"
+                size="sm"
+              >
+                <CloseIcon
+                  className="dark:text-dark h-4 text-white"
+                  strokeWidth={3}
+                />
+              </Button>
+            ) : null}
+            {!isInChat && (
+              <Flex align="center" gap={1}>
+                {isPdf ? (
+                  <Button
+                    asIcon
+                    color="tertiary"
+                    disabled={isUploading}
+                    onClick={() => {
+                      setIsOpen(true);
+                    }}
+                    variant="naked"
+                  >
+                    <NewTabIcon className="h-5" />
+                  </Button>
+                ) : null}
                 <Button
                   asIcon
                   color="tertiary"
                   disabled={isUploading}
-                  onClick={() => {
-                    setIsOpen(true);
-                  }}
+                  onClick={onDownload}
                   variant="naked"
                 >
-                  <NewTabIcon className="h-5" />
+                  <DownloadIcon className="h-5" />
                 </Button>
-              ) : null}
-              <Button
-                asIcon
-                color="tertiary"
-                disabled={isUploading}
-                onClick={onDownload}
-                variant="naked"
-              >
-                <DownloadIcon className="h-5" />
-              </Button>
-              {isAdminOrOwner ? (
-                <Menu>
-                  <Menu.Button>
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      disabled={isUploading}
-                      variant="naked"
-                    >
-                      <MoreHorizontalIcon className="h-5" />
-                    </Button>
-                  </Menu.Button>
-                  <Menu.Items align="end" className="w-36">
-                    <Menu.Group>
-                      <Menu.Item
-                        onClick={() => {
-                          setIsDeleting(true);
-                        }}
+                {isAdminOrOwner ? (
+                  <Menu>
+                    <Menu.Button>
+                      <Button
+                        asIcon
+                        color="tertiary"
+                        disabled={isUploading}
+                        variant="naked"
                       >
-                        <DeleteIcon /> Delete...
-                      </Menu.Item>
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              ) : null}
-            </Flex>
-          )}
-        </Flex>
-      </Wrapper>
-    );
-  };
+                        <MoreHorizontalIcon className="h-5" />
+                      </Button>
+                    </Menu.Button>
+                    <Menu.Items align="end" className="w-36">
+                      <Menu.Group>
+                        <Menu.Item
+                          onClick={() => {
+                            setIsDeleting(true);
+                          }}
+                        >
+                          <DeleteIcon /> Delete...
+                        </Menu.Item>
+                      </Menu.Group>
+                    </Menu.Items>
+                  </Menu>
+                ) : null}
+              </Flex>
+            )}
+          </Flex>
+        </Wrapper>
+      );
+    }
+  }
 
   return (
     <>
-      <Box className={cn("cursor-pointer", className)}>{renderThumbnail()}</Box>
+      <Box className={cn("cursor-pointer", className)}>{thumbnail}</Box>
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <Dialog.Content
           className={cn(

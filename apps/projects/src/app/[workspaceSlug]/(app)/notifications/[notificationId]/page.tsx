@@ -16,9 +16,8 @@ export async function generateMetadata({
     entityType?: "story" | "objective";
   }>;
 }): Promise<Metadata> {
-  const { workspaceSlug } = await params;
-  const { entityType, entityId } = await searchParams;
-  const session = await auth();
+  const [{ workspaceSlug }, { entityType, entityId }, session] =
+    await Promise.all([params, searchParams, auth()]);
   const ctx = { session: session!, workspaceSlug };
 
   let title = "Notification Details";

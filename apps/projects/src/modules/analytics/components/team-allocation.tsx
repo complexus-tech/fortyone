@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { TeamAllocationItem } from "../types";
@@ -49,7 +49,7 @@ const CustomTooltip = ({
   const data = payload[0].payload;
 
   return (
-    <Box className="z-50 min-w-32 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         <Text>Active sprints: {data.activeSprints}</Text>
@@ -64,20 +64,17 @@ export const TeamAllocation = () => {
   const { resolvedTheme } = useTheme();
   const filters = useAppliedFilters();
   const { data: sprintAnalytics, isPending } = useSprintAnalytics(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (sprintAnalytics?.teamAllocation.length) {
-      const formattedData = sprintAnalytics.teamAllocation.map(
-        (item: TeamAllocationItem) => ({
-          teamName: item.teamName,
-          activeSprints: item.activeSprints,
-          totalStories: item.totalStories,
-          completedStories: item.completedStories,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!sprintAnalytics?.teamAllocation.length) {
+      return [];
     }
+
+    return sprintAnalytics.teamAllocation.map((item: TeamAllocationItem) => ({
+      teamName: item.teamName,
+      activeSprints: item.activeSprints,
+      totalStories: item.totalStories,
+      completedStories: item.completedStories,
+    }));
   }, [sprintAnalytics]);
 
   if (isPending) {
@@ -124,7 +121,7 @@ export const TeamAllocation = () => {
             {chartData.map((entry, index) => (
               <Cell
                 fill={TEAM_COLORS[index % TEAM_COLORS.length]}
-                key={`cell-${index}`}
+                key={`cell-${entry.teamName}`}
               />
             ))}
           </Bar>

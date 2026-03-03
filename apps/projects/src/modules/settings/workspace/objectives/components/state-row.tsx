@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type FormEvent } from "react";
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Box, Button, Flex, Menu, Text, ColorPicker } from "ui";
 import {
   CheckIcon,
@@ -33,7 +32,8 @@ export const StateRow = ({
   onCreate,
 }: StateRowProps) => {
   const updateMutation = useUpdateObjectiveStatusMutation();
-  const [isEditing, setIsEditing] = useState(isNew);
+  const [isManualEditing, setIsManualEditing] = useState(false);
+  const isEditing = Boolean(isNew) || isManualEditing;
   const [form, setForm] = useState({ name: status.name, color: status.color });
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -71,7 +71,7 @@ export const StateRow = ({
       statusId: status.id,
       payload: form,
     });
-    setIsEditing(false);
+    setIsManualEditing(false);
   };
 
   const handleMakeDefault = () => {
@@ -82,23 +82,17 @@ export const StateRow = ({
   };
 
   const handleCancelEditing = () => {
-    setIsEditing(false);
     if (isNew) {
       onCreateCancel?.();
     } else {
+      setIsManualEditing(false);
       setForm({ name: status.name, color: status.color });
     }
   };
 
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-    }
-  }, [isEditing]);
-
   return (
     <form
-      className="flex h-16 w-full items-center justify-between rounded-lg bg-surface-muted px-3"
+      className="bg-surface-muted flex h-16 w-full items-center justify-between rounded-lg px-3"
       onSubmit={handleSubmit}
       ref={setNodeRef}
       style={style}
@@ -122,20 +116,22 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="rounded-md bg-surface/40 p-2">
+          <Box className="bg-surface/40 rounded-md p-2">
             <ObjectiveStatusIcon statusId={status.id} />
           </Box>
         )}
 
         <Box>
           <input
-            className="w-max bg-transparent font-medium placeholder:text-foreground focus:outline-none"
+            className="placeholder:text-foreground w-max bg-transparent font-medium focus:outline-none"
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}
             placeholder="Status name..."
             readOnly={!isEditing}
-            ref={inputRef}
+            ref={(element) => {
+              inputRef.current = element;
+            }}
             value={form.name}
           />
         </Box>
@@ -184,7 +180,10 @@ export const StateRow = ({
 
                   <Menu.Item
                     onSelect={() => {
-                      setIsEditing(true);
+                      setIsManualEditing(true);
+                      requestAnimationFrame(() => {
+                        inputRef.current?.focus();
+                      });
                     }}
                   >
                     <EditIcon className="h-[1.15rem]" />

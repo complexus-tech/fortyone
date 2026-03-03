@@ -34,7 +34,6 @@ import {
 import { toast } from "sonner";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
-import { useRouter } from "next/navigation";
 import {
   useFeatures,
   useLocalStorage,
@@ -76,7 +75,6 @@ export const NewObjectiveDialog = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   teamId?: string;
 }) => {
-  const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
   const { userRole } = useUserRole();
   const { data: teams = [] } = useTeams();
@@ -201,15 +199,6 @@ export const NewObjectiveDialog = ({
   };
 
   useEffect(() => {
-    if (initialTeamId) {
-      const team = teams.find((team) => team.id === initialTeamId);
-      if (team) {
-        setActiveTeam(team);
-      }
-    }
-  }, [isOpen, initialTeamId, teams, setActiveTeam, titleEditor]);
-
-  useEffect(() => {
     if (isOpen && titleEditor) {
       titleEditor.commands.focus();
     }
@@ -220,17 +209,12 @@ export const NewObjectiveDialog = ({
   useEffect(() => {
     if (isOpen && teams.length === 0) {
       toast.warning("Join or create a team", {
-        description: "You need to be part of a team to create an objective",
-        action: {
-          label: "Join a team",
-          onClick: () => {
-            router.push(withWorkspace("/settings/workspace/teams"));
-          },
-        },
+        description:
+          "You need to be part of a team to create an objective. Open Team Settings to join or create one.",
       });
       setIsOpen(false);
     }
-  }, [isOpen, teams, setIsOpen, router]);
+  }, [isOpen, teams, setIsOpen]);
 
   return (
     <FeatureGuard
@@ -239,7 +223,7 @@ export const NewObjectiveDialog = ({
         <Dialog open={isOpen}>
           <Dialog.Content hideClose>
             <Dialog.Header className="flex items-center gap-2 px-6 pt-6 text-xl">
-              <CrownIcon className="relative -top-px h-6 text-warning" />
+              <CrownIcon className="text-warning relative -top-px h-6" />
               <Dialog.Title>
                 {getLimit("maxObjectives") === 0 ? (
                   <>
@@ -317,7 +301,7 @@ export const NewObjectiveDialog = ({
               )}
               <Button
                 align="center"
-                className="mb-2 mt-3 border-[0.5px]"
+                className="mt-3 mb-2 border-[0.5px]"
                 color="tertiary"
                 fullWidth
                 onClick={() => {

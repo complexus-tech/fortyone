@@ -10,7 +10,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import type { VelocityTrendPoint } from "../types";
@@ -32,7 +32,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -45,18 +45,15 @@ export const VelocityTrend = () => {
   const { resolvedTheme } = useTheme();
   const filters = useAppliedFilters();
   const { data: overview, isPending } = useWorkspaceOverview(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (overview?.velocityTrend.length) {
-      const formattedData = overview.velocityTrend.map(
-        (item: VelocityTrendPoint) => ({
-          period: item.period,
-          velocity: item.velocity,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!overview?.velocityTrend.length) {
+      return [];
     }
+
+    return overview.velocityTrend.map((item: VelocityTrendPoint) => ({
+      period: item.period,
+      velocity: item.velocity,
+    }));
   }, [overview]);
 
   if (isPending) {

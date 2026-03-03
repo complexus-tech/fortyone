@@ -5,22 +5,27 @@ import { useState } from "react";
 import { Box, Input, Text, Button, Flex } from "ui";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Logo, GoogleIcon } from "@/components/ui";
 import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
-export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
+export const AuthLayout = ({
+  page,
+  errorMessage,
+  isMobileApp = false,
+}: {
+  page: "login" | "signup";
+  errorMessage?: string;
+  isMobileApp?: boolean;
+}) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [isSent, setIsSent] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
-  const searchParams = useSearchParams();
-  const error = searchParams?.get("error");
-  const isMobileApp = searchParams?.get("mobileApp") === "true";
   const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -136,10 +141,9 @@ export const AuthLayout = ({ page }: { page: "login" | "signup" }) => {
           )}
           <form onSubmit={handleSubmit}>
             <Input
-              autoFocus
               className="rounded-lg"
-              hasError={Boolean(error) && !email && !isTouched}
-              helpText={error && !isTouched ? error : undefined}
+              hasError={Boolean(errorMessage) && !email && !isTouched}
+              helpText={errorMessage && !isTouched ? errorMessage : undefined}
               label="Enter your email"
               name="email"
               onChange={(e) => {

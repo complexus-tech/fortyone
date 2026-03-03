@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { createPortal } from "react-dom";
 import { useWalkthrough } from "./walkthrough-provider";
 import { WalkthroughStep } from "./walkthrough-step";
@@ -14,71 +14,73 @@ interface ElementPosition {
 
 export const WalkthroughOverlay = () => {
   const { state, currentStepData } = useWalkthrough();
-  const [targetPosition, setTargetPosition] = useState<ElementPosition | null>(
-    null,
+  const [layoutTick, bumpLayoutTick] = useReducer(
+    (currentValue: number) => currentValue + 1,
+    0,
   );
-  const [mounted, setMounted] = useState(false);
+  const currentTarget = currentStepData?.target;
 
-  const updateTargetPosition = useCallback(() => {
-    if (!currentStepData?.target) return;
+  useEffect(() => {
+    if (!state.isActive || !currentTarget) {
+      return;
+    }
 
-    // Special handling for body target - position in center of viewport
-    if (currentStepData.target === "body") {
-      setTargetPosition({
+    const handleResize = () => {
+      bumpLayoutTick();
+    };
+    const handleScroll = () => {
+      bumpLayoutTick();
+    };
+    const scrollListenerOptions: AddEventListenerOptions = { passive: true };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, scrollListenerOptions);
+
+    const timeout = window.setTimeout(() => {
+      bumpLayoutTick();
+    }, 100);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, scrollListenerOptions);
+      clearTimeout(timeout);
+    };
+  }, [state.isActive, currentTarget]);
+
+  const targetPosition = useMemo<ElementPosition | null>(() => {
+    if (!state.isActive || !currentTarget || typeof window === "undefined") {
+      return null;
+    }
+
+    if (currentTarget === "body") {
+      return {
         top: window.scrollY + window.innerHeight / 2 - 100,
         left: window.innerWidth / 2 - 160,
         width: 320,
         height: 200,
-      });
-      return;
+      };
     }
 
-    const targetElement = document.querySelector(currentStepData.target);
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect();
-      setTargetPosition({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height,
-      });
-    }
-  }, [currentStepData?.target]);
-
-  // Update position when step changes or window resizes
-  useEffect(() => {
-    if (!state.isActive || !currentStepData) {
-      setTargetPosition(null);
-      return;
+    const targetElement = document.querySelector(currentTarget);
+    if (!targetElement) {
+      return null;
     }
 
-    updateTargetPosition();
-
-    const handleResize = () => {
-      updateTargetPosition();
+    const rect = targetElement.getBoundingClientRect();
+    return {
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      height: rect.height,
     };
-    const handleScroll = () => {
-      updateTargetPosition();
-    };
+  }, [state.isActive, currentTarget, layoutTick]);
 
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
-
-    // Also update position after a short delay to handle dynamic content
-    const timeout = setTimeout(updateTargetPosition, 100);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
-      clearTimeout(timeout);
-    };
-  }, [state.isActive, currentStepData, updateTargetPosition]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || !state.isActive || !currentStepData || !targetPosition) {
+  if (
+    typeof document === "undefined" ||
+    !state.isActive ||
+    !currentStepData ||
+    !targetPosition
+  ) {
     return null;
   }
 
@@ -89,7 +91,7 @@ export const WalkthroughOverlay = () => {
         {/* Spotlight cutout - only for non-body targets */}
         {currentStepData.target !== "body" && (
           <div
-            className="absolute rounded-lg border-2 border-primary/50 bg-transparent shadow-xl"
+            className="border-primary/50 absolute rounded-lg border-2 bg-transparent shadow-xl"
             style={{
               top: targetPosition.top - 8,
               left: targetPosition.left - 8,

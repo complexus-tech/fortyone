@@ -18,9 +18,11 @@ export default async function MayaPage({
   searchParams: Promise<{ chatRef: string }>;
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const session = await auth();
-  const { chatRef } = await searchParams;
-  const { workspaceSlug } = await params;
+  const [session, { chatRef }, { workspaceSlug }] = await Promise.all([
+    auth(),
+    searchParams,
+    params,
+  ]);
   const ctx = { session: session!, workspaceSlug };
   const queryClient = getQueryClient();
 

@@ -56,11 +56,10 @@ export const KeyResultEditor = ({
 
   return (
     <form
-      className="mb-6 space-y-4 rounded-2xl border border-border px-5 py-4"
+      className="border-border mb-6 space-y-4 rounded-2xl border px-5 py-4"
       onSubmit={handleSave}
     >
       <Input
-        autoFocus
         label="Name"
         onChange={(e) => {
           onUpdate(0, { name: e.target.value });
@@ -115,7 +114,7 @@ export const KeyResultEditor = ({
               });
             }}
           >
-            <Select.Trigger className="h-[2.7rem] bg-surface/70 text-base">
+            <Select.Trigger className="bg-surface/70 h-[2.7rem] text-base">
               <Select.Input />
             </Select.Trigger>
             <Select.Content defaultValue="number">
@@ -134,7 +133,7 @@ export const KeyResultEditor = ({
           <Box>
             <Text className="mb-1.5 font-medium">Current status</Text>
             <Flex
-              className="rounded-lg border border-border p-1 bg-surface-muted"
+              className="border-border bg-surface-muted rounded-lg border p-1"
               gap={1}
             >
               <Button

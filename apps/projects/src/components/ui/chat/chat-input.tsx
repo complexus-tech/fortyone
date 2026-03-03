@@ -49,6 +49,10 @@ const SendIcon = () => {
   );
 };
 
+const getAttachmentKey = (attachment: File) => {
+  return `${attachment.name}-${attachment.size}-${attachment.lastModified}-${attachment.type}`;
+};
+
 export const ChatInput = ({
   value,
   onChange,
@@ -62,9 +66,26 @@ export const ChatInput = ({
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
+  const placeholderTexts =
+    messagesCount > 2
+      ? [
+          "Tell Maya what to do next...",
+          "Continue the conversation...",
+          "Ask me anything...",
+          "Tell Maya what to do next...",
+          "Continue the conversation...",
+          "Ask me anything...",
+        ]
+      : [
+          "Take me to my work...",
+          "Show me the current sprint...",
+          "Open my objectives...",
+          "Navigate to the roadmap...",
+          "Find stories in progress...",
+          "Show my key results...",
+        ];
 
   const {
     isRecording,
@@ -133,41 +154,15 @@ export const ChatInput = ({
   }, [value]);
 
   useEffect(() => {
-    const showDuration = 4000;
-    const animationDuration = 300;
-
-    const cycle = () => {
-      // Show text for 4 seconds
-      setTimeout(() => {
-        setIsAnimating(true);
-
-        // Change text at the midpoint of animation (when it's most faded)
-        setTimeout(() => {
-          setCurrentPlaceholderIndex(
-            (prev) => (prev + 1) % placeholderTexts.length,
-          );
-        }, animationDuration / 2);
-
-        // Stop animation after full duration
-        setTimeout(() => {
-          setIsAnimating(false);
-        }, animationDuration);
-      }, showDuration);
-    };
-
-    // Start the first cycle
-    const timeout = setTimeout(cycle, showDuration);
-
-    // Set up repeating interval
-    const interval = setInterval(() => {
-      cycle();
-    }, showDuration + animationDuration);
-
+    const placeholderInterval = window.setInterval(() => {
+      setCurrentPlaceholderIndex(
+        (previousIndex) => (previousIndex + 1) % placeholderTexts.length,
+      );
+    }, 4300);
     return () => {
-      clearTimeout(timeout);
-      clearInterval(interval);
+      window.clearInterval(placeholderInterval);
     };
-  }, []);
+  }, [placeholderTexts.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -239,25 +234,6 @@ export const ChatInput = ({
     };
   }, [processRecording]);
 
-  const placeholderTexts =
-    messagesCount > 2
-      ? [
-        "Tell Maya what to do next...",
-        "Continue the conversation...",
-        "Ask me anything...",
-        "Tell Maya what to do next...",
-        "Continue the conversation...",
-        "Ask me anything...",
-      ]
-      : [
-        "Take me to my work...",
-        "Show me the current sprint...",
-        "Open my objectives...",
-        "Navigate to the roadmap...",
-        "Find stories in progress...",
-        "Show my key results...",
-      ];
-
   return (
     <Box className="sticky bottom-0 px-6 pb-3">
       {recordingState !== "idle" && (
@@ -288,7 +264,7 @@ export const ChatInput = ({
       <Box className="border-border rounded-2xl border py-2">
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
-            {images.map((attachment, idx) => (
+            {images.map((attachment) => (
               <StoryAttachmentPreview
                 file={{
                   id: attachment.name,
@@ -300,7 +276,7 @@ export const ChatInput = ({
                   uploadedBy: "me",
                 }}
                 isInChat
-                key={idx}
+                key={getAttachmentKey(attachment)}
                 onDelete={() => {
                   handleRemoveAttachment(attachments.indexOf(attachment));
                 }}
@@ -310,7 +286,7 @@ export const ChatInput = ({
         )}
         {pdfs.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
-            {pdfs.map((attachment, idx) => (
+            {pdfs.map((attachment) => (
               <StoryAttachmentPreview
                 file={{
                   id: attachment.name,
@@ -322,7 +298,7 @@ export const ChatInput = ({
                   uploadedBy: "me",
                 }}
                 isInChat
-                key={idx}
+                key={getAttachmentKey(attachment)}
                 onDelete={() => {
                   handleRemoveAttachment(attachments.indexOf(attachment));
                 }}
@@ -334,7 +310,6 @@ export const ChatInput = ({
         <Box className="relative dark:antialiased">
           <textarea
             aria-label="Chat message"
-            autoFocus={Boolean(isOnPage)}
             className={cn(
               "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none dark:text-white",
               {
@@ -352,18 +327,14 @@ export const ChatInput = ({
           {!value && (
             <Box
               aria-hidden="true"
-              className={cn(
-                "text-text-muted pointer-events-none absolute top-2 left-5 text-[1.1rem] transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
-                {
-                  "translate-y-1 opacity-0 first-letter:uppercase": isAnimating,
-                },
-              )}
+              className="text-text-muted pointer-events-none absolute top-2 left-5 text-[1.1rem] transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none"
             >
               {recordingState === "idle"
                 ? placeholderTexts[currentPlaceholderIndex]
-                : `${recordingState.charAt(0).toUpperCase() +
-                recordingState.slice(1)
-                }...`}
+                : `${
+                    recordingState.charAt(0).toUpperCase() +
+                    recordingState.slice(1)
+                  }...`}
             </Box>
           )}
         </Box>

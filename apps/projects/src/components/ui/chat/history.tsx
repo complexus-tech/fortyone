@@ -10,6 +10,21 @@ import { groupChatsByDate } from "@/lib/grouping";
 import { RowWrapper } from "../row-wrapper";
 import { ConfirmDialog } from "../confirm-dialog";
 
+const RECENT_CHAT_SKELETON_KEYS = [
+  "recent-1",
+  "recent-2",
+  "recent-3",
+  "recent-4",
+];
+const OLDER_CHAT_SKELETON_KEYS = [
+  "older-1",
+  "older-2",
+  "older-3",
+  "older-4",
+  "older-5",
+  "older-6",
+];
+
 const Row = ({
   chat,
   currentChatId,
@@ -71,7 +86,7 @@ const Row = ({
                   setIsDeleteOpen(true);
                 }}
               >
-                <DeleteIcon className="h-4 text-danger dark:text-danger" />
+                <DeleteIcon className="text-danger dark:text-danger h-4" />
                 Delete
               </Menu.Item>
             </Menu.Group>
@@ -109,7 +124,6 @@ const Row = ({
           </Dialog.Header>
           <Dialog.Body>
             <Input
-              autoFocus
               className="rounded-lg"
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -164,16 +178,16 @@ export const History = ({
     return (
       <Box className="px-6">
         <Skeleton className="mb-4 h-4 w-28" />
-        {new Array(4).fill(0).map((_, index) => (
-          <Flex className="mb-3 gap-2" key={index}>
+        {RECENT_CHAT_SKELETON_KEYS.map((key) => (
+          <Flex className="mb-3 gap-2" key={key}>
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-8 rounded-full" />
           </Flex>
         ))}
 
-        <Skeleton className="mb-4 mt-10 h-4 w-28" />
-        {new Array(6).fill(0).map((_, index) => (
-          <Flex className="mb-3 gap-2" key={index}>
+        <Skeleton className="mt-10 mb-4 h-4 w-28" />
+        {OLDER_CHAT_SKELETON_KEYS.map((key) => (
+          <Flex className="mb-3 gap-2" key={key}>
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-8 rounded-full" />
           </Flex>

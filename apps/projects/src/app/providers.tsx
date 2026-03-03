@@ -8,10 +8,8 @@ import { ThemeProvider } from "next-themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { useSession } from "next-auth/react";
 import { getQueryClient } from "./get-query-client";
 import { PostHogProvider } from "./posthog";
-import GoogleOneTap from "./one-tap";
 import PostHogPageView from "./posthog-page-view";
 import { SessionExchange } from "./session-exchange";
 
@@ -21,8 +19,6 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export const Providers = ({ children }: { children: ReactNode }) => {
   const [queryClient] = useState(() => getQueryClient());
-  const { status } = useSession();
-  const shouldLoadOneTap = isProduction && status === "unauthenticated";
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -36,7 +32,6 @@ export const Providers = ({ children }: { children: ReactNode }) => {
         <Suspense>
           {isProduction ? (
             <>
-              {shouldLoadOneTap ? <GoogleOneTap /> : null}
               <PostHogPageView />
             </>
           ) : null}

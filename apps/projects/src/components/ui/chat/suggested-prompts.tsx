@@ -67,7 +67,7 @@ export const SuggestedPrompts = ({
           "grid md:grid-cols-2 md:gap-4": isOnPage,
         })}
       >
-        {SUGGESTED_PROMPTS.slice(fromIndex).map((prompt, index) => (
+        {SUGGESTED_PROMPTS.slice(fromIndex).map((prompt) => (
           <Wrapper
             className={cn(
               "dark:bg-surface/60 ring-primary flex cursor-pointer items-center gap-3 transition hover:ring-2 md:px-4",
@@ -75,7 +75,7 @@ export const SuggestedPrompts = ({
                 "gap-3 md:px-4 md:py-3": isOnPage,
               },
             )}
-            key={index}
+            key={prompt.label}
             onClick={() => {
               onPromptSelect(prompt.label);
             }}

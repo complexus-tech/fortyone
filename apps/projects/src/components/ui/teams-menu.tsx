@@ -57,7 +57,7 @@ const Items = ({
   return (
     <Popover.Content align="start" className="w-72" sideOffset={5}>
       <Command>
-        <Command.Input autoFocus placeholder="Join or manage teams..." />
+        <Command.Input placeholder="Join or manage teams..." />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
           <Text color="muted">No teams found.</Text>
@@ -82,7 +82,7 @@ const Items = ({
                 {team.name}
               </Flex>
               <Button
-                className="px-2 border-border/80"
+                className="border-border/80 px-2"
                 color="tertiary"
                 disabled={teams.length === 1}
                 size="xs"
@@ -114,7 +114,7 @@ const Items = ({
                 {team.name}
               </Flex>
               <Button
-                className="px-3 border-border/80"
+                className="border-border/80 px-3"
                 color="tertiary"
                 size="xs"
               >
@@ -140,7 +140,9 @@ const Items = ({
               </Command.Item>
               <Command.Item
                 onSelect={() => {
-                  router.push(withWorkspace("/settings/workspace/teams/create"));
+                  router.push(
+                    withWorkspace("/settings/workspace/teams/create"),
+                  );
                   setOpen(false);
                 }}
               >

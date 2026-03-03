@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useTeamPerformance } from "../hooks/team-performance";
 import type { TeamWorkloadItem } from "../types";
@@ -34,10 +34,10 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-32 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-2 font-medium">{label}</Text>
-      {payload.map((entry, index) => (
-        <Flex align="center" gap={2} key={index}>
+      {payload.map((entry) => (
+        <Flex align="center" gap={2} key={String(entry.dataKey)}>
           <Box
             className="h-3 w-3 rounded"
             style={{ backgroundColor: entry.color }}
@@ -54,20 +54,17 @@ const CustomTooltip = ({
 export const TeamWorkload = () => {
   const { resolvedTheme } = useTheme();
   const { data: teamPerformance, isPending } = useTeamPerformance();
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (teamPerformance?.teamWorkload.length) {
-      const formattedData = teamPerformance.teamWorkload.map(
-        (item: TeamWorkloadItem) => ({
-          teamName: item.teamName,
-          assigned: item.assigned,
-          completed: item.completed,
-          capacity: item.capacity,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!teamPerformance?.teamWorkload.length) {
+      return [];
     }
+
+    return teamPerformance.teamWorkload.map((item: TeamWorkloadItem) => ({
+      teamName: item.teamName,
+      assigned: item.assigned,
+      completed: item.completed,
+      capacity: item.capacity,
+    }));
   }, [teamPerformance]);
 
   if (isPending) {

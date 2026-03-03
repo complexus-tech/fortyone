@@ -47,5 +47,5 @@ export default async function JoinWorkspacePage({
     );
   }
 
-  return <JoinWorkspace invitation={res.data!} />;
+  return <JoinWorkspace invitation={res.data!} token={token} />;
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { AnalyticsPage } from "@/modules/analytics";
 import PostHogClient from "@/app/posthog-server";
 import { auth } from "@/auth";
@@ -17,19 +16,19 @@ export default async function Page({
 }: {
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const { workspaceSlug } = await params;
-  const session = await auth();
-  const cookieHeader = await getCookieHeader();
+  const [{ workspaceSlug }, session, cookieHeader] = await Promise.all([
+    params,
+    auth(),
+    getCookieHeader(),
+  ]);
   const posthog = PostHogClient();
 
-  const workspaces = await getWorkspaces(session?.token || "", cookieHeader);
+  const [workspaces, isAnalyticsEnabled] = await Promise.all([
+    getWorkspaces(session?.token || "", cookieHeader),
+    posthog.isFeatureEnabled("analytics_page", session?.user?.email ?? ""),
+  ]);
   const workspace = workspaces.find(
     (w) => w.slug.toLowerCase() === workspaceSlug.toLowerCase(),
-  );
-
-  const isAnalyticsEnabled = await posthog.isFeatureEnabled(
-    "analytics_page",
-    session?.user?.email ?? "",
   );
 
   if (workspace?.userRole !== "admin" || !isAnalyticsEnabled) {

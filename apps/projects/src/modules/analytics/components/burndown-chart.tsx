@@ -10,7 +10,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useStoryAnalytics } from "../hooks/story-analytics";
 import type { BurndownPoint } from "../types";
@@ -30,7 +30,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-28 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -50,18 +50,15 @@ const formatDate = (date: string) => {
 export const BurndownChart = () => {
   const { resolvedTheme } = useTheme();
   const { data: storyAnalytics, isPending } = useStoryAnalytics();
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (storyAnalytics?.burndown.length) {
-      const formattedData = storyAnalytics.burndown.map(
-        (item: BurndownPoint) => ({
-          date: formatDate(item.date),
-          remaining: item.remaining,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!storyAnalytics?.burndown.length) {
+      return [];
     }
+
+    return storyAnalytics.burndown.map((item: BurndownPoint) => ({
+      date: formatDate(item.date),
+      remaining: item.remaining,
+    }));
   }, [storyAnalytics]);
 
   if (isPending) {
@@ -73,7 +70,7 @@ export const BurndownChart = () => {
           </Text>
           <Text color="muted">Story completion progress over time.</Text>
         </Box>
-        <Box className="h-[220px] animate-pulse rounded bg-skeleton" />
+        <Box className="bg-skeleton h-[220px] animate-pulse rounded" />
       </Wrapper>
     );
   }
