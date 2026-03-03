@@ -1,6 +1,39 @@
 @import "tailwindcss";
 
+@layer base {
+  @supports (corner-shape: squircle) {
+    :root {
+      --radius-scale: 2;
+    }
+
+    [class*="rounded"]:not([class*="rounded-full"]) {
+      corner-shape: squircle;
+    }
+  }
+}
+
 @theme {
+  --radius-scale: 1;
+  --radius-base: 0.3rem;
+  --radius-base-xs: 0.15rem;
+  --radius-base-sm: 0.3rem;
+  --radius-base-md: 0.5rem;
+  --radius-base-lg: 0.6rem;
+  --radius-base-xl: 0.8rem;
+  --radius-base-2xl: 1.1rem;
+  --radius-base-3xl: 1.6rem;
+  --radius-base-4xl: 2.2rem;
+
+  --radius: calc(var(--radius-base) * var(--radius-scale));
+  --radius-xs: calc(var(--radius-base-xs) * var(--radius-scale));
+  --radius-sm: calc(var(--radius-base-sm) * var(--radius-scale));
+  --radius-md: calc(var(--radius-base-md) * var(--radius-scale));
+  --radius-lg: calc(var(--radius-base-lg) * var(--radius-scale));
+  --radius-xl: calc(var(--radius-base-xl) * var(--radius-scale));
+  --radius-2xl: calc(var(--radius-base-2xl) * var(--radius-scale));
+  --radius-3xl: calc(var(--radius-base-3xl) * var(--radius-scale));
+  --radius-4xl: calc(var(--radius-base-4xl) * var(--radius-scale));
+
   --rounded-app: var(--rounded-app);
   --color-*: initial;
   --color-background: var(--color-background);
