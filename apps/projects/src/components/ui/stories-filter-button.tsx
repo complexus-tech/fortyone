@@ -166,12 +166,11 @@ const UserSelector = ({
   return (
     <Flex gap={2} wrap>
       {users.map((user) => (
-        <MemberTooltip member={user}>
+        <MemberTooltip key={user.id} member={user}>
           <button
             className={cn("relative rounded-full ring-2 ring-transparent", {
               "ring-primary": selected?.includes(user.id),
             })}
-            key={user.id}
             onClick={() => {
               toggleUser(user.id);
             }}
@@ -340,9 +339,6 @@ export const StoriesFilterButton = ({
 
   // filtersCount returns the number of filters applied.
   const filtersCount = () => {
-    let count = 0;
-
-    // Count array filters
     const arrayFilters = [
       "statusIds",
       "assigneeIds",
@@ -352,27 +348,29 @@ export const StoriesFilterButton = ({
       "sprintIds",
       "labelIds",
     ] as const;
-    arrayFilters.forEach((key) => {
-      if (filters[key] && filters[key].length > 0) count++;
-    });
 
-    // Count string filters
     const stringFilters = [
       "parentId",
       "objectiveId",
       "epicId",
       "keyResultId",
     ] as const;
-    stringFilters.forEach((key) => {
-      if (filters[key]) count++;
-    });
+    const arrayFilterCount = arrayFilters.reduce((count, key) => {
+      const values = filters[key];
+      return values && values.length > 0 ? count + 1 : count;
+    }, 0);
 
-    // Count boolean filters
-    if (filters.hasNoAssignee) count++;
-    if (filters.assignedToMe) count++;
-    if (filters.createdByMe) count++;
+    const stringFilterCount = stringFilters.reduce((count, key) => {
+      return filters[key] ? count + 1 : count;
+    }, 0);
 
-    return count;
+    const booleanFilterCount = [
+      filters.hasNoAssignee,
+      filters.assignedToMe,
+      filters.createdByMe,
+    ].filter(Boolean).length;
+
+    return arrayFilterCount + stringFilterCount + booleanFilterCount;
   };
 
   const getButtonLabel = () => {

@@ -22,7 +22,7 @@ import {
   CalendarIcon,
 } from "icons";
 import { useParams } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
 import { cn } from "lib";
@@ -347,9 +347,12 @@ export const KeyResults = () => {
   const keyResultMutation = useCreateKeyResultMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
   const { data: objective } = useObjective(objectiveId);
-  const [selectedKeyResults, setSelectedKeyResults] = useState<Set<string>>(
+  const [manualSelectedKeyResults, setManualSelectedKeyResults] = useState<
+    Set<string>
+  >(
     new Set(),
   );
+  const [hasCustomSelection, setHasCustomSelection] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -359,20 +362,28 @@ export const KeyResults = () => {
     schema: keyResultGenerationSchema,
   });
 
-  // Set all key results as selected by default when they're loaded
-  useEffect(() => {
-    if (object?.keyResults && object.keyResults.length > 0) {
-      const names = object.keyResults
-        .map((kr) => kr?.name)
-        .filter((name): name is string => Boolean(name));
-      setSelectedKeyResults(new Set(names));
-      setShowSuggestions(true);
+  const suggestedKeyResultNames = useMemo(
+    () =>
+      (object?.keyResults ?? [])
+        .map((keyResult) => keyResult?.name)
+        .filter((name): name is string => Boolean(name)),
+    [object?.keyResults],
+  );
+
+  const selectedKeyResults = useMemo(() => {
+    if (hasCustomSelection) {
+      return manualSelectedKeyResults;
     }
-  }, [object?.keyResults]);
+    return new Set(suggestedKeyResultNames);
+  }, [hasCustomSelection, manualSelectedKeyResults, suggestedKeyResultNames]);
 
   const toggleSelection = (keyResultName: string) => {
-    setSelectedKeyResults((prev) => {
-      const newSet = new Set(prev);
+    setHasCustomSelection(true);
+    setManualSelectedKeyResults((prev) => {
+      const baseSelection = hasCustomSelection
+        ? prev
+        : new Set(suggestedKeyResultNames);
+      const newSet = new Set(baseSelection);
       if (newSet.has(keyResultName)) {
         newSet.delete(keyResultName);
       } else {
@@ -383,7 +394,8 @@ export const KeyResults = () => {
   };
 
   const clearSelection = () => {
-    setSelectedKeyResults(new Set());
+    setHasCustomSelection(true);
+    setManualSelectedKeyResults(new Set());
   };
 
   const handleAddSelected = () => {
@@ -451,6 +463,9 @@ export const KeyResults = () => {
               disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
+                setHasCustomSelection(false);
+                setManualSelectedKeyResults(new Set());
+                setShowSuggestions(true);
                 submit({ objective, keyResults });
               }}
               size="sm"
@@ -552,7 +567,10 @@ export const KeyResults = () => {
               <Button
                 color="warning"
                 onClick={() => {
-                  submit(parent);
+                  setHasCustomSelection(false);
+                  setManualSelectedKeyResults(new Set());
+                  setShowSuggestions(true);
+                  submit({ objective, keyResults });
                 }}
               >
                 Try again

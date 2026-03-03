@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
-import { useRef, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
@@ -64,6 +64,7 @@ export const ChatInput = ({
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const processRecordingRef = useRef<() => void>(() => {});
 
   const {
     isRecording,
@@ -76,7 +77,7 @@ export const ChatInput = ({
     getAudioBlob,
     resetRecording,
   } = useVoiceRecording(() => {
-    processRecording();
+    processRecordingRef.current();
   });
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
@@ -192,7 +193,7 @@ export const ChatInput = ({
     }
   };
 
-  const processRecording = async () => {
+  const processRecording = useCallback(async () => {
     // Wait for the recording to finish
     setTimeout(async () => {
       const audioBlob = getAudioBlob();
@@ -206,32 +207,37 @@ export const ChatInput = ({
         return;
       }
       setIsTranscribing(true);
-
-      try {
-        const formData = new FormData();
-        formData.append("audio", audioBlob, "recording.webm");
-        const { text = "" } = await ky
-          .post("/api/transcribe", {
-            body: formData,
-          })
-          .json<{ text: string }>();
-        if (text.trim()) {
-          onChange({
-            target: { value: `${value} ${text}` },
-          } as ChangeEvent<HTMLTextAreaElement>);
-        }
-      } catch (error) {
-        toast.error("Failed to transcribe audio", {
-          description: "Please try again.",
-          duration: 2500,
-          closeButton: false,
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+      const response = await ky
+        .post("/api/transcribe", {
+          body: formData,
+        })
+        .json<{ text: string }>()
+        .catch(() => {
+          toast.error("Failed to transcribe audio", {
+            description: "Please try again.",
+            duration: 2500,
+            closeButton: false,
+          });
+          return null;
         });
-      } finally {
-        setIsTranscribing(false);
-        resetRecording();
+      const text = response?.text ?? "";
+      if (text.trim()) {
+        onChange({
+          target: { value: `${value} ${text}` },
+        } as ChangeEvent<HTMLTextAreaElement>);
       }
+      setIsTranscribing(false);
+      resetRecording();
     }, 100);
-  };
+  }, [getAudioBlob, onChange, resetRecording, value]);
+
+  useEffect(() => {
+    processRecordingRef.current = () => {
+      void processRecording();
+    };
+  }, [processRecording]);
 
   const placeholderTexts =
     messagesCount > 2

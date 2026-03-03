@@ -278,6 +278,7 @@ export const NewStoryDialog = ({
       sprintId: storyForm.sprintId,
     };
 
+    let createError: unknown;
     try {
       await mutation.mutateAsync(newStory);
       if (!createMore) {
@@ -292,8 +293,12 @@ export const NewStoryDialog = ({
           queryKey: storyKeys.total(workspaceSlug),
         });
       }
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      createError = error;
+    }
+    setLoading(false);
+    if (createError) {
+      throw createError;
     }
   };
 

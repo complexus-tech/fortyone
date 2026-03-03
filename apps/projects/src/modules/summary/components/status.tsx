@@ -1,7 +1,7 @@
 "use client";
 import { Flex, Text, Wrapper, Box } from "ui";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import type { TooltipProps } from "recharts";
 import { useStatusSummary } from "@/lib/hooks/analytics-summaries";
 import type { StatusSummary } from "@/types";
@@ -45,18 +45,12 @@ export const Status = () => {
   const { getTermDisplay } = useTerminology();
   const filters = useSummaryDateFilters();
   const { data: statusSummary = [], isLoading } = useStatusSummary(filters);
-  const [chartData, setChartData] = useState<StatusSummary[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-
-  useEffect(() => {
-    if (statusSummary.length > 0) {
-      setChartData(statusSummary);
-      const total = statusSummary.reduce(
-        (sum: number, status: StatusSummary) => sum + status.count,
-        0,
-      );
-      setTotalCount(total);
-    }
+  const chartData = statusSummary;
+  const totalCount = useMemo(() => {
+    return statusSummary.reduce(
+      (sum: number, status: StatusSummary) => sum + status.count,
+      0,
+    );
   }, [statusSummary]);
 
   if (isLoading) {

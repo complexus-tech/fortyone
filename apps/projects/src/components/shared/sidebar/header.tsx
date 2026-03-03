@@ -53,10 +53,6 @@ export const Header = () => {
   //   }
   // });
 
-  useHotkeys("alt+shift+l", async () => {
-    await handleLogout();
-  });
-
   const handleLogout = async () => {
     const mainDomain =
       process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app"
@@ -72,6 +68,10 @@ export const Header = () => {
       window.location.href = `${mainDomain}?signedOut=true`;
     }
   };
+
+  useHotkeys("alt+shift+l", async () => {
+    await handleLogout();
+  });
 
   return (
     <>

@@ -138,6 +138,10 @@ export const Plans = () => {
     const host = `${window.location.protocol}//${window.location.host}`;
     const cancelUrl = `${host}${pathname}`;
     const successUrl = `${host}/my-work`;
+    const resetLoadingState = () => {
+      setIsProLoading(false);
+      setIsBusinessLoading(false);
+    };
 
     if (plan.startsWith("pro")) {
       setIsProLoading(true);
@@ -145,46 +149,65 @@ export const Plans = () => {
       setIsBusinessLoading(true);
     }
 
-    try {
-      if (tier === "free" || tier === "trial") {
-        const response = await checkout({
-          plan,
-          successUrl,
-          cancelUrl,
-          workspaceSlug,
+    if (tier === "free" || tier === "trial") {
+      const response = await checkout({
+        plan,
+        successUrl,
+        cancelUrl,
+        workspaceSlug,
+      }).catch((error) => {
+        toast.error("An unexpected error occurred.", {
+          description: error instanceof Error ? error.message : String(error),
         });
-        if (response.error?.message) {
-          toast.error("Failed to upgrade plan", {
-            description: response.error.message,
-          });
-          return;
-        }
-        window.location.href = response.data?.url ?? "";
-      } else {
-        const toastId = toast.loading("Processing plan change...", {
-          description: "Please wait while we process your request.",
-        });
-        const response = await changePlan(plan, workspaceSlug);
-        if (response.error?.message) {
-          toast.error("Failed to process plan change", {
-            description: response.error.message,
-          });
-          return;
-        }
-        toast.success("Plan change initiated!", {
-          description:
-            "You will receive an email when the plan change is complete.",
-          id: toastId,
-        });
+        return null;
+      });
+
+      if (!response) {
+        resetLoadingState();
+        return;
       }
-    } catch (error) {
+
+      if (response.error?.message) {
+        toast.error("Failed to upgrade plan", {
+          description: response.error.message,
+        });
+        resetLoadingState();
+        return;
+      }
+
+      window.location.href = response.data?.url ?? "";
+      resetLoadingState();
+      return;
+    }
+
+    const toastId = toast.loading("Processing plan change...", {
+      description: "Please wait while we process your request.",
+    });
+    const response = await changePlan(plan, workspaceSlug).catch((error) => {
       toast.error("An unexpected error occurred.", {
         description: error instanceof Error ? error.message : String(error),
       });
-    } finally {
-      setIsProLoading(false);
-      setIsBusinessLoading(false);
+      return null;
+    });
+
+    if (!response) {
+      resetLoadingState();
+      return;
     }
+
+    if (response.error?.message) {
+      toast.error("Failed to process plan change", {
+        description: response.error.message,
+      });
+      resetLoadingState();
+      return;
+    }
+
+    toast.success("Plan change initiated!", {
+      description: "You will receive an email when the plan change is complete.",
+      id: toastId,
+    });
+    resetLoadingState();
   };
 
   const getTierLabel = (tierName: Tier): string => {
