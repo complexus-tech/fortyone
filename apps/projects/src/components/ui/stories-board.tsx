@@ -271,6 +271,9 @@ export const StoriesBoard = ({
   );
 
   useEffect(() => {
+    if (!allStories) {
+      return;
+    }
     setGroupedStories(allStories);
   }, [allStories]);
 

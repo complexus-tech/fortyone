@@ -211,7 +211,8 @@ const updateInfiniteQuery = (
     };
   });
 
-  const { params: currentParams } = parseGroupQueryKey(queryKey);
+  const { params: currentParams, workspaceSlug: keyWorkspaceSlug } =
+    parseGroupQueryKey(queryKey);
   const targetKeyValue = computeTargetKey(
     currentParams.groupBy ?? "none",
     payload,
@@ -224,12 +225,11 @@ const updateInfiniteQuery = (
     groupKey: targetKeyValue,
   };
 
-  const targetQueryKey = [
-    "stories",
-    "group",
+  const targetQueryKey = storyKeys.groupStories(
+    keyWorkspaceSlug,
     targetKeyValue,
     targetParams,
-  ] as const;
+  );
 
   patchInfiniteQuery(targetQueryKey, (data) => {
     if (!movedStory) return data;
