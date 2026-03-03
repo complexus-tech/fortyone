@@ -4,6 +4,17 @@ import { BodyContainer } from "@/components/shared/body";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { StoriesLayout } from "./stories-board";
 
+const GANTT_BAR_LAYOUTS = [
+  { left: "12%", width: "22%" },
+  { left: "26%", width: "18%" },
+  { left: "40%", width: "25%" },
+  { left: "18%", width: "20%" },
+  { left: "33%", width: "19%" },
+  { left: "47%", width: "21%" },
+  { left: "22%", width: "24%" },
+  { left: "36%", width: "17%" },
+] as const;
+
 const ListLayoutSkeleton = () => {
   return (
     <Box>
@@ -174,35 +185,39 @@ const GanttLayoutSkeleton = () => {
           </Box>
 
           {/* Chart rows */}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Box className="relative h-14" key={i}>
-              {/* Grid lines spanning full height */}
-              <Flex className="absolute inset-0">
-                {Array.from({ length: 21 }).map((_, j) => (
-                  <Box
-                    className="border-border min-w-16 flex-1 border-r-[0.5px]"
-                    key={j}
+          {Array.from({ length: 8 }).map((_, i) => {
+            const layout = GANTT_BAR_LAYOUTS[i % GANTT_BAR_LAYOUTS.length];
+
+            return (
+              <Box className="relative h-14" key={i}>
+                {/* Grid lines spanning full height */}
+                <Flex className="absolute inset-0">
+                  {Array.from({ length: 21 }).map((_, j) => (
+                    <Box
+                      className="border-border min-w-16 flex-1 border-r-[0.5px]"
+                      key={j}
+                      style={{
+                        minWidth: "64px",
+                        height: i === 7 ? `calc(100dvh - 4rem - 4rem)` : "100%",
+                      }}
+                    />
+                  ))}
+                </Flex>
+
+                {/* Gantt bar */}
+                <Box className="relative z-10 h-full px-2">
+                  <Skeleton
+                    className="border-border absolute h-10 rounded-lg border-[0.5px]"
                     style={{
-                      minWidth: "64px",
-                      height: i === 7 ? `calc(100dvh - 4rem - 4rem)` : "100%",
+                      left: layout.left,
+                      width: layout.width,
+                      top: "6px",
                     }}
                   />
-                ))}
-              </Flex>
-
-              {/* Gantt bar */}
-              <Box className="relative z-10 h-full px-2">
-                <Skeleton
-                  className="border-border absolute h-10 rounded-lg border-[0.5px]"
-                  style={{
-                    left: `${Math.random() * 50 + 10}%`,
-                    width: `${15 + Math.random() * 25}%`,
-                    top: "6px",
-                  }}
-                />
+                </Box>
               </Box>
-            </Box>
-          ))}
+            );
+          })}
         </Box>
       </Flex>
     </div>

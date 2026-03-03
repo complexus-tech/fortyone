@@ -9,39 +9,57 @@ type Member = {
   email: string;
 };
 
+type InviteMember = Member & {
+  id: string;
+};
+
 type InviteFormProps = {
   onFormChange: (members: Member[]) => void;
 };
 
+let memberCounter = 0;
+
+const createInviteMember = (): InviteMember => {
+  memberCounter += 1;
+  return {
+    id: `invite-member-${memberCounter}`,
+    email: "",
+  };
+};
+
+const toPublicMembers = (members: InviteMember[]): Member[] => {
+  return members.map(({ email }) => ({ email }));
+};
+
 export const InviteForm = ({ onFormChange }: InviteFormProps) => {
-  const [members, setMembers] = useState<Member[]>([
-    { email: "" },
-    { email: "" },
+  const [members, setMembers] = useState<InviteMember[]>([
+    createInviteMember(),
+    createInviteMember(),
   ]);
 
   // Initialize parent state when component mounts
   useEffect(() => {
-    onFormChange(members);
+    onFormChange(toPublicMembers(members));
   }, [members, onFormChange]);
 
   const addMember = () => {
-    const newMembers = [...members, { email: "" }];
+    const newMembers = [...members, createInviteMember()];
     setMembers(newMembers);
-    onFormChange(newMembers);
+    onFormChange(toPublicMembers(newMembers));
   };
 
   const removeMember = (index: number) => {
     const newMembers = members.filter((_, i) => i !== index);
     setMembers(newMembers);
-    onFormChange(newMembers);
+    onFormChange(toPublicMembers(newMembers));
   };
 
   const updateMember = (index: number, email: string) => {
     const newMembers = members.map((member, i) =>
-      i === index ? { email } : member,
+      i === index ? { ...member, email } : member,
     );
     setMembers(newMembers);
-    onFormChange(newMembers);
+    onFormChange(toPublicMembers(newMembers));
   };
 
   return (
@@ -51,7 +69,7 @@ export const InviteForm = ({ onFormChange }: InviteFormProps) => {
           <MemberRow
             email={member.email}
             isRemovable={members.length > 1}
-            key={`member-${index}`}
+            key={member.id}
             onEmailChange={(email) => {
               updateMember(index, email);
             }}

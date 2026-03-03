@@ -17,9 +17,8 @@ export async function generateMetadata({
     tab: "stories" | "overview";
   }>;
 }): Promise<Metadata> {
-  const { objectiveId, workspaceSlug } = await params;
-  const { tab = "overview" } = await searchParams;
-  const session = await auth();
+  const [{ objectiveId, workspaceSlug }, { tab = "overview" }, session] =
+    await Promise.all([params, searchParams, auth()]);
   const ctx = { session: session!, workspaceSlug };
   const objectiveData = await getObjective(objectiveId, ctx);
   const name = objectiveData?.name || "Objective";

@@ -18,11 +18,13 @@ import { slugify } from "@/utils";
 import type { Story } from "@/modules/stories/types";
 import { StoryPage } from "../../../modules/story";
 
+const EMPTY_STORIES: Story[] = [];
+
 export const StoryDialog = ({
   isOpen,
   setIsOpen,
   storyId,
-  stories = [],
+  stories = EMPTY_STORIES,
   onNavigate,
 }: {
   isOpen: boolean;
@@ -182,7 +184,9 @@ export const StoryDialog = ({
                       <Button
                         asIcon
                         color="tertiary"
-                        href={withWorkspace(`/story/${story?.id}/${slugify(story?.title)}`)}
+                        href={withWorkspace(
+                          `/story/${story?.id}/${slugify(story?.title)}`,
+                        )}
                         leftIcon={
                           <MaximizeIcon
                             className="h-[1.15rem]"

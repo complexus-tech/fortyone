@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
@@ -6,6 +7,12 @@ import { getProfile } from "@/lib/queries/profile";
 import { ClientPage } from "./client";
 import { getAuthCode } from "@/lib/queries/get-auth-code";
 import { getCookieHeader } from "@/lib/http/header";
+
+export const metadata: Metadata = {
+  title: "Auth Callback - FortyOne",
+  description:
+    "Finalizing authentication and routing you to the right FortyOne workspace.",
+};
 
 export default async function AuthCallback({
   searchParams,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState } from "react";
 import { Box, Button, Flex, Menu, Text, ColorPicker } from "ui";
 import {
   CheckIcon,
@@ -39,7 +39,8 @@ export const StateRow = ({
 }: StateRowProps) => {
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateStateMutation();
-  const [isEditing, setIsEditing] = useState(isNew);
+  const [isManualEditing, setIsManualEditing] = useState(false);
+  const isEditing = Boolean(isNew) || isManualEditing;
   const [form, setForm] = useState({ name: state.name, color: state.color });
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,14 +77,14 @@ export const StateRow = ({
       stateId: state.id,
       payload: form,
     });
-    setIsEditing(false);
+    setIsManualEditing(false);
   };
 
   const handleCancelEditing = () => {
-    setIsEditing(false);
     if (isNew) {
       onCreateCancel?.();
     } else {
+      setIsManualEditing(false);
       setForm({ name: state.name, color: state.color });
     }
   };
@@ -95,16 +96,10 @@ export const StateRow = ({
     });
   };
 
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-    }
-  }, [isEditing]);
-
   return (
     <form
       className={cn(
-        "flex h-16 w-full items-center justify-between rounded-lg bg-surface-muted px-3",
+        "bg-surface-muted flex h-16 w-full items-center justify-between rounded-lg px-3",
         {
           "opacity-80 backdrop-blur": isDragging,
           "shadow-lg": isDragging,
@@ -133,7 +128,7 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="rounded-md bg-surface/40 p-2">
+          <Box className="bg-surface/40 rounded-md p-2">
             <StoryStatusIcon statusId={state.id} />
           </Box>
         )}
@@ -143,7 +138,7 @@ export const StateRow = ({
             className={cn(
               "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
               {
-                "my-0.5 rounded-lg border border-border bg-surface/50 px-3 py-1":
+                "border-border bg-surface/50 my-0.5 rounded-lg border px-3 py-1":
                   isEditing,
               },
             )}
@@ -152,7 +147,9 @@ export const StateRow = ({
             }}
             placeholder="State name..."
             readOnly={!isEditing}
-            ref={inputRef}
+            ref={(element) => {
+              inputRef.current = element;
+            }}
             value={form.name}
           />
           {storyCount && !isEditing ? (
@@ -208,7 +205,10 @@ export const StateRow = ({
                     )}
                   <Menu.Item
                     onSelect={() => {
-                      setIsEditing(true);
+                      setIsManualEditing(true);
+                      requestAnimationFrame(() => {
+                        inputRef.current?.focus();
+                      });
                     }}
                   >
                     <EditIcon className="h-[1.15rem]" />

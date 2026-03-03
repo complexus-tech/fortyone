@@ -6,8 +6,10 @@ import { JoinForm } from "./components/join-form";
 
 export const JoinWorkspace = async ({
   invitation,
+  token,
 }: {
   invitation: Invitation;
+  token: string;
 }) => {
   const session = await auth();
   const { email, workspaceName, role } = invitation;
@@ -33,7 +35,7 @@ export const JoinWorkspace = async ({
         ) : null}
       </Text>
       {canJoin ? (
-        <JoinForm invitation={invitation} />
+        <JoinForm invitation={invitation} token={token} />
       ) : (
         <Button
           align="center"

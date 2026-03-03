@@ -94,7 +94,7 @@ export const Status = () => {
                 {chartData.map((entry, index) => (
                   <Cell
                     fill={COLORS[index % COLORS.length]}
-                    key={`cell-${index}`}
+                    key={`cell-${entry.name}`}
                     stroke="none"
                   />
                 ))}
@@ -105,7 +105,7 @@ export const Status = () => {
         </Box>
         <Flex className="line-clamp-2 h-[60px] pt-3" gap={3} wrap>
           {chartData.map((entry, index) => (
-            <Flex align="center" gap={1} key={`${entry.name}-${index}`}>
+            <Flex align="center" gap={1} key={entry.name}>
               <Box
                 className="size-4 rounded"
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}

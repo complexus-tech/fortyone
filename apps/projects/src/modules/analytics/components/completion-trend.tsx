@@ -10,7 +10,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { useAppliedFilters } from "@/modules/analytics/hooks/filters";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
@@ -33,7 +33,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="z-50 min-w-32 rounded-lg border border-border bg-surface-elevated/80 px-3 py-3 text-[0.95rem] font-medium text-foreground backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -56,19 +56,16 @@ export const CompletionTrend = () => {
   const filters = useAppliedFilters();
   const { resolvedTheme } = useTheme();
   const { data: overview, isPending } = useWorkspaceOverview(filters);
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-
-  useEffect(() => {
-    if (overview?.completionTrend.length) {
-      const formattedData = overview.completionTrend.map(
-        (item: CompletionTrendPoint) => ({
-          date: formatDate(item.date),
-          completed: item.completed,
-          total: item.total,
-        }),
-      );
-      setChartData(formattedData);
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!overview?.completionTrend.length) {
+      return [];
     }
+
+    return overview.completionTrend.map((item: CompletionTrendPoint) => ({
+      date: formatDate(item.date),
+      completed: item.completed,
+      total: item.total,
+    }));
   }, [overview]);
 
   if (isPending) {

@@ -3,22 +3,26 @@
 import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
 import { toast } from "sonner";
 import { useState } from "react";
-import { redirect, useSearchParams } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { Invitation } from "@/modules/invitations/types";
 import { acceptInvitation } from "@/lib/actions/accept-invitation";
 import { buildWorkspaceUrl } from "@/utils";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 
-export const JoinForm = ({ invitation }: { invitation: Invitation }) => {
+export const JoinForm = ({
+  invitation,
+  token,
+}: {
+  invitation: Invitation;
+  token: string;
+}) => {
   const { workspaceName, workspaceSlug } = invitation;
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
   const [isLoading, setIsLoading] = useState(false);
   const { data: workspaces = [] } = useWorkspaces();
 
   const handleJoin = async () => {
     setIsLoading(true);
-    const res = await acceptInvitation(token || "");
+    const res = await acceptInvitation(token);
     if (res.error?.message) {
       toast.error("Failed to join workspace", {
         description: res.error.message,

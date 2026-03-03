@@ -303,15 +303,6 @@ export const NewStoryDialog = ({
   };
 
   useEffect(() => {
-    if (teamId) {
-      const team = teams.find((team) => team.id === teamId);
-      if (team) {
-        setActiveTeam(team);
-      }
-    }
-  }, [isOpen, teamId, teams, setActiveTeam, titleEditor, router, setIsOpen]);
-
-  useEffect(() => {
     const currentStatus = teamStatuses.find(
       (status) => status.id === storyForm.statusId,
     );

@@ -1,15 +1,17 @@
 "use client";
 
 import { Text, Flex } from "ui";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
 import { logIn, getSession } from "./actions";
 
-export const EmailVerificationCallback = () => {
+export const EmailVerificationCallback = ({
+  isMobileApp,
+}: {
+  isMobileApp: boolean;
+}) => {
   const params = useParams<{ email: string; token: string }>();
-  const searchParams = useSearchParams();
-  const isMobileApp = searchParams?.get("mobileApp") === "true";
   const validatedEmail = decodeURIComponent(params?.email || "");
   const validatedToken = decodeURIComponent(params?.token || "");
   const hasValidated = useRef(false);

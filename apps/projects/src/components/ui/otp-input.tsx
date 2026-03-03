@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useRef, useEffect, useState } from "react";
+import { forwardRef, useRef, useEffect, useState, useMemo } from "react";
 import { cn } from "lib";
 
 export interface OTPInputProps {
@@ -16,6 +16,14 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
   ({ value, onChange, length = 6, className, hasError, disabled }, ref) => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+    const inputSlots = useMemo(
+      () =>
+        Array.from({ length }, (_, index) => ({
+          id: `otp-slot-${index + 1}`,
+          index,
+        })),
+      [length],
+    );
 
     // Initialize input refs array
     useEffect(() => {
@@ -71,21 +79,21 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
 
     return (
       <div ref={ref} className={cn("flex gap-2", className)}>
-        {Array.from({ length }, (_, index) => (
+        {inputSlots.map((slot) => (
           <input
-            key={index}
+            key={slot.id}
             ref={(el) => {
-              inputRefs.current[index] = el;
+              inputRefs.current[slot.index] = el;
             }}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
             maxLength={1}
-            value={value[index] || ""}
-            onChange={(e) => handleInputChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
+            value={value[slot.index] || ""}
+            onChange={(e) => handleInputChange(slot.index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(slot.index, e)}
             onPaste={handlePaste}
-            onFocus={() => setFocusedIndex(index)}
+            onFocus={() => setFocusedIndex(slot.index)}
             onBlur={() => setFocusedIndex(null)}
             disabled={disabled}
             className={cn(
@@ -97,7 +105,7 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
                 "border-danger focus:ring-danger dark:border-danger dark:focus:ring-danger":
                   hasError,
                 "ring-border dark:ring-border ring-[2.5px]":
-                  focusedIndex === index,
+                  focusedIndex === slot.index,
               },
             )}
           />

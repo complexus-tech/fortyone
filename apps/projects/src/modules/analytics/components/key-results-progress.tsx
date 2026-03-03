@@ -1,19 +1,16 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useObjectiveProgress } from "../hooks/objective-progress";
 import type { KeyResultProgressItem } from "../types";
 import { KeyResultsProgressSkeleton } from "./key-results-progress-skeleton";
 
 export const KeyResultsProgress = () => {
   const { data: objectiveProgress, isPending } = useObjectiveProgress();
-  const [progressData, setProgressData] = useState<KeyResultProgressItem[]>([]);
-
-  useEffect(() => {
-    if (objectiveProgress?.keyResultsProgress.length) {
-      setProgressData(objectiveProgress.keyResultsProgress.slice(0, 6));
-    }
-  }, [objectiveProgress]);
+  const progressData = useMemo<KeyResultProgressItem[]>(
+    () => objectiveProgress?.keyResultsProgress.slice(0, 6) ?? [],
+    [objectiveProgress],
+  );
 
   if (isPending) {
     return <KeyResultsProgressSkeleton />;
@@ -49,7 +46,7 @@ export const KeyResultsProgress = () => {
               </Text>
             </Flex>
             <Box className="mb-1">
-              <Box className="relative h-3 overflow-hidden rounded-full bg-surface-muted">
+              <Box className="bg-surface-muted relative h-3 overflow-hidden rounded-full">
                 <Box
                   className={`h-full rounded-full transition-all duration-300 ${getProgressColor(item.avgProgress)}`}
                   style={{

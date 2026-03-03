@@ -17,10 +17,11 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobileApp?: string }>;
+  searchParams: Promise<{ mobileApp?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const isMobileApp = params?.mobileApp === "true";
+  const errorMessage = params?.error;
 
   const session = await auth();
   const cookieHeader = await getCookieHeader();
@@ -37,7 +38,11 @@ export default async function Page({
   // Mobile app users always see login form (even if already logged in on web)
   return (
     <OnboardingLayout>
-      <AuthLayout page="login" />
+      <AuthLayout
+        errorMessage={errorMessage}
+        isMobileApp={isMobileApp}
+        page="login"
+      />
     </OnboardingLayout>
   );
 }

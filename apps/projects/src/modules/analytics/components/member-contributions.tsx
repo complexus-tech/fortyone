@@ -1,22 +1,19 @@
 "use client";
 import { Avatar, Box, Flex, Text, Wrapper } from "ui";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useTeamPerformance } from "../hooks/team-performance";
 import type { MemberContributionItem } from "../types";
 
 export const MemberContributions = () => {
   const { data: teamPerformance, isPending } = useTeamPerformance();
-  const [contributionsData, setContributionsData] = useState<
-    MemberContributionItem[]
-  >([]);
-
-  useEffect(() => {
-    if (teamPerformance?.memberContributions.length) {
-      const sortedData = teamPerformance.memberContributions
-        .slice(0, 6)
-        .sort((a, b) => b.completed - a.completed);
-      setContributionsData(sortedData);
+  const contributionsData = useMemo<MemberContributionItem[]>(() => {
+    if (!teamPerformance?.memberContributions.length) {
+      return [];
     }
+
+    return teamPerformance.memberContributions
+      .slice(0, 6)
+      .sort((a, b) => b.completed - a.completed);
   }, [teamPerformance]);
 
   if (isPending) {
@@ -33,7 +30,7 @@ export const MemberContributions = () => {
         <Box className="space-y-2">
           {Array.from({ length: 4 }).map((_, index) => (
             <Box
-              className="h-10 animate-pulse rounded bg-skeleton"
+              className="bg-skeleton h-10 animate-pulse rounded"
               key={index}
             />
           ))}
@@ -54,7 +51,7 @@ export const MemberContributions = () => {
       </Box>
 
       {contributionsData.length > 0 ? (
-        <Box className="overflow-hidden rounded-lg border border-border">
+        <Box className="border-border overflow-hidden rounded-lg border">
           {/* Compact Rows */}
           <Box className="bg-background">
             {contributionsData.map((member, index) => {
@@ -67,7 +64,7 @@ export const MemberContributions = () => {
                 <Box
                   className={`px-3 py-2.5 ${
                     index !== contributionsData.length - 1
-                      ? "border-b border-border"
+                      ? "border-border border-b"
                       : ""
                   }`}
                   key={member.userId}
@@ -92,9 +89,9 @@ export const MemberContributions = () => {
                     </Text>
                   </Flex>
 
-                  <Box className="h-1 overflow-hidden rounded-full bg-skeleton">
+                  <Box className="bg-skeleton h-1 overflow-hidden rounded-full">
                     <Box
-                      className="from-green-500 to-green-600 h-full rounded-full bg-linear-to-r"
+                      className="h-full rounded-full bg-linear-to-r from-green-500 to-green-600"
                       style={{
                         width: `${Math.min(completionRate, 100)}%`,
                       }}

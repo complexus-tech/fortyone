@@ -2,7 +2,7 @@
 import { Flex, Text, Box, Button } from "ui";
 import { ErrorIcon, SuccessIcon } from "icons";
 import { cn } from "lib";
-import { motion } from "framer-motion";
+import { LazyMotion, domAnimation, m } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
@@ -204,7 +204,8 @@ export const Plans = () => {
     }
 
     toast.success("Plan change initiated!", {
-      description: "You will receive an email when the plan change is complete.",
+      description:
+        "You will receive an email when the plan change is complete.",
       id: toastId,
     });
     resetLoadingState();
@@ -267,280 +268,286 @@ export const Plans = () => {
     getBusinessButtonState(tier, billingInterval, billing, isBusinessLoading);
 
   return (
-    <Box className="hidden overflow-x-auto md:block">
-      <Box>
-        <Flex className="border-border border-b">
-          <Box className="flex w-1/5 items-end px-3 py-6">
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              transition={{
-                duration: 1,
-                delay: 0.3,
-              }}
-              viewport={{ once: true, amount: 0.5 }}
-              whileInView={{ y: 0, opacity: 1 }}
-            >
-              <Box className="border-border bg-surface flex w-full gap-1 rounded-xl border">
-                {["annual", "monthly"].map((option) => (
-                  <Button
-                    className={cn("px-4 capitalize", {
-                      "opacity-80": option !== billing,
-                    })}
-                    color={option === billing ? "primary" : "tertiary"}
-                    key={option}
-                    onClick={() => {
-                      setBilling(option as Billing);
-                    }}
-                    size="sm"
-                    variant={option === billing ? "solid" : "naked"}
-                  >
-                    {option}
-                  </Button>
-                ))}
-              </Box>
-            </motion.div>
-          </Box>
-          <Box className="w-1/5 px-4 py-6">
-            <Text className="mb-2 text-2xl">Hobby</Text>
-            <Text className="mb-2 text-3xl font-semibold">$0</Text>
-            <Button
-              align="center"
-              color="tertiary"
-              disabled={tier === "free" || tier === "trial"}
-              fullWidth
-              onClick={() => {
-                if (tier !== "free" && tier !== "trial") {
-                  setPendingAction({
-                    plan: "free",
-                    type: "downgrade",
-                    from: getTierLabel(tier),
-                    to: "Hobby",
-                  });
-                  setIsOpen(true);
-                }
-              }}
-            >
-              {tier === "free" || tier === "trial"
-                ? "Continue free"
-                : "Downgrade"}
-            </Button>
-          </Box>
-          <Box className="w-1/5 px-4 py-6">
-            <Text className="mb-2 text-2xl">Pro</Text>
-            <Text className="mb-2 text-3xl font-semibold">
-              ${billing === "annual" ? (proPrice * 0.8).toFixed(2) : proPrice}
-              <Text as="span" color="muted" fontSize="md" fontWeight="medium">
-                {" "}
-                per user/month
-              </Text>
-            </Text>
-            <Button
-              align="center"
-              color="tertiary"
-              disabled={isProButtonDisabled}
-              fullWidth
-              onClick={() => {
-                const planId =
-                  billing === "annual" ? "pro_yearly" : "pro_monthly";
-                if (tier === "free" || tier === "trial") {
-                  handlePlanAction(planId);
-                } else {
-                  const actionType = getActionType(tier, "pro");
-                  setPendingAction({
-                    plan: planId,
-                    type: actionType,
-                    from: getTierLabel(tier),
-                    to: `Pro ${billing === "annual" ? "yearly" : "monthly"}`,
-                  });
-                  setIsOpen(true);
-                }
-              }}
-            >
-              {proButtonText}
-            </Button>
-          </Box>
-          <Box className="border-border bg-surface w-1/5 rounded-t-2xl border border-b-0 px-4 py-6">
-            <Text className="mb-2 text-2xl">Business</Text>
-            <Text className="mb-2 text-3xl font-semibold">
-              ${billing === "annual" ? businessPrice * 0.8 : businessPrice}
-              <Text as="span" color="muted" fontSize="md" fontWeight="medium">
-                {" "}
-                per user/month
-              </Text>
-            </Text>
-            <Button
-              align="center"
-              color="tertiary"
-              disabled={isBusinessButtonDisabled}
-              fullWidth
-              onClick={() => {
-                const planId =
-                  billing === "annual" ? "business_yearly" : "business_monthly";
-                if (tier === "free" || tier === "trial") {
-                  handlePlanAction(planId);
-                } else {
-                  const actionType = getActionType(tier, "business");
-                  setPendingAction({
-                    plan: planId,
-                    type: actionType,
-                    from: getTierLabel(tier),
-                    to: `Business ${billing === "annual" ? "yearly" : "monthly"}`,
-                  });
-                  setIsOpen(true);
-                }
-              }}
-            >
-              {businessButtonText}
-            </Button>
-          </Box>
-          <Box className="w-1/5 px-4 py-6">
-            <Text className="mb-2 text-2xl">Enterprise</Text>
-            <Text className="mb-2 text-3xl font-semibold">Custom</Text>
-            <Button
-              align="center"
-              color="tertiary"
-              disabled={tier === "enterprise"}
-              fullWidth
-              href="mailto:info@complexus.app"
-            >
-              {tier === "enterprise" ? "Current plan" : "Contact sales"}
-            </Button>
-          </Box>
-        </Flex>
-
-        {/* Limits section */}
+    <LazyMotion features={domAnimation}>
+      <Box className="hidden overflow-x-auto md:block">
         <Box>
-          <Flex className="border-border bg-surface/50 border-b">
-            <Box className="w-1/5 px-4 py-4">
-              <Text fontWeight="semibold">Limits</Text>
-            </Box>
-            {plans.map((plan) => (
-              <Box
-                className={cn("w-1/5 px-4 py-4", {
-                  "border-border bg-surface border-x": plan.name === "Business",
-                })}
-                key={plan.name}
-              />
-            ))}
-          </Flex>
           <Flex className="border-border border-b">
-            <Box className="w-1/5 px-4 py-4">
-              <Text className="opacity-80">Members</Text>
-            </Box>
-            {plans.map((plan) => (
-              <Box
-                className={cn(
-                  "w-1/5 px-4 py-4",
-                  plan.highlighted && "border-border bg-surface border-x",
-                )}
-                key={`${plan.name}-members`}
+            <Box className="flex w-1/5 items-end px-3 py-6">
+              <m.div
+                initial={{ y: 20, opacity: 0 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.3,
+                }}
+                viewport={{ once: true, amount: 0.5 }}
+                whileInView={{ y: 0, opacity: 1 }}
               >
-                <Text>{plan.limits.members}</Text>
-              </Box>
-            ))}
-          </Flex>
-
-          <Flex className="border-border border-b">
-            <Box className="w-1/5 px-4 py-4">
-              <Text className="opacity-80">File uploads</Text>
+                <Box className="border-border bg-surface flex w-full gap-1 rounded-xl border">
+                  {["annual", "monthly"].map((option) => (
+                    <Button
+                      className={cn("px-4 capitalize", {
+                        "opacity-80": option !== billing,
+                      })}
+                      color={option === billing ? "primary" : "tertiary"}
+                      key={option}
+                      onClick={() => {
+                        setBilling(option as Billing);
+                      }}
+                      size="sm"
+                      variant={option === billing ? "solid" : "naked"}
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </Box>
+              </m.div>
             </Box>
-            {plans.map((plan) => (
-              <Box
-                className={cn("w-1/5 px-4 py-4", {
-                  "border-border bg-surface border-x": plan.highlighted,
-                })}
-                key={`${plan.name}-files`}
+            <Box className="w-1/5 px-4 py-6">
+              <Text className="mb-2 text-2xl">Hobby</Text>
+              <Text className="mb-2 text-3xl font-semibold">$0</Text>
+              <Button
+                align="center"
+                color="tertiary"
+                disabled={tier === "free" || tier === "trial"}
+                fullWidth
+                onClick={() => {
+                  if (tier !== "free" && tier !== "trial") {
+                    setPendingAction({
+                      plan: "free",
+                      type: "downgrade",
+                      from: getTierLabel(tier),
+                      to: "Hobby",
+                    });
+                    setIsOpen(true);
+                  }
+                }}
               >
-                <Text>{plan.limits.fileUploads}</Text>
-              </Box>
-            ))}
-          </Flex>
-
-          <Flex className="border-border border-b">
-            <Box className="w-1/5 px-4 py-4">
-              <Text className="opacity-80">Stories</Text>
+                {tier === "free" || tier === "trial"
+                  ? "Continue free"
+                  : "Downgrade"}
+              </Button>
             </Box>
-            {plans.map((plan) => (
-              <Box
-                className={cn("w-1/5 px-4 py-4", {
-                  "border-border bg-surface border-x": plan.highlighted,
-                })}
-                key={`${plan.name}stories`}
+            <Box className="w-1/5 px-4 py-6">
+              <Text className="mb-2 text-2xl">Pro</Text>
+              <Text className="mb-2 text-3xl font-semibold">
+                ${billing === "annual" ? (proPrice * 0.8).toFixed(2) : proPrice}
+                <Text as="span" color="muted" fontSize="md" fontWeight="medium">
+                  {" "}
+                  per user/month
+                </Text>
+              </Text>
+              <Button
+                align="center"
+                color="tertiary"
+                disabled={isProButtonDisabled}
+                fullWidth
+                onClick={() => {
+                  const planId =
+                    billing === "annual" ? "pro_yearly" : "pro_monthly";
+                  if (tier === "free" || tier === "trial") {
+                    handlePlanAction(planId);
+                  } else {
+                    const actionType = getActionType(tier, "pro");
+                    setPendingAction({
+                      plan: planId,
+                      type: actionType,
+                      from: getTierLabel(tier),
+                      to: `Pro ${billing === "annual" ? "yearly" : "monthly"}`,
+                    });
+                    setIsOpen(true);
+                  }
+                }}
               >
-                <Text>{plan.limits.issues}</Text>
-              </Box>
-            ))}
-          </Flex>
-        </Box>
-
-        {/* Features section */}
-        <Box>
-          <Flex className="border-border bg-surface/50 border-b">
-            <Box className="w-1/5 px-4 py-4">
-              <Text fontWeight="semibold">Features</Text>
+                {proButtonText}
+              </Button>
             </Box>
-            {plans.map((plan) => (
-              <Box
-                className={cn("w-1/5 px-4 py-4", {
-                  "border-border bg-surface border-x": plan.name === "Business",
-                })}
-                key={plan.name}
-              />
-            ))}
+            <Box className="border-border bg-surface w-1/5 rounded-t-2xl border border-b-0 px-4 py-6">
+              <Text className="mb-2 text-2xl">Business</Text>
+              <Text className="mb-2 text-3xl font-semibold">
+                ${billing === "annual" ? businessPrice * 0.8 : businessPrice}
+                <Text as="span" color="muted" fontSize="md" fontWeight="medium">
+                  {" "}
+                  per user/month
+                </Text>
+              </Text>
+              <Button
+                align="center"
+                color="tertiary"
+                disabled={isBusinessButtonDisabled}
+                fullWidth
+                onClick={() => {
+                  const planId =
+                    billing === "annual"
+                      ? "business_yearly"
+                      : "business_monthly";
+                  if (tier === "free" || tier === "trial") {
+                    handlePlanAction(planId);
+                  } else {
+                    const actionType = getActionType(tier, "business");
+                    setPendingAction({
+                      plan: planId,
+                      type: actionType,
+                      from: getTierLabel(tier),
+                      to: `Business ${billing === "annual" ? "yearly" : "monthly"}`,
+                    });
+                    setIsOpen(true);
+                  }
+                }}
+              >
+                {businessButtonText}
+              </Button>
+            </Box>
+            <Box className="w-1/5 px-4 py-6">
+              <Text className="mb-2 text-2xl">Enterprise</Text>
+              <Text className="mb-2 text-3xl font-semibold">Custom</Text>
+              <Button
+                align="center"
+                color="tertiary"
+                disabled={tier === "enterprise"}
+                fullWidth
+                href="mailto:info@complexus.app"
+              >
+                {tier === "enterprise" ? "Current plan" : "Contact sales"}
+              </Button>
+            </Box>
           </Flex>
 
-          {/* Generate all possible feature rows */}
-          {Object.entries(featureLabels).map(
-            ([featureKey, featureLabel], index, array) => {
-              // Skip 'teams' feature since it's already in limits section
-              if (featureKey === "teams") return null;
-
-              const isLastItem = index === array.length - 1;
-
-              return (
-                <Flex
-                  className={!isLastItem ? "border-border border-b" : ""}
-                  key={featureKey}
-                >
-                  <Box className="w-1/5 px-4 py-4">
-                    <Text className="opacity-80">{featureLabel}</Text>
-                  </Box>
-                  {plans.map((plan) => {
-                    const value =
-                      plan.features[featureKey as keyof typeof plan.features];
-                    const isHighlighted = plan.highlighted;
-                    return (
-                      <Box
-                        className={cn("w-1/5 px-4 py-4", {
-                          "border-border bg-surface border-x": isHighlighted,
-                        })}
-                        key={`${plan.name}-${featureKey}`}
-                      >
-                        <FeatureValue value={value} />
-                      </Box>
-                    );
+          {/* Limits section */}
+          <Box>
+            <Flex className="border-border bg-surface/50 border-b">
+              <Box className="w-1/5 px-4 py-4">
+                <Text fontWeight="semibold">Limits</Text>
+              </Box>
+              {plans.map((plan) => (
+                <Box
+                  className={cn("w-1/5 px-4 py-4", {
+                    "border-border bg-surface border-x":
+                      plan.name === "Business",
                   })}
-                </Flex>
-              );
-            },
-          )}
+                  key={plan.name}
+                />
+              ))}
+            </Flex>
+            <Flex className="border-border border-b">
+              <Box className="w-1/5 px-4 py-4">
+                <Text className="opacity-80">Members</Text>
+              </Box>
+              {plans.map((plan) => (
+                <Box
+                  className={cn(
+                    "w-1/5 px-4 py-4",
+                    plan.highlighted && "border-border bg-surface border-x",
+                  )}
+                  key={`${plan.name}-members`}
+                >
+                  <Text>{plan.limits.members}</Text>
+                </Box>
+              ))}
+            </Flex>
+
+            <Flex className="border-border border-b">
+              <Box className="w-1/5 px-4 py-4">
+                <Text className="opacity-80">File uploads</Text>
+              </Box>
+              {plans.map((plan) => (
+                <Box
+                  className={cn("w-1/5 px-4 py-4", {
+                    "border-border bg-surface border-x": plan.highlighted,
+                  })}
+                  key={`${plan.name}-files`}
+                >
+                  <Text>{plan.limits.fileUploads}</Text>
+                </Box>
+              ))}
+            </Flex>
+
+            <Flex className="border-border border-b">
+              <Box className="w-1/5 px-4 py-4">
+                <Text className="opacity-80">Stories</Text>
+              </Box>
+              {plans.map((plan) => (
+                <Box
+                  className={cn("w-1/5 px-4 py-4", {
+                    "border-border bg-surface border-x": plan.highlighted,
+                  })}
+                  key={`${plan.name}stories`}
+                >
+                  <Text>{plan.limits.issues}</Text>
+                </Box>
+              ))}
+            </Flex>
+          </Box>
+
+          {/* Features section */}
+          <Box>
+            <Flex className="border-border bg-surface/50 border-b">
+              <Box className="w-1/5 px-4 py-4">
+                <Text fontWeight="semibold">Features</Text>
+              </Box>
+              {plans.map((plan) => (
+                <Box
+                  className={cn("w-1/5 px-4 py-4", {
+                    "border-border bg-surface border-x":
+                      plan.name === "Business",
+                  })}
+                  key={plan.name}
+                />
+              ))}
+            </Flex>
+
+            {/* Generate all possible feature rows */}
+            {Object.entries(featureLabels).map(
+              ([featureKey, featureLabel], index, array) => {
+                // Skip 'teams' feature since it's already in limits section
+                if (featureKey === "teams") return null;
+
+                const isLastItem = index === array.length - 1;
+
+                return (
+                  <Flex
+                    className={!isLastItem ? "border-border border-b" : ""}
+                    key={featureKey}
+                  >
+                    <Box className="w-1/5 px-4 py-4">
+                      <Text className="opacity-80">{featureLabel}</Text>
+                    </Box>
+                    {plans.map((plan) => {
+                      const value =
+                        plan.features[featureKey as keyof typeof plan.features];
+                      const isHighlighted = plan.highlighted;
+                      return (
+                        <Box
+                          className={cn("w-1/5 px-4 py-4", {
+                            "border-border bg-surface border-x": isHighlighted,
+                          })}
+                          key={`${plan.name}-${featureKey}`}
+                        >
+                          <FeatureValue value={value} />
+                        </Box>
+                      );
+                    })}
+                  </Flex>
+                );
+              },
+            )}
+          </Box>
         </Box>
+        <ConfirmDialog
+          {...getDialogProps()}
+          isOpen={isOpen}
+          onClose={() => {
+            setIsOpen(false);
+            setPendingAction(null);
+          }}
+          onConfirm={() => {
+            if (pendingAction) {
+              handlePlanAction(pendingAction.plan);
+            }
+            setIsOpen(false);
+            setPendingAction(null);
+          }}
+        />
       </Box>
-      <ConfirmDialog
-        {...getDialogProps()}
-        isOpen={isOpen}
-        onClose={() => {
-          setIsOpen(false);
-          setPendingAction(null);
-        }}
-        onConfirm={() => {
-          if (pendingAction) {
-            handlePlanAction(pendingAction.plan);
-          }
-          setIsOpen(false);
-          setPendingAction(null);
-        }}
-      />
-    </Box>
+    </LazyMotion>
   );
 };
