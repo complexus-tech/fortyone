@@ -147,7 +147,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 .tiptap table td,
 th {
-  @apply border-border border;
+  @apply border-border;
 }
 .tiptap table p {
   @apply m-0;
