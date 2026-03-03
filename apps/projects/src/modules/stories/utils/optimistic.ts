@@ -61,13 +61,28 @@ export const moveStoryBetweenGroups = (
 
 /**
  * Parse a React-Query key produced by storyKeys.groupStories().
- * Expected shape: ["stories", "group", groupKey, params]
+ * Expected shape: ["stories", workspaceSlug, "group", groupKey, params]
  */
 export const parseGroupQueryKey = (
   key: readonly unknown[],
-): { groupKey: string; params: Partial<GroupStoryParams> } => {
+): {
+  workspaceSlug: string;
+  groupKey: string;
+  params: Partial<GroupStoryParams>;
+} => {
+  if (key.length >= 5 && key[2] === "group") {
+    const [, workspaceSlug, , groupKey, params] = key;
+    return {
+      workspaceSlug: workspaceSlug as string,
+      groupKey: groupKey as string,
+      params: (params ?? {}) as Partial<GroupStoryParams>,
+    };
+  }
+
+  // Backward-compatible fallback for older key shape.
   const [, , groupKey, params] = key;
   return {
+    workspaceSlug: "",
     groupKey: groupKey as string,
     params: (params ?? {}) as Partial<GroupStoryParams>,
   };
