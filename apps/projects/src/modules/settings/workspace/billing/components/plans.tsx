@@ -280,7 +280,7 @@ export const Plans = () => {
               viewport={{ once: true, amount: 0.5 }}
               whileInView={{ y: 0, opacity: 1 }}
             >
-              <Box className="border-border bg-surface flex w-full gap-1 rounded-[0.7rem] border">
+              <Box className="border-border bg-surface flex w-full gap-1 rounded-xl border">
                 {["annual", "monthly"].map((option) => (
                   <Button
                     className={cn("px-4 capitalize", {

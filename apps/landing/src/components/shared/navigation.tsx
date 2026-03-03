@@ -21,7 +21,7 @@ const MenuItem = ({
   href: string;
 }) => (
   <Link
-    className="hover:bg-state-hover flex w-68 gap-2 rounded-[0.7rem] p-2"
+    className="hover:bg-state-hover flex w-68 gap-2 rounded-xl p-2"
     href={href}
     prefetch
   >

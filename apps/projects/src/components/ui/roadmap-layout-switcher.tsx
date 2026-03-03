@@ -17,7 +17,7 @@ export const RoadmapLayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "h-[2.26rem] items-center gap-1 rounded-[0.6rem] bg-surface-muted md:mr-2",
+        "h-[2.26rem] items-center gap-1 rounded-lg bg-surface-muted md:mr-2",
         {
           "opacity-50": disabled,
         },
@@ -26,7 +26,7 @@ export const RoadmapLayoutSwitcher = ({
     >
       <button
         className={cn(
-          "flex h-full items-center gap-1 rounded-[0.6rem] px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
+          "flex h-full items-center gap-1 rounded-lg px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
           {
             "border border-border bg-surface text-text-primary":
               layout === "gantt",
@@ -44,7 +44,7 @@ export const RoadmapLayoutSwitcher = ({
       </button>
       <button
         className={cn(
-          "flex h-full items-center gap-1.5 rounded-[0.6rem] px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
+          "flex h-full items-center gap-1.5 rounded-lg px-3 font-medium disabled:cursor-not-allowed text-text-secondary enabled:hover:text-text-primary",
           {
             "border border-border bg-surface text-text-primary":
               layout === "list",

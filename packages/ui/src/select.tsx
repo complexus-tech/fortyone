@@ -21,7 +21,7 @@ const Trigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap text-foreground outline-none rounded-[0.6rem] border border-input px-3 py-1 text-sm bg-surface-muted/30",
+      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap text-foreground outline-none rounded-lg border border-input px-3 py-1 text-sm bg-surface-muted/30",
       className
     )}
     {...props}
@@ -119,7 +119,7 @@ const Item = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full hover:bg-state-hover rounded-[0.6rem] select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
+      "relative flex w-full hover:bg-state-hover rounded-lg select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
       className
     )}
     {...props}

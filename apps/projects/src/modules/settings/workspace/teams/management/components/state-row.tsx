@@ -104,7 +104,7 @@ export const StateRow = ({
   return (
     <form
       className={cn(
-        "flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-surface-muted px-3",
+        "flex h-16 w-full items-center justify-between rounded-lg bg-surface-muted px-3",
         {
           "opacity-80 backdrop-blur": isDragging,
           "shadow-lg": isDragging,
@@ -133,7 +133,7 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="rounded-[0.4rem] bg-surface/40 p-2">
+          <Box className="rounded-md bg-surface/40 p-2">
             <StoryStatusIcon statusId={state.id} />
           </Box>
         )}
@@ -143,7 +143,7 @@ export const StateRow = ({
             className={cn(
               "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
               {
-                "my-0.5 rounded-[0.6rem] border border-border bg-surface/50 px-3 py-1":
+                "my-0.5 rounded-lg border border-border bg-surface/50 px-3 py-1":
                   isEditing,
               },
             )}

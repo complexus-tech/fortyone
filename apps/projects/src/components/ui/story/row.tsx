@@ -125,7 +125,7 @@ export const StoryRow = ({
               )}
               <Checkbox
                 checked={selectedStories.includes(story.id)}
-                className="shrink-0 rounded-[0.35rem] md:absolute md:-left-[1.6rem]"
+                className="shrink-0 rounded md:absolute md:-left-[1.6rem]"
                 disabled={userRole === "guest"}
                 onCheckedChange={(checked) => {
                   setSelectedStories(

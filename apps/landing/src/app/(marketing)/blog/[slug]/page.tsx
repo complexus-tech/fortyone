@@ -119,10 +119,10 @@ export default async function BlogPost({
           >
             {post.metadata.title}
           </Text>
-          <Box className="mb-6 rounded-[0.9rem] border border-border p-1.5 d">
+          <Box className="mb-6 rounded-xl border border-border p-1.5 d">
             <BlurImage
               alt={post.metadata.title}
-              className="aspect-16/8 rounded-[0.6rem]"
+              className="aspect-16/8 rounded-lg"
               src={post.metadata.featuredImage}
             />
           </Box>

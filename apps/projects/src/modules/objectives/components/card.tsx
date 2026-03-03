@@ -121,7 +121,7 @@ export const ObjectiveCard = ({
           >
             <Flex
               align="center"
-              className="size-8 shrink-0 rounded-[0.6rem] bg-surface-muted"
+              className="size-8 shrink-0 rounded-lg bg-surface-muted"
               justify="center"
             >
               <ObjectiveIcon className="h-4" />

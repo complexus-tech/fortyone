@@ -294,7 +294,7 @@ export const InviteMembersDialog = ({
                   leftIcon={
                     <Checkbox
                       checked={formState.teamIds.includes(team.id)}
-                      className="rounded-[0.4rem]"
+                      className="rounded-md"
                     />
                   }
                   onClick={() => {

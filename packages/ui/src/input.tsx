@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "cva";
 import { cn } from "lib";
 
 const inputVariants = cva(
-  "w-full rounded-[0.45rem] border bg-surface border-input px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted",
+  "w-full rounded-md border bg-surface border-input px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted",
   {
     variants: {
       size: {
@@ -19,7 +19,7 @@ const inputVariants = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded-md",
-        md: "rounded-[0.6rem]", // default from original
+        md: "rounded-lg", // default from original
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",

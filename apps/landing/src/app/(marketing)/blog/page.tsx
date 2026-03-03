@@ -45,10 +45,10 @@ export default function Page() {
           className="group grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]"
           href={`/blog/${firstPost.slug}`}
         >
-          <Box className="rounded-[0.9rem] border border-border p-1.5 d">
+          <Box className="rounded-xl border border-border p-1.5 d">
             <BlurImage
               alt={firstPost.metadata.title}
-              className="aspect-[16/9.5] rounded-[0.6rem]"
+              className="aspect-[16/9.5] rounded-lg"
               src={firstPost.metadata.featuredImage}
             />
           </Box>
@@ -92,10 +92,10 @@ export default function Page() {
                 href={`/blog/${slug}`}
                 key={`${slug}-${idx}`}
               >
-                <Box className="rounded-[0.9rem] border border-border p-1.5 d dark:bg-dark-100/60">
+                <Box className="rounded-xl border border-border p-1.5 d dark:bg-dark-100/60">
                   <BlurImage
                     alt={title}
-                    className="aspect-video rounded-[0.6rem]"
+                    className="aspect-video rounded-lg"
                     src={featuredImage}
                   />
                 </Box>

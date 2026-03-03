@@ -27,7 +27,7 @@ const contentClasses = cva(
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-[0.6rem]",
+        md: "rounded-lg",
         lg: "rounded-2xl",
       },
     },
@@ -92,7 +92,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
@@ -113,7 +113,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <ContextMenuPrimitive.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-[0.6rem] px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-[state=open]:bg-accent data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-[state=open]:bg-accent data-disabled:opacity-50",
       {
         "bg-accent": active,
       },

@@ -19,7 +19,7 @@ export const NavLink = ({
   return (
     <Link
       className={cn(
-        "group flex items-center gap-2 rounded-[0.6rem] px-2 py-[0.4rem] text-foreground outline-none transition-colors duration-200 hover:bg-accent",
+        "group flex items-center gap-2 rounded-lg px-2 py-[0.4rem] text-foreground outline-none transition-colors duration-200 hover:bg-accent",
         {
           "bg-accent": active,
         },

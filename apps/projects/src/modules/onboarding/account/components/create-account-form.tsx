@@ -37,7 +37,7 @@ export const CreateAccountForm = () => {
   return (
     <form className="w-full space-y-4" onSubmit={handleSubmit}>
       <Input
-        className="rounded-[0.6rem]"
+        className="rounded-lg"
         label="Full Name"
         minLength={3}
         name="fullName"

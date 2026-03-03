@@ -27,7 +27,7 @@ export const TeamsList = () => {
         </Text>
         {teams.length > 1 && (
           <Input
-            className="w-72 rounded-[0.6rem]"
+            className="w-72 rounded-lg"
             leftIcon={<SearchIcon className="h-4" />}
             onChange={(e) => {
               setSearch(e.target.value);

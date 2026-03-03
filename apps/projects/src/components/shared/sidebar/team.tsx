@@ -131,7 +131,7 @@ export const Team = ({
               />
               <Flex
                 align="center"
-                className="h-10 flex-1 rounded-[0.6rem] pr-2 pl-3 transition outline-none select-none"
+                className="h-10 flex-1 rounded-lg pr-2 pl-3 transition outline-none select-none"
                 justify="between"
                 onClick={() => {
                   setIsOpen(!isOpen);

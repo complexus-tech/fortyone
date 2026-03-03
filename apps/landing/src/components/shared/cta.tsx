@@ -63,7 +63,7 @@ export const CallToAction = () => {
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group border-border bg-background/5 d/70 dark:bg-dark-200/40 relative rounded-t-[0.6rem] border border-b-0 p-0.5 pb-0 shadow-2xl backdrop-blur md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+          <Box className="group border-border bg-background/5 d/70 dark:bg-dark-200/40 relative rounded-t-lg border border-b-0 p-0.5 pb-0 shadow-2xl backdrop-blur md:rounded-t-2xl md:px-1.5 md:pt-1.5">
             <Flex align="center" className="mt-1 mb-2 px-1.5" justify="between">
               <Flex className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
@@ -74,15 +74,15 @@ export const CallToAction = () => {
             </Flex>
             <Image
               alt="CTA"
-              className="border-border rounded-t-lg border border-b-0 md:rounded-t-[0.7rem] dark:hidden"
+              className="border-border rounded-t-lg border border-b-0 md:rounded-t-xl dark:hidden"
               src={ctaLight}
             />
             <Image
               alt="CTA"
-              className="border-border d hidden rounded-t-lg border border-b-0 md:rounded-t-[0.7rem] dark:block"
+              className="border-border d hidden rounded-t-lg border border-b-0 md:rounded-t-xl dark:block"
               src={ctaDark}
             />
-            <Box className="group-hover:bg-background/5 absolute inset-0 flex items-center justify-center rounded-t-[0.6rem] transition-colors duration-300 md:rounded-t-2xl">
+            <Box className="group-hover:bg-background/5 absolute inset-0 flex items-center justify-center rounded-t-lg transition-colors duration-300 md:rounded-t-2xl">
               <Button
                 className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pr-4 md:pl-5"
                 color="invert"

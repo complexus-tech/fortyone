@@ -98,7 +98,7 @@ export const StateRow = ({
 
   return (
     <form
-      className="flex h-16 w-full items-center justify-between rounded-[0.6rem] bg-surface-muted px-3"
+      className="flex h-16 w-full items-center justify-between rounded-lg bg-surface-muted px-3"
       onSubmit={handleSubmit}
       ref={setNodeRef}
       style={style}
@@ -122,7 +122,7 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="rounded-[0.4rem] bg-surface/40 p-2">
+          <Box className="rounded-md bg-surface/40 p-2">
             <ObjectiveStatusIcon statusId={status.id} />
           </Box>
         )}

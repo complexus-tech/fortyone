@@ -47,7 +47,7 @@ const contentClasses = cva(
     variants: {
       rounded: {
         sm: "rounded",
-        md: "rounded-[0.6rem]",
+        md: "rounded-lg",
         lg: "rounded-xl",
       },
     },
@@ -112,7 +112,7 @@ const CommandItem = ({
 }) => (
   <CommandPrimitive.Item
     className={cn(
-      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus-visible:bg-accent rounded-[0.6rem] w-full py-1.5 px-2 outline-none cursor-pointer data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:pointer-events-none",
+      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus-visible:bg-accent rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:pointer-events-none",
       {
         "bg-accent": active,
       },

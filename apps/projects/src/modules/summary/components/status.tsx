@@ -27,7 +27,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-[0.6rem] border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {payload[0].name}
       </Flex>

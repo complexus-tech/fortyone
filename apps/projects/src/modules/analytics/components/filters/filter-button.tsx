@@ -19,7 +19,7 @@ export const FilterButton = ({
       <Popover onOpenChange={setIsOpen} open={isOpen}>
         <Popover.Trigger asChild>
           <Button
-            className="min-w-28 justify-between rounded-[0.7rem] md:h-[2.3rem]"
+            className="min-w-28 justify-between rounded-xl md:h-[2.3rem]"
             color="tertiary"
             variant="outline"
           >

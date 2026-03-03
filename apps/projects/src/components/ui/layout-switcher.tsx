@@ -19,7 +19,7 @@ export const LayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "bg-surface-muted h-[2.2rem] items-center gap-1 rounded-[0.7rem] md:mr-2",
+        "bg-surface-muted h-[2.2rem] items-center gap-1 rounded-xl md:mr-2",
         {
           "opacity-50": disabled,
         },
@@ -29,7 +29,7 @@ export const LayoutSwitcher = ({
       {options.includes("list") && (
         <button
           className={cn(
-            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
             {
               "border-border bg-surface text-text-primary border":
                 layout === "list",
@@ -50,7 +50,7 @@ export const LayoutSwitcher = ({
       {options.includes("kanban") && (
         <button
           className={cn(
-            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
             {
               "border-border bg-surface text-text-primary border":
                 layout === "kanban",
@@ -70,7 +70,7 @@ export const LayoutSwitcher = ({
       {options.includes("gantt") && (
         <button
           className={cn(
-            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-[0.7rem] px-3 font-medium disabled:cursor-not-allowed",
+            "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
             {
               "border-border bg-surface text-text-primary border":
                 layout === "gantt",

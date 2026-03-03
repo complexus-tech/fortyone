@@ -73,7 +73,7 @@ svg {
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply bg-border-strong dark:bg-surface-elevated rounded-[3px];
+  @apply bg-border-strong dark:bg-surface-elevated rounded-xs;
 }
 
 * {

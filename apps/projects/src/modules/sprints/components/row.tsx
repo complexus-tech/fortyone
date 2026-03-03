@@ -65,7 +65,7 @@ export const SprintRow = ({
       >
         <Flex
           align="center"
-          className="bg-surface-muted size-10 rounded-[0.6rem]"
+          className="bg-surface-muted size-10 rounded-lg"
           justify="center"
         >
           <SprintsIcon />
