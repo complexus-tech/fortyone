@@ -6,6 +6,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
   GroupStoriesResponse,
+  Story,
 } from "@/modules/stories/types";
 import type { DetailedStory } from "../types";
 import { restoreStoryAction } from "../actions/restore-story";
@@ -25,7 +26,9 @@ const updateInfiniteQuery = (
           index === 0
             ? {
                 ...page,
-                stories: [...page.stories, story],
+                stories: Array.isArray(page.stories)
+                  ? [...page.stories, story]
+                  : [story],
               }
             : page,
         ),
@@ -42,14 +45,16 @@ const updateGroupedQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: GroupedStoriesResponse | undefined) => {
-      if (!data) return data;
+      if (!data || !Array.isArray(data.groups)) return data;
       return {
         ...data,
         groups: data.groups.map((group, index) =>
           index === 0
             ? {
                 ...group,
-                stories: [...group.stories, story],
+                stories: Array.isArray(group.stories)
+                  ? [...group.stories, story]
+                  : [story],
                 totalCount: group.totalCount + 1,
                 loadedCount: group.loadedCount + 1,
               }
@@ -66,8 +71,18 @@ const updateListQuery = (
   story: DetailedStory,
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    queryClient.setQueryData<Story[]>(queryKey, (data) => {
+      if (!Array.isArray(data)) return data;
+      if (data.some((s) => s.id === story.id)) return data;
+      return [story, ...data];
+    });
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     updateInfiniteQuery(queryClient, queryKey, story);

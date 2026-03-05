@@ -31,9 +31,6 @@ export const useDeleteKeyResultMutation = () => {
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
         (old = []) => old.filter((keyResult) => keyResult.id !== keyResultId),
       );
-      toast.success("Success", {
-        description: "Key result deleted successfully",
-      });
 
       return { previousKeyResults };
     },
@@ -59,6 +56,10 @@ export const useDeleteKeyResultMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
+
+      toast.success("Success", {
+        description: "Key result deleted successfully",
+      });
 
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),

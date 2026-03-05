@@ -279,7 +279,7 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		ID: teamID,
 	}
 
-	return web.Respond(ctx, w, team, http.StatusNoContent)
+	return web.Respond(ctx, w, team, http.StatusOK)
 }
 
 func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -5,7 +5,11 @@ import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
-import type { GroupedStoriesResponse, GroupStoriesResponse } from "../types";
+import type {
+  GroupedStoriesResponse,
+  GroupStoriesResponse,
+  Story,
+} from "../types";
 
 type Payload = {
   storyIds: string[];
@@ -45,10 +49,13 @@ const updateInfiniteQuery = (
       if (!data?.pages) return data;
       return {
         ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          stories: page.stories.filter((story) => !storyIds.includes(story.id)),
-        })),
+        pages: data.pages.map((page) => {
+          if (!Array.isArray(page.stories)) return page;
+          return {
+            ...page,
+            stories: page.stories.filter((story) => !storyIds.includes(story.id)),
+          };
+        }),
       };
     },
   );
@@ -62,10 +69,11 @@ const updateGroupedQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: GroupedStoriesResponse | undefined) => {
-      if (!data) return data;
+      if (!data || !Array.isArray(data.groups)) return data;
       return {
         ...data,
         groups: data.groups.map((group) => {
+          if (!Array.isArray(group.stories)) return group;
           const deletedCount = group.stories.filter((story) =>
             storyIds.includes(story.id),
           ).length;
@@ -90,8 +98,17 @@ const updateListQuery = (
   storyIds: string[],
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    queryClient.setQueryData<Story[]>(queryKey, (data) => {
+      if (!Array.isArray(data)) return data;
+      return data.filter((story) => !storyIds.includes(story.id));
+    });
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     updateInfiniteQuery(queryClient, queryKey, storyIds);
