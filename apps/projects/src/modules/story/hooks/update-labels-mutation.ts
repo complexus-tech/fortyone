@@ -6,6 +6,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
   GroupStoriesResponse,
+  Story,
 } from "@/modules/stories/types";
 import { labelKeys } from "@/constants/keys";
 import type { DetailedStory } from "../types";
@@ -47,12 +48,15 @@ const updateInfiniteQuery = (
       if (!data?.pages) return data;
       return {
         ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          stories: page.stories.map((story) =>
-            story.id === storyId ? { ...story, labels } : story,
-          ),
-        })),
+        pages: data.pages.map((page) => {
+          if (!Array.isArray(page.stories)) return page;
+          return {
+            ...page,
+            stories: page.stories.map((story) =>
+              story.id === storyId ? { ...story, labels } : story,
+            ),
+          };
+        }),
       };
     },
   );
@@ -68,15 +72,18 @@ const updateGroupedQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: GroupedStoriesResponse | undefined) => {
-      if (!data) return data;
+      if (!data || !Array.isArray(data.groups)) return data;
       return {
         ...data,
-        groups: data.groups.map((group) => ({
-          ...group,
-          stories: group.stories.map((story) =>
-            story.id === storyId ? { ...story, labels } : story,
-          ),
-        })),
+        groups: data.groups.map((group) => {
+          if (!Array.isArray(group.stories)) return group;
+          return {
+            ...group,
+            stories: group.stories.map((story) =>
+              story.id === storyId ? { ...story, labels } : story,
+            ),
+          };
+        }),
       };
     },
   );
@@ -90,8 +97,19 @@ const updateListQuery = (
   labels: string[],
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    queryClient.setQueryData<Story[]>(queryKey, (data) => {
+      if (!Array.isArray(data)) return data;
+      return data.map((story) =>
+        story.id === storyId ? { ...story, labels } : story,
+      );
+    });
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     updateInfiniteQuery(queryClient, queryKey, storyId, labels);
