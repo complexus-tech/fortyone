@@ -25,9 +25,6 @@ export const useUpdateKeyResultMutation = () => {
       await queryClient.cancelQueries({
         queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
       });
-      toast.success("Success", {
-        description: "Key result updated successfully",
-      });
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
       );
@@ -70,6 +67,9 @@ export const useUpdateKeyResultMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
+      toast.success("Success", {
+        description: "Key result updated successfully",
+      });
       analytics.track("key_result_updated", {
         keyResultId,
         objectiveId,

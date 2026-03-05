@@ -74,7 +74,12 @@ const updateInfiniteQuery = (
         sequenceId:
           data.pages.reduce(
             (max: number, page) =>
-              Math.max(max, ...page.stories.map((s) => s.sequenceId)),
+              Math.max(
+                max,
+                ...(Array.isArray(page.stories)
+                  ? page.stories.map((s) => s.sequenceId)
+                  : [max]),
+              ),
             0,
           ) + 1,
         priority: story.priority,
@@ -95,7 +100,9 @@ const updateInfiniteQuery = (
           index === 0
             ? {
                 ...page,
-                stories: [...page.stories, newStory],
+                stories: Array.isArray(page.stories)
+                  ? [...page.stories, newStory]
+                  : [newStory],
               }
             : page,
         ),
@@ -112,7 +119,7 @@ const updateGroupedQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: GroupedStoriesResponse | undefined) => {
-      if (!data) return data;
+      if (!data || !Array.isArray(data.groups)) return data;
 
       const newStory: Story = {
         id: "123",
@@ -133,7 +140,12 @@ const updateGroupedQuery = (
         sequenceId:
           data.groups.reduce(
             (max, group) =>
-              Math.max(max, ...group.stories.map((s) => s.sequenceId)),
+              Math.max(
+                max,
+                ...(Array.isArray(group.stories)
+                  ? group.stories.map((s) => s.sequenceId)
+                  : [max]),
+              ),
             0,
           ) + 1,
         priority: story.priority,
@@ -175,7 +187,9 @@ const updateGroupedQuery = (
           index === 0
             ? {
                 ...group,
-                stories: [...group.stories, newStory],
+                stories: Array.isArray(group.stories)
+                  ? [...group.stories, newStory]
+                  : [newStory],
                 totalCount: group.totalCount + 1,
                 loadedCount: group.loadedCount + 1,
               }
@@ -193,8 +207,13 @@ const updateListQuery = (
   story: DetailedStory,
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     updateInfiniteQuery(queryClient, queryKey, story);
@@ -209,8 +228,13 @@ const removeOptimisticStory = (
   queryKey: readonly unknown[],
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     queryClient.setQueriesData(
@@ -219,10 +243,13 @@ const removeOptimisticStory = (
         if (!data?.pages) return data;
         return {
           ...data,
-          pages: data.pages.map((page) => ({
-            ...page,
-            stories: page.stories.filter((story) => story.id !== "123"),
-          })),
+          pages: data.pages.map((page) => {
+            if (!Array.isArray(page.stories)) return page;
+            return {
+              ...page,
+              stories: page.stories.filter((story) => story.id !== "123"),
+            };
+          }),
         };
       },
     );
@@ -230,15 +257,18 @@ const removeOptimisticStory = (
     queryClient.setQueriesData(
       { queryKey },
       (data: GroupedStoriesResponse | undefined) => {
-        if (!data) return data;
+        if (!data || !Array.isArray(data.groups)) return data;
         return {
           ...data,
-          groups: data.groups.map((group) => ({
-            ...group,
-            stories: group.stories.filter((story) => story.id !== "123"),
-            totalCount: Math.max(0, group.totalCount - 1),
-            loadedCount: Math.max(0, group.loadedCount - 1),
-          })),
+          groups: data.groups.map((group) => {
+            if (!Array.isArray(group.stories)) return group;
+            return {
+              ...group,
+              stories: group.stories.filter((story) => story.id !== "123"),
+              totalCount: Math.max(0, group.totalCount - 1),
+              loadedCount: Math.max(0, group.loadedCount - 1),
+            };
+          }),
         };
       },
     );

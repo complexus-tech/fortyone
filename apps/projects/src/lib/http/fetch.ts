@@ -42,13 +42,27 @@ const createClient = (ctx: WorkspaceCtx) => {
   return client;
 };
 
+const parseResponse = async <T>(response: Response) => {
+  if (response.status === 204 || response.status === 205) {
+    return { data: null } as T;
+  }
+
+  const text = await response.text();
+  if (!text.trim()) {
+    return { data: null } as T;
+  }
+
+  return JSON.parse(text) as T;
+};
+
 export const get = async <T>(
   url: string,
   ctx: WorkspaceCtx,
   options?: Options,
 ) => {
   const client = createClient(ctx);
-  return client.get(url, options).json<T>();
+  const response = await client.get(url, options);
+  return parseResponse<T>(response);
 };
 
 export const post = async <T, U>(
@@ -60,10 +74,12 @@ export const post = async <T, U>(
   const client = createClient(ctx);
 
   if (json instanceof FormData) {
-    return client.post(url, { body: json, ...options }).json<U>();
+    const response = await client.post(url, { body: json, ...options });
+    return parseResponse<U>(response);
   }
 
-  return client.post(url, { json, ...options }).json<U>();
+  const response = await client.post(url, { json, ...options });
+  return parseResponse<U>(response);
 };
 
 export const put = async <T, U>(
@@ -75,10 +91,12 @@ export const put = async <T, U>(
   const client = createClient(ctx);
 
   if (json instanceof FormData) {
-    return client.put(url, { body: json, ...options }).json<U>();
+    const response = await client.put(url, { body: json, ...options });
+    return parseResponse<U>(response);
   }
 
-  return client.put(url, { json, ...options }).json<U>();
+  const response = await client.put(url, { json, ...options });
+  return parseResponse<U>(response);
 };
 
 export const patch = async <T, U>(
@@ -90,10 +108,12 @@ export const patch = async <T, U>(
   const client = createClient(ctx);
 
   if (json instanceof FormData) {
-    return client.patch(url, { body: json, ...options }).json<U>();
+    const response = await client.patch(url, { body: json, ...options });
+    return parseResponse<U>(response);
   }
 
-  return client.patch(url, { json, ...options }).json<U>();
+  const response = await client.patch(url, { json, ...options });
+  return parseResponse<U>(response);
 };
 
 export const remove = async <T>(
@@ -102,5 +122,6 @@ export const remove = async <T>(
   options?: Options,
 ) => {
   const client = createClient(ctx);
-  return client.delete(url, options).json<T>();
+  const response = await client.delete(url, options);
+  return parseResponse<T>(response);
 };

@@ -6,6 +6,7 @@ import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
   GroupStoriesResponse,
+  Story,
 } from "@/modules/stories/types";
 import { deleteStoryAction } from "../actions/delete-story";
 import type { DetailedStory } from "../types";
@@ -22,10 +23,13 @@ const updateInfiniteQuery = (
       if (!data?.pages) return data;
       return {
         ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          stories: page.stories.filter((story) => story.id !== storyId),
-        })),
+        pages: data.pages.map((page) => {
+          if (!Array.isArray(page.stories)) return page;
+          return {
+            ...page,
+            stories: page.stories.filter((story) => story.id !== storyId),
+          };
+        }),
       };
     },
   );
@@ -39,15 +43,18 @@ const updateGroupedQuery = (
   queryClient.setQueriesData(
     { queryKey },
     (data: GroupedStoriesResponse | undefined) => {
-      if (!data) return data;
+      if (!data || !Array.isArray(data.groups)) return data;
       return {
         ...data,
-        groups: data.groups.map((group) => ({
-          ...group,
-          stories: group.stories.filter((story) => story.id !== storyId),
-          totalCount: Math.max(0, group.totalCount - 1),
-          loadedCount: Math.max(0, group.loadedCount - 1),
-        })),
+        groups: data.groups.map((group) => {
+          if (!Array.isArray(group.stories)) return group;
+          return {
+            ...group,
+            stories: group.stories.filter((story) => story.id !== storyId),
+            totalCount: Math.max(0, group.totalCount - 1),
+            loadedCount: Math.max(0, group.loadedCount - 1),
+          };
+        }),
       };
     },
   );
@@ -59,8 +66,17 @@ const updateListQuery = (
   storyId: string,
 ) => {
   const queryData = queryClient.getQueryData(queryKey);
-  const isInfiniteQuery =
-    queryData && typeof queryData === "object" && "pages" in queryData;
+  if (Array.isArray(queryData)) {
+    queryClient.setQueryData<Story[]>(queryKey, (data) => {
+      if (!Array.isArray(data)) return data;
+      return data.filter((story) => story.id !== storyId);
+    });
+    return;
+  }
+
+  const isInfiniteQuery = Boolean(
+    queryData && typeof queryData === "object" && "pages" in queryData,
+  );
 
   if (isInfiniteQuery) {
     updateInfiniteQuery(queryClient, queryKey, storyId);
