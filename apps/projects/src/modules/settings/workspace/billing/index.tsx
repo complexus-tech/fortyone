@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { ArrowRight2Icon, CheckIcon, NewTabIcon } from "icons";
 import { cn } from "lib";
+import { useWorkspacePath } from "@/hooks";
 import { manageBilling } from "@/lib/actions/billing/manage-billing";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMembers } from "@/lib/hooks/members";
@@ -18,6 +19,7 @@ import { plans, getPlanFeaturesList } from "./components/plan-data";
 
 export const Billing = () => {
   const pathname = usePathname();
+  const { workspaceSlug } = useWorkspacePath();
   const { data: members } = useMembers();
   const { data: invoices = [] } = useInvoices();
   const { tier, billingInterval, billingEndsAt } = useSubscriptionFeatures();
@@ -30,14 +32,17 @@ export const Billing = () => {
     setIsLoading(true);
     const host = `${window.location.protocol}//${window.location.host}`;
     const returnUrl = `${host}${pathname}`;
-    const res = await manageBilling(returnUrl);
-    if (res.error?.message) {
+    const res = await manageBilling(workspaceSlug, returnUrl);
+
+    if (res.error || !res.data?.url) {
       toast.error("Failed to manage billing", {
-        description: res.error.message,
+        description: res.error?.message || "Unable to open billing portal.",
       });
       setIsLoading(false);
+      return;
     }
-    window.location.href = res.data!.url;
+
+    window.location.href = res.data.url;
   };
 
   const formatDate = (date: string | Date | undefined) => {
