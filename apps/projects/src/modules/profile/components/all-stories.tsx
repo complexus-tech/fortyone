@@ -9,11 +9,7 @@ import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
 
-export const AllStories = ({
-  layout,
-}: {
-  layout: StoriesLayout;
-}) => {
+export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { userId } = useParams<{
     userId: string;
   }>();
@@ -37,7 +33,7 @@ export const AllStories = ({
   return (
     <Box className="h-[calc(100vh-4rem)]">
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b border-border backdrop-blur-lg d/40">
+        <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b backdrop-blur-lg">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>

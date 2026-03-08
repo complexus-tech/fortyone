@@ -21,7 +21,7 @@ export const MainDetailsSkeleton = () => {
         </Box>
 
         {/* SubStories skeleton */}
-        <Wrapper className="mb-4 mt-10">
+        <Wrapper className="mt-10 mb-4">
           <Flex align="center" className="mb-4" justify="between">
             <Skeleton className="h-6 w-32 rounded" />
             <Skeleton className="h-8 w-8 rounded-full" />

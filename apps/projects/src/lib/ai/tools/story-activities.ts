@@ -59,7 +59,10 @@ export const storyActivitiesTool = tool({
       ),
   }),
 
-  execute: async ({ action, storyId, limit = 20 }, { experimental_context }) => {
+  execute: async (
+    { action, storyId, limit = 20 },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -70,7 +73,8 @@ export const storyActivitiesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

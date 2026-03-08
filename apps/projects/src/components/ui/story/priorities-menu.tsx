@@ -1,6 +1,6 @@
 "use client";
 import { Box, Command, Flex, Popover, Text, Divider } from "ui";
-import type { ReactNode} from "react";
+import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import { CheckIcon } from "icons";
 import type { StoryPriority } from "@/modules/stories/types";

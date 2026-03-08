@@ -1,7 +1,7 @@
 import { Box, Flex, Text, Button, Avatar, Select, Menu } from "ui";
 import { DeleteIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { cn } from "lib";
 import { toast } from "sonner";
 import type { Member, UserRole } from "@/types";

@@ -26,8 +26,8 @@ export const deleteAttachment = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-      
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -53,7 +53,11 @@ export const deleteAttachment = tool({
         };
       }
 
-      const result = await deleteStoryAttachmentAction(storyId, attachmentId, workspaceSlug);
+      const result = await deleteStoryAttachmentAction(
+        storyId,
+        attachmentId,
+        workspaceSlug,
+      );
 
       if (result.error) {
         return {

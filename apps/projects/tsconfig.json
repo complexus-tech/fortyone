@@ -9,7 +9,9 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "api-client": ["../../packages/api-client/src/index.ts"],
+      "auth": ["../../packages/auth/src/index.ts"]
     },
     "forceConsistentCasingInFileNames": true
   },

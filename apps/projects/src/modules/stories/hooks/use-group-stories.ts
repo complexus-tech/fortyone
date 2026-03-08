@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import type { GroupStoryParams } from "../types";
 import { storyKeys } from "../constants";
@@ -9,7 +9,11 @@ export const useGroupStories = (params: GroupStoryParams) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
-  const queryKey = storyKeys.groupStories(workspaceSlug, params.groupKey, params);
+  const queryKey = storyKeys.groupStories(
+    workspaceSlug,
+    params.groupKey,
+    params,
+  );
 
   return useQuery({
     queryKey,

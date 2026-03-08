@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight2Icon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
@@ -98,7 +98,9 @@ export const StoryRow = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
+        router.prefetch(
+          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+        );
       }}
     >
       <div ref={setNodeRef}>
@@ -169,7 +171,9 @@ export const StoryRow = ({
 
               <Link
                 className="flex items-center gap-1.5"
-                href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
+                href={withWorkspace(
+                  `/story/${story.id}/${slugify(story.title)}`,
+                )}
                 onClick={(e) => {
                   if (isDesktop && openStoryInDialog) {
                     e.preventDefault();

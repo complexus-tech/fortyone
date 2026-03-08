@@ -43,7 +43,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
         </Box>
       )}
 
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
             <AssigneesMenu>
@@ -73,7 +73,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
           title="Team Members"
         />
 
-        <Box className="divide-y divide-gray-100 dark:divide-dark-100">
+        <Box className="dark:divide-dark-100 divide-y divide-gray-100">
           {members.map((member) => (
             <TeamMemberRow key={member.id} member={member} teamId={team.id} />
           ))}

@@ -63,18 +63,21 @@ export const searchTool = tool({
       .describe("Include detailed information in results (default: false)"),
   }),
 
-  execute: async ({
-    action,
-    query,
-    teamId,
-    assigneeId,
-    statusId,
-    priority,
-    sortBy = "relevance",
-    page = 1,
-    pageSize = 20,
-    includeDetails = false,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      action,
+      query,
+      teamId,
+      assigneeId,
+      statusId,
+      priority,
+      sortBy = "relevance",
+      page = 1,
+      pageSize = 20,
+      includeDetails = false,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -85,7 +88,8 @@ export const searchTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

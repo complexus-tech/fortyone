@@ -56,7 +56,8 @@ export const bulkCreateStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -72,7 +73,9 @@ export const bulkCreateStories = tool({
       }
 
       const results = await Promise.all(
-        storiesData.map((storyData) => createStoryAction(storyData, workspaceSlug)),
+        storiesData.map((storyData) =>
+          createStoryAction(storyData, workspaceSlug),
+        ),
       );
 
       const successCount = results.filter((r) => !r.error).length;

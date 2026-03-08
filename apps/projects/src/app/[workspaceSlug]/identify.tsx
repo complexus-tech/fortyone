@@ -1,5 +1,5 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useEffect } from "react";
 import { useAnalytics, useLocalStorage } from "@/hooks";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 import { userKeys } from "@/constants/keys";

@@ -89,17 +89,20 @@ export const notificationsTool = tool({
       .describe("Include detailed notification information (default: false)"),
   }),
 
-  execute: async ({
-    action,
-    notificationId,
-    filterType,
-    unreadOnly = false,
-    limit = 20,
-    preferenceType,
-    emailEnabled,
-    inAppEnabled,
-    includeDetails = false,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      action,
+      notificationId,
+      filterType,
+      unreadOnly = false,
+      limit = 20,
+      preferenceType,
+      emailEnabled,
+      inAppEnabled,
+      includeDetails = false,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -110,7 +113,8 @@ export const notificationsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -254,7 +258,10 @@ export const notificationsTool = tool({
             };
           }
 
-          const result = await deleteNotification(notificationId, workspaceSlug);
+          const result = await deleteNotification(
+            notificationId,
+            workspaceSlug,
+          );
 
           if (result?.error) {
             return {

@@ -12,7 +12,9 @@ export const useDeleteLabelMutation = () => {
   const mutation = useMutation({
     mutationFn: (labelId: string) => deleteLabelAction(labelId, workspaceSlug),
     onMutate: async (labelId) => {
-      await queryClient.cancelQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
       const previousLabels = queryClient.getQueryData<Label[]>(
         labelKeys.lists(workspaceSlug),
       );
@@ -28,7 +30,10 @@ export const useDeleteLabelMutation = () => {
     },
     onError: (error, variables, context) => {
       if (context?.previousLabels) {
-        queryClient.setQueryData(labelKeys.lists(workspaceSlug), context.previousLabels);
+        queryClient.setQueryData(
+          labelKeys.lists(workspaceSlug),
+          context.previousLabels,
+        );
       }
       toast.error("Failed to delete label", {
         description: error.message || "Your changes were not saved",
@@ -45,7 +50,9 @@ export const useDeleteLabelMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
     },
   });
 

@@ -65,7 +65,7 @@ export const Overview = () => {
   ];
 
   return (
-    <Box className="mb-4 mt-3 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
+    <Box className="mt-3 mb-4 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
       {metrics.map((item) => (
         <Card key={item.title} {...item} />
       ))}

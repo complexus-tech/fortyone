@@ -18,8 +18,8 @@ const Guard = () => {
   return (
     <Box className="flex h-[80%] items-center justify-center">
       <Box className="flex flex-col items-center">
-        <CrownIcon className="h-12 text-warning" strokeWidth={1.3} />
-        <Text className="mb-6 mt-8" fontSize="3xl">
+        <CrownIcon className="text-warning h-12" strokeWidth={1.3} />
+        <Text className="mt-8 mb-6" fontSize="3xl">
           Upgrade your plan
         </Text>
         <Text className="mb-6 max-w-md text-center" color="muted">
@@ -35,7 +35,10 @@ const Guard = () => {
           , and unlock more premium features.
         </Text>
         {userRole === "admin" && (
-          <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
+          <Button
+            color="warning"
+            href={withWorkspace("/settings/workspace/billing")}
+          >
             Upgrade now
           </Button>
         )}

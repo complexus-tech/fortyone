@@ -5,7 +5,7 @@ export const SidebarSkeleton = ({ className }: { className?: string }) => {
   return (
     <Box className={className}>
       <Container className="md:px-6">
-        <Flex align="center" className="mb-6 mt-6" gap={2}>
+        <Flex align="center" className="mt-6 mb-6" gap={2}>
           <Skeleton className="h-5 w-24 rounded" />
           <Skeleton className="h-8 w-8 rounded-full" />
         </Flex>

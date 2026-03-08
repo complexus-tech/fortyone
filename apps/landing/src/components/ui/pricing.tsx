@@ -5,6 +5,7 @@ import { cn } from "lib";
 import { useState } from "react";
 import { CheckIcon } from "icons";
 import { usePathname } from "next/navigation";
+import { SIGNUP_URL } from "@/lib/app-url";
 import { Container } from "./container";
 
 type Billing = "annual" | "monthly";
@@ -12,7 +13,7 @@ const packages = [
   {
     name: "Hobby",
     cta: "Start for free",
-    href: "https://cloud.fortyone.app/signup",
+    href: SIGNUP_URL,
     overview: "Plan and track personal work with essential features.",
     price: 0,
     features: [
@@ -27,7 +28,7 @@ const packages = [
   {
     name: "Professional",
     cta: "Try Professional",
-    href: "https://cloud.fortyone.app/signup",
+    href: SIGNUP_URL,
     overview: "Everything in Hobby, plus collaboration and OKR tracking.",
     price: 7,
     features: [
@@ -42,7 +43,7 @@ const packages = [
   {
     name: "Business",
     cta: "Try Business",
-    href: "https://cloud.fortyone.app/signup",
+    href: SIGNUP_URL,
     overview: "Everything in Professional, with advanced controls and support.",
     price: 10,
     features: [

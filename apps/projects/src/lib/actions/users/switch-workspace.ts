@@ -1,5 +1,3 @@
-"use server";
-
 import type { ApiResponse, User } from "@/types";
 import ky from "ky";
 import { auth } from "@/auth";

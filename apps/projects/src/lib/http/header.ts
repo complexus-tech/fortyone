@@ -1,13 +1,13 @@
-"use server";
-
-import { headers } from "next/headers";
-
 export const getHeaders = async () => {
-  const headersList = await headers();
-  return headersList;
+  if (typeof window !== "undefined") {
+    return new Headers();
+  }
+
+  const { headers } = await import("next/headers");
+  return headers();
 };
 
 export const getCookieHeader = async () => {
-  const headersList = await headers();
+  const headersList = await getHeaders();
   return headersList.get("cookie") ?? "";
 };

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -11,7 +11,8 @@ export const useStoryAttachments = (id: string) => {
 
   return useQuery({
     queryKey: storyKeys.attachments(workspaceSlug, id),
-    queryFn: () => getStoryAttachments(id, { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getStoryAttachments(id, { session: session!, workspaceSlug }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
 };

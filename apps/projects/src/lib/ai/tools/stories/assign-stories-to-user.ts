@@ -25,7 +25,8 @@ export const assignStoriesToUser = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -38,10 +39,13 @@ export const assignStoriesToUser = tool({
         };
       }
 
-      const results = await bulkUpdateAction({
-        storyIds,
-        updates: { assigneeId },
-      }, workspaceSlug);
+      const results = await bulkUpdateAction(
+        {
+          storyIds,
+          updates: { assigneeId },
+        },
+        workspaceSlug,
+      );
 
       if (results.error?.message) {
         return {

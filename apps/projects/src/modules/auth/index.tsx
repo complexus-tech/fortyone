@@ -31,15 +31,24 @@ export const AuthLayout = ({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    const result = await requestMagicEmail(email, isMobileApp);
-    if (result?.error?.message) {
+    try {
+      const result = await requestMagicEmail(email, isMobileApp);
+
+      if (result?.error?.message) {
+        toast.error("Failed to send magic link", {
+          description: result.error.message,
+        });
+      } else {
+        setIsSent(true);
+      }
+    } catch (error) {
       toast.error("Failed to send magic link", {
-        description: result.error.message,
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       });
-    } else {
-      setIsSent(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleOTPSubmit = async () => {
@@ -179,11 +188,20 @@ export const AuthLayout = ({
               fullWidth
               leftIcon={<GoogleIcon />}
               onClick={async () => {
-                await signInWithGoogle(
-                  isMobileApp
-                    ? "/auth-callback?mobileApp=true"
-                    : "/auth-callback",
-                );
+                try {
+                  await signInWithGoogle(
+                    isMobileApp
+                      ? "/auth-callback?mobileApp=true"
+                      : "/auth-callback",
+                  );
+                } catch (error) {
+                  toast.error("Google sign-in failed", {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "Please try again.",
+                  });
+                }
               }}
               type="button"
               size="lg"

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { analyticsKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -11,7 +11,8 @@ export const useTimelineTrends = (filters?: AnalyticsFilters) => {
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({
     queryKey: analyticsKeys.timelineTrends(workspaceSlug, filters),
-    queryFn: () => getTimelineTrends({ session: session!, workspaceSlug }, filters),
+    queryFn: () =>
+      getTimelineTrends({ session: session!, workspaceSlug }, filters),
     enabled: Boolean(session),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

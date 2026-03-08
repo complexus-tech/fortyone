@@ -17,7 +17,10 @@ export const getKeyResultActivitiesTool = tool({
       .describe("Number of activities per page"),
   }),
 
-  execute: async ({ keyResultId, page = 1, pageSize = 20 }, { experimental_context }) => {
+  execute: async (
+    { keyResultId, page = 1, pageSize = 20 },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -28,7 +31,8 @@ export const getKeyResultActivitiesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

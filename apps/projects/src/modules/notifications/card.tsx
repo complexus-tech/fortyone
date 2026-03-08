@@ -63,15 +63,17 @@ export const NotificationCard = ({
         <Box>
           <Link
             className="block"
-            href={withWorkspace(`/notifications/${id}?entityId=${entityId}&entityType=${entityType}`)}
+            href={withWorkspace(
+              `/notifications/${id}?entityId=${entityId}&entityType=${entityType}`,
+            )}
             prefetch={index <= 10 ? true : null}
           >
             <Box
               className={cn(
-                "block cursor-pointer border-b-[0.5px] border-border px-5 py-[0.655rem] transition hover:bg-surface-muted d d md:px-4",
+                "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
                 {
                   "bg-surface-muted": pathname.includes(id),
-                  "border-l-[1.5px] border-l-primary dark:border-l-primary":
+                  "border-l-primary dark:border-l-primary border-l-[1.5px]":
                     isUnread,
                 },
               )}
@@ -125,7 +127,7 @@ export const NotificationCard = ({
                     )}
                     {text.toLowerCase().includes("priority") && (
                       <PriorityIcon
-                        className="shrink-0 text-foreground"
+                        className="text-foreground shrink-0"
                         priority="High"
                       />
                     )}

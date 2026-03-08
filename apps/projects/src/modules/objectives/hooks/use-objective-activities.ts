@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -12,7 +12,11 @@ export const useObjectiveActivitiesInfinite = (objectiveId: string) => {
   return useInfiniteQuery({
     queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
     queryFn: ({ pageParam }) =>
-      getObjectiveActivities(objectiveId, { session: session!, workspaceSlug }, pageParam),
+      getObjectiveActivities(
+        objectiveId,
+        { session: session!, workspaceSlug },
+        pageParam,
+      ),
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
     initialPageParam: 1,

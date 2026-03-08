@@ -1,5 +1,3 @@
-"use server";
-
 import { put } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { Team } from "@/modules/teams/types";

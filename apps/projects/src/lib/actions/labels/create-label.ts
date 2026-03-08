@@ -1,5 +1,3 @@
-"use server";
-
 import { auth } from "@/auth";
 import { post } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
@@ -18,7 +16,11 @@ export const createLabelAction = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    const label = await post<NewLabel, ApiResponse<Label>>("labels", newLabel, ctx);
+    const label = await post<NewLabel, ApiResponse<Label>>(
+      "labels",
+      newLabel,
+      ctx,
+    );
     return label;
   } catch (error) {
     return getApiError(error);

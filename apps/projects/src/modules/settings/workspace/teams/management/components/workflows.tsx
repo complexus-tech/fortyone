@@ -98,7 +98,9 @@ export const WorkflowSettings = () => {
   const [stateToDelete, setStateToDelete] = useState<State | null>(null);
 
   const handleDeleteState = (state: State) => {
-    const categoryStates = statuses.filter((s) => s.category === state.category);
+    const categoryStates = statuses.filter(
+      (s) => s.category === state.category,
+    );
     if (
       categoryStates.length <= 1 &&
       ["unstarted", "started"].includes(state.category)
@@ -277,7 +279,10 @@ export const WorkflowSettings = () => {
             </Text>
           </Flex>
           {userRole === "admin" && (
-            <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
+            <Button
+              color="warning"
+              href={withWorkspace("/settings/workspace/billing")}
+            >
               Upgrade now
             </Button>
           )}
@@ -285,7 +290,7 @@ export const WorkflowSettings = () => {
       }
       feature="customWorkflows"
     >
-      <Box className="mb-6 rounded-2xl border border-border bg-surface pb-6">
+      <Box className="border-border bg-surface mb-6 rounded-2xl border pb-6">
         <SectionHeader
           className="mb-4"
           description="Configure custom workflow states to track the progress of your team's work. Each category represents a different phase in your workflow process."

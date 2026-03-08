@@ -37,14 +37,17 @@ export const updateSprintSettings = tool({
       .describe("Automatically move incomplete stories to the next sprint"),
   }),
 
-  execute: async ({
-    teamId,
-    autoCreateSprints,
-    upcomingSprintsCount,
-    sprintDurationWeeks,
-    sprintStartDay,
-    moveIncompleteStoriesEnabled,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      teamId,
+      autoCreateSprints,
+      upcomingSprintsCount,
+      sprintDurationWeeks,
+      sprintStartDay,
+      moveIncompleteStoriesEnabled,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
       if (!session) {
@@ -54,7 +57,8 @@ export const updateSprintSettings = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -76,7 +80,11 @@ export const updateSprintSettings = tool({
         moveIncompleteStoriesEnabled,
       };
 
-      const result = await updateSprintSettingsAction(teamId, updateData, workspaceSlug);
+      const result = await updateSprintSettingsAction(
+        teamId,
+        updateData,
+        workspaceSlug,
+      );
 
       if (result.error) {
         return {

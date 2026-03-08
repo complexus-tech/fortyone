@@ -59,7 +59,8 @@ export const bulkUpdateStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -74,10 +75,13 @@ export const bulkUpdateStories = tool({
         };
       }
 
-      const result = await bulkUpdateAction({
-        storyIds,
-        updates: updateData,
-      }, workspaceSlug);
+      const result = await bulkUpdateAction(
+        {
+          storyIds,
+          updates: updateData,
+        },
+        workspaceSlug,
+      );
 
       if (result.error?.message) {
         return {

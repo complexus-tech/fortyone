@@ -8,7 +8,7 @@ import {
   MaximizeIcon,
 } from "icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";

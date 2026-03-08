@@ -28,8 +28,7 @@ export const storyKeys = {
     [...storyKeys.detail(workspaceSlug, id), "comments", "infinite"] as const,
   attachments: (workspaceSlug: string, id: string) =>
     [...storyKeys.detail(workspaceSlug, id), "attachments"] as const,
-  total: (workspaceSlug: string) =>
-    ["totalStories", workspaceSlug] as const,
+  total: (workspaceSlug: string) => ["totalStories", workspaceSlug] as const,
   // Grouped stories
   grouped: (workspaceSlug: string) =>
     [...storyKeys.all(workspaceSlug), "grouped"] as const,
@@ -62,4 +61,3 @@ export const storyKeys = {
     params: Record<string, unknown>,
   ) => [...storyKeys.all(workspaceSlug), "group", groupKey, params] as const,
 };
-

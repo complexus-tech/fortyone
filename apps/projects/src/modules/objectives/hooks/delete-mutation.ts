@@ -14,7 +14,8 @@ export const useDeleteObjectiveMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (objectiveId: string) => deleteObjective(objectiveId, workspaceSlug),
+    mutationFn: (objectiveId: string) =>
+      deleteObjective(objectiveId, workspaceSlug),
     onError: (error, objectiveId) => {
       toast.error("Failed to delete objective", {
         description:
@@ -43,7 +44,9 @@ export const useDeleteObjectiveMutation = () => {
       queryClient.removeQueries({
         queryKey: objectiveKeys.objective(workspaceSlug, objectiveId),
       });
-      queryClient.invalidateQueries({ queryKey: objectiveKeys.list(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
       if (!teamId) {
         router.replace(withWorkspace("/objectives"));
       } else {

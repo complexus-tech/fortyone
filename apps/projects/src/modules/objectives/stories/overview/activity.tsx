@@ -1,7 +1,7 @@
 import { ArrowDownIcon, ClockIcon, ObjectiveIcon } from "icons";
 import { Button, Flex, Text, Tabs, Dialog, TextArea } from "ui";
 import { useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ObjectiveHealthIcon } from "@/components/ui";
@@ -116,11 +116,11 @@ export const Activity = () => {
             the objective health status.
           </Dialog.Description>
           <Dialog.Body>
-            <Text className="mb-1.5 mt-3" color="muted">
+            <Text className="mt-3 mb-1.5" color="muted">
               Comment*
             </Text>
             <TextArea
-              className="resize-none rounded-2xl border py-4 leading-normal border-border/80 bg-transparent"
+              className="border-border/80 resize-none rounded-2xl border bg-transparent py-4 leading-normal"
               onChange={(e) => {
                 setComment(e.target.value);
               }}

@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getGroupStories } from "../queries/get-group-stories";

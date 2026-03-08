@@ -43,7 +43,9 @@ export const Navigation = () => {
       href:
         runningSprints.length > 1
           ? withWorkspace("/sprints")
-          : withWorkspace(`/teams/${sprint.teamId}/sprints/${sprint.id}/stories`),
+          : withWorkspace(
+              `/teams/${sprint.teamId}/sprints/${sprint.id}/stories`,
+            ),
     };
   };
 
@@ -75,7 +77,7 @@ export const Navigation = () => {
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
-      href: withWorkspace("/analytics") ,
+      href: withWorkspace("/analytics"),
       disabled: !isAnalyticsEnabled,
     },
   ];
@@ -89,9 +91,15 @@ export const Navigation = () => {
           return (
             <NavLink
               active={isActive}
-              data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
-              data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
-              data-nav-ai-assistant={href === withWorkspace("/maya") ? "" : undefined}
+              data-nav-my-work={
+                href === withWorkspace("/my-work") ? "" : undefined
+              }
+              data-nav-summary={
+                href === withWorkspace("/summary") ? "" : undefined
+              }
+              data-nav-ai-assistant={
+                href === withWorkspace("/maya") ? "" : undefined
+              }
               href={href}
               key={name}
             >

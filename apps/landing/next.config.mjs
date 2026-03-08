@@ -1,5 +1,8 @@
 import createMDX from "@next/mdx";
 
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://cloud.fortyone.app")
+  .replace(/\/$/, "");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -50,27 +53,27 @@ const nextConfig = {
       },
       {
         source: "/login",
-        destination: "https://cloud.fortyone.app/",
+        destination: `${appUrl}/`,
         permanent: true,
       },
       {
         source: "/signup",
-        destination: "https://cloud.fortyone.app/signup",
+        destination: `${appUrl}/signup`,
         permanent: true,
       },
       {
         source: "/auth-callback",
-        destination: "https://cloud.fortyone.app/auth-callback",
+        destination: `${appUrl}/auth-callback`,
         permanent: true,
       },
       {
         source: "/verify/:email/:token",
-        destination: "https://cloud.fortyone.app/verify/:email/:token",
+        destination: `${appUrl}/verify/:email/:token`,
         permanent: true,
       },
       {
         source: "/onboarding/:path*",
-        destination: "https://cloud.fortyone.app/onboarding/:path*",
+        destination: `${appUrl}/onboarding/:path*`,
         permanent: true,
       },
     ];

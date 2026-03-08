@@ -280,7 +280,7 @@ export const DateRangeFilter = ({
 
       <Popover.Content
         align="end"
-        className="mr-0 w-96 bg-opacity-80 px-4 py-3 dark:bg-opacity-80"
+        className="bg-opacity-80 dark:bg-opacity-80 mr-0 w-96 px-4 py-3"
       >
         <DateRangeSelector
           endDate={endDate}

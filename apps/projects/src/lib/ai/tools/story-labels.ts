@@ -17,11 +17,15 @@ export const storyLabelsTool = tool({
     storyId: z.string(),
     labelIds: z.array(z.string()).optional(),
   }),
-  execute: async ({ action, storyId, labelIds = [] }, { experimental_context }) => {
+  execute: async (
+    { action, storyId, labelIds = [] },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -46,7 +50,11 @@ export const storyLabelsTool = tool({
               success: false,
               error: "Guests cannot modify story labels",
             };
-          const res = await updateLabelsAction(storyId, labelIds, workspaceSlug);
+          const res = await updateLabelsAction(
+            storyId,
+            labelIds,
+            workspaceSlug,
+          );
           if (res.error) return { success: false, error: res.error.message };
           return { success: true, labelIds };
         }
@@ -60,7 +68,11 @@ export const storyLabelsTool = tool({
           const newLabelIds = Array.from(
             new Set([...currentLabelIds, ...labelIds]),
           );
-          const res = await updateLabelsAction(storyId, newLabelIds, workspaceSlug);
+          const res = await updateLabelsAction(
+            storyId,
+            newLabelIds,
+            workspaceSlug,
+          );
           if (res.error) return { success: false, error: res.error.message };
           return { success: true, labelIds: newLabelIds };
         }
@@ -74,7 +86,11 @@ export const storyLabelsTool = tool({
           const filtered = currentLabelIds.filter(
             (id) => !labelIds.includes(id),
           );
-          const res = await updateLabelsAction(storyId, filtered, workspaceSlug);
+          const res = await updateLabelsAction(
+            storyId,
+            filtered,
+            workspaceSlug,
+          );
           if (res.error) return { success: false, error: res.error.message };
           return { success: true, labelIds: filtered };
         }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -27,7 +27,8 @@ export const useObjective = (objectiveId: string | null, teamId?: string) => {
 
   const query = useQuery({
     queryKey: objectiveKeys.objective(workspaceSlug, objectiveId ?? ""),
-    queryFn: () => getObjective(objectiveId ?? "", { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getObjective(objectiveId ?? "", { session: session!, workspaceSlug }),
     enabled: !existingObjective && !isObjectivesPending && Boolean(objectiveId),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

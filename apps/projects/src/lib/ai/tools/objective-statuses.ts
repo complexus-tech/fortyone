@@ -54,7 +54,10 @@ export const objectiveStatusesTool = tool({
       .optional()
       .describe("Whether this should be the default objective status"),
   }),
-  execute: async ({ action, statusId, name, color, category, isDefault }, { experimental_context }) => {
+  execute: async (
+    { action, statusId, name, color, category, isDefault },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
       if (!session) {
@@ -64,7 +67,8 @@ export const objectiveStatusesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -149,7 +153,10 @@ export const objectiveStatusesTool = tool({
             category,
           };
 
-          const result = await createObjectiveStatusAction(newStatus, workspaceSlug);
+          const result = await createObjectiveStatusAction(
+            newStatus,
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {
@@ -230,9 +237,13 @@ export const objectiveStatusesTool = tool({
             };
           }
 
-          const result = await updateObjectiveStatusAction(statusId, {
-            isDefault: true,
-          }, workspaceSlug);
+          const result = await updateObjectiveStatusAction(
+            statusId,
+            {
+              isDefault: true,
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {
@@ -265,7 +276,10 @@ export const objectiveStatusesTool = tool({
             };
           }
 
-          const result = await deleteObjectiveStatusAction(statusId, workspaceSlug);
+          const result = await deleteObjectiveStatusAction(
+            statusId,
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {

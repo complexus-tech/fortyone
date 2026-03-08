@@ -269,7 +269,7 @@ export const KeyboardShortcuts = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="md:mb-auto md:mt-auto"
+        className="md:mt-auto md:mb-auto"
         overlayClassName="justify-end pr-[1vh]"
         size="sm"
       >

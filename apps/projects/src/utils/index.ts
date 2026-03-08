@@ -19,7 +19,6 @@ export const getRedirectUrl = (
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
     workspaces[0];
 
-  
   if (isFortyOneApp) {
     return `https://${activeWorkspace.slug}.fortyone.app/my-work`;
   }

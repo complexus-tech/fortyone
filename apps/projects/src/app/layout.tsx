@@ -6,10 +6,10 @@ import {
   Bricolage_Grotesque as BricolageGrotesque,
 } from "next/font/google";
 import { type ReactNode } from "react";
-import { SessionProvider } from "next-auth/react";
 import { PublicEnv } from "@/public-env";
 import { cn } from "lib";
 import { auth } from "@/auth";
+import { SessionProvider } from "@/lib/auth/client";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
 import { OnlineStatusMonitor } from "./online-monitor";

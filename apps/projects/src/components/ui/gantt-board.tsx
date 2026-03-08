@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import type { DateRange } from "react-day-picker";
 import { CalendarPlusIcon } from "icons";
 import type { Story } from "@/modules/stories/types";
@@ -73,13 +73,15 @@ const StoryRow = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
+        router.prefetch(
+          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+        );
       }}
     >
       <StoryContextMenu story={story}>
         <Flex
           align="center"
-          className="group h-14 border-b-[0.5px] border-border px-6 transition-colors hover:bg-state-hover"
+          className="group border-border hover:bg-state-hover h-14 border-b-[0.5px] px-6 transition-colors"
           justify="between"
         >
           <Flex align="center" className="min-w-0 flex-1 gap-2">
@@ -146,7 +148,7 @@ const StoryRow = ({
             <PrioritiesMenu>
               <PrioritiesMenu.Trigger>
                 <button
-                  className="flex shrink-0 select-none items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex shrink-0 items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={userRole === "guest"}
                   type="button"
                 >
@@ -244,7 +246,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { mutate } = useUpdateStoryMutation();
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
-  
+
   // Simple function to get team code from teamId
   const getTeamCode = (teamId: string): string => {
     const team = teams.find((t) => t.id === teamId);
@@ -292,7 +294,7 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] border-border/60 bg-background md:w-136">
+        <Box className="border-border/60 bg-background sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] md:w-136">
           <GanttHeader
             onReset={onReset}
             onZoomChange={onZoomChange}

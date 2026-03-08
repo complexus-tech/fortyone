@@ -12,10 +12,10 @@ export const StatusSkeleton = () => {
       <Box>
         {/* Donut chart skeleton */}
         <Box className="relative h-[160px] w-full">
-          <Skeleton className="absolute left-1/2 top-1/2 size-[160px] -translate-x-1/2 -translate-y-1/2 transform rounded-full" />
-          <Skeleton className="absolute left-1/2 top-1/2 size-[100px] -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-background" />
+          <Skeleton className="absolute top-1/2 left-1/2 size-[160px] -translate-x-1/2 -translate-y-1/2 transform rounded-full" />
+          <Skeleton className="bg-background absolute top-1/2 left-1/2 size-[100px] -translate-x-1/2 -translate-y-1/2 transform rounded-full" />
           {/* Center text skeleton */}
-          <Flex className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
+          <Flex className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform flex-col items-center">
             <Skeleton className="h-8 w-10 rounded" />
             <Skeleton className="mt-1 h-4 w-16 rounded" />
           </Flex>

@@ -10,7 +10,7 @@ export const Skeleton = ({ layout }: { layout: StoriesLayout }) => {
   return (
     <Box className="h-[calc(100dvh-4rem)]">
       <Tabs defaultValue={tab}>
-        <Box className="sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] border-border">
+        <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px]">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>

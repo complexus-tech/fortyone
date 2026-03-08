@@ -33,7 +33,10 @@ export const membersTool = tool({
       .describe("Member ID for specific member operations"),
   }),
 
-  execute: async ({ action, teamId, searchQuery, memberId }, { experimental_context }) => {
+  execute: async (
+    { action, teamId, searchQuery, memberId },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -44,7 +47,8 @@ export const membersTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

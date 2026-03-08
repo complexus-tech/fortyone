@@ -2,13 +2,11 @@
   "private": false,
   "scripts": {
     "build": "turbo run build",
-    "dev:old": "turbo run dev",
-    "dev": "concurrently \"turbo run dev\" \"caddy run\" --names \"turbo,caddy\" --prefix-colors \"blue,green\"",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "tsconfig": "workspace:*",

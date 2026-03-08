@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { invitationKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
 import { getPendingInvitations } from "../queries/pending-invitations";

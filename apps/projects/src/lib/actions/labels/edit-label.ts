@@ -1,5 +1,3 @@
-"use server";
-
 import { put } from "@/lib/http";
 import type { ApiResponse, Label } from "@/types";
 import { getApiError } from "@/utils";

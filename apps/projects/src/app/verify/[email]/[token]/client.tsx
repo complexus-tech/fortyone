@@ -4,7 +4,7 @@ import { Text, Flex } from "ui";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
-import { logIn, getSession } from "./actions";
+import { logIn } from "./actions";
 
 export const EmailVerificationCallback = ({
   isMobileApp,
@@ -25,14 +25,6 @@ export const EmailVerificationCallback = ({
       const res = await logIn(validatedEmail, validatedToken);
 
       if (res?.error) {
-        const session = await getSession();
-        if (session) {
-          window.location.href = isMobileApp
-            ? "/auth-callback?mobileApp=true"
-            : "/auth-callback";
-          return;
-        }
-
         window.location.href = `/?error=${encodeURIComponent(res.error)}`;
         return;
       }

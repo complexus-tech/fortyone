@@ -3,7 +3,7 @@ import { Box, Text, Wrapper, ProgressBar, Flex, DatePicker } from "ui";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
 import { differenceInDays, format, formatISO } from "date-fns";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useFeatures, useTerminology } from "@/hooks";
 import { useObjective } from "../../hooks/use-objective";

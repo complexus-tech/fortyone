@@ -17,11 +17,14 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) => readNotification(notificationId, workspaceSlug),
+    mutationFn: (notificationId: string) =>
+      readNotification(notificationId, workspaceSlug),
 
     onMutate: async (notificationId) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       // Get the previous data
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
@@ -82,8 +85,12 @@ export const useReadNotificationMutation = (isOptimistic = true) => {
 
     onSettled: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.unread(workspaceSlug),
+      });
     },
   });
 

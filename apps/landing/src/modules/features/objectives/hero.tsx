@@ -4,6 +4,7 @@ import { Box, Container, Flex, Text, Button } from "ui";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui";
+import { SIGNUP_URL } from "@/lib/app-url";
 import objectivesImg from "../../../../public/images/product/objective.webp";
 import objectivesImgLight from "../../../../public/images/product/objective-light.webp";
 
@@ -88,7 +89,7 @@ export const Hero = () => {
               <Button
                 className="px-3 md:pr-4 md:pl-5"
                 color="invert"
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 rounded="lg"
                 size="lg"
               >
@@ -110,7 +111,7 @@ export const Hero = () => {
               <Button
                 className="px-3 md:pr-4 md:pl-3.5"
                 color="tertiary"
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 leftIcon={<GoogleIcon />}
                 rounded="lg"
                 size="lg"

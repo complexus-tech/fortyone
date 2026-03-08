@@ -29,7 +29,10 @@ export const MemberTooltip = ({
               src={member?.avatarUrl}
             />
             <Box>
-              <Link className="mb-2 flex gap-1" href={withWorkspace(`/profile/${member?.id}`)}>
+              <Link
+                className="mb-2 flex gap-1"
+                href={withWorkspace(`/profile/${member?.id}`)}
+              >
                 <Text fontSize="md" fontWeight="medium">
                   {member?.fullName}
                 </Text>

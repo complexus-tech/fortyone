@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box, Flex, Text, Button, Avatar, Menu } from "ui";
 import { MoreHorizontalIcon, DeleteIcon } from "icons";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import type { Member } from "@/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useUserRole } from "@/hooks/role";

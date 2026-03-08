@@ -5,7 +5,6 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { auth } from "@/auth";
 import { getTeams } from "@/lib/queries/get-teams";
 import { getProfile } from "@/lib/queries/profile";
-import { getCookieHeader } from "@/lib/http/header";
 
 export const metadata: Metadata = {
   title: "Invite Team - FortyOne",
@@ -14,10 +13,9 @@ export const metadata: Metadata = {
 
 export default async function InvitePage() {
   const session = await auth();
-  const cookieHeader = await getCookieHeader();
   const [workspaces, profile] = await Promise.all([
-    getWorkspaces(session?.token, cookieHeader),
-    getProfile({ token: session?.token, cookieHeader }),
+    getWorkspaces(),
+    getProfile(),
   ]);
   const activeWorkspace = workspaces.find(
     (workspace) => workspace.id === profile.lastUsedWorkspaceId,

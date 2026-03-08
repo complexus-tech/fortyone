@@ -75,12 +75,16 @@ export async function getUserContext({
       memories.length > 0
         ? `
     **Long-term User Memories:**
-    ${memories.map((m) => `
+    ${memories
+      .map(
+        (m) => `
       - id: ${m.id}
       - content: ${m.content}
       - created at: ${m.createdAt}
       - updated at: ${m.updatedAt}
-      `).join("\n")}
+      `,
+      )
+      .join("\n")}
 
     `
         : ""

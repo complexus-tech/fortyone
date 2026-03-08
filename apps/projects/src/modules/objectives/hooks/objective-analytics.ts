@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { getObjectiveAnalytics } from "../queries/get-objective-analytics";
@@ -9,6 +9,7 @@ export const useObjectiveAnalytics = (objectiveId: string) => {
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({
     queryKey: objectiveKeys.analytics(workspaceSlug, objectiveId),
-    queryFn: () => getObjectiveAnalytics(objectiveId, { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getObjectiveAnalytics(objectiveId, { session: session!, workspaceSlug }),
   });
 };

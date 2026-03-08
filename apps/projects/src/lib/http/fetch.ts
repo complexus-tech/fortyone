@@ -1,45 +1,14 @@
-import type { Options } from "ky";
-import ky from "ky";
-import type { Session } from "next-auth";
+import { ApiError, createApiClient, type RequestOptions } from "api-client";
 import { getApiUrl } from "@/lib/api-url";
-import { buildAuthHeaders } from "@/lib/http/auth-headers";
-import { ApiError } from "./error";
 
 const apiURL = getApiUrl();
 
 export type WorkspaceCtx = {
-  session: Session;
+  session?: {
+    token?: string;
+  } | null;
   workspaceSlug: string;
   cookieHeader?: string;
-};
-
-const createClient = (ctx: WorkspaceCtx) => {
-  const prefixUrl = `${apiURL}/workspaces/${ctx.workspaceSlug}/`;
-
-  const headers = buildAuthHeaders({
-    token: ctx.session?.token,
-    cookieHeader: ctx.cookieHeader,
-  });
-
-  const client = ky.create({
-    prefixUrl,
-    credentials: "include",
-    headers,
-    hooks: {
-      beforeError: [
-        async (error) => {
-          const { response } = error;
-          if (response.body) {
-            const data = await response.json();
-            throw new ApiError(error.message, response.status, data);
-          }
-          throw error;
-        },
-      ],
-    },
-  });
-
-  return client;
 };
 
 const parseResponse = async <T>(response: Response) => {
@@ -48,6 +17,7 @@ const parseResponse = async <T>(response: Response) => {
   }
 
   const text = await response.text();
+
   if (!text.trim()) {
     return { data: null } as T;
   }
@@ -55,13 +25,17 @@ const parseResponse = async <T>(response: Response) => {
   return JSON.parse(text) as T;
 };
 
+const createWorkspaceClient = (ctx: WorkspaceCtx) =>
+  createApiClient(`${apiURL}/workspaces/${ctx.workspaceSlug}`);
+
+export { ApiError };
+
 export const get = async <T>(
   url: string,
   ctx: WorkspaceCtx,
-  options?: Options,
+  options?: RequestOptions,
 ) => {
-  const client = createClient(ctx);
-  const response = await client.get(url, options);
+  const response = await createWorkspaceClient(ctx).get(url, options);
   return parseResponse<T>(response);
 };
 
@@ -69,16 +43,14 @@ export const post = async <T, U>(
   url: string,
   json: T,
   ctx: WorkspaceCtx,
-  options?: Options,
+  options?: RequestOptions,
 ) => {
-  const client = createClient(ctx);
+  const client = createWorkspaceClient(ctx);
+  const response =
+    json instanceof FormData
+      ? await client.post(url, { body: json, ...options })
+      : await client.post(url, { json, ...options });
 
-  if (json instanceof FormData) {
-    const response = await client.post(url, { body: json, ...options });
-    return parseResponse<U>(response);
-  }
-
-  const response = await client.post(url, { json, ...options });
   return parseResponse<U>(response);
 };
 
@@ -86,16 +58,14 @@ export const put = async <T, U>(
   url: string,
   json: T,
   ctx: WorkspaceCtx,
-  options?: Options,
+  options?: RequestOptions,
 ) => {
-  const client = createClient(ctx);
+  const client = createWorkspaceClient(ctx);
+  const response =
+    json instanceof FormData
+      ? await client.put(url, { body: json, ...options })
+      : await client.put(url, { json, ...options });
 
-  if (json instanceof FormData) {
-    const response = await client.put(url, { body: json, ...options });
-    return parseResponse<U>(response);
-  }
-
-  const response = await client.put(url, { json, ...options });
   return parseResponse<U>(response);
 };
 
@@ -103,25 +73,22 @@ export const patch = async <T, U>(
   url: string,
   json: T,
   ctx: WorkspaceCtx,
-  options?: Options,
+  options?: RequestOptions,
 ) => {
-  const client = createClient(ctx);
+  const client = createWorkspaceClient(ctx);
+  const response =
+    json instanceof FormData
+      ? await client.patch(url, { body: json, ...options })
+      : await client.patch(url, { json, ...options });
 
-  if (json instanceof FormData) {
-    const response = await client.patch(url, { body: json, ...options });
-    return parseResponse<U>(response);
-  }
-
-  const response = await client.patch(url, { json, ...options });
   return parseResponse<U>(response);
 };
 
 export const remove = async <T>(
   url: string,
   ctx: WorkspaceCtx,
-  options?: Options,
+  options?: RequestOptions,
 ) => {
-  const client = createClient(ctx);
-  const response = await client.delete(url, options);
+  const response = await createWorkspaceClient(ctx).delete(url, options);
   return parseResponse<T>(response);
 };

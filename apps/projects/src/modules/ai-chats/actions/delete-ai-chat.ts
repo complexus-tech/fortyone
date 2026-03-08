@@ -1,14 +1,9 @@
-"use server";
-
 import { auth } from "@/auth";
 import { remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
-export const deleteAiChatAction = async (
-  id: string,
-  workspaceSlug: string,
-) => {
+export const deleteAiChatAction = async (id: string, workspaceSlug: string) => {
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };

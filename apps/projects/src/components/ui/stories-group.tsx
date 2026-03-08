@@ -88,7 +88,7 @@ export const StoriesGroup = ({
   return (
     <div
       className={cn("border-0 border-transparent transition", {
-        "border border-primary": isOver && active?.id,
+        "border-primary border": isOver && active?.id,
         hidden: !showEmptyGroups && group.loadedCount === 0,
       })}
       ref={setNodeRef}

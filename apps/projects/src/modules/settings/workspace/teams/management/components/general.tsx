@@ -131,7 +131,10 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
                   </Text>
                 </Flex>
                 {userRole === "admin" && (
-                  <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
+                  <Button
+                    color="warning"
+                    href={withWorkspace("/settings/workspace/billing")}
+                  >
                     Upgrade now
                   </Button>
                 )}

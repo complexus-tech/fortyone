@@ -13,7 +13,9 @@ export const useUpdateRoleMutation = () => {
     mutationFn: ({ userId, role }: { userId: string; role: UserRole }) =>
       updateUserRoleAction({ userId, role, workspaceSlug }),
     onMutate: async ({ userId, role }) => {
-      await queryClient.cancelQueries({ queryKey: memberKeys.lists(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: memberKeys.lists(workspaceSlug),
+      });
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.lists(workspaceSlug),
       );
@@ -32,7 +34,10 @@ export const useUpdateRoleMutation = () => {
       return { previousMembers };
     },
     onError: (error, variables, context) => {
-      queryClient.setQueryData(memberKeys.lists(workspaceSlug), context?.previousMembers);
+      queryClient.setQueryData(
+        memberKeys.lists(workspaceSlug),
+        context?.previousMembers,
+      );
       toast.error("Failed to update user role", {
         description: error.message || "Failed to update user role",
         action: {
@@ -47,7 +52,9 @@ export const useUpdateRoleMutation = () => {
       if (res?.error?.message) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: memberKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: memberKeys.lists(workspaceSlug),
+      });
     },
   });
 

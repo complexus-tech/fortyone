@@ -1,5 +1,3 @@
-"use server";
-
 import type { ApiResponse } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 import ky from "ky";

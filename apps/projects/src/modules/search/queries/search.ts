@@ -12,6 +12,9 @@ export const searchQuery = async (
     addQueryPrefix: true,
     encodeValuesOnly: true,
   });
-  const response = await get<ApiResponse<SearchResponse>>(`search${query}`, ctx);
+  const response = await get<ApiResponse<SearchResponse>>(
+    `search${query}`,
+    ctx,
+  );
   return response.data!;
 };
