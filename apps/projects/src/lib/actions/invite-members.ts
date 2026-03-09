@@ -1,5 +1,3 @@
-"use server";
-
 import ky from "ky";
 import { auth } from "@/auth";
 import { getApiUrl } from "@/lib/api-url";

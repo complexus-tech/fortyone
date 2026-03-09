@@ -1,6 +1,7 @@
 import { Flex, Text, Box, Button } from "ui";
 import { CloseIcon, SuccessIcon } from "icons";
 import { cn } from "lib";
+import { SIGNUP_URL } from "@/lib/app-url";
 import { plans, featureLabels } from "../../lib/plan-data";
 import { Container } from "./container";
 
@@ -178,7 +179,7 @@ export const ComparePlans = () => {
                 align="center"
                 color="tertiary"
                 fullWidth
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 variant="outline"
               >
                 Start for free
@@ -189,7 +190,7 @@ export const ComparePlans = () => {
                 align="center"
                 color="tertiary"
                 fullWidth
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 variant="outline"
               >
                 Try Proffesional
@@ -200,7 +201,7 @@ export const ComparePlans = () => {
                 align="center"
                 color="invert"
                 fullWidth
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 variant="outline"
               >
                 Try Business

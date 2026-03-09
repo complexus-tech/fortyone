@@ -1,0 +1,14 @@
+{
+  "name": "auth",
+  "version": "0.0.0",
+  "private": false,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "api-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.2"
+  }
+}

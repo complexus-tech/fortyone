@@ -34,6 +34,8 @@ const (
 	WorkspaceMembersKey  = "workspaces:members:%s"     // workspaceID (members of a workspace)
 	WorkspaceTeamsKey    = "workspaces:teams:%s"       // workspaceID (teams in a workspace)
 	WorkspaceSettingsKey = "workspaces:settings:%s"    // workspaceID
+	AuthSessionKey       = "auth:session:%s"           // session token
+	AuthGoogleStateKey   = "auth:google:state:%s"      // oauth state
 )
 
 // ObjectiveListCacheKey generates a cache key for a list of objectives
@@ -110,6 +112,16 @@ func WorkspaceTeamsCacheKey(workspaceID uuid.UUID) string {
 // WorkspaceSettingsCacheKey generates a cache key for workspace settings
 func WorkspaceSettingsCacheKey(workspaceID uuid.UUID) string {
 	return fmt.Sprintf(WorkspaceSettingsKey, workspaceID.String())
+}
+
+// AuthSessionCacheKey generates a cache key for an authenticated session token.
+func AuthSessionCacheKey(token string) string {
+	return fmt.Sprintf(AuthSessionKey, token)
+}
+
+// AuthGoogleStateCacheKey generates a cache key for Google OAuth state values.
+func AuthGoogleStateCacheKey(state string) string {
+	return fmt.Sprintf(AuthGoogleStateKey, state)
 }
 
 // InvalidateObjectiveKeys invalidates all cache keys related to an objective

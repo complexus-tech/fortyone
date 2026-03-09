@@ -10,7 +10,7 @@ export const SecuritySettings = () => {
         Security Settings
       </Text>
 
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="Your account is protected by industry-standard security measures."
           title="Account Security"

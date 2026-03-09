@@ -4,7 +4,12 @@ import { CopyIcon, DeleteIcon, GitIcon, MaximizeIcon, UndoIcon } from "icons";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useCopyToClipboard, useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
+import {
+  useCopyToClipboard,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
@@ -61,7 +66,7 @@ export const OptionsHeader = ({
       return `${window.location.origin}/story/${id}`;
     }
     return `${window.location.origin}/${workspaceSlug}/story/${id}`;
-  }
+  };
 
   const copyBranchName = async () => {
     await copyText(generateGitBranchName());
@@ -109,7 +114,7 @@ export const OptionsHeader = ({
   });
   return (
     <>
-      <Container className="flex h-16 w-full items-center justify-between border-b-[0.5px] border-border d md:border-b-0 md:px-6">
+      <Container className="border-border d flex h-16 w-full items-center justify-between border-b-[0.5px] md:border-b-0 md:px-6">
         <Flex align="center" gap={2}>
           <MobileMenuButton />
           <Text color="muted" fontWeight="semibold" transform="uppercase">
@@ -128,9 +133,7 @@ export const OptionsHeader = ({
                   asIcon
                   color="tertiary"
                   href={withWorkspace(`/story/${id}/${slugify(title)}`)}
-                  leftIcon={
-                    <MaximizeIcon className="h-5" strokeWidth={2.5} />
-                  }
+                  leftIcon={<MaximizeIcon className="h-5" strokeWidth={2.5} />}
                   variant="naked"
                 >
                   <span className="sr-only">Fullscreen</span>
@@ -180,8 +183,8 @@ export const OptionsHeader = ({
                   title={
                     isAdminOrOwner
                       ? `Restore ${getTermDisplay("storyTerm", {
-                        capitalize: true,
-                      })}`
+                          capitalize: true,
+                        })}`
                       : `You are not allowed to restore this ${getTermDisplay("storyTerm")}`
                   }
                 >
@@ -209,8 +212,8 @@ export const OptionsHeader = ({
                   title={
                     isAdminOrOwner
                       ? `Delete ${getTermDisplay("storyTerm", {
-                        capitalize: true,
-                      })}`
+                          capitalize: true,
+                        })}`
                       : `You are not allowed to delete this ${getTermDisplay("storyTerm")}`
                   }
                 >

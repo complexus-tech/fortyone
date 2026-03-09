@@ -36,9 +36,7 @@ export const SubStories = ({
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
   const [manualSelectedSubstories, setManualSelectedSubstories] = useState<
     Set<string>
-  >(
-    new Set(),
-  );
+  >(new Set());
   const [hasCustomSelection, setHasCustomSelection] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
@@ -79,7 +77,9 @@ export const SubStories = ({
   const toggleSelection = (substoryTitle: string) => {
     setHasCustomSelection(true);
     setManualSelectedSubstories((prev) => {
-      const baseSelection = hasCustomSelection ? prev : new Set(suggestedTitles);
+      const baseSelection = hasCustomSelection
+        ? prev
+        : new Set(suggestedTitles);
       const newSet = new Set(baseSelection);
       if (newSet.has(substoryTitle)) {
         newSet.delete(substoryTitle);

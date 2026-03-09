@@ -5,7 +5,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -83,7 +83,9 @@ export const StoryCard = ({
             queryFn: () => getLinks(story.id, ctx),
           });
         }
-        router.prefetch(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
+        router.prefetch(
+          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+        );
       }}
     >
       <StoryContextMenu story={story}>

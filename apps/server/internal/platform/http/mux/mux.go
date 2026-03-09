@@ -37,6 +37,7 @@ type Config struct {
 	Log            *logger.Logger
 	Tracer         trace.Tracer
 	SecretKey      string
+	CookieDomain   string
 	EmailService   mailer.Service
 	BrevoService   *brevo.Service
 	GoogleService  *google.Service
@@ -54,6 +55,7 @@ type Config struct {
 
 // New returns a new HTTP handler that defines all the API routes.
 func New(cfg Config, ra RouteAdder) http.Handler {
+	mid.SetAuthCache(cfg.Cache)
 	app := web.New(cfg.Shutdown, cfg.Tracer, mid.Logger(cfg.Log))
 	app.StrictSlash(false)
 

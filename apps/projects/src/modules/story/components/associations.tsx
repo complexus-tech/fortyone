@@ -125,7 +125,9 @@ export const Associations = ({
                 <Flex align="center" className="flex-1 gap-2">
                   <AssociationBadge association={assoc} storyId={storyId} />
                   <Link
-                    href={withWorkspace(`/story/${assoc.story.id}/${slugify(assoc.story.title)}`)}
+                    href={withWorkspace(
+                      `/story/${assoc.story.id}/${slugify(assoc.story.title)}`,
+                    )}
                   >
                     <Text
                       className="line-clamp-1 font-medium"

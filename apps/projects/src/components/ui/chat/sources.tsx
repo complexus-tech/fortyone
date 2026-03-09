@@ -8,7 +8,7 @@ import { Collapsible } from "ui";
 type SourcesProps = ComponentProps<"div">;
 
 export const Sources = ({ className, ...props }: SourcesProps) => (
-  <Collapsible className={cn("not-prose mb-4 mt-2", className)} {...props} />
+  <Collapsible className={cn("not-prose mt-2 mb-4", className)} {...props} />
 );
 
 type SourcesTriggerProps = ComponentProps<typeof Collapsible.Trigger> & {
@@ -20,10 +20,10 @@ export const Trigger = ({ count, children, ...props }: SourcesTriggerProps) => (
     {children ?? (
       <>
         <p className="flex items-center gap-1.5 text-[0.95rem] font-medium">
-          <InternetIcon className="h-4 text-foreground" />
+          <InternetIcon className="text-foreground h-4" />
           Used {count} sources
         </p>
-        <ArrowDown2Icon className="h-4 text-foreground" />
+        <ArrowDown2Icon className="text-foreground h-4" />
       </>
     )}
   </Collapsible.Trigger>
@@ -53,7 +53,7 @@ const Source = ({ href, title, children, ...props }: SourceProps) => (
   >
     {children ?? (
       <>
-        <BookIcon className="relative top-[0.5px] h-4 text-foreground" />
+        <BookIcon className="text-foreground relative top-[0.5px] h-4" />
         <span className="block font-medium">{title}</span>
       </>
     )}

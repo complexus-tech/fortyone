@@ -2,7 +2,7 @@
 import { Flex, Skeleton, Wrapper, Text } from "ui";
 
 const ActivityItemSkeleton = () => (
-  <Flex align="center" className="mb-1 mt-4" gap={3}>
+  <Flex align="center" className="mt-4 mb-1" gap={3}>
     <Skeleton className="size-8 shrink-0 rounded-full" />
     <Skeleton className="h-4 w-2/5 rounded" />
     <Skeleton className="h-4 w-16 rounded" />

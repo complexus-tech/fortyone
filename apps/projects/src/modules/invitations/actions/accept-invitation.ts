@@ -1,5 +1,3 @@
-"use server";
-
 import type { ApiResponse } from "@/types";
 import ky from "ky";
 import { buildAuthHeaders } from "@/lib/http/auth-headers";

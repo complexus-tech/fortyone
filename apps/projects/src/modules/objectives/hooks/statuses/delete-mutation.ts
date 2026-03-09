@@ -10,7 +10,8 @@ export const useDeleteObjectiveStatusMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (statusId: string) => deleteObjectiveStatusAction(statusId, workspaceSlug),
+    mutationFn: (statusId: string) =>
+      deleteObjectiveStatusAction(statusId, workspaceSlug),
     onMutate: (statusId) => {
       const previousStatuses = queryClient.getQueryData<ObjectiveStatus[]>(
         objectiveKeys.statuses(workspaceSlug),

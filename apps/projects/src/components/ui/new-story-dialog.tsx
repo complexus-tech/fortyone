@@ -52,7 +52,7 @@ import {
 import { toast } from "sonner";
 import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {

@@ -43,28 +43,30 @@ export const commentsTool = tool({
       .describe("Limit number of comments returned (default: 20, max: 100)"),
   }),
 
-  execute: async ({
-    action,
-    storyId,
-    parentId,
-    content,
-    mentions = [],
-    includeReplies = true,
-    limit = 20,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      action,
+      storyId,
+      parentId,
+      content,
+      mentions = [],
+      includeReplies = true,
+      limit = 20,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to access comments",
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -157,11 +159,15 @@ export const commentsTool = tool({
             };
           }
 
-          const result = await commentStoryAction(storyId, {
-            comment: content,
-            parentId: parentId ?? null,
-            mentions,
-          }, workspaceSlug);
+          const result = await commentStoryAction(
+            storyId,
+            {
+              comment: content,
+              parentId: parentId ?? null,
+              mentions,
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {
@@ -212,11 +218,15 @@ export const commentsTool = tool({
             };
           }
 
-          const result = await commentStoryAction(storyId, {
-            comment: content,
-            parentId,
-            mentions,
-          }, workspaceSlug);
+          const result = await commentStoryAction(
+            storyId,
+            {
+              comment: content,
+              parentId,
+              mentions,
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {

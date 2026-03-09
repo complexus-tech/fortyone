@@ -3,7 +3,7 @@ import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
 import { format, formatISO } from "date-fns";
 import { useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useIsAdminOrOwner } from "@/hooks/owner";

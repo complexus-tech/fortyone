@@ -15,16 +15,21 @@ export const useUpdateWorkspaceSettingsMutation = () => {
       updateWorkspaceSettingsAction(payload, workspaceSlug),
 
     onMutate: async (updates) => {
-      await queryClient.cancelQueries({ queryKey: workspaceKeys.settings(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: workspaceKeys.settings(workspaceSlug),
+      });
       const previousSettings = queryClient.getQueryData<WorkspaceSettings>(
         workspaceKeys.settings(workspaceSlug),
       );
 
       if (previousSettings) {
-        queryClient.setQueryData<WorkspaceSettings>(workspaceKeys.settings(workspaceSlug), {
-          ...previousSettings,
-          ...updates,
-        });
+        queryClient.setQueryData<WorkspaceSettings>(
+          workspaceKeys.settings(workspaceSlug),
+          {
+            ...previousSettings,
+            ...updates,
+          },
+        );
       }
 
       return { previousSettings };
@@ -52,7 +57,9 @@ export const useUpdateWorkspaceSettingsMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.settings(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: workspaceKeys.settings(workspaceSlug),
+      });
     },
   });
 

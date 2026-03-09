@@ -35,30 +35,32 @@ export const updateObjectiveTool = tool({
       .describe("Updated health status"),
   }),
 
-  execute: async ({
-    objectiveId,
-    name,
-    description,
-    leadUser,
-    startDate,
-    endDate,
-    statusId,
-    priority,
-    health,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      objectiveId,
+      name,
+      description,
+      leadUser,
+      startDate,
+      endDate,
+      statusId,
+      priority,
+      health,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
       if (!session) {
-
-
         return {
           success: false,
           error: "Authentication required to update objectives",
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -87,16 +89,20 @@ export const updateObjectiveTool = tool({
         };
       }
 
-      const result = await updateObjective(objectiveId, {
-        name,
-        description,
-        leadUser,
-        startDate,
-        endDate,
-        statusId,
-        priority,
-        health,
-      }, workspaceSlug);
+      const result = await updateObjective(
+        objectiveId,
+        {
+          name,
+          description,
+          leadUser,
+          startDate,
+          endDate,
+          statusId,
+          priority,
+          health,
+        },
+        workspaceSlug,
+      );
 
       if (result.error) {
         return {

@@ -68,16 +68,10 @@ export const statusesTool = tool({
       .optional()
       .describe("Whether this should be the default status"),
   }),
-  execute: async ({
-    action,
-    teamId,
-    statusId,
-    statusName,
-    name,
-    color,
-    category,
-    isDefault,
-  }, { experimental_context }) => {
+  execute: async (
+    { action, teamId, statusId, statusName, name, color, category, isDefault },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
       if (!session) {
@@ -87,7 +81,8 @@ export const statusesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -285,7 +280,11 @@ export const statusesTool = tool({
           if (name) updateData.name = name;
           if (isDefault !== undefined) updateData.isDefault = isDefault;
 
-          const result = await updateStateAction(targetStatusId, updateData, workspaceSlug);
+          const result = await updateStateAction(
+            targetStatusId,
+            updateData,
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {
@@ -362,9 +361,13 @@ export const statusesTool = tool({
             };
           }
 
-          const result = await updateStateAction(targetStatusId, {
-            isDefault: true,
-          }, workspaceSlug);
+          const result = await updateStateAction(
+            targetStatusId,
+            {
+              isDefault: true,
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {

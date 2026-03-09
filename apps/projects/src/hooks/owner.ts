@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useUserRole } from "./role";
 
 export const useIsOwner = (entityOwnerId?: string) => {

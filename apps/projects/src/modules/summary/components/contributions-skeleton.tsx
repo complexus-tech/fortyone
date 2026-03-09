@@ -12,13 +12,13 @@ export const ContributionsSkeleton = () => {
       <Box className="h-[220px] overflow-hidden">
         <Box className="relative h-[220px] w-full">
           {/* Y-axis ticks */}
-          <Flex className="absolute left-0 top-0 z-10 h-full flex-col justify-between py-6">
+          <Flex className="absolute top-0 left-0 z-10 h-full flex-col justify-between py-6">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton className="h-3 w-6 rounded" key={index} />
             ))}
           </Flex>
           {/* Chart area */}
-          <Box className="absolute inset-0 ml-10 mr-2 mt-4 flex flex-col justify-end">
+          <Box className="absolute inset-0 mt-4 mr-2 ml-10 flex flex-col justify-end">
             {/* Line path simulation */}
             <svg className="w-full overflow-hidden">
               <path

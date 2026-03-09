@@ -13,7 +13,7 @@ export const InvitationsPage = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Workspace Invitations
       </Text>
-      <Box className="rounded-lg border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-lg border">
         <SectionHeader
           action={
             invitations.length > 1 && (
@@ -23,7 +23,7 @@ export const InvitationsPage = () => {
           description="View and manage your pending workspace invitations."
           title="Pending Invitations"
         />
-        <Box className="divide-y divide-gray-100 dark:divide-dark-100">
+        <Box className="dark:divide-dark-100 divide-y divide-gray-100">
           {invitations.length === 0 ? (
             <Box className="px-6 py-8 text-center">
               <Text className="font-medium">No pending invitations</Text>

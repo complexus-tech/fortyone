@@ -14,7 +14,7 @@ import Link from "next/link";
 import { ObjectiveIcon, CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { RowWrapper } from "@/components/ui/row-wrapper";
@@ -121,7 +121,7 @@ export const ObjectiveCard = ({
           >
             <Flex
               align="center"
-              className="size-8 shrink-0 rounded-lg bg-surface-muted"
+              className="bg-surface-muted size-8 shrink-0 rounded-lg"
               justify="center"
             >
               <ObjectiveIcon className="h-4" />
@@ -315,11 +315,11 @@ export const ObjectiveCard = ({
             the objective health status.
           </Dialog.Description>
           <Dialog.Body>
-            <Text className="mb-1.5 mt-3" color="muted">
+            <Text className="mt-3 mb-1.5" color="muted">
               Comment*
             </Text>
             <TextArea
-              className="resize-none rounded-2xl border py-4 leading-normal border-border/80 bg-transparent"
+              className="border-border/80 resize-none rounded-2xl border bg-transparent py-4 leading-normal"
               onChange={(e) => {
                 setComment(e.target.value);
               }}

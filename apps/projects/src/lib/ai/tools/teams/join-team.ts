@@ -21,7 +21,8 @@ export const joinTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const userId = session.user!.id!;
 

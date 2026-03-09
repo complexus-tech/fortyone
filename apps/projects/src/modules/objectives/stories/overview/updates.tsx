@@ -20,7 +20,7 @@ export const Updates = ({ objectiveId }: { objectiveId: string }) => {
 
   if (isPending) {
     return (
-      <Box className="mb-6 mt-4 space-y-6">
+      <Box className="mt-4 mb-6 space-y-6">
         {Array.from({ length: 7 }).map((_, i) => (
           <Box className="flex gap-3" key={i}>
             <Skeleton className="h-8 w-8 rounded-full" />

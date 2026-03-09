@@ -21,7 +21,8 @@ export const listMemories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -60,7 +61,8 @@ export const createMemory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -111,7 +113,8 @@ export const updateMemory = tool({
   }),
   execute: async ({ id, content }, { experimental_context }) => {
     try {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const result = await updateMemoryAction(id, { content }, workspaceSlug);
       if (result.error?.message) {
@@ -141,7 +144,8 @@ export const deleteMemory = tool({
   }),
   execute: async ({ id }, { experimental_context }) => {
     try {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const result = await deleteMemoryAction(id, workspaceSlug);
       if (result.error?.message) {

@@ -349,9 +349,7 @@ export const KeyResults = () => {
   const { data: objective } = useObjective(objectiveId);
   const [manualSelectedKeyResults, setManualSelectedKeyResults] = useState<
     Set<string>
-  >(
-    new Set(),
-  );
+  >(new Set());
   const [hasCustomSelection, setHasCustomSelection] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");

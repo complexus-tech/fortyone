@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { updateProfile } from "@/lib/actions/update-profile";
 
 export const CreateAccountForm = () => {

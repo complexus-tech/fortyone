@@ -185,9 +185,10 @@ install_env() {
   prompt "APP_WEBSITE_URL" "Website URL (public domain for links/emails)" "$default_website_url"
   SERVER_PORT="8000"
   WORKER_PORT="8080"
-  INTERNAL_API_URL="http://server:8000"
   NEXT_PUBLIC_API_URL="http://localhost:8000"
+  NEXT_PUBLIC_DOMAIN="localhost"
   APP_API_HOST="0.0.0.0:8000"
+  APP_AUTH_COOKIE_DOMAIN=""
 
   prompt_yes_no "USE_POSTGRES" "Use local Postgres container" "true"
   if [ "$USE_POSTGRES" = "true" ]; then
@@ -229,7 +230,7 @@ install_env() {
     REDIS_HOST_PORT="6380"
   fi
 
-  APP_TRACING_HOST="jaeger:4318"
+  APP_TRACING_ENDPOINT="http://jaeger:4318"
 
   prompt_yes_no "USE_MAILPIT" "Use local Mailpit (SMTP)" "true"
   if [ "$USE_MAILPIT" = "true" ]; then
@@ -308,26 +309,36 @@ install_env() {
     APP_AZURE_STORAGE_ACCOUNT_NAME=""
   fi
 
-  prompt "AUTH_SECRET" "Auth secret (leave blank to generate)" ""
-  if [ -z "$AUTH_SECRET" ]; then
-    AUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || true)
-    if [ -z "$AUTH_SECRET" ]; then
-      AUTH_SECRET="changeme"
-      echo "WARNING: Could not generate AUTH_SECRET. Using 'changeme'."
+  prompt "APP_AUTH_SECRET_KEY" "Session secret (leave blank to generate)" ""
+  if [ -z "$APP_AUTH_SECRET_KEY" ]; then
+    APP_AUTH_SECRET_KEY=$(openssl rand -base64 32 2>/dev/null || true)
+    if [ -z "$APP_AUTH_SECRET_KEY" ]; then
+      APP_AUTH_SECRET_KEY="changeme"
+      echo "WARNING: Could not generate APP_AUTH_SECRET_KEY. Using 'changeme'."
     fi
   fi
 
+  prompt "GOOGLE_CLIENT_ID" "Google client ID (legacy fallback)" ""
+  prompt "APP_AUTH_GOOGLE_CLIENT_IDS" "Google client IDs (comma-separated)" "$GOOGLE_CLIENT_ID"
+  prompt "APP_AUTH_GOOGLE_CLIENT_SECRET" "Google OAuth client secret (for backend OAuth flow)" ""
+  prompt "APP_AUTH_GOOGLE_REDIRECT_URL" "Google OAuth redirect URL (e.g. http://localhost:8000/auth/google/callback)" ""
+
   cat > "$ENV_FILE" <<EOF
 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-INTERNAL_API_URL=$INTERNAL_API_URL
-AUTH_SECRET=$AUTH_SECRET
+NEXT_PUBLIC_DOMAIN=$NEXT_PUBLIC_DOMAIN
 WEB_PORT=$WEB_PORT
 
 SERVER_PORT=$SERVER_PORT
 WORKER_PORT=$WORKER_PORT
 APP_API_HOST=$APP_API_HOST
 APP_WEBSITE_URL=$APP_WEBSITE_URL
-APP_TRACING_HOST=$APP_TRACING_HOST
+APP_AUTH_SECRET_KEY=$APP_AUTH_SECRET_KEY
+APP_AUTH_COOKIE_DOMAIN=$APP_AUTH_COOKIE_DOMAIN
+APP_AUTH_GOOGLE_CLIENT_IDS=$APP_AUTH_GOOGLE_CLIENT_IDS
+APP_AUTH_GOOGLE_CLIENT_SECRET=$APP_AUTH_GOOGLE_CLIENT_SECRET
+APP_AUTH_GOOGLE_REDIRECT_URL=$APP_AUTH_GOOGLE_REDIRECT_URL
+APP_TRACING_ENDPOINT=$APP_TRACING_ENDPOINT
+GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 
 APP_DB_HOST=$APP_DB_HOST
 APP_DB_PORT=$APP_DB_PORT

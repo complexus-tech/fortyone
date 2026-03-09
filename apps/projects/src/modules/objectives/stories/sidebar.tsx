@@ -15,7 +15,7 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import { CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
 import {

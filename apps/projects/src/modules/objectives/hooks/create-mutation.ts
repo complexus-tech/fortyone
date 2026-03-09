@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { createObjective } from "../actions/create-objective";

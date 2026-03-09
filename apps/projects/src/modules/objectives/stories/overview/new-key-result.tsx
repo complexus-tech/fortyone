@@ -183,7 +183,7 @@ export const NewKeyResultButton = ({
                       });
                     }}
                   >
-                    <Select.Trigger className="h-[2.65rem] bg-surface/70">
+                    <Select.Trigger className="bg-surface/70 h-[2.65rem]">
                       <Select.Input placeholder="Select measurement type" />
                     </Select.Trigger>
                     <Select.Content>
@@ -205,10 +205,7 @@ export const NewKeyResultButton = ({
                     <Text className="mb-[0.35rem]">
                       {isMobile ? "Current" : "Current Value"}
                     </Text>
-                    <Flex
-                      className="rounded-md border bg-surface/70"
-                      gap={1}
-                    >
+                    <Flex className="bg-surface/70 rounded-md border" gap={1}>
                       <Button
                         align="center"
                         className={cn("rounded border-0", {
@@ -248,7 +245,7 @@ export const NewKeyResultButton = ({
                 ) : (
                   <>
                     <Input
-                      className="h-[2.7rem] bg-surface-muted/30"
+                      className="bg-surface-muted/30 h-[2.7rem]"
                       label={isMobile ? "Starting" : "Starting Value"}
                       max={
                         form.measurementType === "percentage" ? 100 : undefined

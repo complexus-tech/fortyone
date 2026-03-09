@@ -154,6 +154,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		DB:             cfg.DB,
 		Log:            cfg.Log,
 		SecretKey:      cfg.SecretKey,
+		CookieDomain:   cfg.CookieDomain,
 		GoogleService:  cfg.GoogleService,
 		Publisher:      cfg.Publisher,
 		TasksService:   cfg.TasksService,

@@ -1,5 +1,3 @@
-"use server";
-
 import { auth } from "@/auth";
 import { remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";

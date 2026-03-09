@@ -104,7 +104,7 @@ const Items = ({
             onClick={handleCreateLabel}
           >
             <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
-            <span className="font-medium text-text-muted">
+            <span className="text-text-muted font-medium">
               &ldquo;{query}&rdquo;
             </span>
           </Button>

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getObjectives } from "../queries/get-objectives";
@@ -21,7 +21,8 @@ export const useTeamObjectives = (teamId: string) => {
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({
     queryKey: objectiveKeys.team(workspaceSlug, teamId),
-    queryFn: () => getTeamObjectives(teamId, { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getTeamObjectives(teamId, { session: session!, workspaceSlug }),
     enabled: Boolean(teamId),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

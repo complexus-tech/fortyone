@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { Logo, Container } from "@/components/ui";
+import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
 import { MobileNavigation } from "./mobile-navigation";
 
 const MenuItem = ({
@@ -33,7 +34,7 @@ const MenuItem = ({
   </Link>
 );
 
-export const Navigation = () => {
+export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   const navLinks = [
     { title: "Pricing", href: "/pricing" },
     { title: "Contact", href: "/contact" },
@@ -83,8 +84,6 @@ export const Navigation = () => {
   ];
 
   const pathname = usePathname();
-  const getNextUrl = () => "https://cloud.fortyone.app/";
-
   return (
     <Box className="border-border/70 d/80 fixed left-0 z-15 w-screen border-b bg-white/20 backdrop-blur-xl dark:bg-black/40">
       <Container className="flex h-16 items-center justify-between gap-12">
@@ -109,23 +108,36 @@ export const Navigation = () => {
         </Flex>
         <Flex align="center" className="ml-4 gap-2">
           {/* <RequestDemo /> */}
-          <Button
-            className="hidden px-5 text-[0.93rem] md:flex"
-            color="tertiary"
-            href={getNextUrl()}
-            rounded="lg"
-            variant="naked"
-          >
-            Login
-          </Button>
-          <Button
-            className="px-5 text-[0.93rem]"
-            color="invert"
-            href="https://cloud.fortyone.app/signup"
-            rounded="lg"
-          >
-            Sign up
-          </Button>
+          {hasSession ? (
+            <Button
+              className="px-5 text-[0.93rem]"
+              color="invert"
+              href={APP_URL}
+              rounded="lg"
+            >
+              Open app
+            </Button>
+          ) : (
+            <>
+              <Button
+                className="hidden px-5 text-[0.93rem] md:flex"
+                color="tertiary"
+                href={APP_URL}
+                rounded="lg"
+                variant="naked"
+              >
+                Login
+              </Button>
+              <Button
+                className="px-5 text-[0.93rem]"
+                color="invert"
+                href={SIGNUP_URL}
+                rounded="lg"
+              >
+                Sign up
+              </Button>
+            </>
+          )}
 
           <MobileNavigation />
         </Flex>

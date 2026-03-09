@@ -127,7 +127,9 @@ export const useUpdateObjectiveMutation = () => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.objective(workspaceSlug, objectiveId),
       });
-      queryClient.invalidateQueries({ queryKey: objectiveKeys.list(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
       });

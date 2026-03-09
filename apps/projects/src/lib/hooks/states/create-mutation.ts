@@ -37,10 +37,10 @@ export const useCreateStateMutation = () => {
       };
 
       if (previousStates) {
-        queryClient.setQueryData<State[]>(statusKeys.team(workspaceSlug, teamId), [
-          ...previousStates,
-          optimisticState,
-        ]);
+        queryClient.setQueryData<State[]>(
+          statusKeys.team(workspaceSlug, teamId),
+          [...previousStates, optimisticState],
+        );
       }
 
       toast.loading("Please wait...", {

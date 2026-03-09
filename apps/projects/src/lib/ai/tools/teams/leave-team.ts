@@ -20,11 +20,16 @@ export const leaveTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const userId = session.user!.id!;
 
-      const result = await removeTeamMemberAction(teamId, userId, workspaceSlug);
+      const result = await removeTeamMemberAction(
+        teamId,
+        userId,
+        workspaceSlug,
+      );
 
       if (result.error) {
         return {

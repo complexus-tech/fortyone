@@ -13,7 +13,7 @@ const SkeletonCard = () => (
 
 export const OverviewSkeleton = () => {
   return (
-    <Box className="mb-4 mt-3 grid grid-cols-2 gap-4 md:grid-cols-5">
+    <Box className="mt-3 mb-4 grid grid-cols-2 gap-4 md:grid-cols-5">
       {Array.from({ length: 5 }).map((_, index) => (
         <SkeletonCard key={index} />
       ))}

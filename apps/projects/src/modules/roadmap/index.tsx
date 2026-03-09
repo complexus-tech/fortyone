@@ -109,7 +109,7 @@ export const RoadmapPage = () => {
           <Box className="flex h-full items-center justify-center">
             <Box className="flex flex-col items-center">
               <RoadmapIcon className="h-12 w-auto" strokeWidth={1.3} />
-              <Text className="mb-6 mt-8" fontSize="3xl">
+              <Text className="mt-8 mb-6" fontSize="3xl">
                 Your strategic Roadmap awaits
               </Text>
               <Text className="mb-6 max-w-md text-center" color="muted">

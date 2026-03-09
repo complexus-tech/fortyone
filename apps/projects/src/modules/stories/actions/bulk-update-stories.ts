@@ -1,5 +1,3 @@
-"use server";
-
 import { auth } from "@/auth";
 import { put } from "@/lib/http";
 import type { DetailedStory } from "@/modules/story/types";
@@ -18,7 +16,11 @@ export const bulkUpdateAction = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    const stories = await put<Payload, ApiResponse<null>>("stories", updates, ctx);
+    const stories = await put<Payload, ApiResponse<null>>(
+      "stories",
+      updates,
+      ctx,
+    );
     return stories;
   } catch (error) {
     return getApiError(error);

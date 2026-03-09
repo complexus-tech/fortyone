@@ -4,7 +4,10 @@ import type { ApiResponse } from "@/types";
 
 export const getUnreadNotifications = async (ctx: WorkspaceCtx) => {
   try {
-    const res = await get<ApiResponse<number>>("notifications/unread-count", ctx);
+    const res = await get<ApiResponse<number>>(
+      "notifications/unread-count",
+      ctx,
+    );
     return res.data ?? 0;
   } catch (error) {
     return 0;

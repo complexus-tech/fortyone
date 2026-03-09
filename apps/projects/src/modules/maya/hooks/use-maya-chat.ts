@@ -6,7 +6,7 @@ import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FileUIPart } from "ai";
 import { generateId } from "ai";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { notificationKeys, teamKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
@@ -71,7 +71,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
     // Fetch messages for the new chat ID directly
     const newMessages = await queryClient.fetchQuery({
       queryKey: aiChatKeys.messages(chatId),
-      queryFn: () => getAiChatMessages({ session: session!, workspaceSlug }, chatId),
+      queryFn: () =>
+        getAiChatMessages({ session: session!, workspaceSlug }, chatId),
     });
     setMessages(newMessages);
     setInput("");

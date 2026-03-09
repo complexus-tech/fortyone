@@ -17,7 +17,7 @@ export const WorkspaceFeatures = () => {
   };
 
   return (
-    <Box className="rounded-2xl border border-border bg-surface">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         description="Enable or disable features for your workspace."
         title="Features"

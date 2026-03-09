@@ -10,21 +10,30 @@ export const useRemoveMemberMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (memberId: string) => removeMemberAction(memberId, workspaceSlug),
+    mutationFn: (memberId: string) =>
+      removeMemberAction(memberId, workspaceSlug),
     onMutate: async (memberId) => {
-      await queryClient.cancelQueries({ queryKey: memberKeys.lists(workspaceSlug) });
-      await queryClient.cancelQueries({ queryKey: memberKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: memberKeys.lists(workspaceSlug),
+      });
+      await queryClient.cancelQueries({
+        queryKey: memberKeys.all(workspaceSlug),
+      });
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.lists(workspaceSlug),
       );
-      queryClient.setQueryData(memberKeys.lists(workspaceSlug), (old: Member[]) =>
-        old.filter((member) => member.id !== memberId),
+      queryClient.setQueryData(
+        memberKeys.lists(workspaceSlug),
+        (old: Member[]) => old.filter((member) => member.id !== memberId),
       );
 
       return { previousMembers };
     },
     onError: (error, variables, context) => {
-      queryClient.setQueryData(memberKeys.lists(workspaceSlug), context?.previousMembers);
+      queryClient.setQueryData(
+        memberKeys.lists(workspaceSlug),
+        context?.previousMembers,
+      );
       toast.error("Error", {
         description: error.message || "Failed to remove member",
         action: {
@@ -39,8 +48,12 @@ export const useRemoveMemberMutation = () => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: memberKeys.lists(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: memberKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: memberKeys.lists(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: memberKeys.all(workspaceSlug),
+      });
     },
   });
 

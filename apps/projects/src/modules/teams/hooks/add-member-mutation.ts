@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
@@ -26,7 +26,9 @@ export const useAddMemberMutation = () => {
           description: "Please wait...",
         },
       );
-      await queryClient.cancelQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
+      await queryClient.cancelQueries({
+        queryKey: memberKeys.team(workspaceSlug, teamId),
+      });
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.team(workspaceSlug, teamId),
       );
@@ -35,7 +37,10 @@ export const useAddMemberMutation = () => {
         const newMembers = [...(previousMembers || []), newMember].sort(
           (a, b) => a.fullName.localeCompare(b.fullName),
         );
-        queryClient.setQueryData(memberKeys.team(workspaceSlug, teamId), newMembers);
+        queryClient.setQueryData(
+          memberKeys.team(workspaceSlug, teamId),
+          newMembers,
+        );
       }
 
       return { previousMembers };
@@ -79,11 +84,19 @@ export const useAddMemberMutation = () => {
               : "Member added",
         },
       );
-      queryClient.invalidateQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
+      queryClient.invalidateQueries({
+        queryKey: memberKeys.team(workspaceSlug, teamId),
+      });
       if (memberId === session?.user?.id) {
-        queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
-        queryClient.invalidateQueries({ queryKey: teamKeys.public(workspaceSlug) });
-        queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
+        queryClient.invalidateQueries({
+          queryKey: teamKeys.lists(workspaceSlug),
+        });
+        queryClient.invalidateQueries({
+          queryKey: teamKeys.public(workspaceSlug),
+        });
+        queryClient.invalidateQueries({
+          queryKey: statusKeys.lists(workspaceSlug),
+        });
       }
     },
   });

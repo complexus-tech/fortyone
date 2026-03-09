@@ -34,14 +34,10 @@ export const searchStories = tool({
       .describe("Maximum number of stories to return (default: 20)"),
   }),
 
-  execute: async ({
-    searchQuery: query,
-    teamId,
-    statusId,
-    assigneeId,
-    priority,
-    limit = 20,
-  }, { experimental_context }) => {
+  execute: async (
+    { searchQuery: query, teamId, statusId, assigneeId, priority, limit = 20 },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -52,7 +48,8 @@ export const searchStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

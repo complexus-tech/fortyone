@@ -47,7 +47,9 @@ const updateInfiniteQuery = (
           if (!Array.isArray(page.stories)) return page;
           return {
             ...page,
-            stories: page.stories.filter((story) => !storyIds.includes(story.id)),
+            stories: page.stories.filter(
+              (story) => !storyIds.includes(story.id),
+            ),
           };
         }),
       };

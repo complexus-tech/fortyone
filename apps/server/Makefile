@@ -1,3 +1,9 @@
+# Load environment variables from .env if it exists
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 otel:
 	docker run -d --name jaeger \
   -e COLLECTOR_OTLP_ENABLED=true \
@@ -24,12 +30,6 @@ tidy:
 # =============================================================================
 # Database Migrations (golang-migrate)
 # =============================================================================
-# Load environment variables from .env if it exists
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
-
 # Override DB_URL inline or set environment variables
 APP_DB_NAME ?= complexus
 APP_DB_USER ?= postgres

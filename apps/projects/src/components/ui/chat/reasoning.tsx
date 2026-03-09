@@ -20,7 +20,7 @@ export const Reasoning = ({ content, isStreaming = false }: ReasoningProps) => {
   return (
     <Box
       className={cn(
-        "prose prose-stone mb-5 line-clamp-5 animate-pulse pb-1 leading-snug dark:prose-invert",
+        "prose prose-stone dark:prose-invert mb-5 line-clamp-5 animate-pulse pb-1 leading-snug",
         {
           "opacity-80": isStreaming,
         },

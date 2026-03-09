@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Container, Flex, Text } from "ui";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { BodyContainer } from "@/components/shared/body";
 import { ErrorBoundary } from "@/components/shared";
 import { Header } from "./components/header";
@@ -35,7 +35,7 @@ export const AnalyticsPage = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pb-4 pt-3">
+        <Container className="pt-3 pb-4">
           <Flex align="end" justify="between">
             <Box>
               <Text

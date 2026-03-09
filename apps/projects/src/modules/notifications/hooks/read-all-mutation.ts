@@ -14,7 +14,9 @@ export const useReadAllNotificationsMutation = () => {
 
     onMutate: async () => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       // Get the previous data
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
@@ -71,8 +73,12 @@ export const useReadAllNotificationsMutation = () => {
 
     onSettled: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.unread(workspaceSlug),
+      });
     },
   });
 

@@ -36,30 +36,32 @@ export const createKeyResultTool = tool({
       .describe("Contributors user IDs (optional)"),
   }),
 
-  execute: async ({
-    objectiveId,
-    name,
-    measurementType,
-    startValue,
-    currentValue,
-    targetValue,
-    startDate,
-    endDate,
-    lead,
-    contributors,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      objectiveId,
+      name,
+      measurementType,
+      startValue,
+      currentValue,
+      targetValue,
+      startDate,
+      endDate,
+      lead,
+      contributors,
+    },
+    { experimental_context },
+  ) => {
     const session = await auth();
 
     if (!session) {
-
-
       return {
         success: false,
         error: "Authentication required",
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      .workspaceSlug;
 
     const ctx = { session, workspaceSlug };
 
@@ -84,18 +86,21 @@ export const createKeyResultTool = tool({
     }
 
     const finalCurrentValue = currentValue ?? startValue;
-    const result = await createKeyResult({
-      objectiveId,
-      name,
-      measurementType,
-      startValue,
-      targetValue,
-      currentValue: finalCurrentValue,
-      startDate,
-      endDate,
-      lead,
-      contributors,
-    }, workspaceSlug);
+    const result = await createKeyResult(
+      {
+        objectiveId,
+        name,
+        measurementType,
+        startValue,
+        targetValue,
+        currentValue: finalCurrentValue,
+        startDate,
+        endDate,
+        lead,
+        contributors,
+      },
+      workspaceSlug,
+    );
 
     if (result.error) {
       return {

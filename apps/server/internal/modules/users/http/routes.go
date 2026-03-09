@@ -18,6 +18,7 @@ type Config struct {
 	DB             *sqlx.DB
 	Log            *logger.Logger
 	SecretKey      string
+	CookieDomain   string
 	GoogleService  *google.Service
 	Publisher      *publisher.Publisher
 	TasksService   *tasks.Service
@@ -32,12 +33,24 @@ func Routes(cfg Config, app *web.App) {
 	usersService := cfg.Users
 	attachmentsService := cfg.Attachments
 
-	h := New(usersService, attachmentsService, cfg.SecretKey, cfg.GoogleService, cfg.Publisher)
+	h := New(
+		usersService,
+		attachmentsService,
+		cfg.SecretKey,
+		cfg.CookieDomain,
+		cfg.Cache,
+		cfg.GoogleService,
+		cfg.Publisher,
+	)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
 	// Public endpoints
+	app.Get("/auth/me", h.Me, auth)
+	app.Get("/auth/google", h.StartGoogleAuth)
+	app.Get("/auth/google/callback", h.CompleteGoogleAuth)
+	app.Post("/auth/google/verify", h.GoogleAuth)
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)

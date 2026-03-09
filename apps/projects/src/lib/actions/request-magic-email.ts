@@ -1,18 +1,10 @@
-"use server";
-
-import ky from "ky";
-import { getApiUrl } from "@/lib/api-url";
-import { requestError } from "../fetch-error";
-
-const apiURL = getApiUrl();
+import { post } from "api-client";
 
 export async function requestMagicEmail(email: string, isMobileApp: boolean) {
   try {
-    await ky.post(`${apiURL}/users/verify/email`, {
-      json: {
-        email,
-        isMobile: isMobileApp,
-      },
+    await post("users/verify/email", {
+      email,
+      isMobile: isMobileApp,
     });
 
     return {
@@ -22,7 +14,14 @@ export async function requestMagicEmail(email: string, isMobileApp: boolean) {
       },
     };
   } catch (error) {
-    const result = await requestError(error);
-    return result;
+    return {
+      data: null,
+      error: {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect to the server",
+      },
+    };
   }
 }

@@ -32,7 +32,7 @@ export const WorkspaceInvitee = ({
     <RowWrapper className="border-0 py-3 md:px-6">
       <Flex align="center" gap={3}>
         <Avatar
-          className="border border-dashed border-border bg-surface-muted"
+          className="border-border bg-surface-muted border border-dashed"
           color="tertiary"
           name={email}
         />

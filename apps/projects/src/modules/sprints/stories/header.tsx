@@ -139,9 +139,7 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="hidden text-text-secondary md:inline">
-          |
-        </span>
+        <span className="text-text-secondary hidden md:inline">|</span>
         <Box className="hidden md:block">
           <SideDetailsSwitch
             isExpanded={isExpanded}

@@ -12,7 +12,7 @@ export const PriorityIcon = ({
     <>
       {priority === "No Priority" && (
         <svg
-          className={cn("shrink-0 text-text-muted", className)}
+          className={cn("text-text-muted shrink-0", className)}
           fill="currentColor"
           focusable="false"
           height="16"
@@ -27,7 +27,7 @@ export const PriorityIcon = ({
 
       {priority === "Urgent" && (
         <svg
-          className={cn("h-5 w-auto shrink-0 text-danger", className)}
+          className={cn("text-danger h-5 w-auto shrink-0", className)}
           fill="currentColor"
           height="24"
           viewBox="0 0 24 24"
@@ -57,7 +57,7 @@ export const PriorityIcon = ({
       )}
       {priority === "High" && (
         <svg
-          className={cn("shrink-0 text-warning", className)}
+          className={cn("text-warning shrink-0", className)}
           fill="currentColor"
           focusable="false"
           height="16"
@@ -71,7 +71,7 @@ export const PriorityIcon = ({
       )}
       {priority === "Medium" && (
         <svg
-          className={cn("shrink-0 text-success", className)}
+          className={cn("text-success shrink-0", className)}
           fill="currentColor"
           focusable="false"
           height="16"
@@ -85,7 +85,7 @@ export const PriorityIcon = ({
       )}
       {priority === "Low" && (
         <svg
-          className={cn("shrink-0 text-info", className)}
+          className={cn("text-info shrink-0", className)}
           fill="currentColor"
           focusable="false"
           height="16"

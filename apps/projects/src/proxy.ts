@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { type NextRequest, NextResponse } from "next/server";
+import { getSessionFromRequest } from "auth";
 
-const AUTH_HOST = "cloud.fortyone.app";
+const AUTH_HOST = process.env.NEXT_PUBLIC_AUTH_HOST ?? "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
 const RESERVED_SUBDOMAINS = new Set(["cloud"]);
 const AUTH_ONLY_PREFIXES = new Set([
@@ -12,10 +12,15 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/unauthorized",
 ]);
 
-const getHost = (req: Request) => req.headers.get("host")?.split(":")[0];
+const getHostname = (req: NextRequest) => req.nextUrl.hostname;
 
-const getSubdomain = (host?: string) =>
-  host?.endsWith(DOMAIN_SUFFIX) ? host.replace(DOMAIN_SUFFIX, "") : undefined;
+const getSubdomain = (hostname: string) =>
+  hostname.endsWith(DOMAIN_SUFFIX)
+    ? hostname.replace(DOMAIN_SUFFIX, "")
+    : undefined;
+
+const isFortyOneHost = (hostname: string) =>
+  hostname === "fortyone.app" || hostname.endsWith(DOMAIN_SUFFIX);
 
 const isAuthOnlyPath = (pathname: string) =>
   pathname === "/" ||
@@ -34,45 +39,35 @@ const buildAuthRedirect = (callbackUrl: string) => {
 };
 
 const buildHostRedirect = (
-  protocol: string,
-  host: string,
+  requestUrl: string,
   callbackUrl: string,
 ) => {
-  const baseUrl = `${protocol}//${host}`;
-  const url = new URL("/", baseUrl);
+  const url = new URL("/", requestUrl);
   url.searchParams.set("callbackUrl", callbackUrl);
   return NextResponse.redirect(url);
 };
 
-export default auth((req) => {
-  // Skip Server Actions - they handle their own auth and must not be redirected
-  if (req.headers.get("Next-Action")) {
-    return NextResponse.next();
-  }
-
+export default async function proxy(req: NextRequest) {
+  const user = await getSessionFromRequest(req);
   const pathname = req.nextUrl.pathname;
   const searchParams = req.nextUrl.search;
-  const host = getHost(req);
+  const hostname = getHostname(req);
+  const isAuthenticated = !!user;
 
-  if (!host || !host.endsWith(DOMAIN_SUFFIX)) {
-    if (!req.auth && !isAuthOnlyPath(pathname)) {
-      const redirectHost = host ?? AUTH_HOST;
-      return buildHostRedirect(
-        req.nextUrl.protocol,
-        redirectHost,
-        `${pathname}${searchParams}`,
-      );
+  if (!isFortyOneHost(hostname)) {
+    if (!isAuthenticated && !isAuthOnlyPath(pathname)) {
+      return buildHostRedirect(req.url, `${pathname}${searchParams}`);
     }
 
     return NextResponse.next();
   }
 
-  const subdomain = getSubdomain(host);
+  const subdomain = getSubdomain(hostname);
   const isWorkspaceSubdomain =
     !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
 
   if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
-    if (pathname === "/" && req.auth) {
+    if (pathname === "/" && isAuthenticated) {
       const rewriteUrl = new URL(`/${subdomain}/my-work`, req.nextUrl);
       rewriteUrl.search = searchParams;
       return NextResponse.rewrite(rewriteUrl);
@@ -90,7 +85,7 @@ export default auth((req) => {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isWorkspaceSubdomain && !req.auth) {
+  if (isWorkspaceSubdomain && !isAuthenticated) {
     const callbackUrl = `https://${subdomain}${DOMAIN_SUFFIX}${pathname}${searchParams}`;
     return buildAuthRedirect(callbackUrl);
   }
@@ -103,12 +98,12 @@ export default auth((req) => {
     return NextResponse.rewrite(rewriteUrl);
   }
 
-  if (!req.auth && !isAuthOnlyPath(pathname)) {
+  if (!isAuthenticated && !isAuthOnlyPath(pathname)) {
     return buildAuthRedirect(`${pathname}${searchParams}`);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [

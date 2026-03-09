@@ -20,7 +20,9 @@ export const useEditLabelMutation = () => {
       editLabelAction(labelId, updates, workspaceSlug),
 
     onMutate: async ({ labelId, updates }) => {
-      await queryClient.cancelQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
       const previousLabels = queryClient.getQueryData<Label[]>(
         labelKeys.lists(workspaceSlug),
       );
@@ -38,7 +40,10 @@ export const useEditLabelMutation = () => {
     },
     onError: (error, variables, context) => {
       if (context?.previousLabels) {
-        queryClient.setQueryData(labelKeys.lists(workspaceSlug), context.previousLabels);
+        queryClient.setQueryData(
+          labelKeys.lists(workspaceSlug),
+          context.previousLabels,
+        );
       }
       toast.error("Failed to update label", {
         description: error.message || "Your changes were not saved",
@@ -55,7 +60,9 @@ export const useEditLabelMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
     },
   });
 

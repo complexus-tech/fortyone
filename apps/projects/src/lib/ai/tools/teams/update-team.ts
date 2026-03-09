@@ -20,7 +20,10 @@ export const updateTeam = tool({
     isPrivate: z.boolean().optional().describe("Updated privacy setting"),
   }),
 
-  execute: async ({ teamId, name, color, code, isPrivate }, { experimental_context }) => {
+  execute: async (
+    { teamId, name, color, code, isPrivate },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -31,7 +34,8 @@ export const updateTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 

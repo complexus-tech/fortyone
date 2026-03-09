@@ -17,7 +17,7 @@ import {
   StoryIcon,
 } from "icons";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useSortable } from "@dnd-kit/sortable";
 import {
   useLocalStorage,
@@ -236,7 +236,8 @@ export const Team = ({
                 .map(({ name, icon, href }) => {
                   const isActive =
                     href === withWorkspace("/")
-                      ? pathname === href || pathname.startsWith(withWorkspace("/dashboard"))
+                      ? pathname === href ||
+                        pathname.startsWith(withWorkspace("/dashboard"))
                       : pathname.startsWith(href);
                   return (
                     <NavLink active={isActive} href={href} key={name}>

@@ -190,9 +190,7 @@ export const WalkthroughProvider = ({
   }, [setWalkthroughClosedAt]);
 
   const canShowWalkthrough =
-    !hasSeenWalkthrough &&
-    !isMobile &&
-    isCooldownComplete(walkthroughClosedAt);
+    !hasSeenWalkthrough && !isMobile && isCooldownComplete(walkthroughClosedAt);
 
   const setSteps = useCallback(
     (nextSteps: WalkthroughStep[]) => {

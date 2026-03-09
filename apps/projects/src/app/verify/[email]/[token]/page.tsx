@@ -5,7 +5,6 @@ import { getRedirectUrl } from "@/utils";
 import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
-import { getCookieHeader } from "@/lib/http/header";
 import { EmailVerificationCallback } from "./client";
 
 export const metadata: Metadata = {
@@ -22,12 +21,11 @@ export default async function Page({
   const params = await searchParams;
   const isMobileApp = params?.mobileApp === "true";
   const session = await auth();
-  const cookieHeader = await getCookieHeader();
   if (session && !isMobileApp) {
     const [invitations, workspaces, profile] = await Promise.all([
       getMyInvitations(),
-      getWorkspaces(session?.token || "", cookieHeader),
-      getProfile({ token: session?.token, cookieHeader }),
+      getWorkspaces(),
+      getProfile(),
     ]);
     redirect(
       getRedirectUrl(

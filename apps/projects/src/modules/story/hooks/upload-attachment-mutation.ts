@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { addAttachmentAction } from "../actions/add-attachment";
@@ -13,7 +13,8 @@ export const useUploadAttachmentMutation = (storyId: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (file: File) => addAttachmentAction(storyId, file, workspaceSlug),
+    mutationFn: (file: File) =>
+      addAttachmentAction(storyId, file, workspaceSlug),
     onMutate: async (file) => {
       toast.loading("Uploading...", { id: toastid, description: file.name });
       await queryClient.cancelQueries({
