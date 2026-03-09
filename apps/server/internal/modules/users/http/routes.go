@@ -48,6 +48,9 @@ func Routes(cfg Config, app *web.App) {
 
 	// Public endpoints
 	app.Get("/auth/me", h.Me, auth)
+	app.Get("/auth/google", h.StartGoogleAuth)
+	app.Get("/auth/google/callback", h.CompleteGoogleAuth)
+	app.Post("/auth/google/verify", h.GoogleAuth)
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)
 	app.Post("/users/verify/email/confirm", h.VerifyEmail)

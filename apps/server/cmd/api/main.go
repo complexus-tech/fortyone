@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -45,8 +46,11 @@ var (
 
 type Config struct {
 	Auth struct {
-		SecretKey    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		CookieDomain string `env:"APP_AUTH_COOKIE_DOMAIN"`
+		SecretKey          string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		CookieDomain       string `env:"APP_AUTH_COOKIE_DOMAIN"`
+		GoogleClientIDs    string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleRedirectURL  string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
@@ -99,7 +103,7 @@ type Config struct {
 		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
 	}
 	Google struct {
-		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
+		ClientID string `env:"GOOGLE_CLIENT_ID"`
 	}
 	Website struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
@@ -331,8 +335,19 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	tracer := tp.Tracer(service)
 
+	googleClientIDs := parseCommaSeparated(cfg.Auth.GoogleClientIDs)
+	if len(googleClientIDs) == 0 {
+		if legacyClientID := strings.TrimSpace(cfg.Google.ClientID); legacyClientID != "" {
+			googleClientIDs = []string{legacyClientID}
+		}
+	}
+
 	// Initialize Google service
-	googleService, err := google.NewService(cfg.Google.ClientID)
+	googleService, err := google.NewService(google.Config{
+		ClientIDs:    googleClientIDs,
+		ClientSecret: cfg.Auth.GoogleClientSecret,
+		RedirectURL:  cfg.Auth.GoogleRedirectURL,
+	})
 	if err != nil {
 		return fmt.Errorf("error initializing google service: %w", err)
 	}
@@ -466,4 +481,17 @@ func runMigrations(ctx context.Context, log *logger.Logger) error {
 		MaxOpenConns: cfg.DB.MaxOpenConns,
 		DisableTLS:   cfg.DB.DisableTLS,
 	})
+}
+
+func parseCommaSeparated(input string) []string {
+	parts := strings.Split(input, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value == "" {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values
 }

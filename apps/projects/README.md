@@ -67,9 +67,6 @@ NEXT_PUBLIC_DOMAIN=localhost
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:8000
 
-# Authentication
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
-
 # Analytics
 NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
 NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
