@@ -4,6 +4,12 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+AIR ?= $(HOME)/go/bin/air
+AIR_API_CONFIG ?= .air.toml
+AIR_WORKER_CONFIG ?= .air.worker.toml
+
+.PHONY: otel stop-otel dev api worker tidy migrate-create migrate-up migrate-down migrate-version migrate-force seed
+
 otel:
 	docker run -d --name jaeger \
   -e COLLECTOR_OTLP_ENABLED=true \
@@ -16,13 +22,17 @@ stop-otel:
 	docker stop jaeger
 
 dev:
-	~/go/bin/air    
+	@set -eu; \
+	trap 'kill 0 >/dev/null 2>&1 || true' INT TERM EXIT; \
+	$(AIR) -c $(AIR_API_CONFIG) & \
+	$(AIR) -c $(AIR_WORKER_CONFIG) & \
+	wait
 
 worker:
-	go run cmd/worker/main.go
+	$(AIR) -c $(AIR_WORKER_CONFIG)
 
-develop:
-	go run cmd/api/main.go 
+api:
+	$(AIR) -c $(AIR_API_CONFIG)
 
 tidy:
 	go mod tidy

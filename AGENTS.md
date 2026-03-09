@@ -76,7 +76,7 @@
 
 - Dev server (air): `make dev` (run in `apps/server`).
 - Worker process: `make worker`.
-- Run API without live reload: `make develop`.
+- API process (air): `make api`.
 - Go module tidy: `make tidy`.
 - Start Jaeger (OTel): `make otel`.
 - Stop Jaeger: `make stop-otel`.
