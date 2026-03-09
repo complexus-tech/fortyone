@@ -50,6 +50,10 @@ type GoogleAuthRequest struct {
 	Token string `json:"token"` // ID token from Google
 }
 
+type googleAuthState struct {
+	CallbackURL string `json:"callbackURL,omitempty"`
+}
+
 // EmailVerificationRequest represents a request to send a verification email
 type EmailVerificationRequest struct {
 	Email    string `json:"email"`
