@@ -1,31 +1,16 @@
-"use server";
-
-import { AuthError } from "next-auth";
-import { auth, signIn } from "@/auth";
+import { post } from "api-client";
 
 export const logIn = async (email: string, token: string) => {
   try {
-    await signIn("credentials", {
+    await post("users/verify/email/confirm", {
       email,
       token,
-      redirect: false,
     });
+
+    return { error: null };
   } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return { error: error?.message || "Invalid link" };
-        default:
-          return { error: error?.message };
-      }
-    }
     return {
-      error: "Invalid link",
+      error: error instanceof Error ? error.message : "Invalid link",
     };
   }
-};
-
-export const getSession = async () => {
-  const session = await auth();
-  return session;
 };

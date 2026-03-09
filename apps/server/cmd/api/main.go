@@ -45,7 +45,8 @@ var (
 
 type Config struct {
 	Auth struct {
-		SecretKey string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		SecretKey    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		CookieDomain string `env:"APP_AUTH_COOKIE_DOMAIN"`
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
@@ -101,7 +102,7 @@ type Config struct {
 		ClientID string `conf:"required,env:GOOGLE_CLIENT_ID"`
 	}
 	Website struct {
-		URL string `default:"http://qa.localhost:3000" env:"APP_WEBSITE_URL"`
+		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	Storage struct {
 		Provider          string `env:"APP_STORAGE_PROVIDER" default:"aws"`
@@ -354,6 +355,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Log:            log,
 		Tracer:         tracer,
 		SecretKey:      cfg.Auth.SecretKey,
+		CookieDomain:   cfg.Auth.CookieDomain,
 		EmailService:   mailerService,
 		BrevoService:   brevoService,
 		GoogleService:  googleService,

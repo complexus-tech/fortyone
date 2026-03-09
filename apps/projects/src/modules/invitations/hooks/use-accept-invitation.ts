@@ -70,7 +70,9 @@ export const useAcceptInvitationMutation = () => {
             label: "Open",
             onClick: () => {
               if (isFortyOneApp) {
-                redirect(`https://${context.invitation!.workspaceSlug}.fortyone.app/my-work`);
+                redirect(
+                  `https://${context.invitation!.workspaceSlug}.fortyone.app/my-work`,
+                );
               } else {
                 redirect(`/${context.invitation!.workspaceSlug}/my-work`);
               }

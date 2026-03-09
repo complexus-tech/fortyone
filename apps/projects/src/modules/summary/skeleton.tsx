@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Container, Text } from "ui";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useTerminology } from "@/hooks";
 import { BodyContainer } from "@/components/shared/body";
 import { Header } from "@/modules/summary/components/header";
@@ -25,7 +25,7 @@ export const SummarySkeleton = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pb-4 pt-3">
+        <Container className="pt-3 pb-4">
           <Text as="h2" className="mb-2" fontSize="3xl" fontWeight="medium">
             Good {timeOfDay()}, {session?.user?.name}.
           </Text>

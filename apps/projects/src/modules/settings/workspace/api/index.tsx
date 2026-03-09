@@ -10,11 +10,11 @@ export const ApiSettings = () => {
         API Settings
       </Text>
 
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
             <Button
-              className="shrink-0 bg-primary dark:bg-primary"
+              className="bg-primary dark:bg-primary shrink-0"
               disabled
               variant="naked"
             >

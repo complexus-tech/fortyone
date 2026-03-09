@@ -1,6 +1,6 @@
 "use client";
 import { Box, Container, Flex, Text } from "ui";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { BodyContainer } from "@/components/shared/body";
 import { useTerminology } from "@/hooks";
 import { ErrorBoundary } from "@/components/shared";

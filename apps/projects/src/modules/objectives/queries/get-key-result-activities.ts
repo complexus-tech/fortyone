@@ -1,4 +1,3 @@
-
 import { get, WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type { ActivitiesResponse } from "../types";

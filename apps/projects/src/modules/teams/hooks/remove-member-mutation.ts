@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useParams, useRouter } from "next/navigation";
 import { useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
@@ -30,13 +30,16 @@ export const useRemoveMemberMutation = () => {
           description: "Please wait...",
         },
       );
-      await queryClient.cancelQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
+      await queryClient.cancelQueries({
+        queryKey: memberKeys.team(workspaceSlug, teamId),
+      });
       const previousMembers = queryClient.getQueryData<Member[]>(
         memberKeys.team(workspaceSlug, teamId),
       );
       if (previousMembers) {
-        queryClient.setQueryData(memberKeys.team(workspaceSlug, teamId), (old: Member[]) =>
-          old.filter((member) => member.id !== memberId),
+        queryClient.setQueryData(
+          memberKeys.team(workspaceSlug, teamId),
+          (old: Member[]) => old.filter((member) => member.id !== memberId),
         );
       }
 
@@ -88,12 +91,22 @@ export const useRemoveMemberMutation = () => {
           },
         },
       );
-      queryClient.invalidateQueries({ queryKey: memberKeys.team(workspaceSlug, teamId) });
+      queryClient.invalidateQueries({
+        queryKey: memberKeys.team(workspaceSlug, teamId),
+      });
       if (memberId === session?.user?.id) {
-        queryClient.invalidateQueries({ queryKey: teamKeys.lists(workspaceSlug) });
-        queryClient.invalidateQueries({ queryKey: teamKeys.public(workspaceSlug) });
-        queryClient.invalidateQueries({ queryKey: storyKeys.mine(workspaceSlug) });
-        queryClient.invalidateQueries({ queryKey: statusKeys.lists(workspaceSlug) });
+        queryClient.invalidateQueries({
+          queryKey: teamKeys.lists(workspaceSlug),
+        });
+        queryClient.invalidateQueries({
+          queryKey: teamKeys.public(workspaceSlug),
+        });
+        queryClient.invalidateQueries({
+          queryKey: storyKeys.mine(workspaceSlug),
+        });
+        queryClient.invalidateQueries({
+          queryKey: statusKeys.lists(workspaceSlug),
+        });
         if (teamIdParam === teamId) {
           router.push(withWorkspace("/my-work"));
         }

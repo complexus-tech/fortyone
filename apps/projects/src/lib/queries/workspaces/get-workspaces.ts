@@ -1,18 +1,11 @@
 import type { ApiResponse, Workspace } from "@/types";
-import ky from "ky";
-import { buildAuthHeaders } from "@/lib/http/auth-headers";
-import { getApiUrl } from "@/lib/api-url";
+import { get } from "api-client";
 
-const apiURL = getApiUrl();
-
-export const getWorkspaces = async (token?: string, cookieHeader?: string) => {
-  const headers = buildAuthHeaders({ token, cookieHeader });
-  const workspaces = await ky
-    .get(`${apiURL}/workspaces`, {
-      credentials: "include",
-      headers,
-    })
-    .json<ApiResponse<Workspace[]>>();
+export const getWorkspaces = async (
+  _token?: string,
+  _cookieHeader?: string,
+) => {
+  const workspaces = await get<ApiResponse<Workspace[]>>("workspaces");
 
   return workspaces.data!;
 };

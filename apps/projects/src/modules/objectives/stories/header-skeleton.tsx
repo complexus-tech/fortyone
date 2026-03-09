@@ -14,13 +14,9 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
         <Flex align="center" gap={2}>
           <Skeleton className="size-6 rounded-full" />
           <Skeleton className="h-5 w-20 rounded" />
-          <span className="hidden text-text-muted md:inline">
-            /
-          </span>
+          <span className="text-text-muted hidden md:inline">/</span>
           <Skeleton className="hidden h-5 w-24 rounded md:block" />
-          <span className="hidden text-text-muted md:inline">
-            /
-          </span>
+          <span className="text-text-muted hidden md:inline">/</span>
           <Skeleton className="hidden h-5 w-16 rounded md:block" />
         </Flex>
       </Flex>
@@ -30,9 +26,7 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
             <LayoutSwitcher layout={layout} setLayout={() => {}} />
             <Skeleton className="size-9 rounded md:size-8" />
             <Skeleton className="size-9 rounded md:size-8" />
-            <span className="hidden text-text-secondary md:inline">
-              |
-            </span>
+            <span className="text-text-secondary hidden md:inline">|</span>
           </>
         )}
         <NewStoryButton className="hidden md:flex" />

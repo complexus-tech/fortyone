@@ -94,9 +94,7 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="hidden text-text-secondary md:inline">
-          |
-        </span>
+        <span className="text-text-secondary hidden md:inline">|</span>
         <NewStoryButton className="hidden md:flex" teamId={teamId} />
       </Flex>
     </HeaderContainer>

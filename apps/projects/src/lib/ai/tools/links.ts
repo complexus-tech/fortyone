@@ -34,7 +34,10 @@ export const linksTool = tool({
       .describe("Limit number of links returned (default: 20, max: 100)"),
   }),
 
-  execute: async ({ action, storyId, linkId, url, title, limit = 20 }, { experimental_context }) => {
+  execute: async (
+    { action, storyId, linkId, url, title, limit = 20 },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -45,7 +48,8 @@ export const linksTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -99,11 +103,14 @@ export const linksTool = tool({
             };
           }
 
-          const result = await createLinkAction({
-            url,
-            title: title || "",
-            storyId,
-          }, workspaceSlug);
+          const result = await createLinkAction(
+            {
+              url,
+              title: title || "",
+              storyId,
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {
@@ -142,10 +149,14 @@ export const linksTool = tool({
             };
           }
 
-          const result = await updateLinkAction(linkId, {
-            url,
-            title: title || "",
-          }, workspaceSlug);
+          const result = await updateLinkAction(
+            linkId,
+            {
+              url,
+              title: title || "",
+            },
+            workspaceSlug,
+          );
 
           if (result.error) {
             return {

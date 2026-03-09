@@ -6,7 +6,6 @@ import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { ClientPage } from "./client";
 import { getAuthCode } from "@/lib/queries/get-auth-code";
-import { getCookieHeader } from "@/lib/http/header";
 
 export const metadata: Metadata = {
   title: "Auth Callback - FortyOne",
@@ -23,7 +22,6 @@ export default async function AuthCallback({
   const isMobileApp = params?.mobileApp === "true";
 
   const session = await auth();
-  const cookieHeader = await getCookieHeader();
 
   if (!session) {
     redirect("/");
@@ -31,15 +29,12 @@ export default async function AuthCallback({
 
   const [invitations, workspaces, profile] = await Promise.all([
     getMyInvitations(),
-    getWorkspaces(session.token, cookieHeader),
-    getProfile({ token: session.token, cookieHeader }),
+    getWorkspaces(),
+    getProfile(),
   ]);
 
   if (isMobileApp && workspaces.length > 0) {
-    const authCodeResponse = await getAuthCode({
-      token: session.token,
-      cookieHeader,
-    });
+    const authCodeResponse = await getAuthCode();
     if (authCodeResponse.error || !authCodeResponse.data) {
       redirect("/?mobileApp=true&error=Failed to generate auth code");
     } else {

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import { getSprint } from "../queries/get-sprint-details";
@@ -24,7 +24,8 @@ export const useSprint = (sprintId: string | null, teamId?: string) => {
 
   const query = useQuery({
     queryKey: sprintKeys.detail(workspaceSlug, sprintId ?? ""),
-    queryFn: () => getSprint(sprintId ?? "", { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getSprint(sprintId ?? "", { session: session!, workspaceSlug }),
     enabled: !existingSprint && !isSprintsPending && Boolean(sprintId),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

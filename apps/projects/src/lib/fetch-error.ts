@@ -3,14 +3,20 @@ import type { ApiResponse } from "@/types";
 
 export const requestError = async <T>(error: unknown) => {
   if (error instanceof HTTPError) {
-    // Handle HTTP errors (4xx, 5xx responses)
+    let errorData: ApiResponse<T> | null = null;
 
-    const errorData = await error.response.json<ApiResponse<T>>();
+    try {
+      const parsed = await error.response.clone().json();
+      errorData = parsed as ApiResponse<T>;
+    } catch {
+      errorData = null;
+    }
+
     return {
       data: null,
       error: {
         message:
-          errorData.error?.message || `HTTP error ${error.response.status}`,
+          errorData?.error?.message || `HTTP error ${error.response.status}`,
       },
     } as ApiResponse<T>;
   } else if (error instanceof TimeoutError) {

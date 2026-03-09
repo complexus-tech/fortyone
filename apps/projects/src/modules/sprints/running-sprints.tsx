@@ -22,7 +22,7 @@ export const RunningSprintsList = () => {
           <Box className="flex h-[70dvh] items-center justify-center">
             <Box className="flex flex-col items-center">
               <SprintsIcon className="h-20 w-auto" strokeWidth={1.3} />
-              <Text className="mb-6 mt-8" fontSize="3xl">
+              <Text className="mt-8 mb-6" fontSize="3xl">
                 No sprints found
               </Text>
               <Text className="mb-6 max-w-md text-center" color="muted">

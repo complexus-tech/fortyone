@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
@@ -19,7 +19,10 @@ export const useCreateKeyResultMutation = () => {
 
     onMutate: async (newKeyResult: NewObjectiveKeyResult) => {
       await queryClient.cancelQueries({
-        queryKey: objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
+        queryKey: objectiveKeys.keyResults(
+          workspaceSlug,
+          newKeyResult.objectiveId,
+        ),
       });
 
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
@@ -76,10 +79,16 @@ export const useCreateKeyResultMutation = () => {
       });
 
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
+        queryKey: objectiveKeys.keyResults(
+          workspaceSlug,
+          newKeyResult.objectiveId,
+        ),
       });
       queryClient.invalidateQueries({
-        queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, newKeyResult.objectiveId),
+        queryKey: objectiveKeys.activitiesInfinite(
+          workspaceSlug,
+          newKeyResult.objectiveId,
+        ),
       });
     },
   });

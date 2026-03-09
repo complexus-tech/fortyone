@@ -137,7 +137,7 @@ export const TerminologyPreferences = () => {
     <>
       <FeatureGuard
         fallback={
-          <Wrapper className="mb-6 flex items-center justify-between gap-2 border border-warning bg-warning/10 p-4 dark:border-warning/20 dark:bg-warning/10">
+          <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 mb-6 flex items-center justify-between gap-2 border p-4">
             <Flex align="center" gap={2}>
               <WarningIcon className="text-warning dark:text-warning" />
               <Text>
@@ -146,7 +146,10 @@ export const TerminologyPreferences = () => {
               </Text>
             </Flex>
             {userRole === "admin" && (
-              <Button color="warning" href={withWorkspace("/settings/workspace/billing")}>
+              <Button
+                color="warning"
+                href={withWorkspace("/settings/workspace/billing")}
+              >
                 Upgrade now
               </Button>
             )}
@@ -154,7 +157,7 @@ export const TerminologyPreferences = () => {
         }
         feature="customTerminology"
       >
-        <Box className="mb-6 rounded-2xl border border-border bg-surface">
+        <Box className="border-border bg-surface mb-6 rounded-2xl border">
           <SectionHeader
             description="Customize the terminology used throughout your workspace."
             title="Terminology Preferences"
@@ -170,7 +173,7 @@ export const TerminologyPreferences = () => {
                   <Flex align="center" gap={2}>
                     <Flex
                       align="center"
-                      className="size-8 shrink-0 rounded-lg bg-surface-muted"
+                      className="bg-surface-muted size-8 shrink-0 rounded-lg"
                       justify="center"
                     >
                       {entity.icon}
@@ -216,14 +219,14 @@ export const TerminologyPreferences = () => {
       </FeatureGuard>
 
       {/* Preview Section */}
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="See how your selected terminology will appear throughout the application."
           title="Terminology Preview"
         />
 
         <Box className="grid grid-cols-1 md:grid-cols-2">
-          <Box className="border-r border-border">
+          <Box className="border-border border-r">
             <RowWrapper className="justify-start gap-2 py-3 md:px-6">
               <StoryIcon />
               My {getTermDisplay("storyTerm", { variant: "plural" })}

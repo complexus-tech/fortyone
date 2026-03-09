@@ -22,7 +22,7 @@ export const DeleteTeam = ({ team }: { team: Team }) => {
   };
   return (
     <div>
-      <Box className="mt-6 rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
           description="Permanently delete your team and all of its data."
           title="Delete Team"

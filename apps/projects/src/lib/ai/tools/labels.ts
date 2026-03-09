@@ -21,11 +21,15 @@ export const labelsTool = tool({
     color: z.string().optional(),
     teamId: z.string().optional(),
   }),
-  execute: async ({ action, labelId, name, color, teamId }, { experimental_context }) => {
+  execute: async (
+    { action, labelId, name, color, teamId },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -48,7 +52,10 @@ export const labelsTool = tool({
           if (!name || !color)
             return { success: false, error: "Name and color are required" };
           {
-            const res = await createLabelAction({ name, color, teamId }, workspaceSlug);
+            const res = await createLabelAction(
+              { name, color, teamId },
+              workspaceSlug,
+            );
             if (res.error) return { success: false, error: res.error.message };
             return { success: true, label: res.data };
           }

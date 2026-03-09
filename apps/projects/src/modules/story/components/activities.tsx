@@ -1,6 +1,6 @@
 import { Avatar, Box, Flex, Tabs, Text, Button, Skeleton } from "ui";
 import { ClockIcon, CommentIcon } from "icons";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { Activity } from "@/components/ui";
 import { useStoryActivitiesInfinite } from "@/modules/story/hooks/story-activities";
 import { CommentInput } from "./comment-input";

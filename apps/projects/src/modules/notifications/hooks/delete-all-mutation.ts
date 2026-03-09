@@ -13,7 +13,9 @@ export const useDeleteAllMutation = () => {
     mutationFn: () => deleteAllNotifications(workspaceSlug),
 
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
         notificationKeys.all(workspaceSlug),
@@ -23,7 +25,10 @@ export const useDeleteAllMutation = () => {
       );
 
       // Optimistically clear all notifications
-      queryClient.setQueryData<AppNotification[]>(notificationKeys.all(workspaceSlug), []);
+      queryClient.setQueryData<AppNotification[]>(
+        notificationKeys.all(workspaceSlug),
+        [],
+      );
       queryClient.setQueryData(notificationKeys.unread(workspaceSlug), 0);
 
       return { previousNotifications, previousUnreadCount };
@@ -60,8 +65,12 @@ export const useDeleteAllMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.unread(workspaceSlug),
+      });
     },
   });
 

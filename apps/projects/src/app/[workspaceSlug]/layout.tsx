@@ -36,16 +36,12 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   const cookieHeader = await getCookieHeader();
-
-  if (!session) {
-    redirect("/");
-  }
   const { workspaceSlug } = await params;
-  const ctx = { session: session!, workspaceSlug, cookieHeader };
+  const ctx = { session, workspaceSlug, cookieHeader };
   const workspaces = await getWorkspaces(session?.token, cookieHeader);
 
   if (workspaces.length === 0) {
-    redirect("/onboarding/create");
+    redirect(session ? "/onboarding/create" : "/");
   }
 
   // First try to find workspace
@@ -76,7 +72,7 @@ export default async function RootLayout({
     }),
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.lists(),
-      queryFn: () => getWorkspaces(ctx.session.token, ctx.cookieHeader),
+      queryFn: () => getWorkspaces(ctx.session?.token, ctx.cookieHeader),
     }),
     queryClient.prefetchQuery({
       queryKey: sprintKeys.running(workspaceSlug),
@@ -86,7 +82,7 @@ export default async function RootLayout({
       queryKey: userKeys.profile(),
       queryFn: () =>
         getProfile({
-          token: ctx.session.token,
+          token: ctx.session?.token,
           cookieHeader: ctx.cookieHeader,
         }),
       staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,

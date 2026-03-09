@@ -61,7 +61,7 @@ export const fetchNonCriticalImportantQueries = (
     queryKey: invitationKeys.mine,
     queryFn: () =>
       getMyInvitations({
-        token: ctx.session.token,
+        token: ctx.session?.token,
         cookieHeader: ctx.cookieHeader,
       }),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
@@ -83,7 +83,7 @@ export const fetchNonCriticalImportantQueries = (
   });
   queryClient.prefetchQuery({
     queryKey: workspaceKeys.lists(),
-    queryFn: () => getWorkspaces(ctx.session.token, ctx.cookieHeader),
+    queryFn: () => getWorkspaces(ctx.session?.token, ctx.cookieHeader),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
   queryClient.prefetchQuery({

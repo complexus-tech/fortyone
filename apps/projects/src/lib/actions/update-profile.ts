@@ -1,5 +1,3 @@
-"use server";
-
 import type { UpdateProfile } from "@/lib/actions/users/update";
 import { updateProfile as updateProfileAction } from "@/lib/actions/users/update";
 

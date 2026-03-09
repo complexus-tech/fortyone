@@ -12,6 +12,7 @@ coverage
 .next/
 out/
 build
+art-circles/
 
 # misc
 .DS_Store

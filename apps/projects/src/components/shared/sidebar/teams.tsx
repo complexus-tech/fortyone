@@ -1,7 +1,7 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
 import { MoreHorizontalIcon } from "icons";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {

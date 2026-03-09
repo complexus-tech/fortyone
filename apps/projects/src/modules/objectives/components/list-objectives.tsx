@@ -37,7 +37,7 @@ export const ListObjectives = ({
             <Box className="flex h-full items-center justify-center">
               <Box className="flex flex-col items-center">
                 <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.6} />
-                <Text className="mb-6 mt-8" fontSize="3xl">
+                <Text className="mt-8 mb-6" fontSize="3xl">
                   No {getTermDisplay("objectiveTerm", { variant: "plural" })}{" "}
                   found
                 </Text>

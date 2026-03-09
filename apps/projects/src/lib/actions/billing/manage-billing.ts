@@ -1,5 +1,3 @@
-"use server";
-
 import { auth } from "@/auth";
 import { post } from "@/lib/http";
 import { getCookieHeader } from "@/lib/http/header";

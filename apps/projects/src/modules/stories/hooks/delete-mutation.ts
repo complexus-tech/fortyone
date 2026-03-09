@@ -53,7 +53,9 @@ const updateInfiniteQuery = (
           if (!Array.isArray(page.stories)) return page;
           return {
             ...page,
-            stories: page.stories.filter((story) => !storyIds.includes(story.id)),
+            stories: page.stories.filter(
+              (story) => !storyIds.includes(story.id),
+            ),
           };
         }),
       };
@@ -123,8 +125,7 @@ export const useBulkDeleteStoryMutation = () => {
   const { mutateAsync } = useBulkRestoreStoryMutation();
 
   const mutation = useMutation({
-    mutationFn: (payload: Payload) =>
-      bulkDeleteAction(payload, workspaceSlug),
+    mutationFn: (payload: Payload) => bulkDeleteAction(payload, workspaceSlug),
 
     onMutate: ({ storyIds }) => {
       const queryCache = queryClient.getQueryCache();

@@ -57,17 +57,20 @@ export const createObjectiveTool = tool({
       .describe("Key results to create with the objective"),
   }),
 
-  execute: async ({
-    name,
-    description,
-    teamId,
-    leadUser,
-    startDate,
-    endDate,
-    priority,
-    statusId,
-    keyResults,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      name,
+      description,
+      teamId,
+      leadUser,
+      startDate,
+      endDate,
+      priority,
+      statusId,
+      keyResults,
+    },
+    { experimental_context },
+  ) => {
     try {
       const session = await auth();
 
@@ -78,7 +81,8 @@ export const createObjectiveTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+        .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
@@ -92,21 +96,24 @@ export const createObjectiveTool = tool({
         };
       }
 
-      const result = await createObjective({
-        name,
-        description,
-        teamId,
-        leadUser,
-        startDate,
-        endDate,
-        priority,
-        statusId,
-        keyResults:
-          keyResults?.map((kr) => ({
-            ...kr,
-            currentValue: kr.startValue,
-          })) || [],
-      }, workspaceSlug);
+      const result = await createObjective(
+        {
+          name,
+          description,
+          teamId,
+          leadUser,
+          startDate,
+          endDate,
+          priority,
+          statusId,
+          keyResults:
+            keyResults?.map((kr) => ({
+              ...kr,
+              currentValue: kr.startValue,
+            })) || [],
+        },
+        workspaceSlug,
+      );
 
       if (result.error) {
         return {

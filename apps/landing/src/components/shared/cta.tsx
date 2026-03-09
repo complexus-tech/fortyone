@@ -4,6 +4,7 @@ import { Box, Button, Flex, Text } from "ui";
 import { motion } from "framer-motion";
 import { ArrowDown2Icon } from "icons";
 import { Container, Dot } from "@/components/ui";
+import { SIGNUP_URL } from "@/lib/app-url";
 import ctaLight from "../../../public/images/product/cta.webp";
 import ctaDark from "../../../public/images/product/cta-dark.webp";
 
@@ -86,7 +87,7 @@ export const CallToAction = () => {
               <Button
                 className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pr-4 md:pl-5"
                 color="invert"
-                href="https://cloud.fortyone.app/signup"
+                href={SIGNUP_URL}
                 rounded="lg"
                 size="lg"
               >

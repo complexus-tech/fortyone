@@ -31,17 +31,20 @@ export const updateKeyResultTool = tool({
       .describe("Updated contributors user IDs (optional)"),
   }),
 
-  execute: async ({
-    keyResultId,
-    name,
-    startValue,
-    currentValue,
-    targetValue,
-    startDate,
-    endDate,
-    lead,
-    contributors,
-  }, { experimental_context }) => {
+  execute: async (
+    {
+      keyResultId,
+      name,
+      startValue,
+      currentValue,
+      targetValue,
+      startDate,
+      endDate,
+      lead,
+      contributors,
+    },
+    { experimental_context },
+  ) => {
     const session = await auth();
 
     if (!session) {
@@ -51,7 +54,8 @@ export const updateKeyResultTool = tool({
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
+    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      .workspaceSlug;
 
     const ctx = { session, workspaceSlug };
 
@@ -66,16 +70,20 @@ export const updateKeyResultTool = tool({
       };
     }
 
-    const result = await updateKeyResult(keyResultId, {
-      name,
-      startValue,
-      currentValue,
-      targetValue,
-      startDate,
-      endDate,
-      lead,
-      contributors,
-    }, workspaceSlug);
+    const result = await updateKeyResult(
+      keyResultId,
+      {
+        name,
+        startValue,
+        currentValue,
+        targetValue,
+        startDate,
+        endDate,
+        lead,
+        contributors,
+      },
+      workspaceSlug,
+    );
 
     if (result.error) {
       return {

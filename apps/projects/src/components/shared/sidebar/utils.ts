@@ -1,8 +1,4 @@
-const SESSION_COOKIE_NAMES = [
-  "__Secure-next-auth.session-token",
-  "next-auth.session-token",
-  "fortyone_session",
-];
+const SESSION_COOKIE_NAMES = ["fortyone_session"];
 
 export const clearAllStorage = () => {
   const domain =

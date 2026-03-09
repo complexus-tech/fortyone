@@ -13,7 +13,7 @@ export const ListUserStories = () => {
   return (
     <ProfileProvider layout={layout}>
       <Header layout={layout} setLayout={setLayout} />
-      <AllStories layout={layout}  />
+      <AllStories layout={layout} />
     </ProfileProvider>
   );
 };

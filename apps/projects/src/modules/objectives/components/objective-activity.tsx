@@ -101,7 +101,9 @@ export const ObjectiveActivityComponent = ({
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
+              href={withWorkspace(
+                `/profile/${members.find((m) => m.id === value)?.id}`,
+              )}
             >
               <Avatar
                 name={members.find((m) => m.id === value)?.fullName}
@@ -169,7 +171,9 @@ export const ObjectiveActivityComponent = ({
           ) : (
             <Link
               className="flex items-center gap-1.5"
-              href={withWorkspace(`/profile/${members.find((m) => m.id === value)?.id}`)}
+              href={withWorkspace(
+                `/profile/${members.find((m) => m.id === value)?.id}`,
+              )}
             >
               <Avatar
                 className="relative"
@@ -225,7 +229,9 @@ export const ObjectiveActivityComponent = ({
                         "mb-0": member.role === "system",
                       })}
                       href={
-                        member.role === "system" ? "" : withWorkspace(`/profile/${member.id}`)
+                        member.role === "system"
+                          ? ""
+                          : withWorkspace(`/profile/${member.id}`)
                       }
                     >
                       <Text fontSize="md">{member.fullName}</Text>

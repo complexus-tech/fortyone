@@ -62,10 +62,13 @@ Create a `.env` file with the following variables:
 
 ```bash
 # Domain Configuration
-NEXT_PUBLIC_DOMAIN=your-domain.com
+NEXT_PUBLIC_DOMAIN=localhost
 
 # API Configuration
-NEXT_PUBLIC_API_URL=api_url
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Authentication
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
 
 # Analytics
 NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
@@ -73,18 +76,13 @@ NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 
 # AI Services
 OPENAI_API_KEY=your_openai_api_key
-GOOGLE_API_KEY=your_google_api_key
-# Authentication
-AUTH_SECRET=your_auth_secret_here
-NEXTAUTH_SECRET=your_nextauth_secret
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key
 
 # Error Tracking
 NEXT_PUBLIC_SENTRY_DSN=your_actual_sentry_dsn
 
-# File Storage (Azure Blob Storage)
-AZURE_STORAGE_ACCOUNT=your_azure_storage_account
-AZURE_STORAGE_ACCESS_KEY=your_azure_storage_access_key
-AZURE_STORAGE_CONTAINER=your_container_name
+# Optional
+NEXT_PUBLIC_GITHUB_APP_SLUG=your_github_app_slug
 ```
 
 ## 🧪 Testing

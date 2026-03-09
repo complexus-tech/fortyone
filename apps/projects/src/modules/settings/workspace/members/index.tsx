@@ -18,7 +18,7 @@ const MembersTab = ({
   const { data: allMembers = [] } = useMembers();
   const members = allMembers.filter(({ role }) => role !== "system");
   return (
-    <Box className="rounded-2xl border border-border bg-surface">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         action={
           <Button
@@ -37,7 +37,7 @@ const MembersTab = ({
       />
 
       <Flex
-        className="divide-y divide-gray-100 dark:divide-dark-100"
+        className="dark:divide-dark-100 divide-y divide-gray-100"
         direction="column"
       >
         {members.map((member) => (
@@ -55,7 +55,7 @@ const PendingInvitationsTab = ({
 }) => {
   const { data: pendingInvitations = [] } = usePendingInvitations();
   return (
-    <Box className="rounded-2xl border border-border bg-surface">
+    <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
         action={
           <Button
@@ -75,7 +75,7 @@ const PendingInvitationsTab = ({
       />
 
       <Flex
-        className="divide-y divide-gray-100 dark:divide-dark-100"
+        className="dark:divide-dark-100 divide-y divide-gray-100"
         direction="column"
       >
         {pendingInvitations.map((invitation) => (

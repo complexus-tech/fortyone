@@ -421,9 +421,7 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={
-                  <DeleteIcon className="text-white" />
-                }
+                leftIcon={<DeleteIcon className="text-white" />}
                 loading={isPending}
                 loadingText="Deleting..."
                 onClick={handleBulkDelete}

@@ -11,7 +11,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { getQueryClient } from "./get-query-client";
 import { PostHogProvider } from "./posthog";
 import PostHogPageView from "./posthog-page-view";
-import { SessionExchange } from "./session-exchange";
 
 TimeAgo.addDefaultLocale(en);
 
@@ -26,7 +25,6 @@ export const Providers = ({ children }: { children: ReactNode }) => {
         <NuqsAdapter>
           <ThemeProvider attribute="class" enableSystem>
             {children}
-            <SessionExchange />
           </ThemeProvider>
         </NuqsAdapter>
         <Suspense>

@@ -54,7 +54,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
         <SprintsIcon className="shrink-0" />
         {selectedSprint.name}
       </Text>
-      <Flex align="center" className="mb-3 mt-4" gap={6} justify="between">
+      <Flex align="center" className="mt-4 mb-3" gap={6} justify="between">
         <Text className="flex items-center gap-1" fontSize="md">
           <CalendarIcon
             className={cn("h-5 w-auto", {
@@ -77,7 +77,7 @@ export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
         <>
           <Text fontSize="md">Sprint Goal:</Text>
           <Box
-            className="mt-1 line-clamp-4 text-text-muted"
+            className="text-text-muted mt-1 line-clamp-4"
             html={selectedSprint.goal}
           />
         </>

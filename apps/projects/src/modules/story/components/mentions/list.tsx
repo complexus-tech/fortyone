@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Avatar, Box, Text } from "ui";
 

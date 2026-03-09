@@ -13,7 +13,9 @@ export const useDeleteReadMutation = () => {
     mutationFn: () => deleteReadNotifications(workspaceSlug),
 
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
         notificationKeys.all(workspaceSlug),
@@ -58,7 +60,9 @@ export const useDeleteReadMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
     },
   });
 

@@ -106,7 +106,7 @@ export const Timezone = () => {
   };
 
   return (
-    <Box className="mt-6 rounded-2xl border border-border bg-surface">
+    <Box className="border-border bg-surface mt-6 rounded-2xl border">
       <SectionHeader
         description="Set your local timezone for accurate time displays."
         title="Timezone"
@@ -123,7 +123,7 @@ export const Timezone = () => {
             <TimezoneMenu>
               <TimezoneMenu.Trigger>
                 <Button
-                  className="shrink-0 text-opacity-80"
+                  className="text-opacity-80 shrink-0"
                   color="tertiary"
                   variant="outline"
                 >

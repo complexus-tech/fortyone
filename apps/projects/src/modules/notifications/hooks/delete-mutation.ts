@@ -10,10 +10,13 @@ export const useDeleteMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) => deleteNotification(notificationId, workspaceSlug),
+    mutationFn: (notificationId: string) =>
+      deleteNotification(notificationId, workspaceSlug),
 
     onMutate: async (notificationId) => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
         notificationKeys.all(workspaceSlug),
@@ -88,8 +91,12 @@ export const useDeleteMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.unread(workspaceSlug),
+      });
     },
   });
 

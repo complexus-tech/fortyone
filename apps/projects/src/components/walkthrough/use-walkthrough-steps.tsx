@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Box, Kbd, Text } from "ui";
 import confetti from "canvas-confetti";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useUserRole } from "@/hooks";
 import { type WalkthroughStep } from "./walkthrough-provider";
 import { usePathname } from "next/navigation";

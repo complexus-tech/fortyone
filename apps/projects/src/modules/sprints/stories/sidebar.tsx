@@ -62,7 +62,7 @@ export const Sidebar = () => {
   } as const;
 
   return (
-    <Box className="h-full bg-surface-muted/30 py-6 bg-surface/60">
+    <Box className="bg-surface-muted/30 bg-surface/60 h-full py-6">
       <Box className="px-6">
         <Flex align="center" justify="between">
           <Text className="flex items-center gap-1.5" fontSize="lg">
@@ -98,20 +98,20 @@ export const Sidebar = () => {
         </Flex>
         <Flex align="center" className="my-4" gap={2}>
           <Badge
-            className="h-8 px-2 text-base capitalize tracking-wide"
+            className="h-8 px-2 text-base tracking-wide capitalize"
             color={getStatusColor(overview.status)}
           >
             {overview.status.replace("_", " ")}
           </Badge>
           <Badge
-            className="h-8 px-2 text-base capitalize tracking-wide"
+            className="h-8 px-2 text-base tracking-wide capitalize"
             color="tertiary"
           >
             {format(new Date(sprint.startDate), "d MMM")} -{" "}
             {format(new Date(sprint.endDate), "d MMM")}
           </Badge>
         </Flex>
-        <Flex align="center" className="mb-2 mt-3" gap={2} justify="between">
+        <Flex align="center" className="mt-3 mb-2" gap={2} justify="between">
           <Text>Sprint Progress</Text>
           <Text>{overview.completionPercentage}%</Text>
         </Flex>

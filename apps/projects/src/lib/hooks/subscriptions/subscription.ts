@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { subscriptionKeys } from "@/constants/keys";

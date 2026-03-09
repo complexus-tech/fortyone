@@ -18,7 +18,7 @@ export const DeleteAccountSettings = () => {
         Delete Account
       </Text>
 
-      <Box className="rounded-2xl border border-border bg-surface">
+      <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           description="Once you delete your account, there is no going back. Please be certain."
           title="Delete your account"

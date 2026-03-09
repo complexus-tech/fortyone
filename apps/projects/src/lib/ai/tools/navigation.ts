@@ -21,7 +21,7 @@ export const navigation = tool({
         "notifications",
         "settings",
         "roadmaps",
-        "billing"
+        "billing",
       ])
       .describe("Type of navigation target"),
 
@@ -55,13 +55,15 @@ export const navigation = tool({
       ),
   }),
 
-  execute: async ({ targetType, entityId, teamId, route }, { experimental_context }) => {
+  execute: async (
+    { targetType, entityId, teamId, route },
+    { experimental_context },
+  ) => {
     let routePath: string;
     let message: string;
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string }).workspaceSlug;
-
-
+    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      .workspaceSlug;
 
     switch (targetType) {
       case "my-work":
@@ -95,7 +97,10 @@ export const navigation = tool({
         break;
 
       case "billing":
-        routePath = withWorkspacePath("/settings/workspace/billing", workspaceSlug);
+        routePath = withWorkspacePath(
+          "/settings/workspace/billing",
+          workspaceSlug,
+        );
         message = "Navigating to billing";
         break;
 
@@ -131,7 +136,10 @@ export const navigation = tool({
             error: "Team ID and Entity ID are required for sprint navigation",
           };
         }
-        routePath = withWorkspacePath(`/teams/${teamId}/sprints/${entityId}/stories`, workspaceSlug);
+        routePath = withWorkspacePath(
+          `/teams/${teamId}/sprints/${entityId}/stories`,
+          workspaceSlug,
+        );
         message = "Navigating to sprint details";
         break;
 
@@ -142,7 +150,10 @@ export const navigation = tool({
               "Team ID and Entity ID are required for objective navigation",
           };
         }
-        routePath = withWorkspacePath(`/teams/${teamId}/objectives/${entityId}`, workspaceSlug);
+        routePath = withWorkspacePath(
+          `/teams/${teamId}/objectives/${entityId}`,
+          workspaceSlug,
+        );
         message = "Navigating to objective details";
         break;
 
@@ -155,10 +166,16 @@ export const navigation = tool({
         }
 
         if (route) {
-          routePath = withWorkspacePath(`/teams/${teamId}/${route}`, workspaceSlug);
+          routePath = withWorkspacePath(
+            `/teams/${teamId}/${route}`,
+            workspaceSlug,
+          );
           message = `Navigating to team ${route}`;
         } else {
-          routePath = withWorkspacePath(`/teams/${teamId}/stories`, workspaceSlug);
+          routePath = withWorkspacePath(
+            `/teams/${teamId}/stories`,
+            workspaceSlug,
+          );
           message = "Navigating to team stories";
         }
         break;

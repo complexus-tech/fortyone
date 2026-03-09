@@ -45,7 +45,7 @@ export const NotificationsHeader = () => {
   return (
     <Flex
       align="center"
-      className="h-16 border-b-[0.5px] border-border/60 px-4 d"
+      className="border-border/60 d h-16 border-b-[0.5px] px-4"
       justify="between"
     >
       <Flex align="center" className="gap-2">
@@ -67,7 +67,7 @@ export const NotificationsHeader = () => {
             </Button>
           </Menu.Button>
           <Menu.Items className="w-54">
-            <Menu.Group className="mb-3 mt-1 px-4">
+            <Menu.Group className="mt-1 mb-3 px-4">
               <Text color="muted" textOverflow="truncate">
                 Filter notifications
               </Text>
@@ -97,7 +97,7 @@ export const NotificationsHeader = () => {
             </Button>
           </Menu.Button>
           <Menu.Items align="end">
-            <Menu.Group className="mb-3 mt-1 px-4">
+            <Menu.Group className="mt-1 mb-3 px-4">
               <Text color="muted" textOverflow="truncate">
                 Manage notifications
               </Text>

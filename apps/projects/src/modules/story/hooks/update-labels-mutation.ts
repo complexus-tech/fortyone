@@ -183,7 +183,9 @@ export const useUpdateLabelsMutation = () => {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
     },
   });
 

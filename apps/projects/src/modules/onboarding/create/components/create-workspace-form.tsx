@@ -139,7 +139,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            {isFortyOneApp && <Text>.fortyone.app</Text>}  
+            {isFortyOneApp && <Text>.fortyone.app</Text>}
             {!isAvailable ? (
               <Flex
                 align="center"

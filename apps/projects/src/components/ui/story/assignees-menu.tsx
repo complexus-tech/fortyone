@@ -2,7 +2,7 @@
 import { CheckIcon, LoadingIcon } from "icons";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 

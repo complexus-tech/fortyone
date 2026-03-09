@@ -42,7 +42,9 @@ export const useCreateLabelMutation = () => {
           newLabel,
         ]);
       }
-      queryClient.invalidateQueries({ queryKey: labelKeys.lists(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: labelKeys.lists(workspaceSlug),
+      });
     },
   });
 

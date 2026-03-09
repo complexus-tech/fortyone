@@ -11,7 +11,7 @@ import {
 } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
 import { useState } from "react";
 import type { Comment } from "@/types";

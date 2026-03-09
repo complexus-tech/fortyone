@@ -76,7 +76,9 @@ export const useRevokeInvitationMutation = () => {
         description: "Invitation revoked successfully",
         id: toastId,
       });
-      queryClient.invalidateQueries({ queryKey: invitationKeys.pending(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: invitationKeys.pending(workspaceSlug),
+      });
       queryClient.invalidateQueries({ queryKey: invitationKeys.mine });
     },
   });

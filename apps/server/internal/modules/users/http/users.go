@@ -2,6 +2,8 @@ package usershttp
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,18 +12,18 @@ import (
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
 var (
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
-	SessionDuration       = time.Hour * 24 * 40
+	SessionDuration       = time.Hour * 24 * 30
 	avatarAccessURLExpiry = 24 * time.Hour
 )
 
@@ -31,15 +33,19 @@ type Handlers struct {
 	users         *users.Service
 	attachments   users.AttachmentsService
 	secretKey     string
+	cookieDomain  string
+	cache         *cache.Service
 	googleService *google.Service
 	publisher     *publisher.Publisher
 }
 
-func New(users *users.Service, attachments users.AttachmentsService, secretKey string, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
+func New(users *users.Service, attachments users.AttachmentsService, secretKey string, cookieDomain string, cacheService *cache.Service, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
 		attachments:   attachments,
 		secretKey:     secretKey,
+		cookieDomain:  cookieDomain,
+		cache:         cacheService,
 		googleService: googleService,
 		publisher:     publisher,
 	}
@@ -69,15 +75,31 @@ func (h *Handlers) resolveUserAvatars(ctx context.Context, usersList []users.Cor
 	}
 }
 
-func (h *Handlers) createSessionToken(userID uuid.UUID) (string, error) {
-	claims := jwt.RegisteredClaims{
-		Subject:   userID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionDuration)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		NotBefore: jwt.NewNumericDate(time.Now()),
+func (h *Handlers) createSessionToken() (string, error) {
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", fmt.Errorf("generate session token: %w", err)
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(h.secretKey))
+
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
+}
+
+func (h *Handlers) persistSession(
+	ctx context.Context,
+	userID uuid.UUID,
+	token string,
+	expires time.Time,
+) error {
+	if h.cache == nil {
+		return errors.New("auth session cache is not configured")
+	}
+
+	ttl := time.Until(expires)
+	if ttl <= 0 {
+		return errors.New("auth session expiry must be in the future")
+	}
+
+	return h.cache.Set(ctx, cache.AuthSessionCacheKey(token), userID.String(), ttl)
 }
 
 func (h *Handlers) setSessionCookie(w http.ResponseWriter, r *http.Request, value string, expires time.Time) {
@@ -93,7 +115,7 @@ func (h *Handlers) setSessionCookie(w http.ResponseWriter, r *http.Request, valu
 		MaxAge:   int(time.Until(expires).Seconds()),
 	}
 
-	if domain := cookieDomainForRequest(r); domain != "" {
+	if domain := cookieDomainForRequest(r, h.cookieDomain); domain != "" {
 		cookie.Domain = domain
 	}
 
@@ -113,14 +135,18 @@ func (h *Handlers) clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	}
 
-	if domain := cookieDomainForRequest(r); domain != "" {
+	if domain := cookieDomainForRequest(r, h.cookieDomain); domain != "" {
 		cookie.Domain = domain
 	}
 
 	http.SetCookie(w, &cookie)
 }
 
-func cookieDomainForRequest(r *http.Request) string {
+func cookieDomainForRequest(r *http.Request, configuredDomain string) string {
+	if configuredDomain != "" {
+		return configuredDomain
+	}
+
 	host := r.Host
 	if host == "" {
 		return ""
@@ -157,6 +183,10 @@ func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *htt
 
 	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+func (h *Handlers) Me(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return h.GetProfile(ctx, w, r)
 }
 
 func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -319,12 +349,16 @@ func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	tokenString, err := h.createSessionToken(user.ID)
+	tokenString, err := h.createSessionToken()
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	user.Token = &tokenString
+	expiresAt := time.Now().Add(SessionDuration)
+	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	h.setSessionCookie(w, r, tokenString, expiresAt)
 	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
@@ -432,12 +466,16 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	tokenString, err := h.createSessionToken(user.ID)
+	tokenString, err := h.createSessionToken()
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	user.Token = &tokenString
+	expiresAt := time.Now().Add(SessionDuration)
+	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	h.setSessionCookie(w, r, tokenString, expiresAt)
 	h.resolveUserAvatar(ctx, &user)
 	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
@@ -598,12 +636,15 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	tokenString, err := h.createSessionToken(userID)
+	tokenString, err := h.createSessionToken()
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	expires := time.Now().Add(SessionDuration)
+	if err := h.persistSession(ctx, userID, tokenString, expires); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
 	h.setSessionCookie(w, r, tokenString, expires)
 
 	return web.Respond(ctx, w, map[string]bool{"ok": true}, http.StatusOK)
@@ -611,6 +652,11 @@ func (h *Handlers) CreateSession(ctx context.Context, w http.ResponseWriter, r *
 
 // ClearSession clears the auth session cookie.
 func (h *Handlers) ClearSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if h.cache != nil {
+		if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {
+			_ = h.cache.Delete(ctx, cache.AuthSessionCacheKey(cookie.Value))
+		}
+	}
 	h.clearSessionCookie(w, r)
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }

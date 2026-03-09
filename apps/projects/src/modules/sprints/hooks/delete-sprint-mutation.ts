@@ -12,7 +12,8 @@ export const useDeleteSprintMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (sprintId: string) => deleteSprintAction(sprintId, workspaceSlug),
+    mutationFn: (sprintId: string) =>
+      deleteSprintAction(sprintId, workspaceSlug),
     onMutate: async (sprintId) => {
       await queryClient.cancelQueries({
         queryKey: sprintKeys.lists(workspaceSlug),

@@ -145,12 +145,8 @@ export const StoriesViewOptionsButton = ({
           className="relative"
           color="tertiary"
           disabled={disabled}
-          leftIcon={
-            <PreferencesIcon className="h-4 w-auto text-text-muted" />
-          }
-          rightIcon={
-            <ArrowDownIcon className="h-3.5 w-auto text-text-muted" />
-          }
+          leftIcon={<PreferencesIcon className="text-text-muted h-4 w-auto" />}
+          rightIcon={<ArrowDownIcon className="text-text-muted h-3.5 w-auto" />}
           size="sm"
           variant="outline"
         >
@@ -223,7 +219,7 @@ export const StoriesViewOptionsButton = ({
           </Text>
           <Text className="mb-4" color="muted">
             <label
-              className="flex select-none items-center justify-between gap-2"
+              className="flex items-center justify-between gap-2 select-none"
               htmlFor="show-empty-groups"
             >
               Show empty groups
@@ -241,7 +237,7 @@ export const StoriesViewOptionsButton = ({
           </Text>
           <Text className="mb-4" color="muted">
             <label
-              className="flex select-none items-center justify-between gap-2"
+              className="flex items-center justify-between gap-2 select-none"
               htmlFor="show-sub-stories"
             >
               {subStoriesLabel}

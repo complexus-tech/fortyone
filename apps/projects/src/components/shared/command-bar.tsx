@@ -16,7 +16,12 @@ import {
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useTerminology, useAnalytics, useUserRole, useWorkspacePath } from "@/hooks";
+import {
+  useTerminology,
+  useAnalytics,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { logOut } from "@/components/shared/sidebar/actions";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {

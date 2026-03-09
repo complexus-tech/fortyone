@@ -14,7 +14,7 @@ export const SprintsSkeleton = () => {
             <Flex className="flex-1 items-center gap-4">
               <Flex
                 align="center"
-                className="size-10 rounded-lg bg-surface-muted"
+                className="bg-surface-muted size-10 rounded-lg"
                 justify="center"
               >
                 <Skeleton className="h-5 w-5" />

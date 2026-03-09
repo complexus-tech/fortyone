@@ -10,10 +10,13 @@ export const useMarkUnreadMutation = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (notificationId: string) => markUnread(notificationId, workspaceSlug),
+    mutationFn: (notificationId: string) =>
+      markUnread(notificationId, workspaceSlug),
 
     onMutate: async (notificationId) => {
-      await queryClient.cancelQueries({ queryKey: notificationKeys.all(workspaceSlug) });
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
 
       const previousNotifications = queryClient.getQueryData<AppNotification[]>(
         notificationKeys.all(workspaceSlug),
@@ -76,8 +79,12 @@ export const useMarkUnreadMutation = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all(workspaceSlug) });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unread(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: notificationKeys.unread(workspaceSlug),
+      });
     },
   });
 
