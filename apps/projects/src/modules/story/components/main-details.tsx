@@ -20,6 +20,7 @@ import TableRow from "@tiptap/extension-table-row";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
@@ -100,6 +101,9 @@ export const MainDetails = ({
     ],
     content: descriptionHTML || description,
     editable: !isDeleted && userRole !== "guest",
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
         descriptionHTML: editor.getHTML(),

@@ -19,6 +19,7 @@ import { useState } from "react";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import { useDebounce, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useChatContext } from "@/context/chat-context";
@@ -80,6 +81,9 @@ export const Overview = () => {
     ],
     content: objective?.name || "",
     editable: isAdminOrOwner,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
@@ -101,6 +105,9 @@ export const Overview = () => {
     ],
     content: objective?.description || "",
     editable: isAdminOrOwner,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({

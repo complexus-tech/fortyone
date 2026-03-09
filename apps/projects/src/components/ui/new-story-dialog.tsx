@@ -52,6 +52,7 @@ import {
 import { toast } from "sonner";
 import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import { useSession } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -250,6 +251,9 @@ export const NewStoryDialog = ({
       gfm: true,
     }),
     editable: true,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: false,
   });
 

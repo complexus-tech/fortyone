@@ -141,6 +141,21 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply accent-primary h-[1.1rem] w-[1.1rem];
 }
 
+.tiptap a[href*="figma.com"] {
+  @apply inline-flex items-center gap-1;
+}
+
+.tiptap a[href*="figma.com"]::before {
+  content: "";
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  background-image: url("/images/figma.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
 /* style tiptap tables */
 .tiptap table {
   @apply w-full table-auto border-collapse;

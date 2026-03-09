@@ -15,6 +15,7 @@ import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { Member } from "@/types";
 import { extractMentionsFromHTML } from "@/lib/utils/mentions";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import {
   MentionList,
   type MentionItem,
@@ -176,6 +177,9 @@ export const CommentInput = ({
     ],
     content: initialComment ?? "",
     editable: true,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: false,
   });
 

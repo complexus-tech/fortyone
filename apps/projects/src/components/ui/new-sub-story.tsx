@@ -16,6 +16,7 @@ import { CalendarIcon, CloseIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
 import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
@@ -72,6 +73,9 @@ export const NewSubStory = ({
     ],
     content: "",
     editable: true,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: false,
   });
 

@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "lib";
 import { format, formatISO } from "date-fns";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -93,6 +94,9 @@ export const NewSprintDialog = ({
     ],
     content: "",
     editable: true,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: false,
   });
 

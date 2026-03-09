@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { parseFigmaUrl } from "@/lib/utils/figma";
 
 export type LinkMetadata = {
   title?: string;
@@ -10,10 +11,58 @@ export type LinkMetadata = {
   image?: string;
 };
 
+type FigmaOEmbedResponse = {
+  title?: string;
+  author_name?: string;
+  provider_name?: string;
+  thumbnail_url?: string;
+};
+
+const DAY_IN_SECONDS = 60 * 60 * 24;
+
+async function fetchFigmaMetadata(url: string): Promise<LinkMetadata | null> {
+  const endpoint = new URL("https://www.figma.com/oembed");
+  endpoint.searchParams.set("url", url);
+
+  try {
+    const response = await fetch(endpoint.toString(), {
+      next: { revalidate: DAY_IN_SECONDS },
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as FigmaOEmbedResponse;
+    const descriptor = [payload.provider_name, payload.author_name]
+      .filter(Boolean)
+      .join(" • ");
+
+    return {
+      title: payload.title,
+      description: descriptor || "Figma preview",
+      image: payload.thumbnail_url,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchMetadata(url: string): Promise<LinkMetadata | null> {
   const session = await auth();
   if (!session) {
     return null;
+  }
+
+  const parsedFigma = parseFigmaUrl(url);
+  if (parsedFigma) {
+    const figmaPreview = await fetchFigmaMetadata(parsedFigma.canonicalUrl);
+    if (figmaPreview?.title || figmaPreview?.image) {
+      return figmaPreview;
+    }
   }
 
   try {

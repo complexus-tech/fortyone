@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
+import { handleFigmaLinkPaste } from "@/lib/editor/figma-link-paste";
 import {
   useFeatures,
   useLocalStorage,
@@ -155,6 +156,9 @@ export const NewObjectiveDialog = ({
     ],
     content: "",
     editable: true,
+    editorProps: {
+      handlePaste: handleFigmaLinkPaste,
+    },
     immediatelyRender: false,
   });
 
