@@ -34,7 +34,7 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-semibold text-balance md:text-6xl md:leading-[1.1]"
+              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-bold text-balance md:text-6xl md:leading-[1.1]"
             >
               Stop managing your project manager. Let Maya do it.
             </Text>

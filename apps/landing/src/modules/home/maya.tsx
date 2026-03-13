@@ -27,9 +27,12 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
+        <Text className="mb-4 font-mono tracking-wider uppercase opacity-75">
+          See Maya in action
+        </Text>
         <Text
           as="h3"
-          className="mb-10 max-w-5xl pb-2 text-4xl leading-[1.15] font-semibold md:mb-6 md:text-5xl"
+          className="mb-10 max-w-5xl pb-2 text-4xl leading-[1.15] font-bold md:mb-6 md:text-5xl"
           color="gradientDark"
         >
           From idea to shipped - without the chaos.
@@ -38,9 +41,8 @@ export const Maya = () => {
           className="mb-10 max-w-3xl text-lg leading-relaxed opacity-70 md:mb-14 md:text-xl"
           color="muted"
         >
-          Type a rough idea, let Maya turn it into structured work, and watch
-          progress roll from tasks into goals automatically. Planning,
-          execution, and visibility stay in one loop.
+          Type a rough idea, let Maya turn it into structured work, and keep
+          planning, execution, and visibility in one loop.
         </Text>
       </motion.div>
       <motion.div
@@ -78,6 +80,20 @@ export const Maya = () => {
           />
         </Box>
       </motion.div>
+      <Box className="mt-6 grid grid-cols-1 gap-3 md:mt-8 md:grid-cols-3">
+        {[
+          "Draft tasks from plain language",
+          "Scope sprints around team capacity",
+          "Push progress straight into goals",
+        ].map((point) => (
+          <Box
+            className="border-border bg-surface/70 rounded-2xl border px-4 py-4"
+            key={point}
+          >
+            <Text className="font-medium opacity-85">{point}</Text>
+          </Box>
+        ))}
+      </Box>
 
       {/* <Box className="mt-20 grid grid-cols-1 gap-16 md:grid-cols-2">
         <motion.div

@@ -32,45 +32,45 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Every task has a clear reason to exist.",
+    title: "Know what the work is driving toward.",
     description:
-      "Link tasks directly to goals so the team always knows what the work is driving toward.",
+      "Connect daily tasks to goals so teams stay aligned and leaders get a live view of progress.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "From backlog chaos to a focused sprint in minutes.",
+    title: "Go from backlog chaos to a focused sprint.",
     description:
-      "Maya reviews your backlog and capacity, then proposes a sprint scope you can actually ship.",
+      "Use Maya to shape realistic sprint scope around backlog priority and team capacity.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "She drafts. She flags. She never drops the ball.",
+    title: "Spend less time coordinating the work.",
     description:
-      "Maya drafts tasks, flags blockers early, and keeps execution moving without constant follow-up.",
+      "Maya drafts tasks, surfaces blockers early, and handles the follow-through that usually slows teams down.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "No more \"wait, what's the latest?\"",
+    title: "Give everyone the same live picture.",
     description:
-      "Live updates keep everyone aligned on what is done, stuck, and next.",
+      "Keep contributors, managers, and leadership aligned on what is done, stuck, and next.",
   },
   {
     icon: (
       <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Built for how your team actually works.",
+    title: "Fit the tool to your team, not the reverse.",
     description:
-      "Customize statuses, terminology, permissions, and workflows to match how your team ships.",
+      "Adapt statuses, terminology, permissions, and workflow rules to the way your team actually ships.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Plays well with your whole stack.",
+    title: "Keep the rest of your stack in sync.",
     description:
-      "GitHub, Slack, Figma, GitLab, and more stay connected without manual sync work.",
+      "Bring GitHub, Slack, Figma, GitLab, and more into one system without manual update chasing.",
   },
 ];
 
@@ -78,7 +78,7 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      description="Tasks, sprints, and goals stay connected, with Maya keeping the system moving."
+      description="The outcome is simple: less admin, clearer priorities, and faster progress from strategy to shipped work."
       mainHeading="Project management that actually connects the dots."
       smallHeading="What's inside"
     />

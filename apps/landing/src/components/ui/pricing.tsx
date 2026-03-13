@@ -113,7 +113,7 @@ const Package = ({
         },
       )}
     >
-      <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
+      <Text className="mb-2 flex items-center gap-1.5 text-xl font-bold">
         {name}{" "}
         {recommended ? (
           <Badge color="invert" rounded="md" className="font-semibold">
@@ -123,7 +123,7 @@ const Package = ({
       </Text>
 
       {name !== "Enterprise" ? (
-        <Text className="mt-4 text-4xl font-semibold">
+        <Text className="mt-4 text-4xl font-bold">
           ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
           <Text as="span" className="text-base opacity-60">
             {" "}
@@ -131,7 +131,7 @@ const Package = ({
           </Text>
         </Text>
       ) : (
-        <Text className="mt-4" fontSize="4xl" fontWeight="semibold">
+        <Text className="mt-4" fontSize="4xl" fontWeight="bold">
           Custom
         </Text>
       )}
@@ -190,7 +190,7 @@ export const Pricing = ({
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
               className={cn(
-                "mt-6 max-w-3xl pb-2 text-5xl font-semibold md:text-6xl",
+                "mt-6 max-w-3xl pb-2 text-5xl font-bold md:text-6xl",
               )}
             >
               Start free. Scale when you&apos;re ready.
