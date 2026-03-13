@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex } from "ui";
+import { Box, Flex, Text } from "ui";
 import { EffectCards } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
@@ -24,7 +24,9 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "List tasks",
+      title: "Turn rough plans into clear tasks",
+      description:
+        "Capture work fast in list view, then organize it without losing the goal behind it.",
       image: {
         src: listImg,
         srcLight: listImgLight,
@@ -33,7 +35,9 @@ export const HeroCards = () => {
     },
     {
       id: 2,
-      title: "Kanban",
+      title: "Run work through a visible workflow",
+      description:
+        "Use kanban to keep delivery moving and make blockers obvious before they slow the team down.",
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,
@@ -42,7 +46,9 @@ export const HeroCards = () => {
     },
     {
       id: 3,
-      title: "Objective",
+      title: "Watch execution roll up to goals",
+      description:
+        "Track objective progress live as tasks move forward, instead of waiting for a status update.",
       image: {
         src: objectiveImg,
         srcLight: objectiveImgLight,
@@ -118,6 +124,21 @@ export const HeroCards = () => {
               </SwiperSlide>
             ))}
           </Swiper>
+        </Box>
+        <Box className="mt-8 grid grid-cols-1 gap-4 md:mt-10 md:grid-cols-3">
+          {cards.map((card) => (
+            <Box
+              className="border-border bg-surface/70 rounded-2xl border px-5 py-5 text-left"
+              key={card.id}
+            >
+              <Text as="h3" className="mb-2 text-lg font-bold md:text-xl">
+                {card.title}
+              </Text>
+              <Text className="text-sm leading-relaxed opacity-70 md:text-base">
+                {card.description}
+              </Text>
+            </Box>
+          ))}
         </Box>
       </Container>
       <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />

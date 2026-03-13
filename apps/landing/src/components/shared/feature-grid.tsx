@@ -14,6 +14,7 @@ type FeatureCard = {
 type FeatureGridProps = {
   smallHeading: string;
   mainHeading: string;
+  description?: string;
   cards: FeatureCard[];
 };
 
@@ -21,13 +22,13 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group border-[0.5px] border-border/80 bg-linear-to-b px-6 py-8 hover:from-surface-muted dark:border-border/80 dark:hover:from-surface-elevated md:px-7 md:py-16",
+        "group border-border/80 hover:from-surface-muted dark:border-border/80 dark:hover:from-surface-elevated border-[0.5px] bg-linear-to-b px-6 py-8 md:px-7 md:py-16",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
-      <Text as="h3" className="mb-3 text-xl dark:text-white md:text-2xl">
+      <Text as="h3" className="mb-3 text-xl font-bold md:text-2xl dark:text-white">
         {card.title}
       </Text>
       <Text className="text-[0.95rem] leading-relaxed opacity-60 group-hover:opacity-100">
@@ -40,6 +41,7 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
 export const FeatureGrid = ({
   smallHeading,
   mainHeading,
+  description,
   cards,
 }: FeatureGridProps) => {
   return (
@@ -50,7 +52,7 @@ export const FeatureGrid = ({
         viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Text className="font-mono mb-8 uppercase tracking-wider opacity-80">
+        <Text className="mb-8 font-mono tracking-wider uppercase opacity-80">
           {smallHeading}
         </Text>
       </motion.div>
@@ -62,11 +64,16 @@ export const FeatureGrid = ({
       >
         <Text
           as="h2"
-          className="pb-4 text-4xl font-semibold md:text-6xl"
+          className="pb-4 text-4xl font-bold md:text-6xl"
           color="gradientDark"
         >
           {mainHeading}
         </Text>
+        {description ? (
+          <Text className="max-w-3xl text-lg leading-relaxed opacity-70 md:text-xl">
+            {description}
+          </Text>
+        ) : null}
       </motion.div>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
@@ -74,7 +81,7 @@ export const FeatureGrid = ({
         viewport={{ once: true, amount: 0.2 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Box className="mt-6 grid grid-cols-1 border-[0.5px] border-border/80 d md:mt-16 md:grid-cols-2 lg:grid-cols-3">
+        <Box className="border-border/80 d mt-6 grid grid-cols-1 border-[0.5px] md:mt-16 md:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, index) => (
             <FeatureCardComponent card={card} key={index} />
           ))}

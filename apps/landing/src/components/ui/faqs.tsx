@@ -20,31 +20,29 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "How does AI improve project management workflows?",
+    question: "What does Maya actually do?",
     answer:
-      "Maya accelerates planning and execution by drafting tasks from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
+      "Maya is your AI project manager - not just a chatbot bolted onto a to-do list. She drafts tasks from plain text, proposes sprint scope from your backlog, writes goals and key results that connect to your roadmap, and flags blockers in real time based on ownership and activity.",
   },
   {
-    question:
-      "How does your project management platform connect OKRs to daily tasks?",
+    question: "How does FortyOne connect goals to daily work?",
     answer:
-      "Objectives and key results are first class. You can link tasks and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
+      "Goals are built into the structure of every sprint and task. Link work directly to key results and watch progress roll up automatically. Team members see how their work drives outcomes, and leaders get a live, trustworthy view of where things stand without spreadsheet wrangling.",
   },
   {
-    question: "How is FortyOne priced? Is there a free plan?",
+    question: "Is there really a free plan?",
     answer:
-      "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members to get started quickly. Paid plans are per user with monthly or annual billing, and annual saves 20%. Higher tiers unlock advanced workflows, custom terminology and permissions, unlimited teams, and priority support. You can upgrade, downgrade, or cancel at any time.",
+      "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members, which is enough to get real work done and decide if FortyOne is right for you. Paid plans are per user, with annual billing saving 20%. You can upgrade, downgrade, or cancel at any time.",
   },
   {
-    question:
-      "How does FortyOne handle security and privacy? Is private cloud available?",
+    question: "How does FortyOne handle security?",
     answer:
-      "We use industry standard encryption in transit and at rest, support SSO with Google, and provide role based permissions and private teams to control access. Audit friendly activity history and fine grained visibility help maintain compliance practices. For organizations with stricter controls, the Enterprise plan offers private cloud or on premise deployment with tailored onboarding.",
+      "We use industry-standard encryption in transit and at rest, support SSO with Google, and provide role-based permissions and private teams to control access. For organizations with stricter requirements, the Enterprise plan includes private cloud or on-premise deployment with tailored onboarding.",
   },
   {
-    question: "Can FortyOne adapt to our workflow?",
+    question: "Can we make it fit the way our team works?",
     answer:
-      "Yes. Teams can customize statuses and workflows, define their own terminology, and set granular permissions by role or team. Automations help reduce repetitive work, and you can structure backlogs and boards to mirror how your org plans and executes. As needs evolve, you can adjust configurations without breaking historical data or reports.",
+      "Yes. Customize statuses, workflows, terminology, and permissions to match your org - not a generic process template. Structure your backlog and boards around the way your team plans and executes, and adjust things as you grow without breaking historical context.",
   },
 ];
 
@@ -124,9 +122,9 @@ export const Faqs = () => {
         >
           <Text
             as="h2"
-            className="mb-6 text-4xl leading-[1.1] font-semibold md:mb-12 md:text-5xl"
+            className="mb-6 text-4xl leading-[1.1] font-bold md:mb-12 md:text-5xl"
           >
-            Frequently Asked Questions
+            Questions worth answering.
           </Text>
         </motion.div>
         <Flex className="pb-4" direction="column">

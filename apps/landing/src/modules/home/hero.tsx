@@ -28,7 +28,7 @@ export const Hero = () => {
               rounded="md"
               size="sm"
             >
-              Free forever. No credit card required.
+              Start free. No credit card required.
             </Button>
           </motion.span>
           <motion.span
@@ -43,10 +43,10 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-1 mt-8 pb-2 text-5xl font-semibold text-balance md:max-w-4xl md:text-[4.1rem] md:leading-[1.1]",
+                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-[4.3rem]",
               )}
             >
-              The Open Source Agentic Project Management Platform
+              Keep every task connected to a goal.
             </Text>
           </motion.span>
 
@@ -60,9 +60,9 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Maya, your AI project manager, drafts tasks, plans sprints, tracks
-              OKRs, and surfaces risks so your team can focus on building, not
-              managing.
+              FortyOne keeps your team's work, plans, and goals in one place,
+              with Maya — your AI project manager — helping everything keep
+              moving.
             </Text>
           </motion.span>
 
@@ -87,7 +87,7 @@ export const Hero = () => {
                 rounded="lg"
                 size="lg"
               >
-                Get Started - It&apos;s free
+                Get Started Free
               </Button>
             </motion.span>
             <motion.span
@@ -112,6 +112,19 @@ export const Hero = () => {
               </Button>
             </motion.span>
           </Flex>
+          <motion.span
+            initial={{ y: -5, opacity: 0 }}
+            transition={{
+              duration: 1,
+              delay: 0.75,
+            }}
+            viewport={{ once: true, amount: 0.5 }}
+            whileInView={{ y: 0, opacity: 1 }}
+          >
+            <Text className="mt-4 text-sm opacity-70 md:text-base">
+              See how work moves from plan to progress to results.
+            </Text>
+          </motion.span>
         </Flex>
       </Container>
     </Box>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CallToAction, JsonLd } from "@/components/shared";
 import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
@@ -11,6 +12,38 @@ import {
   CoreValues,
 } from "@/modules/home";
 
+export const metadata: Metadata = {
+  title: "FortyOne | AI Project Management Platform for Teams",
+  description:
+    "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+  keywords: [
+    "AI project management",
+    "AI project manager",
+    "project management platform",
+    "team project management",
+    "goal tracking software",
+    "sprint planning software",
+    "task management software",
+    "OKR software",
+    "team alignment tool",
+    "project planning software",
+  ],
+  openGraph: {
+    title: "FortyOne | AI Project Management Platform for Teams",
+    description:
+      "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+    url: "/",
+    siteName: "FortyOne",
+    type: "website",
+  },
+  twitter: {
+    title: "FortyOne | AI Project Management Platform for Teams",
+    description:
+      "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+    card: "summary_large_image",
+  },
+};
+
 export default function Page() {
   return (
     <>
@@ -22,7 +55,7 @@ export default function Page() {
       {/* <Features /> */}
       <Maya />
       <Integrations />
-      <Pricing className="md:pb-16 md:pt-0" hideDescription />
+      <Pricing className="md:pb-16 md:pt-0" />
       <Faqs />
       <CallToAction />
     </>

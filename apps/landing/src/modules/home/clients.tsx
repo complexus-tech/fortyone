@@ -13,7 +13,7 @@ export const SampleClients = () => {
     <Container className="relative z-10 mt-12 hidden md:block">
       <Flex className="gap-10" align="center">
         <Text color="muted" fontSize="sm" className="shrink-0">
-          Trusted by leading <br />
+          Trusted by <br />
           product teams at
         </Text>
         <Flex align="center" className="gap-12" wrap>

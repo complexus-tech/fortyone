@@ -34,10 +34,9 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-semibold text-balance md:text-6xl md:leading-[1.1]"
+              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-bold text-balance md:text-6xl md:leading-[1.1]"
             >
-              Ready to <span className="text-stroke-white">10x</span> Your
-              Team&apos;s Velocity? Start Free
+              Stop managing your project manager. Let Maya do it.
             </Text>
           </motion.div>
           <motion.div
@@ -53,8 +52,8 @@ export const CallToAction = () => {
               className="mt-4 max-w-[650px] text-lg md:mt-5 md:text-lg"
               color="muted"
             >
-              Plan with Maya, turn ideas into shippable tasks, and watch
-              progress roll into OKRs automatically.
+              Your team has goals. FortyOne makes sure every task, sprint, and
+              decision is working toward them - automatically.
             </Text>
           </motion.div>
         </Flex>
@@ -91,7 +90,7 @@ export const CallToAction = () => {
                 rounded="lg"
                 size="lg"
               >
-                Get Started - It&apos;s free
+                Get Started Free
               </Button>
             </Box>
           </Box>

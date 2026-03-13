@@ -1,10 +1,10 @@
 import {
-  Inter_Tight as Inter,
+  Bricolage_Grotesque as BricolageGrotesque,
   Inconsolata,
-  Rethink_Sans as RethinkSans,
+  Manrope,
 } from "next/font/google";
 
-export const body = Inter({
+export const body = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
@@ -17,7 +17,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = RethinkSans({
+export const heading = BricolageGrotesque({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],
