@@ -79,7 +79,7 @@ const organization: WithContext<Organization> = {
 const product: WithContext<Product> = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
+  name: "FortyOne - AI project management platform for teams",
   description:
     "FortyOne is the AI project management platform where every task rolls up to a goal and Maya keeps work moving from planning through delivery.",
   category: "Software",
