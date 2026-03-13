@@ -12,9 +12,9 @@ type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
-    cta: "Start for free",
+    cta: "Start for free - no card needed",
     href: SIGNUP_URL,
-    overview: "Plan and track personal work with essential features.",
+    overview: "For individuals and small teams getting started.",
     price: 0,
     features: [
       "1 team",
@@ -29,12 +29,13 @@ const packages = [
     name: "Professional",
     cta: "Try Professional",
     href: SIGNUP_URL,
-    overview: "Everything in Hobby, plus collaboration and OKR tracking.",
+    overview: "For growing teams who need OKRs and more room to move.",
     price: 7,
     features: [
+      "Everything in Hobby",
       "Up to 3 teams",
       "Up to 20 objectives",
-      "Track OKRs",
+      "OKR tracking",
       "Unlimited tasks",
       "Unlimited guests",
       "Custom workflows",
@@ -44,9 +45,10 @@ const packages = [
     name: "Business",
     cta: "Try Business",
     href: SIGNUP_URL,
-    overview: "Everything in Professional, with advanced controls and support.",
+    overview: "For teams who need full control, no limits, and fast support.",
     price: 10,
     features: [
+      "Everything in Professional",
       "Unlimited teams",
       "Unlimited objectives",
       "Unlimited everything",
@@ -58,12 +60,12 @@ const packages = [
   },
   {
     name: "Enterprise",
-    cta: "Contact sales",
+    cta: "Talk to sales",
     href: "mailto:info@complexus.app",
-    overview: "Tailored deployment and support for complex environments.",
+    overview:
+      "For orgs with complex requirements, compliance needs, or on-premise preferences.",
     features: [
-      "Custom onboarding",
-      "Custom integrations",
+      "Custom onboarding & integrations",
       "On-premise/Private Cloud Option",
       "Dedicated account manager",
       "Volume discounts",
@@ -191,16 +193,13 @@ export const Pricing = ({
                 "mt-6 max-w-3xl pb-2 text-5xl font-semibold md:text-6xl",
               )}
             >
-              Start for free. Get used to hitting your{" "}
-              <Text as="span" className="text-stroke-white">
-                goals.
-              </Text>
+              Start free. Scale when you&apos;re ready.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="mt-4 max-w-2xl text-xl font-normal opacity-70">
-              Choose a plan that fits your needs with transparent pricing - no
-              hidden fees, no unexpected charges, just clear value.
+              No surprise bills. No feature-gating the good stuff. Pick a plan
+              that fits where your team is today.
             </Text>
           ) : null}
         </Flex>

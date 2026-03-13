@@ -63,8 +63,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-5xl font-semibold md:mt-6 md:text-6xl"
             >
-              <Text as="span">Sync up</Text> your favorite{" "}
-              <span className="text-stroke-white">tools</span>.
+              Sync up your whole stack.
             </Text>
           </motion.div>
           <motion.div
@@ -81,8 +80,9 @@ export const Integrations = () => {
               color="muted"
               fontSize="lg"
             >
-              Connect your entire stack with GitHub, GitLab, Figma, Slack, and
-              more. Keep development, design, and communication unified.
+              Connect GitHub, GitLab, Figma, Slack, Intercom, and more. Keep
+              every tool in your workflow talking so your team spends time
+              building, not copy-pasting updates between apps.
             </Text>
           </motion.div>
           <motion.div

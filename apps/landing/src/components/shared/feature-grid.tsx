@@ -14,6 +14,7 @@ type FeatureCard = {
 type FeatureGridProps = {
   smallHeading: string;
   mainHeading: string;
+  description?: string;
   cards: FeatureCard[];
 };
 
@@ -40,6 +41,7 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
 export const FeatureGrid = ({
   smallHeading,
   mainHeading,
+  description,
   cards,
 }: FeatureGridProps) => {
   return (
@@ -67,6 +69,11 @@ export const FeatureGrid = ({
         >
           {mainHeading}
         </Text>
+        {description ? (
+          <Text className="max-w-3xl text-lg leading-relaxed opacity-70 md:text-xl">
+            {description}
+          </Text>
+        ) : null}
       </motion.div>
       <motion.div
         initial={{ y: 20, opacity: 0 }}

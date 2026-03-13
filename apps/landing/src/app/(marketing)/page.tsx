@@ -22,7 +22,7 @@ export default function Page() {
       {/* <Features /> */}
       <Maya />
       <Integrations />
-      <Pricing className="md:pb-16 md:pt-0" hideDescription />
+      <Pricing className="md:pb-16 md:pt-0" />
       <Faqs />
       <CallToAction />
     </>

@@ -28,7 +28,7 @@ export const Hero = () => {
               rounded="md"
               size="sm"
             >
-              Free forever. No credit card required.
+              No credit card required.
             </Button>
           </motion.span>
           <motion.span
@@ -60,9 +60,8 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Maya, your AI project manager, drafts tasks, plans sprints, tracks
-              OKRs, and surfaces risks so your team can focus on building, not
-              managing.
+              FortyOne is the AI project management platform where every task
+              rolls up to a goal, and Maya keeps the work moving.
             </Text>
           </motion.span>
 
@@ -87,7 +86,7 @@ export const Hero = () => {
                 rounded="lg"
                 size="lg"
               >
-                Get Started - It&apos;s free
+                Get Started Free
               </Button>
             </motion.span>
             <motion.span

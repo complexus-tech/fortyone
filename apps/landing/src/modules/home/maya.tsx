@@ -29,11 +29,18 @@ export const Maya = () => {
       >
         <Text
           as="h3"
-          className="mb-10 max-w-5xl pb-2 text-4xl font-semibold leading-[1.15] md:mb-16 md:text-5xl"
+          className="mb-10 max-w-5xl pb-2 text-4xl leading-[1.15] font-semibold md:mb-6 md:text-5xl"
           color="gradientDark"
         >
-          Your AI assistant helps your team plan sprints, track objectives, and
-          catch bottlenecks before they slow you down.
+          From idea to shipped - without the chaos.
+        </Text>
+        <Text
+          className="mb-10 max-w-3xl text-lg leading-relaxed opacity-70 md:mb-14 md:text-xl"
+          color="muted"
+        >
+          Type a rough idea, let Maya turn it into structured work, and watch
+          progress roll from tasks into goals automatically. Planning,
+          execution, and visibility stay in one loop.
         </Text>
       </motion.div>
       <motion.div
@@ -42,29 +49,29 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="rounded-lg border border-b-0 border-border bg-background/5 p-0.5 shadow-2xl shadow-shadow md:rounded-2xl md:p-1.5">
+        <Box className="border-border bg-background/5 shadow-shadow rounded-lg border border-b-0 p-0.5 shadow-2xl md:rounded-2xl md:p-1.5">
           <Flex
             align="center"
-            className="mb-2 mt-1 px-1.5 dark:mb-2.5"
+            className="mt-1 mb-2 px-1.5 dark:mb-2.5"
             justify="between"
           >
             <Flex className="gap-1.5">
-              <Dot className="size-2.5 text-primary" />
-              <Dot className="size-2.5 text-warning" />
-              <Dot className="size-2.5 text-success" />
+              <Dot className="text-primary size-2.5" />
+              <Dot className="text-warning size-2.5" />
+              <Dot className="text-success size-2.5" />
             </Flex>
             <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
           </Flex>
           <video
             autoPlay
-            className="hidden aspect-[6/3.9] h-full w-full object-cover dark:block md:rounded-xl"
+            className="hidden aspect-[6/3.9] h-full w-full object-cover md:rounded-xl dark:block"
             loop
             muted
             src="/videos/intro-dark.mp4"
           />
           <video
             autoPlay
-            className="aspect-[6/3.9] h-full w-full object-cover dark:hidden md:rounded-xl"
+            className="aspect-[6/3.9] h-full w-full object-cover md:rounded-xl dark:hidden"
             loop
             muted
             src="/videos/intro-light.mp4"

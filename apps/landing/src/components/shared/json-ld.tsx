@@ -54,7 +54,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "Tasks",
   ],
   description:
-    "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    "FortyOne is the AI project management platform where every task rolls up to a goal and Maya keeps work moving from planning through delivery.",
 };
 
 const organization: WithContext<Organization> = {
@@ -81,7 +81,7 @@ const product: WithContext<Product> = {
   "@type": "Product",
   name: "Meet FortyOne - AI-powered all-in-one Projects & OKRs platform",
   description:
-    "FortyOne is an AI-powered alternative to Jira, Notion, and Monday built to align teams on Projects & OKRs, track progress, and deliver faster. Try it for free.",
+    "FortyOne is the AI project management platform where every task rolls up to a goal and Maya keeps work moving from planning through delivery.",
   category: "Software",
   brand: {
     "@type": "Brand",
@@ -123,42 +123,42 @@ const faq: WithContext<FAQPage> = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "How does AI improve project management workflows?",
+      name: "What does Maya actually do?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Maya accelerates planning and execution by drafting tasks from plain text, proposing sprint scope from backlog context, and suggesting objectives and key results that map to your roadmap. During execution, Maya surfaces risks, highlights stuck work, and recommends follow ups based on ownership and recent activity.",
+        text: "Maya is your AI project manager - not just a chatbot bolted onto a to-do list. She drafts tasks from plain text, proposes sprint scope from your backlog, writes goals and key results that connect to your roadmap, and flags blockers in real time based on ownership and activity.",
       },
     },
     {
       "@type": "Question",
-      name: "How does your project management platform connect OKRs to daily tasks?",
+      name: "How does FortyOne connect goals to daily work?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Objectives and key results are first class. You can link tasks and sprints directly to key results so progress rolls up automatically without spreadsheet wrangling or end of quarter scrambles. Contributors see exactly how their tasks drive outcomes, while leaders get a live, trustworthy view of progress and confidence levels.",
+        text: "Goals are built into the structure of every sprint and task. Link work directly to key results and watch progress roll up automatically. Team members see how their work drives outcomes, and leaders get a live, trustworthy view of where things stand without spreadsheet wrangling.",
       },
     },
     {
       "@type": "Question",
-      name: "How is FortyOne priced? Is there a free plan?",
+      name: "Is there really a free plan?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members to get started quickly. Paid plans are per user with monthly or annual billing, and annual saves 20%. Higher tiers unlock advanced workflows, custom terminology and permissions, unlimited teams, and priority support. You can upgrade, downgrade, or cancel at any time.",
+        text: "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members, which is enough to get real work done and decide if FortyOne is right for you. Paid plans are per user, with annual billing saving 20%. You can upgrade, downgrade, or cancel at any time.",
       },
     },
     {
       "@type": "Question",
-      name: "How does FortyOne handle security and privacy? Is private cloud available?",
+      name: "How does FortyOne handle security?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "We use industry standard encryption in transit and at rest, support SSO with Google, and provide role based permissions and private teams to control access. Audit friendly activity history and fine grained visibility help maintain compliance practices. For organizations with stricter controls, the Enterprise plan offers private cloud or on premise deployment with tailored onboarding.",
+        text: "We use industry-standard encryption in transit and at rest, support SSO with Google, and provide role-based permissions and private teams to control access. For organizations with stricter requirements, the Enterprise plan includes private cloud or on-premise deployment with tailored onboarding.",
       },
     },
     {
       "@type": "Question",
-      name: "Can FortyOne adapt to our workflow?",
+      name: "Can we make it fit the way our team works?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Teams can customize statuses and workflows, define their own terminology, and set granular permissions by role or team. Automations help reduce repetitive work, and you can structure backlogs and boards to mirror how your org plans and executes. As needs evolve, you can adjust configurations without breaking historical data or reports.",
+        text: "Yes. Customize statuses, workflows, terminology, and permissions to match your org - not a generic process template. Structure your backlog and boards around the way your team plans and executes, and adjust things as you grow without breaking historical context.",
       },
     },
   ],

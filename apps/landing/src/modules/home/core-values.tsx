@@ -32,45 +32,45 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Goal Management",
+    title: "Every task has a clear reason to exist.",
     description:
-      "Transform strategic objectives into actionable tasks with integrated OKR tracking and progress monitoring.",
+      "Link tasks directly to goals so the team always knows what the work is driving toward.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Sprint Velocity",
+    title: "From backlog chaos to a focused sprint in minutes.",
     description:
-      "Accelerate project delivery with agile sprint planning, task prioritization, and velocity tracking.",
+      "Maya reviews your backlog and capacity, then proposes a sprint scope you can actually ship.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "AI-Powered Insights",
+    title: "She drafts. She flags. She never drops the ball.",
     description:
-      "Work smarter with Maya, your AI assistant for project management, automated summaries, and predictive insights.",
+      "Maya drafts tasks, flags blockers early, and keeps execution moving without constant follow-up.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Real-Time Collaboration",
+    title: "No more \"wait, what's the latest?\"",
     description:
-      "Keep your project team synchronized with live updates, instant notifications, and seamless collaboration tools.",
+      "Live updates keep everyone aligned on what is done, stuck, and next.",
   },
   {
     icon: (
       <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Custom Workflows",
+    title: "Built for how your team actually works.",
     description:
-      "Adapt the project management platform to your team's needs with custom terminology, statuses, and workflow configurations.",
+      "Customize statuses, terminology, permissions, and workflows to match how your team ships.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Tool Integrations",
+    title: "Plays well with your whole stack.",
     description:
-      "Connect your project management workflow with GitHub, email notifications, Slack, and custom webhooks.",
+      "GitHub, Slack, Figma, GitLab, and more stay connected without manual sync work.",
   },
 ];
 
@@ -78,8 +78,9 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      mainHeading="Made for the way you work"
-      smallHeading="[ What's inside ]"
+      description="Tasks, sprints, and goals stay connected, with Maya keeping the system moving."
+      mainHeading="Project management that actually connects the dots."
+      smallHeading="What's inside"
     />
   );
 };
