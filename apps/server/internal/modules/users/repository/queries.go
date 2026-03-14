@@ -120,6 +120,58 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 	return toCoreUser(user), nil
 }
 
+// GetUserByEmailAnyStatus retrieves a user by email regardless of activation state.
+func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.GetUserByEmailAnyStatus")
+	defer span.End()
+
+	var user dbUser
+	q := `
+		SELECT
+			u.user_id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.has_seen_walkthrough,
+			u.timezone,
+			u.last_login_at,
+			u.last_used_workspace_id,
+			u.created_at,
+			u.updated_at
+		FROM
+			users u
+		WHERE 
+			u.email = :email
+	`
+
+	params := map[string]any{
+		"email": email,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &user, params); err != nil {
+		if err == sql.ErrNoRows {
+			return users.CoreUser{}, ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get user by email regardless of status: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get user by email regardless of status"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+
+	return toCoreUser(user), nil
+}
+
 func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUID) ([]users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
 	defer span.End()

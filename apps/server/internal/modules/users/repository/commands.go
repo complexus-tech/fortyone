@@ -110,6 +110,66 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 	return toCoreUser(dbUser), nil
 }
 
+// ActivateUser marks an inactive user as active again.
+func (r *repo) ActivateUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.ActivateUser")
+	defer span.End()
+
+	q := `
+		UPDATE users
+		SET 
+			is_active = true,
+			last_login_at = NOW(),
+			inactivity_warning_sent_at = NULL,
+			updated_at = NOW()
+		WHERE 
+			user_id = :user_id
+		RETURNING
+			user_id,
+			username,
+			email,
+			full_name,
+			avatar_url,
+			is_active,
+			has_seen_walkthrough,
+			timezone,
+			last_login_at,
+			last_used_workspace_id,
+			created_at,
+			updated_at
+	`
+
+	params := map[string]any{
+		"user_id": userID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+	defer stmt.Close()
+
+	var dbUser dbUser
+	if err := stmt.GetContext(ctx, &dbUser, params); err != nil {
+		if err == sql.ErrNoRows {
+			return users.CoreUser{}, ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to activate user: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to activate user"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return users.CoreUser{}, err
+	}
+
+	span.AddEvent("user activated", trace.WithAttributes(
+		attribute.String("user_id", userID.String()),
+	))
+
+	return toCoreUser(dbUser), nil
+}
+
 // DeleteUser marks a user as inactive
 func (r *repo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.DeleteUser")
