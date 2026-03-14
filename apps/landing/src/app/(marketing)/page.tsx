@@ -6,7 +6,7 @@ import {
   Hero,
   HeroCards,
   SampleClients,
-  // Features,
+  Features,
   Integrations,
   Maya,
   CoreValues,
@@ -51,8 +51,8 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
-      <CoreValues />
       {/* <Features /> */}
+      <CoreValues />
       <Maya />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />

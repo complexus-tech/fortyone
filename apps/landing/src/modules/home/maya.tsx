@@ -27,19 +27,19 @@ export const Maya = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Text className="mb-4 font-mono tracking-wider uppercase opacity-75">
+        <Text className="mb-4 font-mono text-sm tracking-wider uppercase opacity-75">
           See Maya in action
         </Text>
         <Text
           as="h3"
-          className="mb-10 max-w-5xl pb-2 text-5xl font-semibold md:mb-6 md:text-6xl"
+          className="mb-10 max-w-4xl pb-2 text-4xl font-semibold md:mb-4 md:text-5xl"
           color="gradientDark"
         >
           From &ldquo;we should build this&rdquo; to shipped — without the chaos
           in between.
         </Text>
         <Text
-          className="mb-10 max-w-3xl text-lg leading-relaxed opacity-70 md:mb-14 md:text-xl"
+          className="mb-10 max-w-3xl leading-relaxed opacity-70 md:mb-14"
           color="muted"
         >
           Type a rough idea. Maya structures it, adds it to the right sprint,
