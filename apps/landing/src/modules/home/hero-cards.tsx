@@ -99,14 +99,14 @@ export const HeroCards = () => {
                   <Box className="relative overflow-hidden rounded-l-md rounded-r-none md:rounded-lg">
                     <Image
                       alt={card.title}
-                      className="border-border/70 relative hidden h-[21.5rem] w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:block"
+                      className="border-border/70 relative hidden h-88 w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:block"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.src}
                     />
                     <Image
                       alt={card.title}
-                      className="border-border relative h-[21.5rem] w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:hidden"
+                      className="border-border relative h-88 w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:hidden"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.srcLight}
