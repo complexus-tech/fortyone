@@ -14,7 +14,7 @@ export const SampleClients = () => {
       <Flex className="gap-10" align="center">
         <Text color="muted" fontSize="sm" className="shrink-0">
           Trusted by <br />
-          product teams at
+          teams at
         </Text>
         <Flex align="center" className="gap-12" wrap>
           <Image

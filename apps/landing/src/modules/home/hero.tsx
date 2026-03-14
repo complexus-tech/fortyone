@@ -11,26 +11,7 @@ export const Hero = () => {
       <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
-        <Flex className="mt-12 mb-8 md:mt-16" direction="column">
-          <motion.span
-            initial={{ y: -10, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
-            <Button
-              className="dark:bg-surface-elevated/70 dark:hover:bg-surface-elevated/90 border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl md:text-[0.95rem]"
-              color="tertiary"
-              href={SIGNUP_URL}
-              rounded="md"
-              size="sm"
-            >
-              Start free. No credit card required.
-            </Button>
-          </motion.span>
+        <Flex className="mt-12 mb-8 md:mt-10" direction="column">
           <motion.span
             initial={{ y: -15, opacity: 0 }}
             transition={{
@@ -43,7 +24,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-[4.1rem]",
+                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-6xl",
               )}
             >
               Keep every task connected to a goal.
@@ -59,10 +40,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Most teams do not lose on strategy — they lose it between the
-              plan and the sprint board. FortyOne keeps the goal visible, while
-              Maya drafts tasks, scopes sprints, and flags risks early.
+            <Text className="mt-4 max-w-[700px] text-lg opacity-80">
+              Most teams do not lose on strategy — they lose it between the plan
+              and the sprint board. FortyOne keeps the goal visible, while Maya
+              drafts tasks, scopes sprints, and flags risks early.
             </Text>
           </motion.span>
 
