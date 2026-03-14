@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text } from "ui";
+import { Box, Flex } from "ui";
 import { EffectCards } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
@@ -10,10 +10,8 @@ import { useTheme } from "next-themes";
 import { ArrowDown2Icon } from "icons";
 import { Blur, Container, Dot } from "@/components/ui";
 import { useCursor } from "@/hooks";
-import listImg from "../../../public/images/product/list.webp";
 import objectiveImg from "../../../public/images/product/objective.webp";
 import kanbanImg from "../../../public/images/product/kanban.webp";
-import listImgLight from "../../../public/images/product/list-light.webp";
 import kanbanImgLight from "../../../public/images/product/kanban-light.webp";
 import objectiveImgLight from "../../../public/images/product/objective-light.webp";
 
@@ -50,7 +48,8 @@ export const HeroCards = () => {
     <Box>
       <Box className="relative">
         <Container className="relative mt-12">
-          <Blur className="dark:bg-warning/10 absolute -top-[14%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px]" />
+          <Blur className="bg-warning/12 absolute -top-[14%] right-5/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
+          <Blur className="bg-danger/12 absolute -top-[14%] -right-8/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
           <Box
             className="relative"
             onMouseEnter={() => {
@@ -80,7 +79,7 @@ export const HeroCards = () => {
             >
               {cards.map((card) => (
                 <SwiperSlide
-                  className="border-border bg-background/5 relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
+                  className="border-border bg-background/50 dark:bg-background/5 relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
                   key={card.id}
                 >
                   <Flex
@@ -118,21 +117,6 @@ export const HeroCards = () => {
         </Container>
         <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
       </Box>
-      <Container className="mt-8 grid grid-cols-1 gap-4 opacity-70 md:mt-10 md:grid-cols-3">
-        {cards.map((card) => (
-          <Box
-            className="border-border bg-surface/70 rounded-2xl border p-5 text-left"
-            key={card.id}
-          >
-            <Text as="h3" className="mb-2 text-lg font-semibold md:text-xl">
-              {card.title}
-            </Text>
-            <Text className="text-sm leading-relaxed opacity-70 md:text-base">
-              {card.description}
-            </Text>
-          </Box>
-        ))}
-      </Container>
     </Box>
   );
 };
