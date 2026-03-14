@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
+import type { Memory } from "@/modules/ai-chats/types";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
-import { Memory } from "@/modules/ai-chats/types";
 
 export async function getUserContext({
   currentPath,
@@ -45,92 +45,70 @@ export async function getUserContext({
   }
 
   const now = new Date();
-  const currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
+  const currentDate = now.toISOString().split("T")[0];
   const currentTime = now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   });
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const teamsList = teams
-    .map((t) => `name: ${t.name} - id: ${t.id} - code: ${t.code}`)
-    .join(", ");
+  const teamsSummary =
+    teams.length > 0
+      ? teams.map((team) => `${team.name} (${team.code}) [${team.id}]`).join(", ")
+      : "None";
+
+  const memoriesSummary =
+    memories.length > 0
+      ? memories.map((memory) => `- ${memory.id}: ${memory.content}`).join("\n")
+      : "- None";
+
+  const teamSelectionGuidance =
+    teams.length === 1
+      ? `If team selection is needed and the user does not specify one, default to ${teams[0]?.name} [${teams[0]?.id}].`
+      : "If team selection is needed and the user does not specify one, infer from context or ask a clarifying question.";
 
   return `
-    **Current User Context:**
-    - User ID: ${session.user.id}
-    - Name: ${session.user.name}
-    - Username: ${username}
-    - Role: ${workspace.userRole}
-    - Workspace: ${workspace.name}
-    - Current Date: ${currentDate}
-    - Current Time: ${currentTime}
-    - Teams: ${teamsList}
-    - Current Path: ${currentPath} the current page the user is on
-    - Current Theme: ${currentTheme} the current theme the user is using(light, dark, system)
-    - Resolved Theme: ${resolvedTheme} the resolved theme the user is using(light, dark)
-    - Subscription Tier: ${subscription?.tier}
-    - Subscription Billing Interval: ${subscription?.billingInterval}
-    - Subscription Billing Ends At: ${subscription?.billingEndsAt}
-    - Subscription Status: ${subscription?.status}
-    ${
-      memories.length > 0
-        ? `
-    **Long-term User Memories:**
-    ${memories
-      .map(
-        (m) => `
-      - id: ${m.id}
-      - content: ${m.content}
-      - created at: ${m.createdAt}
-      - updated at: ${m.updatedAt}
-      `,
-      )
-      .join("\n")}
+Runtime context:
+- User: ${session.user.name} (@${username}) [${session.user.id}]
+- Workspace: ${workspace.name} (${workspace.slug}) [${workspace.id}]
+- Workspace role: ${workspace.userRole}
+- Current path: ${currentPath}
+- Today: ${currentDate}
+- Current time: ${currentTime}
+- Timezone: ${timezone}
+- Theme preference: ${currentTheme}
+- Resolved theme: ${resolvedTheme}
 
-    `
-        : ""
-    }
+Terminology:
+- Stories => ${terminology.stories}
+- Sprints => ${terminology.sprints}
+- Objectives => ${terminology.objectives}
+- Key Results => ${terminology.keyResults}
 
-    **Current Messages Context:**
-    - Current: ${totalMessages.current} - number of messages the user has sent for the current month
-    - Limit: ${totalMessages.limit} - the maximum number of messages the user can send for the current month
-    - Usage: ${totalMessages.current}/${totalMessages.limit}
+Teams:
+- ${teamsSummary}
+- ${teamSelectionGuidance}
 
+Subscription:
+- Tier: ${subscription?.tier ?? "unknown"}
+- Status: ${subscription?.status ?? "unknown"}
+- Billing interval: ${subscription?.billingInterval ?? "unknown"}
+- Billing ends at: ${subscription?.billingEndsAt ?? "unknown"}
 
-    **Current Terminology:**
-    - Stories: the user's selected terminology for stories is ${terminology.stories}
-    - Sprints: the user's selected terminology for sprints is ${terminology.sprints}
-    - Objectives: the user's selected terminology for objectives is ${terminology.objectives}
-    - Key Results: the user's selected terminology for key results is ${terminology.keyResults}
-    - Always use the user's selected terminology for stories, sprints, objectives, and key results.
-    
+Message usage:
+- Current: ${totalMessages.current}
+- Limit: ${totalMessages.limit}
 
-    **Timezone:**
-    - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-    - When displaying dates and times, use the user's timezone, the data returned from the server is in UTC
+Memories:
+${memoriesSummary}
 
-    **Time**
-    - Do not display seconds in the time
+"Me" resolution:
+- When the user says "me", "my", or "assign to me", resolve to ${session.user.name} [${session.user.id}].
 
-    **"Me" Resolution:**
-    When the user says "me", "my", "assign to me", "show my work", etc., use:
-    - User ID: ${session.user.id}  
-    - Name: ${session.user.name}
-
-    **Personalized Responses:**
-    Use the user's name (${session.user.name}) in responses where it makes sense to be more personal and engaging:
-    - When greeting or acknowledging the user
-    - When showing their personal work or assignments  
-    - When confirming actions they requested
-    - When providing status updates about their work
-
-    **Smart Team Selection:**
-    The user belongs to these teams: ${teamsList}
-    ${teams.length === 1 ? "- Since user has only one team, auto-select it for story/objective creation" : '- When user says "my team" or doesn\'t specify team, ask which team or suggest based on context'}
-
-    Examples:
-    - "assign story to me" → "Assigned story to ${session.user.name}."
-    - "show my stories" → "Here are your current stories, ${session.user.name}:" 
-    - "create objective for me" → "Created objective with you as the lead, ${session.user.name}."
-    - "what's my workload" → "${session.user.name}, you have 5 stories assigned to you."
-    - "create story for my team" → ${teams.length === 1 ? `auto-select ${teams[0]?.name}` : "ask which team"}`;
+Date handling:
+- Server dates are UTC.
+- Present dates/times in ${timezone}.
+- Do not show seconds.
+`;
 }
