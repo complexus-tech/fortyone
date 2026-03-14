@@ -1,7 +1,7 @@
 import {
-  Bricolage_Grotesque as BricolageGrotesque,
   Inconsolata,
   Manrope,
+  Sora,
 } from "next/font/google";
 
 export const body = Manrope({
@@ -17,7 +17,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = BricolageGrotesque({
+export const heading = Sora({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],
