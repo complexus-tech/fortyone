@@ -9,9 +9,9 @@ export const Hero = () => {
   return (
     <Box>
       <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px]" />
-      <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
+      <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/70 dark:to-black" />
       <Container className="pt-12">
-        <Box className="mt-12 mb-6 flex items-end justify-between md:mt-16">
+        <Box className="mt-12 mb-6 flex items-end justify-between md:mt-24">
           <motion.span
             initial={{ y: -15, opacity: 0 }}
             transition={{
@@ -24,7 +24,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-1 text-5xl font-medium text-balance md:max-w-4xl md:text-[3.5rem]",
+                "relative z-1 text-5xl font-medium text-balance md:max-w-4xl md:text-6xl",
               )}
             >
               Keep every task connected to a goal.

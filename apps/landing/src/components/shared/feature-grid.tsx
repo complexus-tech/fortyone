@@ -12,7 +12,7 @@ type FeatureCard = {
 };
 
 type FeatureGridProps = {
-  smallHeading: string;
+  smallHeading?: string;
   mainHeading: string;
   description?: string;
   cards: FeatureCard[];
@@ -45,18 +45,21 @@ export const FeatureGrid = ({
   cards,
 }: FeatureGridProps) => {
   return (
-    <Container className="py-10 md:py-20">
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{ duration: 0.6, delay: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
-      >
-        <Text className="mb-6 font-mono text-sm tracking-wider uppercase opacity-80">
-          {smallHeading}
-        </Text>
-      </motion.div>
-      <Box className="flex items-end justify-between gap-16">
+    <Container className="py-10 md:py-28">
+      {smallHeading && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.6, delay: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          whileInView={{ y: 0, opacity: 1 }}
+        >
+          <Text className="mb-6 font-mono text-sm tracking-wider uppercase opacity-80">
+            {smallHeading}
+          </Text>
+        </motion.div>
+      )}
+
+      <Box className="flex items-baseline justify-between gap-16">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -65,7 +68,7 @@ export const FeatureGrid = ({
         >
           <Text
             as="h2"
-            className="max-w-3xl pb-1 text-4xl md:text-5xl"
+            className="max-w-4xl pb-1 text-4xl md:text-5xl"
             color="gradientDark"
           >
             {mainHeading}

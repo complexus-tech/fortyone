@@ -67,27 +67,7 @@ const isProduction = process.env.NODE_ENV === "production";
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <Script id="brevo-conversations" strategy="afterInteractive">
-        {`
-        (function(d, w, c) {
-            w.BrevoConversationsID = '6834856b58b6d2f7800e0e5e';
-            w[c] = w[c] || function() {
-                (w[c].q = w[c].q || []).push(arguments);
-            };
-            var s = d.createElement('script');
-            s.async = true;
-            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-            if (d.head) d.head.appendChild(s);
-        })(document, window, 'BrevoConversations');
-      `}
-      </Script>
-      <body
-        className={cn(
-          body.variable,
-          heading.variable,
-          mono.variable,
-        )}
-      >
+      <body className={cn(body.variable, heading.variable, mono.variable)}>
         <Providers>
           {children}
           <span className="text-icon" />

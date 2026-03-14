@@ -30,7 +30,7 @@ export const Maya = () => {
         <Text className="mb-4 font-mono text-sm tracking-wider uppercase opacity-75">
           See Maya in action
         </Text>
-        <Box className="mb-10 flex items-end justify-between gap-16">
+        <Box className="mb-10 flex items-baseline justify-between gap-16">
           <Text
             as="h3"
             className="max-w-4xl pb-2 text-4xl md:text-5xl"
