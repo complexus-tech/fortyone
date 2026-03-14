@@ -22,7 +22,7 @@ const faqItems: FaqItem[] = [
   {
     question: "What does Maya actually do?",
     answer:
-      "Maya is your AI project manager - not just a chatbot bolted onto a to-do list. She drafts tasks from plain text, proposes sprint scope from your backlog, writes goals and key results that connect to your roadmap, and flags blockers in real time based on ownership and activity.",
+      "Maya is your AI project manager - not a chatbot bolted onto a to-do list. She drafts tasks from plain language, proposes sprint scope based on your backlog and team capacity, writes OKRs connected to your roadmap, and flags blockers in real time before they cost you a sprint. The more your team works in FortyOne, the more useful she gets.",
   },
   {
     question: "How does FortyOne connect goals to daily work?",

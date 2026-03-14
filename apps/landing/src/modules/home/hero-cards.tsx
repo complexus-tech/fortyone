@@ -24,9 +24,9 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "Turn rough plans into clear tasks",
+      title: "From rough idea to real task in seconds.",
       description:
-        "Capture work fast in list view, then organize it without losing the goal behind it.",
+        "Capture work fast in list view. Maya structures it so the goal behind each task is never lost.",
       image: {
         src: listImg,
         srcLight: listImgLight,
@@ -35,9 +35,9 @@ export const HeroCards = () => {
     },
     {
       id: 2,
-      title: "Run work through a visible workflow",
+      title: "Make blockers visible before they become delays.",
       description:
-        "Use kanban to keep delivery moving and make blockers obvious before they slow the team down.",
+        "Kanban keeps delivery moving and surfaces what's stuck - without a status meeting.",
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,
@@ -46,9 +46,9 @@ export const HeroCards = () => {
     },
     {
       id: 3,
-      title: "Watch execution roll up to goals",
+      title: "See how today's tasks move the quarter's goals.",
       description:
-        "Track objective progress live as tasks move forward, instead of waiting for a status update.",
+        "Objective progress updates live as work moves forward. No spreadsheet required.",
       image: {
         src: objectiveImg,
         srcLight: objectiveImgLight,

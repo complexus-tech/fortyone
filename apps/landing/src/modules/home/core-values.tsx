@@ -32,23 +32,23 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Know what the work is driving toward.",
+    title: "Every task traces back to a goal.",
     description:
-      "Connect daily tasks to goals so teams stay aligned and leaders get a live view of progress.",
+      "Link work directly to key results so your team knows what they're building toward - and leaders stop asking for status updates.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Go from backlog chaos to a focused sprint.",
+    title: "Maya scopes your sprint for you.",
     description:
-      "Use Maya to shape realistic sprint scope around backlog priority and team capacity.",
+      "Tell Maya what you're targeting. She reads your backlog, weighs team capacity, and proposes a sprint that's actually shippable.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "Spend less time coordinating the work.",
+    title: "Less coordination, more building.",
     description:
-      "Maya drafts tasks, surfaces blockers early, and handles the follow-through that usually slows teams down.",
+      "Maya drafts tasks, surfaces blockers early, and does the follow-through that usually falls through the cracks.",
   },
   {
     icon: (
@@ -62,15 +62,15 @@ const capabilities = [
     icon: (
       <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Fit the tool to your team, not the reverse.",
+    title: "Workflows that fit how you actually ship.",
     description:
-      "Adapt statuses, terminology, permissions, and workflow rules to the way your team actually ships.",
+      "Customize statuses, terminology, and permissions around your process - not a generic template. Adjust as you grow without breaking what came before.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Keep the rest of your stack in sync.",
+    title: "One source of truth across your whole stack.",
     description:
-      "Bring GitHub, Slack, Figma, GitLab, and more into one system without manual update chasing.",
+      "GitHub, Slack, Figma, GitLab, and more feed into FortyOne automatically. Your team sees one picture instead of chasing updates across five tabs.",
   },
 ];
 
@@ -79,7 +79,7 @@ export const CoreValues = () => {
     <FeatureGrid
       cards={capabilities}
       description="The outcome is simple: less admin, clearer priorities, and faster progress from strategy to shipped work."
-      mainHeading="Project management that actually connects the dots."
+      mainHeading="Project management that closes the gap between strategy and shipped work."
       smallHeading="What's inside"
     />
   );

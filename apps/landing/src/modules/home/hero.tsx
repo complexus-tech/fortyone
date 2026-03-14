@@ -60,9 +60,9 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              FortyOne keeps your team's work, plans, and goals in one place,
-              with Maya — your AI project manager — helping everything keep
-              moving.
+              FortyOne keeps your team's work, plans, and goals in one place —
+              and Maya, your AI project manager, drafts tasks, scopes sprints,
+              and flags blockers before they cost you a day.
             </Text>
           </motion.span>
 
