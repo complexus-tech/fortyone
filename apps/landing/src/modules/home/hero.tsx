@@ -43,7 +43,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-[4.1rem]",
+                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-6xl",
               )}
             >
               Keep every task connected to a goal.
@@ -59,10 +59,10 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              Most teams do not lose on strategy — they lose it between the
-              plan and the sprint board. FortyOne keeps the goal visible, while
-              Maya drafts tasks, scopes sprints, and flags risks early.
+            <Text className="mt-4 max-w-[700px] text-lg opacity-80">
+              Most teams do not lose on strategy — they lose it between the plan
+              and the sprint board. FortyOne keeps the goal visible, while Maya
+              drafts tasks, scopes sprints, and flags risks early.
             </Text>
           </motion.span>
 
