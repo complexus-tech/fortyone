@@ -32,7 +32,7 @@ export const Maya = () => {
         </Text>
         <Text
           as="h3"
-          className="mb-10 max-w-4xl pb-2 text-4xl font-semibold md:mb-4 md:text-5xl"
+          className="mb-10 max-w-4xl pb-2 text-4xl md:mb-4 md:text-5xl"
           color="gradientDark"
         >
           From &ldquo;we should build this&rdquo; to shipped — without the chaos

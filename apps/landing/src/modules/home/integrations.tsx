@@ -3,6 +3,7 @@ import { Flex, Text, Box, Button } from "ui";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
+import { SIGNUP_URL } from "@/lib/app-url";
 
 export const Integrations = () => {
   return (
@@ -10,38 +11,38 @@ export const Integrations = () => {
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute top-24 left-16 hidden rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/slack.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Intercom logo"
         className="pointer-events-none absolute top-20 left-80 hidden -rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/intercom-icon.svg"
-        width={70}
+        width={55}
       />
 
       <Image
         alt="Notion logo"
         className="pointer-events-none absolute top-1/2 bottom-1/2 left-48 hidden -translate-y-1/2 rotate-12 invert md:block dark:invert-0"
-        height={70}
+        height={55}
         src="/integrations/notion.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Figma logo"
         className="pointer-events-none absolute bottom-24 left-16 hidden rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/figma.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Github logo"
         className="pointer-events-none absolute bottom-24 left-80 hidden rotate-6 invert md:block dark:invert-0"
-        height={70}
+        height={55}
         src="/integrations/github.svg"
-        width={70}
+        width={55}
       />
 
       <Container className="relative">
@@ -61,7 +62,7 @@ export const Integrations = () => {
           >
             <Text
               as="h2"
-              className="h-max max-w-2xl pb-2 text-5xl font-semibold md:mt-6 md:text-6xl"
+              className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
               Sync up your whole stack.
             </Text>
@@ -75,11 +76,7 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="mt-6 mb-10 max-w-[700px]"
-              color="muted"
-              fontSize="lg"
-            >
+            <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
               GitHub merges, Slack threads, Figma handoffs, GitLab pipelines —
               they all happen in isolation, then get lost. FortyOne pulls them
               into a single, coherent view so your team stops chasing context
@@ -95,8 +92,8 @@ export const Integrations = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Button color="invert" href="/features" rounded="lg" size="lg">
-              View all integrations
+            <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
+              Get started
             </Button>
           </motion.div>
         </Flex>
@@ -104,37 +101,37 @@ export const Integrations = () => {
       <Image
         alt="Jira logo"
         className="pointer-events-none absolute top-24 right-16 hidden rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/jira.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Drive logo"
         className="pointer-events-none absolute top-20 right-80 hidden -rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/drive.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Gitlab logo"
         className="pointer-events-none absolute top-1/2 right-48 bottom-1/2 hidden -translate-y-1/2 rotate-12 md:block"
-        height={70}
+        height={55}
         src="/integrations/gitlab.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Figma logo"
         className="pointer-events-none absolute right-16 bottom-24 hidden rotate-6 md:block"
-        height={70}
+        height={55}
         src="/integrations/teams.svg"
-        width={70}
+        width={55}
       />
       <Image
         alt="Zend logo"
         className="pointer-events-none absolute right-80 bottom-24 hidden rotate-6 invert md:block dark:invert-0"
-        height={70}
+        height={55}
         src="/integrations/zend.svg"
-        width={70}
+        width={55}
       />
     </Box>
   );
