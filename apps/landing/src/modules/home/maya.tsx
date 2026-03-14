@@ -35,14 +35,16 @@ export const Maya = () => {
           className="mb-10 max-w-5xl pb-2 text-4xl leading-[1.15] font-bold md:mb-6 md:text-5xl"
           color="gradientDark"
         >
-          From idea to shipped - without the chaos.
+          From "we should build this" to shipped — without the chaos in
+          between.
         </Text>
         <Text
           className="mb-10 max-w-3xl text-lg leading-relaxed opacity-70 md:mb-14 md:text-xl"
           color="muted"
         >
-          Type a rough idea, let Maya turn it into structured work, and keep
-          planning, execution, and visibility in one loop.
+          Type a rough idea. Maya structures it, adds it to the right sprint,
+          connects it to your goals, and tracks it to done. You get the credit.
+          She does the paperwork.
         </Text>
       </motion.div>
       <motion.div

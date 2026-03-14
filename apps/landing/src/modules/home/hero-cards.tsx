@@ -24,9 +24,9 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "From rough idea to real task in seconds.",
+      title: "Rough idea in. Structured task out.",
       description:
-        "Capture work fast in list view. Maya structures it so the goal behind each task is never lost.",
+        "Type what needs doing in plain language. Maya turns it into a structured task with context, ownership, and a goal attached.",
       image: {
         src: listImg,
         srcLight: listImgLight,
@@ -35,9 +35,9 @@ export const HeroCards = () => {
     },
     {
       id: 2,
-      title: "Make blockers visible before they become delays.",
+      title: "Blockers don't hide in kanban. They surface.",
       description:
-        "Kanban keeps delivery moving and surfaces what's stuck - without a status meeting.",
+        "Maya watches ownership and activity. If something starts to stall, it surfaces early instead of waiting for the end-of-sprint retro.",
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,
@@ -46,9 +46,9 @@ export const HeroCards = () => {
     },
     {
       id: 3,
-      title: "See how today's tasks move the quarter's goals.",
+      title: "Done tasks move the quarter, not just the board.",
       description:
-        "Objective progress updates live as work moves forward. No spreadsheet required.",
+        "As tasks close, objective progress updates in real time. Leaders see the quarter move without asking for updates.",
       image: {
         src: objectiveImg,
         srcLight: objectiveImgLight,

@@ -34,43 +34,43 @@ const capabilities = [
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
     title: "Every task traces back to a goal.",
     description:
-      "Link work directly to key results so your team knows what they're building toward - and leaders stop asking for status updates.",
+      "When a task moves, the objective moves with it. Teams stay aligned, and leaders get a live view without chasing updates.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Maya scopes your sprint for you.",
+    title: "Maya scopes your sprint — you approve it.",
     description:
-      "Tell Maya what you're targeting. She reads your backlog, weighs team capacity, and proposes a sprint that's actually shippable.",
+      "Tell Maya the outcome you're aiming for. She reads the backlog, weighs capacity, and proposes a sprint you can actually ship.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "Less coordination, more building.",
+    title: "Maya does the admin. Your team does the work.",
     description:
-      "Maya drafts tasks, surfaces blockers early, and does the follow-through that usually falls through the cracks.",
+      "Maya handles task drafting, blocker flagging, and follow-through. Your team spends more time building and less time coordinating.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Give everyone the same live picture.",
+    title: "One picture. No version conflicts.",
     description:
-      "Keep contributors, managers, and leadership aligned on what is done, stuck, and next.",
+      "Contributors, managers, and leadership see the same live view of what is done, stuck, and next.",
   },
   {
     icon: (
       <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Workflows that fit how you actually ship.",
+    title: "Shaped around your team, not ours.",
     description:
-      "Customize statuses, terminology, and permissions around your process - not a generic template. Adjust as you grow without breaking what came before.",
+      "Customize statuses, terminology, permissions, and workflow rules. It fits how your team ships and adapts as you grow.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "One source of truth across your whole stack.",
+    title: "Your tools talk. FortyOne listens.",
     description:
-      "GitHub, Slack, Figma, GitLab, and more feed into FortyOne automatically. Your team sees one picture instead of chasing updates across five tabs.",
+      "GitHub, Slack, Figma, and GitLab feed into FortyOne automatically. Your team sees one coherent picture instead of scattered updates.",
   },
 ];
 
@@ -78,8 +78,8 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      description="The outcome is simple: less admin, clearer priorities, and faster progress from strategy to shipped work."
-      mainHeading="Project management that closes the gap between strategy and shipped work."
+      description="Most project tools show you what's happening. FortyOne shows you what it means — and Maya keeps it moving."
+      mainHeading="The missing layer between your roadmap and your team."
       smallHeading="What's inside"
     />
   );
