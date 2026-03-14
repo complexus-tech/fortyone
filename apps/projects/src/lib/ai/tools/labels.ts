@@ -6,6 +6,7 @@ import { createLabelAction } from "@/lib/actions/labels/create-label";
 import { editLabelAction } from "@/lib/actions/labels/edit-label";
 import { deleteLabelAction } from "@/lib/actions/labels/delete-label";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 
 export const labelsTool = tool({
   description: "Manage workspace/team labels: list, create, edit, delete.",
@@ -53,7 +54,7 @@ export const labelsTool = tool({
             return { success: false, error: "Name and color are required" };
           {
             const res = await createLabelAction(
-              { name, color, teamId },
+              { name, color, teamId: normalizeOptionalString(teamId) },
               workspaceSlug,
             );
             if (res.error) return { success: false, error: res.error.message };

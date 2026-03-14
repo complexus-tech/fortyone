@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 
 export const bulkUpdateStories = tool({
   description:
@@ -75,10 +76,20 @@ export const bulkUpdateStories = tool({
         };
       }
 
+      const normalizedUpdateData = {
+        statusId: normalizeOptionalString(updateData.statusId),
+        assigneeId: normalizeOptionalString(updateData.assigneeId),
+        priority: updateData.priority,
+        sprintId: normalizeOptionalString(updateData.sprintId),
+        objectiveId: normalizeOptionalString(updateData.objectiveId),
+        startDate: normalizeOptionalString(updateData.startDate),
+        endDate: normalizeOptionalString(updateData.endDate),
+      };
+
       const result = await bulkUpdateAction(
         {
           storyIds,
-          updates: updateData,
+          updates: normalizedUpdateData,
         },
         workspaceSlug,
       );

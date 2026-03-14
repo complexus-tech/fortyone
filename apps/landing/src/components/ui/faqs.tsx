@@ -22,27 +22,27 @@ const faqItems: FaqItem[] = [
   {
     question: "What does Maya actually do?",
     answer:
-      "Maya is your AI project manager - not just a chatbot bolted onto a to-do list. She drafts tasks from plain text, proposes sprint scope from your backlog, writes goals and key results that connect to your roadmap, and flags blockers in real time based on ownership and activity.",
+      "Maya is your AI project manager — not a chatbot bolted onto a to-do list. She drafts tasks from plain language, proposes sprint scope from your backlog, writes OKRs tied to your roadmap, and flags blockers before they cost you a sprint. She doesn't replace your team's judgment — she handles the coordination work so your team can apply it to better things. The longer she works with your setup, the more useful she gets.",
   },
   {
     question: "How does FortyOne connect goals to daily work?",
     answer:
-      "Goals are built into the structure of every sprint and task. Link work directly to key results and watch progress roll up automatically. Team members see how their work drives outcomes, and leaders get a live, trustworthy view of where things stand without spreadsheet wrangling.",
+      "Goals aren't a separate module — they're built into the structure of every sprint and task. Link work directly to key results and watch objective progress update automatically as tasks close. Your team sees exactly how their work moves the quarter. Leadership gets a live, trustworthy view without sending a single \"can you send me an update?\" email.",
   },
   {
-    question: "Is there really a free plan?",
+    question: "Is the free plan actually free?",
     answer:
-      "Yes. The Hobby plan is free with no credit card required and supports up to 1 team and 5 members, which is enough to get real work done and decide if FortyOne is right for you. Paid plans are per user, with annual billing saving 20%. You can upgrade, downgrade, or cancel at any time.",
+      "Yes — no credit card, no trial expiry, no watered-down version. The Hobby plan supports one team and up to five members, which is enough to run a real sprint and decide whether FortyOne is worth scaling. When you're ready to grow, paid plans start at $5.60 per user per month, billed annually.",
   },
   {
     question: "How does FortyOne handle security?",
     answer:
-      "We use industry-standard encryption in transit and at rest, support SSO with Google, and provide role-based permissions and private teams to control access. For organizations with stricter requirements, the Enterprise plan includes private cloud or on-premise deployment with tailored onboarding.",
+      "Encryption in transit and at rest, SSO with Google, role-based permissions, and private teams. For organizations with stricter requirements — compliance, on-premise, custom data residency — the Enterprise plan covers it with dedicated onboarding and a named account manager.",
   },
   {
     question: "Can we make it fit the way our team works?",
     answer:
-      "Yes. Customize statuses, workflows, terminology, and permissions to match your org - not a generic process template. Structure your backlog and boards around the way your team plans and executes, and adjust things as you grow without breaking historical context.",
+      "That's the point. Customize statuses, workflows, terminology, and permissions to match your org — not a generic process template someone wrote in 2018. Structure your backlog and boards around how you plan and ship, and adjust as you grow without breaking historical context.",
   },
 ];
 

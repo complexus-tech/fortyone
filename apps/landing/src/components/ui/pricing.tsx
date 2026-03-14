@@ -193,13 +193,14 @@ export const Pricing = ({
                 "mt-6 max-w-3xl pb-2 text-5xl font-bold md:text-6xl",
               )}
             >
-              Start free. Scale when you&apos;re ready.
+              Start free. Scale when your team outgrows it.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="mt-4 max-w-2xl text-xl font-normal opacity-70">
-              No surprise bills. No feature-gating the good stuff. Pick a plan
-              that fits where your team is today.
+              No card required, no feature walls, no gotchas. The free plan
+              handles a real team doing real work. Paid plans add more room and
+              more Maya — upgrade, downgrade, or cancel any time.
             </Text>
           ) : null}
         </Flex>

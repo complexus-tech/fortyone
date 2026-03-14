@@ -212,6 +212,14 @@ func buildGoogleFullName(identity google.Identity) string {
 	return "User"
 }
 
+func (h *Handlers) reactivateUserForSignIn(ctx context.Context, user users.CoreUser) (users.CoreUser, error) {
+	if user.IsActive {
+		return user, nil
+	}
+
+	return h.users.ActivateUser(ctx, user.ID)
+}
+
 func (h *Handlers) GetProfile(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -467,7 +475,7 @@ func (h *Handlers) authenticateWithGoogleIdentity(
 		return users.CoreUser{}, errors.New("google account email is missing")
 	}
 
-	user, err := h.users.GetUserByEmail(ctx, identity.Email)
+	user, err := h.users.GetUserByEmailAnyStatus(ctx, identity.Email)
 	if err != nil && !errors.Is(err, users.ErrNotFound) {
 		return users.CoreUser{}, err
 	}
@@ -482,6 +490,11 @@ func (h *Handlers) authenticateWithGoogleIdentity(
 		if err != nil {
 			return users.CoreUser{}, err
 		}
+	}
+
+	user, err = h.reactivateUserForSignIn(ctx, user)
+	if err != nil {
+		return users.CoreUser{}, err
 	}
 
 	if identity.Picture != "" && user.AvatarURL == "" {
@@ -529,7 +542,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
 	}
 
-	_, err = h.users.GetUserByEmail(ctx, req.Email)
+	_, err = h.users.GetUserByEmailAnyStatus(ctx, req.Email)
 	tokenType := users.TokenTypeRegistration
 	if err == nil {
 		tokenType = users.TokenTypeLogin
@@ -595,7 +608,7 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	user, err := h.users.GetUserByEmail(ctx, req.Email)
+	user, err := h.users.GetUserByEmailAnyStatus(ctx, req.Email)
 	if err != nil && !errors.Is(err, users.ErrNotFound) {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -609,6 +622,11 @@ func (h *Handlers) VerifyEmail(ctx context.Context, w http.ResponseWriter, r *ht
 		if err != nil {
 			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		}
+	}
+
+	user, err = h.reactivateUserForSignIn(ctx, user)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	tokenString, err := h.createSessionToken()

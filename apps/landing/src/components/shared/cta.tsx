@@ -52,8 +52,9 @@ export const CallToAction = () => {
               className="mt-4 max-w-[650px] text-lg md:mt-5 md:text-lg"
               color="muted"
             >
-              Your team has goals. FortyOne makes sure every task, sprint, and
-              decision is working toward them - automatically.
+              Your team already knows what to build. FortyOne makes sure every
+              task, sprint, and decision is working toward the same goal — and
+              Maya keeps it that way, automatically.
             </Text>
           </motion.div>
         </Flex>

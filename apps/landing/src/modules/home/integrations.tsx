@@ -80,9 +80,10 @@ export const Integrations = () => {
               color="muted"
               fontSize="lg"
             >
-              Connect GitHub, GitLab, Figma, Slack, Intercom, and more so
-              updates do not get lost between tools. Your team gets one clearer
-              view of what is happening without chasing status across apps.
+              GitHub merges, Slack threads, Figma handoffs, GitLab pipelines —
+              they all happen in isolation, then get lost. FortyOne pulls them
+              into a single, coherent view so your team stops chasing context
+              across five tabs.
             </Text>
           </motion.div>
           <motion.div

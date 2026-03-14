@@ -3,6 +3,10 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { updateKeyResult } from "@/modules/objectives/actions/update-key-result";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import {
+  normalizeOptionalString,
+  normalizeStringArray,
+} from "@/lib/ai/tools/normalize-input";
 
 export const updateKeyResultTool = tool({
   description:
@@ -73,14 +77,14 @@ export const updateKeyResultTool = tool({
     const result = await updateKeyResult(
       keyResultId,
       {
-        name,
+        name: normalizeOptionalString(name),
         startValue,
         currentValue,
         targetValue,
-        startDate,
-        endDate,
-        lead,
-        contributors,
+        startDate: normalizeOptionalString(startDate),
+        endDate: normalizeOptionalString(endDate),
+        lead: normalizeOptionalString(lead),
+        contributors: normalizeStringArray(contributors),
       },
       workspaceSlug,
     );

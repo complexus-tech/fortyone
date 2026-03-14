@@ -5,6 +5,7 @@ import { getStoryComments } from "@/modules/story/queries/get-comments";
 import { commentStoryAction } from "@/modules/story/actions/comment-story";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 
 export const commentsTool = tool({
   description:
@@ -57,6 +58,8 @@ export const commentsTool = tool({
   ) => {
     try {
       const session = await auth();
+      const normalizedParentId = normalizeOptionalString(parentId);
+      const normalizedContent = normalizeOptionalString(content);
 
       if (!session) {
         return {
@@ -145,7 +148,7 @@ export const commentsTool = tool({
         }
 
         case "add-comment": {
-          if (!storyId || !content) {
+          if (!storyId || !normalizedContent) {
             return {
               success: false,
               error: "Story ID and content are required for adding comments",
@@ -162,8 +165,8 @@ export const commentsTool = tool({
           const result = await commentStoryAction(
             storyId,
             {
-              comment: content,
-              parentId: parentId ?? null,
+              comment: normalizedContent,
+              parentId: normalizedParentId ?? null,
               mentions,
             },
             workspaceSlug,
@@ -196,14 +199,14 @@ export const commentsTool = tool({
               updatedAt: newComment.updatedAt,
               parentId: newComment.parentId,
             },
-            message: parentId
+            message: normalizedParentId
               ? "Reply added successfully"
               : "Comment added successfully",
           };
         }
 
         case "reply-to-comment": {
-          if (!storyId || !parentId || !content) {
+          if (!storyId || !normalizedParentId || !normalizedContent) {
             return {
               success: false,
               error:
@@ -221,8 +224,8 @@ export const commentsTool = tool({
           const result = await commentStoryAction(
             storyId,
             {
-              comment: content,
-              parentId,
+              comment: normalizedContent,
+              parentId: normalizedParentId,
               mentions,
             },
             workspaceSlug,

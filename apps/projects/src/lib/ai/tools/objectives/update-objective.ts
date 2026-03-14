@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { updateObjective } from "@/modules/objectives/actions/update-objective";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 
 export const updateObjectiveTool = tool({
   description:
@@ -92,12 +93,12 @@ export const updateObjectiveTool = tool({
       const result = await updateObjective(
         objectiveId,
         {
-          name,
-          description,
-          leadUser,
-          startDate,
-          endDate,
-          statusId,
+          name: normalizeOptionalString(name),
+          description: normalizeOptionalString(description),
+          leadUser: normalizeOptionalString(leadUser),
+          startDate: normalizeOptionalString(startDate),
+          endDate: normalizeOptionalString(endDate),
+          statusId: normalizeOptionalString(statusId),
           priority,
           health,
         },

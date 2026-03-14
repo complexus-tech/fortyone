@@ -44,7 +44,9 @@ var (
 type Repository interface {
 	GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
+	GetUserByEmailAnyStatus(ctx context.Context, email string) (CoreUser, error)
 	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) (CoreUser, error)
+	ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
 	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
@@ -124,6 +126,23 @@ func (s *Service) GetUserByEmail(ctx context.Context, email string) (CoreUser, e
 	return user, nil
 }
 
+// GetUserByEmailAnyStatus returns a user by email regardless of activation state.
+func (s *Service) GetUserByEmailAnyStatus(ctx context.Context, email string) (CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.GetUserByEmailAnyStatus")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserByEmailAnyStatus")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.email", email))
+
+	user, err := s.repo.GetUserByEmailAnyStatus(ctx, email)
+	if err != nil {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
+	return user, nil
+}
+
 // Register creates a new user account.
 func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.Register")
@@ -133,7 +152,7 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 	span.SetAttributes(attribute.String("user.email", newUser.Email))
 
 	// Check if email is already taken
-	_, err := s.repo.GetUserByEmail(ctx, newUser.Email)
+	_, err := s.repo.GetUserByEmailAnyStatus(ctx, newUser.Email)
 	if err == nil {
 		span.RecordError(ErrEmailTaken)
 		return CoreUser{}, ErrEmailTaken
@@ -170,6 +189,23 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		span.RecordError(err)
 		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
 	}
+	return user, nil
+}
+
+// ActivateUser reactivates a previously inactive user account.
+func (s *Service) ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.ActivateUser")
+	ctx, span := web.AddSpan(ctx, "business.core.users.ActivateUser")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", userID.String()))
+
+	user, err := s.repo.ActivateUser(ctx, userID)
+	if err != nil {
+		span.RecordError(err)
+		return CoreUser{}, err
+	}
+
 	return user, nil
 }
 

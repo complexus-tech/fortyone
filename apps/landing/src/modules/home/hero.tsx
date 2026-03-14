@@ -43,7 +43,7 @@ export const Hero = () => {
             <Text
               as="h1"
               className={cn(
-                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-[4.3rem]",
+                "relative z-1 mt-8 pb-2 text-5xl font-bold text-balance md:max-w-4xl md:text-[4.1rem]",
               )}
             >
               Keep every task connected to a goal.
@@ -60,9 +60,9 @@ export const Hero = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-8 max-w-[700px] text-lg font-normal opacity-80 md:text-xl">
-              FortyOne keeps your team's work, plans, and goals in one place,
-              with Maya — your AI project manager — helping everything keep
-              moving.
+              Most teams do not lose on strategy — they lose it between the
+              plan and the sprint board. FortyOne keeps the goal visible, while
+              Maya drafts tasks, scopes sprints, and flags risks early.
             </Text>
           </motion.span>
 
