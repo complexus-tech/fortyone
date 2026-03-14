@@ -24,17 +24,6 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "Rough idea in. Structured task out.",
-      description:
-        "Type what needs doing in plain language. Maya turns it into a structured task with context, ownership, and a goal attached.",
-      image: {
-        src: listImg,
-        srcLight: listImgLight,
-        alt: "Project management list view - task tracking",
-      },
-    },
-    {
-      id: 2,
       title: "Blockers don't hide in kanban. They surface.",
       description:
         "Maya watches ownership and activity. If something starts to stall, it surfaces early instead of waiting for the end-of-sprint retro.",
@@ -45,7 +34,7 @@ export const HeroCards = () => {
       },
     },
     {
-      id: 3,
+      id: 2,
       title: "Done tasks move the quarter, not just the board.",
       description:
         "As tasks close, objective progress updates in real time. Leaders see the quarter move without asking for updates.",
@@ -63,7 +52,7 @@ export const HeroCards = () => {
         <Container className="relative mt-12">
           <Blur className="dark:bg-warning/10 absolute -top-[14%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px]" />
           <Box
-            className="relative mx-auto md:w-11/12"
+            className="relative"
             onMouseEnter={() => {
               if (resolvedTheme === "dark") {
                 cursor.setText("←Drag→");
@@ -91,7 +80,7 @@ export const HeroCards = () => {
             >
               {cards.map((card) => (
                 <SwiperSlide
-                  className="border-border bg-background/5 d relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
+                  className="border-border bg-background/5 relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
                   key={card.id}
                 >
                   <Flex

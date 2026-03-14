@@ -49,13 +49,13 @@ export default function Page() {
     <>
       <JsonLd />
       <Hero />
-      <SampleClients />
       <HeroCards />
+      <SampleClients />
       <CoreValues />
       {/* <Features /> */}
       <Maya />
       <Integrations />
-      <Pricing className="md:pb-16 md:pt-0" />
+      <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />
       <CallToAction />
     </>
