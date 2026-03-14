@@ -80,7 +80,7 @@ export const CoreValues = () => {
       cards={capabilities}
       description="Most project tools show you what's happening. FortyOne shows you what it means — and Maya keeps it moving."
       mainHeading="The missing layer between your roadmap and your team."
-      smallHeading="What's inside"
+      // smallHeading="What's inside"
     />
   );
 };

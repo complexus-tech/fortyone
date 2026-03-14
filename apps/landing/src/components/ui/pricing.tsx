@@ -116,16 +116,16 @@ const Package = ({
       <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
-          <Badge color="invert" rounded="md" className="font-semibold">
+          <Badge color="invert" className="font-semibold">
             Most Popular
           </Badge>
         ) : null}
       </Text>
 
       {name !== "Enterprise" ? (
-        <Text className="mt-4 text-4xl font-semibold">
+        <Text className="mt-4 text-4xl font-bold">
           ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
-          <Text as="span" className="text-base opacity-60">
+          <Text as="span" className="text-base font-medium opacity-60">
             {" "}
             {finalPrice > 0 ? "user/month" : ""}
           </Text>
@@ -172,11 +172,13 @@ export const Pricing = ({
   return (
     <Box className={cn("relative md:pt-12", className)}>
       <Container className="max-w-332">
-        <Flex
-          className={cn("mt-10 pb-6", {
+        <Box
+          className={cn(
+            "mt-10 flex flex-col gap-6 pb-6 md:flex-row md:items-end md:justify-between md:gap-16",
+            {
             "md:mt-20": pathname === "/pricing",
-          })}
-          direction="column"
+            },
+          )}
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -189,21 +191,19 @@ export const Pricing = ({
           >
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
-              className={cn(
-                "mt-6 max-w-3xl pb-2 text-5xl font-semibold md:text-6xl",
-              )}
+              className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl")}
             >
               Start free. Scale when your team outgrows it.
             </Text>
           </motion.div>
           {!hideDescription ? (
-            <Text className="mt-4 max-w-2xl text-lg opacity-70">
+            <Text className="w-full max-w-xl opacity-70 md:mt-4">
               No card required, no feature walls, no gotchas. The free plan
               handles a real team doing real work. Paid plans add more room and
               more Maya — upgrade, downgrade, or cancel any time.
             </Text>
           ) : null}
-        </Flex>
+        </Box>
 
         <Flex className="mb-10" direction="column">
           <motion.div

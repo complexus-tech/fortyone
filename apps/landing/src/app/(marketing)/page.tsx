@@ -6,7 +6,7 @@ import {
   Hero,
   HeroCards,
   SampleClients,
-  // Features,
+  Features,
   Integrations,
   Maya,
   CoreValues,
@@ -49,13 +49,13 @@ export default function Page() {
     <>
       <JsonLd />
       <Hero />
-      <SampleClients />
       <HeroCards />
-      <CoreValues />
+      <SampleClients />
       {/* <Features /> */}
+      <CoreValues />
       <Maya />
       <Integrations />
-      <Pricing className="md:pb-16 md:pt-0" />
+      <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />
       <CallToAction />
     </>

@@ -12,7 +12,7 @@ type FeatureCard = {
 };
 
 type FeatureGridProps = {
-  smallHeading: string;
+  smallHeading?: string;
   mainHeading: string;
   description?: string;
   cards: FeatureCard[];
@@ -22,16 +22,13 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
   return (
     <Box
       className={cn(
-        "group border-border/80 hover:from-surface-muted dark:border-border/80 dark:hover:from-surface-elevated border-[0.5px] bg-linear-to-b px-6 py-8 md:px-7 md:py-16",
+        "group border-border/80 hover:from-surface-muted dark:border-border/80 dark:hover:from-surface-elevated border-[0.5px] bg-linear-to-b px-6 py-8 md:px-7 md:py-10",
       )}
     >
       <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
-      <Text
-        as="h3"
-        className="mb-3 text-xl font-semibold md:text-2xl dark:text-white"
-      >
+      <Text as="h3" className="mb-4 text-xl md:text-2xl">
         {card.title}
       </Text>
       <Text className="text-[0.95rem] leading-relaxed opacity-60 group-hover:opacity-100">
@@ -49,35 +46,47 @@ export const FeatureGrid = ({
 }: FeatureGridProps) => {
   return (
     <Container className="py-10 md:py-28">
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{ duration: 0.6, delay: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
-      >
-        <Text className="mb-8 font-mono tracking-wider uppercase opacity-80">
-          {smallHeading}
-        </Text>
-      </motion.div>
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        viewport={{ once: true, amount: 0.5 }}
-        whileInView={{ y: 0, opacity: 1 }}
-      >
-        <Text
-          as="h2"
-          className="max-w-3xl pb-4 text-4xl font-semibold md:text-6xl"
-          color="gradientDark"
+      {smallHeading && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.6, delay: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          whileInView={{ y: 0, opacity: 1 }}
         >
-          {mainHeading}
-        </Text>
-        {description ? (
-          <Text className="max-w-3xl text-lg leading-relaxed opacity-70 md:text-xl">
-            {description}
+          <Text className="mb-6 font-mono text-sm tracking-wider uppercase opacity-80">
+            {smallHeading}
           </Text>
-        ) : null}
-      </motion.div>
+        </motion.div>
+      )}
+
+      <Box className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          viewport={{ once: true, amount: 0.5 }}
+          whileInView={{ y: 0, opacity: 1 }}
+        >
+          <Text
+            as="h2"
+            className="max-w-4xl pb-1 text-4xl md:text-5xl"
+            color="gradientDark"
+          >
+            {mainHeading}
+          </Text>
+        </motion.div>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          viewport={{ once: true, amount: 0.5 }}
+          whileInView={{ y: 0, opacity: 1 }}
+        >
+          {description ? (
+            <Text className="w-full max-w-xl leading-relaxed opacity-70 md:mb-0.5">
+              {description}
+            </Text>
+          ) : null}
+        </motion.div>
+      </Box>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}

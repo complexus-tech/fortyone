@@ -1,5 +1,6 @@
 import {
   Inter_Tight as InterTight,
+  Inter,
   Inconsolata,
   Manrope,
 } from "next/font/google";

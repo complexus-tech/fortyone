@@ -14,7 +14,7 @@ const badge = cva(
       rounded: {
         none: "rounded-none",
         sm: "rounded-md",
-        md: "rounded-md",
+        md: "rounded-lg",
         lg: "rounded-xl",
         xl: "rounded-2xl",
         full: "rounded-full",
@@ -69,7 +69,7 @@ const badge = cva(
       color: "primary",
       rounded: "md",
     },
-  }
+  },
 );
 
 export interface BadgeProps

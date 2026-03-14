@@ -17,7 +17,7 @@ const text = cva("text-foreground", {
       gradient:
         "bg-linear-to-r from-primary dark:via-text-secondary dark:to-info to-text-muted bg-clip-text text-transparent dark:text-transparent",
       gradientDark:
-        "bg-linear-to-r from-foreground dark:from-foreground dark:to-text-muted/70 to-foreground/30 bg-clip-text text-transparent dark:text-transparent",
+        "bg-linear-to-r from-foreground dark:from-foreground to-foreground/20 bg-clip-text text-transparent dark:text-transparent",
       black: "text-text-muted",
       white: "text-text-inverse",
       warning: "text-warning",
@@ -109,7 +109,7 @@ export const Text = ({
       decoration,
       textOverflow,
     }),
-    className
+    className,
   );
 
   return createElement(Tag, {
