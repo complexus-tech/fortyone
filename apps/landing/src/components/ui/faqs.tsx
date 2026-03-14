@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text } from "ui";
-import { ArrowRight2Icon } from "icons";
+import { ArrowRight2Icon, MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -65,7 +65,7 @@ const AccordionItem = ({
         aria-controls={panelId}
         aria-expanded={isOpen}
         className={cn(
-          "group flex w-full items-start justify-between py-6 text-left text-xl opacity-90 outline-none md:text-2xl",
+          "group font-heading flex w-full items-start justify-between py-6 text-left text-xl opacity-90 outline-none md:text-2xl",
         )}
         id={buttonId}
         onClick={onToggle}
@@ -73,15 +73,17 @@ const AccordionItem = ({
       >
         {item.question}
 
-        <ArrowRight2Icon
-          className={cn(
-            "text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300",
-            {
-              "rotate-90": isOpen,
-            },
-          )}
-          strokeWidth={2}
-        />
+        {isOpen ? (
+          <MinusIcon
+            className="text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300"
+            strokeWidth={2}
+          />
+        ) : (
+          <PlusIcon
+            className="text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300"
+            strokeWidth={2}
+          />
+        )}
       </button>
       <Box
         aria-labelledby={buttonId}
@@ -95,7 +97,7 @@ const AccordionItem = ({
         role="region"
       >
         <Box className="overflow-hidden">
-          <Text className="mb-10 max-w-3xl text-lg leading-relaxed opacity-60">
+          <Text className="mb-10 max-w-6xl text-lg leading-relaxed opacity-60">
             {item.answer}
           </Text>
         </Box>
@@ -113,7 +115,7 @@ export const Faqs = () => {
 
   return (
     <Box className="py-16 md:pt-24">
-      <Container className="max-w-4xl">
+      <Container>
         <motion.div
           initial="hidden"
           variants={fadeUp}
@@ -122,9 +124,9 @@ export const Faqs = () => {
         >
           <Text
             as="h2"
-            className="mb-6 text-4xl leading-[1.1] font-semibold md:mb-12 md:text-5xl"
+            className="mb-6 text-5xl font-semibold md:mb-12 md:text-6xl"
           >
-            Questions worth answering.
+            Questions worth <br /> answering.
           </Text>
         </motion.div>
         <Flex className="pb-4" direction="column">
