@@ -113,7 +113,7 @@ const Package = ({
         },
       )}
     >
-      <Text className="mb-2 flex items-center gap-1.5 text-xl font-bold">
+      <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
           <Badge color="invert" rounded="md" className="font-semibold">
@@ -123,7 +123,7 @@ const Package = ({
       </Text>
 
       {name !== "Enterprise" ? (
-        <Text className="mt-4 text-4xl font-bold">
+        <Text className="mt-4 text-4xl font-semibold">
           ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
           <Text as="span" className="text-base opacity-60">
             {" "}
@@ -190,14 +190,14 @@ export const Pricing = ({
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
               className={cn(
-                "mt-6 max-w-3xl pb-2 text-5xl font-bold md:text-6xl",
+                "mt-6 max-w-3xl pb-2 text-5xl font-semibold md:text-6xl",
               )}
             >
               Start free. Scale when your team outgrows it.
             </Text>
           </motion.div>
           {!hideDescription ? (
-            <Text className="mt-4 max-w-2xl text-xl font-normal opacity-70">
+            <Text className="mt-4 max-w-2xl text-lg opacity-70">
               No card required, no feature walls, no gotchas. The free plan
               handles a real team doing real work. Paid plans add more room and
               more Maya — upgrade, downgrade, or cancel any time.

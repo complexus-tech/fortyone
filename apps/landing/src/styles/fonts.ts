@@ -1,7 +1,7 @@
 import {
+  Inter_Tight as InterTight,
   Inconsolata,
   Manrope,
-  Sora,
 } from "next/font/google";
 
 export const body = Manrope({
@@ -17,7 +17,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = Sora({
+export const heading = InterTight({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],

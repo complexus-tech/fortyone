@@ -60,7 +60,7 @@ export const HeroCards = () => {
   return (
     <Box className="relative">
       <Container className="relative mt-12">
-        <Blur className="absolute -top-[12%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px] dark:bg-white/15" />
+        <Blur className="absolute -top-[12%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px] dark:bg-white/10" />
         <Box
           className="relative"
           onMouseEnter={() => {
@@ -131,7 +131,7 @@ export const HeroCards = () => {
               className="border-border bg-surface/70 rounded-2xl border px-5 py-5 text-left"
               key={card.id}
             >
-              <Text as="h3" className="mb-2 text-lg font-bold md:text-xl">
+              <Text as="h3" className="mb-2 text-lg font-semibold md:text-xl">
                 {card.title}
               </Text>
               <Text className="text-sm leading-relaxed opacity-70 md:text-base">

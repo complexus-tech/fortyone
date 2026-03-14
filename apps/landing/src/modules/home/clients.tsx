@@ -10,9 +10,9 @@ import Image from "next/image";
 
 export const SampleClients = () => {
   return (
-    <Container className="relative z-10 mt-12 hidden md:block">
+    <Container className="relative z-10 mt-10 hidden md:block">
       <Flex className="gap-10" align="center">
-        <Text color="muted" fontSize="sm" className="shrink-0">
+        <Text color="muted" fontSize="sm" className="shrink-0 pl-px">
           Trusted by <br />
           teams at
         </Text>
@@ -20,23 +20,23 @@ export const SampleClients = () => {
           <Image
             src={miningoLogo}
             alt="Miningo logo"
-            className="h-11 w-auto grayscale dark:invert"
+            className="h-10 w-auto grayscale dark:invert"
           />
           <Image
             src={digitankLogo}
             alt="Digitank logo"
-            className="h-8 w-auto grayscale dark:invert"
+            className="h-7 w-auto grayscale dark:invert"
           />
 
           <Image
             src={artCircles}
             alt="Art Circles logo"
-            className="mb-1.5 h-6 w-auto opacity-80 dark:invert"
+            className="mb-1 h-5 w-auto opacity-80 dark:invert"
           />
           <Image
             src={zimboriginalLogo}
             alt="Zimboriginal logo"
-            className="h-10 w-auto grayscale dark:invert"
+            className="h-9 w-auto grayscale dark:invert"
           />
         </Flex>
       </Flex>

@@ -8,7 +8,7 @@ import { SIGNUP_URL } from "@/lib/app-url";
 export const Hero = () => {
   return (
     <Box>
-      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] dark:block" />
+      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] opacity-40" />
       <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
         <Flex className="mt-12 mb-8 md:mt-10" direction="column">
@@ -93,19 +93,6 @@ export const Hero = () => {
               </Button>
             </motion.span>
           </Flex>
-          <motion.span
-            initial={{ y: -5, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.75,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
-            <Text className="mt-4 text-sm opacity-70 md:text-base">
-              See how work moves from plan to progress to results.
-            </Text>
-          </motion.span>
         </Flex>
       </Container>
     </Box>

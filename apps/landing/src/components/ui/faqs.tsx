@@ -122,7 +122,7 @@ export const Faqs = () => {
         >
           <Text
             as="h2"
-            className="mb-6 text-4xl leading-[1.1] font-bold md:mb-12 md:text-5xl"
+            className="mb-6 text-4xl leading-[1.1] font-semibold md:mb-12 md:text-5xl"
           >
             Questions worth answering.
           </Text>
