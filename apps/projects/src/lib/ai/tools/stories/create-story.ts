@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeStoryInput } from "./normalize-story-input";
 
 export const createStory = tool({
   description:
@@ -102,7 +103,7 @@ export const createStory = tool({
         };
       }
 
-      const storyData = {
+      const storyData = normalizeStoryInput({
         title,
         description,
         descriptionHTML,
@@ -116,8 +117,10 @@ export const createStory = tool({
         parentId,
         startDate,
         endDate,
-      };
+      });
+
       const result = await createStoryAction(storyData, workspaceSlug);
+
       if (result.error?.message) {
         return {
           success: false,

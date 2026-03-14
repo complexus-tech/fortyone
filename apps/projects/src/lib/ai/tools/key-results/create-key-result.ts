@@ -4,6 +4,10 @@ import { auth } from "@/auth";
 import { createKeyResult } from "@/modules/objectives/actions/create-key-result";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import {
+  normalizeOptionalString,
+  normalizeStringArray,
+} from "@/lib/ai/tools/normalize-input";
 
 export const createKeyResultTool = tool({
   description:
@@ -96,8 +100,8 @@ export const createKeyResultTool = tool({
         currentValue: finalCurrentValue,
         startDate,
         endDate,
-        lead,
-        contributors,
+        lead: normalizeOptionalString(lead),
+        contributors: normalizeStringArray(contributors) ?? [],
       },
       workspaceSlug,
     );

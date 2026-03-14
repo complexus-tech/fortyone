@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     workspace,
     memories,
     webSearchEnabled = true,
-    provider = "google",
+    provider = "openai",
     totalMessages,
   } = await req.json();
   const modelMessages = await convertToModelMessages(

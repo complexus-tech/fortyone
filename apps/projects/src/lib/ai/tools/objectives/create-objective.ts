@@ -3,6 +3,10 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createObjective } from "@/modules/objectives/actions/create-objective";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import {
+  normalizeOptionalString,
+  normalizeStringArray,
+} from "@/lib/ai/tools/normalize-input";
 
 export const createObjectiveTool = tool({
   description:
@@ -99,9 +103,9 @@ export const createObjectiveTool = tool({
       const result = await createObjective(
         {
           name,
-          description,
+          description: normalizeOptionalString(description),
           teamId,
-          leadUser,
+          leadUser: normalizeOptionalString(leadUser),
           startDate,
           endDate,
           priority,
@@ -109,6 +113,8 @@ export const createObjectiveTool = tool({
           keyResults:
             keyResults?.map((kr) => ({
               ...kr,
+              lead: normalizeOptionalString(kr.lead),
+              contributors: normalizeStringArray(kr.contributors) ?? [],
               currentValue: kr.startValue,
             })) || [],
         },

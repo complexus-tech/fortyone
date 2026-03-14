@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 
 export const updateStory = tool({
   description:
@@ -75,17 +76,17 @@ export const updateStory = tool({
       }
 
       const updateData = {
-        title,
-        description,
-        descriptionHTML,
-        statusId,
-        assigneeId,
+        title: normalizeOptionalString(title),
+        description: normalizeOptionalString(description),
+        descriptionHTML: normalizeOptionalString(descriptionHTML),
+        statusId: normalizeOptionalString(statusId),
+        assigneeId: normalizeOptionalString(assigneeId),
         priority,
         estimateValue,
-        sprintId,
-        objectiveId,
-        startDate,
-        endDate,
+        sprintId: normalizeOptionalString(sprintId),
+        objectiveId: normalizeOptionalString(objectiveId),
+        startDate: normalizeOptionalString(startDate),
+        endDate: normalizeOptionalString(endDate),
       };
 
       const result = await updateStoryAction(

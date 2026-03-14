@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { normalizeStoryInput } from "./normalize-story-input";
 
 export const bulkCreateStories = tool({
   description:
@@ -72,8 +73,12 @@ export const bulkCreateStories = tool({
         };
       }
 
+      const normalizedStoriesData = storiesData.map((storyData) =>
+        normalizeStoryInput(storyData),
+      );
+
       const results = await Promise.all(
-        storiesData.map((storyData) =>
+        normalizedStoriesData.map((storyData) =>
           createStoryAction(storyData, workspaceSlug),
         ),
       );
