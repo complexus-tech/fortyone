@@ -18,7 +18,7 @@ export const SampleClients = () => {
           className="shrink-0 pl-0.5 leading-4.5"
         >
           Trusted by <br />
-          teams at
+          <span className="pl-px">teams at</span>
         </Text>
         <Flex align="center" className="gap-12" wrap>
           <Image
