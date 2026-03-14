@@ -58,90 +58,92 @@ export const HeroCards = () => {
   ];
 
   return (
-    <Box className="relative">
-      <Container className="relative mt-12">
-        <Blur className="absolute -top-[12%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px] dark:bg-white/10" />
-        <Box
-          className="relative"
-          onMouseEnter={() => {
-            if (resolvedTheme === "dark") {
-              cursor.setText("←Drag→");
-            }
-          }}
-          onMouseLeave={() => {
-            if (resolvedTheme === "dark") {
-              cursor.removeText();
-            }
-          }}
-        >
-          <Swiper
-            autoplay={{
-              delay: 6000,
-              disableOnInteraction: false,
+    <Box>
+      <Box className="relative">
+        <Container className="relative mt-12">
+          <Blur className="dark:bg-warning/10 absolute -top-[14%] right-1/2 left-1/2 h-[100px] -translate-x-1/2 md:h-[600px] md:w-[800px]" />
+          <Box
+            className="relative mx-auto md:w-11/12"
+            onMouseEnter={() => {
+              if (resolvedTheme === "dark") {
+                cursor.setText("←Drag→");
+              }
             }}
-            cardsEffect={{
-              slideShadows: false,
+            onMouseLeave={() => {
+              if (resolvedTheme === "dark") {
+                cursor.removeText();
+              }
             }}
-            effect="cards"
-            grabCursor
-            initialSlide={1}
-            loop
-            modules={[EffectCards]}
           >
-            {cards.map((card) => (
-              <SwiperSlide
-                className="border-border bg-background/5 d relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
-                key={card.id}
-              >
-                <Flex
-                  align="center"
-                  className="mt-1 mb-2 px-1.5"
-                  justify="between"
-                >
-                  <Flex className="gap-1.5">
-                    <Dot className="text-primary size-2.5" />
-                    <Dot className="text-warning size-2.5" />
-                    <Dot className="text-success size-2.5" />
-                  </Flex>
-                  <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
-                </Flex>
-                <Box className="relative">
-                  <Image
-                    alt={card.title}
-                    className="border-border/70 relative hidden rounded-md border md:rounded-xl dark:block"
-                    placeholder="blur"
-                    priority={card.id === 2}
-                    src={card.image.src}
-                  />
-                  <Image
-                    alt={card.title}
-                    className="border-border relative rounded-md border md:rounded-xl dark:hidden"
-                    placeholder="blur"
-                    priority={card.id === 2}
-                    src={card.image.srcLight}
-                  />
-                </Box>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </Box>
-        <Box className="mt-8 grid grid-cols-1 gap-4 md:mt-10 md:grid-cols-3">
-          {cards.map((card) => (
-            <Box
-              className="border-border bg-surface/70 rounded-2xl border px-5 py-5 text-left"
-              key={card.id}
+            <Swiper
+              autoplay={{
+                delay: 6000,
+                disableOnInteraction: false,
+              }}
+              cardsEffect={{
+                slideShadows: false,
+              }}
+              effect="cards"
+              grabCursor
+              initialSlide={1}
+              loop
+              modules={[EffectCards]}
             >
-              <Text as="h3" className="mb-2 text-lg font-semibold md:text-xl">
-                {card.title}
-              </Text>
-              <Text className="text-sm leading-relaxed opacity-70 md:text-base">
-                {card.description}
-              </Text>
-            </Box>
-          ))}
-        </Box>
+              {cards.map((card) => (
+                <SwiperSlide
+                  className="border-border bg-background/5 d relative rounded-lg border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
+                  key={card.id}
+                >
+                  <Flex
+                    align="center"
+                    className="mt-1 mb-2 px-1.5"
+                    justify="between"
+                  >
+                    <Flex className="gap-1.5">
+                      <Dot className="text-primary size-2.5" />
+                      <Dot className="text-warning size-2.5" />
+                      <Dot className="text-success size-2.5" />
+                    </Flex>
+                    <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
+                  </Flex>
+                  <Box className="relative">
+                    <Image
+                      alt={card.title}
+                      className="border-border/70 relative hidden rounded-md border md:rounded-xl dark:block"
+                      placeholder="blur"
+                      priority={card.id === 2}
+                      src={card.image.src}
+                    />
+                    <Image
+                      alt={card.title}
+                      className="border-border relative rounded-md border md:rounded-xl dark:hidden"
+                      placeholder="blur"
+                      priority={card.id === 2}
+                      src={card.image.srcLight}
+                    />
+                  </Box>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </Box>
+        </Container>
+        <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
+      </Box>
+      <Container className="mt-8 grid grid-cols-1 gap-4 opacity-70 md:mt-10 md:grid-cols-3">
+        {cards.map((card) => (
+          <Box
+            className="border-border bg-surface/70 rounded-2xl border p-5 text-left"
+            key={card.id}
+          >
+            <Text as="h3" className="mb-2 text-lg font-semibold md:text-xl">
+              {card.title}
+            </Text>
+            <Text className="text-sm leading-relaxed opacity-70 md:text-base">
+              {card.description}
+            </Text>
+          </Box>
+        ))}
       </Container>
-      <Box className="pointer-events-none absolute inset-0 z-10 hidden bg-linear-to-t from-white via-white/70 dark:block dark:from-black dark:via-black/80 dark:via-30%" />
     </Box>
   );
 };
