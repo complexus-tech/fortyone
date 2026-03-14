@@ -30,22 +30,24 @@ export const Maya = () => {
         <Text className="mb-4 font-mono text-sm tracking-wider uppercase opacity-75">
           See Maya in action
         </Text>
-        <Text
-          as="h3"
-          className="mb-10 max-w-4xl pb-2 text-4xl md:mb-4 md:text-5xl"
-          color="gradientDark"
-        >
-          From &ldquo;we should build this&rdquo; to shipped — without the chaos
-          in between.
-        </Text>
-        <Text
-          className="mb-10 max-w-3xl leading-relaxed opacity-70 md:mb-14"
-          color="muted"
-        >
-          Type a rough idea. Maya structures it, adds it to the right sprint,
-          connects it to your goals, and tracks it to done. You get the credit.
-          She does the paperwork.
-        </Text>
+        <Box className="mb-10 flex items-end justify-between gap-16">
+          <Text
+            as="h3"
+            className="max-w-4xl pb-2 text-4xl md:text-5xl"
+            color="gradientDark"
+          >
+            From &ldquo;we should build this&rdquo; to shipped — without the
+            chaos in between.
+          </Text>
+          <Text
+            className="mb-0.5 max-w-3xl leading-relaxed opacity-70"
+            color="muted"
+          >
+            Type a rough idea. Maya structures it, adds it to the right sprint,
+            connects it to your goals, and tracks it to done. You get the
+            credit. She does the paperwork.
+          </Text>
+        </Box>
       </motion.div>
       <motion.div
         initial="hidden"

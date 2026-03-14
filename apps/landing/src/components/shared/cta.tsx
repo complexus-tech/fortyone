@@ -22,7 +22,7 @@ export const CallToAction = () => {
   return (
     <Box className="border-border/70 from-surface-muted overflow-hidden border-b bg-linear-to-t">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
-        <Flex className="mb-8 md:mb-12" direction="column">
+        <Box className="mb-8 flex items-end md:mb-12">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -34,7 +34,7 @@ export const CallToAction = () => {
           >
             <Text
               as="h2"
-              className="mt-6 h-max max-w-3xl pb-2 text-5xl font-semibold text-balance md:text-6xl md:leading-[1.1]"
+              className="mt-6 h-max max-w-3xl pb-2 text-4xl text-balance md:text-5xl"
             >
               Stop managing your project manager. Let Maya do it.
             </Text>
@@ -48,16 +48,13 @@ export const CallToAction = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text
-              className="mt-4 max-w-[650px] text-lg md:mt-5 md:text-lg"
-              color="muted"
-            >
+            <Text className="mt-4 mb-0.5 max-w-[650px]" color="muted">
               Your team already knows what to build. FortyOne makes sure every
               task, sprint, and decision is working toward the same goal — and
               Maya keeps it that way, automatically.
             </Text>
           </motion.div>
-        </Flex>
+        </Box>
         <motion.div
           initial="hidden"
           variants={scaleIn}

@@ -115,20 +115,18 @@ export const Faqs = () => {
 
   return (
     <Box className="py-16 md:pt-24">
-      <Container>
+      <Container className="grid grid-cols-[auto_1fr] justify-between gap-16">
         <motion.div
           initial="hidden"
           variants={fadeUp}
           viewport={viewport}
           whileInView="show"
         >
-          <Text
-            as="h2"
-            className="mb-6 text-5xl font-semibold md:mb-12 md:text-6xl"
-          >
+          <Text as="h2" className="mb-6 text-4xl md:mb-12 md:text-5xl">
             Questions worth <br /> answering.
           </Text>
         </motion.div>
+
         <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (
             <AccordionItem
