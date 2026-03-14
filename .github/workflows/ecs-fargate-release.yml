@@ -2,14 +2,8 @@ name: Release Server Images and Deploy
 
 on:
   push:
-    tags:
-      - "v*"
-  workflow_dispatch:
-    inputs:
-      release_tag:
-        description: "Docker image tag (e.g. v1.2.3)"
-        required: true
-        type: string
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -17,7 +11,7 @@ permissions:
 env:
   DOCKERHUB_SERVER_IMAGE: fortyoneapp/server
   DOCKERHUB_WORKER_IMAGE: fortyoneapp/worker
-  IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build-and-push:
