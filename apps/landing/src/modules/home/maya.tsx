@@ -30,7 +30,7 @@ export const Maya = () => {
         <Text className="mb-4 font-mono text-sm tracking-wider uppercase opacity-75">
           See Maya in action
         </Text>
-        <Box className="mb-10 flex items-baseline justify-between gap-16">
+        <Box className="mb-10 flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
           <Text
             as="h3"
             className="max-w-4xl pb-2 text-4xl md:text-5xl"
@@ -40,7 +40,7 @@ export const Maya = () => {
             chaos in between.
           </Text>
           <Text
-            className="mb-0.5 max-w-3xl leading-relaxed opacity-70"
+            className="w-full max-w-xl leading-relaxed opacity-70 md:mb-0.5"
             color="muted"
           >
             Type a rough idea. Maya structures it, adds it to the right sprint,

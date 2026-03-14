@@ -22,7 +22,7 @@ export const CallToAction = () => {
   return (
     <Box className="border-border/70 from-surface-muted overflow-hidden border-b bg-linear-to-t">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
-        <Box className="mb-8 flex items-end md:mb-12">
+        <Box className="mb-8 flex flex-col gap-6 md:mb-12 md:flex-row md:items-end md:justify-between md:gap-12">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -48,7 +48,7 @@ export const CallToAction = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mt-4 mb-0.5 max-w-[650px]" color="muted">
+            <Text className="w-full max-w-xl opacity-70 md:mt-4 md:mb-0.5" color="muted">
               Your team already knows what to build. FortyOne makes sure every
               task, sprint, and decision is working toward the same goal — and
               Maya keeps it that way, automatically.

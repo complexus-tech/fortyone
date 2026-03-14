@@ -8,10 +8,10 @@ import { SIGNUP_URL } from "@/lib/app-url";
 export const Hero = () => {
   return (
     <Box>
-      <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px]" />
-      <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/70 dark:to-black" />
+      <Box className="absolute inset-0 hidden bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] md:block" />
+      <Box className="absolute inset-0 hidden bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/70 dark:to-black md:block" />
       <Container className="pt-12">
-        <Box className="mt-12 mb-6 flex items-end justify-between md:mt-24">
+        <Box className="mt-12 mb-6 flex flex-col gap-6 md:mt-24 md:flex-row md:items-end md:justify-between md:gap-12">
           <motion.span
             initial={{ y: -15, opacity: 0 }}
             transition={{
@@ -40,7 +40,7 @@ export const Hero = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="mb-0.5 max-w-4xl opacity-80">
+            <Text className="w-full max-w-xl opacity-80 md:mb-0.5">
               Most teams do not lose on strategy — they lose it between the plan
               and the sprint board. FortyOne keeps the goal visible, while Maya
               drafts tasks, scopes sprints, and flags risks early.

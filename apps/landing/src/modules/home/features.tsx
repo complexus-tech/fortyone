@@ -11,7 +11,7 @@ import teamImg from "../../../public/features/test1.png";
 
 const Intro = () => (
   <Box className="relative">
-    <Box className="flex flex-col items-end gap-8 pb-12 md:flex-row md:gap-12 md:py-20">
+    <Box className="flex flex-col gap-8 pb-12 md:flex-row md:items-end md:gap-12 md:py-20">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -35,7 +35,7 @@ const Intro = () => (
         viewport={{ once: true, amount: 0.5 }}
         whileInView={{ y: 0, opacity: 1 }}
       >
-        <Text className="mt-6 mb-0.5 max-w-xl" color="muted">
+        <Text className="mb-0.5 max-w-xl opacity-80 md:mt-6" color="muted">
           FortyOne puts an AI assistant at the heart of your workflow helping
           you create tasks, plan sprints, track OKRs, and keep everything
           moving, so your team stays aligned and delivers without the chaos.

@@ -47,11 +47,11 @@ export const HeroCards = () => {
   return (
     <Box>
       <Box className="relative">
-        <Container className="relative mt-12">
+        <Container className="relative mt-12 overflow-visible">
           <Blur className="bg-warning/12 absolute -top-[14%] right-5/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
           <Blur className="bg-danger/12 absolute -top-[14%] -right-8/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
           <Box
-            className="relative"
+            className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible"
             onMouseEnter={() => {
               if (resolvedTheme === "dark") {
                 cursor.setText("←Drag→");
@@ -79,32 +79,34 @@ export const HeroCards = () => {
             >
               {cards.map((card) => (
                 <SwiperSlide
-                  className="border-border bg-background/50 dark:bg-background/5 relative rounded-lg border p-0.5 backdrop-blur md:rounded-xl md:p-[0.35rem]"
+                  className="border-border bg-background/50 dark:bg-background/5 relative rounded-l-lg rounded-r-none border p-0.5 backdrop-blur md:rounded-xl md:p-[0.35rem]"
                   key={card.id}
                 >
                   <Flex
                     align="center"
-                    className="mt-1 mb-2 px-1.5"
-                    justify="between"
+                    className="mt-1 mb-2 justify-start px-1.5 md:justify-between"
                   >
                     <Flex className="gap-1.5">
                       <Dot className="text-primary size-2.5" />
                       <Dot className="text-warning size-2.5" />
                       <Dot className="text-success size-2.5" />
                     </Flex>
-                    <ArrowDown2Icon className="h-3.5" strokeWidth={2.5} />
+                    <ArrowDown2Icon
+                      className="hidden h-3.5 md:block"
+                      strokeWidth={2.5}
+                    />
                   </Flex>
-                  <Box className="relative">
+                  <Box className="relative overflow-hidden rounded-l-md rounded-r-none md:rounded-lg">
                     <Image
                       alt={card.title}
-                      className="border-border/70 relative hidden rounded-md border md:rounded-lg dark:block"
+                      className="border-border/70 relative hidden h-[21.5rem] w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:block"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.src}
                     />
                     <Image
                       alt={card.title}
-                      className="border-border relative rounded-md border md:rounded-lg dark:hidden"
+                      className="border-border relative h-[21.5rem] w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:hidden"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.srcLight}
@@ -115,7 +117,7 @@ export const HeroCards = () => {
             </Swiper>
           </Box>
         </Container>
-        <Box className="pointer-events-none absolute right-0 -bottom-1 left-0 z-10 h-120 bg-linear-to-t from-white dark:block dark:h-140 dark:from-black dark:via-black/80 dark:via-30%" />
+        <Box className="pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t from-white md:block dark:h-140 dark:from-black dark:via-black/80 dark:via-30%" />
       </Box>
     </Box>
   );

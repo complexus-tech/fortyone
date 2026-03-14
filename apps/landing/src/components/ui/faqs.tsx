@@ -115,14 +115,14 @@ export const Faqs = () => {
 
   return (
     <Box className="py-16 md:pt-24">
-      <Container className="grid grid-cols-[auto_1fr] justify-between gap-16">
+      <Container className="grid grid-cols-1 gap-8 md:grid-cols-[auto_1fr] md:justify-between md:gap-16">
         <motion.div
           initial="hidden"
           variants={fadeUp}
           viewport={viewport}
           whileInView="show"
         >
-          <Text as="h2" className="mb-6 text-4xl md:mb-12 md:text-5xl">
+          <Text as="h2" className="mb-2 text-4xl md:mb-12 md:text-5xl">
             Questions worth <br /> answering.
           </Text>
         </motion.div>

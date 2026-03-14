@@ -59,7 +59,7 @@ export const FeatureGrid = ({
         </motion.div>
       )}
 
-      <Box className="flex items-baseline justify-between gap-16">
+      <Box className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -81,7 +81,7 @@ export const FeatureGrid = ({
           whileInView={{ y: 0, opacity: 1 }}
         >
           {description ? (
-            <Text className="mb-0.5 max-w-3xl leading-relaxed opacity-70">
+            <Text className="w-full max-w-xl leading-relaxed opacity-70 md:mb-0.5">
               {description}
             </Text>
           ) : null}
