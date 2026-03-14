@@ -38,12 +38,12 @@ const (
 	AuthGoogleStateKey   = "auth:google:state:%s"      // oauth state
 )
 
-// ObjectiveListCacheKey generates a cache key for a list of objectives
-func ObjectiveListCacheKey(workspaceID uuid.UUID, filters string) string {
+// ObjectiveListCacheKey generates a cache key for a user's list of objectives.
+func ObjectiveListCacheKey(workspaceID, userID uuid.UUID, filters string) string {
 	if filters == "" {
-		return fmt.Sprintf(ObjectiveListKey, workspaceID.String())
+		return fmt.Sprintf(ObjectiveListKey+":%s", workspaceID.String(), userID.String())
 	}
-	return fmt.Sprintf(ObjectiveListKey+":%s", workspaceID.String(), filters)
+	return fmt.Sprintf(ObjectiveListKey+":%s:%s", workspaceID.String(), userID.String(), filters)
 }
 
 // ObjectiveDetailCacheKey generates a cache key for a single objective

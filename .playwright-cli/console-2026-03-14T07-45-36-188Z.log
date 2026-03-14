@@ -1,0 +1,63 @@
+[  873277ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  874282ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  875286ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  876291ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  877296ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  882303ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  887313ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  892326ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  897354ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  902420ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  907556ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/_next/webpack-hmr?id=wz87C5Xno7OFydXHLfdF5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/_next/static/chunks/20297_next_dist_client_d3647f82._.js:10876
+[  917031ms] [ERROR] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <Tooltip delayDuration={600}>
+      <Popper __scopePopper={{Popper:[...]}}>
+        <PopperProvider scope={{Popper:[...]}} anchor={null} onAnchorChange={function bound dispatchSetState}>
+          <TooltipProvider scope={undefined} contentId="radix-_R_7..." open={false} stateAttribute="closed" ...>
+            <TooltipTrigger asChild={true}>
+              <PopperAnchor asChild={true} __scopePopper={{Popper:[...]}}>
+                <Primitive.div asChild={true} ref={function}>
+                  <Primitive.div.Slot ref={function}>
+                    <Primitive.div.SlotClone ref={function}>
+                      <Primitive.button aria-describedby={undefined} data-state="closed" asChild={true} ref={function} ...>
+                        <Primitive.button.Slot aria-describedby={undefined} data-state="closed" ...>
+                          <Primitive.button.SlotClone aria-describedby={undefined} data-state="closed" ...>
+                            <button
++                             className="text-foreground"
+-                             className=""
+                              onClick={function}
+                              type="button"
+                              aria-describedby={undefined}
+                              data-state="closed"
+                              onPointerMove={function handleEvent}
+                              onPointerLeave={function handleEvent}
+                              onPointerDown={function handleEvent}
+                              onFocus={function handleEvent}
+                              onBlur={function handleEvent}
+                              ref={function}
+                            >
+                              <MoonIcon className="h-4 text-f...">
+                                <svg
++                                 className="w-auto h-4 text-foreground"
+-                                 className="w-auto text-icon h-4"
+                                  fill="currentColor"
+                                  strokeWidth={2}
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  width="24"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+            ...
+ @ :0

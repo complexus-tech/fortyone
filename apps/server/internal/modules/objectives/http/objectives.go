@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -78,12 +79,18 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
+	filterKeys := make([]string, 0, len(filters))
+	for key := range filters {
+		filterKeys = append(filterKeys, key)
+	}
+	sort.Strings(filterKeys)
+
 	filtersStr := ""
-	for k, v := range filters {
-		filtersStr += fmt.Sprintf("%s:%v;", k, v)
+	for _, key := range filterKeys {
+		filtersStr += fmt.Sprintf("%s:%v;", key, filters[key])
 	}
 
-	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, filtersStr)
+	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, userID, filtersStr)
 	var cachedObjectives []objectives.CoreObjective
 
 	if err := h.cache.Get(ctx, cacheKey, &cachedObjectives); err == nil {
