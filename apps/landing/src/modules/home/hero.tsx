@@ -11,26 +11,7 @@ export const Hero = () => {
       <Box className="absolute inset-0 bg-[linear-gradient(to_right,#8080802a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-size-[45px_45px] dark:block" />
       <Box className="absolute inset-0 bg-radial-[at_50%_75%] from-transparent via-white/80 to-white dark:via-black/80 dark:to-black" />
       <Container className="pt-12">
-        <Flex className="mt-12 mb-8 md:mt-16" direction="column">
-          <motion.span
-            initial={{ y: -10, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
-            <Button
-              className="dark:bg-surface-elevated/70 dark:hover:bg-surface-elevated/90 border-0 bg-[#dddddd]/30 px-3.5 text-sm backdrop-blur-xl md:text-[0.95rem]"
-              color="tertiary"
-              href={SIGNUP_URL}
-              rounded="md"
-              size="sm"
-            >
-              Start free. No credit card required.
-            </Button>
-          </motion.span>
+        <Flex className="mt-12 mb-8 md:mt-10" direction="column">
           <motion.span
             initial={{ y: -15, opacity: 0 }}
             transition={{
