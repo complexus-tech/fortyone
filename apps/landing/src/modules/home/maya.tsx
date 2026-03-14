@@ -32,11 +32,11 @@ export const Maya = () => {
         </Text>
         <Text
           as="h3"
-          className="mb-10 max-w-5xl pb-2 text-4xl leading-[1.15] font-bold md:mb-6 md:text-5xl"
+          className="mb-10 max-w-5xl pb-2 text-5xl font-semibold md:mb-6 md:text-6xl"
           color="gradientDark"
         >
-          From "we should build this" to shipped — without the chaos in
-          between.
+          From &ldquo;we should build this&rdquo; to shipped — without the chaos
+          in between.
         </Text>
         <Text
           className="mb-10 max-w-3xl text-lg leading-relaxed opacity-70 md:mb-14 md:text-xl"

@@ -1,5 +1,5 @@
 import {
-  Bricolage_Grotesque as BricolageGrotesque,
+  Inter_Tight as InterTight,
   Inconsolata,
   Manrope,
 } from "next/font/google";
@@ -17,7 +17,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = BricolageGrotesque({
+export const heading = InterTight({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],

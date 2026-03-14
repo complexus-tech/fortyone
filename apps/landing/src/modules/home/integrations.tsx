@@ -61,7 +61,7 @@ export const Integrations = () => {
           >
             <Text
               as="h2"
-              className="h-max max-w-2xl pb-2 text-5xl font-bold md:mt-6 md:text-6xl"
+              className="h-max max-w-2xl pb-2 text-5xl font-semibold md:mt-6 md:text-6xl"
             >
               Sync up your whole stack.
             </Text>

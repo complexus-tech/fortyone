@@ -28,7 +28,10 @@ const FeatureCardComponent = ({ card }: { card: FeatureCard }) => {
       <Flex align="center" className="mb-6" justify="between">
         {card.icon}
       </Flex>
-      <Text as="h3" className="mb-3 text-xl font-bold md:text-2xl dark:text-white">
+      <Text
+        as="h3"
+        className="mb-3 text-xl font-semibold md:text-2xl dark:text-white"
+      >
         {card.title}
       </Text>
       <Text className="text-[0.95rem] leading-relaxed opacity-60 group-hover:opacity-100">
@@ -64,7 +67,7 @@ export const FeatureGrid = ({
       >
         <Text
           as="h2"
-          className="pb-4 text-4xl font-bold md:text-6xl"
+          className="max-w-3xl pb-4 text-4xl font-semibold md:text-6xl"
           color="gradientDark"
         >
           {mainHeading}
