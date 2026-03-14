@@ -108,7 +108,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
           ))}
         </Flex>
         <Flex align="center" className="ml-4 gap-2">
-          <RequestDemo />
+          {/* <RequestDemo /> */}
           {hasSession ? (
             <Button
               className="px-5 text-[0.93rem]"
