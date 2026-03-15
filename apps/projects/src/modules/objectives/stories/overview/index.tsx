@@ -45,7 +45,7 @@ export const Overview = () => {
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
   const { userRole } = useUserRole();
-  const { openChat } = useChatContext();
+  const { isOpen: isChatOpen, openChat } = useChatContext();
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -185,7 +185,7 @@ export const Overview = () => {
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
             className="h-[calc(100dvh-7.7rem)]"
-            isExpanded
+            isExpanded={!isChatOpen}
           >
             <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
           </BoardDividedPanel.SideBar>
