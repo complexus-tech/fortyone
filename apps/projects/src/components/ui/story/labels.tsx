@@ -12,11 +12,13 @@ export const Labels = ({
   storyId,
   teamId,
   isRectangular,
+  compact,
 }: {
   storyLabels: string[];
   storyId: string;
   teamId: string;
   isRectangular?: boolean;
+  compact?: boolean;
 }) => {
   const { mutateAsync } = useUpdateLabelsMutation();
   const { data: allLabels = [] } = useLabels();
@@ -28,7 +30,47 @@ export const Labels = ({
     await mutateAsync({ storyId, labels });
   };
 
-  return (
+  const compactLabels = (
+    <Tooltip
+      title={
+        <Flex className="min-w-28" direction="column" gap={2}>
+          {labels.map((label) => (
+            <Flex align="center" gap={1} key={label.id}>
+              <TagsIcon className="h-4" style={{ color: label.color }} />
+              {label.name}
+            </Flex>
+          ))}
+        </Flex>
+      }
+    >
+      <span>
+        <LabelsMenu>
+          <LabelsMenu.Trigger>
+            <Badge
+              className={cn("h-[1.85rem] cursor-pointer text-[0.95rem]", {
+                "pointer-events-none cursor-not-allowed": userRole === "guest",
+              })}
+              color="tertiary"
+              rounded={isRectangular ? "md" : "xl"}
+              variant="outline"
+            >
+              <TagsIcon className="h-4" style={{ color: labels[0]?.color }} />
+              {labels.length} label{labels.length > 1 ? "s" : ""}
+            </Badge>
+          </LabelsMenu.Trigger>
+          <LabelsMenu.Items
+            labelIds={storyLabels}
+            setLabelIds={(labelIds) => {
+              handleUpdateLabels(labelIds);
+            }}
+            teamId={teamId}
+          />
+        </LabelsMenu>
+      </span>
+    </Tooltip>
+  );
+
+  const fullLabels = (
     <>
       {firstTwoLabels.map((label) => (
         <LabelsMenu key={label.id}>
@@ -97,4 +139,17 @@ export const Labels = ({
       )}
     </>
   );
+
+  if (compact) {
+    return (
+      <>
+        <span className="@7xl:hidden">{compactLabels}</span>
+        <Flex align="center" className="hidden @7xl:flex" gap={1}>
+          {fullLabels}
+        </Flex>
+      </>
+    );
+  }
+
+  return fullLabels;
 };
