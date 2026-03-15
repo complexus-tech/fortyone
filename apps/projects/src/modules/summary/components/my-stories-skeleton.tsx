@@ -23,22 +23,26 @@ const StoryRowSkeleton = () => (
 export const MyStoriesSkeleton = () => {
   const { getTermDisplay } = useTerminology();
   return (
-    <Wrapper>
-      <Flex align="center" justify="between">
+    <Wrapper className="min-h-100 md:min-h-120">
+      <Flex align="center" className="mb-2 md:mb-0" justify="between">
         <Text className="mb-2" fontSize="lg">
-          Recent {getTermDisplay("storyTerm", { variant: "plural" })}
+          {getTermDisplay("storyTerm", {
+            variant: "plural",
+            capitalize: true,
+          })}{" "}
+          for the period
         </Text>
         <Skeleton className="h-7 w-20" />
       </Flex>
 
       <Tabs defaultValue="inProgress">
-        <Tabs.List className="mx-0 md:mx-0">
+        <Tabs.List className="mx-0 mb-2 md:mx-0 md:mb-0">
           <Tabs.Tab value="inProgress">In Progress</Tabs.Tab>
           <Tabs.Tab value="upcoming">Due soon</Tabs.Tab>
           <Tabs.Tab value="due">Overdue</Tabs.Tab>
         </Tabs.List>
 
-        <Box className="border-border mt-2.5 border-t">
+        <Box className="border-border mt-2.5 border-t-[0.5px]">
           {Array.from({ length: 9 }).map((_, index) => (
             <StoryRowSkeleton key={index} />
           ))}

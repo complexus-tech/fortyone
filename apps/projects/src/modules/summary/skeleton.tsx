@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Container, Text } from "ui";
+import { Box, Container, Flex, Skeleton, Text } from "ui";
 import { useSession } from "@/lib/auth/client";
 import { useTerminology } from "@/hooks";
 import { BodyContainer } from "@/components/shared/body";
@@ -25,25 +25,30 @@ export const SummarySkeleton = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pt-3 pb-4 @container">
-          <Text
-            as="h2"
-            className="mb-1 text-2xl @6xl:text-3xl"
-            fontWeight="medium"
-          >
-            Good {timeOfDay()}, {session?.user?.name}.
-          </Text>
-          <Text color="muted" fontSize="lg">
-            Here&rsquo;s what&rsquo;s happening with your{" "}
-            {getTermDisplay("storyTerm", { variant: "plural" })}.
-          </Text>
+        <Container className="@container pt-3 pb-4">
+          <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
+            <Box>
+              <Text
+                as="h2"
+                className="mb-1 text-2xl @3xl:text-3xl"
+                fontWeight="medium"
+              >
+                Good {timeOfDay()}, {session?.user?.name}.
+              </Text>
+              <Text color="muted" fontSize="lg">
+                Here&rsquo;s what&rsquo;s happening with your{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })}.
+              </Text>
+            </Box>
+            <Skeleton className="h-9 w-40 rounded-md" />
+          </Flex>
           <OverviewSkeleton />
           <Box className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3">
             <PrioritySkeleton />
             <StatusSkeleton />
             <ContributionsSkeleton />
           </Box>
-          <Box className="my-4 grid grid-cols-1 gap-4 @6xl:grid-cols-2">
+          <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
             <MyStoriesSkeleton />
             <ActivitiesSkeleton />
           </Box>
