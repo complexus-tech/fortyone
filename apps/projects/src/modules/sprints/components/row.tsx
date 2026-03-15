@@ -95,7 +95,7 @@ export const SprintRow = ({
         </Badge>
 
         <Tooltip title={`${progress}% Complete`}>
-          <Flex align="center" className="hidden w-36 md:flex" gap={3}>
+          <Flex align="center" className="hidden w-24 md:flex" gap={2}>
             <ProgressBar className="h-2 flex-1" progress={progress} />
             <Text>{progress}%</Text>
           </Flex>
