@@ -4,12 +4,12 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
   return (
     <Box className="border-border bg-surface/90 sticky top-0 z-1 hidden border-b-[0.5px] py-3 md:block">
       <Container className="flex items-center justify-between">
-        <Box className="w-[300px] shrink-0">
+        <Box className="min-w-60 flex-1 md:min-w-[18rem]">
           <Text color="muted" fontWeight="medium">
             Name
           </Text>
         </Box>
-        <Flex gap={4}>
+        <Flex className="shrink-0" gap={4}>
           {!isInTeam && (
             <Text
               className="w-[50px] shrink-0"
@@ -28,7 +28,7 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
             Progress
           </Text>
           <Text
-            className="w-[120px] shrink-0 pl-2"
+            className="w-[96px] shrink-0 pl-2"
             color="muted"
             fontWeight="medium"
           >
@@ -51,7 +51,7 @@ export const TableHeader = ({ isInTeam }: { isInTeam?: boolean }) => {
           </Text>
 
           <Text
-            className="w-[120px] shrink-0 pl-2.5"
+            className="w-[96px] shrink-0 pl-2.5"
             color="muted"
             fontWeight="medium"
           >
