@@ -176,7 +176,7 @@ export const Pricing = ({
           className={cn(
             "mt-10 flex flex-col gap-6 pb-6 md:flex-row md:items-end md:justify-between md:gap-16",
             {
-            "md:mt-20": pathname === "/pricing",
+              "md:mt-20": pathname === "/pricing",
             },
           )}
         >
@@ -191,7 +191,9 @@ export const Pricing = ({
           >
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
-              className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl")}
+              className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl", {
+                "md:text-6xl": pathname === "/pricing",
+              })}
             >
               Start free. Scale when your team outgrows it.
             </Text>
