@@ -12,7 +12,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark">
+    <ThemeProvider attribute="class" enableSystem>
       <QueryClientProvider client={getQueryClient()}>
         <PostHogProvider>
           <CursorProvider>{children}</CursorProvider>
