@@ -28,7 +28,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "3xl:text-lg hover:text-primary mb-3 block max-w-max opacity-80 transition-opacity duration-200 ease-in-out hover:opacity-80 dark:opacity-60",
+      "hover:text-primary mb-3 block max-w-max text-base opacity-80 transition-opacity duration-200 ease-in-out hover:opacity-80 dark:opacity-60",
       className,
     )}
     href={href}
@@ -40,7 +40,7 @@ const FooterLink = ({
 
 const Copyright = () => {
   return (
-    <Box className="border-border d flex flex-col justify-between gap-y-8 border-b pb-4 md:flex-row md:items-center md:gap-y-0">
+    <Box className="border-border flex flex-col justify-between gap-y-8 border-b pb-4 md:flex-row md:items-center md:gap-y-0">
       <Box className="3xl:gap-16 flex gap-8">
         <Link
           className="hover:text-primary"

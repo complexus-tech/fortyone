@@ -6,7 +6,6 @@ import {
   Hero,
   HeroCards,
   SampleClients,
-  Features,
   Integrations,
   Maya,
   CoreValues,

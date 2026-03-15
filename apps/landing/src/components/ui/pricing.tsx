@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CheckIcon } from "icons";
 import { usePathname } from "next/navigation";
 import { SIGNUP_URL } from "@/lib/app-url";
+import { Blur } from "./blur";
 import { Container } from "./container";
 
 type Billing = "annual" | "monthly";
@@ -171,6 +172,8 @@ export const Pricing = ({
 
   return (
     <Box className={cn("relative md:pt-12", className)}>
+      <Blur className="bg-warning/10 absolute top-32 right-5/12 hidden h-[100px] -translate-x-1/2 md:block md:h-[800px] md:w-[800px]" />
+      <Blur className="bg-danger/12 absolute top-32 -right-8/12 hidden h-[100px] -translate-x-1/2 md:block md:h-[800px] md:w-[800px]" />
       <Container className="max-w-332">
         <Box
           className={cn(
