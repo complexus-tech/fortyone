@@ -1,5 +1,5 @@
 "use client";
-import { Box, ResizablePanel, Button, Text } from "ui";
+import { Box, Button, Text } from "ui";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
@@ -36,34 +36,6 @@ export const StoryPage = ({
     return <StorySkeleton isNotifications={isNotifications} />;
   }
 
-  const getResizablePanelKeyAndSize = () => {
-    if (isNotifications) {
-      return {
-        key: "story-details-notification",
-        main: 75,
-        side: 25,
-        maxSide: 28,
-        minSide: 22,
-      };
-    }
-    if (isDialog) {
-      return {
-        key: "story-details-dialog",
-        main: 72,
-        side: 28,
-        maxSide: 35,
-        minSide: 26,
-      };
-    }
-    return {
-      key: "story-details",
-      main: 72,
-      side: 28,
-      maxSide: 35,
-      minSide: 20,
-    };
-  };
-
   return (
     <Box
       className={cn("h-dvh", {
@@ -78,36 +50,22 @@ export const StoryPage = ({
               storyId={storyId}
             />
           </Box>
-          <Box className="hidden md:block">
-            <ResizablePanel
-              autoSaveId={
-                isNotifications ? "story-details-notification" : "story-details"
-              }
-              direction="horizontal"
-            >
-              <ResizablePanel.Panel
-                defaultSize={getResizablePanelKeyAndSize().main}
-              >
+          <Box className="hidden h-full md:flex">
+            <Box className="min-w-0 flex-1">
                 <MainDetails
                   isDialog={isDialog}
                   isNotifications={Boolean(isNotifications)}
                   mainHeader={mainHeader}
                   storyId={storyId}
                 />
-              </ResizablePanel.Panel>
-              <ResizablePanel.Handle />
-              <ResizablePanel.Panel
-                defaultSize={getResizablePanelKeyAndSize().side}
-                maxSize={getResizablePanelKeyAndSize().maxSide}
-                minSize={getResizablePanelKeyAndSize().minSide}
-              >
+            </Box>
+            <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]">
                 <Options
                   isDialog={isDialog}
                   isNotifications={Boolean(isNotifications)}
                   storyId={storyId}
                 />
-              </ResizablePanel.Panel>
-            </ResizablePanel>
+            </Box>
           </Box>
         </>
       ) : (

@@ -1,44 +1,71 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { Chat } from "@/components/ui/chat";
+import { generateId } from "ai";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useMayaChat } from "@/modules/maya";
 
 type ChatContextType = {
+  chat: ReturnType<typeof useMayaChat>;
   openChat: (message?: string) => void;
   closeChat: () => void;
   isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 };
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
+  const [chatId] = useState(() => generateId());
+  const chat = useMayaChat({
+    currentChatId: chatId,
+  });
   const [isOpen, setIsOpen] = useState(false);
-  const [initialMessage, setInitialMessage] = useState<string>("");
+  const pendingInitialMessageRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !pendingInitialMessageRef.current) {
+      return;
+    }
+
+    const message = pendingInitialMessageRef.current;
+    pendingInitialMessageRef.current = null;
+    chat.handleSuggestedPrompt(message);
+  }, [chat.handleSuggestedPrompt, isOpen]);
 
   const openChat = (message?: string) => {
     if (message) {
-      setInitialMessage(message);
+      if (isOpen) {
+        chat.handleSuggestedPrompt(message);
+      } else {
+        pendingInitialMessageRef.current = message;
+      }
     }
     setIsOpen(true);
   };
 
   const closeChat = () => {
     setIsOpen(false);
-    setInitialMessage("");
+    pendingInitialMessageRef.current = null;
   };
 
   return (
-    <ChatContext.Provider value={{ openChat, closeChat, isOpen }}>
+    <ChatContext.Provider
+      value={{
+        chat,
+        closeChat,
+        isOpen,
+        openChat,
+        setIsOpen,
+      }}
+    >
       {children}
-      <Chat
-        initialMessage={initialMessage}
-        isFromContext
-        isOpen={isOpen}
-        onMessageSent={() => {
-          setInitialMessage("");
-        }}
-        setIsOpen={setIsOpen}
-      />
     </ChatContext.Provider>
   );
 };
