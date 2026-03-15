@@ -24,13 +24,10 @@ export const ListObjectives = ({
 
   return (
     <BodyContainer
-      className={cn("h-[calc(100vh-3.7rem)]", {
+      className={cn("h-[calc(100dvh-3.7rem)] overflow-x-auto", {
         "h-auto": isInSearch,
       })}
     >
-      {!isInSearch && objectives.length > 0 && (
-        <TableHeader isInTeam={isInTeam} />
-      )}
       {objectives.length === 0 ? (
         <>
           {isInSearch ? null : (
@@ -66,14 +63,22 @@ export const ListObjectives = ({
           )}
         </>
       ) : (
-        objectives.map((objective) => (
-          <ObjectiveCard
-            key={objective.id}
-            {...objective}
-            isInSearch={isInSearch}
-            isInTeam={isInTeam}
-          />
-        ))
+        <Box
+          className={cn("min-w-5xl", {
+            "min-w-272": isInTeam,
+            "min-w-6xl": !isInTeam,
+          })}
+        >
+          {!isInSearch && <TableHeader isInTeam={isInTeam} />}
+          {objectives.map((objective) => (
+            <ObjectiveCard
+              key={objective.id}
+              {...objective}
+              isInSearch={isInSearch}
+              isInTeam={isInTeam}
+            />
+          ))}
+        </Box>
       )}
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </BodyContainer>

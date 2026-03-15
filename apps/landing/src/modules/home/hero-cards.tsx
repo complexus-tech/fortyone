@@ -102,6 +102,7 @@ export const HeroCards = () => {
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.src}
+                      quality={100}
                     />
                     <Image
                       alt={card.title}

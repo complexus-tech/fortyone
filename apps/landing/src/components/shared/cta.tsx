@@ -20,9 +20,9 @@ const scaleIn = {
 
 export const CallToAction = () => {
   return (
-    <Box className="border-border/70 from-surface-muted overflow-hidden border-b bg-linear-to-t">
+    <Box className="border-border/70 from-primary/12 overflow-hidden border-b bg-linear-to-t">
       <Container className="relative max-w-7xl pt-6 md:pt-16">
-        <Box className="mb-8 flex flex-col gap-6 md:mb-12 md:flex-row md:items-end md:justify-between md:gap-12">
+        <Box className="mb-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-12">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             transition={{
@@ -48,20 +48,32 @@ export const CallToAction = () => {
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Text className="w-full max-w-xl opacity-70 md:mt-4 md:mb-0.5" color="muted">
+            <Text
+              className="w-full max-w-xl opacity-70 md:mt-4 md:mb-0.5"
+              color="muted"
+            >
               Your team already knows what to build. FortyOne makes sure every
               task, sprint, and decision is working toward the same goal — and
               Maya keeps it that way, automatically.
             </Text>
           </motion.div>
         </Box>
+        <Button
+          className="border-0 px-3 backdrop-blur-lg transition-opacity md:pr-4 md:pl-5"
+          color="invert"
+          href={SIGNUP_URL}
+          rounded="lg"
+          size="lg"
+        >
+          Get Started Free
+        </Button>
         <motion.div
           initial="hidden"
           variants={scaleIn}
           viewport={viewport}
           whileInView="show"
         >
-          <Box className="group border-border bg-background/5 d/70 dark:bg-dark-200/40 relative rounded-t-lg border border-b-0 p-0.5 pb-0 shadow-2xl backdrop-blur md:rounded-t-2xl md:px-1.5 md:pt-1.5">
+          <Box className="group border-border/70 bg-background/30 dark:bg-dark-200/40 relative mt-12 rounded-t-lg border border-b-0 p-0.5 pb-0 shadow-2xl backdrop-blur md:rounded-t-xl md:px-1.5 md:pt-1.5">
             <Flex align="center" className="mt-1 mb-2 px-1.5" justify="between">
               <Flex className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
@@ -72,25 +84,16 @@ export const CallToAction = () => {
             </Flex>
             <Image
               alt="CTA"
-              className="border-border rounded-t-lg border border-b-0 md:rounded-t-xl dark:hidden"
+              className="border-border/70 rounded-t-lg border border-b-0 md:rounded-t-xl dark:hidden"
               src={ctaLight}
+              quality={100}
             />
             <Image
               alt="CTA"
-              className="border-border d hidden rounded-t-lg border border-b-0 md:rounded-t-xl dark:block"
+              className="border-border/70 hidden rounded-t-lg border border-b-0 dark:block"
               src={ctaDark}
+              quality={100}
             />
-            <Box className="group-hover:bg-background/5 absolute inset-0 flex items-center justify-center rounded-t-lg transition-colors duration-300 md:rounded-t-2xl">
-              <Button
-                className="border-0 px-3 opacity-0 backdrop-blur-lg transition-opacity group-hover:opacity-100 md:pr-4 md:pl-5"
-                color="invert"
-                href={SIGNUP_URL}
-                rounded="lg"
-                size="lg"
-              >
-                Get Started Free
-              </Button>
-            </Box>
           </Box>
         </motion.div>
       </Container>

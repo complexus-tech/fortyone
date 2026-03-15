@@ -34,12 +34,11 @@ export const Summary = () => {
   const { data: keyResults = [] } = useKeyResults(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
   const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
+  const completedCount = objective?.stats?.completed ?? 0;
+  const totalCount = objective?.stats?.total ?? 0;
 
   const progress =
-    Math.round(
-      ((objective?.stats?.completed || 0) / (objective?.stats?.total || 1)) *
-        100,
-    ) || 0;
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const getTargetDateMessage = () => {
     const targetDate = new Date(objective?.endDate || "");

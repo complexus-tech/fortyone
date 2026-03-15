@@ -19,7 +19,6 @@ import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-int
 import { getRunningSprints } from "@/modules/sprints/queries/get-running-sprints";
 import { Chat } from "@/components/ui/chat";
 import { ChatProvider } from "@/context/chat-context";
-import { switchWorkspace } from "@/lib/actions/users/switch-workspace";
 import { getProfile } from "@/lib/queries/users/profile";
 import { getCookieHeader } from "@/lib/http/header";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -94,10 +93,10 @@ export default async function RootLayout({
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ChatProvider>
         {children}
-        <Chat />
         <ServerSentEvents />
         <IdentifyUser />
         <WalkthroughIntegration />
+        <Chat />
       </ChatProvider>
     </HydrationBoundary>
   );

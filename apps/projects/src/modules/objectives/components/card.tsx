@@ -105,17 +105,20 @@ export const ObjectiveCard = ({
   return (
     <>
       <RowWrapper
-        className={cn("px-5 py-2.5 md:px-12", {
+        className={cn("@container px-5 py-2.5 md:px-12", {
           "gap-4 md:px-6": isInSearch,
         })}
       >
         <Box
-          className={cn("flex shrink-0 items-center gap-2 md:w-[300px]", {
-            "pointer-events-none opacity-40": id === "optimistic",
-          })}
+          className={cn(
+            "flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20",
+            {
+              "pointer-events-none opacity-40": id === "optimistic",
+            },
+          )}
         >
           <Link
-            className="flex w-full items-center gap-2 hover:opacity-90"
+            className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
             href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
             prefetch
           >
@@ -126,12 +129,10 @@ export const ObjectiveCard = ({
             >
               <ObjectiveIcon className="h-4" />
             </Flex>
-            <Text className="max-w-[22ch] truncate font-medium md:max-w-full">
-              {name}
-            </Text>
+            <Text className="min-w-0 truncate pr-2">{name}</Text>
           </Link>
         </Box>
-        <Flex align="center" className="gap-2 md:gap-4">
+        <Flex align="center" className="shrink-0 gap-2 md:gap-4">
           {!isInTeam ? (
             <Box className="hidden w-[50px] shrink-0 items-center gap-1.5 md:flex">
               <TeamColor color={team?.color} />
@@ -144,7 +145,7 @@ export const ObjectiveCard = ({
             <AssigneesMenu>
               <AssigneesMenu.Trigger>
                 <Button
-                  className={cn("font-medium", {
+                  className={cn({
                     "text-text-secondary": !leadUser,
                   })}
                   color="tertiary"
@@ -185,7 +186,7 @@ export const ObjectiveCard = ({
               {progress}%
             </Box>
           )}
-          <Box className="shrink-0 md:w-[120px]">
+          <Box className="shrink-0 md:w-[96px]">
             <ObjectiveStatusesMenu>
               <ObjectiveStatusesMenu.Trigger>
                 <Button
@@ -274,7 +275,7 @@ export const ObjectiveCard = ({
             </DatePicker>
           </Box>
 
-          <Box className="shrink-0 md:w-[120px]">
+          <Box className="shrink-0 md:w-[96px]">
             <HealthMenu>
               <HealthMenu.Trigger>
                 <Button

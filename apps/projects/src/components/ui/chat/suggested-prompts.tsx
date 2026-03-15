@@ -94,7 +94,7 @@ export const SuggestedPrompts = ({
             </Flex>
             <Box>
               <Text
-                className={cn({
+                className={cn("font-semibold", {
                   "md:text-lg": isOnPage,
                 })}
               >

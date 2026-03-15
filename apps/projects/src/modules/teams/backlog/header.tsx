@@ -26,7 +26,9 @@ export const Header = ({
     teamId: string;
   }>();
   const { data: teams = [] } = useTeams();
-  const { name, color } = teams.find((team) => team.id === teamId)!;
+  const selectedTeam = teams.find((team) => team.id === teamId);
+  const name = selectedTeam?.name ?? "Team";
+  const color = selectedTeam?.color;
   const {
     viewOptions,
     setViewOptions,

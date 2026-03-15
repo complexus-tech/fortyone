@@ -26,12 +26,12 @@ export const SummaryPage = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pt-3 pb-4">
-          <Flex align="center" justify="between">
+        <Container className="@container pt-3 pb-4">
+          <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
             <Box>
               <Text
                 as="h2"
-                className="mb-1 text-2xl md:text-3xl"
+                className="mb-1 text-2xl @3xl:text-3xl"
                 fontWeight="medium"
               >
                 Good {timeOfDay()}, {session?.user?.name}.
@@ -44,7 +44,7 @@ export const SummaryPage = () => {
             <DateRangeFilter />
           </Flex>
           <Overview />
-          <Box className="my-4 grid gap-4 md:grid-cols-3">
+          <Box className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3">
             <ErrorBoundary fallback={<div>Error loading priority</div>}>
               <Priority />
             </ErrorBoundary>
@@ -55,7 +55,7 @@ export const SummaryPage = () => {
               <Contributions />
             </ErrorBoundary>
           </Box>
-          <Box className="my-4 grid gap-4 md:grid-cols-2">
+          <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
             <ErrorBoundary fallback={<div>Error loading stories</div>}>
               <MyStories />
             </ErrorBoundary>

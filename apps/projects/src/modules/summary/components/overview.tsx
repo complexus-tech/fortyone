@@ -1,11 +1,11 @@
 "use client";
+
+import Link from "next/link";
 import { Box, Flex, Text, Wrapper } from "ui";
 import { useSummary } from "@/lib/hooks/summary";
-import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { OverviewSkeleton } from "./overview-skeleton";
-import Link from "next/link";
-import { stringify } from "qs";
 
 const Card = ({
   title,
@@ -52,11 +52,6 @@ export const Overview = () => {
   const { data: summary, isPending } = useSummary(filters);
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
-  // const dateQuery = stringify(filters, {
-  //   skipNulls: true,
-  //   addQueryPrefix: true,
-  //   encodeValuesOnly: true,
-  // });
   if (isPending) {
     return <OverviewSkeleton />;
   }
@@ -89,7 +84,7 @@ export const Overview = () => {
   ];
 
   return (
-    <Box className="mt-3 mb-4 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
+    <Box className="mt-3 mb-4 grid grid-cols-2 gap-3 @3xl:grid-cols-3 @4xl:grid-cols-4 @7xl:grid-cols-5 @7xl:gap-4">
       {overview.map((item) => (
         <Card key={item.title} {...item} />
       ))}

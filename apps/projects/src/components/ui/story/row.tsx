@@ -107,7 +107,7 @@ export const StoryRow = ({
         <StoryContextMenu story={story}>
           <RowWrapper
             className={cn(
-              "gap-4",
+              "@container gap-4",
               {
                 "bg-surface-muted opacity-70": isDragging,
                 "pointer-events-none opacity-40": story.id.startsWith("123"),
@@ -118,7 +118,7 @@ export const StoryRow = ({
           >
             <Flex
               align="center"
-              className="relative shrink select-none"
+              className="relative min-w-0 flex-1 select-none"
               gap={2}
             >
               {isInSearch ? <StoryIcon className="h-[1.1rem]" /> : null}
@@ -170,7 +170,7 @@ export const StoryRow = ({
               )}
 
               <Link
-                className="flex items-center gap-1.5"
+                className="flex min-w-0 flex-1 items-center gap-1.5"
                 href={withWorkspace(
                   `/story/${story.id}/${slugify(story.title)}`,
                 )}
@@ -183,10 +183,10 @@ export const StoryRow = ({
               >
                 {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
                 <Text
-                  className="line-clamp-1 hover:opacity-90"
+                  className="min-w-0 line-clamp-1 hover:opacity-90"
                   fontWeight="medium"
-                >
-                  {story.title}
+              >
+                {story.title}
                 </Text>
               </Link>
             </Flex>

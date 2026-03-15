@@ -1,5 +1,10 @@
-import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
-import { Flex, Button, Text, Tooltip, Badge, Box, CircleProgressBar } from "ui";
+import {
+  CloseIcon,
+  HistoryIcon,
+  NewTabIcon,
+  PlusIcon,
+} from "icons";
+import { Flex, Button, Text, Tooltip, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
@@ -29,10 +34,11 @@ export const ChatHeader = ({
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
     maxMessages > 0 ? Math.round((totalMessages / maxMessages) * 100) : 0;
+
   return (
     <>
-      <Flex align="center" justify="between">
-        <Flex align="center" gap={2}>
+      <Flex align="center" className="w-full" justify="between">
+        <Flex align="center" className="min-w-0 flex-1" gap={2}>
           <Tooltip title="New chat">
             <Button
               asIcon
@@ -41,6 +47,7 @@ export const ChatHeader = ({
                 <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
               }
               onClick={handleNewChat}
+              size="sm"
               variant="naked"
             >
               <span className="sr-only">New chat</span>
@@ -57,6 +64,7 @@ export const ChatHeader = ({
                 router.push(withWorkspace(`/maya?chatRef=${currentChatId}`));
                 setIsOpen(false);
               }}
+              size="sm"
               variant="naked"
             >
               <span className="sr-only">Open on new page</span>
@@ -64,15 +72,16 @@ export const ChatHeader = ({
           </Tooltip>
         </Flex>
         <Text
-          className="flex items-center gap-2 text-xl antialiased"
+          className="shrink-0 px-3 text-base antialiased"
           fontWeight="semibold"
         >
-          Maya{" "}
-          <Badge color="invert" className="rounded-lg px-1.5 font-semibold">
-            Beta
-          </Badge>
+          Chat with Maya
         </Text>
-        <Flex align="center" gap={3}>
+        <Flex
+          align="center"
+          className="min-w-0 flex-1 justify-end"
+          gap={2}
+        >
           {tier !== "enterprise" && (
             <Tooltip
               title={
@@ -96,7 +105,7 @@ export const ChatHeader = ({
               <span className="flex cursor-default">
                 <CircleProgressBar
                   progress={usageProgress}
-                  size={remainingQueries >= 100 ? 20 : 24}
+                  size={remainingQueries >= 100 ? 18 : 22}
                   strokeWidth={3}
                   invertColors={true}
                 >
@@ -123,6 +132,7 @@ export const ChatHeader = ({
                 onClick={() => {
                   setIsHistoryOpen(true);
                 }}
+                size="sm"
                 variant="naked"
               >
                 <span className="sr-only">History</span>
@@ -140,6 +150,7 @@ export const ChatHeader = ({
               onClick={() => {
                 setIsOpen(false);
               }}
+              size="sm"
               variant="naked"
             >
               <span className="sr-only">Close</span>

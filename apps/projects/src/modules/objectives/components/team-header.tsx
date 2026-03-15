@@ -12,7 +12,8 @@ export const TeamObjectivesHeader = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { data: teams = [] } = useTeams();
-  const { name, color } = teams.find((team) => team.id === teamId)!;
+  const selectedTeam = teams.find((team) => team.id === teamId);
+  const name = selectedTeam?.name ?? "Team";
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
@@ -25,7 +26,7 @@ export const TeamObjectivesHeader = () => {
           breadCrumbs={[
             {
               name: isMobile ? "" : name,
-              icon: <TeamColor color={color} />,
+              icon: <TeamColor color={selectedTeam?.color} />,
             },
             {
               name: getTermDisplay("objectiveTerm", {

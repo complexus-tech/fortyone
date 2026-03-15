@@ -84,6 +84,7 @@ export const StoryProperties = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
+  const isListRow = !asKanban;
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
@@ -188,11 +189,14 @@ export const StoryProperties = ({
             ) : (
               <button
                 className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={priority}
                 disabled={isGuest}
                 type="button"
               >
                 <PriorityIcon priority={priority} />
-                <span className="hidden md:inline">{priority}</span>
+                <span className={cn("hidden", { "@6xl:inline": isListRow })}>
+                  {priority}
+                </span>
               </button>
             )}
           </PrioritiesMenu.Trigger>
@@ -226,9 +230,8 @@ export const StoryProperties = ({
             <span>
               <ObjectivesMenu.Trigger>
                 <Button
-                  className={cn("gap-1 pr-2", {
-                    "px-2": !asKanban,
-                  })}
+                  aria-label={selectedObjective.name}
+                  className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
                   rounded={asKanban ? "md" : "xl"}
@@ -237,7 +240,12 @@ export const StoryProperties = ({
                   variant="outline"
                 >
                   <ObjectiveIcon className="h-4" />
-                  <span className="inline-block max-w-32 truncate">
+                  <span
+                    className={cn("max-w-32 truncate", {
+                      "inline-block": asKanban,
+                      "hidden @7xl:inline-block": isListRow,
+                    })}
+                  >
                     {selectedObjective.name}
                   </span>
                 </Button>
@@ -262,7 +270,8 @@ export const StoryProperties = ({
             <span>
               <SprintsMenu.Trigger>
                 <Button
-                  className="gap-1 pr-2"
+                  aria-label={selectedSprint.name}
+                  className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
                   rounded={asKanban ? "md" : "xl"}
@@ -271,7 +280,12 @@ export const StoryProperties = ({
                   variant="outline"
                 >
                   <SprintsIcon className="relative -top-[0.3px] h-[1.1rem]" />
-                  <span className="inline-block max-w-36 truncate">
+                  <span
+                    className={cn("max-w-36 truncate", {
+                      "inline-block": asKanban,
+                      "hidden @7xl:inline-block": isListRow,
+                    })}
+                  >
                     {selectedSprint.name}
                   </span>
                 </Button>
@@ -368,6 +382,7 @@ export const StoryProperties = ({
       )}
       {isColumnVisible("Labels") && storyLabels && storyLabels.length > 0 ? (
         <Labels
+          compact={isListRow}
           isRectangular={asKanban}
           storyId={id}
           storyLabels={storyLabels}

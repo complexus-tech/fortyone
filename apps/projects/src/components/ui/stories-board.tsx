@@ -10,7 +10,7 @@ import {
   TouchSensor,
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useOptimistic } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -158,9 +158,25 @@ export const StoriesBoard = ({
   const sprintsEnabled = useSprintsEnabled(teamId);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
-  const [groupedStories, setGroupedStories] = useState<
-    GroupedStoriesResponse | undefined
-  >(undefined);
+  const [groupedStories, setOptimisticGroupedStories] = useOptimistic<
+    GroupedStoriesResponse | undefined,
+    {
+      storyId: string;
+      updatePayload: Partial<DetailedStory>;
+      targetKey: string;
+    }
+  >(allStories, (currentStories, action) => {
+    if (!currentStories) {
+      return currentStories;
+    }
+
+    return getOptimisticallyUpdatedGroups(
+      currentStories,
+      action.storyId,
+      action.updatePayload,
+      action.targetKey,
+    );
+  });
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -216,23 +232,18 @@ export const StoriesBoard = ({
         if (Object.keys(updatePayload).length > 0) {
           updateStory(storyId, updatePayload);
           if (groupBy !== "none") {
-            setGroupedStories((prev) =>
-              prev
-                ? getOptimisticallyUpdatedGroups(
-                    prev,
-                    storyId,
-                    updatePayload,
-                    e.over!.id.toString(),
-                  )
-                : prev,
-            );
+            setOptimisticGroupedStories({
+              storyId,
+              updatePayload,
+              targetKey: e.over.id.toString(),
+            });
           }
         }
       }
 
       setActiveStory(null);
     },
-    [mutate, viewOptions],
+    [mutate, setOptimisticGroupedStories, viewOptions],
   );
 
   const mouseSensor = useSensor(MouseSensor, {
@@ -269,13 +280,6 @@ export const StoriesBoard = ({
   const hasStories = groupedStories?.groups.some(
     (group) => group.stories.length > 0,
   );
-
-  useEffect(() => {
-    if (!allStories) {
-      return;
-    }
-    setGroupedStories(allStories);
-  }, [allStories]);
 
   return (
     <BoardContext.Provider value={boardContextValue}>

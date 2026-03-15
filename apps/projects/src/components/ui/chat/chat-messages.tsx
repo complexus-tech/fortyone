@@ -25,8 +25,6 @@ export const ChatMessages = ({
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Smart scroll state management
-  const [prevMessageCount, setPrevMessageCount] = useState(0);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const scrollToBottom = () => {
@@ -43,14 +41,11 @@ export const ChatMessages = ({
     setShouldAutoScroll(isNearBottom);
   }, []);
 
-  // Only scroll on new messages when user is near bottom
   useEffect(() => {
-    const hasNewMessage = messages.length > prevMessageCount;
-    if (hasNewMessage && shouldAutoScroll) {
+    if (messages.length > 0 && shouldAutoScroll) {
       scrollToBottom();
     }
-    setPrevMessageCount(messages.length);
-  }, [messages.length, shouldAutoScroll, prevMessageCount]);
+  }, [messages, shouldAutoScroll]);
 
   useEffect(() => {
     if (value === "") {

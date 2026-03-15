@@ -40,7 +40,7 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
-  const { openChat } = useChatContext();
+  const { isOpen: isChatOpen, openChat } = useChatContext();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {
@@ -55,7 +55,9 @@ export const Header = ({
     return null;
   }
 
-  const team = teams.find((team) => team.id === teamId)!;
+  const selectedTeam = teams.find((currentTeam) => currentTeam.id === teamId);
+  const teamName = selectedTeam?.name ?? "Team";
+  const teamColor = selectedTeam?.color;
   const startDate = format(new Date(sprint.startDate), "MMM d");
   const endDate = format(new Date(sprint.endDate), "MMM d");
   const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
@@ -72,14 +74,14 @@ export const Header = ({
         <BreadCrumbs
           breadCrumbs={[
             {
-              name: team.name,
-              icon: <TeamColor color={team.color} />,
-              url: `/teams/${team.id}/stories`,
+              name: teamName,
+              icon: <TeamColor color={teamColor} />,
+              url: `/teams/${teamId}/stories`,
             },
             {
               name: sprintName,
               icon: <SprintsIcon className="h-[1.1rem]" />,
-              url: `/teams/${team.id}/sprints/${sprint.id}/stories`,
+              url: `/teams/${teamId}/sprints/${sprint.id}/stories`,
             },
             {
               name: getTermDisplay("storyTerm", {
@@ -96,7 +98,7 @@ export const Header = ({
             {
               name: sprintName,
               icon: <SprintsIcon className="h-[1.1rem]" />,
-              url: `/teams/${team.id}/sprints/${sprint.id}`,
+              url: `/teams/${teamId}/sprints/${sprint.id}`,
             },
           ]}
           className="md:hidden"
@@ -113,7 +115,7 @@ export const Header = ({
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
                 openChat(
-                  `Suggest stories from "${team.name}" team backlog for sprint "${sprint.name}"`,
+                  `Suggest stories from "${teamName}" team backlog for sprint "${sprint.name}"`,
                 );
               }}
               size="sm"
@@ -139,13 +141,17 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="text-text-secondary hidden md:inline">|</span>
-        <Box className="hidden md:block">
-          <SideDetailsSwitch
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-          />
-        </Box>
+        {!isChatOpen ? (
+          <>
+            <span className="text-text-secondary hidden md:inline">|</span>
+            <Box className="hidden md:block">
+              <SideDetailsSwitch
+                isExpanded={isExpanded}
+                setIsExpanded={setIsExpanded}
+              />
+            </Box>
+          </>
+        ) : null}
       </Flex>
     </HeaderContainer>
   );

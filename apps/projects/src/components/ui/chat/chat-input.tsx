@@ -397,7 +397,10 @@ export const ChatInput = ({
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
-                } else if (status === "submitted") {
+                } else if (
+                  status === "submitted" ||
+                  status === "streaming"
+                ) {
                   onStop();
                 } else {
                   onSend();

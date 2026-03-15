@@ -64,22 +64,23 @@ const Items = ({
   const handleCreateLabel = async () => {
     const usedColors = labels.map((label) => label.color);
     const color = generateRandomColor({ exclude: usedColors });
-    try {
-      setIsLoading(true);
-      await createLabel(
-        { name: query, color, teamId },
-        {
-          onSuccess(res) {
-            if (res.data) {
-              setLabelIds([...labelIds, res.data.id]);
-            }
-          },
+    setIsLoading(true);
+    await createLabel(
+      { name: query, color, teamId },
+      {
+        onSuccess(res) {
+          if (res.data) {
+            setLabelIds([...labelIds, res.data.id]);
+          }
         },
-      );
-      setQuery("");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+    )
+      .then(() => {
+        setQuery("");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (

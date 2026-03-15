@@ -12,9 +12,9 @@ const ActivityItemSkeleton = () => (
 
 export const ActivitiesSkeleton = () => {
   return (
-    <Wrapper>
+    <Wrapper className="min-h-100 md:min-h-120">
       <Flex align="center" className="mb-5" justify="between">
-        <Text fontSize="lg">Recent activities</Text>
+        <Text fontSize="lg">Your Activities</Text>
       </Flex>
       {Array.from({ length: 9 }).map((_, index) => (
         <ActivityItemSkeleton key={index} />

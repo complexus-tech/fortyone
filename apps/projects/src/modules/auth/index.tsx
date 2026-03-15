@@ -31,24 +31,27 @@ export const AuthLayout = ({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    try {
-      const result = await requestMagicEmail(email, isMobileApp);
-
-      if (result?.error?.message) {
-        toast.error("Failed to send magic link", {
-          description: result.error.message,
-        });
-      } else {
-        setIsSent(true);
-      }
-    } catch (error) {
+    const result = await requestMagicEmail(email, isMobileApp).catch((error) => {
       toast.error("Failed to send magic link", {
         description:
           error instanceof Error ? error.message : "Please try again.",
       });
-    } finally {
-      setLoading(false);
+      return null;
+    });
+    setLoading(false);
+
+    if (!result) {
+      return;
     }
+
+    if (result.error?.message) {
+      toast.error("Failed to send magic link", {
+        description: result.error.message,
+      });
+      return;
+    }
+
+    setIsSent(true);
   };
 
   const handleOTPSubmit = async () => {
@@ -188,20 +191,18 @@ export const AuthLayout = ({
               fullWidth
               leftIcon={<GoogleIcon />}
               onClick={async () => {
-                try {
-                  await signInWithGoogle(
-                    isMobileApp
-                      ? "/auth-callback?mobileApp=true"
-                      : "/auth-callback",
-                  );
-                } catch (error) {
+                await signInWithGoogle(
+                  isMobileApp
+                    ? "/auth-callback?mobileApp=true"
+                    : "/auth-callback",
+                ).catch((error) => {
                   toast.error("Google sign-in failed", {
                     description:
                       error instanceof Error
                         ? error.message
                         : "Please try again.",
                   });
-                }
+                });
               }}
               type="button"
               size="lg"
