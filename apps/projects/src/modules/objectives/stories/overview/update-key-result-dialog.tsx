@@ -1,5 +1,5 @@
+import { useState } from "react";
 import type { FormEvent } from "react";
-import React, { useEffect, useState } from "react";
 import { Button, Dialog, Input, Flex, Box, Text, TextArea } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
@@ -15,6 +15,30 @@ type UpdateKeyResultDialogProps = {
   updateMode: "progress" | "other";
 };
 
+type KeyResultForm = {
+  name: string;
+  startValue: number;
+  targetValue: number;
+  currentValue: number;
+  contributors: KeyResult["contributors"];
+  startDate: string;
+  endDate: string;
+  comment: string;
+};
+
+const createInitialForm = (
+  keyResult: Omit<KeyResult, "createdBy">,
+): KeyResultForm => ({
+  name: keyResult.name,
+  startValue: keyResult.startValue,
+  targetValue: keyResult.targetValue,
+  currentValue: keyResult.currentValue,
+  contributors: keyResult.contributors,
+  startDate: keyResult.startDate,
+  endDate: keyResult.endDate,
+  comment: "",
+});
+
 export const UpdateKeyResultDialog = ({
   keyResult,
   isOpen,
@@ -24,16 +48,43 @@ export const UpdateKeyResultDialog = ({
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateKeyResultMutation();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [form, setForm] = useState({
-    name: keyResult.name,
-    startValue: keyResult.startValue,
-    targetValue: keyResult.targetValue,
-    currentValue: keyResult.currentValue,
-    contributors: keyResult.contributors,
-    startDate: keyResult.startDate,
-    endDate: keyResult.endDate,
-    comment: "",
-  });
+  const [formState, setFormState] = useState(() => ({
+    keyResultId: keyResult.id,
+    values: createInitialForm(keyResult),
+  }));
+
+  const form =
+    formState.keyResultId === keyResult.id
+      ? formState.values
+      : createInitialForm(keyResult);
+
+  const setForm = (
+    nextForm: KeyResultForm | ((previousForm: KeyResultForm) => KeyResultForm),
+  ) => {
+    setFormState((previousState) => {
+      const previousForm =
+        previousState.keyResultId === keyResult.id
+          ? previousState.values
+          : createInitialForm(keyResult);
+
+      return {
+        keyResultId: keyResult.id,
+        values:
+          typeof nextForm === "function" ? nextForm(previousForm) : nextForm,
+      };
+    });
+  };
+
+  const resetForm = () => {
+    setForm(createInitialForm(keyResult));
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      resetForm();
+    }
+    onOpenChange(open);
+  };
 
   const getChangedFields = () => {
     const changes: Partial<KeyResultUpdate> = {};
@@ -92,49 +143,11 @@ export const UpdateKeyResultDialog = ({
         ...(form.comment && { comment: form.comment }),
       },
     });
-    onOpenChange(false);
-    setForm({
-      name: keyResult.name,
-      startValue: keyResult.startValue,
-      targetValue: keyResult.targetValue,
-      currentValue: keyResult.currentValue,
-      contributors: keyResult.contributors,
-      startDate: keyResult.startDate,
-      endDate: keyResult.endDate,
-      comment: "",
-    });
+    handleOpenChange(false);
   };
 
-  useEffect(() => {
-    setForm({
-      name: keyResult.name,
-      startValue: keyResult.startValue,
-      targetValue: keyResult.targetValue,
-      currentValue: keyResult.currentValue,
-      contributors: keyResult.contributors,
-      startDate: keyResult.startDate,
-      endDate: keyResult.endDate,
-      comment: "",
-    });
-  }, [keyResult]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setForm({
-        name: keyResult.name,
-        startValue: keyResult.startValue,
-        targetValue: keyResult.targetValue,
-        currentValue: keyResult.currentValue,
-        contributors: keyResult.contributors,
-        startDate: keyResult.startDate,
-        endDate: keyResult.endDate,
-        comment: "",
-      });
-    }
-  }, [isOpen, keyResult]);
-
   return (
-    <Dialog onOpenChange={onOpenChange} open={isOpen}>
+    <Dialog onOpenChange={handleOpenChange} open={isOpen}>
       <Dialog.Content
         className={cn("max-w-2xl", { "max-w-xl": updateMode === "progress" })}
       >
@@ -321,7 +334,7 @@ export const UpdateKeyResultDialog = ({
               className="px-6"
               color="tertiary"
               onClick={() => {
-                onOpenChange(false);
+                handleOpenChange(false);
               }}
               type="button"
             >

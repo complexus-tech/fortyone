@@ -62,6 +62,7 @@ export const NewSubStory = ({
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
   const mutation = useCreateStoryMutation();
+  const selectedStatusId = storyForm.statusId ?? defaultStatus?.id;
 
   const titleEditor = useEditor({
     extensions: [
@@ -109,7 +110,7 @@ export const NewSubStory = ({
       descriptionHTML: editor.getHTML(),
       teamId,
       priority: storyForm.priority,
-      statusId: storyForm.statusId,
+      statusId: selectedStatusId,
       endDate: storyForm.endDate,
       startDate: storyForm.startDate,
       parentId,
@@ -127,12 +128,6 @@ export const NewSubStory = ({
       titleEditor?.commands.focus();
     }
   }, [isOpen, titleEditor]);
-
-  useEffect(() => {
-    if (statuses.length > 0) {
-      setStoryForm((prev) => ({ ...prev, statusId: statuses[0].id }));
-    }
-  }, [statuses]);
 
   return (
     <Box>
@@ -153,7 +148,7 @@ export const NewSubStory = ({
                     leftIcon={
                       <StoryStatusIcon
                         className="h-4"
-                        statusId={storyForm.statusId}
+                        statusId={selectedStatusId}
                       />
                     }
                     size="sm"
@@ -161,7 +156,7 @@ export const NewSubStory = ({
                     variant="outline"
                   >
                     {
-                      statuses.find((state) => state.id === storyForm.statusId)
+                      statuses.find((state) => state.id === selectedStatusId)
                         ?.name
                     }
                   </Button>
@@ -170,7 +165,7 @@ export const NewSubStory = ({
                   setStatusId={(id) => {
                     setStoryForm((prev) => ({ ...prev, statusId: id }));
                   }}
-                  statusId={storyForm.statusId}
+                  statusId={selectedStatusId}
                   teamId={teamId}
                 />
               </StatusesMenu>
