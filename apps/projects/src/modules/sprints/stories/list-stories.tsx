@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { useLocalStorage, useMediaQuery } from "@/hooks";
+import { useChatContext } from "@/context/chat-context";
 import { useSprint } from "../hooks/sprint-details";
 import { Header } from "./header";
 import { SprintStoriesProvider } from "./provider";
@@ -20,7 +22,14 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
     "team:sprints:stories:isExpanded",
     true,
   );
+  const { isOpen: isChatOpen } = useChatContext();
   const { isPending: isSprintPending } = useSprint(sprintId);
+
+  useEffect(() => {
+    if (isChatOpen && isExpanded) {
+      setIsExpanded(false);
+    }
+  }, [isChatOpen, isExpanded, setIsExpanded]);
 
   if (isSprintPending) {
     return <StoriesSkeleton layout={layout} />;

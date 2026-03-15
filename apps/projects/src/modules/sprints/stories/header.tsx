@@ -40,7 +40,7 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
-  const { openChat } = useChatContext();
+  const { isOpen: isChatOpen, openChat } = useChatContext();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {
@@ -139,13 +139,17 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="text-text-secondary hidden md:inline">|</span>
-        <Box className="hidden md:block">
-          <SideDetailsSwitch
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-          />
-        </Box>
+        {!isChatOpen ? (
+          <>
+            <span className="text-text-secondary hidden md:inline">|</span>
+            <Box className="hidden md:block">
+              <SideDetailsSwitch
+                isExpanded={isExpanded}
+                setIsExpanded={setIsExpanded}
+              />
+            </Box>
+          </>
+        ) : null}
       </Flex>
     </HeaderContainer>
   );
