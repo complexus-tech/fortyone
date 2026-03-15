@@ -14,7 +14,9 @@ export const SprintsHeader = () => {
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
 
-  const { name, color } = teams.find((team) => team.id === teamId)!;
+  const selectedTeam = teams.find((team) => team.id === teamId);
+  const name = selectedTeam?.name ?? "Team";
+  const color = selectedTeam?.color;
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
