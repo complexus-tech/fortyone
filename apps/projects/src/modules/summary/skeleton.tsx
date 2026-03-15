@@ -25,8 +25,12 @@ export const SummarySkeleton = () => {
     <>
       <Header />
       <BodyContainer>
-        <Container className="pt-3 pb-4">
-          <Text as="h2" className="mb-2" fontSize="3xl" fontWeight="medium">
+        <Container className="pt-3 pb-4 @container">
+          <Text
+            as="h2"
+            className="mb-1 text-2xl @6xl:text-3xl"
+            fontWeight="medium"
+          >
             Good {timeOfDay()}, {session?.user?.name}.
           </Text>
           <Text color="muted" fontSize="lg">
@@ -34,12 +38,12 @@ export const SummarySkeleton = () => {
             {getTermDisplay("storyTerm", { variant: "plural" })}.
           </Text>
           <OverviewSkeleton />
-          <Box className="my-4 grid gap-4 md:grid-cols-3">
+          <Box className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3">
             <PrioritySkeleton />
             <StatusSkeleton />
             <ContributionsSkeleton />
           </Box>
-          <Box className="my-4 grid gap-4 md:grid-cols-2">
+          <Box className="my-4 grid grid-cols-1 gap-4 @6xl:grid-cols-2">
             <MyStoriesSkeleton />
             <ActivitiesSkeleton />
           </Box>
