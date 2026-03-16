@@ -392,7 +392,7 @@ export const HowItWorks = () => {
       </motion.div>
 
       {/* Numbered descriptions */}
-      <Box className="mt-8 grid grid-cols-1 gap-6 md:mt-10 md:grid-cols-3">
+      <Box className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
         {steps.map((step, i) => (
           <motion.div
             initial="hidden"
@@ -403,13 +403,11 @@ export const HowItWorks = () => {
             whileInView="show"
           >
             <Box>
-              <Text className="text-text-muted mb-2 font-mono text-sm font-semibold">
+              <Text className="text-text-muted mb-2 font-mono text-[0.95rem] font-semibold">
                 {step.number}
               </Text>
-              <Text className="mb-2 text-base font-semibold">{step.title}</Text>
-              <Text className="text-text-muted text-sm leading-relaxed">
-                {step.description}
-              </Text>
+              <Text className="mb-2 text-lg font-semibold">{step.title}</Text>
+              <Text className="text-text-muted">{step.description}</Text>
             </Box>
           </motion.div>
         ))}
