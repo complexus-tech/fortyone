@@ -71,7 +71,7 @@ function TaskGoalCard() {
           </Box>
         </Box>
 
-        <Box className="border-border/40 relative ml-3.5 border-l-2 border-dashed pb-1 pl-5">
+        <Box className="border-border/40 relative mt-1.5 ml-3.5 border-l-2 border-dashed pb-1 pl-5">
           <Box className="bg-text-primary/20 absolute top-0 -left-[5px] size-2 rounded-full" />
           <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
             <Flex align="center" className="mb-2 gap-2">
@@ -328,28 +328,28 @@ function RoadmapCard() {
 const steps = [
   {
     number: "01",
-    title: "Every task traces to a goal.",
+    title: "Goals aren’t separate from the work.",
     description:
-      "Tasks don't float around a board. Each one links to an objective so your team always knows why the work matters.",
+      "Tasks, objectives, and delivery live in one system, so progress isn’t something you have to reconstruct later.",
   },
   {
     number: "02",
-    title: "Maya scopes sprints for you.",
+    title: "Maya reduces planning drag.",
     description:
-      "Tell Maya the outcome you're aiming for. She reads the backlog, weighs capacity, and proposes a sprint you can actually ship.",
+      "She takes rough direction, turns it into a workable sprint proposal, and helps the team start with clarity.",
   },
   {
     number: "03",
-    title: "The full picture, always current.",
+    title: "Progress stays visible by default.",
     description:
-      "Your roadmap updates as work ships. Leaders see what's done, what's next, and what's at risk — without asking.",
+      "As work ships, the roadmap reflects it. Teams, managers, and leadership stay aligned on what’s done, next, and slipping.",
   },
 ];
 
 /* ─── Main Section ─────────────────────────────────────────── */
 export const HowItWorks = () => {
   return (
-    <Container className="py-16 md:py-28">
+    <Container className="py-16 md:py-20">
       {/* Headline with superscript numbers */}
       <motion.div
         initial="hidden"
@@ -358,22 +358,11 @@ export const HowItWorks = () => {
         whileInView="show"
       >
         <Text
+          color="gradientDark"
           as="h2"
-          className="mb-14 max-w-3xl text-3xl leading-snug md:mb-20 md:text-5xl md:leading-tight"
+          className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
         >
-          FortyOne connects{" "}
-          <sup className="text-text-muted font-mono text-xs font-semibold md:text-sm">
-            01
-          </sup>{" "}
-          every task to a goal, scopes{" "}
-          <sup className="text-text-muted font-mono text-xs font-semibold md:text-sm">
-            02
-          </sup>{" "}
-          sprints with Maya, and keeps{" "}
-          <sup className="text-text-muted font-mono text-xs font-semibold md:text-sm">
-            03
-          </sup>{" "}
-          progress visible — from plan to shipped.
+          The system that keeps planning, execution, and goals in sync.
         </Text>
       </motion.div>
 
