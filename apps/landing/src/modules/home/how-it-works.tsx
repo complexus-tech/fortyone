@@ -146,47 +146,49 @@ function MayaSprintCard() {
           </Box>
         </Flex>
 
-        <Box className="border-border/30 bg-surface/60 relative overflow-hidden rounded-lg border p-2.75">
-          <Box className="bg-foreground/6 absolute inset-x-0 top-0 h-px" />
+        <Box className="ml-[2.625rem]">
+          <Box className="border-border/30 bg-surface/60 relative overflow-hidden rounded-lg border p-2.75">
+            <Box className="bg-foreground/6 absolute inset-x-0 top-0 h-px" />
 
-          <Text className="text-text-muted mb-2.25 text-sm leading-relaxed">
-            Based on your team&apos;s capacity, I&apos;d scope these for Sprint
-            14.
-          </Text>
+            <Text className="text-text-muted mb-2.25 text-sm leading-relaxed">
+              Based on your team&apos;s capacity, I&apos;d scope these for Sprint
+              14.
+            </Text>
 
-          <Box className="flex flex-col gap-1.25">
-            {mayaSprintTasks.map((task, i) => (
-              <Flex
-                align="center"
-                className="border-border/35 bg-background/70 rounded-lg border px-2.5 py-1.5"
-                justify="between"
-                key={task.name}
-              >
-                <Flex align="center" className="min-w-0 gap-2.5">
-                  <Box className="bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
-                    {i + 1}
+            <Box className="flex flex-col gap-1.25">
+              {mayaSprintTasks.map((task, i) => (
+                <Flex
+                  align="center"
+                  className="border-border/35 bg-background/70 rounded-lg border px-2.5 py-1.5"
+                  justify="between"
+                  key={task.name}
+                >
+                  <Flex align="center" className="min-w-0 gap-2.5">
+                    <Box className="bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
+                      {i + 1}
+                    </Box>
+                    <Text className="truncate text-sm font-medium">
+                      {task.name}
+                    </Text>
+                  </Flex>
+
+                  <Box className="bg-text-primary/8 shrink-0 rounded-full px-2 py-1 text-xs font-medium opacity-80">
+                    {task.meta}
                   </Box>
-                  <Text className="truncate text-sm font-medium">
-                    {task.name}
-                  </Text>
                 </Flex>
-
-                <Box className="bg-text-primary/8 shrink-0 rounded-full px-2 py-1 text-xs font-medium opacity-80">
-                  {task.meta}
-                </Box>
-              </Flex>
-            ))}
+              ))}
+            </Box>
           </Box>
+
+          <Flex className="mt-2.25 gap-2">
+            <Box className="bg-foreground text-background rounded-md px-3 py-1.25 text-sm font-semibold shadow-sm">
+              Approve sprint
+            </Box>
+            <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.25 text-sm font-medium">
+              Adjust
+            </Box>
+          </Flex>
         </Box>
-
-        <Flex className="mt-2.25 gap-2">
-          <Box className="bg-foreground text-background rounded-md px-3 py-1.25 text-sm font-semibold shadow-sm">
-            Approve sprint
-          </Box>
-          <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.25 text-sm font-medium">
-            Adjust
-          </Box>
-        </Flex>
       </Box>
     </Box>
   );
