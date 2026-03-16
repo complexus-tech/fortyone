@@ -18,10 +18,24 @@ const scaleIn = {
   },
 };
 
+const cardFadeMaskStyle = {
+  WebkitMaskImage:
+    "linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.55) 84%, transparent 100%)",
+  maskImage:
+    "linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.55) 84%, transparent 100%)",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
+};
+
 /* ─── Card 01: Task → Goal connection ──────────────────────── */
 function TaskGoalCard() {
   return (
-    <Box className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border">
+    <Box
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      style={cardFadeMaskStyle}
+    >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
@@ -87,7 +101,10 @@ function TaskGoalCard() {
 /* ─── Card 02: Maya scoping a sprint ───────────────────────── */
 function MayaSprintCard() {
   return (
-    <Box className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border">
+    <Box
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      style={cardFadeMaskStyle}
+    >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
@@ -112,19 +129,16 @@ function MayaSprintCard() {
           </Text>
 
           <Box className="flex flex-col gap-1.5">
-            {[
-              "Redesign onboarding flow",
-              "Fix session timeout bug",
-              "Add email verification step",
-              "Update API rate limits",
-            ].map((task, i) => (
-              <Flex align="center" className="gap-2" key={task}>
-                <Box className="bg-text-primary/8 flex size-4 items-center justify-center rounded text-xs font-bold opacity-70">
-                  {i + 1}
-                </Box>
-                <Text className="text-sm">{task}</Text>
-              </Flex>
-            ))}
+            {["Redesign onboarding flow", "Fix session timeout bug"].map(
+              (task, i) => (
+                <Flex align="center" className="gap-2" key={task}>
+                  <Box className="bg-text-primary/8 flex size-4 items-center justify-center rounded text-xs font-bold opacity-70">
+                    {i + 1}
+                  </Box>
+                  <Text className="text-sm">{task}</Text>
+                </Flex>
+              ),
+            )}
           </Box>
         </Box>
 
@@ -175,7 +189,10 @@ function RoadmapCard() {
   const totalCols = months.length;
 
   return (
-    <Box className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border">
+    <Box
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      style={cardFadeMaskStyle}
+    >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
@@ -334,7 +351,7 @@ export const HowItWorks = () => {
         viewport={viewport}
         whileInView="show"
       >
-        <Box className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Box className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <TaskGoalCard />
           <MayaSprintCard />
           <RoadmapCard />
