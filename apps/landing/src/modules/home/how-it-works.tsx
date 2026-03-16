@@ -126,7 +126,7 @@ function MayaSprintCard() {
       <Box className="relative flex flex-1 flex-col px-3.5 pb-3.25">
         <Flex align="center" className="mb-2.25 justify-between gap-3">
           <Flex align="center" className="gap-2.5">
-            <Box className="bg-text-primary/10 text-foreground flex size-8 items-center justify-center rounded-xl shadow-sm">
+            <Box className="bg-text-primary/6 text-foreground flex size-8 items-center justify-center rounded-xl shadow-sm">
               <AiIcon className="h-4 w-4" />
             </Box>
             <Box>
@@ -142,8 +142,8 @@ function MayaSprintCard() {
           </Box>
         </Flex>
 
-        <Box className="ml-[2.625rem]">
-          <Box className="border-border/30 bg-surface/60 relative overflow-hidden rounded-lg border p-2.75">
+        <Box>
+          <Box className="border-border/20 bg-surface/50 relative overflow-hidden rounded-lg border p-2.75">
             <Text className="text-text-muted mb-2.25 text-[0.8rem] leading-relaxed">
               Based on your team&apos;s capacity, I&apos;d scope these for
               Sprint 14.
