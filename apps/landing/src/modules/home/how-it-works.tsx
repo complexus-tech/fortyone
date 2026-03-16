@@ -117,8 +117,6 @@ function MayaSprintCard() {
       className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
       style={cardFadeMaskStyle}
     >
-      <Box className="from-foreground/4 pointer-events-none absolute inset-x-0 top-0 h-18 bg-linear-to-b via-transparent to-transparent" />
-
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
         <Box className="bg-text-primary/10 size-2.5 rounded-full" />
@@ -128,11 +126,11 @@ function MayaSprintCard() {
       <Box className="relative flex flex-1 flex-col px-3.5 pb-3.25">
         <Flex align="center" className="mb-2.25 justify-between gap-3">
           <Flex align="center" className="gap-2.5">
-            <Box className="bg-text-primary/10 text-foreground flex size-8 items-center justify-center rounded-full shadow-sm">
+            <Box className="bg-text-primary/10 text-foreground flex size-8 items-center justify-center rounded-xl shadow-sm">
               <AiIcon className="h-4 w-4" />
             </Box>
             <Box>
-              <Text className="text-sm font-semibold">Maya</Text>
+              <Text className="text-[0.8rem] font-semibold">Maya</Text>
               <Text className="text-text-muted text-xs">
                 AI Project Manager
               </Text>
@@ -140,19 +138,15 @@ function MayaSprintCard() {
           </Flex>
 
           <Box className="bg-text-primary/8 rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide opacity-70">
-            <Text className="text-text-muted">
-              SPRINT 14
-            </Text>
+            <Text className="text-text-muted">SPRINT 14</Text>
           </Box>
         </Flex>
 
         <Box className="ml-[2.625rem]">
           <Box className="border-border/30 bg-surface/60 relative overflow-hidden rounded-lg border p-2.75">
-            <Box className="bg-foreground/6 absolute inset-x-0 top-0 h-px" />
-
-            <Text className="text-text-muted mb-2.25 text-sm leading-relaxed">
-              Based on your team&apos;s capacity, I&apos;d scope these for Sprint
-              14.
+            <Text className="text-text-muted mb-2.25 text-[0.8rem] leading-relaxed">
+              Based on your team&apos;s capacity, I&apos;d scope these for
+              Sprint 14.
             </Text>
 
             <Box className="flex flex-col gap-1.25">
@@ -167,7 +161,7 @@ function MayaSprintCard() {
                     <Box className="bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
                       {i + 1}
                     </Box>
-                    <Text className="truncate text-sm font-medium">
+                    <Text className="truncate text-[0.8rem] font-medium">
                       {task.name}
                     </Text>
                   </Flex>
@@ -181,10 +175,10 @@ function MayaSprintCard() {
           </Box>
 
           <Flex className="mt-2.25 gap-2">
-            <Box className="bg-foreground text-background rounded-md px-3 py-1.25 text-sm font-semibold shadow-sm">
+            <Box className="bg-foreground text-background rounded-md px-3 py-1.25 text-[0.8rem] font-semibold shadow-sm">
               Approve sprint
             </Box>
-            <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.25 text-sm font-medium">
+            <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.25 text-[0.8rem] font-medium">
               Adjust
             </Box>
           </Flex>
