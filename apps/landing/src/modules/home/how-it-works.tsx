@@ -30,14 +30,16 @@ function TaskGoalCard() {
 
       <Box className="flex flex-1 flex-col px-3.5 pb-3.5">
         <Flex align="center" className="mb-4 gap-2">
-          <Box className="bg-text-primary/8 rounded-md px-2 py-1 font-mono text-[10px] font-semibold tracking-wide opacity-70">
+          <Box className="bg-text-primary/8 rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide opacity-70">
             Q2 OBJECTIVE
           </Box>
-          <Text className="text-text-muted text-xs">Improve activation rate</Text>
+          <Text className="text-text-muted text-sm">
+            Improve activation rate
+          </Text>
         </Flex>
 
         <Box className="border-border/40 relative ml-3.5 border-l-2 border-dashed pb-1 pl-5">
-          <Box className="bg-text-primary/30 absolute -left-[5px] top-0 size-2 rounded-full" />
+          <Box className="bg-text-primary/30 absolute top-0 -left-[5px] size-2 rounded-full" />
           <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
             <Flex align="center" className="mb-2 gap-2">
               <Box className="border-text-primary/30 size-3.5 rounded border-2" />
@@ -46,36 +48,36 @@ function TaskGoalCard() {
               </Text>
             </Flex>
             <Flex align="center" className="gap-2">
-              <Box className="bg-text-primary/8 rounded px-1.5 py-0.5 text-[10px] font-medium opacity-70">
+              <Box className="bg-text-primary/8 rounded px-1.5 py-0.5 text-xs font-medium opacity-70">
                 In Progress
               </Box>
-              <Text className="text-text-muted text-[10px]">Sprint 14</Text>
+              <Text className="text-text-muted text-xs">Sprint 14</Text>
             </Flex>
           </Box>
         </Box>
 
         <Box className="border-border/40 relative ml-3.5 border-l-2 border-dashed pb-1 pl-5">
-          <Box className="bg-text-primary/20 absolute -left-[5px] top-0 size-2 rounded-full" />
+          <Box className="bg-text-primary/20 absolute top-0 -left-[5px] size-2 rounded-full" />
           <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
             <Flex align="center" className="mb-2 gap-2">
               <Box className="bg-text-primary/10 flex size-3.5 items-center justify-center rounded">
-                <Box className="text-text-muted text-[8px]">✓</Box>
+                <Box className="text-text-muted text-xs">✓</Box>
               </Box>
               <Text className="text-text-muted text-sm font-medium line-through decoration-1">
                 Add welcome checklist
               </Text>
             </Flex>
             <Flex align="center" className="gap-2">
-              <Box className="bg-text-primary/8 text-text-muted rounded px-1.5 py-0.5 text-[10px] font-medium">
+              <Box className="bg-text-primary/8 text-text-muted rounded px-1.5 py-0.5 text-xs font-medium">
                 Done
               </Box>
-              <Text className="text-text-muted text-[10px]">Sprint 13</Text>
+              <Text className="text-text-muted text-xs">Sprint 13</Text>
             </Flex>
           </Box>
         </Box>
 
         <Box className="relative ml-3.5">
-          <Box className="bg-border/60 absolute -left-[3px] top-0 size-1.5 rounded-full" />
+          <Box className="bg-border/60 absolute top-0 -left-[3px] size-1.5 rounded-full" />
         </Box>
       </Box>
     </Box>
@@ -94,18 +96,19 @@ function MayaSprintCard() {
 
       <Box className="flex flex-1 flex-col px-3.5 pb-3.5">
         <Flex align="center" className="mb-3 gap-2.5">
-          <Box className="bg-text-primary/10 flex size-7 items-center justify-center rounded-full text-[11px] font-bold">
+          <Box className="bg-text-primary/10 flex size-7 items-center justify-center rounded-full text-sm font-bold">
             M
           </Box>
           <Box>
             <Text className="text-sm font-semibold">Maya</Text>
-            <Text className="text-text-muted text-[10px]">AI Project Manager</Text>
+            <Text className="text-text-muted text-xs">AI Project Manager</Text>
           </Box>
         </Flex>
 
         <Box className="border-border/30 bg-surface/50 rounded-lg border p-3">
-          <Text className="text-text-muted mb-3 text-xs leading-relaxed">
-            Based on your team&apos;s capacity, I&apos;d scope these for Sprint 14:
+          <Text className="text-text-muted mb-3 text-sm leading-relaxed">
+            Based on your team&apos;s capacity, I&apos;d scope these for Sprint
+            14:
           </Text>
 
           <Box className="flex flex-col gap-1.5">
@@ -116,20 +119,20 @@ function MayaSprintCard() {
               "Update API rate limits",
             ].map((task, i) => (
               <Flex align="center" className="gap-2" key={task}>
-                <Box className="bg-text-primary/8 flex size-4 items-center justify-center rounded text-[8px] font-bold opacity-70">
+                <Box className="bg-text-primary/8 flex size-4 items-center justify-center rounded text-xs font-bold opacity-70">
                   {i + 1}
                 </Box>
-                <Text className="text-xs">{task}</Text>
+                <Text className="text-sm">{task}</Text>
               </Flex>
             ))}
           </Box>
         </Box>
 
         <Flex className="mt-3 gap-2">
-          <Box className="bg-foreground text-background rounded-md px-3 py-1.5 text-[11px] font-semibold">
+          <Box className="bg-foreground text-background rounded-md px-3 py-1.5 text-sm font-semibold">
             Approve sprint
           </Box>
-          <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.5 text-[11px] font-medium">
+          <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.5 text-sm font-medium">
             Adjust
           </Box>
         </Flex>
@@ -187,7 +190,7 @@ function RoadmapCard() {
         >
           {months.map((m) => (
             <Text
-              className="text-text-muted text-center font-mono text-[9px] tracking-wider"
+              className="text-text-muted text-center font-mono text-xs tracking-wider"
               key={m}
             >
               {m}
@@ -215,9 +218,7 @@ function RoadmapCard() {
           {/* Gantt bars */}
           {roadmapBars.map((bar) => (
             <Box className="relative" key={bar.name}>
-              <Text className="mb-1.5 text-[11px] font-medium">
-                {bar.name}
-              </Text>
+              <Text className="mb-2 text-[0.8rem] font-medium">{bar.name}</Text>
 
               <Box className="relative">
                 <Box
@@ -228,7 +229,7 @@ function RoadmapCard() {
                 >
                   {/* Solid portion */}
                   <Box
-                    className="bg-text-primary/12 relative z-1 h-[7px] rounded-full"
+                    className="bg-text-primary/12 relative z-1 h-5 rounded-sm"
                     style={{
                       gridColumn: `${bar.startCol} / span ${bar.solidCols}`,
                     }}
@@ -236,7 +237,7 @@ function RoadmapCard() {
                   {/* Dashed portion */}
                   {bar.dashedCols > 0 && (
                     <Box
-                      className="border-text-primary/20 relative z-1 h-[7px] rounded-r-full border border-dashed border-l-0"
+                      className="border-text-primary/20 relative z-1 h-4 rounded-r-sm border border-l-0 border-dashed"
                       style={{
                         gridColumn: `${bar.startCol + bar.solidCols} / span ${bar.dashedCols}`,
                       }}
@@ -258,7 +259,7 @@ function RoadmapCard() {
                       style={{ gridColumn: ms.col }}
                     >
                       <Box className="bg-text-primary/25 size-[5px] rotate-45" />
-                      <Text className="text-text-muted mt-0.5 text-[7px]">
+                      <Text className="text-text-muted relative top-1 mt-1.5 text-xs">
                         {ms.label}
                       </Text>
                     </Box>
