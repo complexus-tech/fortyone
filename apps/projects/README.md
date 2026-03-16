@@ -75,9 +75,6 @@ NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 OPENAI_API_KEY=your_openai_api_key
 GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key
 
-# Error Tracking
-NEXT_PUBLIC_SENTRY_DSN=your_actual_sentry_dsn
-
 # Optional
 NEXT_PUBLIC_GITHUB_APP_SLUG=your_github_app_slug
 ```

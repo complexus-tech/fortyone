@@ -68,6 +68,6 @@ export const saveChat = async ({
       await saveAiChatMessagesAction({ id, messages }, workspaceSlug);
     }
   } catch (error) {
-    // log to posthog or sentry later
+    // log to analytics later
   }
 };
