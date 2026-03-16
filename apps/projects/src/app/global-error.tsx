@@ -1,9 +1,7 @@
 "use client";
-import * as Sentry from "@sentry/nextjs";
 import type Error from "next/error";
 import { ArrowLeft2Icon, ReloadIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
-import { useEffect } from "react";
 import { Instrument_Sans as InstrumentSans } from "next/font/google";
 import { Logo } from "@/components/ui";
 import "../styles/global.css";
@@ -21,9 +19,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
   return (
     <html className={font.className} lang="en">
       <body>
