@@ -9,6 +9,7 @@ import {
   Integrations,
   Maya,
   CoreValues,
+  HowItWorks,
 } from "@/modules/home";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function Page() {
       <SampleClients />
       {/* <Features /> */}
       <CoreValues />
+      <HowItWorks />
       <Maya />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
