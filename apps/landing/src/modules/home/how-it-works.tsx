@@ -45,7 +45,7 @@ function TaskGoalCard() {
 
       <Box className="flex flex-1 flex-col px-3.5 pb-3.5">
         <Flex align="center" className="mb-4 gap-2">
-          <Box className="bg-text-primary/8 rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide opacity-70">
+          <Box className="bg-primary/10 text-primary rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide">
             Q2 OBJECTIVE
           </Box>
           <Text className="text-text-muted text-sm">
@@ -54,16 +54,16 @@ function TaskGoalCard() {
         </Flex>
 
         <Box className="border-border/40 relative ml-3.5 border-l-2 border-dashed pb-1 pl-5">
-          <Box className="bg-text-primary/30 absolute top-0 -left-[5px] size-2 rounded-full" />
+          <Box className="bg-primary/40 absolute top-0 -left-[5px] size-2 rounded-full" />
           <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
             <Flex align="center" className="mb-2 gap-2">
-              <Box className="border-text-primary/30 size-3.5 rounded border-2" />
+              <Box className="border-primary/40 size-3.5 rounded border-2" />
               <Text className="text-sm font-medium">
                 Redesign onboarding flow
               </Text>
             </Flex>
             <Flex align="center" className="gap-2">
-              <Box className="bg-text-primary/8 rounded px-1.5 py-0.5 text-xs font-medium opacity-70">
+              <Box className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs font-medium">
                 In Progress
               </Box>
               <Text className="text-text-muted text-xs">Sprint 14</Text>
@@ -72,18 +72,18 @@ function TaskGoalCard() {
         </Box>
 
         <Box className="border-border/40 relative mt-1.5 ml-3.5 border-l-2 border-dashed pb-1 pl-5">
-          <Box className="bg-text-primary/20 absolute top-0 -left-[5px] size-2 rounded-full" />
+          <Box className="bg-success/30 absolute top-0 -left-[5px] size-2 rounded-full" />
           <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
             <Flex align="center" className="mb-2 gap-2">
-              <Box className="bg-text-primary/10 flex size-3.5 items-center justify-center rounded">
-                <Box className="text-text-muted text-xs">✓</Box>
+              <Box className="bg-success/15 flex size-3.5 items-center justify-center rounded">
+                <Box className="text-success text-xs">✓</Box>
               </Box>
               <Text className="text-text-muted text-sm font-medium line-through decoration-1">
                 Add welcome checklist
               </Text>
             </Flex>
             <Flex align="center" className="gap-2">
-              <Box className="bg-text-primary/8 text-text-muted rounded px-1.5 py-0.5 text-xs font-medium">
+              <Box className="bg-success/10 text-success rounded px-1.5 py-0.5 text-xs font-medium">
                 Done
               </Box>
               <Text className="text-text-muted text-xs">Sprint 13</Text>
@@ -126,8 +126,8 @@ function MayaSprintCard() {
       <Box className="relative flex flex-1 flex-col px-3.5 pb-3.25">
         <Flex align="center" className="mb-2.25 justify-between gap-3">
           <Flex align="center" className="gap-2.5">
-            <Box className="bg-text-primary/6 text-foreground flex size-8 items-center justify-center rounded-xl shadow-sm">
-              <AiIcon className="h-4 w-4" />
+            <Box className="dark:bg-info/10 bg-accent/40 text-info flex size-8 items-center justify-center rounded-xl">
+              <AiIcon className="text-primary/80 h-4 w-4" />
             </Box>
             <Box>
               <Text className="text-[0.8rem] font-semibold">Maya</Text>
@@ -158,7 +158,7 @@ function MayaSprintCard() {
                   key={task.name}
                 >
                   <Flex align="center" className="min-w-0 gap-2.5">
-                    <Box className="bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
+                    <Box className="bg-info/15 text-info flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
                       {i + 1}
                     </Box>
                     <Text className="truncate text-[0.8rem] font-medium">
@@ -197,6 +197,9 @@ const roadmapBars = [
     startCol: 1,
     solidCols: 3,
     dashedCols: 1,
+    solidClass: "bg-primary/15",
+    dashedClass: "border-primary/25",
+    dotClass: "bg-primary/30",
     milestones: [
       { col: 2, label: "Wireframes" },
       { col: 3, label: "Ship" },
@@ -207,6 +210,9 @@ const roadmapBars = [
     startCol: 2,
     solidCols: 2,
     dashedCols: 2,
+    solidClass: "bg-info/15",
+    dashedClass: "border-info/25",
+    dotClass: "bg-info/30",
     milestones: [{ col: 3, label: "Beta" }],
   },
   {
@@ -214,6 +220,9 @@ const roadmapBars = [
     startCol: 3,
     solidCols: 1,
     dashedCols: 2,
+    solidClass: "bg-success/15",
+    dashedClass: "border-success/25",
+    dotClass: "bg-success/30",
     milestones: [{ col: 5, label: "Alpha" }],
   },
 ];
@@ -279,7 +288,7 @@ function RoadmapCard() {
                 >
                   {/* Solid portion */}
                   <Box
-                    className="bg-text-primary/12 relative z-1 h-5 rounded-sm"
+                    className={`${bar.solidClass} relative z-1 h-5 rounded-sm`}
                     style={{
                       gridColumn: `${bar.startCol} / span ${bar.solidCols}`,
                     }}
@@ -287,7 +296,7 @@ function RoadmapCard() {
                   {/* Dashed portion */}
                   {bar.dashedCols > 0 && (
                     <Box
-                      className="border-text-primary/20 relative z-1 h-4 rounded-r-sm border border-l-0 border-dashed"
+                      className={`${bar.dashedClass} relative z-1 h-4 rounded-r-sm border border-l-0 border-dashed`}
                       style={{
                         gridColumn: `${bar.startCol + bar.solidCols} / span ${bar.dashedCols}`,
                       }}
@@ -308,7 +317,7 @@ function RoadmapCard() {
                       key={ms.label}
                       style={{ gridColumn: ms.col }}
                     >
-                      <Box className="bg-text-primary/25 size-[5px] rotate-45" />
+                      <Box className={`${bar.dotClass} size-[5px] rotate-45`} />
                       <Text className="text-text-muted relative top-1 mt-1.5 text-xs">
                         {ms.label}
                       </Text>
@@ -328,18 +337,21 @@ function RoadmapCard() {
 const steps = [
   {
     number: "01",
+    numberClass: "text-primary",
     title: "Goals aren’t separate from the work.",
     description:
       "Tasks, objectives, and delivery live in one system, so progress isn’t something you have to reconstruct later.",
   },
   {
     number: "02",
+    numberClass: "text-info",
     title: "Maya reduces planning drag.",
     description:
       "She takes rough direction, turns it into a workable sprint proposal, and helps the team start with clarity.",
   },
   {
     number: "03",
+    numberClass: "text-success",
     title: "Progress stays visible by default.",
     description:
       "As work ships, the roadmap reflects it. Teams, managers, and leadership stay aligned on what’s done, next, and slipping.",
@@ -392,7 +404,9 @@ export const HowItWorks = () => {
             whileInView="show"
           >
             <Box>
-              <Text className="text-text-muted mb-2 font-mono text-[0.95rem] font-semibold">
+              <Text
+                className={`${step.numberClass} mb-2 font-mono text-[0.95rem] font-semibold`}
+              >
                 {step.number}
               </Text>
               <Text className="mb-2 text-lg font-semibold">{step.title}</Text>
