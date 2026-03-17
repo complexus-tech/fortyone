@@ -34,7 +34,7 @@ const cardFadeMaskStyle = {
 function TaskGoalCard() {
   return (
     <Box
-      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
       style={cardFadeMaskStyle}
     >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
@@ -114,7 +114,7 @@ const mayaSprintTasks = [
 function MayaSprintCard() {
   return (
     <Box
-      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
       style={cardFadeMaskStyle}
     >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
@@ -223,7 +223,7 @@ function RoadmapCard() {
 
   return (
     <Box
-      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-xl border"
+      className="border-border/40 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
       style={cardFadeMaskStyle}
     >
       <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
