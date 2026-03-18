@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
         await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[chat/route] Stream error:", error);
     throw new Error(
       "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.",
     );
