@@ -35,6 +35,7 @@ export const CallToAction = () => {
             <Text
               as="h2"
               className="mt-6 h-max max-w-3xl pb-2 text-4xl text-balance md:text-5xl"
+              color="gradientDark"
             >
               Stop managing your project manager. Let Maya do it.
             </Text>

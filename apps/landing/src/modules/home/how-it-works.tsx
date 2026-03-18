@@ -1,0 +1,420 @@
+"use client";
+
+import { Text, Box, Flex } from "ui";
+import { motion } from "framer-motion";
+import { AiIcon } from "icons";
+import { Container } from "@/components/ui";
+
+const viewport = { once: true, amount: 0.3 };
+const fadeUp = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.7, ease: "easeOut" } },
+};
+const scaleIn = {
+  hidden: { scale: 0.96, opacity: 0 },
+  show: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.8, ease: "easeOut" },
+  },
+};
+
+const cardFadeMaskStyle = {
+  WebkitMaskImage:
+    "linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.55) 84%, transparent 100%)",
+  maskImage:
+    "linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.55) 84%, transparent 100%)",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
+};
+
+/* ─── Card 01: Task → Goal connection ──────────────────────── */
+function TaskGoalCard() {
+  return (
+    <Box
+      className="border-border/70 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
+      style={cardFadeMaskStyle}
+    >
+      <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+      </Flex>
+
+      <Box className="flex flex-1 flex-col px-3.5 pb-3.5">
+        <Flex align="center" className="mb-4 gap-2">
+          <Box className="bg-primary/10 text-primary rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide">
+            Q2 OBJECTIVE
+          </Box>
+          <Text className="text-text-muted text-sm">
+            Improve activation rate
+          </Text>
+        </Flex>
+
+        <Box className="border-border/40 relative ml-3.5 border-l-2 border-dashed pb-1 pl-5">
+          <Box className="bg-primary/40 absolute top-0 -left-[5px] size-2 rounded-full" />
+          <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
+            <Flex align="center" className="mb-2 gap-2">
+              <Box className="border-primary/40 size-3.5 rounded border-2" />
+              <Text className="text-sm font-medium">
+                Redesign onboarding flow
+              </Text>
+            </Flex>
+            <Flex align="center" className="gap-2">
+              <Box className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs font-medium">
+                In Progress
+              </Box>
+              <Text className="text-text-muted text-xs">Sprint 14</Text>
+            </Flex>
+          </Box>
+        </Box>
+
+        <Box className="border-border/40 relative mt-1.5 ml-3.5 border-l-2 border-dashed pb-1 pl-5">
+          <Box className="bg-success/30 absolute top-0 -left-[5px] size-2 rounded-full" />
+          <Box className="border-border/50 bg-surface/50 rounded-lg border p-3">
+            <Flex align="center" className="mb-2 gap-2">
+              <Box className="bg-success/15 flex size-3.5 items-center justify-center rounded">
+                <Box className="text-success text-xs">✓</Box>
+              </Box>
+              <Text className="text-text-muted text-sm font-medium line-through decoration-1">
+                Add welcome checklist
+              </Text>
+            </Flex>
+            <Flex align="center" className="gap-2">
+              <Box className="bg-success/10 text-success rounded px-1.5 py-0.5 text-xs font-medium">
+                Done
+              </Box>
+              <Text className="text-text-muted text-xs">Sprint 13</Text>
+            </Flex>
+          </Box>
+        </Box>
+
+        <Box className="relative ml-3.5">
+          <Box className="bg-border/60 absolute top-0 -left-[3px] size-1.5 rounded-full" />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Card 02: Maya scoping a sprint ───────────────────────── */
+const mayaSprintTasks = [
+  {
+    name: "Redesign onboarding flow",
+    meta: "8 pts",
+  },
+  {
+    name: "Fix session timeout bug",
+    meta: "3 pts",
+  },
+];
+
+function MayaSprintCard() {
+  return (
+    <Box
+      className="border-border/70 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
+      style={cardFadeMaskStyle}
+    >
+      <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+      </Flex>
+
+      <Box className="relative flex flex-1 flex-col px-3.5 pb-3.25">
+        <Flex align="center" className="mb-2.25 justify-between gap-3">
+          <Flex align="center" className="gap-2.5">
+            <Box className="dark:bg-info/10 bg-accent/40 text-info flex size-8 items-center justify-center rounded-xl">
+              <AiIcon className="text-primary/80 h-4 w-4" />
+            </Box>
+            <Box>
+              <Text className="text-[0.8rem] font-semibold">Maya</Text>
+              <Text className="text-text-muted text-xs">
+                AI Project Manager
+              </Text>
+            </Box>
+          </Flex>
+
+          <Box className="bg-text-primary/8 rounded-md px-2 py-1 font-mono text-xs font-semibold tracking-wide opacity-70">
+            <Text className="text-text-muted">SPRINT 14</Text>
+          </Box>
+        </Flex>
+
+        <Box>
+          <Box className="border-border/20 bg-surface/50 relative overflow-hidden rounded-lg border p-2.75">
+            <Text className="text-text-muted mb-2.25 text-[0.8rem] leading-relaxed">
+              Based on your team&apos;s capacity, I&apos;d scope these for
+              Sprint 14.
+            </Text>
+
+            <Box className="flex flex-col gap-1.25">
+              {mayaSprintTasks.map((task, i) => (
+                <Flex
+                  align="center"
+                  className="border-border/35 bg-background/70 rounded-lg border px-2.5 py-1.5"
+                  justify="between"
+                  key={task.name}
+                >
+                  <Flex align="center" className="min-w-0 gap-2.5">
+                    <Box className="bg-info/15 text-info flex size-5 shrink-0 items-center justify-center rounded-md text-[0.7rem] font-semibold">
+                      {i + 1}
+                    </Box>
+                    <Text className="truncate text-[0.8rem] font-medium">
+                      {task.name}
+                    </Text>
+                  </Flex>
+
+                  <Box className="bg-text-primary/8 shrink-0 rounded-full px-2 py-1 text-xs font-medium opacity-80">
+                    {task.meta}
+                  </Box>
+                </Flex>
+              ))}
+            </Box>
+          </Box>
+
+          <Flex className="mt-2.25 gap-2">
+            <Box className="bg-foreground text-background rounded-md px-3 py-1.25 text-[0.8rem] font-semibold shadow-sm">
+              Approve sprint
+            </Box>
+            <Box className="border-border/50 text-text-muted rounded-md border px-3 py-1.25 text-[0.8rem] font-medium">
+              Adjust
+            </Box>
+          </Flex>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Card 03: Gantt-chart roadmap ─────────────────────────── */
+const months = ["MAR", "APR", "MAY", "JUN", "JUL"];
+
+const roadmapBars = [
+  {
+    name: "Onboarding redesign",
+    startCol: 1,
+    solidCols: 3,
+    dashedCols: 1,
+    solidClass: "bg-primary/15",
+    dashedClass: "border-primary/25",
+    dotClass: "bg-primary/30",
+    milestones: [
+      { col: 2, label: "Wireframes" },
+      { col: 3, label: "Ship" },
+    ],
+  },
+  {
+    name: "Slack integration",
+    startCol: 2,
+    solidCols: 2,
+    dashedCols: 2,
+    solidClass: "bg-info/15",
+    dashedClass: "border-info/25",
+    dotClass: "bg-info/30",
+    milestones: [{ col: 3, label: "Beta" }],
+  },
+  {
+    name: "Analytics dashboard",
+    startCol: 3,
+    solidCols: 1,
+    dashedCols: 2,
+    solidClass: "bg-success/15",
+    dashedClass: "border-success/25",
+    dotClass: "bg-success/30",
+    milestones: [{ col: 5, label: "Alpha" }],
+  },
+];
+
+function RoadmapCard() {
+  const totalCols = months.length;
+
+  return (
+    <Box
+      className="border-border/70 bg-background relative flex h-full flex-col overflow-hidden rounded-lg border"
+      style={cardFadeMaskStyle}
+    >
+      <Flex align="center" className="gap-1.5 px-3.5 pt-3.5 pb-2.5">
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+        <Box className="bg-text-primary/10 size-2.5 rounded-full" />
+      </Flex>
+
+      <Box className="flex flex-1 flex-col overflow-hidden px-3.5 pb-3.5">
+        {/* Month headers */}
+        <Box
+          className="mb-3 grid"
+          style={{ gridTemplateColumns: `repeat(${totalCols}, 1fr)` }}
+        >
+          {months.map((m) => (
+            <Text
+              className="text-text-muted text-center font-mono text-xs tracking-wider"
+              key={m}
+            >
+              {m}
+            </Text>
+          ))}
+        </Box>
+
+        {/* Bars area with grid lines */}
+        <Box className="relative flex flex-1 flex-col gap-5">
+          {/* Vertical grid lines */}
+          <Box className="pointer-events-none absolute inset-0">
+            <Box
+              className="grid h-full"
+              style={{ gridTemplateColumns: `repeat(${totalCols}, 1fr)` }}
+            >
+              {months.map((m) => (
+                <Box
+                  className="border-border/15 border-l last:border-r"
+                  key={m}
+                />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Gantt bars */}
+          {roadmapBars.map((bar) => (
+            <Box className="relative" key={bar.name}>
+              <Text className="mb-2 text-[0.8rem] font-medium">{bar.name}</Text>
+
+              <Box className="relative">
+                <Box
+                  className="grid items-center"
+                  style={{
+                    gridTemplateColumns: `repeat(${totalCols}, 1fr)`,
+                  }}
+                >
+                  {/* Solid portion */}
+                  <Box
+                    className={`${bar.solidClass} relative z-1 h-5 rounded-sm`}
+                    style={{
+                      gridColumn: `${bar.startCol} / span ${bar.solidCols}`,
+                    }}
+                  />
+                  {/* Dashed portion */}
+                  {bar.dashedCols > 0 && (
+                    <Box
+                      className={`${bar.dashedClass} relative z-1 h-4 rounded-r-sm border border-l-0 border-dashed`}
+                      style={{
+                        gridColumn: `${bar.startCol + bar.solidCols} / span ${bar.dashedCols}`,
+                      }}
+                    />
+                  )}
+                </Box>
+
+                {/* Diamond milestones */}
+                <Box
+                  className="pointer-events-none absolute -bottom-3.5 grid w-full"
+                  style={{
+                    gridTemplateColumns: `repeat(${totalCols}, 1fr)`,
+                  }}
+                >
+                  {bar.milestones.map((ms) => (
+                    <Box
+                      className="flex flex-col items-center"
+                      key={ms.label}
+                      style={{ gridColumn: ms.col }}
+                    >
+                      <Box className={`${bar.dotClass} size-[5px] rotate-45`} />
+                      <Text className="text-text-muted relative top-1 mt-1.5 text-xs">
+                        {ms.label}
+                      </Text>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Descriptions ─────────────────────────────────────────── */
+const steps = [
+  {
+    number: "01",
+    numberClass: "text-primary",
+    title: "Goals aren’t separate from the work.",
+    description:
+      "Tasks, objectives, and delivery live in one system, so progress isn’t something you have to reconstruct later.",
+  },
+  {
+    number: "02",
+    numberClass: "text-info",
+    title: "Maya reduces planning drag.",
+    description:
+      "She takes rough direction, turns it into a workable sprint proposal, and helps the team start with clarity.",
+  },
+  {
+    number: "03",
+    numberClass: "text-success",
+    title: "Progress stays visible by default.",
+    description:
+      "As work ships, the roadmap reflects it. Teams, managers, and leadership stay aligned on what’s done, next, and slipping.",
+  },
+];
+
+/* ─── Main Section ─────────────────────────────────────────── */
+export const HowItWorks = () => {
+  return (
+    <Container className="py-16 md:py-20">
+      {/* Headline with superscript numbers */}
+      <motion.div
+        initial="hidden"
+        variants={fadeUp}
+        viewport={viewport}
+        whileInView="show"
+      >
+        <Text
+          color="gradientDark"
+          as="h2"
+          className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
+        >
+          The system that keeps planning, execution, and goals in sync.
+        </Text>
+      </motion.div>
+
+      {/* Three cards */}
+      <motion.div
+        initial="hidden"
+        variants={scaleIn}
+        viewport={viewport}
+        whileInView="show"
+      >
+        <Box className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <TaskGoalCard />
+          <MayaSprintCard />
+          <RoadmapCard />
+        </Box>
+      </motion.div>
+
+      {/* Numbered descriptions */}
+      <Box className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+        {steps.map((step, i) => (
+          <motion.div
+            initial="hidden"
+            key={step.number}
+            transition={{ delay: i * 0.1 }}
+            variants={fadeUp}
+            viewport={viewport}
+            whileInView="show"
+          >
+            <Box>
+              <Text
+                className={`${step.numberClass} mb-2 font-mono text-[0.95rem] font-semibold`}
+              >
+                {step.number}
+              </Text>
+              <Text className="mb-2 text-lg font-semibold">{step.title}</Text>
+              <Text className="text-text-muted">{step.description}</Text>
+            </Box>
+          </motion.div>
+        ))}
+      </Box>
+    </Container>
+  );
+};
