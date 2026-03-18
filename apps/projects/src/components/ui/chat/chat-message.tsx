@@ -1,8 +1,29 @@
+import type { ReactNode } from "react";
 import { Avatar, Box, Text, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
 import type { ChatStatus } from "ai";
 import { useState } from "react";
-import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
+import {
+  CheckIcon,
+  CopyIcon,
+  PlusIcon,
+  ReloadIcon,
+  SprintsIcon,
+  StoryIcon,
+  TeamIcon,
+  ObjectiveIcon,
+  SearchIcon,
+  NotificationsIcon,
+  CommentIcon,
+  TagsIcon,
+  LinkIcon,
+  AttachmentIcon,
+  BrainIcon,
+  SunIcon,
+  WorkflowIcon,
+  UserIcon,
+  HistoryIcon,
+} from "icons";
 import { usePathname } from "next/navigation";
 import { Streamdown } from "streamdown";
 import type { User } from "@/types";
@@ -25,77 +46,81 @@ type ChatMessageProps = {
   onPromptSelect: (prompt: string) => void;
 };
 
-/** Maps tool part types to user-friendly thinking labels */
-const TOOL_THINKING_LABELS: Record<string, string> = {
+const ICON_CLASS = "size-3.5";
+
+/** Maps tool part types to label + icon */
+const TOOL_THINKING_META: Record<string, { label: string; icon: ReactNode }> = {
   // Stories
-  "tool-listTeamStories": "Fetching stories",
-  "tool-searchStories": "Searching stories",
-  "tool-getStoryDetails": "Getting story details",
-  "tool-createStory": "Creating story",
-  "tool-updateStory": "Updating story",
-  "tool-deleteStory": "Deleting story",
-  "tool-bulkCreateStories": "Creating stories",
-  "tool-bulkUpdateStories": "Updating stories",
-  "tool-bulkDeleteStories": "Deleting stories",
-  "tool-assignStoriesToUser": "Assigning stories",
-  "tool-duplicateStory": "Duplicating story",
-  "tool-restoreStory": "Restoring story",
-  "tool-addStoryAssociation": "Linking stories",
-  "tool-removeStoryAssociation": "Unlinking stories",
+  "tool-listTeamStories": { label: "Fetching stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-searchStories": { label: "Searching stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-getStoryDetails": { label: "Getting story details", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-createStory": { label: "Creating story", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-updateStory": { label: "Updating story", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-deleteStory": { label: "Deleting story", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-bulkCreateStories": { label: "Creating stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-bulkUpdateStories": { label: "Updating stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-bulkDeleteStories": { label: "Deleting stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-assignStoriesToUser": { label: "Assigning stories", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-duplicateStory": { label: "Duplicating story", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-restoreStory": { label: "Restoring story", icon: <StoryIcon className={ICON_CLASS} /> },
+  "tool-addStoryAssociation": { label: "Linking stories", icon: <LinkIcon className={ICON_CLASS} /> },
+  "tool-removeStoryAssociation": { label: "Unlinking stories", icon: <LinkIcon className={ICON_CLASS} /> },
   // Sprints
-  "tool-listSprints": "Loading sprints",
-  "tool-listRunningSprints": "Getting active sprints",
-  "tool-getSprintDetailsTool": "Getting sprint details",
-  "tool-getSprintAnalyticsTool": "Analyzing sprint data",
-  "tool-updateSprintSettings": "Updating sprint settings",
+  "tool-listSprints": { label: "Loading sprints", icon: <SprintsIcon className={ICON_CLASS} /> },
+  "tool-listRunningSprints": { label: "Getting active sprints", icon: <SprintsIcon className={ICON_CLASS} /> },
+  "tool-getSprintDetailsTool": { label: "Getting sprint details", icon: <SprintsIcon className={ICON_CLASS} /> },
+  "tool-getSprintAnalyticsTool": { label: "Analyzing sprint data", icon: <SprintsIcon className={ICON_CLASS} /> },
+  "tool-updateSprintSettings": { label: "Updating sprint settings", icon: <SprintsIcon className={ICON_CLASS} /> },
   // Teams
-  "tool-listTeams": "Loading teams",
-  "tool-listPublicTeams": "Loading public teams",
-  "tool-getTeamDetails": "Getting team details",
-  "tool-listTeamMembers": "Loading team members",
-  "tool-createTeamTool": "Creating team",
-  "tool-updateTeam": "Updating team",
-  "tool-joinTeam": "Joining team",
-  "tool-leaveTeam": "Leaving team",
-  "tool-deleteTeam": "Deleting team",
-  "tool-getTeamSettingsTool": "Loading team settings",
+  "tool-listTeams": { label: "Loading teams", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-listPublicTeams": { label: "Loading public teams", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-getTeamDetails": { label: "Getting team details", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-listTeamMembers": { label: "Loading team members", icon: <UserIcon className={ICON_CLASS} /> },
+  "tool-createTeamTool": { label: "Creating team", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-updateTeam": { label: "Updating team", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-joinTeam": { label: "Joining team", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-leaveTeam": { label: "Leaving team", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-deleteTeam": { label: "Deleting team", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-getTeamSettingsTool": { label: "Loading team settings", icon: <TeamIcon className={ICON_CLASS} /> },
   // Objectives & Key Results
-  "tool-listObjectivesTool": "Loading objectives",
-  "tool-listTeamObjectivesTool": "Loading team objectives",
-  "tool-createObjectiveTool": "Creating objective",
-  "tool-updateObjectiveTool": "Updating objective",
-  "tool-deleteObjectiveTool": "Deleting objective",
-  "tool-getObjectiveDetailsTool": "Getting objective details",
-  "tool-objectiveAnalyticsTool": "Analyzing objective data",
-  "tool-getObjectiveActivitiesTool": "Loading objective activity",
-  "tool-listKeyResultsTool": "Loading key results",
-  "tool-createKeyResultTool": "Creating key result",
-  "tool-updateKeyResultTool": "Updating key result",
-  "tool-deleteKeyResultTool": "Deleting key result",
-  "tool-getKeyResultActivitiesTool": "Loading key result activity",
+  "tool-listObjectivesTool": { label: "Loading objectives", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-listTeamObjectivesTool": { label: "Loading team objectives", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-createObjectiveTool": { label: "Creating objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-updateObjectiveTool": { label: "Updating objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-deleteObjectiveTool": { label: "Deleting objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-getObjectiveDetailsTool": { label: "Getting objective details", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-objectiveAnalyticsTool": { label: "Analyzing objective data", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-getObjectiveActivitiesTool": { label: "Loading objective activity", icon: <HistoryIcon className={ICON_CLASS} /> },
+  "tool-listKeyResultsTool": { label: "Loading key results", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-createKeyResultTool": { label: "Creating key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-updateKeyResultTool": { label: "Updating key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-deleteKeyResultTool": { label: "Deleting key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
+  "tool-getKeyResultActivitiesTool": { label: "Loading key result activity", icon: <HistoryIcon className={ICON_CLASS} /> },
   // Other
-  "tool-navigation": "Navigating",
-  "tool-search": "Searching",
-  "tool-members": "Loading members",
-  "tool-comments": "Loading comments",
-  "tool-notifications": "Checking notifications",
-  "tool-statuses": "Loading statuses",
-  "tool-objectiveStatuses": "Loading objective statuses",
-  "tool-links": "Loading links",
-  "tool-labels": "Loading labels",
-  "tool-storyLabels": "Managing labels",
-  "tool-storyActivities": "Loading activity",
-  "tool-listAttachments": "Loading attachments",
-  "tool-deleteAttachment": "Deleting attachment",
-  "tool-listMemories": "Checking memory",
-  "tool-createMemory": "Saving to memory",
-  "tool-updateMemory": "Updating memory",
-  "tool-deleteMemory": "Removing memory",
-  "tool-theme": "Changing theme",
+  "tool-navigation": { label: "Navigating", icon: <WorkflowIcon className={ICON_CLASS} /> },
+  "tool-search": { label: "Searching", icon: <SearchIcon className={ICON_CLASS} /> },
+  "tool-members": { label: "Loading members", icon: <UserIcon className={ICON_CLASS} /> },
+  "tool-comments": { label: "Loading comments", icon: <CommentIcon className={ICON_CLASS} /> },
+  "tool-notifications": { label: "Checking notifications", icon: <NotificationsIcon className={ICON_CLASS} /> },
+  "tool-statuses": { label: "Loading statuses", icon: <WorkflowIcon className={ICON_CLASS} /> },
+  "tool-objectiveStatuses": { label: "Loading objective statuses", icon: <WorkflowIcon className={ICON_CLASS} /> },
+  "tool-links": { label: "Loading links", icon: <LinkIcon className={ICON_CLASS} /> },
+  "tool-labels": { label: "Loading labels", icon: <TagsIcon className={ICON_CLASS} /> },
+  "tool-storyLabels": { label: "Managing labels", icon: <TagsIcon className={ICON_CLASS} /> },
+  "tool-storyActivities": { label: "Loading activity", icon: <HistoryIcon className={ICON_CLASS} /> },
+  "tool-listAttachments": { label: "Loading attachments", icon: <AttachmentIcon className={ICON_CLASS} /> },
+  "tool-deleteAttachment": { label: "Deleting attachment", icon: <AttachmentIcon className={ICON_CLASS} /> },
+  "tool-listMemories": { label: "Checking memory", icon: <BrainIcon className={ICON_CLASS} /> },
+  "tool-createMemory": { label: "Saving to memory", icon: <BrainIcon className={ICON_CLASS} /> },
+  "tool-updateMemory": { label: "Updating memory", icon: <BrainIcon className={ICON_CLASS} /> },
+  "tool-deleteMemory": { label: "Removing memory", icon: <BrainIcon className={ICON_CLASS} /> },
+  "tool-theme": { label: "Changing theme", icon: <SunIcon className={ICON_CLASS} /> },
 };
 
-const getToolThinkingLabel = (toolType: string): string => {
-  return TOOL_THINKING_LABELS[toolType] ?? "Working on it";
+const DEFAULT_TOOL_META = { label: "Working on it", icon: <WorkflowIcon className={ICON_CLASS} /> };
+
+const getToolThinkingMeta = (toolType: string) => {
+  return TOOL_THINKING_META[toolType] ?? DEFAULT_TOOL_META;
 };
 
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
@@ -188,11 +213,9 @@ const RenderMessage = ({
             (part.state === "input-available" ||
               part.state === "input-streaming")
           ) {
+            const { label, icon } = getToolThinkingMeta(part.type);
             return (
-              <Thinking
-                key={index}
-                message={getToolThinkingLabel(part.type)}
-              />
+              <Thinking key={index} message={label} icon={icon} />
             );
           }
 
