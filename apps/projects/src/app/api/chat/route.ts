@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   let client =
     provider === "openai"
-      ? openaiClient("gpt-5.2")
+      ? openaiClient("gpt-5.4-mini")
       : googleClient("gemini-3-flash-preview");
 
   if (process.env.NODE_ENV === "development") {
