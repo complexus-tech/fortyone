@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
@@ -51,6 +51,37 @@ const SendIcon = () => {
 
 const getAttachmentKey = (attachment: File) => {
   return `${attachment.name}-${attachment.size}-${attachment.lastModified}-${attachment.type}`;
+};
+
+/** Wraps StoryAttachmentPreview with proper blob URL lifecycle management */
+const AttachmentPreviewItem = ({
+  file,
+  onDelete,
+}: {
+  file: File;
+  onDelete: () => void;
+}) => {
+  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
+
+  return (
+    <StoryAttachmentPreview
+      file={{
+        id: file.name,
+        filename: file.name,
+        size: file.size,
+        mimeType: file.type,
+        url: objectUrl,
+        createdAt: new Date().toISOString(),
+        uploadedBy: "me",
+      }}
+      isInChat
+      onDelete={onDelete}
+    />
+  );
 };
 
 export const ChatInput = ({
@@ -244,7 +275,7 @@ export const ChatInput = ({
           justify="between"
         >
           <Text color="muted">
-            {`${recordingState.replace("r", "l").charAt(0).toUpperCase() + recordingState.replace("recording", "listening").slice(1)}...`}
+            {recordingState === "recording" ? "Listening" : recordingState}...
           </Text>
           <Flex align="center" gap={1}>
             <Text
@@ -265,21 +296,12 @@ export const ChatInput = ({
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment) => (
-              <StoryAttachmentPreview
-                file={{
-                  id: attachment.name,
-                  filename: attachment.name,
-                  size: attachment.size,
-                  mimeType: attachment.type,
-                  url: URL.createObjectURL(attachment),
-                  createdAt: new Date().toISOString(),
-                  uploadedBy: "me",
-                }}
-                isInChat
+              <AttachmentPreviewItem
+                file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() => {
-                  handleRemoveAttachment(attachments.indexOf(attachment));
-                }}
+                onDelete={() =>
+                  handleRemoveAttachment(attachments.indexOf(attachment))
+                }
               />
             ))}
           </Box>
@@ -287,21 +309,12 @@ export const ChatInput = ({
         {pdfs.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-1 gap-3 px-4">
             {pdfs.map((attachment) => (
-              <StoryAttachmentPreview
-                file={{
-                  id: attachment.name,
-                  filename: attachment.name,
-                  size: attachment.size,
-                  mimeType: attachment.type,
-                  url: URL.createObjectURL(attachment),
-                  createdAt: new Date().toISOString(),
-                  uploadedBy: "me",
-                }}
-                isInChat
+              <AttachmentPreviewItem
+                file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() => {
-                  handleRemoveAttachment(attachments.indexOf(attachment));
-                }}
+                onDelete={() =>
+                  handleRemoveAttachment(attachments.indexOf(attachment))
+                }
               />
             ))}
           </Box>

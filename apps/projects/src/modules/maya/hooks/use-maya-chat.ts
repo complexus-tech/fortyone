@@ -80,6 +80,41 @@ export const useMayaChat = (config: MayaChatConfig) => {
     updateChatRef(chatId);
   };
 
+  // Map tool types to the query keys they should invalidate
+  const toolInvalidationMap: Record<string, () => readonly unknown[]> = {
+    // Teams
+    "tool-createTeamTool": () => teamKeys.all(workspaceSlug),
+    "tool-updateTeam": () => teamKeys.all(workspaceSlug),
+    "tool-joinTeam": () => teamKeys.all(workspaceSlug),
+    "tool-leaveTeam": () => teamKeys.all(workspaceSlug),
+    "tool-deleteTeam": () => teamKeys.all(workspaceSlug),
+    // Stories
+    "tool-createStory": () => storyKeys.all(workspaceSlug),
+    "tool-updateStory": () => storyKeys.all(workspaceSlug),
+    "tool-deleteStory": () => storyKeys.all(workspaceSlug),
+    "tool-bulkUpdateStories": () => storyKeys.all(workspaceSlug),
+    "tool-bulkDeleteStories": () => storyKeys.all(workspaceSlug),
+    "tool-bulkCreateStories": () => storyKeys.all(workspaceSlug),
+    "tool-assignStoriesToUser": () => storyKeys.all(workspaceSlug),
+    "tool-duplicateStory": () => storyKeys.all(workspaceSlug),
+    "tool-restoreStory": () => storyKeys.all(workspaceSlug),
+    // Objectives & Key Results
+    "tool-createKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+    "tool-updateKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+    "tool-deleteKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+    "tool-createObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+    "tool-updateObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+    "tool-deleteObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+    // Notifications
+    "tool-notifications": () => notificationKeys.all(workspaceSlug),
+    // Memory
+    "tool-deleteMemory": () => aiChatKeys.memories(),
+    "tool-updateMemory": () => aiChatKeys.memories(),
+    "tool-createMemory": () => aiChatKeys.memories(),
+    // Objective statuses
+    "tool-objectiveStatuses": () => objectiveKeys.statuses(workspaceSlug),
+  };
+
   const {
     messages,
     status,
@@ -92,93 +127,41 @@ export const useMayaChat = (config: MayaChatConfig) => {
     id: idRef.current,
     onFinish: ({ message }) => {
       message.parts.forEach((part) => {
+        // Handle side effects for navigation and theme
         if (part.type === "tool-navigation") {
-          if (part.state === "output-available") {
-            const route = part.output.route;
-            if (route) {
-              router.push(route);
-            }
+          if (part.state === "output-available" && part.output.route) {
+            router.push(part.output.route);
           }
-        } else if (part.type === "tool-theme") {
+          return;
+        }
+
+        if (part.type === "tool-theme") {
           if (part.state === "output-available") {
-            const requestedTheme = part.output.theme;
-            if (requestedTheme === "toggle") {
-              const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-              setTheme(newTheme);
-            } else {
-              setTheme(requestedTheme);
-            }
+            const requested = part.output.theme;
+            setTheme(
+              requested === "toggle"
+                ? resolvedTheme === "dark"
+                  ? "light"
+                  : "dark"
+                : requested,
+            );
           }
-        } else if (part.type === "text") {
-          queryClient.invalidateQueries({
-            queryKey: aiChatKeys.lists(),
-          });
+          return;
+        }
+
+        // Refresh chat list on any text response
+        if (part.type === "text") {
+          queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
           queryClient.invalidateQueries({
             queryKey: aiChatKeys.totalMessages(),
           });
-        } else if (
-          part.type === "tool-createTeamTool" ||
-          part.type === "tool-updateTeam" ||
-          part.type === "tool-joinTeam" ||
-          part.type === "tool-leaveTeam" ||
-          part.type === "tool-deleteTeam"
-        ) {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: teamKeys.all(workspaceSlug),
-            });
-          }
-        } else if (
-          part.type === "tool-createStory" ||
-          part.type === "tool-updateStory" ||
-          part.type === "tool-deleteStory" ||
-          part.type === "tool-bulkUpdateStories" ||
-          part.type === "tool-bulkDeleteStories" ||
-          part.type === "tool-bulkCreateStories" ||
-          part.type === "tool-assignStoriesToUser" ||
-          part.type === "tool-duplicateStory" ||
-          part.type === "tool-restoreStory"
-        ) {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: storyKeys.all(workspaceSlug),
-            });
-          }
-        } else if (
-          part.type === "tool-createKeyResultTool" ||
-          part.type === "tool-updateKeyResultTool" ||
-          part.type === "tool-deleteKeyResultTool" ||
-          part.type === "tool-createObjectiveTool" ||
-          part.type === "tool-updateObjectiveTool" ||
-          part.type === "tool-deleteObjectiveTool"
-        ) {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: objectiveKeys.all(workspaceSlug),
-            });
-          }
-        } else if (part.type === "tool-notifications") {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: notificationKeys.all(workspaceSlug),
-            });
-          }
-        } else if (
-          part.type === "tool-deleteMemory" ||
-          part.type === "tool-updateMemory" ||
-          part.type === "tool-createMemory"
-        ) {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: aiChatKeys.memories(),
-            });
-          }
-        } else if (part.type === "tool-objectiveStatuses") {
-          if (part.state === "output-available") {
-            queryClient.invalidateQueries({
-              queryKey: objectiveKeys.statuses(workspaceSlug),
-            });
-          }
+          return;
+        }
+
+        // Invalidate queries for tool completions via the map
+        const getQueryKey = toolInvalidationMap[part.type];
+        if (getQueryKey && "state" in part && part.state === "output-available") {
+          queryClient.invalidateQueries({ queryKey: getQueryKey() });
         }
       });
     },

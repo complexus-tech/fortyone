@@ -70,7 +70,11 @@ export const ChatMessages = ({
             status={status}
           />
         ))}
-        {status === "submitted" ? <ChatLoading /> : null}
+        {/* Show loading only before an assistant message exists */}
+        {status !== "ready" &&
+          messages[messages.length - 1]?.role !== "assistant" && (
+            <ChatLoading />
+          )}
         {status === "streaming" ? <div className="h-32" /> : null}
         <div ref={messagesEndRef} />
       </Flex>
