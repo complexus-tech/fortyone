@@ -1,6 +1,3 @@
-// eslint-disable-next-line turbo/no-undeclared-env-vars -- build-time flag for docker
-const isDockerBuild = process.env.DOCKER_BUILD === "1";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -9,12 +6,6 @@ const nextConfig = {
   transpilePackages: ["ui", "icons"],
   devIndicators: false,
   reactCompiler: true,
-  eslint: {
-    ignoreDuringBuilds: isDockerBuild,
-  },
-  typescript: {
-    ignoreBuildErrors: isDockerBuild,
-  },
   experimental: {
     turbopackFileSystemCacheForDev: true,
     staleTimes: {
