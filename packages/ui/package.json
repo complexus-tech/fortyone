@@ -48,10 +48,10 @@
     "date-fns": "^2.30.0",
     "icons": "workspace:*",
     "lib": "workspace:*",
-    "next": "16.1.1",
-    "react": "19.2.3",
+    "next": "16.2.0",
+    "react": "19.2.4",
     "react-day-picker": "^8.10.1",
-    "react-dom": "19.2.3",
+    "react-dom": "19.2.4",
     "react-dropzone": "^14.2.3",
     "react-resizable-panels": "^3.0.4",
     "react-select": "^5.8.0",
@@ -60,7 +60,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.18",
     "@types/node": "^25.0.3",
-    "@types/react": "19.2.7",
+    "@types/react": "19.2.14",
     "eslint": "^9.39.1",
     "eslint-config-custom": "workspace:*",
     "tailwind-config": "workspace:*",
@@ -70,7 +70,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "19.2.7"
+      "@types/react": "19.2.14"
     }
   }
 }
