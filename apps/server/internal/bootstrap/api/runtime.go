@@ -26,6 +26,7 @@ func BuildRuntime(cfg mux.Config, websiteURL string, emailService mailer.Service
 		websiteURL,
 		svcs.notifications,
 		emailService,
+		svcs.github,
 		svcs.stories,
 		svcs.objectives,
 		svcs.users,

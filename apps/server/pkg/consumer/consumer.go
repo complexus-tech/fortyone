@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	"github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	"github.com/complexus-tech/projects-api/internal/modules/states/service"
@@ -34,6 +35,7 @@ type Consumer struct {
 	notifications     *notifications.Service
 	notificationRules *notifications.Rules
 	mailerService     mailer.Service
+	github            *github.Service
 	stories           *stories.Service
 	objectives        *objectives.Service
 	users             *users.Service
@@ -41,7 +43,7 @@ type Consumer struct {
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, githubService *github.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
@@ -50,6 +52,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		notifications:     notificationsService,
 		notificationRules: notificationRules,
 		mailerService:     mailerService,
+		github:            githubService,
 		stories:           stories,
 		objectives:        objectives,
 		users:             users,
@@ -279,6 +282,10 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		c.broadcastToWorkspace(ctx, payload, event.ActorID)
 	}
 
+	if err := c.syncStoryToGitHub(ctx, payload.WorkspaceID, payload.StoryID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -311,7 +318,31 @@ func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) e
 		}
 	}
 
+	if err := c.syncStoryToGitHub(ctx, payload.WorkspaceID, payload.StoryID); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (c *Consumer) syncStoryToGitHub(ctx context.Context, workspaceID, storyID uuid.UUID) error {
+	if c.github == nil {
+		return nil
+	}
+
+	story, err := c.stories.Get(ctx, storyID, workspaceID)
+	if err != nil {
+		return err
+	}
+
+	return c.github.SyncStoryFromFortyOne(ctx, github.CoreStorySyncInput{
+		StoryID:     story.ID,
+		WorkspaceID: workspaceID,
+		TeamID:      story.Team,
+		Title:       story.Title,
+		Description: story.Description,
+		StatusID:    story.Status,
+	})
 }
 
 // NEW: Check if updates contain workspace-worthy changes

@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -28,6 +29,8 @@ import (
 )
 
 var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
+
+const githubIssueLinkPrefix = "GitHub issue: "
 
 type Service struct {
 	log        *logger.Logger
@@ -218,6 +221,62 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 		return CoreTeamGitHubSettings{}, errors.New("at least one rule is required")
 	}
 	return s.repo.ReplaceTeamWorkflowSettings(ctx, workspaceID, teamID, input.Rules)
+}
+
+func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
+	if !s.isConfigured() {
+		return nil
+	}
+
+	link, err := s.repo.FindBidirectionalIssueSyncLinkByTeamID(ctx, input.WorkspaceID, input.TeamID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	desiredState := "open"
+	if input.StatusID != nil {
+		category, err := s.repo.GetStatusCategory(ctx, *input.StatusID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if category == "completed" {
+			desiredState = "closed"
+		}
+	}
+
+	issueBody := issueBodyFromStoryDescription(input.Description)
+	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.StoryID, link.RepositoryID)
+	switch {
+	case err == nil:
+		issue, err := s.updateIssue(ctx, link.GitHubInstallationID, link.OwnerLogin, link.RepositorySlug, existingLink.GitHubNumber, input.Title, issueBody, desiredState)
+		if err != nil {
+			return err
+		}
+		if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+			return err
+		}
+		return s.repo.UpdateStoryDescription(ctx, input.StoryID, ensureIssueLinkInDescription(input.Description, issue.HTMLURL))
+	case !errors.Is(err, sql.ErrNoRows):
+		return err
+	}
+
+	issue, err := s.createIssue(ctx, link.GitHubInstallationID, link.OwnerLogin, link.RepositorySlug, input.Title, issueBody)
+	if err != nil {
+		return err
+	}
+	if desiredState == "closed" {
+		issue, err = s.updateIssue(ctx, link.GitHubInstallationID, link.OwnerLogin, link.RepositorySlug, issue.Number, input.Title, issueBody, desiredState)
+		if err != nil {
+			return err
+		}
+	}
+	if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+		return err
+	}
+	return s.repo.UpdateStoryDescription(ctx, input.StoryID, ensureIssueLinkInDescription(input.Description, issue.HTMLURL))
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, deliveryID, eventName, signature string, body []byte) error {
@@ -575,6 +634,94 @@ func (s *Service) listInstallationRepositories(ctx context.Context, installation
 	return payload.Repositories, nil
 }
 
+type githubIssuePayload struct {
+	ID      int64  `json:"id"`
+	Number  int    `json:"number"`
+	HTMLURL string `json:"html_url"`
+	Title   string `json:"title"`
+	State   string `json:"state"`
+}
+
+func (s *Service) createIssue(ctx context.Context, installationID int64, owner, repository, title, body string) (githubIssuePayload, error) {
+	requestBody := map[string]any{
+		"title": title,
+		"body":  body,
+	}
+	var issue githubIssuePayload
+	if err := s.doInstallationRequest(
+		ctx,
+		installationID,
+		http.MethodPost,
+		fmt.Sprintf("https://api.github.com/repos/%s/%s/issues", owner, repository),
+		requestBody,
+		&issue,
+	); err != nil {
+		return githubIssuePayload{}, err
+	}
+	return issue, nil
+}
+
+func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, repository string, number int, title, body, state string) (githubIssuePayload, error) {
+	requestBody := map[string]any{
+		"title": title,
+		"body":  body,
+		"state": state,
+	}
+	var issue githubIssuePayload
+	if err := s.doInstallationRequest(
+		ctx,
+		installationID,
+		http.MethodPatch,
+		fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/%d", owner, repository, number),
+		requestBody,
+		&issue,
+	); err != nil {
+		return githubIssuePayload{}, err
+	}
+	return issue, nil
+}
+
+func (s *Service) doInstallationRequest(ctx context.Context, installationID int64, method, requestURL string, payload any, target any) error {
+	token, err := s.getInstallationToken(ctx, installationID)
+	if err != nil {
+		return err
+	}
+
+	var body io.Reader
+	if payload != nil {
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		body = strings.NewReader(string(payloadBytes))
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= http.StatusBadRequest {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("github request failed: %s", responseBody)
+	}
+	if target == nil {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(target)
+}
+
 func (s *Service) verifyWebhookSignature(body []byte, signature string) error {
 	if strings.TrimSpace(s.cfg.WebhookSecret) == "" {
 		return nil
@@ -589,6 +736,44 @@ func (s *Service) verifyWebhookSignature(body []byte, signature string) error {
 		return errors.New("invalid github webhook signature")
 	}
 	return nil
+}
+
+func issueBodyFromStoryDescription(description *string) string {
+	if description == nil {
+		return ""
+	}
+	return stripManagedIssueLink(*description)
+}
+
+func ensureIssueLinkInDescription(description *string, issueURL string) *string {
+	base := ""
+	if description != nil {
+		base = stripManagedIssueLink(*description)
+	}
+	footer := githubIssueLinkPrefix + issueURL
+	if strings.TrimSpace(base) == "" {
+		value := footer
+		return &value
+	}
+	value := strings.TrimSpace(base) + "\n\n" + footer
+	return &value
+}
+
+func stripManagedIssueLink(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return ""
+	}
+
+	lines := strings.Split(value, "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, githubIssueLinkPrefix) {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.TrimSpace(strings.Join(filtered, "\n"))
 }
 
 func (s *Service) signState(values map[string]string) (string, error) {

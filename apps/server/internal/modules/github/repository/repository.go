@@ -71,6 +71,18 @@ type syncLinkRow struct {
 	UpdatedAt      time.Time `db:"updated_at"`
 }
 
+type bidirectionalLinkRow struct {
+	ID                   uuid.UUID `db:"id"`
+	RepositoryID         uuid.UUID `db:"repository_id"`
+	TeamID               uuid.UUID `db:"team_id"`
+	SyncDirection        string    `db:"sync_direction"`
+	RepositoryName       string    `db:"repository_name"`
+	OwnerLogin           string    `db:"owner_login"`
+	RepositorySlug       string    `db:"repository_slug"`
+	RepositoryHTMLURL    string    `db:"repository_html_url"`
+	GitHubInstallationID int64     `db:"github_installation_id"`
+}
+
 type workflowRuleRow struct {
 	ID                uuid.UUID  `db:"id"`
 	EventKey          string     `db:"event_key"`
@@ -109,6 +121,17 @@ type RepoByExternalRow struct {
 	WorkspaceID   uuid.UUID `db:"workspace_id"`
 	FullName      string    `db:"full_name"`
 	DefaultBranch string    `db:"default_branch"`
+}
+
+type issueStoryLinkRow struct {
+	ID           uuid.UUID `db:"id"`
+	StoryID      uuid.UUID `db:"story_id"`
+	RepositoryID uuid.UUID `db:"repository_id"`
+	GitHubID     int64     `db:"github_id"`
+	GitHubNumber int       `db:"github_number"`
+	URL          string    `db:"url"`
+	Title        *string   `db:"title"`
+	State        *string   `db:"state"`
 }
 
 func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (githubshared.CoreWorkspaceSettings, error) {
@@ -521,6 +544,26 @@ func (r *Repo) FindIssueSyncLinkByRepositoryID(ctx context.Context, repositoryID
 	return row, err
 }
 
+func (r *Repo) FindBidirectionalIssueSyncLinkByTeamID(ctx context.Context, workspaceID, teamID uuid.UUID) (bidirectionalLinkRow, error) {
+	var row bidirectionalLinkRow
+	query := `
+		SELECT l.id, l.repository_id, l.team_id, l.sync_direction,
+		       gr.full_name AS repository_name, gr.owner_login, gr.name AS repository_slug,
+		       gr.html_url AS repository_html_url, gi.github_installation_id
+		FROM github_issue_sync_links l
+		INNER JOIN github_repositories gr ON gr.id = l.repository_id
+		INNER JOIN github_installations gi ON gi.id = gr.installation_id
+		WHERE l.workspace_id = $1
+		  AND l.team_id = $2
+		  AND l.is_active = true
+		  AND l.sync_direction = 'bidirectional'
+		  AND gr.is_active = true
+		LIMIT 1
+	`
+	err := r.db.GetContext(ctx, &row, query, workspaceID, teamID)
+	return row, err
+}
+
 func (r *Repo) ResolveStoriesByRefs(ctx context.Context, workspaceID uuid.UUID, refs []string) ([]storyMatch, error) {
 	if len(refs) == 0 {
 		return nil, nil
@@ -579,6 +622,21 @@ func (r *Repo) FindStoryLink(ctx context.Context, repositoryID uuid.UUID, extern
 		return uuid.Nil, uuid.Nil, err
 	}
 	return row.ID, row.StoryID, nil
+}
+
+func (r *Repo) FindIssueStoryLinkByStoryID(ctx context.Context, storyID, repositoryID uuid.UUID) (issueStoryLinkRow, error) {
+	var row issueStoryLinkRow
+	query := `
+		SELECT id, story_id, repository_id, github_id, github_number, url, title, state
+		FROM github_story_links
+		WHERE story_id = $1
+		  AND repository_id = $2
+		  AND external_type = 'issue'
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	err := r.db.GetContext(ctx, &row, query, storyID, repositoryID)
+	return row, err
 }
 
 func (r *Repo) CreateOrUpdateExternalStory(ctx context.Context, workspaceID, teamID, reporterID, repositoryID uuid.UUID, title, description string, externalType string, githubID int64, githubNumber int, url string) (uuid.UUID, error) {
@@ -686,6 +744,24 @@ func (r *Repo) UpsertStoryLink(ctx context.Context, workspaceID, storyID, reposi
 
 func (r *Repo) MoveStoryToStatus(ctx context.Context, storyID, statusID uuid.UUID) error {
 	_, err := r.db.ExecContext(ctx, `UPDATE stories SET status_id = $2, updated_at = NOW() WHERE id = $1`, storyID, statusID)
+	return err
+}
+
+func (r *Repo) GetStatusCategory(ctx context.Context, statusID uuid.UUID) (string, error) {
+	var category string
+	err := r.db.GetContext(ctx, &category, `SELECT category FROM statuses WHERE status_id = $1`, statusID)
+	return category, err
+}
+
+func (r *Repo) UpdateStoryDescription(ctx context.Context, storyID uuid.UUID, description *string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`UPDATE stories
+		 SET description = $2, description_html = $2, updated_at = NOW()
+		 WHERE id = $1`,
+		storyID,
+		description,
+	)
 	return err
 }
 

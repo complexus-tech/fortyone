@@ -33,6 +33,15 @@ type CoreTeamGitHubSettings = githubshared.CoreTeamGitHubSettings
 type CoreWorkflowRuleInput = githubshared.CoreWorkflowRuleInput
 type CoreUpdateTeamGitHubSettings = githubshared.CoreUpdateTeamGitHubSettings
 
+type CoreStorySyncInput struct {
+	StoryID     uuid.UUID
+	WorkspaceID uuid.UUID
+	TeamID      uuid.UUID
+	Title       string
+	Description *string
+	StatusID    *uuid.UUID
+}
+
 type Config struct {
 	AppID          int64
 	AppSlug        string
