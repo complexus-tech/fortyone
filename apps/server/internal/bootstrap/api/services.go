@@ -142,7 +142,7 @@ func buildServices(cfg mux.Config) services {
 	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, github.Config{
 		AppID:         cfg.GitHubAppID,
 		AppSlug:       cfg.GitHubAppSlug,
-		PrivateKey:    cfg.GitHubKey,
+		PrivateKeyBase64: cfg.GitHubKeyBase64,
 		RedirectURL:   cfg.GitHubRedirect,
 		WebhookSecret: cfg.GitHubWebhook,
 		WebsiteURL:    cfg.WebsiteURL,

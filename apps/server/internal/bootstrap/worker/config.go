@@ -63,7 +63,7 @@ type Config struct {
 	GitHub struct {
 		AppID         int64  `env:"APP_GITHUB_APP_ID"`
 		AppSlug       string `env:"GITHUB_APP_SLUG"`
-		PrivateKey    string `env:"GITHUB_PRIVATE_KEY"`
+		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
 		RedirectURL   string `env:"GITHUB_REDIRECT_URL"`
 		WebhookSecret string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
