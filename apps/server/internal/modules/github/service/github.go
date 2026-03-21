@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"slices"
@@ -49,14 +48,12 @@ type Service struct {
 func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
-	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyPath) != "" {
-		privateKey, err = loadPrivateKey(cfg.PrivateKeyPath)
+	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKey) != "" {
+		privateKey, err = loadPrivateKey(cfg.PrivateKey)
 		if err != nil {
 			log.Warn(
 				context.Background(),
 				"github integration disabled: failed to load private key",
-				"path",
-				cfg.PrivateKeyPath,
 				"error",
 				err,
 			)
@@ -807,12 +804,8 @@ func slugifyStoryTitle(title string) string {
 	return slug
 }
 
-func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	block, _ := pem.Decode(bytes)
+func loadPrivateKey(privateKey string) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(strings.TrimSpace(privateKey)))
 	if block == nil {
 		return nil, errors.New("invalid github private key")
 	}

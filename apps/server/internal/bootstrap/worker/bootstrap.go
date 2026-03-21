@@ -102,14 +102,14 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	}
 
 	githubService, err := github.New(log, githubrepository.New(log, db), nil, github.Config{
-		AppID:          cfg.GitHub.AppID,
-		AppSlug:        cfg.GitHub.AppSlug,
-		PrivateKeyPath: cfg.GitHub.PrivateKeyPath,
-		RedirectURL:    cfg.GitHub.RedirectURL,
-		WebhookSecret:  cfg.GitHub.WebhookSecret,
-		WebsiteURL:     cfg.Website.URL,
-		SecretKey:      cfg.Auth.SecretKey,
-		GitHubUserID:   githubUserID,
+		AppID:         cfg.GitHub.AppID,
+		AppSlug:       cfg.GitHub.AppSlug,
+		PrivateKey:    cfg.GitHub.PrivateKey,
+		RedirectURL:   cfg.GitHub.RedirectURL,
+		WebhookSecret: cfg.GitHub.WebhookSecret,
+		WebsiteURL:    cfg.Website.URL,
+		SecretKey:     cfg.Auth.SecretKey,
+		GitHubUserID:  githubUserID,
 	})
 	if err != nil {
 		_ = db.Close()
