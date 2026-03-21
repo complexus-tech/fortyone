@@ -1,6 +1,6 @@
 import {
   Inter_Tight as InterTight,
-  Inter,
+  Playfair_Display as Playfair,
   Inconsolata,
   Manrope,
 } from "next/font/google";
@@ -18,7 +18,7 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = InterTight({
+export const heading = Playfair({
   variable: "--font-heading",
   display: "swap",
   subsets: ["latin"],

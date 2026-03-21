@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 
+	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
@@ -22,6 +23,7 @@ const (
 	EventIssueOpen                      = githubshared.EventIssueOpen
 	EventIssueReopen                    = githubshared.EventIssueReopen
 	EventIssueClose                     = githubshared.EventIssueClose
+	EventCommitClose                    = githubshared.EventCommitClose
 )
 
 type CoreWorkspaceSettings = githubshared.CoreWorkspaceSettings
@@ -52,6 +54,7 @@ type StoryService interface {
 	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
+	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
 }
 
 type Config struct {

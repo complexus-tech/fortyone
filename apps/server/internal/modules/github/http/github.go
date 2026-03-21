@@ -193,6 +193,32 @@ func (h *Handlers) UpdateTeamSettings(ctx context.Context, w http.ResponseWriter
 	return web.Respond(ctx, w, toAppTeamSettings(settings), http.StatusOK)
 }
 
+func (h *Handlers) LinkGitHubUser(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppLinkGitHubUserRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.service.LinkGitHubUser(ctx, userID, input.Code); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
+func (h *Handlers) UnlinkGitHubUser(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if err := h.service.UnlinkGitHubUser(ctx, userID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	deliveryID := r.Header.Get("X-GitHub-Delivery")
 	eventName := r.Header.Get("X-GitHub-Event")

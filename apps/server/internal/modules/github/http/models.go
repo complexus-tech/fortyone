@@ -10,6 +10,10 @@ import (
 type AppWorkspaceSettings struct {
 	BranchFormat            string    `json:"branchFormat"`
 	LinkCommitsByMagicWords bool      `json:"linkCommitsByMagicWords"`
+	SyncAssignees           bool      `json:"syncAssignees"`
+	SyncLabels              bool      `json:"syncLabels"`
+	AutoPopulatePRBody      bool      `json:"autoPopulatePrBody"`
+	CloseOnCommitKeywords   bool      `json:"closeOnCommitKeywords"`
 	CreatedAt               time.Time `json:"createdAt"`
 	UpdatedAt               time.Time `json:"updatedAt"`
 }
@@ -87,6 +91,14 @@ type AppUpdateIssueSyncLinkRequest struct {
 type AppUpdateWorkspaceSettingsRequest struct {
 	BranchFormat            *string `json:"branchFormat,omitempty"`
 	LinkCommitsByMagicWords *bool   `json:"linkCommitsByMagicWords,omitempty"`
+	SyncAssignees           *bool   `json:"syncAssignees,omitempty"`
+	SyncLabels              *bool   `json:"syncLabels,omitempty"`
+	AutoPopulatePRBody      *bool   `json:"autoPopulatePrBody,omitempty"`
+	CloseOnCommitKeywords   *bool   `json:"closeOnCommitKeywords,omitempty"`
+}
+
+type AppLinkGitHubUserRequest struct {
+	Code string `json:"code" validate:"required"`
 }
 
 type AppTeamGitHubSettings struct {
@@ -171,6 +183,10 @@ func toCoreWorkspaceSettingsUpdate(input AppUpdateWorkspaceSettingsRequest) gith
 	return github.CoreUpdateWorkspaceSettingsInput{
 		BranchFormat:            input.BranchFormat,
 		LinkCommitsByMagicWords: input.LinkCommitsByMagicWords,
+		SyncAssignees:           input.SyncAssignees,
+		SyncLabels:              input.SyncLabels,
+		AutoPopulatePRBody:      input.AutoPopulatePRBody,
+		CloseOnCommitKeywords:   input.CloseOnCommitKeywords,
 	}
 }
 
@@ -178,6 +194,10 @@ func toAppWorkspaceSettings(core github.CoreWorkspaceSettings) AppWorkspaceSetti
 	return AppWorkspaceSettings{
 		BranchFormat:            core.BranchFormat,
 		LinkCommitsByMagicWords: core.LinkCommitsByMagicWords,
+		SyncAssignees:           core.SyncAssignees,
+		SyncLabels:              core.SyncLabels,
+		AutoPopulatePRBody:      core.AutoPopulatePRBody,
+		CloseOnCommitKeywords:   core.CloseOnCommitKeywords,
 		CreatedAt:               core.CreatedAt,
 		UpdatedAt:               core.UpdatedAt,
 	}

@@ -20,12 +20,17 @@ const (
 	EventIssueOpen                      = "issue_open"
 	EventIssueReopen                    = "issue_reopen"
 	EventIssueClose                     = "issue_close"
+	EventCommitClose                    = "commit_close"
 )
 
 type CoreWorkspaceSettings struct {
 	WorkspaceID             uuid.UUID
 	BranchFormat            string
 	LinkCommitsByMagicWords bool
+	SyncAssignees           bool
+	SyncLabels              bool
+	AutoPopulatePRBody      bool
+	CloseOnCommitKeywords   bool
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -112,6 +117,10 @@ type CoreUpdateIssueSyncLinkInput struct {
 type CoreUpdateWorkspaceSettingsInput struct {
 	BranchFormat            *string
 	LinkCommitsByMagicWords *bool
+	SyncAssignees           *bool
+	SyncLabels              *bool
+	AutoPopulatePRBody      *bool
+	CloseOnCommitKeywords   *bool
 }
 
 type CoreTeamGitHubSettings struct {
