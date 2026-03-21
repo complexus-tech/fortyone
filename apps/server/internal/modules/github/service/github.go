@@ -505,6 +505,9 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 			if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_pull_request", fmt.Sprintf("PR #%d", payload.PullRequest.Number), payload.PullRequest.HTMLURL); err != nil {
 				return err
 			}
+			if err := s.ensurePRLinkedComment(ctx, repository, payload.PullRequest.Number, story); err != nil {
+				return err
+			}
 		}
 		branchRef := payload.PullRequest.Head.Ref
 		if branchRef != "" {
@@ -768,8 +771,8 @@ func (s *Service) appAPIConfigDiagnostics() []any {
 	}
 }
 
-func buildImportedStoryIssueComment(storyURL string, story stories.CoreSingleStory) string {
-	taskKey := fmt.Sprintf("%s-%d", story.TeamCode, story.SequenceID)
+func buildLinkedTaskComment(storyURL, teamCode string, sequenceID int) string {
+	taskKey := fmt.Sprintf("%s-%d", teamCode, sequenceID)
 	return fmt.Sprintf(
 		"Linked to FortyOne task [%s](%s).",
 		taskKey,
@@ -785,7 +788,7 @@ func storyCommentMarker(storyID uuid.UUID) string {
 	return fmt.Sprintf("`%s`", storyID.String())
 }
 
-func storyURLFromWebsite(websiteURL, workspaceSlug string, story stories.CoreSingleStory) (string, error) {
+func storyURLFromWebsite(websiteURL, workspaceSlug string, storyID uuid.UUID, storyTitle string) (string, error) {
 	baseURL, err := url.Parse(strings.TrimRight(websiteURL, "/"))
 	if err != nil {
 		return "", err
@@ -795,7 +798,7 @@ func storyURLFromWebsite(websiteURL, workspaceSlug string, story stories.CoreSin
 		return "", errors.New("workspace slug is required")
 	}
 
-	baseURL.Path = path.Join("/", "story", story.ID.String(), slugifyStoryTitle(story.Title))
+	baseURL.Path = path.Join("/", "story", storyID.String(), slugifyStoryTitle(storyTitle))
 
 	host := baseURL.Hostname()
 	if host == "" {
@@ -803,7 +806,7 @@ func storyURLFromWebsite(websiteURL, workspaceSlug string, story stories.CoreSin
 	}
 
 	if isLocalWebsiteHost(host) {
-		baseURL.Path = path.Join("/", workspaceSlug, "story", story.ID.String(), slugifyStoryTitle(story.Title))
+		baseURL.Path = path.Join("/", workspaceSlug, "story", storyID.String(), slugifyStoryTitle(storyTitle))
 		return baseURL.String(), nil
 	}
 
@@ -1134,7 +1137,7 @@ func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, 
 }
 
 func (s *Service) ensureIssueImportComment(ctx context.Context, repository githubrepository.RepoByExternalRow, issueNumber int, story stories.CoreSingleStory) error {
-	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story)
+	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.ID, story.Title)
 	if err != nil {
 		return err
 	}
@@ -1155,13 +1158,46 @@ func (s *Service) ensureIssueImportComment(ctx context.Context, repository githu
 		return nil
 	}
 
-	commentBody := buildImportedStoryIssueComment(storyURL, story)
+	commentBody := buildLinkedTaskComment(storyURL, story.TeamCode, story.SequenceID)
 	return s.createIssueComment(
 		ctx,
 		repository.GitHubInstallationID,
 		repository.OwnerLogin,
 		repository.RepositorySlug,
 		issueNumber,
+		commentBody,
+	)
+}
+
+func (s *Service) ensurePRLinkedComment(ctx context.Context, repository githubrepository.RepoByExternalRow, prNumber int, story githubrepository.StoryMatch) error {
+	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.StoryID, story.Title)
+	if err != nil {
+		return err
+	}
+
+	exists, err := s.issueHasStoryComment(
+		ctx,
+		repository.GitHubInstallationID,
+		repository.OwnerLogin,
+		repository.RepositorySlug,
+		prNumber,
+		story.StoryID,
+		storyURL,
+	)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	commentBody := buildLinkedTaskComment(storyURL, story.TeamCode, story.SequenceID)
+	return s.createIssueComment(
+		ctx,
+		repository.GitHubInstallationID,
+		repository.OwnerLogin,
+		repository.RepositorySlug,
+		prNumber,
 		commentBody,
 	)
 }

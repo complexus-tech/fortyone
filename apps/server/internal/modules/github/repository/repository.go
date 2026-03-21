@@ -108,10 +108,11 @@ type statusRow struct {
 	Color    string    `db:"color"`
 }
 
-type storyMatch struct {
+type StoryMatch struct {
 	StoryID    uuid.UUID `db:"id"`
 	StatusID   uuid.UUID `db:"status_id"`
 	TeamID     uuid.UUID `db:"team_id"`
+	TeamCode   string    `db:"team_code"`
 	SequenceID int       `db:"sequence_id"`
 	Title      string    `db:"title"`
 }
@@ -604,11 +605,11 @@ func (r *Repo) FindBidirectionalIssueSyncLinkByTeamID(ctx context.Context, works
 	return row, err
 }
 
-func (r *Repo) ResolveStoriesByRefs(ctx context.Context, workspaceID uuid.UUID, refs []string) ([]storyMatch, error) {
+func (r *Repo) ResolveStoriesByRefs(ctx context.Context, workspaceID uuid.UUID, refs []string) ([]StoryMatch, error) {
 	if len(refs) == 0 {
 		return nil, nil
 	}
-	matches := make([]storyMatch, 0)
+	matches := make([]StoryMatch, 0)
 	seen := map[string]struct{}{}
 	for _, ref := range refs {
 		normalized := strings.ToUpper(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(ref), "-", ""), " ", ""))
@@ -631,9 +632,9 @@ func (r *Repo) ResolveStoriesByRefs(ctx context.Context, workspaceID uuid.UUID, 
 		}
 		teamCode := normalized[:letters]
 		sequenceID := normalized[letters:]
-		var match storyMatch
+		var match StoryMatch
 		query := `
-			SELECT s.id, s.status_id, s.team_id, s.sequence_id, s.title
+			SELECT s.id, s.status_id, s.team_id, t.code AS team_code, s.sequence_id, s.title
 			FROM stories s
 			INNER JOIN teams t ON t.team_id = s.team_id
 			WHERE s.workspace_id = $1 AND UPPER(t.code) = $2 AND s.sequence_id = $3
