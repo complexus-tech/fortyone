@@ -15,7 +15,6 @@ import { useSession } from "@/lib/auth/client";
 import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
 import { useState } from "react";
 import type { Comment } from "@/types";
-import { useMembers } from "@/lib/hooks/members";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { CommentInput } from "@/modules/story/components/comment-input";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
@@ -23,7 +22,7 @@ import { useWorkspacePath } from "@/hooks";
 
 const MainComment = ({
   storyId,
-  comment: { id, userId, createdAt, comment, subComments },
+  comment: { id, userId, user, createdAt, comment, subComments },
   isSubComment = false,
   className,
   teamId,
@@ -34,7 +33,6 @@ const MainComment = ({
   storyId: string;
   teamId: string;
 }) => {
-  const { data: members = [] } = useMembers();
   const { data: session } = useSession();
   const { mutate: deleteComment } = useDeleteCommentMutation();
   const { withWorkspace } = useWorkspacePath();
@@ -42,10 +40,6 @@ const MainComment = ({
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isOwner = userId === session?.user?.id;
-
-  const member = members.find(
-    (member) => member.id === (userId || session?.user?.id),
-  );
 
   const handleCancel = () => {
     setIsReplying(false);
@@ -71,30 +65,36 @@ const MainComment = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? (
+            user ? (
               <Box>
                 <Flex align="center" gap={2}>
                   <Avatar
                     className="mt-0.5"
-                    name={member.fullName}
-                    src={member.avatarUrl}
+                    name={user.fullName}
+                    src={user.avatarUrl}
                   />
                   <Box>
                     <Link
                       className="mb-2 flex gap-1"
-                      href={withWorkspace(`/profile/${member.id}`)}
+                      href={user.isSystem ? "" : withWorkspace(`/profile/${user.id}`)}
                     >
-                      <Text fontSize="md">{member.fullName}</Text>
-                      <Text color="muted">({member.username})</Text>
+                      <Text fontSize="md">{user.fullName}</Text>
+                      <Text color="muted">({user.username})</Text>
                     </Link>
-                    <Button
-                      className="mb-0.5 ml-px px-2"
-                      color="tertiary"
-                      href={withWorkspace(`/profile/${member.id}`)}
-                      size="xs"
-                    >
-                      Go to profile
-                    </Button>
+                    {!user.isSystem ? (
+                      <Button
+                        className="mb-0.5 ml-px px-2"
+                        color="tertiary"
+                        href={withWorkspace(`/profile/${user.id}`)}
+                        size="xs"
+                      >
+                        Go to profile
+                      </Button>
+                    ) : (
+                      <Text color="muted" fontSize="md">
+                        (System Account)
+                      </Text>
+                    )}
                   </Box>
                 </Flex>
               </Box>
@@ -104,13 +104,13 @@ const MainComment = ({
           <Flex className="cursor-pointer" gap={1}>
             <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
               <Avatar
-                name={member?.fullName}
+                name={user.fullName}
                 size="xs"
-                src={member?.avatarUrl}
+                src={user.avatarUrl}
               />
             </Box>
             <Text className="relative top-0.5 ml-1 text-black dark:text-white">
-              {member?.username}
+              {user.username}
             </Text>
           </Flex>
         </Tooltip>

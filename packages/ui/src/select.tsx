@@ -21,8 +21,8 @@ const Trigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap text-foreground outline-none rounded-lg border border-input px-3 py-1 text-sm bg-surface-muted/30",
-      className
+      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap text-foreground outline-none rounded-xl border border-input px-3 py-1 text-sm bg-surface-muted/30",
+      className,
     )}
     {...props}
   >
@@ -42,7 +42,7 @@ const ScrollUpButton = forwardRef<
     ref={ref}
     className={cn(
       "flex cursor-default items-center justify-center py-1",
-      className
+      className,
     )}
     {...props}
   >
@@ -59,7 +59,7 @@ const ScrollDownButton = forwardRef<
     ref={ref}
     className={cn(
       "flex cursor-default items-center justify-center py-1",
-      className
+      className,
     )}
     {...props}
   >
@@ -79,7 +79,7 @@ const SelectContent = forwardRef<
         "relative z-50 max-h-96 min-w-32 overflow-hidden rounded-2xl border shadow-md bg-surface-elevated/90 backdrop-blur text-foreground border-border w-max shadow-shadow",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
-        className
+        className,
       )}
       position={position}
       {...props}
@@ -89,7 +89,7 @@ const SelectContent = forwardRef<
         className={cn(
           "p-1",
           position === "popper" &&
-            "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)"
+            "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)",
         )}
       >
         {children}
@@ -120,7 +120,7 @@ const Item = forwardRef<
     ref={ref}
     className={cn(
       "relative flex w-full hover:bg-state-hover rounded-lg select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
-      className
+      className,
     )}
     {...props}
   >

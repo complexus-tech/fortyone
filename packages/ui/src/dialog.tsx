@@ -90,7 +90,7 @@ const DialogOverlay = forwardRef<
     className={cn(
       "fixed inset-0 z-50 flex items-start justify-center bg-black/15 dark:bg-black/40 ",
       "dialog-overlay-animate",
-      className
+      className,
     )}
     {...props}
   />
@@ -102,7 +102,7 @@ const DialogClose = ({ className }: { className?: string }) => (
     data-testid="close-modal"
     className={cn(
       "inline-block rounded-lg p-1 outline-none transition hover:bg-accent",
-      className
+      className,
     )}
   >
     <CloseIcon className="h-6 w-auto" />
@@ -120,14 +120,14 @@ const DialogContent = forwardRef<
 >(
   (
     { className, children, hideClose, overlayClassName, size = "md", ...props },
-    ref
+    ref,
   ) => (
     <DialogPortal>
       <DialogOverlay className={overlayClassName}>
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border-strong bg-surface-elevated",
+            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border-strong bg-surface",
             "dialog-content-animate outline-transparent",
             {
               "max-w-md": size === "sm",
@@ -135,7 +135,7 @@ const DialogContent = forwardRef<
               "max-w-5xl": size === "lg",
               "max-w-7xl": size === "xl",
             },
-            className
+            className,
           )}
           {...props}
         >
@@ -144,7 +144,7 @@ const DialogContent = forwardRef<
         </DialogPrimitive.Content>
       </DialogOverlay>
     </DialogPortal>
-  )
+  ),
 );
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
@@ -176,7 +176,7 @@ const DialogFooter = ({
         "justify-center": justify === "center",
         "justify-between": justify === "between",
       },
-      className
+      className,
     )}
     {...props}
   />
@@ -191,7 +191,7 @@ const DialogTitle = forwardRef<
     ref={ref}
     className={cn(
       "font-medium leading-none tracking-tight dark:text-white",
-      className
+      className,
     )}
     {...props}
   />
@@ -218,7 +218,7 @@ const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
       "max-h-[80dvh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
-      className
+      className,
     )}
     {...props}
   />

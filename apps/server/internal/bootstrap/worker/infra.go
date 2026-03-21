@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 )
 
 func openDB(cfg Config) (*sqlx.DB, error) {
@@ -28,6 +29,25 @@ func openDB(cfg Config) (*sqlx.DB, error) {
 }
 
 func redisClientOpt(cfg Config) asynq.RedisClientOpt {
+	options := redisOptions(cfg)
+
+	return asynq.RedisClientOpt{
+		Addr:         options.Addr,
+		Password:     options.Password,
+		DB:           options.DB,
+		TLSConfig:    options.TLSConfig,
+		DialTimeout:  options.DialTimeout,
+		ReadTimeout:  options.ReadTimeout,
+		WriteTimeout: options.WriteTimeout,
+		PoolSize:     options.PoolSize,
+	}
+}
+
+func openRedis(cfg Config) *redis.Client {
+	return redis.NewClient(redisOptions(cfg))
+}
+
+func redisOptions(cfg Config) *redis.Options {
 	var tlsConfig *tls.Config
 	if !cfg.Redis.DisableTLS {
 		tlsConfig = &tls.Config{
@@ -35,7 +55,7 @@ func redisClientOpt(cfg Config) asynq.RedisClientOpt {
 		}
 	}
 
-	return asynq.RedisClientOpt{
+	return &redis.Options{
 		Addr:         net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
 		Password:     cfg.Redis.Password,
 		DB:           cfg.Redis.Name,

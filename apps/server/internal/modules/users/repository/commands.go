@@ -74,6 +74,7 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 			full_name,
 			avatar_url,
 			is_active,
+			is_system,
 			has_seen_walkthrough,
 			timezone,
 			last_login_at,
@@ -131,6 +132,7 @@ func (r *repo) ActivateUser(ctx context.Context, userID uuid.UUID) (users.CoreUs
 			full_name,
 			avatar_url,
 			is_active,
+			is_system,
 			has_seen_walkthrough,
 			timezone,
 			last_login_at,
@@ -288,9 +290,14 @@ func (r *repo) Create(ctx context.Context, user users.CoreUser) (users.CoreUser,
 			email,
 			full_name,
 			avatar_url,
+			is_active,
+			is_system,
+			has_seen_walkthrough,
 			timezone,
 			last_login_at,
-			last_used_workspace_id
+			last_used_workspace_id,
+			created_at,
+			updated_at
 	`
 
 	params := map[string]any{

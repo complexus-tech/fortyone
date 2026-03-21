@@ -5,6 +5,7 @@ import (
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -25,6 +26,7 @@ type Config struct {
 	StorageService storage.StorageService
 	Cache          *cache.Service
 	Stories        *stories.Service
+	Users          *users.Service
 	Comments       *comments.Service
 	Links          *links.Service
 	Attachments    *attachments.Service
@@ -40,7 +42,7 @@ func Routes(cfg Config, app *web.App) {
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
-	h := New(storiesService, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
+	h := New(storiesService, cfg.Users, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
 	app.Get("/workspaces/{workspaceSlug}/stories", h.List, auth, workspace, gzip)

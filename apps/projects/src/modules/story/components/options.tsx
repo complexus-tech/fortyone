@@ -123,7 +123,7 @@ export const Options = ({
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
-  const assignee = members.find((m) => m.id === assigneeId);
+  const assignee = data?.assignee ?? members.find((m) => m.id === assigneeId);
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();

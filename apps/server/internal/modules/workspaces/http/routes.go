@@ -16,7 +16,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stripe/stripe-go/v82/client"
 )
@@ -30,7 +29,6 @@ type Config struct {
 	StripeClient    *client.API
 	WebhookSecret   string
 	TasksService    *tasks.Service
-	SystemUserID    uuid.UUID
 	StorageConfig   storage.Config
 	StorageService  storage.StorageService
 	Workspaces      *workspaces.Service

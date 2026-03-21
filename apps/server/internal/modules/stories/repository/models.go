@@ -228,6 +228,7 @@ type dbActivityWithUser struct {
 	FullName  string `db:"full_name"`
 	AvatarURL string `db:"avatar_url"`
 	IsActive  bool   `db:"is_active"`
+	IsSystem  bool   `db:"is_system"`
 }
 
 // toCoreActivity converts a dbActivity to a CoreActivity.
@@ -288,6 +289,7 @@ func toCoreActivityWithUser(i dbActivityWithUser) stories.CoreActivityWithUser {
 			FullName:  i.FullName,
 			AvatarURL: i.AvatarURL,
 			IsActive:  i.IsActive,
+			IsSystem:  i.IsSystem,
 		},
 	}
 }

@@ -14,11 +14,21 @@ export type User = {
   fullName: string;
   avatarUrl: string | null;
   isActive: boolean;
+  isSystem: boolean;
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
   timezone: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type UserSummary = {
+  id: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string | null;
+  isActive: boolean;
+  isSystem: boolean;
 };
 
 export type Member = {
@@ -29,6 +39,7 @@ export type Member = {
   fullName: string;
   avatarUrl: string | null;
   isActive: boolean;
+  isSystem: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -57,6 +68,7 @@ export type Comment = {
   storyId: string;
   parentId: string | null;
   userId: string;
+  user: UserSummary;
   comment: string;
   createdAt: string;
   updatedAt: string;

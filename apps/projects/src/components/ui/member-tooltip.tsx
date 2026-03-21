@@ -1,4 +1,4 @@
-import { Member } from "@/types";
+import type { Member, UserSummary } from "@/types";
 import React from "react";
 import { Avatar, Box, Button, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
@@ -8,7 +8,7 @@ export const MemberTooltip = ({
   member,
   children,
 }: {
-  member?: Member;
+  member?: Member | UserSummary | null;
   children: React.ReactNode;
 }) => {
   const { withWorkspace } = useWorkspacePath();

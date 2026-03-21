@@ -47,9 +47,8 @@ export const StoryCard = ({
 
   const teamCode = teams.find((team) => team.id === story.teamId)?.code;
 
-  const selectedAssignee = members.find(
-    (member) => member.id === story.assigneeId,
-  );
+  const selectedAssignee =
+    story.assignee ?? members.find((member) => member.id === story.assigneeId);
 
   const { mutate } = useUpdateStoryMutation();
 

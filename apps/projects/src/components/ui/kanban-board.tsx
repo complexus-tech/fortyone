@@ -108,9 +108,7 @@ export const KanbanBoard = ({
   const { data: allStatuses = [] } = useStatuses();
   const { data: allMembers = [] } = useMembers();
   const { data: teamMembers = [] } = useTeamMembers(teamId);
-  const members = (teamId ? teamMembers : allMembers).filter(
-    ({ role }) => role !== "system",
-  );
+  const members = teamId ? teamMembers : allMembers;
   const statuses = teamId ? teamStatuses : allStatuses;
 
   return (

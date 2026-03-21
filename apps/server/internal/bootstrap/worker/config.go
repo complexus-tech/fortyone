@@ -10,6 +10,7 @@ import (
 var defaultQueues = map[string]int{
 	"critical":      6,
 	"default":       3,
+	"integrations":  2,
 	"low":           1,
 	"onboarding":    5,
 	"cleanup":       2,
@@ -50,13 +51,23 @@ type Config struct {
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
-	System struct {
-		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
-	}
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
+	Auth struct {
+		SecretKey string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+	}
+	Website struct {
+		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
+	}
+	GitHub struct {
+		AppID          int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug        string `env:"GITHUB_APP_SLUG"`
+		PrivateKeyPath string `env:"GITHUB_PRIVATE_KEY_PATH"`
+		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
+		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
+	}
+	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"integrations\":2,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
 }
 
 func loadConfig() (Config, error) {

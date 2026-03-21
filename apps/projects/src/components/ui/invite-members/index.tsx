@@ -300,7 +300,7 @@ export const InviteMembersDialog = ({
                   onClick={() => {
                     handleTeamToggle(team.id);
                   }}
-                  rounded="full"
+                  rounded="xl"
                   title={team.name}
                   variant="outline"
                 >

@@ -69,16 +69,17 @@ const DisplayObjective = ({
 
 export const Activity = ({
   teamId,
-  userId,
   field,
   currentValue,
   type,
   createdAt,
+  user,
+  newValue,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { withWorkspace } = useWorkspacePath();
-  const member = members.find((m) => m.id === userId);
+  const member = user;
 
   if (field === "completed_at") {
     return null;
@@ -199,6 +200,11 @@ export const Activity = ({
     }
   >;
 
+  const fieldMeta = fieldMap[field] ?? {
+    label: field,
+    render: (value: string) => <span>{value}</span>,
+  };
+
   return (
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
       <Box
@@ -221,11 +227,9 @@ export const Activity = ({
                   <Box>
                     <Link
                       className={cn("mb-2 flex gap-1", {
-                        "mb-0": member.role === "system",
+                        "mb-0": member.isSystem,
                       })}
-                      href={
-                        member.role === "system" ? "" : `/profile/${member.id}`
-                      }
+                      href={member.isSystem ? "" : `/profile/${member.id}`}
                     >
                       <Text fontSize="md" fontWeight="medium">
                         {member.fullName}
@@ -234,7 +238,7 @@ export const Activity = ({
                         ({member.username})
                       </Text>
                     </Link>
-                    {member.role !== "system" ? (
+                    {!member.isSystem ? (
                       <Button
                         className="mb-0.5 ml-px px-2"
                         color="tertiary"
@@ -272,7 +276,11 @@ export const Activity = ({
         </Tooltip>
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {type === "create" ? "created the story" : "changed"}
+            {type === "create"
+              ? "created the story"
+              : type === "link"
+                ? "linked"
+                : "changed"}
           </Text>
           {type === "update" && (
             <>
@@ -281,7 +289,7 @@ export const Activity = ({
                 className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
                 fontWeight="medium"
               >
-                {fieldMap[field].label}
+                {fieldMeta.label}
               </Text>
               {currentValue ? (
                 <>
@@ -297,12 +305,32 @@ export const Activity = ({
                     className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
                     fontWeight="medium"
                   >
-                    {fieldMap[field].render(currentValue)}
+                    {fieldMeta.render(currentValue)}
                   </Text>
                 </>
               ) : null}
             </>
           )}
+          {type === "link" && currentValue ? (
+            typeof newValue === "string" && newValue.startsWith("http") ? (
+              <a
+                className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
+                href={newValue}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {currentValue}
+              </a>
+            ) : (
+              <Text
+                as="span"
+                className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+                fontWeight="medium"
+              >
+                {currentValue}
+              </Text>
+            )
+          ) : null}
           <Text
             as="span"
             className="mx-0.5 text-sm md:text-[0.95rem]"

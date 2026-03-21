@@ -14,6 +14,7 @@ type dbUser struct {
 	FullName            *string    `db:"full_name"`
 	AvatarURL           *string    `db:"avatar_url"`
 	IsActive            bool       `db:"is_active"`
+	IsSystem            bool       `db:"is_system"`
 	HasSeenWalkthrough  bool       `db:"has_seen_walkthrough"`
 	Timezone            string     `db:"timezone"`
 	LastLoginAt         *time.Time `db:"last_login_at"`
@@ -56,6 +57,7 @@ func toCoreUser(p dbUser) users.CoreUser {
 		FullName:            derefString(p.FullName),
 		AvatarURL:           derefString(p.AvatarURL),
 		IsActive:            p.IsActive,
+		IsSystem:            p.IsSystem,
 		HasSeenWalkthrough:  p.HasSeenWalkthrough,
 		Timezone:            p.Timezone,
 		LastLoginAt:         derefTime(p.LastLoginAt),

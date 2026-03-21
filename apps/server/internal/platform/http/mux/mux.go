@@ -48,9 +48,15 @@ type Config struct {
 	StorageConfig  storage.Config
 	StorageService storage.StorageService
 	WebhookSecret  string
+	WebsiteURL     string
+	GitHubAppID    int64
+	GitHubAppSlug  string
+	GitHubUserID   uuid.UUID
+	GitHubKeyPath  string
+	GitHubRedirect string
+	GitHubWebhook  string
 	SSEHub         *sse.Hub
 	CorsOrigin     string
-	SystemUserID   uuid.UUID
 }
 
 // New returns a new HTTP handler that defines all the API routes.

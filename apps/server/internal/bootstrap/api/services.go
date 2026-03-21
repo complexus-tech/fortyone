@@ -15,6 +15,8 @@ import (
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	epicsrepository "github.com/complexus-tech/projects-api/internal/modules/epics/repository"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
+	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
+	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	invitationsrepository "github.com/complexus-tech/projects-api/internal/modules/invitations/repository"
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
@@ -62,6 +64,7 @@ type services struct {
 	comments       *comments.Service
 	documents      *documents.Service
 	epics          *epics.Service
+	github         *github.Service
 	invitations    *invitations.Service
 	keyResults     *keyresults.Service
 	labels         *labels.Service
@@ -103,7 +106,7 @@ func buildServices(cfg mux.Config) services {
 		cfg.WebhookSecret,
 		cfg.TasksService,
 	)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
+	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
 	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
 	workspacesService := workspaces.New(
@@ -119,7 +122,6 @@ func buildServices(cfg mux.Config) services {
 			Subscriptions:   subscriptionsService,
 			Attachments:     attachmentsService,
 			Cache:           cfg.Cache,
-			SystemUserID:    cfg.SystemUserID,
 			Publisher:       cfg.Publisher,
 			TasksService:    cfg.TasksService,
 		},
@@ -137,6 +139,19 @@ func buildServices(cfg mux.Config) services {
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
 	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
+	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, github.Config{
+		AppID:          cfg.GitHubAppID,
+		AppSlug:        cfg.GitHubAppSlug,
+		PrivateKeyPath: cfg.GitHubKeyPath,
+		RedirectURL:    cfg.GitHubRedirect,
+		WebhookSecret:  cfg.GitHubWebhook,
+		WebsiteURL:     cfg.WebsiteURL,
+		SecretKey:      cfg.SecretKey,
+		GitHubUserID:   cfg.GitHubUserID,
+	})
+	if err != nil {
+		panic("failed to initialize github service: " + err.Error())
+	}
 
 	return services{
 		activities:     activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
@@ -145,6 +160,7 @@ func buildServices(cfg mux.Config) services {
 		comments:       commentsService,
 		documents:      documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
 		epics:          epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
+		github:         githubService,
 		invitations:    invitationsService,
 		keyResults:     keyResultsService,
 		labels:         labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB)),
@@ -184,6 +200,9 @@ func (s services) validate() error {
 	}
 	if s.epics == nil {
 		return fmt.Errorf("missing service: epics")
+	}
+	if s.github == nil {
+		return fmt.Errorf("missing service: github")
 	}
 	if s.invitations == nil {
 		return fmt.Errorf("missing service: invitations")

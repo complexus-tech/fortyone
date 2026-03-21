@@ -34,7 +34,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
-	"github.com/google/uuid"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -58,9 +57,6 @@ type Config struct {
 		Password   string `default:"" env:"APP_REDIS_PASSWORD"`
 		Name       int    `default:"0" env:"APP_REDIS_DB"`
 		DisableTLS bool   `default:"false" env:"APP_REDIS_DISABLE_TLS"`
-	}
-	System struct {
-		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
 	}
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
@@ -125,8 +121,6 @@ func main() {
 	tasksService, _ := tasks.New(rdb, log)
 	publisher := publisher.New(rdb, log)
 
-	systemUserID, _ := uuid.Parse(cfg.System.UserID)
-
 	// Dependency Tree
 	usersRepo := usersrepository.New(log, db)
 	usersService := users.New(log, usersRepo, tasksService)
@@ -139,7 +133,7 @@ func main() {
 
 	mentionsRepo := mentionsrepository.New(log, db)
 	storiesRepo := storiesrepository.New(log, db)
-	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher)
+	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher, tasksService)
 
 	okrActivitiesRepo := okractivitiesrepository.New(log, db)
 	okrActivitiesService := okractivities.New(log, okrActivitiesRepo)
@@ -174,7 +168,6 @@ func main() {
 			ObjectiveStatus: objStatusService,
 			Subscriptions:   subService,
 			Cache:           cacheService,
-			SystemUserID:    systemUserID,
 			Publisher:       publisher,
 			TasksService:    tasksService,
 			// Attachments are not needed for seed.

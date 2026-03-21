@@ -6,6 +6,7 @@ import (
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
+	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	invitationshttp "github.com/complexus-tech/projects-api/internal/modules/invitations/http"
 	keyresultshttp "github.com/complexus-tech/projects-api/internal/modules/keyresults/http"
@@ -55,6 +56,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log: cfg.Log,
 	}, app)
 
+	githubhttp.Routes(githubhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.github,
+	}, app)
+
 	storieshttp.Routes(storieshttp.Config{
 		DB:             cfg.DB,
 		Log:            cfg.Log,
@@ -65,6 +74,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Validate:       cfg.Validate,
 		Cache:          cfg.Cache,
 		Stories:        svcs.stories,
+		Users:          svcs.users,
 		Comments:       svcs.comments,
 		Links:          svcs.links,
 		Attachments:    svcs.attachments,
@@ -174,7 +184,6 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient:    cfg.StripeClient,
 		WebhookSecret:   cfg.WebhookSecret,
 		TasksService:    cfg.TasksService,
-		SystemUserID:    cfg.SystemUserID,
 		StorageConfig:   cfg.StorageConfig,
 		StorageService:  cfg.StorageService,
 		Workspaces:      svcs.workspaces,
@@ -247,7 +256,6 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		StripeClient: cfg.StripeClient,
 		StripeSecret: cfg.WebhookSecret,
 		TasksService: cfg.TasksService,
-		SystemUserID: cfg.SystemUserID,
 		Cache:        cfg.Cache,
 		Invitations:  svcs.invitations,
 		UsersService: svcs.users,
@@ -269,7 +277,6 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		WebhookSecret: cfg.WebhookSecret,
 		Publisher:     cfg.Publisher,
 		TasksService:  cfg.TasksService,
-		SystemUserID:  cfg.SystemUserID,
 		Cache:         cfg.Cache,
 		Subscriptions: svcs.subscriptions,
 		Users:         svcs.users,

@@ -84,7 +84,6 @@ type Service struct {
 	subscriptions   *subscriptions.Service
 	attachments     AttachmentsService
 	cache           *cache.Service
-	systemUserID    uuid.UUID
 	publisher       *publisher.Publisher
 	tasksService    *tasks.Service
 }
@@ -99,7 +98,6 @@ type Dependencies struct {
 	Subscriptions   *subscriptions.Service
 	Attachments     AttachmentsService
 	Cache           *cache.Service
-	SystemUserID    uuid.UUID
 	Publisher       *publisher.Publisher
 	TasksService    *tasks.Service
 }
@@ -118,7 +116,6 @@ func New(log *logger.Logger, repo Repository, db *sqlx.DB, deps Dependencies) *S
 		subscriptions:   deps.Subscriptions,
 		attachments:     deps.Attachments,
 		cache:           deps.Cache,
-		systemUserID:    deps.SystemUserID,
 		publisher:       deps.Publisher,
 		tasksService:    deps.TasksService,
 	}
@@ -162,11 +159,6 @@ func (s *Service) Create(ctx context.Context, newWorkspace CoreWorkspace, userID
 
 	// Add creator as member of the workspace
 	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, userID, "admin"); err != nil {
-		return CoreWorkspace{}, err
-	}
-
-	// Add system user as member of the workspace
-	if err := s.repo.AddMemberTx(ctx, tx, workspace.ID, s.systemUserID, "system"); err != nil {
 		return CoreWorkspace{}, err
 	}
 
@@ -737,7 +729,7 @@ func (s *Service) UploadWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID
 	defer span.End()
 
 	// Get current workspace to check for existing logo
-	workspace, err := s.repo.Get(ctx, workspaceID, s.systemUserID)
+	workspace, err := s.repo.GetByID(ctx, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -783,7 +775,7 @@ func (s *Service) DeleteWorkspaceLogo(ctx context.Context, workspaceID uuid.UUID
 	defer span.End()
 
 	// Get current workspace
-	workspace, err := s.repo.Get(ctx, workspaceID, s.systemUserID)
+	workspace, err := s.repo.GetByID(ctx, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err

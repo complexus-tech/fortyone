@@ -8,10 +8,20 @@ import (
 
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
+
+type AppUserSummary struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
+	IsSystem  bool      `json:"isSystem"`
+}
 
 // AppActivityWithUser represents an activity with embedded user details
 type AppActivityWithUser struct {
@@ -21,6 +31,8 @@ type AppActivityWithUser struct {
 	Type         string    `json:"type"`
 	Field        string    `json:"field"`
 	CurrentValue string    `json:"currentValue"`
+	OldValue     any       `json:"oldValue"`
+	NewValue     any       `json:"newValue"`
 	CreatedAt    time.Time `json:"createdAt"`
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 
@@ -35,6 +47,7 @@ type AppUserDetails struct {
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
 	IsActive  bool      `json:"isActive"`
+	IsSystem  bool      `json:"isSystem"`
 }
 
 // AppNewLabels represents a new label in the application.
@@ -50,6 +63,8 @@ func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 		Type:         i.Type,
 		Field:        i.Field,
 		CurrentValue: i.CurrentValue,
+		OldValue:     i.OldValue,
+		NewValue:     i.NewValue,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 		User: AppUserDetails{
@@ -58,6 +73,7 @@ func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 			FullName:  i.User.FullName,
 			AvatarURL: i.User.AvatarURL,
 			IsActive:  i.User.IsActive,
+			IsSystem:  i.User.IsSystem,
 		},
 	}
 }
@@ -150,11 +166,13 @@ type AppSingleStory struct {
 	DescriptionHTML *string               `json:"descriptionHTML"`
 	Parent          *uuid.UUID            `json:"parentId"`
 	Status          *uuid.UUID            `json:"statusId"`
-	Assignee        *uuid.UUID            `json:"assigneeId"`
+	AssigneeID      *uuid.UUID            `json:"assigneeId"`
+	Assignee        *AppUserSummary       `json:"assignee"`
 	BlockedBy       *uuid.UUID            `json:"blockedById"`
 	Blocking        *uuid.UUID            `json:"blockingId"`
 	Related         *uuid.UUID            `json:"relatedId"`
-	Reporter        *uuid.UUID            `json:"reporterId"`
+	ReporterID      *uuid.UUID            `json:"reporterId"`
+	Reporter        *AppUserSummary       `json:"reporter"`
 	Priority        string                `json:"priority"`
 	Sprint          *uuid.UUID            `json:"sprintId"`
 	Epic            *uuid.UUID            `json:"epicId"`
@@ -184,33 +202,46 @@ type AppStoryAssociation struct {
 
 // AppStoryList represents a single story in the list of stories in the application.
 type AppStoryList struct {
-	ID             uuid.UUID      `json:"id"`
-	SequenceID     int            `json:"sequenceId"`
-	Title          string         `json:"title"`
-	EstimateLabel  *string        `json:"estimateLabel"`
-	EstimateValue  *int16         `json:"estimateValue"`
-	EstimateScheme string         `json:"estimateScheme"`
-	Objective      *uuid.UUID     `json:"objectiveId"`
-	Status         *uuid.UUID     `json:"statusId"`
-	Assignee       *uuid.UUID     `json:"assigneeId"`
-	Reporter       *uuid.UUID     `json:"reporterId"`
-	Priority       string         `json:"priority"`
-	Sprint         *uuid.UUID     `json:"sprintId"`
-	KeyResult      *uuid.UUID     `json:"keyResultId"`
-	Workspace      uuid.UUID      `json:"workspaceId"`
-	Team           uuid.UUID      `json:"teamId"`
-	StartDate      *time.Time     `json:"startDate"`
-	EndDate        *time.Time     `json:"endDate"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	CompletedAt    *time.Time     `json:"completedAt"`
-	DeletedAt      *time.Time     `json:"deletedAt"`
-	ArchivedAt     *time.Time     `json:"archivedAt"`
-	Labels         []uuid.UUID    `json:"labels"`
-	SubStories     []AppStoryList `json:"subStories"`
+	ID             uuid.UUID       `json:"id"`
+	SequenceID     int             `json:"sequenceId"`
+	Title          string          `json:"title"`
+	EstimateLabel  *string         `json:"estimateLabel"`
+	EstimateValue  *int16          `json:"estimateValue"`
+	EstimateScheme string          `json:"estimateScheme"`
+	Objective      *uuid.UUID      `json:"objectiveId"`
+	Status         *uuid.UUID      `json:"statusId"`
+	AssigneeID     *uuid.UUID      `json:"assigneeId"`
+	Assignee       *AppUserSummary `json:"assignee"`
+	ReporterID     *uuid.UUID      `json:"reporterId"`
+	Reporter       *AppUserSummary `json:"reporter"`
+	Priority       string          `json:"priority"`
+	Sprint         *uuid.UUID      `json:"sprintId"`
+	KeyResult      *uuid.UUID      `json:"keyResultId"`
+	Workspace      uuid.UUID       `json:"workspaceId"`
+	Team           uuid.UUID       `json:"teamId"`
+	StartDate      *time.Time      `json:"startDate"`
+	EndDate        *time.Time      `json:"endDate"`
+	CreatedAt      time.Time       `json:"createdAt"`
+	UpdatedAt      time.Time       `json:"updatedAt"`
+	CompletedAt    *time.Time      `json:"completedAt"`
+	DeletedAt      *time.Time      `json:"deletedAt"`
+	ArchivedAt     *time.Time      `json:"archivedAt"`
+	Labels         []uuid.UUID     `json:"labels"`
+	SubStories     []AppStoryList  `json:"subStories"`
 }
 
-func toAppStory(i stories.CoreSingleStory) AppSingleStory {
+func toAppUserSummary(user users.CoreUser) AppUserSummary {
+	return AppUserSummary{
+		ID:        user.ID,
+		Username:  user.Username,
+		FullName:  user.FullName,
+		AvatarURL: user.AvatarURL,
+		IsActive:  user.IsActive,
+		IsSystem:  user.IsSystem,
+	}
+}
+
+func toAppStory(i stories.CoreSingleStory, usersByID map[uuid.UUID]AppUserSummary) AppSingleStory {
 	return AppSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
@@ -224,7 +255,8 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		Title:           i.Title,
 		Objective:       i.Objective,
 		Status:          i.Status,
-		Assignee:        i.Assignee,
+		AssigneeID:      i.Assignee,
+		Assignee:        findAppUserSummary(usersByID, i.Assignee),
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
 		Epic:            i.Epic,
@@ -241,14 +273,15 @@ func toAppStory(i stories.CoreSingleStory) AppSingleStory {
 		BlockedBy:       i.BlockedBy,
 		Blocking:        i.Blocking,
 		Related:         i.Related,
-		Reporter:        i.Reporter,
-		SubStories:      toAppStories(i.SubStories),
+		ReporterID:      i.Reporter,
+		Reporter:        findAppUserSummary(usersByID, i.Reporter),
+		SubStories:      toAppStories(i.SubStories, usersByID),
 		Labels:          i.Labels,
-		Associations:    toAppStoryAssociations(i.Associations),
+		Associations:    toAppStoryAssociations(i.Associations, usersByID),
 	}
 }
 
-func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppStoryAssociation {
+func toAppStoryAssociations(associations []stories.CoreStoryAssociation, usersByID map[uuid.UUID]AppUserSummary) []AppStoryAssociation {
 	appAssociations := make([]AppStoryAssociation, len(associations))
 	for i, association := range associations {
 		appAssociations[i] = AppStoryAssociation{
@@ -267,8 +300,10 @@ func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppSt
 				Team:           association.Story.Team,
 				Workspace:      association.Story.Workspace,
 				Status:         association.Story.Status,
-				Assignee:       association.Story.Assignee,
-				Reporter:       association.Story.Reporter,
+				AssigneeID:     association.Story.Assignee,
+				Assignee:       findAppUserSummary(usersByID, association.Story.Assignee),
+				ReporterID:     association.Story.Reporter,
+				Reporter:       findAppUserSummary(usersByID, association.Story.Reporter),
 				Priority:       association.Story.Priority,
 				Sprint:         association.Story.Sprint,
 				KeyResult:      association.Story.KeyResult,
@@ -280,23 +315,23 @@ func toAppStoryAssociations(associations []stories.CoreStoryAssociation) []AppSt
 				DeletedAt:      association.Story.DeletedAt,
 				ArchivedAt:     association.Story.ArchivedAt,
 				Labels:         association.Story.Labels,
-				SubStories:     toAppStories(association.Story.SubStories),
+				SubStories:     toAppStories(association.Story.SubStories, usersByID),
 			},
 		}
 	}
 	return appAssociations
 }
 
-func toAppStories(stories []stories.CoreStoryList) []AppStoryList {
+func toAppStories(stories []stories.CoreStoryList, usersByID map[uuid.UUID]AppUserSummary) []AppStoryList {
 	appStories := make([]AppStoryList, len(stories))
 
 	for i, story := range stories {
-		appStories[i] = toAppStoryListItem(story)
+		appStories[i] = toAppStoryListItem(story, usersByID)
 	}
 	return appStories
 }
 
-func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
+func toAppStoryListItem(story stories.CoreStoryList, usersByID map[uuid.UUID]AppUserSummary) AppStoryList {
 	return AppStoryList{
 		ID:             story.ID,
 		SequenceID:     story.SequenceID,
@@ -308,8 +343,10 @@ func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
 		Team:           story.Team,
 		Workspace:      story.Workspace,
 		Status:         story.Status,
-		Assignee:       story.Assignee,
-		Reporter:       story.Reporter,
+		AssigneeID:     story.Assignee,
+		Assignee:       findAppUserSummary(usersByID, story.Assignee),
+		ReporterID:     story.Reporter,
+		Reporter:       findAppUserSummary(usersByID, story.Reporter),
 		Priority:       story.Priority,
 		Sprint:         story.Sprint,
 		KeyResult:      story.KeyResult,
@@ -321,8 +358,22 @@ func toAppStoryListItem(story stories.CoreStoryList) AppStoryList {
 		DeletedAt:      story.DeletedAt,
 		ArchivedAt:     story.ArchivedAt,
 		Labels:         story.Labels,
-		SubStories:     toAppStories(story.SubStories),
+		SubStories:     toAppStories(story.SubStories, usersByID),
 	}
+}
+
+func findAppUserSummary(usersByID map[uuid.UUID]AppUserSummary, userID *uuid.UUID) *AppUserSummary {
+	if userID == nil {
+		return nil
+	}
+
+	user, ok := usersByID[*userID]
+	if !ok {
+		return nil
+	}
+
+	userCopy := user
+	return &userCopy
 }
 
 // AppNewStory represents a new story in the application. Make all fields are optional and have both json and db tags.
@@ -366,14 +417,15 @@ type AppNewComment struct {
 }
 
 type AppComment struct {
-	ID          uuid.UUID    `json:"id"`
-	StoryID     uuid.UUID    `json:"storyId"`
-	Parent      *uuid.UUID   `json:"parentId"`
-	UserID      uuid.UUID    `json:"userId"`
-	Comment     string       `json:"comment"`
-	CreatedAt   time.Time    `json:"createdAt"`
-	UpdatedAt   time.Time    `json:"updatedAt"`
-	SubComments []AppComment `json:"subComments"`
+	ID          uuid.UUID      `json:"id"`
+	StoryID     uuid.UUID      `json:"storyId"`
+	Parent      *uuid.UUID     `json:"parentId"`
+	UserID      uuid.UUID      `json:"userId"`
+	User        AppUserSummary `json:"user"`
+	Comment     string         `json:"comment"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	SubComments []AppComment   `json:"subComments"`
 }
 
 type AppNewAssociation struct {
@@ -504,23 +556,24 @@ type AppFilters struct {
 	KeyResult *uuid.UUID `json:"keyResultId" db:"key_result_id"`
 }
 
-func toAppComment(i comments.CoreComment) AppComment {
+func toAppComment(i comments.CoreComment, usersByID map[uuid.UUID]AppUserSummary) AppComment {
 	return AppComment{
 		ID:          i.ID,
 		StoryID:     i.StoryID,
 		Parent:      i.Parent,
 		UserID:      i.UserID,
+		User:        usersByID[i.UserID],
 		Comment:     i.Comment,
 		CreatedAt:   i.CreatedAt,
 		UpdatedAt:   i.UpdatedAt,
-		SubComments: toAppComments(i.SubComments),
+		SubComments: toAppComments(i.SubComments, usersByID),
 	}
 }
 
-func toAppComments(i []comments.CoreComment) []AppComment {
+func toAppComments(i []comments.CoreComment, usersByID map[uuid.UUID]AppUserSummary) []AppComment {
 	appComments := make([]AppComment, len(i))
 	for i, comment := range i {
-		appComments[i] = toAppComment(comment)
+		appComments[i] = toAppComment(comment, usersByID)
 	}
 	return appComments
 }

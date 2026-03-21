@@ -1,0 +1,26 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { githubKeys } from "@/constants/keys";
+import { useWorkspacePath } from "@/hooks";
+import { createGitHubIssueSyncLinkAction } from "@/lib/actions/github/create-issue-sync-link";
+import type { CreateGitHubIssueSyncLinkInput } from "@/modules/settings/workspace/integrations/github/types";
+
+export const useCreateGitHubIssueSyncLink = () => {
+  const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
+
+  return useMutation({
+    mutationFn: (input: CreateGitHubIssueSyncLinkInput) =>
+      createGitHubIssueSyncLinkAction(input, workspaceSlug),
+    onSuccess: (res) => {
+      if (res.error?.message) {
+        toast.error("GitHub", { description: res.error.message });
+        return;
+      }
+      queryClient.invalidateQueries({
+        queryKey: githubKeys.integration(workspaceSlug),
+      });
+      toast.success("Repository linked");
+    },
+  });
+};

@@ -17,6 +17,7 @@ import (
 
 	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
 	"github.com/complexus-tech/projects-api/internal/migrations"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/aws"
@@ -32,7 +33,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -95,9 +95,6 @@ type Config struct {
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	System struct {
-		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
-	}
 	Tracing struct {
 		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
 		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
@@ -131,6 +128,14 @@ type Config struct {
 	Stripe struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
 		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
+	}
+	GitHub struct {
+		AppID          int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug        string `env:"GITHUB_APP_SLUG"`
+		PrivateKeyPath string `env:"GITHUB_PRIVATE_KEY_PATH"`
+		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
+		WebhookURL     string `env:"GITHUB_WEBHOOK_URL"`
+		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 }
 
@@ -309,10 +314,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}()
 
-	systemUserID, err := uuid.Parse(cfg.System.UserID)
-	if err != nil {
-		return fmt.Errorf("invalid system user ID: %w", err)
-	}
+	actorResolver := actors.NewResolver(log, db, cacheService)
 
 	shutdown := make(chan os.Signal, 1)
 
@@ -356,6 +358,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Initialize Stripe client
 	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
 
+	githubUserID, err := actorResolver.Resolve(ctx, actors.KeyGitHub)
+	if err != nil {
+		return fmt.Errorf("resolve github actor: %w", err)
+	}
+
 	// Initialize SSE Hub
 	sseHub := sse.NewHub(ctx, log, rdb)
 	go sseHub.Run()
@@ -381,9 +388,15 @@ func run(ctx context.Context, log *logger.Logger) error {
 		TasksService:   tasksService,
 		StripeClient:   stripeClient,
 		WebhookSecret:  cfg.Stripe.WebhookSecret,
+		WebsiteURL:     cfg.Website.URL,
+		GitHubAppID:    cfg.GitHub.AppID,
+		GitHubAppSlug:  cfg.GitHub.AppSlug,
+		GitHubUserID:   githubUserID,
+		GitHubKeyPath:  cfg.GitHub.PrivateKeyPath,
+		GitHubRedirect: cfg.GitHub.RedirectURL,
+		GitHubWebhook:  cfg.GitHub.WebhookSecret,
 		SSEHub:         sseHub,
 		CorsOrigin:     "*",
-		SystemUserID:   systemUserID,
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

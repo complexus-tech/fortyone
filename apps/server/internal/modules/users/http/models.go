@@ -14,6 +14,7 @@ type AppUser struct {
 	FullName            string     `json:"fullName"`
 	AvatarURL           string     `json:"avatarUrl"`
 	IsActive            bool       `json:"isActive"`
+	IsSystem            bool       `json:"isSystem"`
 	HasSeenWalkthrough  bool       `json:"hasSeenWalkthrough"`
 	Timezone            string     `json:"timezone"`
 	LastLoginAt         time.Time  `json:"-"`
@@ -100,6 +101,7 @@ func toAppUser(user users.CoreUser) AppUser {
 		FullName:            user.FullName,
 		AvatarURL:           user.AvatarURL,
 		IsActive:            user.IsActive,
+		IsSystem:            user.IsSystem,
 		HasSeenWalkthrough:  user.HasSeenWalkthrough,
 		Timezone:            user.Timezone,
 		LastLoginAt:         user.LastLoginAt,
