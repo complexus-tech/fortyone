@@ -33,6 +33,9 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/teams/{teamId}/settings/github", h.GetTeamSettings, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/github", h.UpdateTeamSettings, auth, workspace)
 
+	app.Post("/user/integrations/github/link", h.LinkGitHubUser, auth)
+	app.Delete("/user/integrations/github/link", h.UnlinkGitHubUser, auth)
+
 	app.Get("/integrations/github/setup", h.HandleSetup)
 	app.Post("/webhooks/github", h.HandleWebhook)
 }

@@ -377,6 +377,12 @@ func (s *Service) processWebhook(ctx context.Context, eventName string, payload 
 		return s.handleIssueEvent(ctx, repository, payload)
 	case "pull_request":
 		return s.handlePullRequestEvent(ctx, repository, payload)
+	case "pull_request_review":
+		return s.handlePullRequestReviewEvent(ctx, repository, payload)
+	case "issue_comment":
+		return s.handleIssueCommentEvent(ctx, repository, payload)
+	case "check_run":
+		return s.handleCheckRunEvent(ctx, repository, payload)
 	case "create":
 		return s.handleCreateEvent(ctx, repository, payload)
 	case "push":
@@ -508,7 +514,13 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 			if err := s.ensurePRLinkedComment(ctx, repository, payload.PullRequest.Number, story); err != nil {
 				return err
 			}
+			s.autoPopulatePRBody(ctx, repository, payload, story)
 		}
+		// Sync assignee from PR to story
+		s.syncAssigneeFromGitHub(ctx, repository, story, payload.PullRequest.Assignee)
+		// Sync labels from PR to story
+		s.syncLabelsFromGitHub(ctx, repository, story, payload.PullRequest.Labels)
+
 		branchRef := payload.PullRequest.Head.Ref
 		if branchRef != "" {
 			branchLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branchRef, payload.PullRequest.Head.HTMLURL, payload.PullRequest.Head.Ref, payload.PullRequest.State, payload.PullRequest.Head)
@@ -613,8 +625,333 @@ func (s *Service) handlePushEvent(ctx context.Context, repository githubreposito
 				return err
 			}
 		}
+		// Check for closing keywords in commit messages
+		if hasClosingKeyword(payload.Commits, story.TeamCode, story.SequenceID) {
+			if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, EventCommitClose, nil); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
+}
+
+var closingKeywordPattern = regexp.MustCompile(`(?i)\b(fix|fixes|fixed|close|closes|closed|resolve|resolves|resolved)\b\s+`)
+
+func hasClosingKeyword(commits []struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+	URL     string `json:"url"`
+}, teamCode string, sequenceID int) bool {
+	target := strings.ToUpper(fmt.Sprintf("%s-%d", teamCode, sequenceID))
+	targetAlt := strings.ToUpper(fmt.Sprintf("%s %d", teamCode, sequenceID))
+	for _, commit := range commits {
+		upper := strings.ToUpper(commit.Message)
+		if !closingKeywordPattern.MatchString(commit.Message) {
+			continue
+		}
+		if strings.Contains(upper, target) || strings.Contains(upper, targetAlt) {
+			return true
+		}
+	}
+	return false
+}
+
+// ==================== pull_request_review ====================
+
+func (s *Service) handlePullRequestReviewEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+	if payload.Action != "submitted" && payload.Action != "dismissed" {
+		return nil
+	}
+
+	refs := extractStoryRefs(payload.PullRequest.Title, payload.PullRequest.Body, payload.PullRequest.Head.Ref)
+	matches, err := s.repo.ResolveStoriesByRefs(ctx, repository.WorkspaceID, refs)
+	if err != nil || len(matches) == 0 {
+		return err
+	}
+
+	reviewState := normalizeReviewState(payload.Review.State)
+	for _, story := range matches {
+		approved, changesRequested := countReviews(ctx, s, repository, payload.PullRequest.Number)
+		summaryState := summarizeReviewState(approved, changesRequested)
+		if err := s.repo.UpdateStoryLinkReviewState(ctx, story.StoryID, repository.ID, payload.PullRequest.ID, summaryState, approved, changesRequested); err != nil {
+			s.log.Warn(ctx, "failed to update review state on story link", "error", err)
+		}
+
+		if err := s.stories.RecordActivity(ctx, stories.CoreActivity{
+			StoryID:      story.StoryID,
+			Type:         "link",
+			Field:        "github_review",
+			CurrentValue: fmt.Sprintf("PR #%d %s by %s", payload.PullRequest.Number, reviewState, payload.Review.User.Login),
+			NewValue:     payload.Review.HTMLURL,
+			UserID:       s.resolveActorID(ctx, payload.Review.User.ID),
+			WorkspaceID:  repository.WorkspaceID,
+		}); err != nil {
+			return err
+		}
+
+		if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, EventPRReviewActivity, &payload.PullRequest.Base.Ref); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func normalizeReviewState(state string) string {
+	switch strings.ToLower(state) {
+	case "approved":
+		return "approved"
+	case "changes_requested":
+		return "changes_requested"
+	case "dismissed":
+		return "dismissed"
+	case "commented":
+		return "commented"
+	default:
+		return state
+	}
+}
+
+func countReviews(ctx context.Context, s *Service, repository githubrepository.RepoByExternalRow, prNumber int) (approved, changesRequested int) {
+	client, err := s.newInstallationClient(ctx, repository.GitHubInstallationID)
+	if err != nil {
+		return 0, 0
+	}
+	reviews, _, err := client.PullRequests.ListReviews(ctx, repository.OwnerLogin, repository.RepositorySlug, prNumber, &githubsdk.ListOptions{PerPage: 100})
+	if err != nil {
+		return 0, 0
+	}
+	latestByUser := map[int64]string{}
+	for _, r := range reviews {
+		if r.GetUser() != nil {
+			latestByUser[r.GetUser().GetID()] = r.GetState()
+		}
+	}
+	for _, state := range latestByUser {
+		switch strings.ToUpper(state) {
+		case "APPROVED":
+			approved++
+		case "CHANGES_REQUESTED":
+			changesRequested++
+		}
+	}
+	return approved, changesRequested
+}
+
+func summarizeReviewState(approved, changesRequested int) string {
+	if changesRequested > 0 {
+		return "changes_requested"
+	}
+	if approved > 0 {
+		return "approved"
+	}
+	return "pending"
+}
+
+// ==================== issue_comment ====================
+
+func (s *Service) handleIssueCommentEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+	if payload.Action != "created" {
+		return nil
+	}
+	// Ignore comments from our own app to prevent loops.
+	if payload.Comment.User.ID == 0 || s.isAppComment(ctx, repository, payload.Comment.User.ID) {
+		return nil
+	}
+
+	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
+	if err != nil {
+		return nil // Issue not linked to any story
+	}
+
+	actorID := s.resolveActorID(ctx, payload.Comment.User.ID)
+	commentBody := fmt.Sprintf("**%s** commented on GitHub issue #%d:\n\n%s", payload.Comment.User.Login, payload.Issue.Number, payload.Comment.Body)
+	_, err = s.stories.CreateComment(ctx, repository.WorkspaceID, stories.CoreNewComment{
+		StoryID: storyID,
+		UserID:  actorID,
+		Comment: commentBody,
+	})
+	return err
+}
+
+func (s *Service) isAppComment(ctx context.Context, repository githubrepository.RepoByExternalRow, userID int64) bool {
+	client, err := s.newInstallationClient(ctx, repository.GitHubInstallationID)
+	if err != nil {
+		return false
+	}
+	app, _, err := client.Apps.Get(ctx, "")
+	if err != nil || app.GetOwner() == nil {
+		return false
+	}
+	return app.GetOwner().GetID() == userID
+}
+
+// ==================== check_run ====================
+
+func (s *Service) handleCheckRunEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if payload.Action != "completed" {
+		return nil
+	}
+	for _, pr := range payload.CheckRun.PullRequests {
+		matches, err := s.repo.FindStoryLinksByPRNumber(ctx, repository.ID, pr.Number)
+		if err != nil || len(matches) == 0 {
+			continue
+		}
+		for _, story := range matches {
+			if err := s.repo.UpdateStoryLinkCheckState(ctx, story.StoryID, repository.ID, pr.ID, payload.CheckRun.Conclusion); err != nil {
+				s.log.Warn(ctx, "failed to update check state on story link", "error", err)
+			}
+		}
+	}
+	return nil
+}
+
+// ==================== auto-populate PR body ====================
+
+func (s *Service) autoPopulatePRBody(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope, story githubrepository.StoryMatch) {
+	settings, err := s.repo.GetWorkspaceSettingsByWorkspaceID(ctx, repository.WorkspaceID)
+	if err != nil || !settings.AutoPopulatePRBody {
+		return
+	}
+	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.StoryID, story.Title)
+	if err != nil {
+		return
+	}
+	taskKey := fmt.Sprintf("%s-%d", story.TeamCode, story.SequenceID)
+	marker := fmt.Sprintf("<!-- fortyone:%s -->", story.StoryID.String())
+	if strings.Contains(payload.PullRequest.Body, marker) {
+		return
+	}
+	footer := fmt.Sprintf("\n\n%s\n---\nLinked to [%s](%s)", marker, taskKey, storyURL)
+	newBody := payload.PullRequest.Body + footer
+	client, clientErr := s.newInstallationClient(ctx, repository.GitHubInstallationID)
+	if clientErr != nil {
+		return
+	}
+	_, _, _ = client.PullRequests.Edit(ctx, repository.OwnerLogin, repository.RepositorySlug, payload.PullRequest.Number, &githubsdk.PullRequest{
+		Body: &newBody,
+	})
+}
+
+// ==================== assignee sync ====================
+
+func (s *Service) syncAssigneeFromGitHub(ctx context.Context, repository githubrepository.RepoByExternalRow, story githubrepository.StoryMatch, assignee *struct {
+	ID    int64  `json:"id"`
+	Login string `json:"login"`
+}) {
+	settings, err := s.repo.GetWorkspaceSettingsByWorkspaceID(ctx, repository.WorkspaceID)
+	if err != nil || !settings.SyncAssignees || assignee == nil || assignee.ID == 0 {
+		return
+	}
+	userID, err := s.repo.ResolveUserByGitHubID(ctx, assignee.ID)
+	if err != nil {
+		return
+	}
+	fullStory, err := s.stories.Get(ctx, story.StoryID, repository.WorkspaceID)
+	if err != nil || (fullStory.Assignee != nil && *fullStory.Assignee == userID) {
+		return
+	}
+	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+		"assignee_id": userID,
+	})
+}
+
+// ==================== label sync ====================
+
+func (s *Service) syncLabelsFromGitHub(ctx context.Context, repository githubrepository.RepoByExternalRow, story githubrepository.StoryMatch, labels []struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}) {
+	settings, err := s.repo.GetWorkspaceSettingsByWorkspaceID(ctx, repository.WorkspaceID)
+	if err != nil || !settings.SyncLabels || len(labels) == 0 {
+		return
+	}
+	labelNames := make([]string, 0, len(labels))
+	for _, l := range labels {
+		labelNames = append(labelNames, l.Name)
+	}
+	resolvedIDs, err := s.repo.ResolveOrCreateLabelsByName(ctx, repository.WorkspaceID, story.TeamID, labelNames)
+	if err != nil || len(resolvedIDs) == 0 {
+		return
+	}
+	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+		"labels": resolvedIDs,
+	})
+}
+
+// ==================== user resolution ====================
+
+func (s *Service) resolveActorID(ctx context.Context, githubUserID int64) uuid.UUID {
+	if githubUserID == 0 {
+		return s.cfg.GitHubUserID
+	}
+	userID, err := s.repo.ResolveUserByGitHubID(ctx, githubUserID)
+	if err != nil {
+		return s.cfg.GitHubUserID
+	}
+	return userID
+}
+
+// ==================== GitHub user linking ====================
+
+func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code string) error {
+	token, err := s.exchangeOAuthCode(ctx, code)
+	if err != nil {
+		return fmt.Errorf("failed to exchange github oauth code: %w", err)
+	}
+	ghClient := githubsdk.NewClient(s.httpClient).WithAuthToken(token)
+	user, _, err := ghClient.Users.Get(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to get github user: %w", err)
+	}
+	return s.repo.LinkGitHubUser(ctx, userID, user.GetID(), user.GetLogin())
+}
+
+func (s *Service) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.UnlinkGitHubUser(ctx, userID)
+}
+
+func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (string, error) {
+	client, err := s.newAppClient()
+	if err != nil {
+		return "", err
+	}
+	// GitHub App user OAuth token exchange using the check-authorization endpoint
+	// is not directly available in the SDK; use the app JWT to call the token exchange.
+	appJWT, err := s.createAppJWT()
+	if err != nil {
+		return "", err
+	}
+	_ = client
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&code=%s", s.cfg.AppSlug, code),
+		nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+appJWT)
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	var result struct {
+		AccessToken string `json:"access_token"`
+		Error       string `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	if result.Error != "" {
+		return "", fmt.Errorf("github oauth error: %s", result.Error)
+	}
+	return result.AccessToken, nil
 }
 
 func (s *Service) moveStoryByRule(ctx context.Context, workspaceID, teamID, storyID uuid.UUID, eventKey string, baseBranch *string) error {
@@ -683,6 +1020,7 @@ func (s *Service) seedDefaultWorkflowRules(ctx context.Context, workspaceID, tea
 		{EventKey: EventIssueOpen, TargetStatusID: findCategory("unstarted"), IsActive: true},
 		{EventKey: EventIssueReopen, TargetStatusID: findCategory("unstarted"), IsActive: true},
 		{EventKey: EventIssueClose, TargetStatusID: findCategory("completed"), IsActive: true},
+		{EventKey: EventCommitClose, TargetStatusID: findCategory("completed"), IsActive: true},
 	}
 	return s.repo.ReplaceTeamWorkflowSettings(ctx, workspaceID, teamID, rules)
 }
@@ -1301,7 +1639,8 @@ type webhookEnvelope struct {
 		ID int64 `json:"id"`
 	} `json:"installation"`
 	Sender struct {
-		ID int64 `json:"id"`
+		ID    int64  `json:"id"`
+		Login string `json:"login"`
 	} `json:"sender"`
 	Issue struct {
 		ID      int64  `json:"id"`
@@ -1310,6 +1649,18 @@ type webhookEnvelope struct {
 		Body    string `json:"body"`
 		State   string `json:"state"`
 		HTMLURL string `json:"html_url"`
+		User    struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"user"`
+		Assignee *struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"assignee"`
+		Labels []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+		} `json:"labels"`
 	} `json:"issue"`
 	PullRequest struct {
 		ID      int64  `json:"id"`
@@ -1327,7 +1678,57 @@ type webhookEnvelope struct {
 		Base struct {
 			Ref string `json:"ref"`
 		} `json:"base"`
+		User struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"user"`
+		Assignee *struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"assignee"`
+		Labels []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+		} `json:"labels"`
 	} `json:"pull_request"`
+	Review struct {
+		ID    int64  `json:"id"`
+		State string `json:"state"`
+		Body  string `json:"body"`
+		User  struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"user"`
+		HTMLURL string `json:"html_url"`
+	} `json:"review"`
+	Comment struct {
+		ID      int64  `json:"id"`
+		Body    string `json:"body"`
+		HTMLURL string `json:"html_url"`
+		User    struct {
+			ID    int64  `json:"id"`
+			Login string `json:"login"`
+		} `json:"user"`
+	} `json:"comment"`
+	CheckRun struct {
+		ID         int64  `json:"id"`
+		Name       string `json:"name"`
+		Status     string `json:"status"`
+		Conclusion string `json:"conclusion"`
+		HTMLURL    string `json:"html_url"`
+		PullRequests []struct {
+			ID     int64 `json:"id"`
+			Number int   `json:"number"`
+		} `json:"pull_requests"`
+	} `json:"check_run"`
+	Label struct {
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+	} `json:"label"`
+	Assignee *struct {
+		ID    int64  `json:"id"`
+		Login string `json:"login"`
+	} `json:"assignee"`
 	Ref     string `json:"ref"`
 	Commits []struct {
 		ID      string `json:"id"`

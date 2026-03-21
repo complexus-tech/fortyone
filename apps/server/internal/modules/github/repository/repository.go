@@ -97,6 +97,10 @@ type workspaceSettingsRow struct {
 	WorkspaceID             uuid.UUID `db:"workspace_id"`
 	BranchFormat            string    `db:"branch_format"`
 	LinkCommitsByMagicWords bool      `db:"link_commits_by_magic_words"`
+	SyncAssignees           bool      `db:"sync_assignees"`
+	SyncLabels              bool      `db:"sync_labels"`
+	AutoPopulatePRBody      bool      `db:"auto_populate_pr_body"`
+	CloseOnCommitKeywords   bool      `db:"close_on_commit_keywords"`
 	CreatedAt               time.Time `db:"created_at"`
 	UpdatedAt               time.Time `db:"updated_at"`
 }
@@ -201,12 +205,27 @@ func (r *Repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 	if updates.LinkCommitsByMagicWords != nil {
 		current.LinkCommitsByMagicWords = *updates.LinkCommitsByMagicWords
 	}
+	if updates.SyncAssignees != nil {
+		current.SyncAssignees = *updates.SyncAssignees
+	}
+	if updates.SyncLabels != nil {
+		current.SyncLabels = *updates.SyncLabels
+	}
+	if updates.AutoPopulatePRBody != nil {
+		current.AutoPopulatePRBody = *updates.AutoPopulatePRBody
+	}
+	if updates.CloseOnCommitKeywords != nil {
+		current.CloseOnCommitKeywords = *updates.CloseOnCommitKeywords
+	}
 	query := `
 		UPDATE github_workspace_settings
-		SET branch_format = $2, link_commits_by_magic_words = $3, updated_at = NOW()
+		SET branch_format = $2, link_commits_by_magic_words = $3,
+		    sync_assignees = $4, sync_labels = $5, auto_populate_pr_body = $6, close_on_commit_keywords = $7,
+		    updated_at = NOW()
 		WHERE workspace_id = $1
 	`
-	if _, err := r.db.ExecContext(ctx, query, workspaceID, current.BranchFormat, current.LinkCommitsByMagicWords); err != nil {
+	if _, err := r.db.ExecContext(ctx, query, workspaceID, current.BranchFormat, current.LinkCommitsByMagicWords,
+		current.SyncAssignees, current.SyncLabels, current.AutoPopulatePRBody, current.CloseOnCommitKeywords); err != nil {
 		return githubshared.CoreWorkspaceSettings{}, err
 	}
 	return r.GetWorkspaceSettings(ctx, workspaceID)
@@ -850,6 +869,10 @@ func toCoreWorkspaceSettings(row workspaceSettingsRow) githubshared.CoreWorkspac
 		WorkspaceID:             row.WorkspaceID,
 		BranchFormat:            row.BranchFormat,
 		LinkCommitsByMagicWords: row.LinkCommitsByMagicWords,
+		SyncAssignees:           row.SyncAssignees,
+		SyncLabels:              row.SyncLabels,
+		AutoPopulatePRBody:      row.AutoPopulatePRBody,
+		CloseOnCommitKeywords:   row.CloseOnCommitKeywords,
 		CreatedAt:               row.CreatedAt,
 		UpdatedAt:               row.UpdatedAt,
 	}
@@ -901,4 +924,124 @@ func (r *Repo) EnsureContext(ctx context.Context) context.Context {
 	}
 	ctx, _ = web.AddSpan(ctx, "business.repository.github")
 	return ctx
+}
+
+// ResolveUserByGitHubID finds a FortyOne user by their linked GitHub user ID.
+func (r *Repo) ResolveUserByGitHubID(ctx context.Context, githubUserID int64) (uuid.UUID, error) {
+	var userID uuid.UUID
+	err := r.db.GetContext(ctx, &userID, `SELECT user_id FROM users WHERE github_user_id = $1 LIMIT 1`, githubUserID)
+	return userID, err
+}
+
+// LinkGitHubUser sets the github_user_id and github_username on a user record.
+func (r *Repo) LinkGitHubUser(ctx context.Context, userID uuid.UUID, githubUserID int64, githubUsername string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET github_user_id = $2, github_username = $3, updated_at = NOW() WHERE user_id = $1`,
+		userID, githubUserID, githubUsername,
+	)
+	return err
+}
+
+// UnlinkGitHubUser clears the github fields on a user record.
+func (r *Repo) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET github_user_id = NULL, github_username = NULL, updated_at = NOW() WHERE user_id = $1`,
+		userID,
+	)
+	return err
+}
+
+// UpdateStoryLinkReviewState updates review counters on a PR story link.
+func (r *Repo) UpdateStoryLinkReviewState(ctx context.Context, storyID, repositoryID uuid.UUID, prGitHubID int64, reviewState string, approved, changesRequested int) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE github_story_links
+		 SET review_state = $4, reviews_approved = $5, reviews_changes_requested = $6, updated_at = NOW()
+		 WHERE story_id = $1 AND repository_id = $2 AND external_type = 'pull_request' AND github_id = $3`,
+		storyID, repositoryID, prGitHubID, reviewState, approved, changesRequested,
+	)
+	return err
+}
+
+// UpdateStoryLinkCheckState updates the CI check state on a PR story link.
+func (r *Repo) UpdateStoryLinkCheckState(ctx context.Context, storyID, repositoryID uuid.UUID, prGitHubID int64, checkState string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE github_story_links
+		 SET check_state = $4, updated_at = NOW()
+		 WHERE story_id = $1 AND repository_id = $2 AND external_type = 'pull_request' AND github_id = $3`,
+		storyID, repositoryID, prGitHubID, checkState,
+	)
+	return err
+}
+
+// FindStoryLinksByPRNumber finds all story links for a given PR number in a repository.
+func (r *Repo) FindStoryLinksByPRNumber(ctx context.Context, repositoryID uuid.UUID, prNumber int) ([]StoryMatch, error) {
+	var links []struct {
+		StoryID      uuid.UUID `db:"story_id"`
+		GitHubID     int64     `db:"github_id"`
+		RepositoryID uuid.UUID `db:"repository_id"`
+	}
+	err := r.db.SelectContext(ctx, &links,
+		`SELECT story_id, github_id, repository_id FROM github_story_links
+		 WHERE repository_id = $1 AND external_type = 'pull_request' AND github_number = $2`,
+		repositoryID, prNumber,
+	)
+	if err != nil {
+		return nil, err
+	}
+	matches := make([]StoryMatch, 0, len(links))
+	for _, link := range links {
+		var match StoryMatch
+		err := r.db.GetContext(ctx, &match,
+			`SELECT s.id, s.status_id, s.team_id, t.code AS team_code, s.sequence_id, s.title
+			 FROM stories s
+			 INNER JOIN teams t ON t.team_id = s.team_id
+			 WHERE s.id = $1`, link.StoryID)
+		if err == nil {
+			matches = append(matches, match)
+		}
+	}
+	return matches, nil
+}
+
+// GetWorkspaceSettings returns the workspace-level GitHub settings.
+func (r *Repo) GetWorkspaceSettingsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (githubshared.CoreWorkspaceSettings, error) {
+	var row workspaceSettingsRow
+	err := r.db.GetContext(ctx, &row, `SELECT * FROM github_workspace_settings WHERE workspace_id = $1`, workspaceID)
+	if err != nil {
+		return githubshared.CoreWorkspaceSettings{}, err
+	}
+	return toCoreWorkspaceSettings(row), nil
+}
+
+// ResolveOrCreateLabelsByName finds existing labels by name within a workspace or creates them.
+func (r *Repo) ResolveOrCreateLabelsByName(ctx context.Context, workspaceID, teamID uuid.UUID, names []string) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0, len(names))
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		var labelID uuid.UUID
+		err := r.db.GetContext(ctx, &labelID,
+			`SELECT label_id FROM labels WHERE workspace_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1`,
+			workspaceID, name)
+		if err == nil {
+			ids = append(ids, labelID)
+			continue
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		labelID = uuid.New()
+		_, err = r.db.ExecContext(ctx,
+			`INSERT INTO labels (label_id, name, workspace_id, team_id, color, created_at, updated_at)
+			 VALUES ($1, $2, $3, $4, '#6B7280', NOW(), NOW())
+			 ON CONFLICT DO NOTHING`,
+			labelID, name, workspaceID, teamID)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, labelID)
+	}
+	return ids, nil
 }
