@@ -854,7 +854,8 @@ func slugifyStoryTitle(title string) string {
 }
 
 func loadPrivateKey(privateKey string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(strings.TrimSpace(privateKey)))
+	normalized := normalizePrivateKey(privateKey)
+	block, _ := pem.Decode([]byte(normalized))
 	if block == nil {
 		return nil, errors.New("invalid github private key")
 	}
@@ -870,6 +871,21 @@ func loadPrivateKey(privateKey string) (*rsa.PrivateKey, error) {
 		return nil, errors.New("github private key is not RSA")
 	}
 	return rsaKey, nil
+}
+
+func normalizePrivateKey(privateKey string) string {
+	trimmed := strings.TrimSpace(privateKey)
+	if len(trimmed) >= 2 {
+		if (trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"') || (trimmed[0] == '\'' && trimmed[len(trimmed)-1] == '\'') {
+			trimmed = trimmed[1 : len(trimmed)-1]
+		}
+	}
+
+	trimmed = strings.ReplaceAll(trimmed, "\\r\\n", "\n")
+	trimmed = strings.ReplaceAll(trimmed, "\\n", "\n")
+	trimmed = strings.ReplaceAll(trimmed, "\r\n", "\n")
+
+	return trimmed
 }
 
 func errorString(err error) string {
