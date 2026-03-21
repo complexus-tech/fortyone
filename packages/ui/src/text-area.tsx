@@ -18,8 +18,8 @@ export const TextArea: FC<Props> = (props) => {
       <textarea
         required={required}
         className={cn(
-          "w-full rounded-lg border bg-surface border-input px-4 leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted",
-          className
+          "w-full rounded-xl border bg-surface border-input px-4 leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted",
+          className,
         )}
         {...rest}
       />
