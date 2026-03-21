@@ -28,6 +28,7 @@ import {
   useResyncGitHubRepositories,
   useUpdateGitHubWorkspaceSettings,
 } from "@/lib/hooks/github";
+import { GITHUB_BRANCH_FORMATS } from "./branch-format";
 
 const GitHubIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   <svg
@@ -224,8 +225,7 @@ export const GitHubIntegrationSettings = () => {
           <Box>
             <Text className="font-medium">Format</Text>
             <Text color="muted">
-              Current story branch names default to username, identifier, and
-              title.
+              Choose the branch name template copied from story pages.
             </Text>
           </Box>
           <Menu open={branchFormatOpen} onOpenChange={setBranchFormatOpen}>
@@ -237,15 +237,18 @@ export const GitHubIntegrationSettings = () => {
             </Menu.Button>
             <Menu.Items align="end">
               <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    updateSettings.mutate({
-                      branchFormat: "username/identifier-title",
-                    });
-                  }}
-                >
-                  username/identifier-title
-                </Menu.Item>
+                {GITHUB_BRANCH_FORMATS.map((format) => (
+                  <Menu.Item
+                    key={format}
+                    onSelect={() => {
+                      updateSettings.mutate({
+                        branchFormat: format,
+                      });
+                    }}
+                  >
+                    {format}
+                  </Menu.Item>
+                ))}
               </Menu.Group>
             </Menu.Items>
           </Menu>
