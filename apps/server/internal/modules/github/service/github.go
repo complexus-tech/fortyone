@@ -70,11 +70,19 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 	}, nil
 }
 
-func (s *Service) isConfigured() bool {
+func (s *Service) canInstall() bool {
 	return s.cfg.AppID != 0 &&
 		strings.TrimSpace(s.cfg.AppSlug) != "" &&
 		strings.TrimSpace(s.cfg.RedirectURL) != "" &&
 		s.privateKey != nil
+}
+
+func (s *Service) canUseAppAPI() bool {
+	return s.cfg.AppID != 0 && s.privateKey != nil
+}
+
+func (s *Service) canVerifyWebhooks() bool {
+	return strings.TrimSpace(s.cfg.WebhookSecret) != ""
 }
 
 func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (CoreIntegration, error) {
@@ -100,7 +108,7 @@ func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (Co
 }
 
 func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string) (CoreCreateInstallSession, error) {
-	if !s.isConfigured() {
+	if !s.canInstall() {
 		return CoreCreateInstallSession{}, errors.New("github integration is not configured")
 	}
 	state, err := s.signState(map[string]string{
@@ -116,7 +124,7 @@ func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID 
 }
 
 func (s *Service) HandleSetup(ctx context.Context, installationExternalID int64, state string) (string, error) {
-	if !s.isConfigured() {
+	if !s.canInstall() {
 		return "", errors.New("github integration is not configured")
 	}
 	values, err := s.verifyState(state)
@@ -147,7 +155,7 @@ func (s *Service) HandleSetup(ctx context.Context, installationExternalID int64,
 }
 
 func (s *Service) ResyncRepositories(ctx context.Context, workspaceID uuid.UUID) error {
-	if !s.isConfigured() {
+	if !s.canUseAppAPI() {
 		return errors.New("github integration is not configured")
 	}
 	integrations, err := s.repo.ListInstallations(ctx, workspaceID)
@@ -227,7 +235,7 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
-	if !s.isConfigured() {
+	if !s.canUseAppAPI() {
 		return nil
 	}
 
@@ -283,7 +291,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, deliveryID, eventName, signature string, body []byte) error {
-	if !s.isConfigured() {
+	if !s.canVerifyWebhooks() {
 		return errors.New("github integration is not configured")
 	}
 	if err := s.verifyWebhookSignature(body, signature); err != nil {
