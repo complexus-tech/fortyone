@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Badge, Box, Button, Command, Dialog, Divider, Flex, Menu, Popover, Switch, Text } from "ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Command,
+  Dialog,
+  Divider,
+  Flex,
+  Menu,
+  Popover,
+  Switch,
+  Text,
+} from "ui";
 import { CheckIcon, GitIcon, PlusIcon } from "icons";
 import { TeamColor } from "@/components/ui/team-color";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -129,11 +141,7 @@ export const GitHubIntegrationSettings = () => {
                     </Text>
                   </Box>
                 </Flex>
-                <Badge
-                  color={installation.isActive ? "success" : "danger"}
-                  size="sm"
-                  variant="outline"
-                >
+                <Badge color="success" className="uppercase">
                   {installation.isActive ? "Connected" : "Disconnected"}
                 </Badge>
               </Flex>
@@ -223,14 +231,17 @@ export const GitHubIntegrationSettings = () => {
           <Menu open={branchFormatOpen} onOpenChange={setBranchFormatOpen}>
             <Menu.Button>
               <Button color="tertiary">
-                {integration?.settings.branchFormat ?? "username/identifier-title"}
+                {integration?.settings.branchFormat ??
+                  "username/identifier-title"}
               </Button>
             </Menu.Button>
             <Menu.Items align="end">
               <Menu.Group>
                 <Menu.Item
                   onSelect={() => {
-                    updateSettings.mutate({ branchFormat: "username/identifier-title" });
+                    updateSettings.mutate({
+                      branchFormat: "username/identifier-title",
+                    });
                   }}
                 >
                   username/identifier-title
@@ -283,13 +294,18 @@ export const GitHubIntegrationSettings = () => {
                   <Button className="w-full justify-start" color="tertiary">
                     <Flex align="center" gap={2}>
                       <GitHubIcon className="h-4 w-4 shrink-0" />
-                      <Text>{selectedRepo?.fullName ?? "Choose repository..."}</Text>
+                      <Text>
+                        {selectedRepo?.fullName ?? "Choose repository..."}
+                      </Text>
                     </Flex>
                   </Button>
                 </Popover.Trigger>
                 <Popover.Content align="start" className="w-80">
                   <Command>
-                    <Command.Input autoFocus placeholder="Search repositories..." />
+                    <Command.Input
+                      autoFocus
+                      placeholder="Search repositories..."
+                    />
                     <Divider className="my-2" />
                     <Command.Empty className="py-2">
                       <Text color="muted">No repositories found.</Text>
@@ -307,10 +323,15 @@ export const GitHubIntegrationSettings = () => {
                         >
                           <Flex align="center" gap={2}>
                             <GitHubIcon className="h-4 w-4 shrink-0" />
-                            <Text className="truncate">{repository.fullName}</Text>
+                            <Text className="truncate">
+                              {repository.fullName}
+                            </Text>
                           </Flex>
                           {repositoryId === repository.id && (
-                            <CheckIcon className="h-5 w-auto shrink-0" strokeWidth={2.1} />
+                            <CheckIcon
+                              className="h-5 w-auto shrink-0"
+                              strokeWidth={2.1}
+                            />
                           )}
                         </Command.Item>
                       ))}
@@ -326,7 +347,10 @@ export const GitHubIntegrationSettings = () => {
                 <Popover.Trigger asChild>
                   <Button className="w-full justify-start" color="tertiary">
                     <Flex align="center" gap={2}>
-                      <TeamColor className="shrink-0" color={selectedTeam?.color} />
+                      <TeamColor
+                        className="shrink-0"
+                        color={selectedTeam?.color}
+                      />
                       <Text>{selectedTeam?.name ?? "Choose team..."}</Text>
                     </Flex>
                   </Button>
@@ -350,11 +374,17 @@ export const GitHubIntegrationSettings = () => {
                           }}
                         >
                           <Flex align="center" gap={2}>
-                            <TeamColor className="shrink-0" color={team.color} />
+                            <TeamColor
+                              className="shrink-0"
+                              color={team.color}
+                            />
                             <Text className="truncate">{team.name}</Text>
                           </Flex>
                           {teamId === team.id && (
-                            <CheckIcon className="h-5 w-auto shrink-0" strokeWidth={2.1} />
+                            <CheckIcon
+                              className="h-5 w-auto shrink-0"
+                              strokeWidth={2.1}
+                            />
                           )}
                         </Command.Item>
                       ))}
@@ -391,10 +421,7 @@ export const GitHubIntegrationSettings = () => {
             </Box>
 
             <Flex justify="end" gap={2}>
-              <Button
-                color="tertiary"
-                onClick={() => setIsModalOpen(false)}
-              >
+              <Button color="tertiary" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>
               <Button

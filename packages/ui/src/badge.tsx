@@ -32,7 +32,7 @@ const badge = cva(
       size: {
         xs: "h-[1.15rem] min-w-4 text-[70%] py-1 px-0.5",
         sm: "h-5 min-w-5 text-[80%] py-2 px-1",
-        md: "h-6 text-[0.9rem] leading-6 p-2",
+        md: "h-7 text-[0.95rem] leading-7 p-2",
         lg: "h-8 px-3.5 text-[0.95rem]",
       },
     },
