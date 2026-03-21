@@ -57,7 +57,7 @@ type StoryService interface {
 type Config struct {
 	AppID         int64
 	AppSlug       string
-	PrivateKey    string
+	PrivateKeyBase64 string
 	RedirectURL   string
 	WebhookSecret string
 	WebsiteURL    string

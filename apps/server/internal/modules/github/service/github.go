@@ -49,16 +49,18 @@ type Service struct {
 func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
-	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKey) != "" {
-		privateKey, err = loadPrivateKey(cfg.PrivateKey)
+	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyBase64) != "" {
+		privateKey, err = loadPrivateKey(cfg.PrivateKeyBase64)
 		if err != nil {
 			log.Warn(
 				context.Background(),
 				"github integration disabled: failed to load private key",
 				"app_id_configured",
 				cfg.AppID != 0,
-				"private_key_present",
-				strings.TrimSpace(cfg.PrivateKey) != "",
+				"private_key_base64_present",
+				strings.TrimSpace(cfg.PrivateKeyBase64) != "",
+				"private_key_base64_length",
+				len(cfg.PrivateKeyBase64),
 				"error",
 				err,
 			)
@@ -95,7 +97,7 @@ func (s *Service) canVerifyWebhooks() bool {
 func (s *Service) HasAnyConfig() bool {
 	return s.cfg.AppID != 0 ||
 		strings.TrimSpace(s.cfg.AppSlug) != "" ||
-		strings.TrimSpace(s.cfg.PrivateKey) != "" ||
+		strings.TrimSpace(s.cfg.PrivateKeyBase64) != "" ||
 		strings.TrimSpace(s.cfg.RedirectURL) != "" ||
 		strings.TrimSpace(s.cfg.WebhookSecret) != ""
 }
@@ -111,7 +113,7 @@ func (s *Service) ValidateWorkerConfiguration() error {
 		"github worker configuration invalid: app_id_configured=%t app_slug_configured=%t private_key_present=%t private_key_loaded=%t private_key_load_error=%q redirect_url_configured=%t webhook_secret_configured=%t",
 		s.cfg.AppID != 0,
 		strings.TrimSpace(s.cfg.AppSlug) != "",
-		strings.TrimSpace(s.cfg.PrivateKey) != "",
+		strings.TrimSpace(s.cfg.PrivateKeyBase64) != "",
 		s.privateKey != nil,
 		s.privateKeyLoadError,
 		strings.TrimSpace(s.cfg.RedirectURL) != "",
@@ -758,7 +760,7 @@ func (s *Service) appAPIConfigDiagnostics() []any {
 	return []any{
 		"app_id_configured", s.cfg.AppID != 0,
 		"app_slug_configured", strings.TrimSpace(s.cfg.AppSlug) != "",
-		"private_key_present", strings.TrimSpace(s.cfg.PrivateKey) != "",
+		"private_key_base64_present", strings.TrimSpace(s.cfg.PrivateKeyBase64) != "",
 		"private_key_loaded", s.privateKey != nil,
 		"private_key_load_error", s.privateKeyLoadError,
 		"redirect_url_configured", strings.TrimSpace(s.cfg.RedirectURL) != "",
@@ -853,39 +855,27 @@ func slugifyStoryTitle(title string) string {
 	return slug
 }
 
-func loadPrivateKey(privateKey string) (*rsa.PrivateKey, error) {
-	normalized := normalizePrivateKey(privateKey)
-	block, _ := pem.Decode([]byte(normalized))
+func loadPrivateKey(privateKeyBase64 string) (*rsa.PrivateKey, error) {
+	pemBytes, err := base64.StdEncoding.DecodeString(strings.TrimSpace(privateKeyBase64))
+	if err != nil {
+		return nil, fmt.Errorf("failed to base64 decode private key: %w", err)
+	}
+	block, _ := pem.Decode(pemBytes)
 	if block == nil {
-		return nil, errors.New("invalid github private key")
+		return nil, errors.New("invalid github private key: no PEM block found after base64 decoding")
 	}
 	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
 		return key, nil
 	}
 	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
 	rsaKey, ok := key.(*rsa.PrivateKey)
 	if !ok {
 		return nil, errors.New("github private key is not RSA")
 	}
 	return rsaKey, nil
-}
-
-func normalizePrivateKey(privateKey string) string {
-	trimmed := strings.TrimSpace(privateKey)
-	if len(trimmed) >= 2 {
-		if (trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"') || (trimmed[0] == '\'' && trimmed[len(trimmed)-1] == '\'') {
-			trimmed = trimmed[1 : len(trimmed)-1]
-		}
-	}
-
-	trimmed = strings.ReplaceAll(trimmed, "\\r\\n", "\n")
-	trimmed = strings.ReplaceAll(trimmed, "\\n", "\n")
-	trimmed = strings.ReplaceAll(trimmed, "\r\n", "\n")
-
-	return trimmed
 }
 
 func errorString(err error) string {

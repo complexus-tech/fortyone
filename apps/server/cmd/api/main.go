@@ -132,7 +132,7 @@ type Config struct {
 	GitHub struct {
 		AppID         int64  `env:"APP_GITHUB_APP_ID"`
 		AppSlug       string `env:"GITHUB_APP_SLUG"`
-		PrivateKey    string `env:"GITHUB_PRIVATE_KEY"`
+		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
 		RedirectURL   string `env:"GITHUB_REDIRECT_URL"`
 		WebhookURL    string `env:"GITHUB_WEBHOOK_URL"`
 		WebhookSecret string `env:"GITHUB_WEBHOOK_SECRET"`
@@ -392,7 +392,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubAppID:    cfg.GitHub.AppID,
 		GitHubAppSlug:  cfg.GitHub.AppSlug,
 		GitHubUserID:   githubUserID,
-		GitHubKey:      cfg.GitHub.PrivateKey,
+		GitHubKeyBase64: cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect: cfg.GitHub.RedirectURL,
 		GitHubWebhook:  cfg.GitHub.WebhookSecret,
 		SSEHub:         sseHub,

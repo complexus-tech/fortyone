@@ -104,7 +104,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	githubService, err := github.New(log, githubrepository.New(log, db), nil, github.Config{
 		AppID:         cfg.GitHub.AppID,
 		AppSlug:       cfg.GitHub.AppSlug,
-		PrivateKey:    cfg.GitHub.PrivateKey,
+		PrivateKeyBase64: cfg.GitHub.PrivateKeyBase64,
 		RedirectURL:   cfg.GitHub.RedirectURL,
 		WebhookSecret: cfg.GitHub.WebhookSecret,
 		WebsiteURL:    cfg.Website.URL,
