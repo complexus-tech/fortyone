@@ -61,11 +61,11 @@ type Config struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
 	}
 	GitHub struct {
-		AppID          int64  `env:"APP_GITHUB_APP_ID"`
-		AppSlug        string `env:"GITHUB_APP_SLUG"`
-		PrivateKeyPath string `env:"GITHUB_PRIVATE_KEY_PATH"`
-		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
-		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
+		AppID         int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug       string `env:"GITHUB_APP_SLUG"`
+		PrivateKey    string `env:"GITHUB_PRIVATE_KEY"`
+		RedirectURL   string `env:"GITHUB_REDIRECT_URL"`
+		WebhookSecret string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"integrations\":2,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
 }

@@ -52,7 +52,7 @@ type Config struct {
 	GitHubAppID    int64
 	GitHubAppSlug  string
 	GitHubUserID   uuid.UUID
-	GitHubKeyPath  string
+	GitHubKey      string
 	GitHubRedirect string
 	GitHubWebhook  string
 	SSEHub         *sse.Hub
