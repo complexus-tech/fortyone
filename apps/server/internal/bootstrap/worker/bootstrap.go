@@ -115,6 +115,10 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		_ = db.Close()
 		return App{}, fmt.Errorf("error initializing github service: %w", err)
 	}
+	if err := githubService.ValidateWorkerConfiguration(); err != nil {
+		_ = db.Close()
+		return App{}, err
+	}
 
 	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, systemUserID)
 
