@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useMemo, type ReactNode } from "react";
 import { Box, Flex, Input, Text } from "ui";
+import { cn } from "lib";
 import { SearchIcon } from "icons";
 import { useGitHubIntegration } from "@/lib/hooks/github";
 import { useWorkspacePath } from "@/hooks";
@@ -123,13 +124,13 @@ const IntegrationCard = ({
   showDescription?: boolean;
 }) => {
   const content = (
-    <Box className="border-border hover:border-text-muted/30 rounded-xl border p-5 transition-colors">
+    <Box className={cn("border-border rounded-xl border p-5 transition-colors", integration.href ? "hover:border-text-muted/30" : "cursor-not-allowed opacity-50")}>
       <Flex align="center" gap={3}>
         {integration.icon}
         <Box>
           <Text className="font-medium">{integration.name}</Text>
           <Text color="muted">
-            {integration.enabled ? "Installed" : "Not installed"}
+            {integration.enabled ? "Installed" : "Coming soon"}
           </Text>
         </Box>
       </Flex>
