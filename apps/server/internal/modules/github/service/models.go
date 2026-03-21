@@ -1,7 +1,10 @@
 package github
 
 import (
+	"context"
+
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
 
@@ -40,6 +43,13 @@ type CoreStorySyncInput struct {
 	Title       string
 	Description *string
 	StatusID    *uuid.UUID
+}
+
+type StoryService interface {
+	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (stories.CoreSingleStory, error)
+	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
+	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
+	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
 }
 
 type Config struct {

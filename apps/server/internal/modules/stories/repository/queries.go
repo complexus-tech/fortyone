@@ -671,7 +671,8 @@ SELECT
 		u.username,
 		u.full_name,
 		u.avatar_url,
-		u.is_active
+		u.is_active,
+		u.is_system
 		FROM story_activities sa
 		INNER JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.story_id = :story_id

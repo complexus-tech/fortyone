@@ -44,9 +44,11 @@ export type StoryActivity = {
   storyId: string;
   userId: string;
   user: UserSummary;
-  type: "update" | "create";
+  type: "update" | "create" | "link";
   field: string;
   currentValue: string;
+  oldValue?: unknown;
+  newValue?: unknown;
   createdAt: string;
 };
 

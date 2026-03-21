@@ -82,6 +82,18 @@ type Service struct {
 	tasksService *tasks.Service
 }
 
+type createOptions struct {
+	publishEvents     bool
+	enqueueGitHubSync bool
+}
+
+type updateOptions struct {
+	publishEvents            bool
+	enqueueGitHubSync        bool
+	recordDescriptionUpdates bool
+	onlyChangedFields        bool
+}
+
 // New constructs a new stories service instance with the provided repository.
 func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
 	return &Service{
@@ -95,9 +107,37 @@ func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, p
 
 // Create creates a new story.
 func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.UUID) (CoreSingleStory, error) {
+	actorID := uuid.Nil
+	if ns.Reporter != nil {
+		actorID = *ns.Reporter
+	}
+	return s.createWithOptions(ctx, ns, workspaceId, actorID, createOptions{
+		publishEvents:     true,
+		enqueueGitHubSync: true,
+	})
+}
+
+func (s *Service) CreateExternal(ctx context.Context, actorID uuid.UUID, ns CoreNewStory, workspaceID uuid.UUID) (CoreSingleStory, error) {
+	if ns.Reporter == nil {
+		ns.Reporter = &actorID
+	}
+	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{})
+}
+
+func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, workspaceId, actorID uuid.UUID, options createOptions) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.create")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Create")
 	defer span.End()
+
+	if actorID == uuid.Nil {
+		if ns.Reporter == nil {
+			return CoreSingleStory{}, fmt.Errorf("actor ID is required to create a story")
+		}
+		actorID = *ns.Reporter
+	}
+	if ns.Reporter == nil {
+		ns.Reporter = &actorID
+	}
 
 	story := toCoreSingleStory(ns, workspaceId)
 	estimateScheme, err := s.repo.GetTeamEstimateScheme(ctx, ns.Team, workspaceId)
@@ -132,34 +172,37 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		Field:        "story",
 		CurrentValue: cs.Title,
 		NewValue:     cs.Title,
-		UserID:       *ns.Reporter,
+		UserID:       actorID,
 		WorkspaceID:  workspaceId,
 	}
 	if _, err := s.repo.RecordActivities(ctx, []CoreActivity{ca}); err != nil {
 		span.RecordError(err)
 	}
 
-	// Publish story created event for notifications
-	payload := events.StoryCreatedPayload{
-		StoryID:     cs.ID,
-		WorkspaceID: workspaceId,
-		Title:       cs.Title,
-		AssigneeID:  cs.Assignee,
-		ReporterID:  *ns.Reporter,
-	}
+	if options.publishEvents {
+		payload := events.StoryCreatedPayload{
+			StoryID:     cs.ID,
+			WorkspaceID: workspaceId,
+			Title:       cs.Title,
+			AssigneeID:  cs.Assignee,
+			ReporterID:  *ns.Reporter,
+		}
 
-	event := events.Event{
-		Type:      events.StoryCreated,
-		Payload:   payload,
-		Timestamp: time.Now(),
-		ActorID:   *ns.Reporter,
-	}
+		event := events.Event{
+			Type:      events.StoryCreated,
+			Payload:   payload,
+			Timestamp: time.Now(),
+			ActorID:   actorID,
+		}
 
-	if err := s.publisher.Publish(context.Background(), event); err != nil {
-		s.log.Error(ctx, "failed to publish story created event", "error", err)
-		// Don't return error as this is not critical
+		if err := s.publisher.Publish(context.Background(), event); err != nil {
+			s.log.Error(ctx, "failed to publish story created event", "error", err)
+			// Don't return error as this is not critical
+		}
 	}
-	s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
+	if options.enqueueGitHubSync {
+		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
+	}
 
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -278,6 +321,29 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 // Update updates a story.
 func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, updates map[string]any) error {
+	actorID, _ := auth.GetUserID(ctx)
+	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		publishEvents:            true,
+		enqueueGitHubSync:        true,
+		recordDescriptionUpdates: false,
+	})
+}
+
+func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
+	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		recordDescriptionUpdates: true,
+		onlyChangedFields:        true,
+	})
+}
+
+func (s *Service) RecordActivity(ctx context.Context, activity CoreActivity) error {
+	if _, err := s.repo.RecordActivities(ctx, []CoreActivity{activity}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, actorID uuid.UUID, updates map[string]any, options updateOptions) error {
 	s.log.Info(ctx, "business.core.stories.Update")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Update")
 	defer span.End()
@@ -289,9 +355,6 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	}
 	updates = normalizedUpdates
 
-	// Get the actor ID from context
-	actorID, _ := auth.GetUserID(ctx)
-
 	story, err := s.repo.Get(ctx, storyID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
@@ -302,6 +365,17 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	if err := s.applyEstimateUpdate(ctx, workspaceID, story, updates); err != nil {
 		span.RecordError(err)
 		return err
+	}
+
+	if options.onlyChangedFields {
+		for field, value := range updates {
+			if s.valuesEqual(s.getOldValue(story, field), value) {
+				delete(updates, field)
+			}
+		}
+		if len(updates) == 0 {
+			return nil
+		}
 	}
 
 	// Handle auto-completion logic if status is being updated
@@ -320,8 +394,7 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	ca := []CoreActivity{}
 
 	for field, value := range updates {
-		// ignore if field contains description
-		if strings.Contains(field, "description") {
+		if strings.Contains(field, "description") && !options.recordDescriptionUpdates {
 			continue
 		}
 
@@ -338,35 +411,39 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		}
 		ca = append(ca, na)
 	}
-	if _, err := s.repo.RecordActivities(ctx, ca); err != nil {
-		span.RecordError(err)
+	if len(ca) > 0 {
+		if _, err := s.repo.RecordActivities(ctx, ca); err != nil {
+			span.RecordError(err)
+		}
 	}
 
 	span.AddEvent("story updated", trace.WithAttributes(
 		attribute.String("story.id", storyID.String()),
 	))
 
-	// Always publish event - let notification rules decide what to do
-	payload := events.StoryUpdatedPayload{
-		StoryID:     storyID,
-		WorkspaceID: workspaceID,
-		Updates:     updates,
-		AssigneeID:  story.Assignee, // Current assignee before update
-	}
+	if options.publishEvents {
+		payload := events.StoryUpdatedPayload{
+			StoryID:     storyID,
+			WorkspaceID: workspaceID,
+			Updates:     updates,
+			AssigneeID:  story.Assignee, // Current assignee before update
+		}
 
-	// Publish event
-	event := events.Event{
-		Type:      events.StoryUpdated,
-		Payload:   payload,
-		Timestamp: time.Now(),
-		ActorID:   actorID,
-	}
+		event := events.Event{
+			Type:      events.StoryUpdated,
+			Payload:   payload,
+			Timestamp: time.Now(),
+			ActorID:   actorID,
+		}
 
-	if err := s.publisher.Publish(context.Background(), event); err != nil {
-		s.log.Error(ctx, "failed to publish story updated event", "error", err)
-		// Don't return error as this is not critical
+		if err := s.publisher.Publish(context.Background(), event); err != nil {
+			s.log.Error(ctx, "failed to publish story updated event", "error", err)
+			// Don't return error as this is not critical
+		}
 	}
-	s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
+	if options.enqueueGitHubSync {
+		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
+	}
 
 	return nil
 }
@@ -836,6 +913,13 @@ func (s *Service) formatValue(value any) string {
 		return "nil"
 	}
 	switch v := value.(type) {
+	case string:
+		return v
+	case *string:
+		if v != nil {
+			return *v
+		}
+		return "nil"
 	case *int16:
 		if v != nil {
 			return fmt.Sprintf("%d", *v)
@@ -860,6 +944,58 @@ func (s *Service) formatValue(value any) string {
 		return "nil"
 	case time.Time:
 		return v.Format(time.RFC3339)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func (s *Service) valuesEqual(oldValue, newValue any) bool {
+	return normalizeComparableValue(oldValue) == normalizeComparableValue(newValue)
+}
+
+func normalizeComparableValue(value any) string {
+	if value == nil {
+		return "nil"
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v
+	case *string:
+		if v == nil {
+			return "nil"
+		}
+		return *v
+	case uuid.UUID:
+		return v.String()
+	case *uuid.UUID:
+		if v == nil {
+			return "nil"
+		}
+		return v.String()
+	case time.Time:
+		return v.UTC().Format(time.RFC3339Nano)
+	case *time.Time:
+		if v == nil {
+			return "nil"
+		}
+		return v.UTC().Format(time.RFC3339Nano)
+	case int:
+		return strconv.Itoa(v)
+	case int16:
+		return strconv.FormatInt(int64(v), 10)
+	case *int16:
+		if v == nil {
+			return "nil"
+		}
+		return strconv.FormatInt(int64(*v), 10)
+	case bool:
+		return strconv.FormatBool(v)
+	case *bool:
+		if v == nil {
+			return "nil"
+		}
+		return strconv.FormatBool(*v)
 	default:
 		return fmt.Sprintf("%v", v)
 	}

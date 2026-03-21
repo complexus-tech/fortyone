@@ -134,6 +134,32 @@ type issueStoryLinkRow struct {
 	State        *string   `db:"state"`
 }
 
+func (r *Repo) EnsureStoryLink(ctx context.Context, storyID uuid.UUID, title *string, url string) error {
+	if strings.TrimSpace(url) == "" {
+		return nil
+	}
+
+	var existingID uuid.UUID
+	err := r.db.GetContext(ctx, &existingID, `
+		SELECT link_id
+		FROM story_links
+		WHERE story_id = $1 AND url = $2
+		LIMIT 1
+	`, storyID, url)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO story_links (title, url, story_id)
+		VALUES ($1, $2, $3)
+	`, title, url, storyID)
+	return err
+}
+
 func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (githubshared.CoreWorkspaceSettings, error) {
 	var row workspaceSettingsRow
 	query := `

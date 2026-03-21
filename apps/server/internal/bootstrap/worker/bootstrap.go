@@ -101,7 +101,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, fmt.Errorf("error initializing mailer service: %w", err)
 	}
 
-	githubService, err := github.New(log, githubrepository.New(log, db), github.Config{
+	githubService, err := github.New(log, githubrepository.New(log, db), nil, github.Config{
 		AppID:          cfg.GitHub.AppID,
 		AppSlug:        cfg.GitHub.AppSlug,
 		PrivateKeyPath: cfg.GitHub.PrivateKeyPath,

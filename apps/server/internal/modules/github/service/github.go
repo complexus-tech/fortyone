@@ -23,6 +23,7 @@ import (
 	"time"
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -35,12 +36,13 @@ const githubIssueLinkPrefix = "GitHub issue: "
 type Service struct {
 	log        *logger.Logger
 	repo       *githubrepository.Repo
+	stories    StoryService
 	httpClient *http.Client
 	cfg        Config
 	privateKey *rsa.PrivateKey
 }
 
-func New(log *logger.Logger, repo *githubrepository.Repo, cfg Config) (*Service, error) {
+func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
 	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyPath) != "" {
@@ -57,9 +59,10 @@ func New(log *logger.Logger, repo *githubrepository.Repo, cfg Config) (*Service,
 		}
 	}
 	return &Service{
-		log:  log,
-		repo: repo,
-		cfg:  cfg,
+		log:     log,
+		repo:    repo,
+		stories: storyService,
+		cfg:     cfg,
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
 		},
@@ -258,7 +261,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 		if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
 			return err
 		}
-		return s.repo.UpdateStoryDescription(ctx, input.StoryID, ensureIssueLinkInDescription(input.Description, issue.HTMLURL))
+		return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
 	case !errors.Is(err, sql.ErrNoRows):
 		return err
 	}
@@ -276,7 +279,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
 		return err
 	}
-	return s.repo.UpdateStoryDescription(ctx, input.StoryID, ensureIssueLinkInDescription(input.Description, issue.HTMLURL))
+	return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, deliveryID, eventName, signature string, body []byte) error {
@@ -323,42 +326,86 @@ func (s *Service) processWebhook(ctx context.Context, eventName string, payload 
 }
 
 func (s *Service) handleIssueEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+
 	link, err := s.repo.FindIssueSyncLinkByRepositoryID(ctx, repository.ID)
 	if err != nil {
 		return nil
 	}
 
-	description := payload.Issue.Body
-	storyID, err := s.repo.CreateOrUpdateExternalStory(
-		ctx,
-		repository.WorkspaceID,
-		link.TeamID,
-		s.cfg.GitHubUserID,
-		repository.ID,
-		payload.Issue.Title,
-		description,
-		"issue",
-		payload.Issue.ID,
-		payload.Issue.Number,
-		payload.Issue.HTMLURL,
-	)
+	issueDescription := githubString(payload.Issue.Body)
+	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
+	switch {
+	case err == nil:
+		story, getErr := s.stories.Get(ctx, storyID, repository.WorkspaceID)
+		if getErr != nil {
+			return getErr
+		}
+		updates := map[string]any{
+			"title":       payload.Issue.Title,
+			"description": issueDescription,
+		}
+		if updateErr := s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates); updateErr != nil {
+			return updateErr
+		}
+	case errors.Is(err, sql.ErrNoRows):
+		statusID, statusErr := s.repo.FindFirstStatusByCategory(ctx, link.TeamID, "unstarted")
+		if statusErr != nil {
+			return statusErr
+		}
+		if statusID == nil {
+			return errors.New("team has no unstarted status configured")
+		}
+
+		story, createErr := s.stories.CreateExternal(ctx, s.cfg.GitHubUserID, stories.CoreNewStory{
+			Title:       payload.Issue.Title,
+			Description: issueDescription,
+			Status:      statusID,
+			Reporter:    &s.cfg.GitHubUserID,
+			Team:        link.TeamID,
+			Priority:    "No Priority",
+		}, repository.WorkspaceID)
+		if createErr != nil {
+			return createErr
+		}
+		storyID = story.ID
+	default:
+		return err
+	}
+
+	linkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, storyID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue)
 	if err != nil {
 		return err
 	}
-	if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, storyID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue); err != nil {
+	if err := s.repo.EnsureStoryLink(ctx, storyID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
 		return err
 	}
+	if linkCreated {
+		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+			return err
+		}
+	}
 	switch payload.Action {
+	case "opened":
+		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueOpen, nil)
 	case "reopened":
 		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueReopen, nil)
 	case "closed":
 		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueClose, nil)
+	case "edited":
+		return nil
 	default:
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueOpen, nil)
+		return nil
 	}
 }
 
 func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+
 	refs := extractStoryRefs(payload.PullRequest.Title, payload.PullRequest.Body, payload.PullRequest.Head.Ref)
 	stories, err := s.repo.ResolveStoriesByRefs(ctx, repository.WorkspaceID, refs)
 	if err != nil || len(stories) == 0 {
@@ -378,13 +425,25 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 	}
 
 	for _, story := range stories {
-		if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "pull_request", payload.PullRequest.ID, payload.PullRequest.Number, nil, payload.PullRequest.HTMLURL, payload.PullRequest.Title, payload.PullRequest.State, payload.PullRequest); err != nil {
+		prLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "pull_request", payload.PullRequest.ID, payload.PullRequest.Number, nil, payload.PullRequest.HTMLURL, payload.PullRequest.Title, payload.PullRequest.State, payload.PullRequest)
+		if err != nil {
 			return err
+		}
+		if prLinkCreated {
+			if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_pull_request", fmt.Sprintf("PR #%d", payload.PullRequest.Number), payload.PullRequest.HTMLURL); err != nil {
+				return err
+			}
 		}
 		branchRef := payload.PullRequest.Head.Ref
 		if branchRef != "" {
-			if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branchRef, payload.PullRequest.Head.HTMLURL, payload.PullRequest.Head.Ref, payload.PullRequest.State, payload.PullRequest.Head); err != nil {
+			branchLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branchRef, payload.PullRequest.Head.HTMLURL, payload.PullRequest.Head.Ref, payload.PullRequest.State, payload.PullRequest.Head)
+			if err != nil {
 				return err
+			}
+			if branchLinkCreated {
+				if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_branch", fmt.Sprintf("branch %s", branchRef), payload.PullRequest.Head.HTMLURL); err != nil {
+					return err
+				}
 			}
 		}
 		if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
@@ -395,6 +454,10 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 }
 
 func (s *Service) handlePushEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+
 	refs := extractStoryRefs(payload.Ref)
 	for _, commit := range payload.Commits {
 		refs = append(refs, extractStoryRefs(commit.Message)...)
@@ -405,14 +468,34 @@ func (s *Service) handlePushEvent(ctx context.Context, repository githubreposito
 	}
 	branch := strings.TrimPrefix(payload.Ref, "refs/heads/")
 	for _, story := range stories {
+		newCommits := 0
 		if branch != "" {
-			if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branch, payload.Repository.HTMLURL+"/tree/"+branch, branch, "active", map[string]any{"ref": payload.Ref}); err != nil {
+			branchLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branch, payload.Repository.HTMLURL+"/tree/"+branch, branch, "active", map[string]any{"ref": payload.Ref})
+			if err != nil {
 				return err
+			}
+			if branchLinkCreated {
+				if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_branch", fmt.Sprintf("branch %s", branch), payload.Repository.HTMLURL+"/tree/"+branch); err != nil {
+					return err
+				}
 			}
 		}
 		for _, commit := range payload.Commits {
 			refName := commit.ID
-			if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "commit", 0, 0, &refName, commit.URL, commit.Message, "linked", commit); err != nil {
+			commitLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "commit", 0, 0, &refName, commit.URL, commit.Message, "linked", commit)
+			if err != nil {
+				return err
+			}
+			if commitLinkCreated {
+				newCommits++
+			}
+		}
+		if newCommits > 0 {
+			label := "1 commit"
+			if newCommits > 1 {
+				label = fmt.Sprintf("%d commits", newCommits)
+			}
+			if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_commit", label, payload.Repository.HTMLURL+"/commits/"+branch); err != nil {
 				return err
 			}
 		}
@@ -442,7 +525,16 @@ func (s *Service) moveStoryByRule(ctx context.Context, workspaceID, teamID, stor
 	if statusID == nil {
 		return nil
 	}
-	return s.repo.MoveStoryToStatus(ctx, storyID, *statusID)
+	story, err := s.stories.Get(ctx, storyID, workspaceID)
+	if err != nil {
+		return err
+	}
+	if story.Status != nil && *story.Status == *statusID {
+		return nil
+	}
+	return s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, storyID, workspaceID, map[string]any{
+		"status_id": *statusID,
+	})
 }
 
 func (s *Service) seedDefaultWorkflowRules(ctx context.Context, workspaceID, teamID uuid.UUID) (CoreTeamGitHubSettings, error) {
@@ -508,6 +600,43 @@ func matchBranchPattern(pattern, branch string) bool {
 		return strings.HasPrefix(branch, strings.TrimSuffix(pattern, "*"))
 	}
 	return false
+}
+
+func (s *Service) upsertStoryLink(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID, externalType string, githubID int64, githubNumber int, refName *string, url, title, state string, metadata any) (bool, error) {
+	_, _, err := s.repo.FindStoryLink(ctx, repositoryID, externalType, githubID, refName)
+	linkCreated := errors.Is(err, sql.ErrNoRows)
+	if err != nil && !linkCreated {
+		return false, err
+	}
+	if err := s.repo.UpsertStoryLink(ctx, workspaceID, storyID, repositoryID, externalType, githubID, githubNumber, refName, url, title, state, metadata); err != nil {
+		return false, err
+	}
+	return linkCreated, nil
+}
+
+func (s *Service) recordLinkActivity(ctx context.Context, workspaceID, storyID uuid.UUID, field, currentValue, targetURL string) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+
+	return s.stories.RecordActivity(ctx, stories.CoreActivity{
+		StoryID:      storyID,
+		Type:         "link",
+		Field:        field,
+		CurrentValue: currentValue,
+		NewValue:     targetURL,
+		UserID:       s.cfg.GitHubUserID,
+		WorkspaceID:  workspaceID,
+	})
+}
+
+func githubIssueStoryLinkTitle(issueNumber int) *string {
+	title := fmt.Sprintf("GitHub issue #%d", issueNumber)
+	return &title
+}
+
+func githubString(value string) *string {
+	return &value
 }
 
 func loadPrivateKey(path string) (*rsa.PrivateKey, error) {

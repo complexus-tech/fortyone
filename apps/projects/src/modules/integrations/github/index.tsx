@@ -45,8 +45,11 @@ export const GitHubIntegrationSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 flex items-center gap-2 text-2xl font-medium">
-        <GitIcon className="h-6" />
+      <Text
+        as="h1"
+        className="mb-6 flex items-center gap-2 text-2xl font-medium"
+      >
+        <GitIcon className="h-5" />
         GitHub
       </Text>
 
@@ -78,7 +81,9 @@ export const GitHubIntegrationSettings = () => {
 
         {(integration?.installations.length ?? 0) === 0 ? (
           <Box className="px-6 py-8">
-            <Text className="font-medium">No GitHub organizations connected</Text>
+            <Text className="font-medium">
+              No GitHub organizations connected
+            </Text>
             <Text className="mt-1" color="muted">
               Install the FortyOne GitHub App to sync pull requests, branches,
               commits, and issues.
@@ -94,7 +99,9 @@ export const GitHubIntegrationSettings = () => {
                 key={installation.id}
               >
                 <Box>
-                  <Text className="font-medium">{installation.accountLogin}</Text>
+                  <Text className="font-medium">
+                    {installation.accountLogin}
+                  </Text>
                   <Text color="muted">
                     {installation.repositorySelection} repositories
                   </Text>
@@ -127,7 +134,8 @@ export const GitHubIntegrationSettings = () => {
           <Box className="px-6 py-8">
             <Text className="font-medium">No repositories linked to teams</Text>
             <Text className="mt-1" color="muted">
-              Link a repository to enable issue sync and pull request automation.
+              Link a repository to enable issue sync and pull request
+              automation.
             </Text>
           </Box>
         ) : (
@@ -179,7 +187,9 @@ export const GitHubIntegrationSettings = () => {
             onValueChange={(value) => {
               updateSettings.mutate({ branchFormat: value });
             }}
-            value={integration?.settings.branchFormat ?? "username/identifier-title"}
+            value={
+              integration?.settings.branchFormat ?? "username/identifier-title"
+            }
           >
             <Select.Trigger className="w-64 text-[0.9rem] md:text-base">
               <Select.Input />
