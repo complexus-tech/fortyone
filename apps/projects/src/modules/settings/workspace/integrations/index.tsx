@@ -82,11 +82,20 @@ const GitLabIcon = () => (
   >
     <path d="M190 350L250 170H130L190 350Z" fill="#E24329" />
     <path d="M190 350L130 170H30L190 350Z" fill="#FC6D26" />
-    <path d="M30 170L10 230C8 237 11 245 17 249L190 350L30 170Z" fill="#FCA326" />
+    <path
+      d="M30 170L10 230C8 237 11 245 17 249L190 350L30 170Z"
+      fill="#FCA326"
+    />
     <path d="M30 170H130L90 30C88 23 78 23 76 30L30 170Z" fill="#E24329" />
     <path d="M190 350L250 170H350L190 350Z" fill="#FC6D26" />
-    <path d="M350 170L370 230C372 237 369 245 363 249L190 350L350 170Z" fill="#FCA326" />
-    <path d="M350 170H250L290 30C292 23 302 23 304 30L350 170Z" fill="#E24329" />
+    <path
+      d="M350 170L370 230C372 237 369 245 363 249L190 350L350 170Z"
+      fill="#FCA326"
+    />
+    <path
+      d="M350 170H250L290 30C292 23 302 23 304 30L350 170Z"
+      fill="#E24329"
+    />
   </svg>
 );
 
@@ -103,7 +112,6 @@ const IntercomIcon = () => (
     />
   </svg>
 );
-
 
 type Integration = {
   id: string;
@@ -124,7 +132,14 @@ const IntegrationCard = ({
   showDescription?: boolean;
 }) => {
   const content = (
-    <Box className={cn("border-border rounded-xl border p-5 transition-colors", integration.href ? "hover:border-text-muted/30" : "cursor-not-allowed opacity-50")}>
+    <Box
+      className={cn(
+        "border-border rounded-xl border p-5 transition-colors",
+        integration.href
+          ? "hover:border-text-muted/30"
+          : "cursor-not-allowed opacity-50",
+      )}
+    >
       <Flex align="center" gap={3}>
         {integration.icon}
         <Box>
@@ -201,9 +216,7 @@ export const IntegrationsIndex = () => {
   const filteredIntegrations = useMemo(() => {
     if (!search.trim()) return allIntegrations;
     const query = search.toLowerCase();
-    return allIntegrations.filter((i) =>
-      i.name.toLowerCase().includes(query),
-    );
+    return allIntegrations.filter((i) => i.name.toLowerCase().includes(query));
   }, [search, allIntegrations]);
 
   const filteredEnabled = useMemo(() => {
@@ -225,7 +238,7 @@ export const IntegrationsIndex = () => {
 
       <Box className="mt-6">
         <Input
-          leftIcon={<SearchIcon className="h-4 w-4" />}
+          leftIcon={<SearchIcon className="h-4.5" />}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search integrations"
           rounded="xl"
@@ -236,7 +249,10 @@ export const IntegrationsIndex = () => {
 
       {filteredEnabled.length > 0 && (
         <Box className="mt-8">
-          <Text className="mb-4 text-sm font-medium uppercase tracking-wider" color="muted">
+          <Text
+            className="mb-4 text-sm font-medium tracking-wider uppercase"
+            color="muted"
+          >
             Installed
           </Text>
           <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -253,7 +269,10 @@ export const IntegrationsIndex = () => {
       )}
 
       <Box className="mt-8">
-        <Text className="mb-4 text-sm font-medium uppercase tracking-wider" color="muted">
+        <Text
+          className="mb-4 text-sm font-medium tracking-wider uppercase"
+          color="muted"
+        >
           Essentials
         </Text>
         <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
