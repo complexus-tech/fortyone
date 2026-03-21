@@ -453,6 +453,9 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 		if err != nil {
 			return err
 		}
+		if err := s.repo.EnsureStoryLink(ctx, story.StoryID, githubPullRequestStoryLinkTitle(payload.PullRequest.Number), payload.PullRequest.HTMLURL); err != nil {
+			return err
+		}
 		if prLinkCreated {
 			if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_pull_request", fmt.Sprintf("PR #%d", payload.PullRequest.Number), payload.PullRequest.HTMLURL); err != nil {
 				return err
@@ -656,6 +659,11 @@ func (s *Service) recordLinkActivity(ctx context.Context, workspaceID, storyID u
 
 func githubIssueStoryLinkTitle(issueNumber int) *string {
 	title := fmt.Sprintf("GitHub issue #%d", issueNumber)
+	return &title
+}
+
+func githubPullRequestStoryLinkTitle(prNumber int) *string {
+	title := fmt.Sprintf("GitHub PR #%d", prNumber)
 	return &title
 }
 
