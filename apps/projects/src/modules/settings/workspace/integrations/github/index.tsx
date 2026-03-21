@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Box, Button, Command, Dialog, Divider, Flex, Menu, Popover, Switch, Text } from "ui";
-import { CheckIcon, GitIcon, PlusIcon, TeamIcon } from "icons";
+import { CheckIcon, GitIcon, PlusIcon } from "icons";
+import { TeamColor } from "@/components/ui/team-color";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import { useWorkspacePath } from "@/hooks";
@@ -325,7 +326,7 @@ export const GitHubIntegrationSettings = () => {
                 <Popover.Trigger asChild>
                   <Button className="w-full justify-start" color="tertiary">
                     <Flex align="center" gap={2}>
-                      <TeamIcon className="h-4 shrink-0" />
+                      <TeamColor className="shrink-0" color={selectedTeam?.color} />
                       <Text>{selectedTeam?.name ?? "Choose team..."}</Text>
                     </Flex>
                   </Button>
@@ -349,7 +350,7 @@ export const GitHubIntegrationSettings = () => {
                           }}
                         >
                           <Flex align="center" gap={2}>
-                            <TeamIcon className="h-4 shrink-0" />
+                            <TeamColor className="shrink-0" color={team.color} />
                             <Text className="truncate">{team.name}</Text>
                           </Flex>
                           {teamId === team.id && (
