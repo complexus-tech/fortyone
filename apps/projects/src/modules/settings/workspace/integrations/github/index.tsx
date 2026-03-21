@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Box, Button, Dialog, Flex, Select, Switch, Text } from "ui";
-import { GitIcon, PlusIcon, ReloadIcon } from "icons";
+import { Badge, Box, Button, Command, Dialog, Divider, Flex, Menu, Popover, Switch, Text } from "ui";
+import { CheckIcon, GitIcon, PlusIcon, TeamIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import { useWorkspacePath } from "@/hooks";
@@ -15,6 +15,17 @@ import {
   useResyncGitHubRepositories,
   useUpdateGitHubWorkspaceSettings,
 } from "@/lib/hooks/github";
+
+const GitHubIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+  </svg>
+);
 
 export const GitHubIntegrationSettings = () => {
   const { data: integration } = useGitHubIntegration();
@@ -31,6 +42,9 @@ export const GitHubIntegrationSettings = () => {
   const [syncDirection, setSyncDirection] = useState<
     "inbound_only" | "bidirectional"
   >("inbound_only");
+  const [branchFormatOpen, setBranchFormatOpen] = useState(false);
+  const [repoPickerOpen, setRepoPickerOpen] = useState(false);
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
 
   const availableRepositories = useMemo(
     () =>
@@ -43,13 +57,12 @@ export const GitHubIntegrationSettings = () => {
     [integration],
   );
 
+  const selectedRepo = availableRepositories.find((r) => r.id === repositoryId);
+  const selectedTeam = teams.find((t) => t.id === teamId);
+
   return (
     <Box>
-      <Text
-        as="h1"
-        className="mb-6 flex items-center gap-2 text-2xl font-medium"
-      >
-        <GitIcon className="h-5" />
+      <Text as="h1" className="mb-6 text-2xl font-medium">
         GitHub
       </Text>
 
@@ -58,8 +71,7 @@ export const GitHubIntegrationSettings = () => {
           action={
             <Flex gap={2}>
               <Button
-                color="secondary"
-                leftIcon={<ReloadIcon />}
+                color="tertiary"
                 onClick={() => {
                   resyncRepositories.mutate();
                 }}
@@ -67,6 +79,7 @@ export const GitHubIntegrationSettings = () => {
                 Resync
               </Button>
               <Button
+                color="invert"
                 onClick={() => {
                   createInstallSession.mutate();
                 }}
@@ -98,17 +111,30 @@ export const GitHubIntegrationSettings = () => {
                 justify="between"
                 key={installation.id}
               >
-                <Box>
-                  <Text className="font-medium">
-                    {installation.accountLogin}
-                  </Text>
-                  <Text color="muted">
-                    {installation.repositorySelection} repositories
-                  </Text>
-                </Box>
-                <Text color="muted">
+                <Flex align="center" gap={3}>
+                  <Flex
+                    align="center"
+                    className="bg-surface-muted size-9 shrink-0 rounded-lg"
+                    justify="center"
+                  >
+                    <GitHubIcon className="h-4.5 w-4.5" />
+                  </Flex>
+                  <Box>
+                    <Text className="font-medium">
+                      {installation.accountLogin}
+                    </Text>
+                    <Text color="muted">
+                      {installation.repositorySelection} repositories
+                    </Text>
+                  </Box>
+                </Flex>
+                <Badge
+                  color={installation.isActive ? "success" : "danger"}
+                  size="sm"
+                  variant="outline"
+                >
                   {installation.isActive ? "Connected" : "Disconnected"}
-                </Text>
+                </Badge>
               </Flex>
             ))}
           </Box>
@@ -119,6 +145,7 @@ export const GitHubIntegrationSettings = () => {
         <SectionHeader
           action={
             <Button
+              color="tertiary"
               leftIcon={<PlusIcon />}
               onClick={() => {
                 setIsModalOpen(true);
@@ -147,17 +174,26 @@ export const GitHubIntegrationSettings = () => {
                 justify="between"
                 key={link.id}
               >
-                <Box>
-                  <Text className="font-medium">{link.repositoryName}</Text>
-                  <Text color="muted">
-                    {link.teamName} ·{" "}
-                    {link.syncDirection === "bidirectional"
-                      ? "Two-way sync"
-                      : "GitHub to FortyOne only"}
-                  </Text>
-                </Box>
+                <Flex align="center" gap={3}>
+                  <Flex
+                    align="center"
+                    className="bg-surface-muted size-9 shrink-0 rounded-lg"
+                    justify="center"
+                  >
+                    <GitIcon className="h-4" />
+                  </Flex>
+                  <Box>
+                    <Text className="font-medium">{link.repositoryName}</Text>
+                    <Text color="muted">
+                      {link.teamName} ·{" "}
+                      {link.syncDirection === "bidirectional"
+                        ? "Two-way sync"
+                        : "GitHub to FortyOne only"}
+                    </Text>
+                  </Box>
+                </Flex>
                 <Button
-                  color="secondary"
+                  color="tertiary"
                   onClick={() => {
                     deleteLink.mutate(link.id);
                   }}
@@ -183,23 +219,24 @@ export const GitHubIntegrationSettings = () => {
               title.
             </Text>
           </Box>
-          <Select
-            onValueChange={(value) => {
-              updateSettings.mutate({ branchFormat: value });
-            }}
-            value={
-              integration?.settings.branchFormat ?? "username/identifier-title"
-            }
-          >
-            <Select.Trigger className="w-64 text-[0.9rem] md:text-base">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Option value="username/identifier-title">
-                username/identifier-title
-              </Select.Option>
-            </Select.Content>
-          </Select>
+          <Menu open={branchFormatOpen} onOpenChange={setBranchFormatOpen}>
+            <Menu.Button>
+              <Button color="tertiary">
+                {integration?.settings.branchFormat ?? "username/identifier-title"}
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item
+                  onSelect={() => {
+                    updateSettings.mutate({ branchFormat: "username/identifier-title" });
+                  }}
+                >
+                  username/identifier-title
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
         </Flex>
       </Box>
 
@@ -240,59 +277,125 @@ export const GitHubIntegrationSettings = () => {
           <Dialog.Body className="space-y-5">
             <Box>
               <Text className="mb-2 font-medium">GitHub repository</Text>
-              <Select onValueChange={setRepositoryId} value={repositoryId}>
-                <Select.Trigger className="w-full text-[0.9rem] md:text-base">
-                  <Select.Input placeholder="Choose repository..." />
-                </Select.Trigger>
-                <Select.Content>
-                  {availableRepositories.map((repository) => (
-                    <Select.Option key={repository.id} value={repository.id}>
-                      {repository.fullName}
-                    </Select.Option>
-                  ))}
-                </Select.Content>
-              </Select>
+              <Popover onOpenChange={setRepoPickerOpen} open={repoPickerOpen}>
+                <Popover.Trigger asChild>
+                  <Button className="w-full justify-start" color="tertiary">
+                    <Flex align="center" gap={2}>
+                      <GitHubIcon className="h-4 w-4 shrink-0" />
+                      <Text>{selectedRepo?.fullName ?? "Choose repository..."}</Text>
+                    </Flex>
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Content align="start" className="w-80">
+                  <Command>
+                    <Command.Input autoFocus placeholder="Search repositories..." />
+                    <Divider className="my-2" />
+                    <Command.Empty className="py-2">
+                      <Text color="muted">No repositories found.</Text>
+                    </Command.Empty>
+                    <Command.Group className="max-h-60 overflow-y-auto">
+                      {availableRepositories.map((repository) => (
+                        <Command.Item
+                          active={repositoryId === repository.id}
+                          className="justify-between"
+                          key={repository.id}
+                          onSelect={() => {
+                            setRepositoryId(repository.id);
+                            setRepoPickerOpen(false);
+                          }}
+                        >
+                          <Flex align="center" gap={2}>
+                            <GitHubIcon className="h-4 w-4 shrink-0" />
+                            <Text className="truncate">{repository.fullName}</Text>
+                          </Flex>
+                          {repositoryId === repository.id && (
+                            <CheckIcon className="h-5 w-auto shrink-0" strokeWidth={2.1} />
+                          )}
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  </Command>
+                </Popover.Content>
+              </Popover>
             </Box>
 
             <Box>
               <Text className="mb-2 font-medium">FortyOne team</Text>
-              <Select onValueChange={setTeamId} value={teamId}>
-                <Select.Trigger className="w-full text-[0.9rem] md:text-base">
-                  <Select.Input placeholder="Choose team..." />
-                </Select.Trigger>
-                <Select.Content>
-                  {teams.map((team) => (
-                    <Select.Option key={team.id} value={team.id}>
-                      {team.name}
-                    </Select.Option>
-                  ))}
-                </Select.Content>
-              </Select>
+              <Popover onOpenChange={setTeamPickerOpen} open={teamPickerOpen}>
+                <Popover.Trigger asChild>
+                  <Button className="w-full justify-start" color="tertiary">
+                    <Flex align="center" gap={2}>
+                      <TeamIcon className="h-4 shrink-0" />
+                      <Text>{selectedTeam?.name ?? "Choose team..."}</Text>
+                    </Flex>
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Content align="start" className="w-80">
+                  <Command>
+                    <Command.Input autoFocus placeholder="Search teams..." />
+                    <Divider className="my-2" />
+                    <Command.Empty className="py-2">
+                      <Text color="muted">No teams found.</Text>
+                    </Command.Empty>
+                    <Command.Group className="max-h-60 overflow-y-auto">
+                      {teams.map((team) => (
+                        <Command.Item
+                          active={teamId === team.id}
+                          className="justify-between"
+                          key={team.id}
+                          onSelect={() => {
+                            setTeamId(team.id);
+                            setTeamPickerOpen(false);
+                          }}
+                        >
+                          <Flex align="center" gap={2}>
+                            <TeamIcon className="h-4 shrink-0" />
+                            <Text className="truncate">{team.name}</Text>
+                          </Flex>
+                          {teamId === team.id && (
+                            <CheckIcon className="h-5 w-auto shrink-0" strokeWidth={2.1} />
+                          )}
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  </Command>
+                </Popover.Content>
+              </Popover>
             </Box>
 
             <Box>
               <Text className="mb-2 font-medium">Sync mode</Text>
-              <Select
-                onValueChange={(value) => {
-                  setSyncDirection(value as "inbound_only" | "bidirectional");
-                }}
-                value={syncDirection}
-              >
-                <Select.Trigger className="w-full text-[0.9rem] md:text-base">
-                  <Select.Input />
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Option value="inbound_only">
-                    Only sync issues from this repository to FortyOne
-                  </Select.Option>
-                  <Select.Option value="bidirectional">
-                    Two-way sync issues between FortyOne and this repository
-                  </Select.Option>
-                </Select.Content>
-              </Select>
+              <Flex direction="column" gap={2}>
+                <button
+                  className={`border-border rounded-lg border px-4 py-3 text-left transition-colors ${syncDirection === "inbound_only" ? "border-primary bg-primary/5" : "hover:bg-surface-muted"}`}
+                  onClick={() => setSyncDirection("inbound_only")}
+                  type="button"
+                >
+                  <Text className="font-medium">One-way sync</Text>
+                  <Text color="muted">
+                    Only sync issues from GitHub to FortyOne
+                  </Text>
+                </button>
+                <button
+                  className={`border-border rounded-lg border px-4 py-3 text-left transition-colors ${syncDirection === "bidirectional" ? "border-primary bg-primary/5" : "hover:bg-surface-muted"}`}
+                  onClick={() => setSyncDirection("bidirectional")}
+                  type="button"
+                >
+                  <Text className="font-medium">Two-way sync</Text>
+                  <Text color="muted">
+                    Sync issues between FortyOne and GitHub
+                  </Text>
+                </button>
+              </Flex>
             </Box>
 
-            <Flex justify="end">
+            <Flex justify="end" gap={2}>
+              <Button
+                color="tertiary"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button
                 disabled={!repositoryId || !teamId}
                 onClick={() => {
