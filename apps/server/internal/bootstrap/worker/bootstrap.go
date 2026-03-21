@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
+	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
@@ -81,7 +83,28 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, fmt.Errorf("invalid system user ID: %w", err)
 	}
 
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, systemUserID)
+	githubUserID, err := uuid.Parse(cfg.GitHub.UserID)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("invalid github user ID: %w", err)
+	}
+
+	githubService, err := github.New(log, githubrepository.New(log, db), github.Config{
+		AppID:          cfg.GitHub.AppID,
+		AppSlug:        cfg.GitHub.AppSlug,
+		PrivateKeyPath: cfg.GitHub.PrivateKeyPath,
+		RedirectURL:    cfg.GitHub.RedirectURL,
+		WebhookSecret:  cfg.GitHub.WebhookSecret,
+		WebsiteURL:     cfg.Website.URL,
+		SecretKey:      cfg.Auth.SecretKey,
+		GitHubUserID:   githubUserID,
+	})
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("error initializing github service: %w", err)
+	}
+
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, systemUserID)
 
 	return App{
 		log:       log,

@@ -15,6 +15,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -78,15 +79,17 @@ type Service struct {
 	mentionsRepo MentionsRepository
 	log          *logger.Logger
 	publisher    *publisher.Publisher
+	tasksService *tasks.Service
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher) *Service {
+func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
 	return &Service{
 		repo:         repo,
 		mentionsRepo: mentionsRepo,
 		log:          log,
 		publisher:    publisher,
+		tasksService: tasksService,
 	}
 }
 
@@ -156,6 +159,7 @@ func (s *Service) Create(ctx context.Context, ns CoreNewStory, workspaceId uuid.
 		s.log.Error(ctx, "failed to publish story created event", "error", err)
 		// Don't return error as this is not critical
 	}
+	s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -362,8 +366,21 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 		s.log.Error(ctx, "failed to publish story updated event", "error", err)
 		// Don't return error as this is not critical
 	}
+	s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
 
 	return nil
+}
+
+func (s *Service) enqueueGitHubStorySync(ctx context.Context, storyID, workspaceID uuid.UUID) {
+	if s.tasksService == nil {
+		return
+	}
+	if _, err := s.tasksService.EnqueueGitHubStorySync(tasks.GitHubStorySyncPayload{
+		StoryID:     storyID,
+		WorkspaceID: workspaceID,
+	}); err != nil {
+		s.log.Error(ctx, "failed to enqueue github story sync task", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+	}
 }
 
 // handleCompletionStatusChange handles auto-setting completed_at based on status category changes

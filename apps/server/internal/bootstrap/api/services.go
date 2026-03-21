@@ -106,7 +106,7 @@ func buildServices(cfg mux.Config) services {
 		cfg.WebhookSecret,
 		cfg.TasksService,
 	)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher)
+	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
 	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
 	workspacesService := workspaces.New(

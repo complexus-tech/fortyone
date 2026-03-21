@@ -1,6 +1,7 @@
 package workerbootstrap
 
 import (
+	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -11,8 +12,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID)
 
 	mux := asynq.NewServeMux()
@@ -23,6 +24,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeWorkspaceTrialEnd, workerTaskService.HandleWorkspaceTrialEnd)
 	mux.HandleFunc(tasks.TypeSubscriberUpdate, workerTaskService.HandleSubscriberUpdate)
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
+	mux.HandleFunc(tasks.TypeGitHubStorySync, workerTaskService.HandleGitHubStorySync)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

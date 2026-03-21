@@ -139,7 +139,7 @@ func main() {
 
 	mentionsRepo := mentionsrepository.New(log, db)
 	storiesRepo := storiesrepository.New(log, db)
-	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher)
+	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher, tasksService)
 
 	okrActivitiesRepo := okractivitiesrepository.New(log, db)
 	okrActivitiesService := okractivities.New(log, okrActivitiesRepo)
