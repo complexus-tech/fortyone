@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,6 +25,7 @@ import (
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
+	githubsdk "github.com/google/go-github/v72/github"
 	"github.com/google/uuid"
 )
 
@@ -236,12 +236,14 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
 	if !s.canUseAppAPI() {
+		s.log.Warn(ctx, "skipping github story sync because github app api is not configured", "story_id", input.StoryID)
 		return nil
 	}
 
 	link, err := s.repo.FindBidirectionalIssueSyncLinkByTeamID(ctx, input.WorkspaceID, input.TeamID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			s.log.Info(ctx, "skipping github story sync because team has no bidirectional github issue link", "story_id", input.StoryID, "team_id", input.TeamID)
 			return nil
 		}
 		return err
@@ -262,6 +264,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.StoryID, link.RepositoryID)
 	switch {
 	case err == nil:
+		s.log.Info(ctx, "syncing story state to github issue", "story_id", input.StoryID, "github_issue_number", existingLink.GitHubNumber, "desired_state", desiredState)
 		issue, err := s.updateIssue(ctx, link.GitHubInstallationID, link.OwnerLogin, link.RepositorySlug, existingLink.GitHubNumber, input.Title, issueBody, desiredState)
 		if err != nil {
 			return err
@@ -274,6 +277,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 		return err
 	}
 
+	s.log.Info(ctx, "creating github issue for story during bidirectional sync", "story_id", input.StoryID, "desired_state", desiredState)
 	issue, err := s.createIssue(ctx, link.GitHubInstallationID, link.OwnerLogin, link.RepositorySlug, input.Title, issueBody)
 	if err != nil {
 		return err
@@ -683,92 +687,63 @@ func (s *Service) createAppJWT() (string, error) {
 	return token.SignedString(s.privateKey)
 }
 
-func (s *Service) getInstallationToken(ctx context.Context, installationID int64) (string, error) {
+func (s *Service) newAppClient() (*githubsdk.Client, error) {
 	appJWT, err := s.createAppJWT()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID), nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "Bearer "+appJWT)
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= http.StatusBadRequest {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("github installation token request failed: %s", body)
-	}
-	var payload struct {
-		Token string `json:"token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return "", err
-	}
-	return payload.Token, nil
+	return githubsdk.NewClient(s.httpClient).WithAuthToken(appJWT), nil
 }
 
-func (s *Service) getInstallation(ctx context.Context, installationID int64) (githubrepository.GithubInstallationPayload, error) {
-	appJWT, err := s.createAppJWT()
-	if err != nil {
-		return githubrepository.GithubInstallationPayload{}, err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.github.com/app/installations/%d", installationID), nil)
-	if err != nil {
-		return githubrepository.GithubInstallationPayload{}, err
-	}
-	req.Header.Set("Authorization", "Bearer "+appJWT)
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return githubrepository.GithubInstallationPayload{}, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= http.StatusBadRequest {
-		body, _ := io.ReadAll(resp.Body)
-		return githubrepository.GithubInstallationPayload{}, fmt.Errorf("github installation lookup failed: %s", body)
-	}
-	var payload githubrepository.GithubInstallationPayload
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return githubrepository.GithubInstallationPayload{}, err
-	}
-	return payload, nil
-}
-
-func (s *Service) listInstallationRepositories(ctx context.Context, installationID int64) ([]githubrepository.GithubRepositoryPayload, error) {
+func (s *Service) newInstallationClient(ctx context.Context, installationID int64) (*githubsdk.Client, error) {
 	token, err := s.getInstallationToken(ctx, installationID)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/installation/repositories?per_page=100", nil)
+	return githubsdk.NewClient(s.httpClient).WithAuthToken(token), nil
+}
+
+func (s *Service) getInstallationToken(ctx context.Context, installationID int64) (string, error) {
+	client, err := s.newAppClient()
+	if err != nil {
+		return "", err
+	}
+	token, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
+	if err != nil {
+		return "", err
+	}
+	return token.GetToken(), nil
+}
+
+func (s *Service) getInstallation(ctx context.Context, installationID int64) (githubrepository.GithubInstallationPayload, error) {
+	client, err := s.newAppClient()
+	if err != nil {
+		return githubrepository.GithubInstallationPayload{}, err
+	}
+	installation, _, err := client.Apps.GetInstallation(ctx, installationID)
+	if err != nil {
+		return githubrepository.GithubInstallationPayload{}, err
+	}
+	return toInstallationPayload(installation), nil
+}
+
+func (s *Service) listInstallationRepositories(ctx context.Context, installationID int64) ([]githubrepository.GithubRepositoryPayload, error) {
+	client, err := s.newInstallationClient(ctx, installationID)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	resp, err := s.httpClient.Do(req)
+	repos, _, err := client.Apps.ListRepos(ctx, &githubsdk.ListOptions{PerPage: 100})
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= http.StatusBadRequest {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("github repository listing failed: %s", body)
+	items := make([]githubrepository.GithubRepositoryPayload, 0, len(repos.Repositories))
+	for _, repository := range repos.Repositories {
+		if repository == nil {
+			continue
+		}
+		items = append(items, toRepositoryPayload(repository))
 	}
-	var payload struct {
-		Repositories []githubrepository.GithubRepositoryPayload `json:"repositories"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, err
-	}
-	return payload.Repositories, nil
+	return items, nil
 }
 
 type githubIssuePayload struct {
@@ -779,84 +754,128 @@ type githubIssuePayload struct {
 	State   string `json:"state"`
 }
 
-func (s *Service) createIssue(ctx context.Context, installationID int64, owner, repository, title, body string) (githubIssuePayload, error) {
-	requestBody := map[string]any{
-		"title": title,
-		"body":  body,
+func toInstallationPayload(installation *githubsdk.Installation) githubrepository.GithubInstallationPayload {
+	if installation == nil {
+		return githubrepository.GithubInstallationPayload{}
 	}
-	var issue githubIssuePayload
-	if err := s.doInstallationRequest(
-		ctx,
-		installationID,
-		http.MethodPost,
-		fmt.Sprintf("https://api.github.com/repos/%s/%s/issues", owner, repository),
-		requestBody,
-		&issue,
-	); err != nil {
+
+	permissions := map[string]string{}
+	if installation.Permissions != nil {
+		bytes, err := json.Marshal(installation.Permissions)
+		if err == nil {
+			_ = json.Unmarshal(bytes, &permissions)
+		}
+	}
+
+	var avatarURL *string
+	account := installation.GetAccount()
+	accountID := int64(0)
+	accountLogin := ""
+	accountType := ""
+	if account != nil && account.AvatarURL != nil {
+		avatarURL = account.AvatarURL
+	}
+	if account != nil {
+		accountID = account.GetID()
+		accountLogin = account.GetLogin()
+		accountType = account.GetType()
+	}
+
+	return githubrepository.GithubInstallationPayload{
+		ID: installation.GetID(),
+		Account: githubrepository.GithubInstallationAccountPayload{
+			ID:        accountID,
+			Login:     accountLogin,
+			Type:      accountType,
+			AvatarURL: avatarURL,
+		},
+		RepositorySelection: installation.GetRepositorySelection(),
+		Permissions:         permissions,
+		Events:              installation.Events,
+	}
+}
+
+func toRepositoryPayload(repository *githubsdk.Repository) githubrepository.GithubRepositoryPayload {
+	if repository == nil {
+		return githubrepository.GithubRepositoryPayload{}
+	}
+
+	var description *string
+	if repository.Description != nil {
+		description = repository.Description
+	}
+
+	owner := repository.GetOwner()
+	ownerID := int64(0)
+	ownerLogin := ""
+	if owner != nil {
+		ownerID = owner.GetID()
+		ownerLogin = owner.GetLogin()
+	}
+
+	return githubrepository.GithubRepositoryPayload{
+		ID:            repository.GetID(),
+		Name:          repository.GetName(),
+		FullName:      repository.GetFullName(),
+		Description:   description,
+		HTMLURL:       repository.GetHTMLURL(),
+		CloneURL:      repository.GetCloneURL(),
+		SSHURL:        repository.GetSSHURL(),
+		DefaultBranch: repository.GetDefaultBranch(),
+		Private:       repository.GetPrivate(),
+		Archived:      repository.GetArchived(),
+		Disabled:      repository.GetDisabled(),
+		Owner: githubrepository.GithubRepositoryOwnerPayload{
+			ID:    ownerID,
+			Login: ownerLogin,
+		},
+	}
+}
+
+func toIssuePayload(issue *githubsdk.Issue) githubIssuePayload {
+	if issue == nil {
+		return githubIssuePayload{}
+	}
+	return githubIssuePayload{
+		ID:      issue.GetID(),
+		Number:  issue.GetNumber(),
+		HTMLURL: issue.GetHTMLURL(),
+		Title:   issue.GetTitle(),
+		State:   issue.GetState(),
+	}
+}
+
+func (s *Service) createIssue(ctx context.Context, installationID int64, owner, repository, title, body string) (githubIssuePayload, error) {
+	client, err := s.newInstallationClient(ctx, installationID)
+	if err != nil {
 		return githubIssuePayload{}, err
 	}
-	return issue, nil
+	request := &githubsdk.IssueRequest{
+		Title: &title,
+		Body:  &body,
+	}
+	issue, _, err := client.Issues.Create(ctx, owner, repository, request)
+	if err != nil {
+		return githubIssuePayload{}, err
+	}
+	return toIssuePayload(issue), nil
 }
 
 func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, repository string, number int, title, body, state string) (githubIssuePayload, error) {
-	requestBody := map[string]any{
-		"title": title,
-		"body":  body,
-		"state": state,
-	}
-	var issue githubIssuePayload
-	if err := s.doInstallationRequest(
-		ctx,
-		installationID,
-		http.MethodPatch,
-		fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/%d", owner, repository, number),
-		requestBody,
-		&issue,
-	); err != nil {
+	client, err := s.newInstallationClient(ctx, installationID)
+	if err != nil {
 		return githubIssuePayload{}, err
 	}
-	return issue, nil
-}
-
-func (s *Service) doInstallationRequest(ctx context.Context, installationID int64, method, requestURL string, payload any, target any) error {
-	token, err := s.getInstallationToken(ctx, installationID)
+	request := &githubsdk.IssueRequest{
+		Title: &title,
+		Body:  &body,
+		State: &state,
+	}
+	issue, _, err := client.Issues.Edit(ctx, owner, repository, number, request)
 	if err != nil {
-		return err
+		return githubIssuePayload{}, err
 	}
-
-	var body io.Reader
-	if payload != nil {
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return err
-		}
-		body = strings.NewReader(string(payloadBytes))
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, requestURL, body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if payload != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= http.StatusBadRequest {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("github request failed: %s", responseBody)
-	}
-	if target == nil {
-		return nil
-	}
-	return json.NewDecoder(resp.Body).Decode(target)
+	return toIssuePayload(issue), nil
 }
 
 func (s *Service) verifyWebhookSignature(body []byte, signature string) error {
