@@ -769,9 +769,10 @@ func (s *Service) appAPIConfigDiagnostics() []any {
 }
 
 func buildImportedStoryIssueComment(storyURL string, story stories.CoreSingleStory) string {
+	taskKey := fmt.Sprintf("%s-%d", story.TeamCode, story.SequenceID)
 	return fmt.Sprintf(
-		"Linked to FortyOne story `%s`.\n\nView story: %s",
-		story.ID.String(),
+		"Linked to FortyOne task [%s](%s).",
+		taskKey,
 		storyURL,
 	)
 }
