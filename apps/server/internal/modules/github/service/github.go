@@ -37,12 +37,13 @@ var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
 const githubIssueLinkPrefix = "GitHub issue: "
 
 type Service struct {
-	log        *logger.Logger
-	repo       *githubrepository.Repo
-	stories    StoryService
-	httpClient *http.Client
-	cfg        Config
-	privateKey *rsa.PrivateKey
+	log                 *logger.Logger
+	repo                *githubrepository.Repo
+	stories             StoryService
+	httpClient          *http.Client
+	cfg                 Config
+	privateKey          *rsa.PrivateKey
+	privateKeyLoadError string
 }
 
 func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, cfg Config) (*Service, error) {
@@ -54,6 +55,10 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 			log.Warn(
 				context.Background(),
 				"github integration disabled: failed to load private key",
+				"app_id_configured",
+				cfg.AppID != 0,
+				"private_key_present",
+				strings.TrimSpace(cfg.PrivateKey) != "",
 				"error",
 				err,
 			)
@@ -67,7 +72,8 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
 		},
-		privateKey: privateKey,
+		privateKey:          privateKey,
+		privateKeyLoadError: errorString(err),
 	}, nil
 }
 
@@ -84,6 +90,33 @@ func (s *Service) canUseAppAPI() bool {
 
 func (s *Service) canVerifyWebhooks() bool {
 	return strings.TrimSpace(s.cfg.WebhookSecret) != ""
+}
+
+func (s *Service) HasAnyConfig() bool {
+	return s.cfg.AppID != 0 ||
+		strings.TrimSpace(s.cfg.AppSlug) != "" ||
+		strings.TrimSpace(s.cfg.PrivateKey) != "" ||
+		strings.TrimSpace(s.cfg.RedirectURL) != "" ||
+		strings.TrimSpace(s.cfg.WebhookSecret) != ""
+}
+
+func (s *Service) ValidateWorkerConfiguration() error {
+	if !s.HasAnyConfig() {
+		return nil
+	}
+	if s.canUseAppAPI() {
+		return nil
+	}
+	return fmt.Errorf(
+		"github worker configuration invalid: app_id_configured=%t app_slug_configured=%t private_key_present=%t private_key_loaded=%t private_key_load_error=%q redirect_url_configured=%t webhook_secret_configured=%t",
+		s.cfg.AppID != 0,
+		strings.TrimSpace(s.cfg.AppSlug) != "",
+		strings.TrimSpace(s.cfg.PrivateKey) != "",
+		s.privateKey != nil,
+		s.privateKeyLoadError,
+		strings.TrimSpace(s.cfg.RedirectURL) != "",
+		strings.TrimSpace(s.cfg.WebhookSecret) != "",
+	)
 }
 
 func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (CoreIntegration, error) {
@@ -244,7 +277,11 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
 	if !s.canUseAppAPI() {
-		s.log.Warn(ctx, "skipping github story sync because github app api is not configured", "story_id", input.StoryID)
+		s.log.Warn(
+			ctx,
+			"skipping github story sync because github app api is not configured",
+			append([]any{"story_id", input.StoryID}, s.appAPIConfigDiagnostics()...)...,
+		)
 		return nil
 	}
 
@@ -717,6 +754,18 @@ func githubBranchStoryLinkTitle(branchName string) *string {
 	return &title
 }
 
+func (s *Service) appAPIConfigDiagnostics() []any {
+	return []any{
+		"app_id_configured", s.cfg.AppID != 0,
+		"app_slug_configured", strings.TrimSpace(s.cfg.AppSlug) != "",
+		"private_key_present", strings.TrimSpace(s.cfg.PrivateKey) != "",
+		"private_key_loaded", s.privateKey != nil,
+		"private_key_load_error", s.privateKeyLoadError,
+		"redirect_url_configured", strings.TrimSpace(s.cfg.RedirectURL) != "",
+		"webhook_secret_configured", strings.TrimSpace(s.cfg.WebhookSecret) != "",
+	}
+}
+
 func buildImportedStoryIssueComment(storyURL string, story stories.CoreSingleStory) string {
 	return fmt.Sprintf(
 		"Linked to FortyOne story `%s`.\n\nView story: %s",
@@ -821,6 +870,13 @@ func loadPrivateKey(privateKey string) (*rsa.PrivateKey, error) {
 		return nil, errors.New("github private key is not RSA")
 	}
 	return rsaKey, nil
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 func (s *Service) createAppJWT() (string, error) {
