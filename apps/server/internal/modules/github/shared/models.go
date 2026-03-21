@@ -10,6 +10,8 @@ const (
 	SyncDirectionInboundOnly            = "inbound_only"
 	SyncDirectionBidirectional          = "bidirectional"
 	BranchFormatUsernameIdentifierTitle = "username/identifier-title"
+	BranchFormatIdentifierTitle         = "identifier-title"
+	BranchFormatIdentifierSlashTitle    = "identifier/title"
 	EventDraftPROpen                    = "draft_pr_open"
 	EventPROpen                         = "pr_open"
 	EventPRReviewActivity               = "pr_review_activity"

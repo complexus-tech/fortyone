@@ -186,6 +186,13 @@ func (s *Service) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.
 	if input.BranchFormat != nil && strings.TrimSpace(*input.BranchFormat) == "" {
 		return CoreWorkspaceSettings{}, errors.New("branch format is required")
 	}
+	if input.BranchFormat != nil && !slices.Contains([]string{
+		BranchFormatUsernameIdentifierTitle,
+		BranchFormatIdentifierTitle,
+		BranchFormatIdentifierSlashTitle,
+	}, *input.BranchFormat) {
+		return CoreWorkspaceSettings{}, errors.New("invalid branch format")
+	}
 	return s.repo.UpdateWorkspaceSettings(ctx, workspaceID, input)
 }
 
@@ -334,6 +341,8 @@ func (s *Service) processWebhook(ctx context.Context, eventName string, payload 
 		return s.handleIssueEvent(ctx, repository, payload)
 	case "pull_request":
 		return s.handlePullRequestEvent(ctx, repository, payload)
+	case "create":
+		return s.handleCreateEvent(ctx, repository, payload)
 	case "push":
 		return s.handlePushEvent(ctx, repository, payload)
 	default:
@@ -467,6 +476,9 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 			if err != nil {
 				return err
 			}
+			if err := s.repo.EnsureStoryLink(ctx, story.StoryID, githubBranchStoryLinkTitle(branchRef), payload.PullRequest.Head.HTMLURL); err != nil {
+				return err
+			}
 			if branchLinkCreated {
 				if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_branch", fmt.Sprintf("branch %s", branchRef), payload.PullRequest.Head.HTMLURL); err != nil {
 					return err
@@ -475,6 +487,39 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 		}
 		if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) handleCreateEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
+	if s.stories == nil {
+		return errors.New("stories service is not configured")
+	}
+	if payload.RefType != "branch" || strings.TrimSpace(payload.Ref) == "" {
+		return nil
+	}
+
+	refs := extractStoryRefs(payload.Ref)
+	stories, err := s.repo.ResolveStoriesByRefs(ctx, repository.WorkspaceID, refs)
+	if err != nil || len(stories) == 0 {
+		return err
+	}
+
+	branchURL := payload.Repository.HTMLURL + "/tree/" + payload.Ref
+	for _, story := range stories {
+		branchRef := payload.Ref
+		branchLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branchRef, branchURL, payload.Ref, "active", map[string]any{"ref": payload.Ref, "ref_type": payload.RefType})
+		if err != nil {
+			return err
+		}
+		if err := s.repo.EnsureStoryLink(ctx, story.StoryID, githubBranchStoryLinkTitle(branchRef), branchURL); err != nil {
+			return err
+		}
+		if branchLinkCreated {
+			if err := s.recordLinkActivity(ctx, repository.WorkspaceID, story.StoryID, "github_branch", fmt.Sprintf("branch %s", branchRef), branchURL); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -499,6 +544,9 @@ func (s *Service) handlePushEvent(ctx context.Context, repository githubreposito
 		if branch != "" {
 			branchLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "branch", 0, 0, &branch, payload.Repository.HTMLURL+"/tree/"+branch, branch, "active", map[string]any{"ref": payload.Ref})
 			if err != nil {
+				return err
+			}
+			if err := s.repo.EnsureStoryLink(ctx, story.StoryID, githubBranchStoryLinkTitle(branch), payload.Repository.HTMLURL+"/tree/"+branch); err != nil {
 				return err
 			}
 			if branchLinkCreated {
@@ -664,6 +712,11 @@ func githubIssueStoryLinkTitle(issueNumber int) *string {
 
 func githubPullRequestStoryLinkTitle(prNumber int) *string {
 	title := fmt.Sprintf("GitHub PR #%d", prNumber)
+	return &title
+}
+
+func githubBranchStoryLinkTitle(branchName string) *string {
+	title := fmt.Sprintf("GitHub branch %s", branchName)
 	return &title
 }
 
@@ -1147,6 +1200,7 @@ func (s *Service) verifyState(value string) (map[string]string, error) {
 
 type webhookEnvelope struct {
 	Action     string `json:"action"`
+	RefType    string `json:"ref_type"`
 	Repository struct {
 		ID      int64  `json:"id"`
 		HTMLURL string `json:"html_url"`

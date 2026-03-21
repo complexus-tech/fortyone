@@ -17,7 +17,9 @@ import { useProfile } from "@/lib/hooks/profile";
 import { slugify } from "@/utils";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useGitHubIntegration } from "@/lib/hooks/github";
 import { MobileMenuButton } from "@/components/shared";
+import { buildGitBranchName } from "@/modules/settings/workspace/integrations/github/branch-format";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 
@@ -47,6 +49,7 @@ export const OptionsHeader = ({
   const { mutate: deleteStory } = useDeleteStoryMutation();
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { data: statuses } = useTeamStatuses(teamId);
+  const { data: githubIntegration } = useGitHubIntegration();
   const { mutateAsync } = useRestoreStoryMutation();
   const { getTermDisplay } = useTerminology();
   const { data: automationPreferences } = useAutomationPreferences();
@@ -54,11 +57,14 @@ export const OptionsHeader = ({
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
 
   const generateGitBranchName = () => {
-    const branchName =
-      `${currentUser?.username}/${code}-${sequenceId}-${slugify(
-        title.slice(0, 32),
-      )}`.toLowerCase();
-    return branchName.replace(/-$/, "");
+    return buildGitBranchName({
+      format:
+        githubIntegration?.settings.branchFormat ?? "username/identifier-title",
+      username: currentUser?.username,
+      teamCode: code,
+      sequenceId,
+      title,
+    });
   };
 
   const getStoryUrl = () => {

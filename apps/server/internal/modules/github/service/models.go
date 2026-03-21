@@ -12,6 +12,8 @@ const (
 	SyncDirectionInboundOnly            = githubshared.SyncDirectionInboundOnly
 	SyncDirectionBidirectional          = githubshared.SyncDirectionBidirectional
 	BranchFormatUsernameIdentifierTitle = githubshared.BranchFormatUsernameIdentifierTitle
+	BranchFormatIdentifierTitle         = githubshared.BranchFormatIdentifierTitle
+	BranchFormatIdentifierSlashTitle    = githubshared.BranchFormatIdentifierSlashTitle
 	EventDraftPROpen                    = githubshared.EventDraftPROpen
 	EventPROpen                         = githubshared.EventPROpen
 	EventPRReviewActivity               = githubshared.EventPRReviewActivity
