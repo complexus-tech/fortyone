@@ -8,6 +8,7 @@ import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useUpdateSprintSettingsMutation } from "@/modules/teams/hooks/update-sprint-settings-mutation";
 import { useUpdateStoryAutomationSettingsMutation } from "@/modules/teams/hooks/update-story-automation-settings-mutation";
 import { useUpdateEstimationSettingsMutation } from "@/modules/teams/hooks/update-estimation-settings-mutation";
+import { GitHubAutomations } from "./github-automations";
 
 export const Automations = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -382,6 +383,8 @@ export const Automations = () => {
           </Flex>
         </Box>
       </Box>
+
+      <GitHubAutomations />
     </>
   );
 };

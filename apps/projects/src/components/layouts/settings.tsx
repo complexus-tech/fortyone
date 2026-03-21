@@ -76,7 +76,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
-          // { title: "Integrations", href: withWorkspace("/settings/workspace/integrations") },
+          { title: "Integrations", href: withWorkspace("/settings/workspace/integrations") },
           // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
         ]
       : []),

@@ -132,6 +132,15 @@ type Config struct {
 		SecretKey     string `env:"STRIPE_SECRET_KEY"`
 		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
 	}
+	GitHub struct {
+		AppID          int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug        string `env:"GITHUB_APP_SLUG"`
+		PrivateKeyPath string `env:"GITHUB_PRIVATE_KEY_PATH"`
+		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
+		WebhookURL     string `env:"GITHUB_WEBHOOK_URL"`
+		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
+		UserID         string `default:"00000000-0000-0000-0000-000000000002" env:"APP_GITHUB_USER_ID"`
+	}
 }
 
 func main() {
@@ -356,6 +365,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Initialize Stripe client
 	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
 
+	githubUserID, err := uuid.Parse(cfg.GitHub.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid github user id: %w", err)
+	}
+
 	// Initialize SSE Hub
 	sseHub := sse.NewHub(ctx, log, rdb)
 	go sseHub.Run()
@@ -381,6 +395,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 		TasksService:   tasksService,
 		StripeClient:   stripeClient,
 		WebhookSecret:  cfg.Stripe.WebhookSecret,
+		WebsiteURL:     cfg.Website.URL,
+		GitHubAppID:    cfg.GitHub.AppID,
+		GitHubAppSlug:  cfg.GitHub.AppSlug,
+		GitHubUserID:   githubUserID,
+		GitHubKeyPath:  cfg.GitHub.PrivateKeyPath,
+		GitHubRedirect: cfg.GitHub.RedirectURL,
+		GitHubWebhook:  cfg.GitHub.WebhookSecret,
 		SSEHub:         sseHub,
 		CorsOrigin:     "*",
 		SystemUserID:   systemUserID,

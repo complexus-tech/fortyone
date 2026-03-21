@@ -130,3 +130,10 @@ export const analyticsKeys = {
   timelineTrends: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "timeline-trends", filters] as const,
 };
+
+export const githubKeys = {
+  integration: (workspaceSlug: string) =>
+    ["github", workspaceSlug, "integration"] as const,
+  teamSettings: (workspaceSlug: string, teamId: string) =>
+    ["github", workspaceSlug, "team-settings", teamId] as const,
+};

@@ -6,6 +6,7 @@ import (
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
+	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	invitationshttp "github.com/complexus-tech/projects-api/internal/modules/invitations/http"
 	keyresultshttp "github.com/complexus-tech/projects-api/internal/modules/keyresults/http"
@@ -53,6 +54,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+	}, app)
+
+	githubhttp.Routes(githubhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.github,
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{
