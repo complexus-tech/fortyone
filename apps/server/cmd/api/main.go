@@ -17,6 +17,7 @@ import (
 
 	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
 	"github.com/complexus-tech/projects-api/internal/migrations"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/aws"
@@ -32,7 +33,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -95,9 +95,6 @@ type Config struct {
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
-	System struct {
-		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
-	}
 	Tracing struct {
 		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
 		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
@@ -139,7 +136,6 @@ type Config struct {
 		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
 		WebhookURL     string `env:"GITHUB_WEBHOOK_URL"`
 		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
-		UserID         string `default:"00000000-0000-0000-0000-000000000002" env:"APP_GITHUB_USER_ID"`
 	}
 }
 
@@ -318,10 +314,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 	}()
 
-	systemUserID, err := uuid.Parse(cfg.System.UserID)
-	if err != nil {
-		return fmt.Errorf("invalid system user ID: %w", err)
-	}
+	actorResolver := actors.NewResolver(log, db, cacheService)
 
 	shutdown := make(chan os.Signal, 1)
 
@@ -365,9 +358,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Initialize Stripe client
 	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
 
-	githubUserID, err := uuid.Parse(cfg.GitHub.UserID)
+	githubUserID, err := actorResolver.Resolve(ctx, actors.KeyGitHub)
 	if err != nil {
-		return fmt.Errorf("invalid github user id: %w", err)
+		return fmt.Errorf("resolve github actor: %w", err)
 	}
 
 	// Initialize SSE Hub
@@ -404,7 +397,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubWebhook:  cfg.GitHub.WebhookSecret,
 		SSEHub:         sseHub,
 		CorsOrigin:     "*",
-		SystemUserID:   systemUserID,
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

@@ -7,10 +7,11 @@ import (
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/jmoiron/sqlx"
@@ -40,6 +41,29 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	log.Info(ctx, "database connection established")
 
 	redisOpt := redisClientOpt(cfg)
+	redisClient := openRedis(cfg)
+	defer redisClient.Close()
+
+	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("error pinging redis: %w", err)
+	}
+
+	cacheService := cache.New(redisClient, log)
+	actorResolver := actors.NewResolver(log, db, cacheService)
+
+	systemUserID, err := actorResolver.Resolve(ctx, actors.KeySystem)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("resolve system actor: %w", err)
+	}
+
+	githubUserID, err := actorResolver.Resolve(ctx, actors.KeyGitHub)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("resolve github actor: %w", err)
+	}
+
 	scheduler := asynq.NewScheduler(redisOpt, nil)
 	if err := registerSchedules(scheduler); err != nil {
 		_ = db.Close()
@@ -75,18 +99,6 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if err != nil {
 		_ = db.Close()
 		return App{}, fmt.Errorf("error initializing mailer service: %w", err)
-	}
-
-	systemUserID, err := uuid.Parse(cfg.System.UserID)
-	if err != nil {
-		_ = db.Close()
-		return App{}, fmt.Errorf("invalid system user ID: %w", err)
-	}
-
-	githubUserID, err := uuid.Parse(cfg.GitHub.UserID)
-	if err != nil {
-		_ = db.Close()
-		return App{}, fmt.Errorf("invalid github user ID: %w", err)
 	}
 
 	githubService, err := github.New(log, githubrepository.New(log, db), github.Config{

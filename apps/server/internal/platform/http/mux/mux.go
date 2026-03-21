@@ -57,7 +57,6 @@ type Config struct {
 	GitHubWebhook  string
 	SSEHub         *sse.Hub
 	CorsOrigin     string
-	SystemUserID   uuid.UUID
 }
 
 // New returns a new HTTP handler that defines all the API routes.

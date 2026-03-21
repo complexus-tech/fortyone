@@ -16,7 +16,6 @@ const MembersTab = ({
   setIsInviteMembersDialogOpen: (open: boolean) => void;
 }) => {
   const { data: allMembers = [] } = useMembers();
-  const members = allMembers.filter(({ role }) => role !== "system");
   return (
     <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
@@ -40,7 +39,7 @@ const MembersTab = ({
         className="dark:divide-dark-100 divide-y divide-gray-100"
         direction="column"
       >
-        {members.map((member) => (
+        {allMembers.map((member) => (
           <WorkspaceMember key={member.id} {...member} />
         ))}
       </Flex>

@@ -122,7 +122,6 @@ func buildServices(cfg mux.Config) services {
 			Subscriptions:   subscriptionsService,
 			Attachments:     attachmentsService,
 			Cache:           cfg.Cache,
-			SystemUserID:    cfg.SystemUserID,
 			Publisher:       cfg.Publisher,
 			TasksService:    cfg.TasksService,
 		},

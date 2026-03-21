@@ -51,9 +51,6 @@ type Config struct {
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
-	System struct {
-		UserID string `default:"00000000-0000-0000-0000-000000000001" env:"APP_SYSTEM_USER_ID"`
-	}
 	Brevo struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
@@ -69,7 +66,6 @@ type Config struct {
 		PrivateKeyPath string `env:"GITHUB_PRIVATE_KEY_PATH"`
 		RedirectURL    string `env:"GITHUB_REDIRECT_URL"`
 		WebhookSecret  string `env:"GITHUB_WEBHOOK_SECRET"`
-		UserID         string `default:"00000000-0000-0000-0000-000000000002" env:"APP_GITHUB_USER_ID"`
 	}
 	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"integrations\":2,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
 }

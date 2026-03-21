@@ -17,8 +17,8 @@ export const MembersSettings = ({ team }: { team: Team }) => {
   const { mutate: addMember } = useAddMemberMutation();
   const [search, setSearch] = useState("");
 
-  const members = teamMembers.filter(({ role }) => role !== "system");
-  const allMembers = workspaceMembers.filter(({ role }) => role !== "system");
+  const members = teamMembers;
+  const allMembers = workspaceMembers;
 
   const handleAddMember = (memberId: string) => {
     addMember({ teamId: team.id, memberId });
