@@ -45,6 +45,7 @@ type Repository interface {
 	GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
 	GetUserByEmailAnyStatus(ctx context.Context, email string) (CoreUser, error)
+	GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]CoreUser, error)
 	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) (CoreUser, error)
 	ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
@@ -141,6 +142,25 @@ func (s *Service) GetUserByEmailAnyStatus(ctx context.Context, email string) (Co
 	}
 
 	return user, nil
+}
+
+// GetUsersByIDs returns users by ID regardless of membership or active status.
+func (s *Service) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.GetUsersByIDs")
+	ctx, span := web.AddSpan(ctx, "business.core.users.GetUsersByIDs")
+	defer span.End()
+
+	if len(userIDs) == 0 {
+		return []CoreUser{}, nil
+	}
+
+	users, err := s.repo.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return users, nil
 }
 
 // Register creates a new user account.

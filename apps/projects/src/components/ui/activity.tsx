@@ -69,16 +69,16 @@ const DisplayObjective = ({
 
 export const Activity = ({
   teamId,
-  userId,
   field,
   currentValue,
   type,
   createdAt,
+  user,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useStatuses();
   const { withWorkspace } = useWorkspacePath();
-  const member = members.find((m) => m.id === userId);
+  const member = user;
 
   if (field === "completed_at") {
     return null;
@@ -221,11 +221,9 @@ export const Activity = ({
                   <Box>
                     <Link
                       className={cn("mb-2 flex gap-1", {
-                        "mb-0": member.role === "system",
+                        "mb-0": member.isSystem,
                       })}
-                      href={
-                        member.role === "system" ? "" : `/profile/${member.id}`
-                      }
+                      href={member.isSystem ? "" : `/profile/${member.id}`}
                     >
                       <Text fontSize="md" fontWeight="medium">
                         {member.fullName}
@@ -234,7 +232,7 @@ export const Activity = ({
                         ({member.username})
                       </Text>
                     </Link>
-                    {member.role !== "system" ? (
+                    {!member.isSystem ? (
                       <Button
                         className="mb-0.5 ml-px px-2"
                         color="tertiary"

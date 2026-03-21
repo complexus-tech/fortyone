@@ -198,6 +198,7 @@ type UserDetails struct {
 	FullName  string    `json:"fullName"`
 	AvatarURL string    `json:"avatarUrl"`
 	IsActive  bool      `json:"isActive"`
+	IsSystem  bool      `json:"isSystem"`
 }
 
 type CoreNewComment struct {

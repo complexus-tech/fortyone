@@ -10,6 +10,7 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -28,6 +29,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.is_system,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -81,6 +83,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.is_system,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -134,6 +137,7 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.is_system,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -193,6 +197,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.is_system,
 			u.timezone,
 			u.last_login_at,
 			u.created_at,
@@ -216,6 +221,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.full_name,
 			u.avatar_url,
 			u.is_active,
+			u.is_system,
 			u.timezone,
 			u.last_login_at,
 			u.created_at,
@@ -245,6 +251,51 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	}
 
 	return toCoreUsers(users), nil
+}
+
+func (r *repo) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]users.CoreUser, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.users.GetUsersByIDs")
+	defer span.End()
+
+	if len(userIDs) == 0 {
+		return []users.CoreUser{}, nil
+	}
+
+	baseQuery := `
+		SELECT
+			u.user_id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.avatar_url,
+			u.is_active,
+			u.is_system,
+			u.has_seen_walkthrough,
+			u.timezone,
+			u.last_login_at,
+			u.last_used_workspace_id,
+			u.created_at,
+			u.updated_at
+		FROM users u
+		WHERE u.user_id IN (?)
+	`
+
+	query, args, err := sqlx.In(baseQuery, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand user ids query: %w", err)
+	}
+
+	query = r.db.Rebind(query)
+
+	var dbUsers []dbUser
+	if err := r.db.SelectContext(ctx, &dbUsers, query, args...); err != nil {
+		errMsg := fmt.Sprintf("failed to retrieve users by ids: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to retrieve users by ids"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, fmt.Errorf("failed to retrieve users by ids: %w", err)
+	}
+
+	return toCoreUsers(dbUsers), nil
 }
 
 // GetVerificationToken retrieves a verification token from the database

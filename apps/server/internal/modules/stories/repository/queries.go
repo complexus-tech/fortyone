@@ -675,7 +675,6 @@ SELECT
 		FROM story_activities sa
 		INNER JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.story_id = :story_id
-			AND u.is_active = true
 		ORDER BY sa.created_at DESC
 		LIMIT :limit OFFSET :offset
 	`

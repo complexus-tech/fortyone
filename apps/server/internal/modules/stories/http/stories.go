@@ -32,6 +32,7 @@ import (
 	linkshttp "github.com/complexus-tech/projects-api/internal/modules/links/http"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -49,6 +50,7 @@ var (
 // Handlers provides HTTP handlers for story operations.
 type Handlers struct {
 	stories     *stories.Service
+	users       *users.Service
 	comments    *comments.Service
 	links       *links.Service
 	attachments *attachments.Service
@@ -57,9 +59,10 @@ type Handlers struct {
 }
 
 // New creates a new Handlers instance with the required dependencies.
-func New(stories *stories.Service, comments *comments.Service, links *links.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
+func New(stories *stories.Service, users *users.Service, comments *comments.Service, links *links.Service, attachments *attachments.Service, cacheService *cache.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		stories:     stories,
+		users:       users,
 		comments:    comments,
 		links:       links,
 		attachments: attachments,
@@ -77,6 +80,147 @@ func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) stri
 		return ""
 	}
 	return resolved
+}
+
+func (h *Handlers) buildAppUserSummary(ctx context.Context, user users.CoreUser) AppUserSummary {
+	user.AvatarURL = h.resolveUserAvatarURL(ctx, user.AvatarURL)
+	return toAppUserSummary(user)
+}
+
+func (h *Handlers) getStoryUsers(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]AppUserSummary, error) {
+	usersByID := make(map[uuid.UUID]AppUserSummary, len(userIDs))
+	if len(userIDs) == 0 {
+		return usersByID, nil
+	}
+	if h.users == nil {
+		return usersByID, nil
+	}
+
+	fetchedUsers, err := h.users.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range fetchedUsers {
+		usersByID[user.ID] = h.buildAppUserSummary(ctx, user)
+	}
+
+	return usersByID, nil
+}
+
+func collectStoryListUserIDs(story stories.CoreStoryList, userIDs map[uuid.UUID]struct{}) {
+	if story.Assignee != nil {
+		userIDs[*story.Assignee] = struct{}{}
+	}
+	if story.Reporter != nil {
+		userIDs[*story.Reporter] = struct{}{}
+	}
+
+	for _, subStory := range story.SubStories {
+		collectStoryListUserIDs(subStory, userIDs)
+	}
+}
+
+func collectStoryUserIDs(story stories.CoreSingleStory, userIDs map[uuid.UUID]struct{}) {
+	if story.Assignee != nil {
+		userIDs[*story.Assignee] = struct{}{}
+	}
+	if story.Reporter != nil {
+		userIDs[*story.Reporter] = struct{}{}
+	}
+
+	for _, subStory := range story.SubStories {
+		collectStoryListUserIDs(subStory, userIDs)
+	}
+
+	for _, association := range story.Associations {
+		collectStoryListUserIDs(association.Story, userIDs)
+	}
+}
+
+func mapUserIDs(values map[uuid.UUID]struct{}) []uuid.UUID {
+	userIDs := make([]uuid.UUID, 0, len(values))
+	for userID := range values {
+		userIDs = append(userIDs, userID)
+	}
+	return userIDs
+}
+
+func (h *Handlers) buildStoryUsersByID(ctx context.Context, story stories.CoreSingleStory) (map[uuid.UUID]AppUserSummary, error) {
+	userIDs := make(map[uuid.UUID]struct{})
+	collectStoryUserIDs(story, userIDs)
+	return h.getStoryUsers(ctx, mapUserIDs(userIDs))
+}
+
+func (h *Handlers) buildStoriesUsersByID(ctx context.Context, storyList []stories.CoreStoryList) (map[uuid.UUID]AppUserSummary, error) {
+	userIDs := make(map[uuid.UUID]struct{})
+	for _, story := range storyList {
+		collectStoryListUserIDs(story, userIDs)
+	}
+	return h.getStoryUsers(ctx, mapUserIDs(userIDs))
+}
+
+func (h *Handlers) buildStoryGroupsUsersByID(ctx context.Context, groups []stories.CoreStoryGroup) (map[uuid.UUID]AppUserSummary, error) {
+	userIDs := make(map[uuid.UUID]struct{})
+	for _, group := range groups {
+		for _, story := range group.Stories {
+			collectStoryListUserIDs(story, userIDs)
+		}
+	}
+	return h.getStoryUsers(ctx, mapUserIDs(userIDs))
+}
+
+func (h *Handlers) respondStory(ctx context.Context, w http.ResponseWriter, story stories.CoreSingleStory, statusCode int) error {
+	usersByID, err := h.buildStoryUsersByID(ctx, story)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppStory(story, usersByID), statusCode)
+}
+
+func (h *Handlers) respondStories(ctx context.Context, w http.ResponseWriter, storyList []stories.CoreStoryList, statusCode int) error {
+	usersByID, err := h.buildStoriesUsersByID(ctx, storyList)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppStories(storyList, usersByID), statusCode)
+}
+
+func collectCommentUserIDs(comment comments.CoreComment, userIDs map[uuid.UUID]struct{}) {
+	userIDs[comment.UserID] = struct{}{}
+
+	for _, subComment := range comment.SubComments {
+		collectCommentUserIDs(subComment, userIDs)
+	}
+}
+
+func (h *Handlers) buildCommentsUsersByID(ctx context.Context, commentList []comments.CoreComment) (map[uuid.UUID]AppUserSummary, error) {
+	userIDs := make(map[uuid.UUID]struct{})
+	for _, comment := range commentList {
+		collectCommentUserIDs(comment, userIDs)
+	}
+	return h.getStoryUsers(ctx, mapUserIDs(userIDs))
+}
+
+func (h *Handlers) respondComment(ctx context.Context, w http.ResponseWriter, comment comments.CoreComment, statusCode int) error {
+	usersByID, err := h.buildCommentsUsersByID(ctx, []comments.CoreComment{comment})
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, toAppComment(comment, usersByID), statusCode)
+}
+
+func (h *Handlers) respondComments(ctx context.Context, w http.ResponseWriter, commentList []comments.CoreComment, response CommentsResponse, statusCode int) error {
+	usersByID, err := h.buildCommentsUsersByID(ctx, commentList)
+	if err != nil {
+		return err
+	}
+
+	response.Comments = toAppComments(commentList, usersByID)
+	return web.Respond(ctx, w, response, statusCode)
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -102,8 +246,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	web.Respond(ctx, w, toAppStory(story), http.StatusOK)
-	return nil
+	return h.respondStory(ctx, w, story, http.StatusOK)
 }
 
 func (h *Handlers) QueryByRef(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -122,8 +265,7 @@ func (h *Handlers) QueryByRef(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	web.Respond(ctx, w, toAppStory(story), http.StatusOK)
-	return nil
+	return h.respondStory(ctx, w, story, http.StatusOK)
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -160,8 +302,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
-		web.Respond(ctx, w, toAppStories(cachedStories), http.StatusOK)
-		return nil
+		return h.respondStories(ctx, w, cachedStories, http.StatusOK)
 	}
 
 	storyList, err := h.stories.List(ctx, workspace.ID, filters)
@@ -174,8 +315,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
-	web.Respond(ctx, w, toAppStories(storyList), http.StatusOK)
-	return nil
+	return h.respondStories(ctx, w, storyList, http.StatusOK)
 }
 
 func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -543,8 +683,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	web.Respond(ctx, w, toAppStory(story), http.StatusCreated)
-	return nil
+	return h.respondStory(ctx, w, story, http.StatusCreated)
 }
 
 func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -634,8 +773,7 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 		span.AddEvent("cache hit", trace.WithAttributes(
 			attribute.String("cache_key", cacheKey),
 		))
-		web.Respond(ctx, w, toAppStories(cachedStories), http.StatusOK)
-		return nil
+		return h.respondStories(ctx, w, cachedStories, http.StatusOK)
 	}
 
 	storiesList, err := h.stories.MyStories(ctx, workspace.ID)
@@ -648,8 +786,7 @@ func (h *Handlers) MyStories(ctx context.Context, w http.ResponseWriter, r *http
 		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
-	web.Respond(ctx, w, toAppStories(storiesList), http.StatusOK)
-	return nil
+	return h.respondStories(ctx, w, storiesList, http.StatusOK)
 }
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -803,9 +940,7 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
-
-	return nil
+	return h.respondComment(ctx, w, comment, http.StatusCreated)
 }
 
 func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -837,15 +972,12 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		return nil
 	}
 
-	appComments := toAppComments(commentsList)
-
 	nextPage := page + 1
 	if !hasMore {
 		nextPage = 0
 	}
 
 	response := CommentsResponse{
-		Comments: appComments,
 		Pagination: CommentsPagination{
 			Page:     page,
 			PageSize: pageSize,
@@ -854,8 +986,7 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		},
 	}
 
-	web.Respond(ctx, w, response, http.StatusOK)
-	return nil
+	return h.respondComments(ctx, w, commentsList, response, http.StatusOK)
 }
 
 func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -893,8 +1024,7 @@ func (h *Handlers) DuplicateStory(ctx context.Context, w http.ResponseWriter, r 
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	web.Respond(ctx, w, toAppStory(duplicatedStory), http.StatusCreated)
-	return nil
+	return h.respondStory(ctx, w, duplicatedStory, http.StatusCreated)
 }
 
 func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -1037,7 +1167,11 @@ func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *ht
 			return nil
 		}
 
-		response := convertGroupsToResponse(groups, query)
+		response, err := h.convertGroupsToResponse(ctx, groups, query)
+		if err != nil {
+			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			return nil
+		}
 		return web.Respond(ctx, w, response, http.StatusOK)
 	}
 
@@ -1047,7 +1181,11 @@ func (h *Handlers) ListGrouped(ctx context.Context, w http.ResponseWriter, r *ht
 		return nil
 	}
 
-	response := convertGroupsToResponse(groups, query)
+	response, err := h.convertGroupsToResponse(ctx, groups, query)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
@@ -1093,7 +1231,13 @@ func (h *Handlers) LoadMoreGroup(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	appStories := toAppStories(stories)
+	usersByID, err := h.buildStoriesUsersByID(ctx, stories)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	appStories := toAppStories(stories, usersByID)
 
 	nextPage := query.Page + 1
 	if !hasMore {
@@ -1169,7 +1313,13 @@ func (h *Handlers) ListByCategory(ctx context.Context, w http.ResponseWriter, r 
 		return nil
 	}
 
-	appStories := toAppStories(stories)
+	usersByID, err := h.buildStoriesUsersByID(ctx, stories)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return nil
+	}
+
+	appStories := toAppStories(stories, usersByID)
 
 	nextPage := page + 1
 	if !hasMore {
@@ -1498,10 +1648,15 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	return result
 }
 
-func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) StoriesResponse {
+func (h *Handlers) convertGroupsToResponse(ctx context.Context, groups []stories.CoreStoryGroup, query StoryQuery) (StoriesResponse, error) {
+	usersByID, err := h.buildStoryGroupsUsersByID(ctx, groups)
+	if err != nil {
+		return StoriesResponse{}, err
+	}
+
 	appGroups := make([]StoryGroup, len(groups))
 	for i, group := range groups {
-		appStories := toAppStories(group.Stories)
+		appStories := toAppStories(group.Stories, usersByID)
 
 		appGroups[i] = StoryGroup{
 			Key:         group.Key,
@@ -1522,7 +1677,7 @@ func convertGroupsToResponse(groups []stories.CoreStoryGroup, query StoryQuery) 
 			OrderBy:        query.OrderBy,
 			OrderDirection: query.OrderDirection,
 		},
-	}
+	}, nil
 }
 
 func (h *Handlers) AddAssociation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -1563,7 +1718,7 @@ func (h *Handlers) AddAssociation(ctx context.Context, w http.ResponseWriter, r 
 		FromStoryID: assoc.FromStoryID,
 		ToStoryID:   assoc.ToStoryID,
 		Type:        assoc.Type,
-		Story:       toAppStoryListItem(assoc.Story),
+		Story:       toAppStoryListItem(assoc.Story, nil),
 	}
 
 	web.Respond(ctx, w, appAssoc, http.StatusCreated)

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
+import { useSession } from "@/lib/auth/client";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
 import { commentStoryAction } from "../actions/comment-story";
@@ -21,6 +22,7 @@ type InfiniteCommentsData = {
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const { data: session } = useSession();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -62,7 +64,15 @@ export const useCommentStoryMutation = () => {
       if (previousData) {
         const newComment = {
           id: "new comment",
-          userId: "",
+          userId: session?.user?.id ?? "",
+          user: {
+            id: session?.user?.id ?? "",
+            username: session?.user?.username ?? "",
+            fullName: session?.user?.name ?? "",
+            avatarUrl: session?.user?.image ?? null,
+            isActive: true,
+            isSystem: false,
+          },
           comment: payload.comment,
           storyId,
           createdAt: new Date().toISOString(),

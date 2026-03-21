@@ -74,6 +74,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Validate:       cfg.Validate,
 		Cache:          cfg.Cache,
 		Stories:        svcs.stories,
+		Users:          svcs.users,
 		Comments:       svcs.comments,
 		Links:          svcs.links,
 		Attachments:    svcs.attachments,

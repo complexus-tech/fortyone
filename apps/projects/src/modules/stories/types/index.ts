@@ -1,4 +1,5 @@
 import type { StateCategory } from "@/types/states";
+import type { UserSummary } from "@/types";
 
 export type StoryPriority =
   | "No Priority"
@@ -21,7 +22,9 @@ export type Story = {
   teamId: string;
   workspaceId: string;
   assigneeId: string | null;
+  assignee?: UserSummary | null;
   reporterId: string;
+  reporter?: UserSummary | null;
   epicId: string | null;
   sequenceId: number;
   priority: StoryPriority;
@@ -40,6 +43,7 @@ export type StoryActivity = {
   id: string;
   storyId: string;
   userId: string;
+  user: UserSummary;
   type: "update" | "create";
   field: string;
   currentValue: string;

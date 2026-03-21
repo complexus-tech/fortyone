@@ -1,4 +1,5 @@
 import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { UserSummary } from "@/types";
 
 export type StoryAssociationType = "related" | "blocking" | "duplicate";
 
@@ -27,7 +28,9 @@ export type DetailedStory = {
   keyResultId: string | null;
   statusId: string;
   assigneeId: string | null;
+  assignee?: UserSummary | null;
   reporterId: string;
+  reporter?: UserSummary | null;
   priority: StoryPriority;
   sprintId: string | null;
   epicId: string | null;
