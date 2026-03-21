@@ -235,8 +235,8 @@ export const IntegrationsIndex = () => {
 
       {filteredEnabled.length > 0 && (
         <Box className="mt-8">
-          <Text className="mb-4 text-xs font-medium uppercase tracking-wider" color="muted">
-            Enabled
+          <Text className="mb-4 text-sm font-medium uppercase tracking-wider" color="muted">
+            Installed
           </Text>
           <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEnabled.map((integration) => (
@@ -252,7 +252,7 @@ export const IntegrationsIndex = () => {
       )}
 
       <Box className="mt-8">
-        <Text className="mb-4 text-xs font-medium uppercase tracking-wider" color="muted">
+        <Text className="mb-4 text-sm font-medium uppercase tracking-wider" color="muted">
           Essentials
         </Text>
         <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
