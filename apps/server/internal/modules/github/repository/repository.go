@@ -117,10 +117,14 @@ type storyMatch struct {
 }
 
 type RepoByExternalRow struct {
-	ID            uuid.UUID `db:"id"`
-	WorkspaceID   uuid.UUID `db:"workspace_id"`
-	FullName      string    `db:"full_name"`
-	DefaultBranch string    `db:"default_branch"`
+	ID                   uuid.UUID `db:"id"`
+	WorkspaceID          uuid.UUID `db:"workspace_id"`
+	WorkspaceSlug        string    `db:"workspace_slug"`
+	FullName             string    `db:"full_name"`
+	OwnerLogin           string    `db:"owner_login"`
+	RepositorySlug       string    `db:"repository_slug"`
+	DefaultBranch        string    `db:"default_branch"`
+	GitHubInstallationID int64     `db:"github_installation_id"`
 }
 
 type issueStoryLinkRow struct {
@@ -548,9 +552,19 @@ func (r *Repo) ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]status
 func (r *Repo) FindRepositoryByExternalID(ctx context.Context, repositoryExternalID int64) (RepoByExternalRow, error) {
 	var row RepoByExternalRow
 	query := `
-		SELECT id, workspace_id, full_name, default_branch
-		FROM github_repositories
-		WHERE github_repository_id = $1 AND is_active = true
+		SELECT
+			gr.id,
+			gr.workspace_id,
+			w.slug AS workspace_slug,
+			gr.full_name,
+			gr.owner_login,
+			gr.name AS repository_slug,
+			gr.default_branch,
+			gi.github_installation_id
+		FROM github_repositories gr
+		INNER JOIN github_installations gi ON gi.id = gr.installation_id
+		INNER JOIN workspaces w ON w.workspace_id = gr.workspace_id
+		WHERE gr.github_repository_id = $1 AND gr.is_active = true
 	`
 	err := r.db.GetContext(ctx, &row, query, repositoryExternalID)
 	return row, err

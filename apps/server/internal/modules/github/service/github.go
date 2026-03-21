@@ -13,13 +13,16 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
@@ -27,6 +30,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	githubsdk "github.com/google/go-github/v72/github"
 	"github.com/google/uuid"
+	"golang.org/x/text/unicode/norm"
 )
 
 var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
@@ -348,10 +352,13 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 
 	issueDescription := githubString(payload.Issue.Body)
+	var story stories.CoreSingleStory
+	var getErr error
+	var createErr error
 	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
 	switch {
 	case err == nil:
-		story, getErr := s.stories.Get(ctx, storyID, repository.WorkspaceID)
+		story, getErr = s.stories.Get(ctx, storyID, repository.WorkspaceID)
 		if getErr != nil {
 			return getErr
 		}
@@ -371,7 +378,7 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 			return errors.New("team has no unstarted status configured")
 		}
 
-		story, createErr := s.stories.CreateExternal(ctx, s.cfg.GitHubUserID, stories.CoreNewStory{
+		story, createErr = s.stories.CreateExternal(ctx, s.cfg.GitHubUserID, stories.CoreNewStory{
 			Title:       payload.Issue.Title,
 			Description: issueDescription,
 			Status:      statusID,
@@ -396,6 +403,11 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 	if linkCreated {
 		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+			return err
+		}
+	}
+	if payload.Action == "opened" {
+		if err := s.ensureIssueImportComment(ctx, repository, payload.Issue.Number, story); err != nil {
 			return err
 		}
 	}
@@ -647,8 +659,91 @@ func githubIssueStoryLinkTitle(issueNumber int) *string {
 	return &title
 }
 
+func buildImportedStoryIssueComment(storyURL string, story stories.CoreSingleStory) string {
+	return fmt.Sprintf(
+		"Linked to FortyOne story `%s`.\n\nView story: %s",
+		story.ID.String(),
+		storyURL,
+	)
+}
+
 func githubString(value string) *string {
 	return &value
+}
+
+func storyCommentMarker(storyID uuid.UUID) string {
+	return fmt.Sprintf("`%s`", storyID.String())
+}
+
+func storyURLFromWebsite(websiteURL, workspaceSlug string, story stories.CoreSingleStory) (string, error) {
+	baseURL, err := url.Parse(strings.TrimRight(websiteURL, "/"))
+	if err != nil {
+		return "", err
+	}
+
+	if workspaceSlug == "" {
+		return "", errors.New("workspace slug is required")
+	}
+
+	baseURL.Path = path.Join("/", "story", story.ID.String(), slugifyStoryTitle(story.Title))
+
+	host := baseURL.Hostname()
+	if host == "" {
+		return "", errors.New("website host is required")
+	}
+
+	if isLocalWebsiteHost(host) {
+		baseURL.Path = path.Join("/", workspaceSlug, "story", story.ID.String(), slugifyStoryTitle(story.Title))
+		return baseURL.String(), nil
+	}
+
+	if !strings.HasPrefix(host, workspaceSlug+".") {
+		if port := baseURL.Port(); port != "" {
+			baseURL.Host = fmt.Sprintf("%s.%s:%s", workspaceSlug, host, port)
+		} else {
+			baseURL.Host = fmt.Sprintf("%s.%s", workspaceSlug, host)
+		}
+	}
+
+	return baseURL.String(), nil
+}
+
+func isLocalWebsiteHost(host string) bool {
+	return strings.EqualFold(host, "localhost") || strings.EqualFold(host, "0.0.0.0") || net.ParseIP(host) != nil
+}
+
+func slugifyStoryTitle(title string) string {
+	normalized := norm.NFD.String(strings.TrimSpace(strings.ToLower(title)))
+	var b strings.Builder
+	lastHyphen := false
+
+	for _, r := range normalized {
+		switch {
+		case unicode.Is(unicode.Mn, r):
+			continue
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			b.WriteRune(r)
+			lastHyphen = false
+		case r == '&':
+			if b.Len() > 0 && !lastHyphen {
+				b.WriteByte('-')
+			}
+			b.WriteString("and")
+			lastHyphen = false
+		default:
+			if b.Len() == 0 || lastHyphen {
+				continue
+			}
+			b.WriteByte('-')
+			lastHyphen = true
+		}
+	}
+
+	slug := strings.Trim(b.String(), "-")
+	if slug == "" {
+		return "story"
+	}
+	return slug
 }
 
 func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
@@ -861,6 +956,49 @@ func (s *Service) createIssue(ctx context.Context, installationID int64, owner, 
 	return toIssuePayload(issue), nil
 }
 
+func (s *Service) createIssueComment(ctx context.Context, installationID int64, owner, repository string, number int, body string) error {
+	client, err := s.newInstallationClient(ctx, installationID)
+	if err != nil {
+		return err
+	}
+	comment := &githubsdk.IssueComment{Body: &body}
+	_, _, err = client.Issues.CreateComment(ctx, owner, repository, number, comment)
+	return err
+}
+
+func (s *Service) issueHasStoryComment(ctx context.Context, installationID int64, owner, repository string, number int, storyID uuid.UUID, storyURL string) (bool, error) {
+	client, err := s.newInstallationClient(ctx, installationID)
+	if err != nil {
+		return false, err
+	}
+
+	options := &githubsdk.IssueListCommentsOptions{
+		ListOptions: githubsdk.ListOptions{PerPage: 100},
+	}
+
+	for {
+		comments, response, err := client.Issues.ListComments(ctx, owner, repository, number, options)
+		if err != nil {
+			return false, err
+		}
+
+		for _, comment := range comments {
+			if comment == nil || comment.Body == nil {
+				continue
+			}
+			body := *comment.Body
+			if strings.Contains(body, storyURL) || strings.Contains(body, storyCommentMarker(storyID)) {
+				return true, nil
+			}
+		}
+
+		if response == nil || response.NextPage == 0 {
+			return false, nil
+		}
+		options.Page = response.NextPage
+	}
+}
+
 func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, repository string, number int, title, body, state string) (githubIssuePayload, error) {
 	client, err := s.newInstallationClient(ctx, installationID)
 	if err != nil {
@@ -876,6 +1014,39 @@ func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, 
 		return githubIssuePayload{}, err
 	}
 	return toIssuePayload(issue), nil
+}
+
+func (s *Service) ensureIssueImportComment(ctx context.Context, repository githubrepository.RepoByExternalRow, issueNumber int, story stories.CoreSingleStory) error {
+	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story)
+	if err != nil {
+		return err
+	}
+
+	exists, err := s.issueHasStoryComment(
+		ctx,
+		repository.GitHubInstallationID,
+		repository.OwnerLogin,
+		repository.RepositorySlug,
+		issueNumber,
+		story.ID,
+		storyURL,
+	)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	commentBody := buildImportedStoryIssueComment(storyURL, story)
+	return s.createIssueComment(
+		ctx,
+		repository.GitHubInstallationID,
+		repository.OwnerLogin,
+		repository.RepositorySlug,
+		issueNumber,
+		commentBody,
+	)
 }
 
 func (s *Service) verifyWebhookSignature(body []byte, signature string) error {
