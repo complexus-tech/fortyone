@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GitHubIntegrationSettings } from "@/modules/integrations/github";
+import { GitHubIntegrationSettings } from "@/modules/settings/workspace/integrations/github";
 
 export const metadata: Metadata = {
   title: "Settings › GitHub",

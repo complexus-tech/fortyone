@@ -2,7 +2,7 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
-import type { CreateGitHubInstallSessionResponse } from "@/modules/integrations/github/types";
+import type { CreateGitHubInstallSessionResponse } from "@/modules/settings/workspace/integrations/github/types";
 
 export const createGitHubInstallSessionAction = async (
   workspaceSlug: string,

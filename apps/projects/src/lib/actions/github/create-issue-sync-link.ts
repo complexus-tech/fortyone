@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import type {
   CreateGitHubIssueSyncLinkInput,
   GitHubIssueSyncLink,
-} from "@/modules/integrations/github/types";
+} from "@/modules/settings/workspace/integrations/github/types";
 
 export const createGitHubIssueSyncLinkAction = async (
   input: CreateGitHubIssueSyncLinkInput,

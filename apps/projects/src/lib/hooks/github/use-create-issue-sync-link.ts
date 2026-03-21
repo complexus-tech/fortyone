@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { githubKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
 import { createGitHubIssueSyncLinkAction } from "@/lib/actions/github/create-issue-sync-link";
-import type { CreateGitHubIssueSyncLinkInput } from "@/modules/integrations/github/types";
+import type { CreateGitHubIssueSyncLinkInput } from "@/modules/settings/workspace/integrations/github/types";
 
 export const useCreateGitHubIssueSyncLink = () => {
   const queryClient = useQueryClient();

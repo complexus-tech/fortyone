@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IntegrationsIndex } from "@/modules/integrations/github";
+import { IntegrationsIndex } from "@/modules/settings/workspace/integrations";
 
 export const metadata: Metadata = {
   title: "Settings › Integrations",

@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import type {
   GitHubTeamSettings,
   UpdateGitHubTeamSettingsInput,
-} from "@/modules/integrations/github/types";
+} from "@/modules/settings/workspace/integrations/github/types";
 
 export const updateGitHubTeamSettingsAction = async (
   teamId: string,

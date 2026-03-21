@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import type {
   GitHubWorkspaceSettings,
   UpdateGitHubWorkspaceSettingsInput,
-} from "@/modules/integrations/github/types";
+} from "@/modules/settings/workspace/integrations/github/types";
 
 export const updateGitHubWorkspaceSettingsAction = async (
   input: UpdateGitHubWorkspaceSettingsInput,

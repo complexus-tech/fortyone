@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { githubKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
 import { updateGitHubTeamSettingsAction } from "@/lib/actions/github/update-team-settings";
-import type { UpdateGitHubTeamSettingsInput } from "@/modules/integrations/github/types";
+import type { UpdateGitHubTeamSettingsInput } from "@/modules/settings/workspace/integrations/github/types";
 
 export const useUpdateGitHubTeamSettings = (teamId: string) => {
   const queryClient = useQueryClient();
