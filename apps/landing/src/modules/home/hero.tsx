@@ -78,6 +78,7 @@ export const Hero = () => {
               color="invert"
               href={SIGNUP_URL}
               rounded="lg"
+              size="lg"
             >
               Get Started Free
             </Button>
