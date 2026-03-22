@@ -1,10 +1,12 @@
 import { Avatar, Box, Flex, Tabs, Text, Button, Skeleton } from "ui";
-import { ClockIcon, CommentIcon } from "icons";
+import { ClockIcon, CommentIcon, GitHubIcon } from "icons";
 import { useSession } from "@/lib/auth/client";
+import { useStoryGitHubLinks } from "@/lib/hooks/github";
 import { Activity } from "@/components/ui";
 import { useStoryActivitiesInfinite } from "@/modules/story/hooks/story-activities";
 import { CommentInput } from "./comment-input";
 import { Comments } from "./comments";
+import { GitHubCommentsPanel } from "./github-comments";
 
 export const Activities = ({
   className,
@@ -16,6 +18,8 @@ export const Activities = ({
   teamId: string;
 }) => {
   const { data: session } = useSession();
+  const { data: githubLinks = [] } = useStoryGitHubLinks(storyId);
+  const hasGitHubLinks = githubLinks.length > 0;
   const {
     data: infiniteData,
     hasNextPage,
@@ -57,6 +61,15 @@ export const Activities = ({
           >
             Updates
           </Tabs.Tab>
+          {hasGitHubLinks && (
+            <Tabs.Tab
+              className="gap-1 px-2"
+              leftIcon={<GitHubIcon className="h-[1.05rem]" />}
+              value="github"
+            >
+              GitHub
+            </Tabs.Tab>
+          )}
         </Tabs.List>
 
         <Tabs.Panel value="updates">
@@ -112,6 +125,11 @@ export const Activities = ({
           </Flex>
           <Comments storyId={storyId} teamId={teamId} />
         </Tabs.Panel>
+        {hasGitHubLinks && (
+          <Tabs.Panel value="github">
+            <GitHubCommentsPanel hasLinks={hasGitHubLinks} storyId={storyId} />
+          </Tabs.Panel>
+        )}
       </Tabs>
     </Box>
   );

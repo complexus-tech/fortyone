@@ -93,6 +93,32 @@ export type GitHubTeamSettings = {
   rules: GitHubWorkflowRule[];
 };
 
+export type StoryGitHubLink = {
+  id: string;
+  externalType: "issue" | "pull_request" | "branch" | "commit";
+  githubNumber: number | null;
+  url: string;
+  title: string | null;
+  state: string | null;
+  reviewState: string | null;
+  reviewsApproved: number;
+  reviewsChangesRequested: number;
+  checkState: string | null;
+  repositoryFullName: string;
+  refName: string | null;
+  createdAt: string;
+};
+
+export type GitHubComment = {
+  id: number;
+  body: string;
+  userLogin: string;
+  userAvatar: string;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+};
+
 export type UpdateGitHubTeamSettingsInput = {
   rules: Array<{
     eventKey: string;

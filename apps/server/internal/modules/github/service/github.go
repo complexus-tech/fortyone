@@ -40,13 +40,14 @@ type Service struct {
 	log                 *logger.Logger
 	repo                *githubrepository.Repo
 	stories             StoryService
+	avatars             AvatarResolver
 	httpClient          *http.Client
 	cfg                 Config
 	privateKey          *rsa.PrivateKey
 	privateKeyLoadError string
 }
 
-func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, cfg Config) (*Service, error) {
+func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, avatarResolver AvatarResolver, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
 	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyBase64) != "" {
@@ -70,6 +71,7 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 		log:     log,
 		repo:    repo,
 		stories: storyService,
+		avatars: avatarResolver,
 		cfg:     cfg,
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
@@ -275,6 +277,208 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 		return CoreTeamGitHubSettings{}, errors.New("at least one rule is required")
 	}
 	return s.repo.ReplaceTeamWorkflowSettings(ctx, workspaceID, teamID, input.Rules)
+}
+
+func (s *Service) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]githubrepository.StoryGitHubLink, error) {
+	return s.repo.GetStoryGitHubLinks(ctx, storyID)
+}
+
+func (s *Service) DeleteStoryGitHubLink(ctx context.Context, linkID uuid.UUID) error {
+	return s.repo.DeleteStoryGitHubLink(ctx, linkID)
+}
+
+const avatarURLExpiry = 24 * time.Hour
+
+// resolveAvatarURL converts a stored avatar blob name to a signed URL.
+// If the avatar is already a full URL or the resolver is not configured, it returns as-is.
+func (s *Service) resolveAvatarURL(ctx context.Context, avatar *string) string {
+	if avatar == nil || *avatar == "" {
+		return ""
+	}
+	if s.avatars == nil {
+		return *avatar
+	}
+	resolved, err := s.avatars.ResolveProfileImageURL(ctx, *avatar, avatarURLExpiry)
+	if err != nil {
+		return ""
+	}
+	return resolved
+}
+
+// GitHubComment represents a single comment fetched from the GitHub API.
+type GitHubComment struct {
+	ID        int64  `json:"id"`
+	Body      string `json:"body"`
+	UserLogin string `json:"userLogin"`
+	UserAvatar string `json:"userAvatar"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+	HTMLURL   string `json:"htmlUrl"`
+}
+
+// Regex to parse bot attribution: **Name** commented via/on FortyOne:\n\nbody
+var fortyOneCommentPattern = regexp.MustCompile(`(?s)\A\*\*(.+?)\*\* commented (?:via|on) FortyOne:\s*\n\n?(.*)`)
+
+// GetStoryGitHubComments fetches comments from all linked GitHub issues for a story.
+// It resolves GitHub users to FortyOne users when possible, and for bot comments
+// posted via FortyOne it extracts the real author and strips the attribution prefix.
+func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID) ([]GitHubComment, error) {
+	if !s.canUseAppAPI() {
+		return []GitHubComment{}, nil
+	}
+
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get linked issues: %w", err)
+	}
+	if len(issues) == 0 {
+		return []GitHubComment{}, nil
+	}
+
+	// Collect raw comments and unique GitHub user IDs.
+	type rawComment struct {
+		comment  *githubsdk.IssueComment
+		gitHubUserID int64
+	}
+	var rawComments []rawComment
+
+	for _, issue := range issues {
+		client, err := s.newInstallationClient(ctx, issue.GitHubInstallationID)
+		if err != nil {
+			s.log.Warn(ctx, "failed to create installation client for fetching comments", "error", err)
+			continue
+		}
+
+		opts := &githubsdk.IssueListCommentsOptions{
+			Sort:      githubsdk.String("created"),
+			Direction: githubsdk.String("asc"),
+			ListOptions: githubsdk.ListOptions{PerPage: 100},
+		}
+		comments, _, err := client.Issues.ListComments(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, opts)
+		if err != nil {
+			s.log.Warn(ctx, "failed to fetch github comments", "issue", issue.GitHubNumber, "error", err)
+			continue
+		}
+
+		for _, c := range comments {
+			if c == nil {
+				continue
+			}
+			var ghUID int64
+			if c.User != nil {
+				ghUID = c.User.GetID()
+			}
+			rawComments = append(rawComments, rawComment{comment: c, gitHubUserID: ghUID})
+		}
+	}
+
+	// Batch-resolve GitHub user IDs → FortyOne users.
+	uniqueIDs := make(map[int64]struct{})
+	for _, rc := range rawComments {
+		if rc.gitHubUserID != 0 {
+			uniqueIDs[rc.gitHubUserID] = struct{}{}
+		}
+	}
+	idSlice := make([]int64, 0, len(uniqueIDs))
+	for id := range uniqueIDs {
+		idSlice = append(idSlice, id)
+	}
+	userMap, _ := s.repo.ResolveFortyOneUsersByGitHubIDs(ctx, idSlice)
+	if userMap == nil {
+		userMap = map[int64]githubrepository.FortyOneUser{}
+	}
+
+	// Build result, resolving authors.
+	allComments := make([]GitHubComment, 0, len(rawComments))
+	for _, rc := range rawComments {
+		c := rc.comment
+		gc := GitHubComment{
+			ID:        c.GetID(),
+			Body:      c.GetBody(),
+			CreatedAt: c.GetCreatedAt().Format(time.RFC3339),
+			UpdatedAt: c.GetUpdatedAt().Format(time.RFC3339),
+			HTMLURL:   c.GetHTMLURL(),
+		}
+		if c.User != nil {
+			gc.UserLogin = c.User.GetLogin()
+			gc.UserAvatar = c.User.GetAvatarURL()
+		}
+
+		// Check if this GitHub user is a linked FortyOne user.
+		if fu, ok := userMap[rc.gitHubUserID]; ok {
+			gc.UserLogin = fu.Username
+			gc.UserAvatar = s.resolveAvatarURL(ctx, fu.AvatarURL)
+		}
+
+		// For bot comments (e.g. fortyone-app[bot]), extract the real author.
+		if strings.HasSuffix(gc.UserLogin, "[bot]") {
+			if match := fortyOneCommentPattern.FindStringSubmatch(gc.Body); match != nil {
+				authorName := match[1]
+				gc.Body = match[2]
+
+				// Try to resolve the author name to a FortyOne user.
+				if fu, err := s.repo.ResolveFortyOneUserByFullName(ctx, authorName); err == nil {
+					gc.UserLogin = fu.Username
+					gc.UserAvatar = s.resolveAvatarURL(ctx, fu.AvatarURL)
+				} else {
+					gc.UserLogin = authorName
+					gc.UserAvatar = ""
+				}
+			}
+		}
+
+		allComments = append(allComments, gc)
+	}
+
+	return allComments, nil
+}
+
+// PostCommentToGitHub posts a comment to all linked GitHub issues for a story.
+// If the user has a linked GitHub account with a stored token, the comment is
+// posted as the user directly. Otherwise it falls back to the installation bot.
+func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.UUID, authorName, body string) error {
+	if !s.canUseAppAPI() {
+		return errors.New("github app api is not configured")
+	}
+
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	if err != nil {
+		return fmt.Errorf("failed to get linked issues: %w", err)
+	}
+	if len(issues) == 0 {
+		return errors.New("no linked github issues found for this story")
+	}
+
+	// Try to use the user's own GitHub token so the comment appears as them.
+	userToken, tokenErr := s.repo.GetUserGitHubToken(ctx, userID)
+	useUserToken := tokenErr == nil && userToken != ""
+
+	commentBody := body
+	if !useUserToken {
+		// Fallback: post as bot with attribution
+		commentBody = fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, body)
+	}
+
+	var lastErr error
+	for _, issue := range issues {
+		var client *githubsdk.Client
+		if useUserToken {
+			client = githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
+		} else {
+			client, err = s.newInstallationClient(ctx, issue.GitHubInstallationID)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+		}
+		_, _, err = client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+			Body: &commentBody,
+		})
+		if err != nil {
+			lastErr = err
+		}
+	}
+	return lastErr
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
@@ -939,7 +1143,7 @@ func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code str
 	if err != nil {
 		return fmt.Errorf("failed to get github user: %w", err)
 	}
-	return s.repo.LinkGitHubUser(ctx, userID, user.GetID(), user.GetLogin())
+	return s.repo.LinkGitHubUser(ctx, userID, user.GetID(), user.GetLogin(), token)
 }
 
 func (s *Service) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error {

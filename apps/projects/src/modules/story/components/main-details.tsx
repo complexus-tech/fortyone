@@ -27,6 +27,7 @@ import type { DetailedStory } from "../types";
 import { Activities } from "./activities";
 import { Associations } from "./associations";
 import { Attachments } from "./attachments";
+import { GitHubSection } from "./github-section";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { LinksSkeleton } from "./links-skeleton";
@@ -160,6 +161,7 @@ export const MainDetails = ({
           "md:pt-2": isDialog,
         })}
       >
+        <GitHubSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
           className="text-foreground mb-8 text-3xl font-medium md:text-4xl"

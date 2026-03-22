@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
@@ -17,6 +19,7 @@ import (
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	sprintshttp "github.com/complexus-tech/projects-api/internal/modules/sprints/http"
 	stateshttp "github.com/complexus-tech/projects-api/internal/modules/states/http"
 	storieshttp "github.com/complexus-tech/projects-api/internal/modules/stories/http"
@@ -28,7 +31,24 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	ssehttp "github.com/complexus-tech/projects-api/internal/sse/http"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
+
+// userLookupAdapter wraps *users.Service to satisfy githubhttp.UserLookup.
+type userLookupAdapter struct {
+	svc *users.Service
+}
+
+func (a *userLookupAdapter) GetUserName(ctx context.Context, userID uuid.UUID) (string, error) {
+	u, err := a.svc.GetUser(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	if u.FullName != "" {
+		return u.FullName, nil
+	}
+	return u.Username, nil
+}
 
 type routes struct {
 	services *services
@@ -62,6 +82,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.github,
+		Users:     &userLookupAdapter{svc: svcs.users},
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{

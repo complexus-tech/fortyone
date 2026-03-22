@@ -261,7 +261,11 @@ export const Comments = ({
   } = useStoryCommentsInfinite(storyId);
 
   const allComments =
-    infiniteData?.pages.flatMap((page) => page.comments) ?? [];
+    infiniteData?.pages
+      .flatMap((page) => page.comments)
+      .filter(
+        (c) => !c.comment.includes("commented on GitHub issue #"),
+      ) ?? [];
 
   const handleLoadMore = () => {
     fetchNextPage();

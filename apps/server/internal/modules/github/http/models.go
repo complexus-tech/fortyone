@@ -101,6 +101,10 @@ type AppLinkGitHubUserRequest struct {
 	Code string `json:"code" validate:"required"`
 }
 
+type AppPostGitHubCommentRequest struct {
+	Body string `json:"body" validate:"required"`
+}
+
 type AppTeamGitHubSettings struct {
 	TeamID uuid.UUID         `json:"teamId"`
 	Rules  []AppWorkflowRule `json:"rules"`
