@@ -32,6 +32,7 @@ type CoreUser struct {
 	Timezone            string
 	LastLoginAt         time.Time
 	LastUsedWorkspaceID *uuid.UUID
+	GitHubUsername      *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	Token               *string

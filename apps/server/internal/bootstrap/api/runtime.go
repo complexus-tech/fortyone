@@ -30,6 +30,7 @@ func BuildRuntime(cfg mux.Config, websiteURL string, emailService mailer.Service
 		svcs.objectives,
 		svcs.users,
 		svcs.states,
+		svcs.github,
 	)
 
 	return Runtime{

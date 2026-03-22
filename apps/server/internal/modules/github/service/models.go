@@ -58,12 +58,14 @@ type StoryService interface {
 }
 
 type Config struct {
-	AppID         int64
-	AppSlug       string
+	AppID            int64
+	AppSlug          string
+	ClientID         string
+	ClientSecret     string
 	PrivateKeyBase64 string
-	RedirectURL   string
-	WebhookSecret string
-	WebsiteURL    string
-	SecretKey     string
-	GitHubUserID  uuid.UUID
+	RedirectURL      string
+	WebhookSecret    string
+	WebsiteURL       string
+	SecretKey        string
+	GitHubUserID     uuid.UUID
 }

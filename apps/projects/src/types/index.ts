@@ -18,6 +18,7 @@ export type User = {
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
   timezone: string;
+  githubUsername: string | null;
   createdAt: string;
   updatedAt: string;
 };

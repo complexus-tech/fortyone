@@ -130,12 +130,14 @@ type Config struct {
 		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
 	}
 	GitHub struct {
-		AppID         int64  `env:"APP_GITHUB_APP_ID"`
-		AppSlug       string `env:"GITHUB_APP_SLUG"`
+		AppID            int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug          string `env:"GITHUB_APP_SLUG"`
+		ClientID         string `env:"GITHUB_CLIENT_ID"`
+		ClientSecret     string `env:"GITHUB_CLIENT_SECRET"`
 		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
-		RedirectURL   string `env:"GITHUB_REDIRECT_URL"`
-		WebhookURL    string `env:"GITHUB_WEBHOOK_URL"`
-		WebhookSecret string `env:"GITHUB_WEBHOOK_SECRET"`
+		RedirectURL      string `env:"GITHUB_REDIRECT_URL"`
+		WebhookURL       string `env:"GITHUB_WEBHOOK_URL"`
+		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 }
 
@@ -389,12 +391,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 		StripeClient:   stripeClient,
 		WebhookSecret:  cfg.Stripe.WebhookSecret,
 		WebsiteURL:     cfg.Website.URL,
-		GitHubAppID:    cfg.GitHub.AppID,
-		GitHubAppSlug:  cfg.GitHub.AppSlug,
-		GitHubUserID:   githubUserID,
-		GitHubKeyBase64: cfg.GitHub.PrivateKeyBase64,
-		GitHubRedirect: cfg.GitHub.RedirectURL,
-		GitHubWebhook:  cfg.GitHub.WebhookSecret,
+		GitHubAppID:        cfg.GitHub.AppID,
+		GitHubAppSlug:      cfg.GitHub.AppSlug,
+		GitHubClientID:     cfg.GitHub.ClientID,
+		GitHubClientSecret: cfg.GitHub.ClientSecret,
+		GitHubUserID:       githubUserID,
+		GitHubKeyBase64:    cfg.GitHub.PrivateKeyBase64,
+		GitHubRedirect:     cfg.GitHub.RedirectURL,
+		GitHubWebhook:      cfg.GitHub.WebhookSecret,
 		SSEHub:         sseHub,
 		CorsOrigin:     "*",
 	}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "../../components";
 import { Form } from "./components/form";
+import { GitHubAccountLink } from "./components/github-link";
 
 export const ProfileSettings = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,6 +20,7 @@ export const ProfileSettings = () => {
         Profile Settings
       </Text>
       <Form />
+      <GitHubAccountLink />
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
           description="Leave your current workspace. This action cannot be undone."

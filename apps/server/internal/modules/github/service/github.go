@@ -791,6 +791,36 @@ func (s *Service) isAppComment(ctx context.Context, repository githubrepository.
 	return app.GetOwner().GetID() == userID
 }
 
+// ==================== outbound comment sync (bidirectional) ====================
+
+// SyncCommentToGitHub posts a FortyOne comment to the linked GitHub issue
+// when the issue sync link is configured as bidirectional.
+func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID uuid.UUID, authorName, content string) error {
+	link, err := s.repo.FindBidirectionalIssueSyncLinkByTeamID(ctx, workspaceID, teamID)
+	if err != nil {
+		return nil // No bidirectional link for this team — nothing to do
+	}
+
+	issueLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, storyID, link.RepositoryID)
+	if err != nil {
+		return nil // Story has no linked GitHub issue
+	}
+
+	client, err := s.newInstallationClient(ctx, link.GitHubInstallationID)
+	if err != nil {
+		return fmt.Errorf("failed to create installation client: %w", err)
+	}
+
+	body := fmt.Sprintf("**%s** commented on FortyOne:\n\n%s", authorName, content)
+	_, _, err = client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
+		Body: &body,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create github issue comment: %w", err)
+	}
+	return nil
+}
+
 // ==================== check_run ====================
 
 func (s *Service) handleCheckRunEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
@@ -917,25 +947,14 @@ func (s *Service) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error 
 }
 
 func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (string, error) {
-	client, err := s.newAppClient()
-	if err != nil {
-		return "", err
-	}
-	// GitHub App user OAuth token exchange using the check-authorization endpoint
-	// is not directly available in the SDK; use the app JWT to call the token exchange.
-	appJWT, err := s.createAppJWT()
-	if err != nil {
-		return "", err
-	}
-	_ = client
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&code=%s", s.cfg.AppSlug, code),
+		fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s",
+			s.cfg.ClientID, s.cfg.ClientSecret, code),
 		nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+appJWT)
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return "", err

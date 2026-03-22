@@ -19,6 +19,7 @@ type AppUser struct {
 	Timezone            string     `json:"timezone"`
 	LastLoginAt         time.Time  `json:"-"`
 	LastUsedWorkspaceID *uuid.UUID `json:"lastUsedWorkspaceId"`
+	GitHubUsername      *string    `json:"githubUsername"`
 	CreatedAt           time.Time  `json:"createdAt"`
 	UpdatedAt           time.Time  `json:"updatedAt"`
 	Token               *string    `json:"token,omitempty"`
@@ -106,6 +107,7 @@ func toAppUser(user users.CoreUser) AppUser {
 		Timezone:            user.Timezone,
 		LastLoginAt:         user.LastLoginAt,
 		LastUsedWorkspaceID: user.LastUsedWorkspaceID,
+		GitHubUsername:      user.GitHubUsername,
 		CreatedAt:           user.CreatedAt,
 		UpdatedAt:           user.UpdatedAt,
 		Token:               user.Token,
