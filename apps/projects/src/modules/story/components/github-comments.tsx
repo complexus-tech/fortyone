@@ -36,7 +36,7 @@ const CommentRow = ({ comment }: { comment: GitHubComment }) => (
           src={comment.userAvatar || undefined}
         />
       </Box>
-      <Text className="relative top-0.5 ml-1 text-black dark:text-white">
+      <Text className="ml-1 text-black dark:text-white">
         {comment.userLogin}
       </Text>
       <Text className="mx-0.5 text-[0.95rem]" color="muted">
