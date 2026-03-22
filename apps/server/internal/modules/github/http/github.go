@@ -14,10 +14,11 @@ import (
 
 type Handlers struct {
 	service *github.Service
+	users   UserLookup
 }
 
-func New(service *github.Service) *Handlers {
-	return &Handlers{service: service}
+func New(service *github.Service, users UserLookup) *Handlers {
+	return &Handlers{service: service, users: users}
 }
 
 func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -191,6 +192,66 @@ func (h *Handlers) UpdateTeamSettings(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	return web.Respond(ctx, w, toAppTeamSettings(settings), http.StatusOK)
+}
+
+func (h *Handlers) GetStoryGitHubLinks(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	links, err := h.service.GetStoryGitHubLinks(ctx, storyID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, links, http.StatusOK)
+}
+
+func (h *Handlers) DeleteStoryGitHubLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	linkID, err := uuid.Parse(web.Params(r, "linkId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.service.DeleteStoryGitHubLink(ctx, linkID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) GetStoryGitHubComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	comments, err := h.service.GetStoryGitHubComments(ctx, storyID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, comments, http.StatusOK)
+}
+
+func (h *Handlers) PostStoryGitHubComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppPostGitHubCommentRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	authorName := "Someone"
+	if h.users != nil {
+		if name, err := h.users.GetUserName(ctx, userID); err == nil {
+			authorName = name
+		}
+	}
+	if err := h.service.PostCommentToGitHub(ctx, storyID, userID, authorName, input.Body); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
 func (h *Handlers) LinkGitHubUser(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -933,11 +933,11 @@ func (r *Repo) ResolveUserByGitHubID(ctx context.Context, githubUserID int64) (u
 	return userID, err
 }
 
-// LinkGitHubUser sets the github_user_id and github_username on a user record.
-func (r *Repo) LinkGitHubUser(ctx context.Context, userID uuid.UUID, githubUserID int64, githubUsername string) error {
+// LinkGitHubUser sets the github_user_id, github_username, and github_access_token on a user record.
+func (r *Repo) LinkGitHubUser(ctx context.Context, userID uuid.UUID, githubUserID int64, githubUsername, accessToken string) error {
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE users SET github_user_id = $2, github_username = $3, updated_at = NOW() WHERE user_id = $1`,
-		userID, githubUserID, githubUsername,
+		`UPDATE users SET github_user_id = $2, github_username = $3, github_access_token = $4, updated_at = NOW() WHERE user_id = $1`,
+		userID, githubUserID, githubUsername, accessToken,
 	)
 	return err
 }
@@ -945,10 +945,76 @@ func (r *Repo) LinkGitHubUser(ctx context.Context, userID uuid.UUID, githubUserI
 // UnlinkGitHubUser clears the github fields on a user record.
 func (r *Repo) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error {
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE users SET github_user_id = NULL, github_username = NULL, updated_at = NOW() WHERE user_id = $1`,
+		`UPDATE users SET github_user_id = NULL, github_username = NULL, github_access_token = NULL, updated_at = NOW() WHERE user_id = $1`,
 		userID,
 	)
 	return err
+}
+
+// GetUserGitHubToken returns the stored GitHub OAuth access token for a user, if any.
+func (r *Repo) GetUserGitHubToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	var token sql.NullString
+	err := r.db.GetContext(ctx, &token, `SELECT github_access_token FROM users WHERE user_id = $1`, userID)
+	if err != nil {
+		return "", err
+	}
+	if !token.Valid || token.String == "" {
+		return "", sql.ErrNoRows
+	}
+	return token.String, nil
+}
+
+// FortyOneUser holds the fields needed to attribute a comment to an internal user.
+type FortyOneUser struct {
+	Username  string  `db:"username"`
+	FullName  *string `db:"full_name"`
+	AvatarURL *string `db:"avatar_url"`
+}
+
+// ResolveFortyOneUsersByGitHubIDs maps GitHub user IDs to FortyOne users.
+func (r *Repo) ResolveFortyOneUsersByGitHubIDs(ctx context.Context, githubUserIDs []int64) (map[int64]FortyOneUser, error) {
+	if len(githubUserIDs) == 0 {
+		return map[int64]FortyOneUser{}, nil
+	}
+	type row struct {
+		GitHubUserID int64   `db:"github_user_id"`
+		Username     string  `db:"username"`
+		FullName     *string `db:"full_name"`
+		AvatarURL    *string `db:"avatar_url"`
+	}
+	query, args, err := sqlx.In(
+		`SELECT github_user_id, username, full_name, avatar_url
+		 FROM users
+		 WHERE github_user_id IN (?) AND is_active = true`,
+		githubUserIDs,
+	)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+	var rows []row
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+	result := make(map[int64]FortyOneUser, len(rows))
+	for _, r := range rows {
+		result[r.GitHubUserID] = FortyOneUser{
+			Username:  r.Username,
+			FullName:  r.FullName,
+			AvatarURL: r.AvatarURL,
+		}
+	}
+	return result, nil
+}
+
+// ResolveFortyOneUserByFullName finds a user by full name.
+func (r *Repo) ResolveFortyOneUserByFullName(ctx context.Context, fullName string) (FortyOneUser, error) {
+	var u FortyOneUser
+	err := r.db.GetContext(ctx, &u,
+		`SELECT username, full_name, avatar_url FROM users WHERE full_name = $1 AND is_active = true LIMIT 1`,
+		fullName,
+	)
+	return u, err
 }
 
 // UpdateStoryLinkReviewState updates review counters on a PR story link.
@@ -1044,4 +1110,69 @@ func (r *Repo) ResolveOrCreateLabelsByName(ctx context.Context, workspaceID, tea
 		ids = append(ids, labelID)
 	}
 	return ids, nil
+}
+
+// StoryGitHubLink represents a GitHub link attached to a story (issue, PR, branch, commit).
+type StoryGitHubLink struct {
+	ID                  uuid.UUID  `db:"id"                    json:"id"`
+	ExternalType        string     `db:"external_type"         json:"externalType"`
+	GitHubNumber        *int       `db:"github_number"         json:"githubNumber"`
+	URL                 string     `db:"url"                   json:"url"`
+	Title               *string    `db:"title"                 json:"title"`
+	State               *string    `db:"state"                 json:"state"`
+	ReviewState         *string    `db:"review_state"          json:"reviewState"`
+	ReviewsApproved     int        `db:"reviews_approved"      json:"reviewsApproved"`
+	ReviewsChangesReq   int        `db:"reviews_changes_requested" json:"reviewsChangesRequested"`
+	CheckState          *string    `db:"check_state"           json:"checkState"`
+	RepositoryFullName  string     `db:"repository_full_name"  json:"repositoryFullName"`
+	RefName             *string    `db:"ref_name"              json:"refName"`
+	CreatedAt           time.Time  `db:"created_at"            json:"createdAt"`
+}
+
+// StoryIssueWithInstallation represents a linked GitHub issue with enough info to call the GitHub API.
+type StoryIssueWithInstallation struct {
+	GitHubNumber         int    `db:"github_number"`
+	OwnerLogin           string `db:"owner_login"`
+	RepositorySlug       string `db:"name"`
+	GitHubInstallationID int64  `db:"github_installation_id"`
+}
+
+// GetStoryLinkedIssues returns all linked GitHub issues for a story, along with installation info.
+func (r *Repo) GetStoryLinkedIssues(ctx context.Context, storyID uuid.UUID) ([]StoryIssueWithInstallation, error) {
+	var rows []StoryIssueWithInstallation
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT sl.github_number, gr.owner_login, gr.name, gi.github_installation_id
+		FROM github_story_links sl
+		INNER JOIN github_repositories gr ON gr.id = sl.repository_id
+		INNER JOIN github_installations gi ON gi.id = gr.installation_id
+		WHERE sl.story_id = $1 AND sl.external_type = 'issue' AND sl.github_number IS NOT NULL
+	`, storyID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+// GetStoryGitHubLinks returns all GitHub links for a given story.
+func (r *Repo) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]StoryGitHubLink, error) {
+	var links []StoryGitHubLink
+	err := r.db.SelectContext(ctx, &links, `
+		SELECT sl.id, sl.external_type, sl.github_number, sl.url, sl.title, sl.state,
+		       sl.review_state, sl.reviews_approved, sl.reviews_changes_requested, sl.check_state,
+		       gr.full_name AS repository_full_name, sl.ref_name, sl.created_at
+		FROM github_story_links sl
+		INNER JOIN github_repositories gr ON gr.id = sl.repository_id
+		WHERE sl.story_id = $1
+		ORDER BY sl.created_at DESC
+	`, storyID)
+	if err != nil {
+		return nil, err
+	}
+	return links, nil
+}
+
+// DeleteStoryGitHubLink removes a GitHub link from a story.
+func (r *Repo) DeleteStoryGitHubLink(ctx context.Context, linkID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM github_story_links WHERE id = $1`, linkID)
+	return err
 }

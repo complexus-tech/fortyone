@@ -10,3 +10,7 @@ export {
   useLinkGitHubUser,
   useUnlinkGitHubUser,
 } from "./use-link-github-user";
+export { useStoryGitHubLinks } from "./use-story-github-links";
+export { useDeleteStoryGitHubLink } from "./use-delete-story-github-link";
+export { useStoryGitHubComments } from "./use-story-github-comments";
+export { usePostGitHubComment } from "./use-post-github-comment";

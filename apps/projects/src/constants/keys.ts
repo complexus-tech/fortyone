@@ -136,4 +136,8 @@ export const githubKeys = {
     ["github", workspaceSlug, "integration"] as const,
   teamSettings: (workspaceSlug: string, teamId: string) =>
     ["github", workspaceSlug, "team-settings", teamId] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    ["github", workspaceSlug, "story-links", storyId] as const,
+  storyComments: (workspaceSlug: string, storyId: string) =>
+    ["github", workspaceSlug, "story-comments", storyId] as const,
 };

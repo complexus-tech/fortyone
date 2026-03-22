@@ -27,6 +27,8 @@ export * from "./logout";
 export * from "./check";
 export * from "./user";
 export * from "./link";
+export * from "./unlink";
+export * from "./github";
 export * from "./delete";
 export * from "./more-horizontal";
 export * from "./more-vertical";

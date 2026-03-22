@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"time"
 
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
@@ -55,6 +56,11 @@ type StoryService interface {
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
 	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
+}
+
+// AvatarResolver resolves stored avatar blob names to accessible URLs.
+type AvatarResolver interface {
+	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
 type Config struct {
