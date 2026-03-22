@@ -56,7 +56,7 @@ export const Hero = () => {
               <Text
                 as="h1"
                 className={cn(
-                  "relative z-1 text-5xl font-medium text-balance md:max-w-4xl md:text-6xl",
+                  "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-6xl",
                 )}
               >
                 Keep every task connected to a goal.
@@ -78,7 +78,6 @@ export const Hero = () => {
               color="invert"
               href={SIGNUP_URL}
               rounded="lg"
-              size="lg"
             >
               Get Started Free
             </Button>
