@@ -140,14 +140,16 @@ func buildServices(cfg mux.Config) services {
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
 	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
 	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, github.Config{
-		AppID:         cfg.GitHubAppID,
-		AppSlug:       cfg.GitHubAppSlug,
+		AppID:            cfg.GitHubAppID,
+		AppSlug:          cfg.GitHubAppSlug,
+		ClientID:         cfg.GitHubClientID,
+		ClientSecret:     cfg.GitHubClientSecret,
 		PrivateKeyBase64: cfg.GitHubKeyBase64,
-		RedirectURL:   cfg.GitHubRedirect,
-		WebhookSecret: cfg.GitHubWebhook,
-		WebsiteURL:    cfg.WebsiteURL,
-		SecretKey:     cfg.SecretKey,
-		GitHubUserID:  cfg.GitHubUserID,
+		RedirectURL:      cfg.GitHubRedirect,
+		WebhookSecret:    cfg.GitHubWebhook,
+		WebsiteURL:       cfg.WebsiteURL,
+		SecretKey:        cfg.SecretKey,
+		GitHubUserID:     cfg.GitHubUserID,
 	})
 	if err != nil {
 		panic("failed to initialize github service: " + err.Error())

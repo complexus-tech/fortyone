@@ -1,6 +1,10 @@
 export type GitHubWorkspaceSettings = {
   branchFormat: string;
   linkCommitsByMagicWords: boolean;
+  syncAssignees: boolean;
+  syncLabels: boolean;
+  autoPopulatePrBody: boolean;
+  closeOnCommitKeywords: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -78,6 +82,10 @@ export type UpdateGitHubIssueSyncLinkInput = Partial<{
 export type UpdateGitHubWorkspaceSettingsInput = Partial<{
   branchFormat: string;
   linkCommitsByMagicWords: boolean;
+  syncAssignees: boolean;
+  syncLabels: boolean;
+  autoPopulatePrBody: boolean;
+  closeOnCommitKeywords: boolean;
 }>;
 
 export type GitHubTeamSettings = {

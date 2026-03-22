@@ -28,6 +28,11 @@ const (
 	pendingClaimTimeout = time.Minute * 5
 )
 
+// GitHubCommentSyncer syncs FortyOne comments to linked GitHub issues.
+type GitHubCommentSyncer interface {
+	SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID uuid.UUID, authorName, content string) error
+}
+
 type Consumer struct {
 	redis             *redis.Client
 	log               *logger.Logger
@@ -38,10 +43,11 @@ type Consumer struct {
 	objectives        *objectives.Service
 	users             *users.Service
 	statuses          *states.Service
+	githubSyncer      GitHubCommentSyncer
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, githubSyncer GitHubCommentSyncer) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
@@ -54,6 +60,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		objectives:        objectives,
 		users:             users,
 		statuses:          statuses,
+		githubSyncer:      githubSyncer,
 		websiteURL:        websiteURL,
 	}
 }
@@ -628,6 +635,22 @@ func (c *Consumer) handleCommentCreated(ctx context.Context, event events.Event)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err)
 			// Continue processing other notifications
+		}
+	}
+
+	// Sync comment to GitHub if bidirectional sync is enabled.
+	// Skip comments that originated from GitHub (they have a "commented on GitHub" marker)
+	// to prevent infinite loops.
+	if c.githubSyncer != nil && !strings.Contains(payload.Content, "commented on GitHub issue #") {
+		story, storyErr := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
+		if storyErr == nil {
+			authorName := "Someone"
+			if actor, actorErr := c.users.GetUser(ctx, event.ActorID); actorErr == nil {
+				authorName = actor.Username
+			}
+			if syncErr := c.githubSyncer.SyncCommentToGitHub(ctx, payload.WorkspaceID, payload.StoryID, story.Team, authorName, payload.Content); syncErr != nil {
+				c.log.Error(ctx, "failed to sync comment to github", "error", syncErr, "story_id", payload.StoryID)
+			}
 		}
 	}
 

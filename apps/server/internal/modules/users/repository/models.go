@@ -19,6 +19,7 @@ type dbUser struct {
 	Timezone            string     `db:"timezone"`
 	LastLoginAt         *time.Time `db:"last_login_at"`
 	LastUsedWorkspaceID *uuid.UUID `db:"last_used_workspace_id"`
+	GitHubUsername      *string    `db:"github_username"`
 	CreatedAt           time.Time  `db:"created_at"`
 	UpdatedAt           time.Time  `db:"updated_at"`
 	Role                *string    `db:"role"`
@@ -62,6 +63,7 @@ func toCoreUser(p dbUser) users.CoreUser {
 		Timezone:            p.Timezone,
 		LastLoginAt:         derefTime(p.LastLoginAt),
 		LastUsedWorkspaceID: p.LastUsedWorkspaceID,
+		GitHubUsername:      p.GitHubUsername,
 		CreatedAt:           p.CreatedAt,
 		UpdatedAt:           p.UpdatedAt,
 		Role:                p.Role,

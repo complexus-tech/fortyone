@@ -34,11 +34,12 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
+			u.github_username,
 			u.created_at,
 			u.updated_at
 		FROM
 			users u
-		WHERE 
+		WHERE
 			u.user_id = :user_id
 			AND u.is_active = true
 	`
@@ -88,11 +89,12 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
+			u.github_username,
 			u.created_at,
 			u.updated_at
 		FROM
 			users u
-		WHERE 
+		WHERE
 			u.email = :email
 			AND u.is_active = true
 	`
@@ -142,11 +144,12 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
+			u.github_username,
 			u.created_at,
 			u.updated_at
 		FROM
 			users u
-		WHERE 
+		WHERE
 			u.email = :email
 	`
 
@@ -276,6 +279,7 @@ func (r *repo) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]users.
 			u.timezone,
 			u.last_login_at,
 			u.last_used_workspace_id,
+			u.github_username,
 			u.created_at,
 			u.updated_at
 		FROM users u

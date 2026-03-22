@@ -49,12 +49,14 @@ type Config struct {
 	StorageService storage.StorageService
 	WebhookSecret  string
 	WebsiteURL     string
-	GitHubAppID    int64
-	GitHubAppSlug  string
-	GitHubUserID   uuid.UUID
-	GitHubKeyBase64 string
-	GitHubRedirect string
-	GitHubWebhook  string
+	GitHubAppID        int64
+	GitHubAppSlug      string
+	GitHubClientID     string
+	GitHubClientSecret string
+	GitHubUserID       uuid.UUID
+	GitHubKeyBase64    string
+	GitHubRedirect     string
+	GitHubWebhook      string
 	SSEHub         *sse.Hub
 	CorsOrigin     string
 }

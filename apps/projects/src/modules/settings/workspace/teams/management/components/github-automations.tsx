@@ -22,6 +22,10 @@ const orderedEvents = [
   { key: "issue_open", label: "On GitHub issue open, move to..." },
   { key: "issue_reopen", label: "On GitHub issue reopen, move to..." },
   { key: "issue_close", label: "On GitHub issue close, move to..." },
+  {
+    key: "commit_close",
+    label: "On commit with closing keyword, move to...",
+  },
 ] as const;
 
 const StatusPicker = ({

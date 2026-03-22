@@ -276,6 +276,72 @@ export const GitHubIntegrationSettings = () => {
         </Flex>
       </Box>
 
+      <Box className="border-border bg-surface mt-6 rounded-2xl border">
+        <SectionHeader
+          description="Control how GitHub activity syncs with FortyOne."
+          title="Sync settings"
+        />
+        <Box className="divide-border divide-y-[0.5px]">
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text className="font-medium">Close stories on commit keywords</Text>
+              <Text color="muted">
+                Detect keywords like &quot;fixes PRO-123&quot; in commits to
+                auto-close stories.
+              </Text>
+            </Box>
+            <Switch
+              checked={integration?.settings.closeOnCommitKeywords ?? true}
+              onCheckedChange={(checked) => {
+                updateSettings.mutate({ closeOnCommitKeywords: checked });
+              }}
+            />
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text className="font-medium">Auto-populate PR body</Text>
+              <Text color="muted">
+                Pre-fill pull request descriptions with linked story details.
+              </Text>
+            </Box>
+            <Switch
+              checked={integration?.settings.autoPopulatePrBody ?? true}
+              onCheckedChange={(checked) => {
+                updateSettings.mutate({ autoPopulatePrBody: checked });
+              }}
+            />
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text className="font-medium">Sync assignees</Text>
+              <Text color="muted">
+                Assign stories to the linked FortyOne user when a PR is opened.
+              </Text>
+            </Box>
+            <Switch
+              checked={integration?.settings.syncAssignees ?? false}
+              onCheckedChange={(checked) => {
+                updateSettings.mutate({ syncAssignees: checked });
+              }}
+            />
+          </Flex>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text className="font-medium">Sync labels</Text>
+              <Text color="muted">
+                Mirror GitHub labels to FortyOne story labels.
+              </Text>
+            </Box>
+            <Switch
+              checked={integration?.settings.syncLabels ?? false}
+              onCheckedChange={(checked) => {
+                updateSettings.mutate({ syncLabels: checked });
+              }}
+            />
+          </Flex>
+        </Box>
+      </Box>
+
       <Box className="mt-6">
         <Link href={withWorkspace("/settings/workspace/integrations")}>
           <Text color="muted">Back to integrations</Text>
