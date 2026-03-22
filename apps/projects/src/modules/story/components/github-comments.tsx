@@ -6,7 +6,10 @@ import remarkGfm from "remark-gfm";
 import { Avatar, Box, Button, Flex, Skeleton, Text, TimeAgo } from "ui";
 import { NewTabIcon } from "icons";
 import { useSession } from "@/lib/auth/client";
-import { useStoryGitHubComments, usePostGitHubComment } from "@/lib/hooks/github";
+import {
+  useStoryGitHubComments,
+  usePostGitHubComment,
+} from "@/lib/hooks/github";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
 
 const CommentRow = ({ comment }: { comment: GitHubComment }) => (
@@ -66,10 +69,7 @@ const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
   const handleSubmit = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    postComment(
-      { storyId, body: trimmed },
-      { onSuccess: () => setValue("") },
-    );
+    postComment({ storyId, body: trimmed }, { onSuccess: () => setValue("") });
   };
 
   return (
@@ -88,7 +88,7 @@ const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
         justify="between"
       >
         <textarea
-          className="bg-transparent mt-3 w-full resize-none leading-6 outline-none placeholder:text-gray-400"
+          className="mt-3 w-full resize-none bg-transparent leading-6 outline-none placeholder:text-gray-400"
           disabled={isPending}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Comment on GitHub..."
@@ -102,9 +102,10 @@ const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
             disabled={isPending || !value.trim()}
             onClick={handleSubmit}
             size="sm"
+            loading={isPending}
             variant="outline"
           >
-            {isPending ? "Posting..." : "Comment"}
+            Comment on github
           </Button>
         </Flex>
       </Flex>
@@ -135,9 +136,7 @@ export const GitHubCommentsPanel = ({
             <CommentRow comment={comment} key={comment.id} />
           ))}
         </Box>
-      ) : (
-        <Text color="muted">No GitHub comments yet</Text>
-      )}
+      ) : null}
     </Box>
   );
 };

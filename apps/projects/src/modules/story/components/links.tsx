@@ -177,12 +177,12 @@ export const Links = ({
                 <ArrowUp2Icon className="h-4" />
               )
             }
-            leftIcon={<LinkIcon className="mr-0.5 h-4" />}
+            leftIcon={<LinkIcon className="mr-0.5 h-5" />}
             size="sm"
             variant="naked"
             className="font-semibold"
           >
-            External links {links.length > 0 ? `(${links.length})` : ""}
+            External links
           </Button>
 
           {userRole !== "guest" && (
