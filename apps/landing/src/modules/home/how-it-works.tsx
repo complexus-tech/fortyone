@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Text, Box, Flex } from "ui";
+import { cn } from "lib";
+import { Text, Box, Button, Flex } from "ui";
 import { motion } from "framer-motion";
-import { AiIcon, GitHubIcon } from "icons";
+import { AiIcon, GitHubIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
 import { Container } from "@/components/ui";
 import meshImage from "../../../public/images/mesh.webp";
 
@@ -12,37 +13,21 @@ const fadeUp = {
   hidden: { y: 20, opacity: 0 },
   show: { y: 0, opacity: 1, transition: { duration: 0.7, ease: "easeOut" } },
 };
+const CARD_TEXT_CLASS = "text-[0.9rem] leading-[1.35]";
+const CARD_META_TEXT_CLASS = "text-[0.82rem] leading-[1.25]";
+const CARD_SURFACE_CLASS =
+  "bg-background rounded-xl border border-white/50 dark:border-border shadow-lg shadow-shadow";
 
 /* ─── Brand icons (inline SVGs) ───────────────────────────── */
-function GmailIcon({ className }: { className?: string }) {
+function DriveIcon({ className }: { className?: string }) {
   return (
-    <svg
+    <Image
+      alt=""
       className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Z"
-        fill="#fff"
-      />
-      <path
-        d="M2 6l10 7 10-7"
-        stroke="#EA4335"
-        strokeWidth="1.8"
-        fill="none"
-      />
-      <rect
-        x="2"
-        y="4"
-        width="20"
-        height="16"
-        rx="2"
-        stroke="#D93025"
-        strokeWidth="1.5"
-        fill="none"
-      />
-    </svg>
+      height={20}
+      src="/integrations/drive.svg"
+      width={20}
+    />
   );
 }
 
@@ -93,30 +78,96 @@ function LinearIcon({ className }: { className?: string }) {
   );
 }
 
+function IntegrationTile({
+  action,
+  icon,
+  label,
+  muted = false,
+}: {
+  action?: React.ReactNode;
+  icon: React.ReactNode;
+  label: string;
+  muted?: boolean;
+}) {
+  return (
+    <Flex
+      align="center"
+      justify="between"
+      className={cn(CARD_SURFACE_CLASS, "gap-2.5 px-4 py-2")}
+    >
+      <Flex align="center" className="min-w-0 gap-2">
+        <Box className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-black/4">
+          {icon}
+        </Box>
+        <Text
+          className={cn(
+            CARD_TEXT_CLASS,
+            muted
+              ? "text-text-muted font-semibold"
+              : "text-foreground font-semibold",
+          )}
+        >
+          {label}
+        </Text>
+      </Flex>
+      {action}
+    </Flex>
+  );
+}
+
 /* ─── Card 01: Task → Goal ────────────────────────────────── */
 function TaskGoalCard() {
   return (
-    <Box className="flex flex-col gap-3">
-      <Box className="bg-background text-text-muted rounded-xl px-4 py-3 text-[0.95rem] shadow-lg">
-        Connect task to objective...
+    <Box className="flex h-full flex-col gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3 backdrop-blur-sm")}>
+        <Flex align="center" justify="between" className="gap-3">
+          <Flex align="center" className="min-w-0 gap-2.5">
+            <Box className="bg-success/15 flex size-7 shrink-0 items-center justify-center rounded-lg">
+              <Box className="bg-success size-2 rounded-full" />
+            </Box>
+            <Text className={cn(CARD_TEXT_CLASS, "text-text-muted truncate")}>
+              Connect task to objective...
+            </Text>
+          </Flex>
+          <Text
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-accent text-text-secondary rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
+            Goal
+          </Text>
+        </Flex>
       </Box>
-      <Box className="bg-background rounded-xl p-4 shadow-lg">
+      <Box className={cn(CARD_SURFACE_CLASS, "flex-1 p-4")}>
         <Flex align="center" className="mb-3 gap-2">
-          <Box className="bg-accent text-text-secondary rounded-md px-2 py-0.5 font-mono text-xs font-semibold tracking-wide">
-            Q2 OBJECTIVE
+          <Box
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-accent text-text-secondary rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
+            Q2 Objective
           </Box>
-          <Text className="text-text-muted text-[0.95rem]">
+          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
             Improve activation rate
           </Text>
         </Flex>
         <Box className="border-border-strong ml-3 border-l-2 border-dashed pl-4">
           <Flex align="center" className="gap-2">
             <Box className="border-border-strong size-3.5 rounded border-2" />
-            <Text className="text-foreground text-[0.95rem] font-medium">
+            <Text
+              className={cn(CARD_TEXT_CLASS, "text-foreground font-medium")}
+            >
               Redesign onboarding flow
             </Text>
           </Flex>
-          <Box className="bg-success/10 text-success mt-2 ml-5.5 w-max rounded-full px-2.5 py-0.5 text-xs font-medium">
+          <Box
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-success/10 text-success mt-2 ml-5.5 w-max rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
             In Progress
           </Box>
         </Box>
@@ -124,14 +175,14 @@ function TaskGoalCard() {
       {/* Linked source */}
       <Flex
         align="center"
-        className="bg-background gap-2 rounded-xl px-4 py-2.5 shadow-lg"
+        className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-2.5")}
       >
         <GitHubIcon className="size-4 shrink-0" />
-        <Text className="text-text-muted text-[0.95rem]">
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
           Linked to <span className="text-foreground font-medium">#142</span>
         </Text>
         <LinearIcon className="ml-auto size-4 shrink-0" />
-        <Text className="text-text-muted text-[0.95rem]">OBJ-7</Text>
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>OBJ-7</Text>
       </Flex>
     </Box>
   );
@@ -140,74 +191,64 @@ function TaskGoalCard() {
 /* ─── Card 02: Integration context picker ─────────────────── */
 function IntegrationCard() {
   return (
-    <Box className="flex flex-col gap-3">
+    <Box className="flex h-full flex-col gap-3">
       {/* Command bar */}
       <Flex
         align="center"
-        className="bg-background gap-2 rounded-xl px-4 py-3 shadow-lg"
+        className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-3")}
       >
         <AiIcon className="text-icon h-4 w-4 shrink-0" />
-        <Text className="text-text-muted text-[0.95rem]">Add context from</Text>
-        <Text className="border-border text-text-muted ml-auto rounded-md border px-2 py-0.5 text-[0.95rem]">
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          Add context from
+        </Text>
+        <Text className="text-foreground ml-auto text-[1rem] leading-none font-medium">
           @
         </Text>
       </Flex>
-      {/* Integration dropdown */}
-      <Box className="bg-background divide-border divide-y rounded-xl shadow-lg">
-        <Flex align="center" className="gap-3 px-4 py-3">
-          <GitHubIcon className="size-5 shrink-0" />
-          <Text className="text-foreground text-[0.95rem] font-medium">
-            GitHub
-          </Text>
-        </Flex>
-        <Flex align="center" className="gap-3 px-4 py-3">
-          <GmailIcon className="size-5 shrink-0" />
-          <Text className="text-foreground text-[0.95rem] font-medium">
-            Gmail
-          </Text>
-        </Flex>
-        <Flex align="center" justify="between" className="px-4 py-3">
-          <Flex align="center" className="gap-3">
-            <SlackIcon className="size-5 shrink-0" />
-            <Text className="text-foreground text-[0.95rem] font-medium">
-              Slack
+      {/* Integration options */}
+      <Box className="grid content-start gap-2">
+        <IntegrationTile
+          icon={<GitHubIcon className="size-4.5 shrink-0" />}
+          label="GitHub"
+        />
+        <IntegrationTile
+          icon={<DriveIcon className="size-4.5 shrink-0" />}
+          label="Drive"
+        />
+        <IntegrationTile
+          action={
+            <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+              Connect
             </Text>
-          </Flex>
-          <Text className="text-text-muted text-[0.95rem]">Connect</Text>
-        </Flex>
-        <Flex align="center" justify="between" className="px-4 py-3">
-          <Flex align="center" className="gap-3">
+          }
+          icon={<SlackIcon className="size-4.5 shrink-0" />}
+          label="Slack"
+        />
+        <IntegrationTile
+          action={
             <svg
-              className="text-text-muted size-5 shrink-0"
+              className="text-text-muted size-4.5 shrink-0"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="2"
               viewBox="0 0 24 24"
             >
               <path
-                d="M12 6V4m0 2a2 2 0 1 0 0 4m0-4a2 2 0 1 1 0 4m-6 8a2 2 0 1 0 0-4m0 4a2 2 0 1 1 0-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 1 0 0-4m0 4a2 2 0 1 1 0-4m0 4v2m0-6V4"
+                d="M7 17 17 7M7 7h10v10"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
-            <Text className="text-text-muted text-[0.95rem]">
-              Manage tools
-            </Text>
-          </Flex>
-          <svg
-            className="text-text-muted size-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M7 17 17 7M7 7h10v10"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          }
+          icon={
+            <SettingsIcon
+              className="text-text-muted h-4.5 shrink-0"
+              strokeWidth={1.7}
             />
-          </svg>
-        </Flex>
+          }
+          label="Manage tools"
+          muted
+        />
       </Box>
     </Box>
   );
@@ -216,41 +257,67 @@ function IntegrationCard() {
 /* ─── Card 03: Progress actions ───────────────────────────── */
 function ProgressCard() {
   return (
-    <Box className="flex flex-col items-end gap-3">
-      <Box className="bg-background w-full rounded-xl p-4 shadow-lg">
-        <Text className="text-foreground mb-3 text-[0.95rem] font-medium">
+    <Box className="flex h-full flex-col items-end gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "w-full p-4")}>
+        <Text
+          className={cn(CARD_TEXT_CLASS, "text-foreground mb-3 font-medium")}
+        >
           Sprint 14 Progress
         </Text>
         <Box className="bg-surface-muted mb-2.5 h-2.5 w-full overflow-hidden rounded-full">
           <Box className="bg-foreground h-full w-[65%] rounded-full" />
         </Box>
         <Flex justify="between">
-          <Text className="text-text-muted text-[0.95rem]">7 of 11 tasks</Text>
-          <Text className="text-foreground text-[0.95rem] font-medium">
+          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+            7 of 11 tasks
+          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "text-foreground font-medium")}>
             65%
           </Text>
         </Flex>
       </Box>
       <Flex className="gap-2">
-        <Box className="bg-background-inverse text-foreground-inverse rounded-lg px-3 py-1.5 text-sm font-medium shadow-lg">
+        <Button
+          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
+          color="invert"
+          rounded="lg"
+          size="sm"
+          type="button"
+        >
           Approve
-        </Box>
-        <Box className="bg-background text-text-secondary rounded-lg px-3 py-1.5 text-sm font-medium shadow-lg">
+        </Button>
+        <Button
+          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
+          color="tertiary"
+          rounded="lg"
+          size="sm"
+          type="button"
+        >
           Done
-        </Box>
-        <Box className="bg-background text-text-muted flex size-8 items-center justify-center rounded-lg text-sm shadow-lg">
-          ...
-        </Box>
+        </Button>
+        <Button
+          aria-label="More actions"
+          className={cn(CARD_TEXT_CLASS, "text-foreground shadow-lg")}
+          color="tertiary"
+          asIcon
+          rounded="lg"
+          size="sm"
+          type="button"
+        >
+          <MoreHorizontalIcon className="h-4 w-auto text-current" />
+        </Button>
       </Flex>
       {/* Shared to integrations */}
       <Flex
         align="center"
-        className="bg-background w-full gap-2.5 rounded-xl px-4 py-2.5 shadow-lg"
+        className={cn(CARD_SURFACE_CLASS, "mt-auto w-full gap-2.5 px-4 py-2.5")}
       >
-        <Text className="text-text-muted text-[0.95rem]">Shared to</Text>
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          Shared to
+        </Text>
         <Flex className="ml-auto gap-2">
           <SlackIcon className="size-4" />
-          <GmailIcon className="size-4" />
+          <DriveIcon className="size-4" />
         </Flex>
       </Flex>
     </Box>
@@ -271,7 +338,6 @@ function FeatureCard({
 }) {
   return (
     <motion.div
-      className="h-full"
       initial="hidden"
       transition={{ delay }}
       variants={fadeUp}
@@ -283,15 +349,16 @@ function FeatureCard({
         <Box className="relative flex min-h-[300px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[350px]">
           <Image
             alt=""
-            className="object-cover"
+            className="object-cover opacity-15"
             src={meshImage}
             fill
             quality={100}
+            sizes="(max-width: 767px) 100vw, 33vw"
           />
           <Box className="relative z-10 w-full p-5">{children}</Box>
         </Box>
         {/* Text below */}
-        <Box className="mt-5">
+        <Box className="mt-5 flex min-h-[116px] flex-col">
           <Text className="text-foreground mb-2 text-lg font-semibold">
             {title}
           </Text>
@@ -323,7 +390,7 @@ export const HowItWorks = () => {
       </motion.div>
 
       {/* Feature cards with mesh backgrounds */}
-      <Box className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
           title="Goals aren't separate from the work."
           description="Tasks, objectives, and delivery live in one system, so progress isn't something you have to reconstruct later."
