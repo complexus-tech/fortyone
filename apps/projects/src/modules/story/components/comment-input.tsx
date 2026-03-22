@@ -1,12 +1,4 @@
-import { useEditor, ReactRenderer, mergeAttributes } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
-import Mention from "@tiptap/extension-mention";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import tippy from "tippy.js";
+import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
 import { cn } from "lib";
@@ -15,11 +7,8 @@ import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import type { Member } from "@/types";
 import { extractMentionsFromHTML } from "@/lib/utils/mentions";
-import {
-  MentionList,
-  type MentionItem,
-  type MentionListRef,
-} from "./mentions/list";
+import { type MentionItem } from "./mentions/list";
+import { getStoryCommentEditorExtensions } from "./story-comment-editor";
 
 export const CommentInput = ({
   storyId,
@@ -69,111 +58,11 @@ export const CommentInput = ({
   };
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-      Mention.configure({
-        HTMLAttributes: {
-          class: "mention bg-surface-muted hover:bg-state-hover transition",
-        },
-        renderHTML({ options, node }) {
-          return [
-            "a",
-            mergeAttributes(
-              {
-                href: `/profile/${node.attrs.id}`,
-              },
-              options.HTMLAttributes,
-            ),
-            `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
-          ];
-        },
-        suggestion: {
-          items: ({ query }: { query: string }) => {
-            if (!query || query.trim() === "") {
-              return mentionUsers.slice(0, 6);
-            }
-
-            const filtered = mentionUsers.filter(
-              (user) =>
-                user.label.toLowerCase().includes(query.toLowerCase()) ||
-                user.username.toLowerCase().includes(query.toLowerCase()),
-            );
-
-            return filtered.slice(0, 6);
-          },
-          render: () => {
-            let component: ReactRenderer<MentionListRef>;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tippy.js instance type is complex
-            let popup: any;
-
-            return {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
-              onStart: (props: any) => {
-                component = new ReactRenderer(MentionList, {
-                  props,
-                  editor: props.editor,
-                });
-
-                if (!props.clientRect) {
-                  return;
-                }
-
-                popup = tippy("body", {
-                  getReferenceClientRect: props.clientRect,
-                  appendTo: () => document.body,
-                  content: component.element,
-                  showOnCreate: true,
-                  interactive: true,
-                  trigger: "manual",
-                  placement: "bottom-start",
-                });
-              },
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
-              onUpdate(props: any) {
-                component.updateProps(props as Record<string, unknown>);
-                if (!props.clientRect) {
-                  return;
-                }
-
-                popup?.[0]?.setProps({
-                  getReferenceClientRect: props.clientRect,
-                });
-              },
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tiptap suggestion props type is complex
-              onKeyDown(props: any) {
-                if (props.event.key === "Escape") {
-                  popup?.[0]?.hide();
-                  return true;
-                }
-
-                return (
-                  component.ref?.onKeyDown(props.event as KeyboardEvent) ??
-                  false
-                );
-              },
-
-              onExit() {
-                popup?.[0]?.destroy();
-                component.destroy();
-              },
-            };
-          },
-        },
-      }),
-      Placeholder.configure({
-        placeholder: getPlaceHolder(),
-      }),
-    ],
+    extensions: getStoryCommentEditorExtensions({
+      enableMentions: true,
+      mentionUsers,
+      placeholder: getPlaceHolder(),
+    }),
     content: initialComment ?? "",
     editable: true,
     immediatelyRender: false,

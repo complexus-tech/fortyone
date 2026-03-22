@@ -44,7 +44,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
                 src={metadata.image}
               />
             ) : (
-              <LinkIcon className="text-info/80 dark:text-info/80 mx-0.5 h-[1.3rem]" />
+              <LinkIcon className="mx-0.5 h-[1.3rem]" />
             )}
             <Text
               className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
