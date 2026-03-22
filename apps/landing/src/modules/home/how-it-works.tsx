@@ -349,7 +349,7 @@ function FeatureCard({
         <Box className="relative flex min-h-[300px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[350px]">
           <Image
             alt=""
-            className="object-cover"
+            className="object-cover opacity-15"
             src={meshImage}
             fill
             quality={100}
