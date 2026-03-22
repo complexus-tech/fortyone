@@ -44,7 +44,7 @@ const StoryLink = ({ link }: { link: LinkType }) => {
                 src={metadata.image}
               />
             ) : (
-              <LinkIcon className="text-info/80 dark:text-info/80 mx-0.5 h-[1.3rem]" />
+              <LinkIcon className="mx-0.5 h-[1.3rem]" />
             )}
             <Text
               className="line-clamp-1 max-w-[24ch] font-medium md:shrink-0"
@@ -177,12 +177,12 @@ export const Links = ({
                 <ArrowUp2Icon className="h-4" />
               )
             }
-            leftIcon={<LinkIcon className="mr-0.5 h-4" />}
+            leftIcon={<LinkIcon className="mr-0.5 h-5" />}
             size="sm"
             variant="naked"
             className="font-semibold"
           >
-            External links {links.length > 0 ? `(${links.length})` : ""}
+            External links
           </Button>
 
           {userRole !== "guest" && (

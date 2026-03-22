@@ -1,13 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEditor } from "@tiptap/react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Avatar, Box, Button, Flex, Skeleton, Text, TimeAgo } from "ui";
-import { NewTabIcon } from "icons";
+import {
+  Avatar,
+  Box,
+  Button,
+  Flex,
+  Skeleton,
+  Text,
+  TextEditor,
+  TimeAgo,
+} from "ui";
+import { LinkIcon, NewTabIcon } from "icons";
 import { useSession } from "@/lib/auth/client";
-import { useStoryGitHubComments, usePostGitHubComment } from "@/lib/hooks/github";
+import {
+  useStoryGitHubComments,
+  usePostGitHubComment,
+} from "@/lib/hooks/github";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
+import {
+  getStoryCommentEditorExtensions,
+  serializeStoryCommentToGitHubMarkdown,
+} from "./story-comment-editor";
 
 const CommentRow = ({ comment }: { comment: GitHubComment }) => (
   <Box className="relative pb-4">
@@ -16,10 +32,11 @@ const CommentRow = ({ comment }: { comment: GitHubComment }) => (
         <Avatar
           name={comment.userLogin}
           size="xs"
+          className="relative top-0.5"
           src={comment.userAvatar || undefined}
         />
       </Box>
-      <Text className="relative top-0.5 ml-1 text-black dark:text-white">
+      <Text className="ml-1 text-black dark:text-white">
         {comment.userLogin}
       </Text>
       <Text className="mx-0.5 text-[0.95rem]" color="muted">
@@ -29,13 +46,13 @@ const CommentRow = ({ comment }: { comment: GitHubComment }) => (
         <TimeAgo timestamp={comment.createdAt} />
       </Text>
       <a
-        className="text-muted hover:text-foreground ml-1 rounded-md p-0.5 transition"
+        className="text-muted hover:text-foreground rounded-md p-0.5 transition"
         href={comment.htmlUrl}
         rel="noopener noreferrer"
         target="_blank"
         title="View on GitHub"
       >
-        <NewTabIcon className="h-3.5 w-3.5" />
+        <LinkIcon className="h-4" />
       </a>
     </Flex>
     <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6">
@@ -61,14 +78,33 @@ const CommentsSkeleton = () => (
 const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
   const { data: session } = useSession();
   const { mutate: postComment, isPending } = usePostGitHubComment();
-  const [value, setValue] = useState("");
+  const editor = useEditor({
+    content: "",
+    editable: !isPending,
+    extensions: getStoryCommentEditorExtensions({
+      placeholder: "Leave a comment...",
+    }),
+    immediatelyRender: false,
+  });
 
   const handleSubmit = () => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
+    if (!editor || editor.isEmpty) {
+      return;
+    }
+
+    const body = serializeStoryCommentToGitHubMarkdown(editor.getJSON());
+
+    if (!body) {
+      return;
+    }
+
     postComment(
-      { storyId, body: trimmed },
-      { onSuccess: () => setValue("") },
+      { storyId, body },
+      {
+        onSuccess: () => {
+          editor.commands.clearContent();
+        },
+      },
     );
   };
 
@@ -87,24 +123,20 @@ const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
         gap={2}
         justify="between"
       >
-        <textarea
-          className="bg-transparent mt-3 w-full resize-none leading-6 outline-none placeholder:text-gray-400"
-          disabled={isPending}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Comment on GitHub..."
-          rows={3}
-          value={value}
+        <TextEditor
+          className="prose-base prose-a:text-foreground leading-6 antialiased"
+          editor={editor}
         />
         <Flex gap={2} justify="end">
           <Button
             className="px-3"
             color="tertiary"
-            disabled={isPending || !value.trim()}
+            disabled={isPending}
             onClick={handleSubmit}
             size="sm"
             variant="outline"
           >
-            {isPending ? "Posting..." : "Comment"}
+            Comment
           </Button>
         </Flex>
       </Flex>
@@ -135,9 +167,7 @@ export const GitHubCommentsPanel = ({
             <CommentRow comment={comment} key={comment.id} />
           ))}
         </Box>
-      ) : (
-        <Text color="muted">No GitHub comments yet</Text>
-      )}
+      ) : null}
     </Box>
   );
 };

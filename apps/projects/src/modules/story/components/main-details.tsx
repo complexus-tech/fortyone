@@ -157,17 +157,17 @@ export const MainDetails = ({
       </Box>
 
       <Container
-        className={cn("pt-4 md:pt-7", {
+        className={cn("max-w-7xl pt-4 md:pt-7", {
           "md:pt-2": isDialog,
         })}
       >
         <GitHubSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
-          className="text-foreground mb-8 text-3xl font-medium md:text-4xl"
+          className="text-foreground mb-8 text-3xl md:text-4xl"
           editor={titleEditor}
         />
-        <TextEditor editor={descriptionEditor} />
+        <TextEditor editor={descriptionEditor} className="text-lg" />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}
