@@ -124,7 +124,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
                 className="hidden px-5 text-[0.93rem] md:flex"
                 color="tertiary"
                 href={APP_URL}
-                rounded="lg"
+                rounded="full"
                 variant="naked"
               >
                 Login
@@ -133,7 +133,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
                 className="px-5 text-[0.93rem]"
                 color="invert"
                 href={SIGNUP_URL}
-                rounded="lg"
+                rounded="full"
               >
                 Sign up
               </Button>

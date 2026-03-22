@@ -42,7 +42,7 @@ export const CallToAction = () => {
               className="mt-8 border-0"
               color="invert"
               href={SIGNUP_URL}
-              rounded="full"
+              rounded="lg"
               size="lg"
             >
               Get started
