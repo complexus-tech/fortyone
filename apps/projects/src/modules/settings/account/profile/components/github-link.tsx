@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Box, Button, Flex, Text } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
@@ -11,21 +11,25 @@ import {
 import { useProfile } from "@/lib/hooks/profile";
 
 const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? "";
+const GITHUB_CALLBACK_URL = process.env.NEXT_PUBLIC_GITHUB_CALLBACK_URL ?? "";
+
+// Module-level flag survives React Strict Mode double-mount.
+// Prevents the OAuth code from being exchanged twice (GitHub codes are single-use).
+let codeConsumed = false;
 
 export const GitHubAccountLink = () => {
   const searchParams = useSearchParams();
   const linkGitHub = useLinkGitHubUser();
   const unlinkGitHub = useUnlinkGitHubUser();
   const { data: profile } = useProfile();
-  const hasHandledCode = useRef(false);
 
   const isLinked = !!profile?.githubUsername;
 
   useEffect(() => {
     const code = searchParams.get("code");
     const isGitHubLink = searchParams.get("github_link");
-    if (code && isGitHubLink && !hasHandledCode.current) {
-      hasHandledCode.current = true;
+    if (code && isGitHubLink && !codeConsumed) {
+      codeConsumed = true;
       linkGitHub.mutate(code);
       // Clean the code from the URL
       const url = new URL(window.location.href);
@@ -33,12 +37,16 @@ export const GitHubAccountLink = () => {
       url.searchParams.delete("github_link");
       window.history.replaceState({}, "", url.toString());
     }
-  }, [searchParams, linkGitHub]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleConnect = () => {
-    localStorage.setItem("github_link_return", window.location.href);
-    const redirectUri = `${window.location.origin}/github/callback`;
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    // Use a fixed callback URL so it works across workspace subdomains.
+    // The return URL is base64-encoded in the OAuth `state` parameter — GitHub
+    // passes it back untouched, so it survives cross-origin redirects.
+    const returnUrl = btoa(window.location.href);
+    const callbackUrl = GITHUB_CALLBACK_URL || `${window.location.origin}/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(returnUrl)}`;
   };
 
   const handleDisconnect = () => {

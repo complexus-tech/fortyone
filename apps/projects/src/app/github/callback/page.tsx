@@ -10,8 +10,17 @@ export default function GitHubCallbackPage() {
 
   useEffect(() => {
     const code = searchParams.get("code");
-    const returnTo = localStorage.getItem("github_link_return");
-    localStorage.removeItem("github_link_return");
+    const state = searchParams.get("state");
+
+    // Decode the return URL from the state parameter
+    let returnTo: string | null = null;
+    if (state) {
+      try {
+        returnTo = atob(state);
+      } catch {
+        // invalid base64, ignore
+      }
+    }
 
     if (code && returnTo) {
       const separator = returnTo.includes("?") ? "&" : "?";
