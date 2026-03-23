@@ -537,11 +537,17 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.
 }
 
 func isGitHubAuthOrPermissionError(err error) bool {
-	var ghErr *githubsdk.ErrorResponse
-	if !errors.As(err, &ghErr) || ghErr.Response == nil {
+	if err == nil {
 		return false
 	}
-	return ghErr.Response.StatusCode == http.StatusUnauthorized || ghErr.Response.StatusCode == http.StatusForbidden
+	var ghErr *githubsdk.ErrorResponse
+	if errors.As(err, &ghErr) && ghErr.Response != nil {
+		return ghErr.Response.StatusCode == http.StatusUnauthorized || ghErr.Response.StatusCode == http.StatusForbidden
+	}
+	errText := strings.ToLower(err.Error())
+	return strings.Contains(errText, "bad credentials") ||
+		strings.Contains(errText, "requires authentication") ||
+		strings.Contains(errText, "resource not accessible by personal access token")
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
