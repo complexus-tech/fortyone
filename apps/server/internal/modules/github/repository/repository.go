@@ -1019,6 +1019,16 @@ func (r *Repo) ResolveFortyOneUserByFullName(ctx context.Context, fullName strin
 	return u, err
 }
 
+// ResolveFortyOneUserByEmail finds a user by email.
+func (r *Repo) ResolveFortyOneUserByEmail(ctx context.Context, email string) (FortyOneUser, error) {
+	var u FortyOneUser
+	err := r.db.GetContext(ctx, &u,
+		`SELECT username, full_name, avatar_url FROM users WHERE email = $1 AND is_system = true LIMIT 1`,
+		email,
+	)
+	return u, err
+}
+
 // UpdateStoryLinkReviewState updates review counters on a PR story link.
 func (r *Repo) UpdateStoryLinkReviewState(ctx context.Context, storyID, repositoryID uuid.UUID, prGitHubID int64, reviewState string, approved, changesRequested int) error {
 	_, err := r.db.ExecContext(ctx,

@@ -27,6 +27,12 @@ var actorEmails = map[Key]string{
 	KeyGitHub: "github@fortyone.app",
 }
 
+// EmailForKey returns the configured system actor email for a key.
+func EmailForKey(key Key) (string, bool) {
+	email, ok := actorEmails[key]
+	return email, ok
+}
+
 type Resolver struct {
 	log   *logger.Logger
 	db    *sqlx.DB

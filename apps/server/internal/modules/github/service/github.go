@@ -25,6 +25,7 @@ import (
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	githubsdk "github.com/google/go-github/v72/github"
@@ -414,6 +415,16 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 	if userMap == nil {
 		userMap = map[int64]githubrepository.FortyOneUser{}
 	}
+	systemGitHubLogin := "github"
+	systemGitHubAvatar := ""
+	if githubActorEmail, ok := actors.EmailForKey(actors.KeyGitHub); ok {
+		if systemUser, err := s.repo.ResolveFortyOneUserByEmail(ctx, githubActorEmail); err == nil {
+			if username := strings.TrimSpace(systemUser.Username); username != "" {
+				systemGitHubLogin = username
+			}
+			systemGitHubAvatar = s.resolveAvatarURL(ctx, systemUser.AvatarURL)
+		}
+	}
 
 	// Build result, resolving authors.
 	allComments := make([]GitHubComment, 0, len(rawComments))
@@ -457,11 +468,13 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 				}
 			}
 		}
-		// For app-authored comments without a resolvable author, expose a stable GitHub label
-		// instead of the app account login (e.g. fortyone-app[bot]).
-		if rc.isAppAuthor && !commentedViaFortyOne {
-			gc.UserLogin = "GitHub"
-			gc.UserAvatar = ""
+		// For app-authored/system comments without a resolvable author, expose a
+		// stable GitHub label instead of the app account login (e.g. fortyone-app[bot]).
+		if !commentedViaFortyOne && (rc.isAppAuthor ||
+			isFortyOneBotAuthorLogin(rawGitHubLogin, s.cfg.AppSlug) ||
+			isFortyOneSystemLinkedTaskComment(gc.Body)) {
+			gc.UserLogin = systemGitHubLogin
+			gc.UserAvatar = systemGitHubAvatar
 		}
 
 		allComments = append(allComments, gc)
@@ -548,6 +561,25 @@ func isGitHubAuthOrPermissionError(err error) bool {
 	return strings.Contains(errText, "bad credentials") ||
 		strings.Contains(errText, "requires authentication") ||
 		strings.Contains(errText, "resource not accessible by personal access token")
+}
+
+func isFortyOneBotAuthorLogin(login, configuredSlug string) bool {
+	normalizedLogin := strings.ToLower(strings.TrimSpace(login))
+	if !strings.HasSuffix(normalizedLogin, "[bot]") {
+		return false
+	}
+
+	configured := strings.ToLower(strings.TrimSpace(configuredSlug))
+	if configured != "" && normalizedLogin == configured+"[bot]" {
+		return true
+	}
+
+	// Keep this strict enough to avoid relabeling unrelated bots.
+	return strings.HasPrefix(normalizedLogin, "fortyone-")
+}
+
+func isFortyOneSystemLinkedTaskComment(body string) bool {
+	return strings.HasPrefix(strings.TrimSpace(body), "Linked to FortyOne task [")
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
