@@ -75,12 +75,12 @@ const AccordionItem = ({
 
         {isOpen ? (
           <MinusIcon
-            className="text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300"
+            className="text-foreground dark:text-text-secondary shrink-0 transition-transform duration-300"
             strokeWidth={2}
           />
         ) : (
           <PlusIcon
-            className="text-foreground dark:text-text-secondary h-6 shrink-0 transition-transform duration-300"
+            className="text-foreground dark:text-text-secondary shrink-0 transition-transform duration-300"
             strokeWidth={2}
           />
         )}
