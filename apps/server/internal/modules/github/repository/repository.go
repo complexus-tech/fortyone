@@ -172,7 +172,8 @@ func (r *Repo) EnsureStoryLink(ctx context.Context, storyID uuid.UUID, title *st
 func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (githubshared.CoreWorkspaceSettings, error) {
 	var row workspaceSettingsRow
 	query := `
-		SELECT workspace_id, branch_format, link_commits_by_magic_words, created_at, updated_at
+		SELECT workspace_id, branch_format, link_commits_by_magic_words, sync_assignees, sync_labels,
+		       auto_populate_pr_body, close_on_commit_keywords, created_at, updated_at
 		FROM github_workspace_settings
 		WHERE workspace_id = $1
 	`
@@ -182,7 +183,8 @@ func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) 
 			insertQuery := `
 				INSERT INTO github_workspace_settings (workspace_id)
 				VALUES ($1)
-				RETURNING workspace_id, branch_format, link_commits_by_magic_words, created_at, updated_at
+				RETURNING workspace_id, branch_format, link_commits_by_magic_words, sync_assignees, sync_labels,
+				          auto_populate_pr_body, close_on_commit_keywords, created_at, updated_at
 			`
 			if err := r.db.GetContext(ctx, &row, insertQuery, workspaceID); err != nil {
 				return githubshared.CoreWorkspaceSettings{}, err
@@ -1114,19 +1116,19 @@ func (r *Repo) ResolveOrCreateLabelsByName(ctx context.Context, workspaceID, tea
 
 // StoryGitHubLink represents a GitHub link attached to a story (issue, PR, branch, commit).
 type StoryGitHubLink struct {
-	ID                  uuid.UUID  `db:"id"                    json:"id"`
-	ExternalType        string     `db:"external_type"         json:"externalType"`
-	GitHubNumber        *int       `db:"github_number"         json:"githubNumber"`
-	URL                 string     `db:"url"                   json:"url"`
-	Title               *string    `db:"title"                 json:"title"`
-	State               *string    `db:"state"                 json:"state"`
-	ReviewState         *string    `db:"review_state"          json:"reviewState"`
-	ReviewsApproved     int        `db:"reviews_approved"      json:"reviewsApproved"`
-	ReviewsChangesReq   int        `db:"reviews_changes_requested" json:"reviewsChangesRequested"`
-	CheckState          *string    `db:"check_state"           json:"checkState"`
-	RepositoryFullName  string     `db:"repository_full_name"  json:"repositoryFullName"`
-	RefName             *string    `db:"ref_name"              json:"refName"`
-	CreatedAt           time.Time  `db:"created_at"            json:"createdAt"`
+	ID                 uuid.UUID `db:"id"                    json:"id"`
+	ExternalType       string    `db:"external_type"         json:"externalType"`
+	GitHubNumber       *int      `db:"github_number"         json:"githubNumber"`
+	URL                string    `db:"url"                   json:"url"`
+	Title              *string   `db:"title"                 json:"title"`
+	State              *string   `db:"state"                 json:"state"`
+	ReviewState        *string   `db:"review_state"          json:"reviewState"`
+	ReviewsApproved    int       `db:"reviews_approved"      json:"reviewsApproved"`
+	ReviewsChangesReq  int       `db:"reviews_changes_requested" json:"reviewsChangesRequested"`
+	CheckState         *string   `db:"check_state"           json:"checkState"`
+	RepositoryFullName string    `db:"repository_full_name"  json:"repositoryFullName"`
+	RefName            *string   `db:"ref_name"              json:"refName"`
+	CreatedAt          time.Time `db:"created_at"            json:"createdAt"`
 }
 
 // StoryIssueWithInstallation represents a linked GitHub issue with enough info to call the GitHub API.

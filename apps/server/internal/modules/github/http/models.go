@@ -152,6 +152,10 @@ func toAppIntegration(core github.CoreIntegration) AppIntegration {
 		Settings: AppWorkspaceSettings{
 			BranchFormat:            core.Settings.BranchFormat,
 			LinkCommitsByMagicWords: core.Settings.LinkCommitsByMagicWords,
+			SyncAssignees:           core.Settings.SyncAssignees,
+			SyncLabels:              core.Settings.SyncLabels,
+			AutoPopulatePRBody:      core.Settings.AutoPopulatePRBody,
+			CloseOnCommitKeywords:   core.Settings.CloseOnCommitKeywords,
 			CreatedAt:               core.Settings.CreatedAt,
 			UpdatedAt:               core.Settings.UpdatedAt,
 		},

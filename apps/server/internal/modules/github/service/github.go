@@ -307,13 +307,13 @@ func (s *Service) resolveAvatarURL(ctx context.Context, avatar *string) string {
 
 // GitHubComment represents a single comment fetched from the GitHub API.
 type GitHubComment struct {
-	ID        int64  `json:"id"`
-	Body      string `json:"body"`
-	UserLogin string `json:"userLogin"`
+	ID         int64  `json:"id"`
+	Body       string `json:"body"`
+	UserLogin  string `json:"userLogin"`
 	UserAvatar string `json:"userAvatar"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
-	HTMLURL   string `json:"htmlUrl"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
+	HTMLURL    string `json:"htmlUrl"`
 }
 
 // Regex to parse bot attribution: **Name** commented via/on FortyOne:\n\nbody
@@ -337,8 +337,9 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 
 	// Collect raw comments and unique GitHub user IDs.
 	type rawComment struct {
-		comment  *githubsdk.IssueComment
+		comment      *githubsdk.IssueComment
 		gitHubUserID int64
+		isAppAuthor  bool
 	}
 	var rawComments []rawComment
 
@@ -350,14 +351,20 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 		}
 
 		opts := &githubsdk.IssueListCommentsOptions{
-			Sort:      githubsdk.String("created"),
-			Direction: githubsdk.String("asc"),
+			Sort:        githubsdk.String("created"),
+			Direction:   githubsdk.String("asc"),
 			ListOptions: githubsdk.ListOptions{PerPage: 100},
 		}
 		comments, _, err := client.Issues.ListComments(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, opts)
 		if err != nil {
 			s.log.Warn(ctx, "failed to fetch github comments", "issue", issue.GitHubNumber, "error", err)
 			continue
+		}
+
+		var appOwnerID int64
+		app, _, err := client.Apps.Get(ctx, "")
+		if err == nil && app.GetOwner() != nil {
+			appOwnerID = app.GetOwner().GetID()
 		}
 
 		for _, c := range comments {
@@ -368,7 +375,11 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			if c.User != nil {
 				ghUID = c.User.GetID()
 			}
-			rawComments = append(rawComments, rawComment{comment: c, gitHubUserID: ghUID})
+			rawComments = append(rawComments, rawComment{
+				comment:      c,
+				gitHubUserID: ghUID,
+				isAppAuthor:  appOwnerID != 0 && ghUID != 0 && ghUID == appOwnerID,
+			})
 		}
 	}
 
@@ -399,8 +410,10 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			UpdatedAt: c.GetUpdatedAt().Format(time.RFC3339),
 			HTMLURL:   c.GetHTMLURL(),
 		}
+		rawGitHubLogin := ""
 		if c.User != nil {
-			gc.UserLogin = c.User.GetLogin()
+			rawGitHubLogin = c.User.GetLogin()
+			gc.UserLogin = rawGitHubLogin
 			gc.UserAvatar = c.User.GetAvatarURL()
 		}
 
@@ -410,9 +423,11 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			gc.UserAvatar = s.resolveAvatarURL(ctx, fu.AvatarURL)
 		}
 
-		// For bot comments (e.g. fortyone-app[bot]), extract the real author.
-		if strings.HasSuffix(gc.UserLogin, "[bot]") {
+		commentedViaFortyOne := false
+		// For app and bot comments, extract the real author when the attribution marker exists.
+		if rc.isAppAuthor || strings.HasSuffix(rawGitHubLogin, "[bot]") {
 			if match := fortyOneCommentPattern.FindStringSubmatch(gc.Body); match != nil {
+				commentedViaFortyOne = true
 				authorName := match[1]
 				gc.Body = match[2]
 
@@ -425,6 +440,12 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 					gc.UserAvatar = ""
 				}
 			}
+		}
+		// For app-authored comments without a resolvable author, expose a stable GitHub label
+		// instead of the app account login (e.g. fortyone-app[bot]).
+		if rc.isAppAuthor && !commentedViaFortyOne && gc.UserLogin == rawGitHubLogin {
+			gc.UserLogin = "GitHub"
+			gc.UserAvatar = ""
 		}
 
 		allComments = append(allComments, gc)
@@ -1934,11 +1955,11 @@ type webhookEnvelope struct {
 		} `json:"user"`
 	} `json:"comment"`
 	CheckRun struct {
-		ID         int64  `json:"id"`
-		Name       string `json:"name"`
-		Status     string `json:"status"`
-		Conclusion string `json:"conclusion"`
-		HTMLURL    string `json:"html_url"`
+		ID           int64  `json:"id"`
+		Name         string `json:"name"`
+		Status       string `json:"status"`
+		Conclusion   string `json:"conclusion"`
+		HTMLURL      string `json:"html_url"`
 		PullRequests []struct {
 			ID     int64 `json:"id"`
 			Number int   `json:"number"`
