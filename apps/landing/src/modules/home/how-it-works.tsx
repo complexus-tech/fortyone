@@ -6,7 +6,7 @@ import { Text, Box, Button, Flex } from "ui";
 import { motion } from "framer-motion";
 import { AiIcon, GitHubIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
 import { Container } from "@/components/ui";
-import meshImage from "../../../public/images/mesh.webp";
+import meshImage from "../../../public/images/meshing.webp";
 
 const viewport = { once: true, amount: 0.3 };
 const fadeUp = {
@@ -349,7 +349,7 @@ function FeatureCard({
         <Box className="relative flex min-h-[300px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[350px]">
           <Image
             alt=""
-            className="object-cover opacity-15"
+            className="object-cover dark:opacity-40"
             src={meshImage}
             fill
             quality={100}

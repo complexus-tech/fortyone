@@ -4,7 +4,7 @@ import { Box, Button } from "ui";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
-import meshImage from "../../../public/images/mesh.webp";
+import meshImage from "../../../public/images/meshing.webp";
 
 const viewport = { once: true, amount: 0.35 };
 const scaleIn = {
@@ -33,7 +33,7 @@ export const CallToAction = () => {
             fill
             quality={100}
           />
-          <Box className="absolute inset-0 z-1 dark:bg-black/40" />
+          <Box className="absolute inset-0 z-1 dark:bg-black/30" />
           <Box className="relative z-2 flex flex-col items-center px-6 py-24 md:py-36">
             <h2 className="text-foreground text-center text-4xl font-medium tracking-tight md:text-6xl">
               Try FortyOne today.

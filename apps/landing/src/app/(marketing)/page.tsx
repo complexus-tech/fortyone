@@ -54,7 +54,7 @@ export default function Page() {
       {/* <Features /> */}
       <CoreValues />
       <HowItWorks />
-      <Maya />
+      {/* <Maya /> */}
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />
