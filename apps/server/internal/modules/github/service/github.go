@@ -362,9 +362,19 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 		}
 
 		var appOwnerID int64
+		appBotLogin := ""
 		app, _, err := client.Apps.Get(ctx, "")
-		if err == nil && app.GetOwner() != nil {
-			appOwnerID = app.GetOwner().GetID()
+		if err == nil {
+			if app.GetOwner() != nil {
+				appOwnerID = app.GetOwner().GetID()
+			}
+			appSlug := strings.TrimSpace(app.GetSlug())
+			if appSlug == "" {
+				appSlug = strings.TrimSpace(s.cfg.AppSlug)
+			}
+			if appSlug != "" {
+				appBotLogin = strings.ToLower(appSlug + "[bot]")
+			}
 		}
 
 		for _, c := range comments {
@@ -372,13 +382,19 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 				continue
 			}
 			var ghUID int64
+			ghLogin := ""
 			if c.User != nil {
 				ghUID = c.User.GetID()
+				ghLogin = strings.ToLower(strings.TrimSpace(c.User.GetLogin()))
+			}
+			isAppAuthor := appOwnerID != 0 && ghUID != 0 && ghUID == appOwnerID
+			if !isAppAuthor && appBotLogin != "" && ghLogin != "" {
+				isAppAuthor = ghLogin == appBotLogin
 			}
 			rawComments = append(rawComments, rawComment{
 				comment:      c,
 				gitHubUserID: ghUID,
-				isAppAuthor:  appOwnerID != 0 && ghUID != 0 && ghUID == appOwnerID,
+				isAppAuthor:  isAppAuthor,
 			})
 		}
 	}
@@ -443,7 +459,7 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 		}
 		// For app-authored comments without a resolvable author, expose a stable GitHub label
 		// instead of the app account login (e.g. fortyone-app[bot]).
-		if rc.isAppAuthor && !commentedViaFortyOne && gc.UserLogin == rawGitHubLogin {
+		if rc.isAppAuthor && !commentedViaFortyOne {
 			gc.UserLogin = "GitHub"
 			gc.UserAvatar = ""
 		}
@@ -472,34 +488,60 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.
 
 	// Try to use the user's own GitHub token so the comment appears as them.
 	userToken, tokenErr := s.repo.GetUserGitHubToken(ctx, userID)
-	useUserToken := tokenErr == nil && userToken != ""
+	useUserToken := tokenErr == nil && strings.TrimSpace(userToken) != ""
+	userClient := githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
 
-	commentBody := body
-	if !useUserToken {
-		// Fallback: post as bot with attribution
-		commentBody = fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, body)
-	}
+	userCommentBody := body
+	fallbackCommentBody := fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, body)
 
 	var lastErr error
 	for _, issue := range issues {
-		var client *githubsdk.Client
 		if useUserToken {
-			client = githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
-		} else {
-			client, err = s.newInstallationClient(ctx, issue.GitHubInstallationID)
-			if err != nil {
+			_, _, err = userClient.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+				Body: &userCommentBody,
+			})
+			if err == nil {
+				continue
+			}
+
+			// If the linked user token is stale/revoked or lacks scope, transparently
+			// fall back to installation auth so comment posting still succeeds.
+			if !isGitHubAuthOrPermissionError(err) {
 				lastErr = err
 				continue
 			}
+
+			s.log.Warn(ctx, "github user token failed for comment; falling back to app installation",
+				"issue_number", issue.GitHubNumber,
+				"owner", issue.OwnerLogin,
+				"repo", issue.RepositorySlug,
+				"error", err,
+			)
+			// Stop retrying the same bad user token for remaining linked issues.
+			useUserToken = false
+		}
+
+		client, clientErr := s.newInstallationClient(ctx, issue.GitHubInstallationID)
+		if clientErr != nil {
+			lastErr = clientErr
+			continue
 		}
 		_, _, err = client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
-			Body: &commentBody,
+			Body: &fallbackCommentBody,
 		})
 		if err != nil {
 			lastErr = err
 		}
 	}
 	return lastErr
+}
+
+func isGitHubAuthOrPermissionError(err error) bool {
+	var ghErr *githubsdk.ErrorResponse
+	if !errors.As(err, &ghErr) || ghErr.Response == nil {
+		return false
+	}
+	return ghErr.Response.StatusCode == http.StatusUnauthorized || ghErr.Response.StatusCode == http.StatusForbidden
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
