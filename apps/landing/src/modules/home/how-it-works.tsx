@@ -372,7 +372,7 @@ function FeatureCard({
 /* ─── Main Section ─────────────────────────────────────────── */
 export const HowItWorks = () => {
   return (
-    <Container className="py-16 md:py-20">
+    <Container className="py-16 md:pt-36">
       {/* Headline */}
       <motion.div
         initial="hidden"
