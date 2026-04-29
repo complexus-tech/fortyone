@@ -320,6 +320,7 @@ type GitHubComment struct {
 
 // Regex to parse bot attribution: **Name** commented via/on FortyOne:\n\nbody
 var fortyOneCommentPattern = regexp.MustCompile(`(?s)\A\*\*(.+?)\*\* commented (?:via|on) FortyOne:\s*\n\n?(.*)`)
+var fortyOneCommentMarkerPattern = regexp.MustCompile(`(?m)\n*\s*<!--\s*fortyone:comment:[0-9a-fA-F-]{36}\s*-->\s*`)
 
 // GetStoryGitHubComments fetches comments from all linked GitHub issues for a story.
 // It resolves GitHub users to FortyOne users when possible, and for bot comments
@@ -457,7 +458,7 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, workspaceID, story
 			if match := fortyOneCommentPattern.FindStringSubmatch(gc.Body); match != nil {
 				commentedViaFortyOne = true
 				authorName := match[1]
-				gc.Body = match[2]
+				gc.Body = stripFortyOneCommentMarker(match[2])
 
 				// Try to resolve the author name to a FortyOne user.
 				if fu, err := s.repo.ResolveFortyOneUserByFullName(ctx, authorName); err == nil {
@@ -469,6 +470,7 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, workspaceID, story
 				}
 			}
 		}
+		gc.Body = stripFortyOneCommentMarker(gc.Body)
 		// For app-authored/system comments without a resolvable author, expose a
 		// stable GitHub label instead of the app account login (e.g. fortyone-app[bot]).
 		if !commentedViaFortyOne && (rc.isAppAuthor ||
@@ -505,8 +507,12 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, workspaceID, storyID,
 	useUserToken := tokenErr == nil && strings.TrimSpace(userToken) != ""
 	userClient := githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
 
-	userCommentBody := body
-	fallbackCommentBody := fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, body)
+	commentMarkerID := uuid.New()
+	if localCommentID != nil {
+		commentMarkerID = *localCommentID
+	}
+	userCommentBody := buildFortyOneUserCommentBody(body, commentMarkerID)
+	fallbackCommentBody := buildFortyOneBotCommentBody(authorName, body, commentMarkerID)
 
 	var lastErr error
 	for _, issue := range issues {
@@ -591,7 +597,20 @@ func isFortyOneSystemLinkedTaskComment(body string) bool {
 }
 
 func isFortyOneAuthoredCommentBody(body string) bool {
-	return fortyOneCommentPattern.MatchString(strings.TrimSpace(body))
+	trimmed := strings.TrimSpace(body)
+	return fortyOneCommentPattern.MatchString(trimmed) || fortyOneCommentMarkerPattern.MatchString(trimmed)
+}
+
+func buildFortyOneUserCommentBody(body string, commentID uuid.UUID) string {
+	return fmt.Sprintf("%s\n\n<!-- fortyone:comment:%s -->", strings.TrimSpace(body), commentID.String())
+}
+
+func buildFortyOneBotCommentBody(authorName, body string, commentID uuid.UUID) string {
+	return fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, buildFortyOneUserCommentBody(body, commentID))
+}
+
+func stripFortyOneCommentMarker(body string) string {
+	return strings.TrimSpace(fortyOneCommentMarkerPattern.ReplaceAllString(body, ""))
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
@@ -809,17 +828,7 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 		return err
 	}
 
-	var eventKey string
-	switch {
-	case payload.Action == "closed" && payload.PullRequest.Merged:
-		eventKey = EventPRMerge
-	case payload.Action == "ready_for_review":
-		eventKey = EventPRReadyForMerge
-	case payload.PullRequest.Draft:
-		eventKey = EventDraftPROpen
-	default:
-		eventKey = EventPROpen
-	}
+	eventKey, shouldMoveStory := pullRequestWorkflowEvent(payload.Action, payload.PullRequest.Draft, payload.PullRequest.Merged)
 
 	for _, story := range stories {
 		prLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "pull_request", payload.PullRequest.ID, payload.PullRequest.Number, nil, payload.PullRequest.HTMLURL, payload.PullRequest.Title, payload.PullRequest.State, payload.PullRequest)
@@ -858,11 +867,32 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 				}
 			}
 		}
-		if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
-			return err
+		if shouldMoveStory {
+			if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func pullRequestWorkflowEvent(action string, draft bool, merged bool) (string, bool) {
+	switch action {
+	case "opened":
+		if draft {
+			return EventDraftPROpen, true
+		}
+		return EventPROpen, true
+	case "ready_for_review":
+		return EventPRReadyForMerge, true
+	case "closed":
+		if merged {
+			return EventPRMerge, true
+		}
+		return "", false
+	default:
+		return "", false
+	}
 }
 
 func (s *Service) handleCreateEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
@@ -1107,13 +1137,25 @@ func (s *Service) handleIssueCommentEvent(ctx context.Context, repository github
 	}
 
 	actorID := s.resolveActorID(ctx, payload.Comment.User.ID)
+	reserved, err := s.repo.ReserveInboundGitHubComment(ctx, repository.WorkspaceID, storyID, repository.ID, payload.Comment.ID, actorID)
+	if err != nil {
+		return err
+	}
+	if !reserved {
+		return nil
+	}
+
 	commentBody := fmt.Sprintf("**%s** commented on GitHub issue #%d:\n\n%s", payload.Comment.User.Login, payload.Issue.Number, payload.Comment.Body)
-	_, err = s.stories.CreateComment(ctx, repository.WorkspaceID, stories.CoreNewComment{
+	comment, err := s.stories.CreateCommentExternal(ctx, actorID, repository.WorkspaceID, stories.CoreNewComment{
 		StoryID: storyID,
 		UserID:  actorID,
 		Comment: commentBody,
 	})
-	return err
+	if err != nil {
+		_ = s.repo.DeleteGitHubCommentLink(ctx, repository.ID, payload.Comment.ID)
+		return err
+	}
+	return s.repo.CompleteInboundGitHubComment(ctx, repository.ID, payload.Comment.ID, comment.ID)
 }
 
 func (s *Service) isAppComment(ctx context.Context, repository githubrepository.RepoByExternalRow, userID int64) bool {
@@ -1174,7 +1216,7 @@ func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID,
 		return fmt.Errorf("failed to create installation client: %w", err)
 	}
 
-	body := fmt.Sprintf("**%s** commented on FortyOne:\n\n%s", authorName, content)
+	body := buildFortyOneBotCommentBody(authorName, content, localCommentID)
 	comment, _, err := client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
 		Body: &body,
 	})

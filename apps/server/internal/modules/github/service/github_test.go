@@ -43,3 +43,36 @@ func TestIsFortyOneAuthoredCommentBody(t *testing.T) {
 	require.False(t, isFortyOneAuthoredCommentBody("**octocat** commented on GitHub issue #12:\n\nLooks good."))
 	require.False(t, isFortyOneAuthoredCommentBody("A regular GitHub comment."))
 }
+
+func TestPullRequestWorkflowEventOnlyMatchesWorkflowActions(t *testing.T) {
+	eventKey, ok := pullRequestWorkflowEvent("opened", false, false)
+	require.True(t, ok)
+	require.Equal(t, EventPROpen, eventKey)
+
+	eventKey, ok = pullRequestWorkflowEvent("opened", true, false)
+	require.True(t, ok)
+	require.Equal(t, EventDraftPROpen, eventKey)
+
+	eventKey, ok = pullRequestWorkflowEvent("ready_for_review", false, false)
+	require.True(t, ok)
+	require.Equal(t, EventPRReadyForMerge, eventKey)
+
+	eventKey, ok = pullRequestWorkflowEvent("closed", false, true)
+	require.True(t, ok)
+	require.Equal(t, EventPRMerge, eventKey)
+
+	for _, action := range []string{"edited", "synchronize", "reopened", "closed"} {
+		eventKey, ok = pullRequestWorkflowEvent(action, false, false)
+		require.False(t, ok, "action %s should not trigger workflow event %q", action, eventKey)
+	}
+}
+
+func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
+	commentID := uuid.New()
+	body := buildFortyOneUserCommentBody("Ship it", commentID)
+
+	require.Contains(t, body, "Ship it")
+	require.Contains(t, body, "<!-- fortyone:comment:"+commentID.String()+" -->")
+	require.True(t, isFortyOneAuthoredCommentBody(body))
+	require.Equal(t, "Ship it", stripFortyOneCommentMarker(body))
+}
