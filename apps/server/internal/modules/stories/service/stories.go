@@ -94,6 +94,10 @@ type updateOptions struct {
 	onlyChangedFields        bool
 }
 
+type commentOptions struct {
+	actorID uuid.UUID
+}
+
 // New constructs a new stories service instance with the provided repository.
 func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
 	return &Service{
@@ -678,6 +682,15 @@ func (s *Service) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, 
 
 // CreateComment creates a comment for a story.
 func (s *Service) CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc CoreNewComment) (comments.CoreComment, error) {
+	actorID, _ := auth.GetUserID(ctx)
+	return s.createCommentWithOptions(ctx, workspaceID, cnc, commentOptions{actorID: actorID})
+}
+
+func (s *Service) CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc CoreNewComment) (comments.CoreComment, error) {
+	return s.createCommentWithOptions(ctx, workspaceID, cnc, commentOptions{actorID: actorID})
+}
+
+func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid.UUID, cnc CoreNewComment, options commentOptions) (comments.CoreComment, error) {
 	s.log.Info(ctx, "business.core.stories.CreateComment")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.CreateComment")
 	defer span.End()
@@ -702,8 +715,7 @@ func (s *Service) CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc 
 		}
 	}
 
-	// Get actor ID from context
-	actorID, _ := auth.GetUserID(ctx)
+	actorID := options.actorID
 
 	// Publish events based on comment type
 	if cnc.Parent != nil {

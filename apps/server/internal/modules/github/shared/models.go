@@ -103,6 +103,10 @@ type CoreCreateInstallSession struct {
 	InstallURL string
 }
 
+type CoreCreateUserLinkSession struct {
+	State string
+}
+
 type CoreIssueSyncLinkInput struct {
 	RepositoryID  uuid.UUID
 	TeamID        uuid.UUID

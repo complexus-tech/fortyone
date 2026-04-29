@@ -8,7 +8,31 @@ import { getApiError } from "@/utils";
 
 const apiURL = getApiUrl();
 
-export async function linkGitHubUserAction(code: string) {
+export async function createGitHubUserLinkSessionAction(returnTo: string) {
+  try {
+    const session = await auth();
+    const cookieHeader = await getCookieHeader();
+    const headers = buildAuthHeaders({
+      token: session?.token,
+      cookieHeader,
+    });
+    const response = await ky
+      .post(`${apiURL}/user/integrations/github/link-session`, {
+        json: { returnTo },
+        credentials: "include",
+        headers,
+      })
+      .json<ApiResponse<{ state: string }>>();
+    return response;
+  } catch (error) {
+    return getApiError(error);
+  }
+}
+
+export async function linkGitHubUserAction(input: {
+  code: string;
+  state: string;
+}) {
   try {
     const session = await auth();
     const cookieHeader = await getCookieHeader();
@@ -17,7 +41,7 @@ export async function linkGitHubUserAction(code: string) {
       cookieHeader,
     });
     await ky.post(`${apiURL}/user/integrations/github/link`, {
-      json: { code },
+      json: input,
       credentials: "include",
       headers,
     });

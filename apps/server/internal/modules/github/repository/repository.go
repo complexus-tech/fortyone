@@ -172,7 +172,8 @@ func (r *Repo) EnsureStoryLink(ctx context.Context, storyID uuid.UUID, title *st
 func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (githubshared.CoreWorkspaceSettings, error) {
 	var row workspaceSettingsRow
 	query := `
-		SELECT workspace_id, branch_format, link_commits_by_magic_words, created_at, updated_at
+		SELECT workspace_id, branch_format, link_commits_by_magic_words, sync_assignees, sync_labels,
+		       auto_populate_pr_body, close_on_commit_keywords, created_at, updated_at
 		FROM github_workspace_settings
 		WHERE workspace_id = $1
 	`
@@ -182,7 +183,8 @@ func (r *Repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) 
 			insertQuery := `
 				INSERT INTO github_workspace_settings (workspace_id)
 				VALUES ($1)
-				RETURNING workspace_id, branch_format, link_commits_by_magic_words, created_at, updated_at
+				RETURNING workspace_id, branch_format, link_commits_by_magic_words, sync_assignees, sync_labels,
+				          auto_populate_pr_body, close_on_commit_keywords, created_at, updated_at
 			`
 			if err := r.db.GetContext(ctx, &row, insertQuery, workspaceID); err != nil {
 				return githubshared.CoreWorkspaceSettings{}, err
@@ -444,7 +446,10 @@ func (r *Repo) CreateIssueSyncLink(ctx context.Context, workspaceID, userID uuid
 	var id uuid.UUID
 	query := `
 		INSERT INTO github_issue_sync_links (workspace_id, repository_id, team_id, sync_direction, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5)
+		SELECT $1, gr.id, t.team_id, $4, $5
+		FROM github_repositories gr
+		INNER JOIN teams t ON t.team_id = $3 AND t.workspace_id = $1
+		WHERE gr.id = $2 AND gr.workspace_id = $1
 		RETURNING id
 	`
 	if err := r.db.GetContext(ctx, &id, query, workspaceID, input.RepositoryID, input.TeamID, input.SyncDirection, userID); err != nil {
@@ -536,6 +541,13 @@ func (r *Repo) ReplaceTeamWorkflowSettings(ctx context.Context, workspaceID, tea
 	defer func() {
 		_ = tx.Rollback()
 	}()
+	var teamExists bool
+	if err := tx.GetContext(ctx, &teamExists, `SELECT EXISTS (SELECT 1 FROM teams WHERE workspace_id = $1 AND team_id = $2)`, workspaceID, teamID); err != nil {
+		return githubshared.CoreTeamGitHubSettings{}, err
+	}
+	if !teamExists {
+		return githubshared.CoreTeamGitHubSettings{}, sql.ErrNoRows
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM github_team_workflow_rules WHERE workspace_id = $1 AND team_id = $2`, workspaceID, teamID); err != nil {
 		return githubshared.CoreTeamGitHubSettings{}, err
 	}
@@ -599,6 +611,8 @@ func (r *Repo) FindIssueSyncLinkByRepositoryID(ctx context.Context, repositoryID
 		INNER JOIN github_repositories gr ON gr.id = l.repository_id
 		INNER JOIN teams t ON t.team_id = l.team_id
 		WHERE l.repository_id = $1 AND l.is_active = true
+		ORDER BY l.created_at ASC, l.id ASC
+		LIMIT 1
 	`
 	err := r.db.GetContext(ctx, &row, query, repositoryID)
 	return row, err
@@ -684,18 +698,19 @@ func (r *Repo) FindStoryLink(ctx context.Context, repositoryID uuid.UUID, extern
 	return row.ID, row.StoryID, nil
 }
 
-func (r *Repo) FindIssueStoryLinkByStoryID(ctx context.Context, storyID, repositoryID uuid.UUID) (issueStoryLinkRow, error) {
+func (r *Repo) FindIssueStoryLinkByStoryID(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID) (issueStoryLinkRow, error) {
 	var row issueStoryLinkRow
 	query := `
 		SELECT id, story_id, repository_id, github_id, github_number, url, title, state
 		FROM github_story_links
-		WHERE story_id = $1
-		  AND repository_id = $2
+		WHERE workspace_id = $1
+		  AND story_id = $2
+		  AND repository_id = $3
 		  AND external_type = 'issue'
 		ORDER BY created_at DESC
 		LIMIT 1
 	`
-	err := r.db.GetContext(ctx, &row, query, storyID, repositoryID)
+	err := r.db.GetContext(ctx, &row, query, workspaceID, storyID, repositoryID)
 	return row, err
 }
 
@@ -841,7 +856,17 @@ func (r *Repo) RecordWebhookEvent(ctx context.Context, deliveryID, eventName, ac
 	query := `
 		INSERT INTO github_webhook_events (delivery_id, event_name, action, installation_external_id, repository_external_id, sender_external_id, payload)
 		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
-		ON CONFLICT (delivery_id) DO NOTHING
+		ON CONFLICT (delivery_id) DO UPDATE SET
+			event_name = EXCLUDED.event_name,
+			action = EXCLUDED.action,
+			installation_external_id = EXCLUDED.installation_external_id,
+			repository_external_id = EXCLUDED.repository_external_id,
+			sender_external_id = EXCLUDED.sender_external_id,
+			payload = EXCLUDED.payload,
+			processing_state = 'pending',
+			error_message = NULL,
+			processed_at = NULL
+		WHERE github_webhook_events.processing_state = 'failed'
 	`
 	result, err := r.db.ExecContext(ctx, query, deliveryID, eventName, action, installationExternalID, repositoryExternalID, senderExternalID, string(payload))
 	if err != nil {
@@ -1017,6 +1042,16 @@ func (r *Repo) ResolveFortyOneUserByFullName(ctx context.Context, fullName strin
 	return u, err
 }
 
+// ResolveFortyOneUserByEmail finds a user by email.
+func (r *Repo) ResolveFortyOneUserByEmail(ctx context.Context, email string) (FortyOneUser, error) {
+	var u FortyOneUser
+	err := r.db.GetContext(ctx, &u,
+		`SELECT username, full_name, avatar_url FROM users WHERE email = $1 AND is_system = true LIMIT 1`,
+		email,
+	)
+	return u, err
+}
+
 // UpdateStoryLinkReviewState updates review counters on a PR story link.
 func (r *Repo) UpdateStoryLinkReviewState(ctx context.Context, storyID, repositoryID uuid.UUID, prGitHubID int64, reviewState string, approved, changesRequested int) error {
 	_, err := r.db.ExecContext(ctx,
@@ -1114,39 +1149,40 @@ func (r *Repo) ResolveOrCreateLabelsByName(ctx context.Context, workspaceID, tea
 
 // StoryGitHubLink represents a GitHub link attached to a story (issue, PR, branch, commit).
 type StoryGitHubLink struct {
-	ID                  uuid.UUID  `db:"id"                    json:"id"`
-	ExternalType        string     `db:"external_type"         json:"externalType"`
-	GitHubNumber        *int       `db:"github_number"         json:"githubNumber"`
-	URL                 string     `db:"url"                   json:"url"`
-	Title               *string    `db:"title"                 json:"title"`
-	State               *string    `db:"state"                 json:"state"`
-	ReviewState         *string    `db:"review_state"          json:"reviewState"`
-	ReviewsApproved     int        `db:"reviews_approved"      json:"reviewsApproved"`
-	ReviewsChangesReq   int        `db:"reviews_changes_requested" json:"reviewsChangesRequested"`
-	CheckState          *string    `db:"check_state"           json:"checkState"`
-	RepositoryFullName  string     `db:"repository_full_name"  json:"repositoryFullName"`
-	RefName             *string    `db:"ref_name"              json:"refName"`
-	CreatedAt           time.Time  `db:"created_at"            json:"createdAt"`
+	ID                 uuid.UUID `db:"id"                    json:"id"`
+	ExternalType       string    `db:"external_type"         json:"externalType"`
+	GitHubNumber       *int      `db:"github_number"         json:"githubNumber"`
+	URL                string    `db:"url"                   json:"url"`
+	Title              *string   `db:"title"                 json:"title"`
+	State              *string   `db:"state"                 json:"state"`
+	ReviewState        *string   `db:"review_state"          json:"reviewState"`
+	ReviewsApproved    int       `db:"reviews_approved"      json:"reviewsApproved"`
+	ReviewsChangesReq  int       `db:"reviews_changes_requested" json:"reviewsChangesRequested"`
+	CheckState         *string   `db:"check_state"           json:"checkState"`
+	RepositoryFullName string    `db:"repository_full_name"  json:"repositoryFullName"`
+	RefName            *string   `db:"ref_name"              json:"refName"`
+	CreatedAt          time.Time `db:"created_at"            json:"createdAt"`
 }
 
 // StoryIssueWithInstallation represents a linked GitHub issue with enough info to call the GitHub API.
 type StoryIssueWithInstallation struct {
-	GitHubNumber         int    `db:"github_number"`
-	OwnerLogin           string `db:"owner_login"`
-	RepositorySlug       string `db:"name"`
-	GitHubInstallationID int64  `db:"github_installation_id"`
+	RepositoryID         uuid.UUID `db:"repository_id"`
+	GitHubNumber         int       `db:"github_number"`
+	OwnerLogin           string    `db:"owner_login"`
+	RepositorySlug       string    `db:"name"`
+	GitHubInstallationID int64     `db:"github_installation_id"`
 }
 
 // GetStoryLinkedIssues returns all linked GitHub issues for a story, along with installation info.
-func (r *Repo) GetStoryLinkedIssues(ctx context.Context, storyID uuid.UUID) ([]StoryIssueWithInstallation, error) {
+func (r *Repo) GetStoryLinkedIssues(ctx context.Context, workspaceID, storyID uuid.UUID) ([]StoryIssueWithInstallation, error) {
 	var rows []StoryIssueWithInstallation
 	err := r.db.SelectContext(ctx, &rows, `
-		SELECT sl.github_number, gr.owner_login, gr.name, gi.github_installation_id
+		SELECT sl.repository_id, sl.github_number, gr.owner_login, gr.name, gi.github_installation_id
 		FROM github_story_links sl
 		INNER JOIN github_repositories gr ON gr.id = sl.repository_id
 		INNER JOIN github_installations gi ON gi.id = gr.installation_id
-		WHERE sl.story_id = $1 AND sl.external_type = 'issue' AND sl.github_number IS NOT NULL
-	`, storyID)
+		WHERE sl.workspace_id = $1 AND sl.story_id = $2 AND sl.external_type = 'issue' AND sl.github_number IS NOT NULL
+	`, workspaceID, storyID)
 	if err != nil {
 		return nil, err
 	}
@@ -1154,7 +1190,7 @@ func (r *Repo) GetStoryLinkedIssues(ctx context.Context, storyID uuid.UUID) ([]S
 }
 
 // GetStoryGitHubLinks returns all GitHub links for a given story.
-func (r *Repo) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]StoryGitHubLink, error) {
+func (r *Repo) GetStoryGitHubLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]StoryGitHubLink, error) {
 	var links []StoryGitHubLink
 	err := r.db.SelectContext(ctx, &links, `
 		SELECT sl.id, sl.external_type, sl.github_number, sl.url, sl.title, sl.state,
@@ -1162,9 +1198,9 @@ func (r *Repo) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]St
 		       gr.full_name AS repository_full_name, sl.ref_name, sl.created_at
 		FROM github_story_links sl
 		INNER JOIN github_repositories gr ON gr.id = sl.repository_id
-		WHERE sl.story_id = $1
+		WHERE sl.workspace_id = $1 AND sl.story_id = $2
 		ORDER BY sl.created_at DESC
-	`, storyID)
+	`, workspaceID, storyID)
 	if err != nil {
 		return nil, err
 	}
@@ -1172,7 +1208,85 @@ func (r *Repo) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]St
 }
 
 // DeleteStoryGitHubLink removes a GitHub link from a story.
-func (r *Repo) DeleteStoryGitHubLink(ctx context.Context, linkID uuid.UUID) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM github_story_links WHERE id = $1`, linkID)
+func (r *Repo) DeleteStoryGitHubLink(ctx context.Context, workspaceID, linkID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM github_story_links WHERE workspace_id = $1 AND id = $2`, workspaceID, linkID)
 	return err
+}
+
+func (r *Repo) RecordOutboundGitHubComment(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID, githubCommentID int64, localCommentID *uuid.UUID, createdByUserID uuid.UUID) error {
+	if githubCommentID == 0 {
+		return nil
+	}
+	var localCommentValue any
+	if localCommentID != nil {
+		localCommentValue = *localCommentID
+	}
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO github_comment_links (
+			workspace_id, story_id, repository_id, local_comment_id, github_comment_id, source, created_by_user_id
+		) VALUES ($1, $2, $3, $4, $5, 'fortyone', $6)
+		ON CONFLICT (repository_id, github_comment_id) DO UPDATE SET
+			local_comment_id = COALESCE(EXCLUDED.local_comment_id, github_comment_links.local_comment_id),
+			source = 'fortyone',
+			created_by_user_id = EXCLUDED.created_by_user_id
+	`, workspaceID, storyID, repositoryID, localCommentValue, githubCommentID, createdByUserID)
+	return err
+}
+
+func (r *Repo) ReserveInboundGitHubComment(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID, githubCommentID int64, createdByUserID uuid.UUID) (bool, error) {
+	if githubCommentID == 0 {
+		return false, nil
+	}
+	result, err := r.db.ExecContext(ctx, `
+		INSERT INTO github_comment_links (
+			workspace_id, story_id, repository_id, github_comment_id, source, created_by_user_id
+		) VALUES ($1, $2, $3, $4, 'github', $5)
+		ON CONFLICT (repository_id, github_comment_id) DO NOTHING
+	`, workspaceID, storyID, repositoryID, githubCommentID, createdByUserID)
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
+
+func (r *Repo) CompleteInboundGitHubComment(ctx context.Context, repositoryID uuid.UUID, githubCommentID int64, localCommentID uuid.UUID) error {
+	if githubCommentID == 0 {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE github_comment_links
+		SET local_comment_id = $3
+		WHERE repository_id = $1 AND github_comment_id = $2 AND source = 'github'
+	`, repositoryID, githubCommentID, localCommentID)
+	return err
+}
+
+func (r *Repo) DeleteGitHubCommentLink(ctx context.Context, repositoryID uuid.UUID, githubCommentID int64) error {
+	if githubCommentID == 0 {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM github_comment_links
+		WHERE repository_id = $1 AND github_comment_id = $2
+	`, repositoryID, githubCommentID)
+	return err
+}
+
+func (r *Repo) IsOutboundGitHubComment(ctx context.Context, repositoryID uuid.UUID, githubCommentID int64) (bool, error) {
+	if githubCommentID == 0 {
+		return false, nil
+	}
+	var exists bool
+	err := r.db.GetContext(ctx, &exists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM github_comment_links
+			WHERE repository_id = $1 AND github_comment_id = $2 AND source = 'fortyone'
+		)
+	`, repositoryID, githubCommentID)
+	return exists, err
 }

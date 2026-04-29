@@ -19,12 +19,14 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	githubsdk "github.com/google/go-github/v72/github"
@@ -279,12 +281,12 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 	return s.repo.ReplaceTeamWorkflowSettings(ctx, workspaceID, teamID, input.Rules)
 }
 
-func (s *Service) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]githubrepository.StoryGitHubLink, error) {
-	return s.repo.GetStoryGitHubLinks(ctx, storyID)
+func (s *Service) GetStoryGitHubLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]githubrepository.StoryGitHubLink, error) {
+	return s.repo.GetStoryGitHubLinks(ctx, workspaceID, storyID)
 }
 
-func (s *Service) DeleteStoryGitHubLink(ctx context.Context, linkID uuid.UUID) error {
-	return s.repo.DeleteStoryGitHubLink(ctx, linkID)
+func (s *Service) DeleteStoryGitHubLink(ctx context.Context, workspaceID, linkID uuid.UUID) error {
+	return s.repo.DeleteStoryGitHubLink(ctx, workspaceID, linkID)
 }
 
 const avatarURLExpiry = 24 * time.Hour
@@ -307,27 +309,28 @@ func (s *Service) resolveAvatarURL(ctx context.Context, avatar *string) string {
 
 // GitHubComment represents a single comment fetched from the GitHub API.
 type GitHubComment struct {
-	ID        int64  `json:"id"`
-	Body      string `json:"body"`
-	UserLogin string `json:"userLogin"`
+	ID         int64  `json:"id"`
+	Body       string `json:"body"`
+	UserLogin  string `json:"userLogin"`
 	UserAvatar string `json:"userAvatar"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
-	HTMLURL   string `json:"htmlUrl"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
+	HTMLURL    string `json:"htmlUrl"`
 }
 
 // Regex to parse bot attribution: **Name** commented via/on FortyOne:\n\nbody
 var fortyOneCommentPattern = regexp.MustCompile(`(?s)\A\*\*(.+?)\*\* commented (?:via|on) FortyOne:\s*\n\n?(.*)`)
+var fortyOneCommentMarkerPattern = regexp.MustCompile(`(?m)\n*\s*<!--\s*fortyone:comment:[0-9a-fA-F-]{36}\s*-->\s*`)
 
 // GetStoryGitHubComments fetches comments from all linked GitHub issues for a story.
 // It resolves GitHub users to FortyOne users when possible, and for bot comments
 // posted via FortyOne it extracts the real author and strips the attribution prefix.
-func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID) ([]GitHubComment, error) {
+func (s *Service) GetStoryGitHubComments(ctx context.Context, workspaceID, storyID uuid.UUID) ([]GitHubComment, error) {
 	if !s.canUseAppAPI() {
 		return []GitHubComment{}, nil
 	}
 
-	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, workspaceID, storyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get linked issues: %w", err)
 	}
@@ -337,8 +340,9 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 
 	// Collect raw comments and unique GitHub user IDs.
 	type rawComment struct {
-		comment  *githubsdk.IssueComment
+		comment      *githubsdk.IssueComment
 		gitHubUserID int64
+		isAppAuthor  bool
 	}
 	var rawComments []rawComment
 
@@ -350,8 +354,8 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 		}
 
 		opts := &githubsdk.IssueListCommentsOptions{
-			Sort:      githubsdk.String("created"),
-			Direction: githubsdk.String("asc"),
+			Sort:        githubsdk.String("created"),
+			Direction:   githubsdk.String("asc"),
 			ListOptions: githubsdk.ListOptions{PerPage: 100},
 		}
 		comments, _, err := client.Issues.ListComments(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, opts)
@@ -360,15 +364,41 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			continue
 		}
 
+		var appOwnerID int64
+		appBotLogin := ""
+		app, _, err := client.Apps.Get(ctx, "")
+		if err == nil {
+			if app.GetOwner() != nil {
+				appOwnerID = app.GetOwner().GetID()
+			}
+			appSlug := strings.TrimSpace(app.GetSlug())
+			if appSlug == "" {
+				appSlug = strings.TrimSpace(s.cfg.AppSlug)
+			}
+			if appSlug != "" {
+				appBotLogin = strings.ToLower(appSlug + "[bot]")
+			}
+		}
+
 		for _, c := range comments {
 			if c == nil {
 				continue
 			}
 			var ghUID int64
+			ghLogin := ""
 			if c.User != nil {
 				ghUID = c.User.GetID()
+				ghLogin = strings.ToLower(strings.TrimSpace(c.User.GetLogin()))
 			}
-			rawComments = append(rawComments, rawComment{comment: c, gitHubUserID: ghUID})
+			isAppAuthor := appOwnerID != 0 && ghUID != 0 && ghUID == appOwnerID
+			if !isAppAuthor && appBotLogin != "" && ghLogin != "" {
+				isAppAuthor = ghLogin == appBotLogin
+			}
+			rawComments = append(rawComments, rawComment{
+				comment:      c,
+				gitHubUserID: ghUID,
+				isAppAuthor:  isAppAuthor,
+			})
 		}
 	}
 
@@ -387,6 +417,16 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 	if userMap == nil {
 		userMap = map[int64]githubrepository.FortyOneUser{}
 	}
+	systemGitHubLogin := "github"
+	systemGitHubAvatar := ""
+	if githubActorEmail, ok := actors.EmailForKey(actors.KeyGitHub); ok {
+		if systemUser, err := s.repo.ResolveFortyOneUserByEmail(ctx, githubActorEmail); err == nil {
+			if username := strings.TrimSpace(systemUser.Username); username != "" {
+				systemGitHubLogin = username
+			}
+			systemGitHubAvatar = s.resolveAvatarURL(ctx, systemUser.AvatarURL)
+		}
+	}
 
 	// Build result, resolving authors.
 	allComments := make([]GitHubComment, 0, len(rawComments))
@@ -399,8 +439,10 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			UpdatedAt: c.GetUpdatedAt().Format(time.RFC3339),
 			HTMLURL:   c.GetHTMLURL(),
 		}
+		rawGitHubLogin := ""
 		if c.User != nil {
-			gc.UserLogin = c.User.GetLogin()
+			rawGitHubLogin = c.User.GetLogin()
+			gc.UserLogin = rawGitHubLogin
 			gc.UserAvatar = c.User.GetAvatarURL()
 		}
 
@@ -410,11 +452,13 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 			gc.UserAvatar = s.resolveAvatarURL(ctx, fu.AvatarURL)
 		}
 
-		// For bot comments (e.g. fortyone-app[bot]), extract the real author.
-		if strings.HasSuffix(gc.UserLogin, "[bot]") {
+		commentedViaFortyOne := false
+		// For app and bot comments, extract the real author when the attribution marker exists.
+		if rc.isAppAuthor || strings.HasSuffix(rawGitHubLogin, "[bot]") {
 			if match := fortyOneCommentPattern.FindStringSubmatch(gc.Body); match != nil {
+				commentedViaFortyOne = true
 				authorName := match[1]
-				gc.Body = match[2]
+				gc.Body = stripFortyOneCommentMarker(match[2])
 
 				// Try to resolve the author name to a FortyOne user.
 				if fu, err := s.repo.ResolveFortyOneUserByFullName(ctx, authorName); err == nil {
@@ -426,6 +470,15 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 				}
 			}
 		}
+		gc.Body = stripFortyOneCommentMarker(gc.Body)
+		// For app-authored/system comments without a resolvable author, expose a
+		// stable GitHub label instead of the app account login (e.g. fortyone-app[bot]).
+		if !commentedViaFortyOne && (rc.isAppAuthor ||
+			isFortyOneBotAuthorLogin(rawGitHubLogin, s.cfg.AppSlug) ||
+			isFortyOneSystemLinkedTaskComment(gc.Body)) {
+			gc.UserLogin = systemGitHubLogin
+			gc.UserAvatar = systemGitHubAvatar
+		}
 
 		allComments = append(allComments, gc)
 	}
@@ -436,12 +489,12 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 // PostCommentToGitHub posts a comment to all linked GitHub issues for a story.
 // If the user has a linked GitHub account with a stored token, the comment is
 // posted as the user directly. Otherwise it falls back to the installation bot.
-func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.UUID, authorName, body string) error {
+func (s *Service) PostCommentToGitHub(ctx context.Context, workspaceID, storyID, userID uuid.UUID, localCommentID *uuid.UUID, authorName, body string) error {
 	if !s.canUseAppAPI() {
 		return errors.New("github app api is not configured")
 	}
 
-	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, workspaceID, storyID)
 	if err != nil {
 		return fmt.Errorf("failed to get linked issues: %w", err)
 	}
@@ -451,34 +504,113 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.
 
 	// Try to use the user's own GitHub token so the comment appears as them.
 	userToken, tokenErr := s.repo.GetUserGitHubToken(ctx, userID)
-	useUserToken := tokenErr == nil && userToken != ""
+	useUserToken := tokenErr == nil && strings.TrimSpace(userToken) != ""
+	userClient := githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
 
-	commentBody := body
-	if !useUserToken {
-		// Fallback: post as bot with attribution
-		commentBody = fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, body)
+	commentMarkerID := uuid.New()
+	if localCommentID != nil {
+		commentMarkerID = *localCommentID
 	}
+	userCommentBody := buildFortyOneUserCommentBody(body, commentMarkerID)
+	fallbackCommentBody := buildFortyOneBotCommentBody(authorName, body, commentMarkerID)
 
 	var lastErr error
 	for _, issue := range issues {
-		var client *githubsdk.Client
 		if useUserToken {
-			client = githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
-		} else {
-			client, err = s.newInstallationClient(ctx, issue.GitHubInstallationID)
-			if err != nil {
+			comment, _, err := userClient.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+				Body: &userCommentBody,
+			})
+			if err == nil {
+				if recordErr := s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, issue.RepositoryID, comment.GetID(), localCommentID, userID); recordErr != nil {
+					s.log.Warn(ctx, "failed to record outbound github user comment", "error", recordErr, "github_comment_id", comment.GetID())
+				}
+				continue
+			}
+
+			// If the linked user token is stale/revoked or lacks scope, transparently
+			// fall back to installation auth so comment posting still succeeds.
+			if !isGitHubAuthOrPermissionError(err) {
 				lastErr = err
 				continue
 			}
+
+			s.log.Warn(ctx, "github user token failed for comment; falling back to app installation",
+				"issue_number", issue.GitHubNumber,
+				"owner", issue.OwnerLogin,
+				"repo", issue.RepositorySlug,
+				"error", err,
+			)
+			// Stop retrying the same bad user token for remaining linked issues.
+			useUserToken = false
 		}
-		_, _, err = client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
-			Body: &commentBody,
+
+		client, clientErr := s.newInstallationClient(ctx, issue.GitHubInstallationID)
+		if clientErr != nil {
+			lastErr = clientErr
+			continue
+		}
+		comment, _, err := client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+			Body: &fallbackCommentBody,
 		})
 		if err != nil {
 			lastErr = err
+			continue
+		}
+		if recordErr := s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, issue.RepositoryID, comment.GetID(), localCommentID, userID); recordErr != nil {
+			s.log.Warn(ctx, "failed to record outbound github app comment", "error", recordErr, "github_comment_id", comment.GetID())
 		}
 	}
 	return lastErr
+}
+
+func isGitHubAuthOrPermissionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var ghErr *githubsdk.ErrorResponse
+	if errors.As(err, &ghErr) && ghErr.Response != nil {
+		return ghErr.Response.StatusCode == http.StatusUnauthorized || ghErr.Response.StatusCode == http.StatusForbidden
+	}
+	errText := strings.ToLower(err.Error())
+	return strings.Contains(errText, "bad credentials") ||
+		strings.Contains(errText, "requires authentication") ||
+		strings.Contains(errText, "resource not accessible by personal access token")
+}
+
+func isFortyOneBotAuthorLogin(login, configuredSlug string) bool {
+	normalizedLogin := strings.ToLower(strings.TrimSpace(login))
+	if !strings.HasSuffix(normalizedLogin, "[bot]") {
+		return false
+	}
+
+	configured := strings.ToLower(strings.TrimSpace(configuredSlug))
+	if configured != "" && normalizedLogin == configured+"[bot]" {
+		return true
+	}
+
+	// Keep this strict enough to avoid relabeling unrelated bots.
+	return strings.HasPrefix(normalizedLogin, "fortyone-")
+}
+
+func isFortyOneSystemLinkedTaskComment(body string) bool {
+	return strings.HasPrefix(strings.TrimSpace(body), "Linked to FortyOne task [")
+}
+
+func isFortyOneAuthoredCommentBody(body string) bool {
+	trimmed := strings.TrimSpace(body)
+	return fortyOneCommentPattern.MatchString(trimmed) || fortyOneCommentMarkerPattern.MatchString(trimmed)
+}
+
+func buildFortyOneUserCommentBody(body string, commentID uuid.UUID) string {
+	return fmt.Sprintf("%s\n\n<!-- fortyone:comment:%s -->", strings.TrimSpace(body), commentID.String())
+}
+
+func buildFortyOneBotCommentBody(authorName, body string, commentID uuid.UUID) string {
+	return fmt.Sprintf("**%s** commented via FortyOne:\n\n%s", authorName, buildFortyOneUserCommentBody(body, commentID))
+}
+
+func stripFortyOneCommentMarker(body string) string {
+	return strings.TrimSpace(fortyOneCommentMarkerPattern.ReplaceAllString(body, ""))
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
@@ -512,7 +644,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	}
 
 	issueBody := issueBodyFromStoryDescription(input.Description)
-	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.StoryID, link.RepositoryID)
+	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
 	switch {
 	case err == nil:
 		s.log.Info(ctx, "syncing story state to github issue", "story_id", input.StoryID, "github_issue_number", existingLink.GitHubNumber, "desired_state", desiredState)
@@ -599,6 +731,11 @@ func (s *Service) processWebhook(ctx context.Context, eventName string, payload 
 func (s *Service) handleIssueEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
 	if s.stories == nil {
 		return errors.New("stories service is not configured")
+	}
+	// Ignore issue events generated by our own GitHub App actor to avoid
+	// status bounce-back loops for outbound FortyOne -> GitHub sync.
+	if s.isAppSender(ctx, repository, payload.Sender.Login) {
+		return nil
 	}
 
 	link, err := s.repo.FindIssueSyncLinkByRepositoryID(ctx, repository.ID)
@@ -691,17 +828,7 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 		return err
 	}
 
-	var eventKey string
-	switch {
-	case payload.Action == "closed" && payload.PullRequest.Merged:
-		eventKey = EventPRMerge
-	case payload.Action == "ready_for_review":
-		eventKey = EventPRReadyForMerge
-	case payload.PullRequest.Draft:
-		eventKey = EventDraftPROpen
-	default:
-		eventKey = EventPROpen
-	}
+	eventKey, shouldMoveStory := pullRequestWorkflowEvent(payload.Action, payload.PullRequest.Draft, payload.PullRequest.Merged)
 
 	for _, story := range stories {
 		prLinkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, story.StoryID, repository.ID, "pull_request", payload.PullRequest.ID, payload.PullRequest.Number, nil, payload.PullRequest.HTMLURL, payload.PullRequest.Title, payload.PullRequest.State, payload.PullRequest)
@@ -740,11 +867,32 @@ func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubr
 				}
 			}
 		}
-		if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
-			return err
+		if shouldMoveStory {
+			if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, eventKey, &payload.PullRequest.Base.Ref); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func pullRequestWorkflowEvent(action string, draft bool, merged bool) (string, bool) {
+	switch action {
+	case "opened":
+		if draft {
+			return EventDraftPROpen, true
+		}
+		return EventPROpen, true
+	case "ready_for_review":
+		return EventPRReadyForMerge, true
+	case "closed":
+		if merged {
+			return EventPRMerge, true
+		}
+		return "", false
+	default:
+		return "", false
+	}
 }
 
 func (s *Service) handleCreateEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {
@@ -785,9 +933,16 @@ func (s *Service) handlePushEvent(ctx context.Context, repository githubreposito
 		return errors.New("stories service is not configured")
 	}
 
+	settings, err := s.repo.GetWorkspaceSettings(ctx, repository.WorkspaceID)
+	if err != nil {
+		return err
+	}
+
 	refs := extractStoryRefs(payload.Ref)
-	for _, commit := range payload.Commits {
-		refs = append(refs, extractStoryRefs(commit.Message)...)
+	if settings.LinkCommitsByMagicWords {
+		for _, commit := range payload.Commits {
+			refs = append(refs, extractStoryRefs(commit.Message)...)
+		}
 	}
 	stories, err := s.repo.ResolveStoriesByRefs(ctx, repository.WorkspaceID, refs)
 	if err != nil || len(stories) == 0 {
@@ -829,8 +984,8 @@ func (s *Service) handlePushEvent(ctx context.Context, repository githubreposito
 				return err
 			}
 		}
-		// Check for closing keywords in commit messages
-		if hasClosingKeyword(payload.Commits, story.TeamCode, story.SequenceID) {
+		// Auto-close from commit keywords is configurable at workspace level.
+		if settings.CloseOnCommitKeywords && hasClosingKeyword(payload.Commits, story.TeamCode, story.SequenceID) {
 			if err := s.moveStoryByRule(ctx, repository.WorkspaceID, story.TeamID, story.StoryID, EventCommitClose, nil); err != nil {
 				return err
 			}
@@ -964,7 +1119,15 @@ func (s *Service) handleIssueCommentEvent(ctx context.Context, repository github
 		return nil
 	}
 	// Ignore comments from our own app to prevent loops.
-	if payload.Comment.User.ID == 0 || s.isAppComment(ctx, repository, payload.Comment.User.ID) {
+	if payload.Comment.User.ID == 0 ||
+		isFortyOneAuthoredCommentBody(payload.Comment.Body) ||
+		isFortyOneSystemLinkedTaskComment(payload.Comment.Body) ||
+		s.isAppComment(ctx, repository, payload.Comment.User.ID) {
+		return nil
+	}
+	if isOutbound, err := s.repo.IsOutboundGitHubComment(ctx, repository.ID, payload.Comment.ID); err != nil {
+		return err
+	} else if isOutbound {
 		return nil
 	}
 
@@ -974,13 +1137,25 @@ func (s *Service) handleIssueCommentEvent(ctx context.Context, repository github
 	}
 
 	actorID := s.resolveActorID(ctx, payload.Comment.User.ID)
+	reserved, err := s.repo.ReserveInboundGitHubComment(ctx, repository.WorkspaceID, storyID, repository.ID, payload.Comment.ID, actorID)
+	if err != nil {
+		return err
+	}
+	if !reserved {
+		return nil
+	}
+
 	commentBody := fmt.Sprintf("**%s** commented on GitHub issue #%d:\n\n%s", payload.Comment.User.Login, payload.Issue.Number, payload.Comment.Body)
-	_, err = s.stories.CreateComment(ctx, repository.WorkspaceID, stories.CoreNewComment{
+	comment, err := s.stories.CreateCommentExternal(ctx, actorID, repository.WorkspaceID, stories.CoreNewComment{
 		StoryID: storyID,
 		UserID:  actorID,
 		Comment: commentBody,
 	})
-	return err
+	if err != nil {
+		_ = s.repo.DeleteGitHubCommentLink(ctx, repository.ID, payload.Comment.ID)
+		return err
+	}
+	return s.repo.CompleteInboundGitHubComment(ctx, repository.ID, payload.Comment.ID, comment.ID)
 }
 
 func (s *Service) isAppComment(ctx context.Context, repository githubrepository.RepoByExternalRow, userID int64) bool {
@@ -995,17 +1170,43 @@ func (s *Service) isAppComment(ctx context.Context, repository githubrepository.
 	return app.GetOwner().GetID() == userID
 }
 
+func (s *Service) isAppSender(ctx context.Context, repository githubrepository.RepoByExternalRow, senderLogin string) bool {
+	login := strings.ToLower(strings.TrimSpace(senderLogin))
+	if login == "" {
+		return false
+	}
+
+	client, err := s.newInstallationClient(ctx, repository.GitHubInstallationID)
+	if err != nil {
+		return false
+	}
+	app, _, err := client.Apps.Get(ctx, "")
+	if err != nil {
+		return false
+	}
+
+	appSlug := strings.ToLower(strings.TrimSpace(app.GetSlug()))
+	if appSlug == "" {
+		appSlug = strings.ToLower(strings.TrimSpace(s.cfg.AppSlug))
+	}
+	if appSlug == "" {
+		return false
+	}
+
+	return login == appSlug+"[bot]"
+}
+
 // ==================== outbound comment sync (bidirectional) ====================
 
 // SyncCommentToGitHub posts a FortyOne comment to the linked GitHub issue
 // when the issue sync link is configured as bidirectional.
-func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID uuid.UUID, authorName, content string) error {
+func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID, localCommentID uuid.UUID, authorName, content string) error {
 	link, err := s.repo.FindBidirectionalIssueSyncLinkByTeamID(ctx, workspaceID, teamID)
 	if err != nil {
 		return nil // No bidirectional link for this team — nothing to do
 	}
 
-	issueLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, storyID, link.RepositoryID)
+	issueLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, workspaceID, storyID, link.RepositoryID)
 	if err != nil {
 		return nil // Story has no linked GitHub issue
 	}
@@ -1015,14 +1216,14 @@ func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID,
 		return fmt.Errorf("failed to create installation client: %w", err)
 	}
 
-	body := fmt.Sprintf("**%s** commented on FortyOne:\n\n%s", authorName, content)
-	_, _, err = client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
+	body := buildFortyOneBotCommentBody(authorName, content, localCommentID)
+	comment, _, err := client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
 		Body: &body,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create github issue comment: %w", err)
 	}
-	return nil
+	return s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, link.RepositoryID, comment.GetID(), &localCommentID, s.cfg.GitHubUserID)
 }
 
 // ==================== check_run ====================
@@ -1133,7 +1334,20 @@ func (s *Service) resolveActorID(ctx context.Context, githubUserID int64) uuid.U
 
 // ==================== GitHub user linking ====================
 
-func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code string) error {
+const userLinkStateTTL = 15 * time.Minute
+
+func (s *Service) CreateUserLinkSession(ctx context.Context, userID uuid.UUID, returnTo string) (CoreCreateUserLinkSession, error) {
+	state, err := s.createUserLinkState(userID, returnTo, time.Now().Add(userLinkStateTTL))
+	if err != nil {
+		return CoreCreateUserLinkSession{}, err
+	}
+	return CoreCreateUserLinkSession{State: state}, nil
+}
+
+func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code, state string) error {
+	if _, err := s.verifyUserLinkState(state, userID, time.Now()); err != nil {
+		return err
+	}
 	token, err := s.exchangeOAuthCode(ctx, code)
 	if err != nil {
 		return fmt.Errorf("failed to exchange github oauth code: %w", err)
@@ -1151,10 +1365,11 @@ func (s *Service) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error 
 }
 
 func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s",
-			s.cfg.ClientID, s.cfg.ClientSecret, code),
-		nil)
+	values := url.Values{}
+	values.Set("client_id", s.cfg.ClientID)
+	values.Set("client_secret", s.cfg.ClientSecret)
+	values.Set("code", code)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://github.com/login/oauth/access_token?"+values.Encode(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -1333,7 +1548,11 @@ func (s *Service) appAPIConfigDiagnostics() []any {
 }
 
 func buildLinkedTaskComment(storyURL, teamCode string, sequenceID int) string {
-	taskKey := fmt.Sprintf("%s-%d", teamCode, sequenceID)
+	normalizedTeamCode := strings.ToUpper(strings.TrimSpace(teamCode))
+	taskKey := fmt.Sprintf("#%d", sequenceID)
+	if normalizedTeamCode != "" {
+		taskKey = fmt.Sprintf("%s-%d", normalizedTeamCode, sequenceID)
+	}
 	return fmt.Sprintf(
 		"Linked to FortyOne task [%s](%s).",
 		taskKey,
@@ -1508,16 +1727,24 @@ func (s *Service) listInstallationRepositories(ctx context.Context, installation
 	if err != nil {
 		return nil, err
 	}
-	repos, _, err := client.Apps.ListRepos(ctx, &githubsdk.ListOptions{PerPage: 100})
-	if err != nil {
-		return nil, err
-	}
-	items := make([]githubrepository.GithubRepositoryPayload, 0, len(repos.Repositories))
-	for _, repository := range repos.Repositories {
-		if repository == nil {
-			continue
+
+	options := &githubsdk.ListOptions{PerPage: 100}
+	items := make([]githubrepository.GithubRepositoryPayload, 0)
+	for {
+		repos, response, err := client.Apps.ListRepos(ctx, options)
+		if err != nil {
+			return nil, err
 		}
-		items = append(items, toRepositoryPayload(repository))
+		for _, repository := range repos.Repositories {
+			if repository == nil {
+				continue
+			}
+			items = append(items, toRepositoryPayload(repository))
+		}
+		if response == nil || response.NextPage == 0 {
+			break
+		}
+		options.Page = response.NextPage
 	}
 	return items, nil
 }
@@ -1703,6 +1930,15 @@ func (s *Service) ensureIssueImportComment(ctx context.Context, repository githu
 		return err
 	}
 
+	// Some create paths may not hydrate team_code on the freshly returned story.
+	// Re-load before constructing the task key to avoid malformed values like "-418".
+	if strings.TrimSpace(story.TeamCode) == "" {
+		loadedStory, loadErr := s.stories.Get(ctx, story.ID, repository.WorkspaceID)
+		if loadErr == nil {
+			story = loadedStory
+		}
+	}
+
 	exists, err := s.issueHasStoryComment(
 		ctx,
 		repository.GitHubInstallationID,
@@ -1851,6 +2087,90 @@ func (s *Service) verifyState(value string) (map[string]string, error) {
 	return values, nil
 }
 
+func (s *Service) createUserLinkState(userID uuid.UUID, returnTo string, expiresAt time.Time) (string, error) {
+	safeReturnTo, err := s.safeUserLinkReturnTo(returnTo)
+	if err != nil {
+		return "", err
+	}
+	return s.signState(map[string]string{
+		"kind":      "github_user_link",
+		"user_id":   userID.String(),
+		"return_to": safeReturnTo,
+		"expires":   strconv.FormatInt(expiresAt.Unix(), 10),
+	})
+}
+
+func (s *Service) verifyUserLinkState(state string, userID uuid.UUID, now time.Time) (string, error) {
+	values, err := s.verifyState(state)
+	if err != nil {
+		return "", err
+	}
+	if values["kind"] != "github_user_link" {
+		return "", errors.New("invalid github user link state")
+	}
+	if values["user_id"] != userID.String() {
+		return "", errors.New("github user link state does not match the authenticated user")
+	}
+	expires, err := strconv.ParseInt(values["expires"], 10, 64)
+	if err != nil {
+		return "", errors.New("invalid github user link state expiry")
+	}
+	if !now.Before(time.Unix(expires, 0)) {
+		return "", errors.New("github user link state has expired")
+	}
+	return s.safeUserLinkReturnTo(values["return_to"])
+}
+
+func (s *Service) safeUserLinkReturnTo(returnTo string) (string, error) {
+	if strings.TrimSpace(returnTo) == "" {
+		return "", errors.New("return path is required")
+	}
+	parsed, err := url.Parse(returnTo)
+	if err != nil {
+		return "", err
+	}
+	if parsed.IsAbs() || parsed.Host != "" {
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return "", errors.New("return URL scheme is not allowed")
+		}
+		if !s.isAllowedUserLinkReturnHost(parsed.Hostname()) {
+			return "", errors.New("return URL host is not allowed")
+		}
+		return parsed.String(), nil
+	}
+	if !strings.HasPrefix(parsed.Path, "/") || strings.HasPrefix(parsed.Path, "//") {
+		return "", errors.New("return path must be a relative application path")
+	}
+	if parsed.Path == "" {
+		parsed.Path = "/"
+	}
+	return parsed.RequestURI(), nil
+}
+
+func (s *Service) isAllowedUserLinkReturnHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "" {
+		return false
+	}
+	if isLocalWebsiteHost(host) {
+		return true
+	}
+	website, err := url.Parse(s.cfg.WebsiteURL)
+	if err != nil {
+		return false
+	}
+	configuredHost := strings.ToLower(strings.TrimSpace(website.Hostname()))
+	if host == configuredHost {
+		return true
+	}
+	labels := strings.Split(configuredHost, ".")
+	if len(labels) < 2 {
+		return false
+	}
+	rootDomain := strings.Join(labels[len(labels)-2:], ".")
+	return host == rootDomain || strings.HasSuffix(host, "."+rootDomain)
+}
+
 type webhookEnvelope struct {
 	Action     string `json:"action"`
 	RefType    string `json:"ref_type"`
@@ -1934,11 +2254,11 @@ type webhookEnvelope struct {
 		} `json:"user"`
 	} `json:"comment"`
 	CheckRun struct {
-		ID         int64  `json:"id"`
-		Name       string `json:"name"`
-		Status     string `json:"status"`
-		Conclusion string `json:"conclusion"`
-		HTMLURL    string `json:"html_url"`
+		ID           int64  `json:"id"`
+		Name         string `json:"name"`
+		Status       string `json:"status"`
+		Conclusion   string `json:"conclusion"`
+		HTMLURL      string `json:"html_url"`
 		PullRequests []struct {
 			ID     int64 `json:"id"`
 			Number int   `json:"number"`

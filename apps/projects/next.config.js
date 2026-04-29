@@ -38,6 +38,14 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "user-images.githubusercontent.com",
+      },
+      {
+        protocol: "https",
         hostname: "fortyone.s3.us-east-1.amazonaws.com",
       },
       {

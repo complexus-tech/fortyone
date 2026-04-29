@@ -7,6 +7,7 @@ export { useDeleteGitHubIssueSyncLink } from "./use-delete-issue-sync-link";
 export { useUpdateGitHubWorkspaceSettings } from "./use-update-workspace-settings";
 export { useUpdateGitHubTeamSettings } from "./use-update-team-settings";
 export {
+  useCreateGitHubUserLinkSession,
   useLinkGitHubUser,
   useUnlinkGitHubUser,
 } from "./use-link-github-user";

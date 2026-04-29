@@ -52,8 +52,8 @@ export default function Page() {
       <HeroCards />
       <SampleClients />
       {/* <Features /> */}
-      <CoreValues />
       <HowItWorks />
+      <CoreValues />
       {/* <Maya /> */}
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />

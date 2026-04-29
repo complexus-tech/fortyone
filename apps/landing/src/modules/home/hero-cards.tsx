@@ -48,8 +48,8 @@ export const HeroCards = () => {
     <Box>
       <Box className="relative">
         <Container className="relative mt-12 overflow-visible">
-          <Blur className="bg-warning/12 absolute -top-[14%] right-5/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
-          <Blur className="bg-danger/12 absolute -top-[14%] -right-8/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
+          <Blur className="dark:bg-warning/12 absolute -top-[14%] right-5/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
+          <Blur className="dark:bg-danger/12 absolute -top-[14%] -right-8/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
           <Box
             className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible"
             onMouseEnter={() => {

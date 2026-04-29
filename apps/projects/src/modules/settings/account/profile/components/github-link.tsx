@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Box, Button, Flex, Text } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import {
+  useCreateGitHubUserLinkSession,
   useLinkGitHubUser,
   useUnlinkGitHubUser,
 } from "@/lib/hooks/github";
@@ -19,6 +20,7 @@ let codeConsumed = false;
 
 export const GitHubAccountLink = () => {
   const searchParams = useSearchParams();
+  const createLinkSession = useCreateGitHubUserLinkSession();
   const linkGitHub = useLinkGitHubUser();
   const unlinkGitHub = useUnlinkGitHubUser();
   const { data: profile } = useProfile();
@@ -28,25 +30,36 @@ export const GitHubAccountLink = () => {
   useEffect(() => {
     const code = searchParams.get("code");
     const isGitHubLink = searchParams.get("github_link");
-    if (code && isGitHubLink && !codeConsumed) {
+    const state = searchParams.get("github_state");
+    if (code && state && isGitHubLink && !codeConsumed) {
       codeConsumed = true;
-      linkGitHub.mutate(code);
+      linkGitHub.mutate({ code, state });
       // Clean the code from the URL
       const url = new URL(window.location.href);
       url.searchParams.delete("code");
       url.searchParams.delete("github_link");
+      url.searchParams.delete("github_state");
       window.history.replaceState({}, "", url.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleConnect = () => {
-    // Use a fixed callback URL so it works across workspace subdomains.
-    // The return URL is base64-encoded in the OAuth `state` parameter — GitHub
-    // passes it back untouched, so it survives cross-origin redirects.
-    const returnUrl = btoa(window.location.href);
-    const callbackUrl = GITHUB_CALLBACK_URL || `${window.location.origin}/github/callback`;
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(returnUrl)}`;
+    createLinkSession.mutate(window.location.href, {
+      onSuccess: (res) => {
+        if (res.error?.message || !res.data?.state) {
+          return;
+        }
+        const callbackUrl =
+          GITHUB_CALLBACK_URL || `${window.location.origin}/github/callback`;
+        const params = new URLSearchParams({
+          client_id: GITHUB_CLIENT_ID,
+          redirect_uri: callbackUrl,
+          state: res.data.state,
+        });
+        window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+      },
+    });
   };
 
   const handleDisconnect = () => {
@@ -87,9 +100,15 @@ export const GitHubAccountLink = () => {
             <Button
               color="invert"
               onClick={handleConnect}
-              disabled={!GITHUB_CLIENT_ID || linkGitHub.isPending}
+              disabled={
+                !GITHUB_CLIENT_ID ||
+                createLinkSession.isPending ||
+                linkGitHub.isPending
+              }
             >
-              {linkGitHub.isPending ? "Connecting..." : "Connect GitHub"}
+              {linkGitHub.isPending || createLinkSession.isPending
+                ? "Connecting..."
+                : "Connect GitHub"}
             </Button>
           </Flex>
         )}

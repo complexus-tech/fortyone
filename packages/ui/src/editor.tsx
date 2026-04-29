@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { EditorContent, BubbleMenu, EditorContentProps } from "@tiptap/react";
+import { EditorContent, EditorContentProps } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 
 import { BubbleMenu as CustomBubbleMenu } from "./bubble-menu";
 import { cn } from "lib";
@@ -26,10 +27,8 @@ export const TextEditor = ({
       {editor && !asTitle && !hideBubbleMenu && (
         <BubbleMenu
           editor={editor}
-          tippyOptions={{
-            duration: 100,
-            moveTransition: "transform 0.15s ease-out",
-            onHidden: () => {
+          options={{
+            onHide: () => {
               setIsLinkOpen(false);
             },
           }}
