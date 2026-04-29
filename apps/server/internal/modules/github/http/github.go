@@ -195,11 +195,15 @@ func (h *Handlers) UpdateTeamSettings(ctx context.Context, w http.ResponseWriter
 }
 
 func (h *Handlers) GetStoryGitHubLinks(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	storyID, err := uuid.Parse(web.Params(r, "storyId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	links, err := h.service.GetStoryGitHubLinks(ctx, storyID)
+	links, err := h.service.GetStoryGitHubLinks(ctx, workspace.ID, storyID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -207,22 +211,30 @@ func (h *Handlers) GetStoryGitHubLinks(ctx context.Context, w http.ResponseWrite
 }
 
 func (h *Handlers) DeleteStoryGitHubLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	linkID, err := uuid.Parse(web.Params(r, "linkId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	if err := h.service.DeleteStoryGitHubLink(ctx, linkID); err != nil {
+	if err := h.service.DeleteStoryGitHubLink(ctx, workspace.ID, linkID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 func (h *Handlers) GetStoryGitHubComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	storyID, err := uuid.Parse(web.Params(r, "storyId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	comments, err := h.service.GetStoryGitHubComments(ctx, storyID)
+	comments, err := h.service.GetStoryGitHubComments(ctx, workspace.ID, storyID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -230,6 +242,10 @@ func (h *Handlers) GetStoryGitHubComments(ctx context.Context, w http.ResponseWr
 }
 
 func (h *Handlers) PostStoryGitHubComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	storyID, err := uuid.Parse(web.Params(r, "storyId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -248,10 +264,26 @@ func (h *Handlers) PostStoryGitHubComment(ctx context.Context, w http.ResponseWr
 			authorName = name
 		}
 	}
-	if err := h.service.PostCommentToGitHub(ctx, storyID, userID, authorName, input.Body); err != nil {
+	if err := h.service.PostCommentToGitHub(ctx, workspace.ID, storyID, userID, nil, authorName, input.Body); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
+func (h *Handlers) CreateUserLinkSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppCreateUserLinkSessionRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	session, err := h.service.CreateUserLinkSession(ctx, userID, input.ReturnTo)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, AppCreateUserLinkSession{State: session.State}, http.StatusOK)
 }
 
 func (h *Handlers) LinkGitHubUser(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -263,7 +295,7 @@ func (h *Handlers) LinkGitHubUser(ctx context.Context, w http.ResponseWriter, r 
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	if err := h.service.LinkGitHubUser(ctx, userID, input.Code); err != nil {
+	if err := h.service.LinkGitHubUser(ctx, userID, input.Code, input.State); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	return web.Respond(ctx, w, nil, http.StatusOK)

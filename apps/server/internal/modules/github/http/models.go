@@ -77,6 +77,14 @@ type AppCreateInstallSession struct {
 	InstallURL string `json:"installUrl"`
 }
 
+type AppCreateUserLinkSessionRequest struct {
+	ReturnTo string `json:"returnTo" validate:"required"`
+}
+
+type AppCreateUserLinkSession struct {
+	State string `json:"state"`
+}
+
 type AppCreateIssueSyncLinkRequest struct {
 	RepositoryID  uuid.UUID `json:"repositoryId"`
 	TeamID        uuid.UUID `json:"teamId"`
@@ -98,7 +106,8 @@ type AppUpdateWorkspaceSettingsRequest struct {
 }
 
 type AppLinkGitHubUserRequest struct {
-	Code string `json:"code" validate:"required"`
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state" validate:"required"`
 }
 
 type AppPostGitHubCommentRequest struct {

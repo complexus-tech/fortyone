@@ -19,6 +19,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -280,12 +281,12 @@ func (s *Service) UpdateTeamSettings(ctx context.Context, workspaceID, teamID uu
 	return s.repo.ReplaceTeamWorkflowSettings(ctx, workspaceID, teamID, input.Rules)
 }
 
-func (s *Service) GetStoryGitHubLinks(ctx context.Context, storyID uuid.UUID) ([]githubrepository.StoryGitHubLink, error) {
-	return s.repo.GetStoryGitHubLinks(ctx, storyID)
+func (s *Service) GetStoryGitHubLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]githubrepository.StoryGitHubLink, error) {
+	return s.repo.GetStoryGitHubLinks(ctx, workspaceID, storyID)
 }
 
-func (s *Service) DeleteStoryGitHubLink(ctx context.Context, linkID uuid.UUID) error {
-	return s.repo.DeleteStoryGitHubLink(ctx, linkID)
+func (s *Service) DeleteStoryGitHubLink(ctx context.Context, workspaceID, linkID uuid.UUID) error {
+	return s.repo.DeleteStoryGitHubLink(ctx, workspaceID, linkID)
 }
 
 const avatarURLExpiry = 24 * time.Hour
@@ -323,12 +324,12 @@ var fortyOneCommentPattern = regexp.MustCompile(`(?s)\A\*\*(.+?)\*\* commented (
 // GetStoryGitHubComments fetches comments from all linked GitHub issues for a story.
 // It resolves GitHub users to FortyOne users when possible, and for bot comments
 // posted via FortyOne it extracts the real author and strips the attribution prefix.
-func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID) ([]GitHubComment, error) {
+func (s *Service) GetStoryGitHubComments(ctx context.Context, workspaceID, storyID uuid.UUID) ([]GitHubComment, error) {
 	if !s.canUseAppAPI() {
 		return []GitHubComment{}, nil
 	}
 
-	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, workspaceID, storyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get linked issues: %w", err)
 	}
@@ -486,12 +487,12 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, storyID uuid.UUID)
 // PostCommentToGitHub posts a comment to all linked GitHub issues for a story.
 // If the user has a linked GitHub account with a stored token, the comment is
 // posted as the user directly. Otherwise it falls back to the installation bot.
-func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.UUID, authorName, body string) error {
+func (s *Service) PostCommentToGitHub(ctx context.Context, workspaceID, storyID, userID uuid.UUID, localCommentID *uuid.UUID, authorName, body string) error {
 	if !s.canUseAppAPI() {
 		return errors.New("github app api is not configured")
 	}
 
-	issues, err := s.repo.GetStoryLinkedIssues(ctx, storyID)
+	issues, err := s.repo.GetStoryLinkedIssues(ctx, workspaceID, storyID)
 	if err != nil {
 		return fmt.Errorf("failed to get linked issues: %w", err)
 	}
@@ -510,10 +511,13 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.
 	var lastErr error
 	for _, issue := range issues {
 		if useUserToken {
-			_, _, err = userClient.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+			comment, _, err := userClient.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
 				Body: &userCommentBody,
 			})
 			if err == nil {
+				if recordErr := s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, issue.RepositoryID, comment.GetID(), localCommentID, userID); recordErr != nil {
+					s.log.Warn(ctx, "failed to record outbound github user comment", "error", recordErr, "github_comment_id", comment.GetID())
+				}
 				continue
 			}
 
@@ -539,11 +543,15 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, storyID, userID uuid.
 			lastErr = clientErr
 			continue
 		}
-		_, _, err = client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
+		comment, _, err := client.Issues.CreateComment(ctx, issue.OwnerLogin, issue.RepositorySlug, issue.GitHubNumber, &githubsdk.IssueComment{
 			Body: &fallbackCommentBody,
 		})
 		if err != nil {
 			lastErr = err
+			continue
+		}
+		if recordErr := s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, issue.RepositoryID, comment.GetID(), localCommentID, userID); recordErr != nil {
+			s.log.Warn(ctx, "failed to record outbound github app comment", "error", recordErr, "github_comment_id", comment.GetID())
 		}
 	}
 	return lastErr
@@ -582,6 +590,10 @@ func isFortyOneSystemLinkedTaskComment(body string) bool {
 	return strings.HasPrefix(strings.TrimSpace(body), "Linked to FortyOne task [")
 }
 
+func isFortyOneAuthoredCommentBody(body string) bool {
+	return fortyOneCommentPattern.MatchString(strings.TrimSpace(body))
+}
+
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
 	if !s.canUseAppAPI() {
 		s.log.Warn(
@@ -613,7 +625,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	}
 
 	issueBody := issueBodyFromStoryDescription(input.Description)
-	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.StoryID, link.RepositoryID)
+	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
 	switch {
 	case err == nil:
 		s.log.Info(ctx, "syncing story state to github issue", "story_id", input.StoryID, "github_issue_number", existingLink.GitHubNumber, "desired_state", desiredState)
@@ -1077,7 +1089,15 @@ func (s *Service) handleIssueCommentEvent(ctx context.Context, repository github
 		return nil
 	}
 	// Ignore comments from our own app to prevent loops.
-	if payload.Comment.User.ID == 0 || s.isAppComment(ctx, repository, payload.Comment.User.ID) {
+	if payload.Comment.User.ID == 0 ||
+		isFortyOneAuthoredCommentBody(payload.Comment.Body) ||
+		isFortyOneSystemLinkedTaskComment(payload.Comment.Body) ||
+		s.isAppComment(ctx, repository, payload.Comment.User.ID) {
+		return nil
+	}
+	if isOutbound, err := s.repo.IsOutboundGitHubComment(ctx, repository.ID, payload.Comment.ID); err != nil {
+		return err
+	} else if isOutbound {
 		return nil
 	}
 
@@ -1138,13 +1158,13 @@ func (s *Service) isAppSender(ctx context.Context, repository githubrepository.R
 
 // SyncCommentToGitHub posts a FortyOne comment to the linked GitHub issue
 // when the issue sync link is configured as bidirectional.
-func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID uuid.UUID, authorName, content string) error {
+func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID, localCommentID uuid.UUID, authorName, content string) error {
 	link, err := s.repo.FindBidirectionalIssueSyncLinkByTeamID(ctx, workspaceID, teamID)
 	if err != nil {
 		return nil // No bidirectional link for this team — nothing to do
 	}
 
-	issueLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, storyID, link.RepositoryID)
+	issueLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, workspaceID, storyID, link.RepositoryID)
 	if err != nil {
 		return nil // Story has no linked GitHub issue
 	}
@@ -1155,13 +1175,13 @@ func (s *Service) SyncCommentToGitHub(ctx context.Context, workspaceID, storyID,
 	}
 
 	body := fmt.Sprintf("**%s** commented on FortyOne:\n\n%s", authorName, content)
-	_, _, err = client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
+	comment, _, err := client.Issues.CreateComment(ctx, link.OwnerLogin, link.RepositorySlug, issueLink.GitHubNumber, &githubsdk.IssueComment{
 		Body: &body,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create github issue comment: %w", err)
 	}
-	return nil
+	return s.repo.RecordOutboundGitHubComment(ctx, workspaceID, storyID, link.RepositoryID, comment.GetID(), &localCommentID, s.cfg.GitHubUserID)
 }
 
 // ==================== check_run ====================
@@ -1272,7 +1292,20 @@ func (s *Service) resolveActorID(ctx context.Context, githubUserID int64) uuid.U
 
 // ==================== GitHub user linking ====================
 
-func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code string) error {
+const userLinkStateTTL = 15 * time.Minute
+
+func (s *Service) CreateUserLinkSession(ctx context.Context, userID uuid.UUID, returnTo string) (CoreCreateUserLinkSession, error) {
+	state, err := s.createUserLinkState(userID, returnTo, time.Now().Add(userLinkStateTTL))
+	if err != nil {
+		return CoreCreateUserLinkSession{}, err
+	}
+	return CoreCreateUserLinkSession{State: state}, nil
+}
+
+func (s *Service) LinkGitHubUser(ctx context.Context, userID uuid.UUID, code, state string) error {
+	if _, err := s.verifyUserLinkState(state, userID, time.Now()); err != nil {
+		return err
+	}
 	token, err := s.exchangeOAuthCode(ctx, code)
 	if err != nil {
 		return fmt.Errorf("failed to exchange github oauth code: %w", err)
@@ -1290,10 +1323,11 @@ func (s *Service) UnlinkGitHubUser(ctx context.Context, userID uuid.UUID) error 
 }
 
 func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s",
-			s.cfg.ClientID, s.cfg.ClientSecret, code),
-		nil)
+	values := url.Values{}
+	values.Set("client_id", s.cfg.ClientID)
+	values.Set("client_secret", s.cfg.ClientSecret)
+	values.Set("code", code)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://github.com/login/oauth/access_token?"+values.Encode(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -1651,16 +1685,24 @@ func (s *Service) listInstallationRepositories(ctx context.Context, installation
 	if err != nil {
 		return nil, err
 	}
-	repos, _, err := client.Apps.ListRepos(ctx, &githubsdk.ListOptions{PerPage: 100})
-	if err != nil {
-		return nil, err
-	}
-	items := make([]githubrepository.GithubRepositoryPayload, 0, len(repos.Repositories))
-	for _, repository := range repos.Repositories {
-		if repository == nil {
-			continue
+
+	options := &githubsdk.ListOptions{PerPage: 100}
+	items := make([]githubrepository.GithubRepositoryPayload, 0)
+	for {
+		repos, response, err := client.Apps.ListRepos(ctx, options)
+		if err != nil {
+			return nil, err
 		}
-		items = append(items, toRepositoryPayload(repository))
+		for _, repository := range repos.Repositories {
+			if repository == nil {
+				continue
+			}
+			items = append(items, toRepositoryPayload(repository))
+		}
+		if response == nil || response.NextPage == 0 {
+			break
+		}
+		options.Page = response.NextPage
 	}
 	return items, nil
 }
@@ -2001,6 +2043,90 @@ func (s *Service) verifyState(value string) (map[string]string, error) {
 		return nil, err
 	}
 	return values, nil
+}
+
+func (s *Service) createUserLinkState(userID uuid.UUID, returnTo string, expiresAt time.Time) (string, error) {
+	safeReturnTo, err := s.safeUserLinkReturnTo(returnTo)
+	if err != nil {
+		return "", err
+	}
+	return s.signState(map[string]string{
+		"kind":      "github_user_link",
+		"user_id":   userID.String(),
+		"return_to": safeReturnTo,
+		"expires":   strconv.FormatInt(expiresAt.Unix(), 10),
+	})
+}
+
+func (s *Service) verifyUserLinkState(state string, userID uuid.UUID, now time.Time) (string, error) {
+	values, err := s.verifyState(state)
+	if err != nil {
+		return "", err
+	}
+	if values["kind"] != "github_user_link" {
+		return "", errors.New("invalid github user link state")
+	}
+	if values["user_id"] != userID.String() {
+		return "", errors.New("github user link state does not match the authenticated user")
+	}
+	expires, err := strconv.ParseInt(values["expires"], 10, 64)
+	if err != nil {
+		return "", errors.New("invalid github user link state expiry")
+	}
+	if !now.Before(time.Unix(expires, 0)) {
+		return "", errors.New("github user link state has expired")
+	}
+	return s.safeUserLinkReturnTo(values["return_to"])
+}
+
+func (s *Service) safeUserLinkReturnTo(returnTo string) (string, error) {
+	if strings.TrimSpace(returnTo) == "" {
+		return "", errors.New("return path is required")
+	}
+	parsed, err := url.Parse(returnTo)
+	if err != nil {
+		return "", err
+	}
+	if parsed.IsAbs() || parsed.Host != "" {
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return "", errors.New("return URL scheme is not allowed")
+		}
+		if !s.isAllowedUserLinkReturnHost(parsed.Hostname()) {
+			return "", errors.New("return URL host is not allowed")
+		}
+		return parsed.String(), nil
+	}
+	if !strings.HasPrefix(parsed.Path, "/") || strings.HasPrefix(parsed.Path, "//") {
+		return "", errors.New("return path must be a relative application path")
+	}
+	if parsed.Path == "" {
+		parsed.Path = "/"
+	}
+	return parsed.RequestURI(), nil
+}
+
+func (s *Service) isAllowedUserLinkReturnHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "" {
+		return false
+	}
+	if isLocalWebsiteHost(host) {
+		return true
+	}
+	website, err := url.Parse(s.cfg.WebsiteURL)
+	if err != nil {
+		return false
+	}
+	configuredHost := strings.ToLower(strings.TrimSpace(website.Hostname()))
+	if host == configuredHost {
+		return true
+	}
+	labels := strings.Split(configuredHost, ".")
+	if len(labels) < 2 {
+		return false
+	}
+	rootDomain := strings.Join(labels[len(labels)-2:], ".")
+	return host == rootDomain || strings.HasSuffix(host, "."+rootDomain)
 }
 
 type webhookEnvelope struct {

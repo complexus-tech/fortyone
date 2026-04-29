@@ -30,7 +30,7 @@ const (
 
 // GitHubCommentSyncer syncs FortyOne comments to linked GitHub issues.
 type GitHubCommentSyncer interface {
-	SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID uuid.UUID, authorName, content string) error
+	SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID, localCommentID uuid.UUID, authorName, content string) error
 }
 
 type Consumer struct {
@@ -648,7 +648,7 @@ func (c *Consumer) handleCommentCreated(ctx context.Context, event events.Event)
 			if actor, actorErr := c.users.GetUser(ctx, event.ActorID); actorErr == nil {
 				authorName = actor.Username
 			}
-			if syncErr := c.githubSyncer.SyncCommentToGitHub(ctx, payload.WorkspaceID, payload.StoryID, story.Team, authorName, payload.Content); syncErr != nil {
+			if syncErr := c.githubSyncer.SyncCommentToGitHub(ctx, payload.WorkspaceID, payload.StoryID, story.Team, payload.CommentID, authorName, payload.Content); syncErr != nil {
 				c.log.Error(ctx, "failed to sync comment to github", "error", syncErr, "story_id", payload.StoryID)
 			}
 		}

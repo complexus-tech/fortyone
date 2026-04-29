@@ -34,6 +34,7 @@ type CoreIssueSyncLink = githubshared.CoreIssueSyncLink
 type CoreWorkflowRule = githubshared.CoreWorkflowRule
 type CoreIntegration = githubshared.CoreIntegration
 type CoreCreateInstallSession = githubshared.CoreCreateInstallSession
+type CoreCreateUserLinkSession = githubshared.CoreCreateUserLinkSession
 type CoreIssueSyncLinkInput = githubshared.CoreIssueSyncLinkInput
 type CoreUpdateIssueSyncLinkInput = githubshared.CoreUpdateIssueSyncLinkInput
 type CoreUpdateWorkspaceSettingsInput = githubshared.CoreUpdateWorkspaceSettingsInput
