@@ -57,6 +57,7 @@ type StoryService interface {
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
 	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
+	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
 }
 
 // AvatarResolver resolves stored avatar blob names to accessible URLs.

@@ -611,6 +611,8 @@ func (r *Repo) FindIssueSyncLinkByRepositoryID(ctx context.Context, repositoryID
 		INNER JOIN github_repositories gr ON gr.id = l.repository_id
 		INNER JOIN teams t ON t.team_id = l.team_id
 		WHERE l.repository_id = $1 AND l.is_active = true
+		ORDER BY l.created_at ASC, l.id ASC
+		LIMIT 1
 	`
 	err := r.db.GetContext(ctx, &row, query, repositoryID)
 	return row, err
@@ -1228,6 +1230,49 @@ func (r *Repo) RecordOutboundGitHubComment(ctx context.Context, workspaceID, sto
 			source = 'fortyone',
 			created_by_user_id = EXCLUDED.created_by_user_id
 	`, workspaceID, storyID, repositoryID, localCommentValue, githubCommentID, createdByUserID)
+	return err
+}
+
+func (r *Repo) ReserveInboundGitHubComment(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID, githubCommentID int64, createdByUserID uuid.UUID) (bool, error) {
+	if githubCommentID == 0 {
+		return false, nil
+	}
+	result, err := r.db.ExecContext(ctx, `
+		INSERT INTO github_comment_links (
+			workspace_id, story_id, repository_id, github_comment_id, source, created_by_user_id
+		) VALUES ($1, $2, $3, $4, 'github', $5)
+		ON CONFLICT (repository_id, github_comment_id) DO NOTHING
+	`, workspaceID, storyID, repositoryID, githubCommentID, createdByUserID)
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
+
+func (r *Repo) CompleteInboundGitHubComment(ctx context.Context, repositoryID uuid.UUID, githubCommentID int64, localCommentID uuid.UUID) error {
+	if githubCommentID == 0 {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE github_comment_links
+		SET local_comment_id = $3
+		WHERE repository_id = $1 AND github_comment_id = $2 AND source = 'github'
+	`, repositoryID, githubCommentID, localCommentID)
+	return err
+}
+
+func (r *Repo) DeleteGitHubCommentLink(ctx context.Context, repositoryID uuid.UUID, githubCommentID int64) error {
+	if githubCommentID == 0 {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM github_comment_links
+		WHERE repository_id = $1 AND github_comment_id = $2
+	`, repositoryID, githubCommentID)
 	return err
 }
 
