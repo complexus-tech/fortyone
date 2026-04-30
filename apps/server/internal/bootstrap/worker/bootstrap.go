@@ -101,15 +101,15 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, fmt.Errorf("error initializing mailer service: %w", err)
 	}
 
-	githubService, err := github.New(log, githubrepository.New(log, db), nil, nil, github.Config{
-		AppID:         cfg.GitHub.AppID,
-		AppSlug:       cfg.GitHub.AppSlug,
+	githubService, err := github.New(log, githubrepository.New(log, db), nil, nil, nil, github.Config{
+		AppID:            cfg.GitHub.AppID,
+		AppSlug:          cfg.GitHub.AppSlug,
 		PrivateKeyBase64: cfg.GitHub.PrivateKeyBase64,
-		RedirectURL:   cfg.GitHub.RedirectURL,
-		WebhookSecret: cfg.GitHub.WebhookSecret,
-		WebsiteURL:    cfg.Website.URL,
-		SecretKey:     cfg.Auth.SecretKey,
-		GitHubUserID:  githubUserID,
+		RedirectURL:      cfg.GitHub.RedirectURL,
+		WebhookSecret:    cfg.GitHub.WebhookSecret,
+		WebsiteURL:       cfg.Website.URL,
+		SecretKey:        cfg.Auth.SecretKey,
+		GitHubUserID:     githubUserID,
 	})
 	if err != nil {
 		_ = db.Close()

@@ -638,22 +638,6 @@ func (c *Consumer) handleCommentCreated(ctx context.Context, event events.Event)
 		}
 	}
 
-	// Sync comment to GitHub if bidirectional sync is enabled.
-	// Skip comments that originated from GitHub (they have a "commented on GitHub" marker)
-	// to prevent infinite loops.
-	if c.githubSyncer != nil && !strings.Contains(payload.Content, "commented on GitHub issue #") {
-		story, storyErr := c.stories.Get(ctx, payload.StoryID, payload.WorkspaceID)
-		if storyErr == nil {
-			authorName := "Someone"
-			if actor, actorErr := c.users.GetUser(ctx, event.ActorID); actorErr == nil {
-				authorName = actor.Username
-			}
-			if syncErr := c.githubSyncer.SyncCommentToGitHub(ctx, payload.WorkspaceID, payload.StoryID, story.Team, payload.CommentID, authorName, payload.Content); syncErr != nil {
-				c.log.Error(ctx, "failed to sync comment to github", "error", syncErr, "story_id", payload.StoryID)
-			}
-		}
-	}
-
 	return nil
 }
 

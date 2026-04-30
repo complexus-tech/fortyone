@@ -6,6 +6,7 @@ import (
 
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
@@ -58,6 +59,10 @@ type StoryService interface {
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
 	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
 	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
+}
+
+type RequestSink interface {
+	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
 }
 
 // AvatarResolver resolves stored avatar blob names to accessible URLs.
