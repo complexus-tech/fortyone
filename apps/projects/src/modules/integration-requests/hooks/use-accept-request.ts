@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
-import { integrationRequestKeys, storyKeys } from "@/constants/keys";
+import { integrationRequestKeys } from "@/constants/keys";
+import { storyKeys } from "@/modules/stories/constants";
 import { acceptIntegrationRequestAction } from "../actions/accept";
 
 export const useAcceptIntegrationRequest = () => {
