@@ -66,7 +66,7 @@ export const IntegrationRequestCard = ({
             <Flex align="center" gap={2} justify="between">
               <Flex align="center" className="min-w-0" gap={2}>
                 {request.provider === "github" ? (
-                  <GitHubIcon className="text-primary h-4 shrink-0" />
+                  <GitHubIcon className="h-4 shrink-0" />
                 ) : null}
                 <Text className="line-clamp-1" color="muted">
                   {providerLabel(request.provider)} {request.sourceType}{" "}
