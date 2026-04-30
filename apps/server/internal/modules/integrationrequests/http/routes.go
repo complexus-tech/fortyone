@@ -24,6 +24,7 @@ func Routes(cfg Config, app *web.App) {
 
 	app.Get("/workspaces/{workspaceSlug}/teams/{teamId}/integration-requests", h.ListTeamRequests, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/integration-requests/{requestId}", h.GetRequest, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/integration-requests/{requestId}", h.UpdateRequest, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/accept", h.AcceptRequest, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/decline", h.DeclineRequest, auth, workspace)
 }

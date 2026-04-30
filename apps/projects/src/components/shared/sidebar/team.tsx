@@ -7,6 +7,7 @@ import {
   ArchiveIcon,
   ArrowRight2Icon,
   BacklogIcon,
+  CheckListIcon,
   DeleteIcon,
   DragIcon,
   LogoutIcon,
@@ -31,6 +32,7 @@ import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mut
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 
 export const Team = ({
   id,
@@ -53,11 +55,13 @@ export const Team = ({
     idx === 0,
   );
   const { data: statuses } = useTeamStatuses(id);
+  const { data: pendingRequests = [] } = useTeamIntegrationRequests(id);
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
   const hasBacklog = statuses?.some((status) => status.category === "backlog");
+  const hasRequests = pendingRequests.length > 0;
 
   const {
     attributes,
@@ -78,6 +82,13 @@ export const Team = ({
   };
 
   const links = [
+    {
+      name: "Requests",
+      icon: <CheckListIcon className="h-[1.05rem]" />,
+      href: withWorkspace(`/teams/${id}/requests`),
+      count: pendingRequests.length,
+      disabled: !hasRequests,
+    },
     {
       name: "Backlog",
       icon: <BacklogIcon className="h-[1.15rem]" />,
@@ -233,7 +244,7 @@ export const Team = ({
             >
               {links
                 .filter(({ disabled }) => !disabled)
-                .map(({ name, icon, href }) => {
+                .map(({ name, icon, href, count }) => {
                   const isActive =
                     href === withWorkspace("/")
                       ? pathname === href ||
@@ -242,7 +253,14 @@ export const Team = ({
                   return (
                     <NavLink active={isActive} href={href} key={name}>
                       {icon}
-                      <span className="capitalize">{name}</span>
+                      <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                        <span className="capitalize">{name}</span>
+                        {count ? (
+                          <span className="text-muted-foreground text-[0.8rem]">
+                            {count}
+                          </span>
+                        ) : null}
+                      </span>
                     </NavLink>
                   );
                 })}

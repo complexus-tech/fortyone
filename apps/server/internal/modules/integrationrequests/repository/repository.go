@@ -32,6 +32,9 @@ type requestRow struct {
 	SourceURL        *string      `db:"source_url"`
 	Title            string       `db:"title"`
 	Description      *string      `db:"description"`
+	StatusID         *uuid.UUID   `db:"status_id"`
+	Priority         string       `db:"priority"`
+	AssigneeID       *uuid.UUID   `db:"assignee_id"`
 	Status           string       `db:"status"`
 	Metadata         mapJSON      `db:"metadata"`
 	AcceptedStoryID  *uuid.UUID   `db:"accepted_story_id"`
@@ -80,14 +83,17 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 	query := `
 		INSERT INTO integration_requests (
 			workspace_id, team_id, provider, source_type, source_external_id, source_number,
-			source_url, title, description, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
+			source_url, title, description, status_id, priority, assignee_id, metadata, created_by_user_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13::jsonb, $14)
 		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
 			team_id = EXCLUDED.team_id,
 			source_number = EXCLUDED.source_number,
 			source_url = EXCLUDED.source_url,
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
+			status_id = COALESCE(integration_requests.status_id, EXCLUDED.status_id),
+			priority = COALESCE(NULLIF(integration_requests.priority, ''), EXCLUDED.priority),
+			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
 			metadata = EXCLUDED.metadata,
 			updated_at = NOW()
 		WHERE integration_requests.status = 'pending'
@@ -106,6 +112,9 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		input.SourceURL,
 		input.Title,
 		input.Description,
+		input.StatusID,
+		input.Priority,
+		input.AssigneeID,
 		string(metadata),
 		input.CreatedByUserID,
 	)
@@ -113,6 +122,25 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		if err == sql.ErrNoRows {
 			return r.GetByExternal(ctx, input.WorkspaceID, input.Provider, input.SourceType, input.SourceExternalID)
 		}
+		return integrationrequests.CoreIntegrationRequest{}, err
+	}
+	return toCore(row), nil
+}
+
+func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input integrationrequests.CoreUpdateRequestInput) (integrationrequests.CoreIntegrationRequest, error) {
+	var row requestRow
+	err := r.db.GetContext(ctx, &row, `
+		UPDATE integration_requests
+		SET title = COALESCE($3, title),
+			description = COALESCE($4, description),
+			status_id = COALESCE($5, status_id),
+			priority = COALESCE(NULLIF($6, ''), priority),
+			assignee_id = COALESCE($7, assignee_id),
+			updated_at = NOW()
+		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
+		RETURNING *
+	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID)
+	if err != nil {
 		return integrationrequests.CoreIntegrationRequest{}, err
 	}
 	return toCore(row), nil
@@ -221,6 +249,9 @@ func toCore(row requestRow) integrationrequests.CoreIntegrationRequest {
 		SourceURL:        row.SourceURL,
 		Title:            row.Title,
 		Description:      row.Description,
+		StatusID:         row.StatusID,
+		Priority:         row.Priority,
+		AssigneeID:       row.AssigneeID,
 		Status:           row.Status,
 		Metadata:         map[string]any(row.Metadata),
 		AcceptedStoryID:  row.AcceptedStoryID,

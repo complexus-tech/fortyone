@@ -31,6 +31,9 @@ type CoreIntegrationRequest struct {
 	SourceURL        *string
 	Title            string
 	Description      *string
+	StatusID         *uuid.UUID
+	Priority         string
+	AssigneeID       *uuid.UUID
 	Status           string
 	Metadata         map[string]any
 	AcceptedStoryID  *uuid.UUID
@@ -53,12 +56,23 @@ type CoreUpsertRequestInput struct {
 	SourceURL        *string
 	Title            string
 	Description      *string
+	StatusID         *uuid.UUID
+	Priority         string
+	AssigneeID       *uuid.UUID
 	Metadata         map[string]any
 	CreatedByUserID  *uuid.UUID
 }
 
 type CoreListRequestsFilter struct {
 	Status string
+}
+
+type CoreUpdateRequestInput struct {
+	Title       *string
+	Description *string
+	StatusID    *uuid.UUID
+	Priority    *string
+	AssigneeID  *uuid.UUID
 }
 
 type StoryService interface {

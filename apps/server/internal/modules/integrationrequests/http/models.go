@@ -16,11 +16,22 @@ type AppIntegrationRequest struct {
 	SourceURL        *string        `json:"sourceUrl,omitempty"`
 	Title            string         `json:"title"`
 	Description      *string        `json:"description,omitempty"`
+	StatusID         *uuid.UUID     `json:"statusId,omitempty"`
+	Priority         string         `json:"priority"`
+	AssigneeID       *uuid.UUID     `json:"assigneeId,omitempty"`
 	Status           string         `json:"status"`
 	Metadata         map[string]any `json:"metadata"`
 	AcceptedStoryID  *uuid.UUID     `json:"acceptedStoryId,omitempty"`
 	CreatedAt        string         `json:"createdAt"`
 	UpdatedAt        string         `json:"updatedAt"`
+}
+
+type AppUpdateIntegrationRequest struct {
+	Title       *string    `json:"title,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	StatusID    *uuid.UUID `json:"statusId,omitempty"`
+	Priority    *string    `json:"priority,omitempty"`
+	AssigneeID  *uuid.UUID `json:"assigneeId,omitempty"`
 }
 
 func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegrationRequest {
@@ -35,6 +46,9 @@ func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegratio
 		SourceURL:        core.SourceURL,
 		Title:            core.Title,
 		Description:      core.Description,
+		StatusID:         core.StatusID,
+		Priority:         core.Priority,
+		AssigneeID:       core.AssigneeID,
 		Status:           core.Status,
 		Metadata:         core.Metadata,
 		AcceptedStoryID:  core.AcceptedStoryID,

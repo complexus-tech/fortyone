@@ -140,4 +140,19 @@ export const githubKeys = {
     ["github", workspaceSlug, "story-links", storyId] as const,
   storyComments: (workspaceSlug: string, storyId: string) =>
     ["github", workspaceSlug, "story-comments", storyId] as const,
+  requestComments: (workspaceSlug: string, requestId: string) =>
+    ["github", workspaceSlug, "request-comments", requestId] as const,
+};
+
+export const integrationRequestKeys = {
+  all: (workspaceSlug: string) =>
+    ["integration-requests", workspaceSlug] as const,
+  lists: (workspaceSlug: string) =>
+    [...integrationRequestKeys.all(workspaceSlug), "list"] as const,
+  team: (workspaceSlug: string, teamId: string, status = "pending") =>
+    [...integrationRequestKeys.lists(workspaceSlug), teamId, status] as const,
+  details: (workspaceSlug: string) =>
+    [...integrationRequestKeys.all(workspaceSlug), "detail"] as const,
+  detail: (workspaceSlug: string, requestId: string) =>
+    [...integrationRequestKeys.details(workspaceSlug), requestId] as const,
 };

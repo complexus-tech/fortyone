@@ -45,6 +45,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/stories/{storyId}/github-links/{linkId}", h.DeleteStoryGitHubLink, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{storyId}/github-comments", h.GetStoryGitHubComments, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/stories/{storyId}/github-comments", h.PostStoryGitHubComment, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/integration-requests/{requestId}/github-comments", h.GetRequestGitHubComments, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/github-comments", h.PostRequestGitHubComment, auth, workspace)
 
 	app.Post("/user/integrations/github/link-session", h.CreateUserLinkSession, auth)
 	app.Post("/user/integrations/github/link", h.LinkGitHubUser, auth)
