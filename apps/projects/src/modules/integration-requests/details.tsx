@@ -13,7 +13,14 @@ import TextExtension from "@tiptap/extension-text";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useParams, useRouter } from "next/navigation";
-import { CheckIcon, CloseIcon, GitHubIcon, LinkIcon, NewTabIcon } from "icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  GitHubIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  NewTabIcon,
+} from "icons";
 import {
   Avatar,
   Box,
@@ -21,6 +28,7 @@ import {
   Container,
   Divider,
   Flex,
+  Menu,
   Skeleton,
   Text,
   TextEditor,
@@ -154,6 +162,47 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
   );
 };
 
+const RequestGitHubBanner = ({
+  issueNumber,
+  repositoryName,
+  sourceUrl,
+}: {
+  issueNumber: string;
+  repositoryName: string | null;
+  sourceUrl?: string;
+}) => (
+  <Box className="mb-3 space-y-2">
+    <Flex
+      align="center"
+      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
+      justify="between"
+    >
+      <Flex align="center" className="min-w-0" gap={2}>
+        <GitHubIcon className="h-5 shrink-0" />
+        <Text className="text-primary line-clamp-1 font-medium">
+          Issue synced with GitHub {issueNumber}
+        </Text>
+        {repositoryName ? (
+          <Text className="line-clamp-1" color="muted">
+            {repositoryName}
+          </Text>
+        ) : null}
+      </Flex>
+      {sourceUrl ? (
+        <a
+          className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+          href={sourceUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Open on GitHub"
+        >
+          <NewTabIcon className="h-5 text-current" />
+        </a>
+      ) : null}
+    </Flex>
+  </Box>
+);
+
 const GitHubComments = ({ requestId }: { requestId: string }) => {
   const { data: comments = [], isLoading } =
     useRequestGitHubComments(requestId);
@@ -161,7 +210,7 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
   return (
     <Box>
       <Flex align="center" className="mb-4" gap={2}>
-        <GitHubIcon className="text-primary h-4" />
+        <GitHubIcon className="h-4" />
         <Text className="font-medium">GitHub comments</Text>
       </Flex>
       <GitHubCommentInput requestId={requestId} />
@@ -298,39 +347,14 @@ export const IntegrationRequestDetails = ({
   const selectedStatus = statuses.find((status) => status.id === statusId);
 
   return (
-    <Box className="grid h-dvh md:grid-cols-[minmax(0,1fr)_280px]">
-      <Box className="h-dvh overflow-y-auto pb-8">
-        <Container className="max-w-5xl pt-6">
-          <Flex
-            align="center"
-            className="border-border bg-surface-muted/30 mb-8 rounded-xl border px-4 py-3"
-            gap={2}
-            justify="between"
-          >
-            <Flex align="center" className="min-w-0" gap={2}>
-              <GitHubIcon className="text-primary h-5 shrink-0" />
-              <Text className="line-clamp-1 font-medium">
-                Request from GitHub {issueNumber}
-              </Text>
-              <Text className="line-clamp-1" color="muted">
-                {repositoryName}
-              </Text>
-            </Flex>
-            {request.sourceUrl ? (
-              <Button
-                asIcon
-                color="tertiary"
-                href={request.sourceUrl}
-                rounded="full"
-                size="sm"
-                target="_blank"
-                title="Open on GitHub"
-              >
-                <NewTabIcon className="h-4" />
-              </Button>
-            ) : null}
-          </Flex>
-
+    <Box className="hidden h-full md:flex">
+      <Box className="h-dvh min-w-0 flex-1 overflow-y-auto pb-8">
+        <Container className="max-w-7xl pt-7">
+          <RequestGitHubBanner
+            issueNumber={issueNumber}
+            repositoryName={repositoryName}
+            sourceUrl={request.sourceUrl}
+          />
           <TextEditor
             asTitle
             className="text-foreground mb-8 text-3xl md:text-4xl"
@@ -343,15 +367,61 @@ export const IntegrationRequestDetails = ({
         </Container>
       </Box>
 
-      <Box className="border-border hidden h-dvh overflow-y-auto border-l-[0.5px] p-5 md:block">
-        <Text className="mb-5 font-semibold">Properties</Text>
+      <Box className="border-border w-(--story-sidebar-width) shrink-0 overflow-y-auto border-l-[0.5px] p-5">
+        <Flex align="center" className="mb-5" justify="between">
+          <Text className="font-semibold">Properties</Text>
+          <Menu>
+            <Menu.Button>
+              <Button
+                asIcon
+                color="tertiary"
+                rounded="full"
+                size="sm"
+                variant="naked"
+              >
+                <MoreHorizontalIcon className="h-5" />
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item
+                  disabled={request.status !== "pending"}
+                  onSelect={() => {
+                    acceptRequest.mutate(request.id, {
+                      onSuccess: (res) => {
+                        if (res.data?.acceptedStoryId) {
+                          router.push(
+                            withWorkspace(`/story/${res.data.acceptedStoryId}`),
+                          );
+                        }
+                      },
+                    });
+                  }}
+                >
+                  <CheckIcon />
+                  Accept
+                </Menu.Item>
+                <Menu.Item
+                  className="text-danger"
+                  disabled={request.status !== "pending"}
+                  onSelect={() => {
+                    setIsDeclining(true);
+                  }}
+                >
+                  <CloseIcon className="text-danger" />
+                  Decline...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
         <Box className="space-y-4">
           <Box>
             <Text className="mb-2" color="muted">
               Request state
             </Text>
             <Flex align="center" gap={2}>
-              <GitHubIcon className="text-primary h-4" />
+              <GitHubIcon className="h-4" />
               <Text>GitHub request</Text>
             </Flex>
           </Box>
@@ -397,42 +467,6 @@ export const IntegrationRequestDetails = ({
             </PrioritiesMenu>
           </Box>
         </Box>
-
-        <Divider className="my-6" />
-
-        <Flex direction="column" gap={2}>
-          <Button
-            disabled={request.status !== "pending"}
-            fullWidth
-            leftIcon={<CheckIcon className="h-4" />}
-            loading={acceptRequest.isPending}
-            loadingText="Accepting..."
-            onClick={() => {
-              acceptRequest.mutate(request.id, {
-                onSuccess: (res) => {
-                  if (res.data?.acceptedStoryId) {
-                    router.push(
-                      withWorkspace(`/story/${res.data.acceptedStoryId}`),
-                    );
-                  }
-                },
-              });
-            }}
-          >
-            Accept
-          </Button>
-          <Button
-            color="tertiary"
-            disabled={request.status !== "pending"}
-            fullWidth
-            leftIcon={<CloseIcon className="h-4" />}
-            onClick={() => {
-              setIsDeclining(true);
-            }}
-          >
-            Decline
-          </Button>
-        </Flex>
       </Box>
 
       <ConfirmDialog
