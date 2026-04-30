@@ -13,9 +13,19 @@ export type IntegrationRequest = {
   sourceUrl?: string;
   title: string;
   description?: string;
+  statusId?: string;
+  priority: "No Priority" | "Low" | "Medium" | "High" | "Urgent";
+  assigneeId?: string;
   status: IntegrationRequestStatus;
   metadata: Record<string, unknown>;
   acceptedStoryId?: string;
   createdAt: string;
   updatedAt: string;
 };
+
+export type UpdateIntegrationRequestInput = Partial<
+  Pick<
+    IntegrationRequest,
+    "title" | "description" | "statusId" | "priority" | "assigneeId"
+  >
+>;

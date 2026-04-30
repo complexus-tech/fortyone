@@ -61,8 +61,9 @@ type StoryService interface {
 	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
 }
 
-type RequestSink interface {
+type RequestStore interface {
 	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
+	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error)
 }
 
 // AvatarResolver resolves stored avatar blob names to accessible URLs.

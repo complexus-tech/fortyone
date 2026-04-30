@@ -22,6 +22,7 @@ type Repository interface {
 	ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error)
 	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
+	UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error)
 	MarkAccepted(ctx context.Context, workspaceID, requestID, storyID, acceptedByUserID uuid.UUID) (CoreIntegrationRequest, error)
 	MarkDeclined(ctx context.Context, workspaceID, requestID, declinedByUserID uuid.UUID) (CoreIntegrationRequest, error)
 }
@@ -57,6 +58,10 @@ func (s *Service) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (Co
 	return s.repo.Get(ctx, workspaceID, requestID)
 }
 
+func (s *Service) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error) {
+	return s.repo.UpdatePending(ctx, workspaceID, requestID, input)
+}
+
 func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uuid.UUID) (CoreIntegrationRequest, error) {
 	request, err := s.repo.Get(ctx, workspaceID, requestID)
 	if err != nil {
@@ -70,12 +75,20 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		return CoreIntegrationRequest{}, fmt.Errorf("%w: %s", ErrUnsupportedProvider, request.Provider)
 	}
 
-	statusID, err := s.repo.FindFirstStatusByCategory(ctx, request.TeamID, "unstarted")
-	if err != nil {
-		return CoreIntegrationRequest{}, err
-	}
+	statusID := request.StatusID
 	if statusID == nil {
-		return CoreIntegrationRequest{}, errors.New("team has no unstarted status configured")
+		var err error
+		statusID, err = s.repo.FindFirstStatusByCategory(ctx, request.TeamID, "unstarted")
+		if err != nil {
+			return CoreIntegrationRequest{}, err
+		}
+		if statusID == nil {
+			return CoreIntegrationRequest{}, errors.New("team has no unstarted status configured")
+		}
+	}
+	priority := strings.TrimSpace(request.Priority)
+	if priority == "" {
+		priority = "No Priority"
 	}
 
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
@@ -83,8 +96,9 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		Description: request.Description,
 		Status:      statusID,
 		Reporter:    &actorID,
+		Assignee:    request.AssigneeID,
 		Team:        request.TeamID,
-		Priority:    "No Priority",
+		Priority:    priority,
 	}, workspaceID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err

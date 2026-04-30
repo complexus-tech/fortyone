@@ -43,7 +43,7 @@ type Service struct {
 	log                 *logger.Logger
 	repo                *githubrepository.Repo
 	stories             StoryService
-	requests            RequestSink
+	requests            RequestStore
 	avatars             AvatarResolver
 	httpClient          *http.Client
 	cfg                 Config
@@ -51,7 +51,7 @@ type Service struct {
 	privateKeyLoadError string
 }
 
-func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, requestSink RequestSink, avatarResolver AvatarResolver, cfg Config) (*Service, error) {
+func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, requestSink RequestStore, avatarResolver AvatarResolver, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
 	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyBase64) != "" {
@@ -489,6 +489,47 @@ func (s *Service) GetStoryGitHubComments(ctx context.Context, workspaceID, story
 	return allComments, nil
 }
 
+func (s *Service) GetRequestGitHubComments(ctx context.Context, workspaceID, requestID uuid.UUID) ([]GitHubComment, error) {
+	if !s.canUseAppAPI() {
+		return []GitHubComment{}, nil
+	}
+	repository, issueNumber, err := s.requestGitHubIssue(ctx, workspaceID, requestID)
+	if err != nil {
+		return nil, err
+	}
+	client, err := s.newInstallationClient(ctx, repository.GitHubInstallationID)
+	if err != nil {
+		return nil, err
+	}
+	opts := &githubsdk.IssueListCommentsOptions{
+		Sort:        githubsdk.String("created"),
+		Direction:   githubsdk.String("asc"),
+		ListOptions: githubsdk.ListOptions{PerPage: 100},
+	}
+	comments, _, err := client.Issues.ListComments(ctx, repository.OwnerLogin, repository.RepositorySlug, issueNumber, opts)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]GitHubComment, 0, len(comments))
+	for _, comment := range comments {
+		if comment == nil {
+			continue
+		}
+		user := comment.GetUser()
+		avatar := user.GetAvatarURL()
+		result = append(result, GitHubComment{
+			ID:         comment.GetID(),
+			Body:       stripFortyOneCommentMarker(stripFortyOneBotAttribution(comment.GetBody())),
+			UserLogin:  user.GetLogin(),
+			UserAvatar: avatar,
+			CreatedAt:  comment.GetCreatedAt().Format(time.RFC3339),
+			UpdatedAt:  comment.GetUpdatedAt().Format(time.RFC3339),
+			HTMLURL:    comment.GetHTMLURL(),
+		})
+	}
+	return result, nil
+}
+
 // PostCommentToGitHub posts a comment to all linked GitHub issues for a story.
 // If the user has a linked GitHub account with a stored token, the comment is
 // posted as the user directly. Otherwise it falls back to the installation bot.
@@ -566,6 +607,59 @@ func (s *Service) PostCommentToGitHub(ctx context.Context, workspaceID, storyID,
 	return lastErr
 }
 
+func (s *Service) PostRequestCommentToGitHub(ctx context.Context, workspaceID, requestID, userID uuid.UUID, authorName, body string) error {
+	if !s.canUseAppAPI() {
+		return errors.New("github app api is not configured")
+	}
+	repository, issueNumber, err := s.requestGitHubIssue(ctx, workspaceID, requestID)
+	if err != nil {
+		return err
+	}
+
+	commentMarkerID := uuid.New()
+	userCommentBody := buildFortyOneUserCommentBody(body, commentMarkerID)
+	fallbackCommentBody := buildFortyOneBotCommentBody(authorName, body, commentMarkerID)
+
+	userToken, tokenErr := s.repo.GetUserGitHubToken(ctx, userID)
+	if tokenErr == nil && strings.TrimSpace(userToken) != "" {
+		userClient := githubsdk.NewClient(s.httpClient).WithAuthToken(userToken)
+		if _, _, err := userClient.Issues.CreateComment(ctx, repository.OwnerLogin, repository.RepositorySlug, issueNumber, &githubsdk.IssueComment{
+			Body: &userCommentBody,
+		}); err == nil {
+			return nil
+		} else if !isGitHubAuthOrPermissionError(err) {
+			return err
+		}
+	}
+
+	return s.createIssueComment(ctx, repository.GitHubInstallationID, repository.OwnerLogin, repository.RepositorySlug, issueNumber, fallbackCommentBody)
+}
+
+func (s *Service) requestGitHubIssue(ctx context.Context, workspaceID, requestID uuid.UUID) (githubrepository.RepoByExternalRow, int, error) {
+	if s.requests == nil {
+		return githubrepository.RepoByExternalRow{}, 0, errors.New("integration request service is not configured")
+	}
+	request, err := s.requests.Get(ctx, workspaceID, requestID)
+	if err != nil {
+		return githubrepository.RepoByExternalRow{}, 0, err
+	}
+	if request.Provider != integrationrequests.ProviderGitHub || request.SourceType != integrationrequests.SourceTypeIssue {
+		return githubrepository.RepoByExternalRow{}, 0, errors.New("request is not linked to a github issue")
+	}
+	repositoryID, err := metadataUUID(request.Metadata, "repository_id")
+	if err != nil {
+		return githubrepository.RepoByExternalRow{}, 0, err
+	}
+	repository, err := s.repo.FindRepositoryByID(ctx, workspaceID, repositoryID)
+	if err != nil {
+		return githubrepository.RepoByExternalRow{}, 0, err
+	}
+	if request.SourceNumber == nil || *request.SourceNumber == 0 {
+		return githubrepository.RepoByExternalRow{}, 0, errors.New("github issue number is required")
+	}
+	return repository, *request.SourceNumber, nil
+}
+
 func isGitHubAuthOrPermissionError(err error) bool {
 	if err == nil {
 		return false
@@ -614,6 +708,13 @@ func buildFortyOneBotCommentBody(authorName, body string, commentID uuid.UUID) s
 
 func stripFortyOneCommentMarker(body string) string {
 	return strings.TrimSpace(fortyOneCommentMarkerPattern.ReplaceAllString(body, ""))
+}
+
+func stripFortyOneBotAttribution(body string) string {
+	if match := fortyOneCommentPattern.FindStringSubmatch(strings.TrimSpace(body)); match != nil {
+		return match[2]
+	}
+	return body
 }
 
 func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySyncInput) error {
@@ -868,6 +969,13 @@ func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrat
 		if err := s.repo.EnsureStoryLink(ctx, story.ID, githubIssueStoryLinkTitle(githubNumber), sourceURL); err != nil {
 			return err
 		}
+	}
+	repository, err := s.repo.FindRepositoryByID(ctx, request.WorkspaceID, repositoryID)
+	if err != nil {
+		return err
+	}
+	if err := s.ensureIssueImportComment(ctx, repository, githubNumber, story); err != nil {
+		return err
 	}
 	return s.recordLinkActivity(ctx, request.WorkspaceID, story.ID, "github_issue", fmt.Sprintf("issue %d", githubNumber), sourceURL)
 }
