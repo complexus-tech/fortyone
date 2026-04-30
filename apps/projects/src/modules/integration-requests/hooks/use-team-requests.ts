@@ -14,7 +14,11 @@ export const useTeamIntegrationRequests = (
   return useQuery({
     queryKey: integrationRequestKeys.team(workspaceSlug, teamId, status),
     queryFn: () =>
-      getTeamIntegrationRequests(teamId, { session: session!, workspaceSlug }, status),
+      getTeamIntegrationRequests(
+        teamId,
+        { session: session!, workspaceSlug },
+        status,
+      ),
     enabled: Boolean(teamId && session),
   });
 };

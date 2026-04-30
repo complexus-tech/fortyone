@@ -10,7 +10,8 @@ export const useIntegrationRequest = (requestId: string) => {
 
   return useQuery({
     queryKey: integrationRequestKeys.detail(workspaceSlug, requestId),
-    queryFn: () => getIntegrationRequest(requestId, { session: session!, workspaceSlug }),
+    queryFn: () =>
+      getIntegrationRequest(requestId, { session: session!, workspaceSlug }),
     enabled: Boolean(requestId && session),
   });
 };
