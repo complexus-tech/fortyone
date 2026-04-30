@@ -16,6 +16,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CheckIcon,
   CloseIcon,
+  ClockIcon,
   GitHubIcon,
   LinkIcon,
   MoreHorizontalIcon,
@@ -30,6 +31,7 @@ import {
   Flex,
   Menu,
   Skeleton,
+  Tabs,
   Text,
   TextEditor,
   TimeAgo,
@@ -110,7 +112,7 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
     content: "",
     editable: !isPending,
     extensions: getStoryCommentEditorExtensions({
-      placeholder: "Leave a GitHub comment...",
+      placeholder: "Leave a comment...",
     }),
     immediatelyRender: false,
   });
@@ -213,10 +215,6 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
 
   return (
     <Box>
-      <Flex align="center" className="mb-4" gap={2}>
-        <GitHubIcon className="h-4" />
-        <Text className="font-medium">GitHub comments</Text>
-      </Flex>
       <GitHubCommentInput requestId={requestId} />
       {isLoading ? (
         <Box className="space-y-4">
@@ -387,10 +385,23 @@ export const IntegrationRequestDetails = ({
                   className="mb-4 flex items-center gap-1"
                   fontWeight="medium"
                 >
-                  <GitHubIcon className="h-[1.05rem]" />
-                  GitHub comments
+                  <ClockIcon className="relative -top-px" />
+                  Activity feed
                 </Text>
-                <GitHubComments requestId={request.id} />
+                <Tabs defaultValue="github">
+                  <Tabs.List className="mx-0 mb-5 md:mx-0">
+                    <Tabs.Tab
+                      className="gap-1 px-2"
+                      leftIcon={<GitHubIcon className="h-[1.05rem]" />}
+                      value="github"
+                    >
+                      GitHub
+                    </Tabs.Tab>
+                  </Tabs.List>
+                  <Tabs.Panel value="github">
+                    <GitHubComments requestId={request.id} />
+                  </Tabs.Panel>
+                </Tabs>
               </Box>
             </Container>
           </BodyContainer>
