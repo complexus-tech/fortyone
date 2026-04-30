@@ -4,7 +4,9 @@ import { cn } from "lib";
 import { CheckIcon, CloseIcon, GitHubIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
+import { ConfirmDialog } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import type { IntegrationRequest } from "./types";
 import { useAcceptIntegrationRequest } from "./hooks/use-accept-request";
@@ -34,6 +36,7 @@ export const IntegrationRequestCard = ({
   const { withWorkspace } = useWorkspacePath();
   const acceptRequest = useAcceptIntegrationRequest();
   const declineRequest = useDeclineIntegrationRequest();
+  const [isDeclining, setIsDeclining] = useState(false);
   const sourceNumber = request.sourceNumber ? `#${request.sourceNumber}` : "";
   const isActive = pathname.includes(request.id);
 
@@ -92,13 +95,36 @@ export const IntegrationRequestCard = ({
           <ContextMenu.Item
             className="text-danger"
             disabled={request.status !== "pending"}
-            onSelect={() => declineRequest.mutate(request.id)}
+            onSelect={() => {
+              setIsDeclining(true);
+            }}
           >
             <CloseIcon className="text-danger" />
             Decline
           </ContextMenu.Item>
         </ContextMenu.Group>
       </ContextMenu.Items>
+      <ConfirmDialog
+        confirmText="Decline request"
+        description="Declining removes this item from the team request queue."
+        isLoading={declineRequest.isPending}
+        isOpen={isDeclining}
+        loadingText="Declining..."
+        onCancel={() => {
+          setIsDeclining(false);
+        }}
+        onClose={() => {
+          setIsDeclining(false);
+        }}
+        onConfirm={() => {
+          declineRequest.mutate(request.id, {
+            onSuccess: () => {
+              setIsDeclining(false);
+            },
+          });
+        }}
+        title="Decline this request?"
+      />
     </ContextMenu>
   );
 };
