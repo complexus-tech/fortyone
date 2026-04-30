@@ -602,6 +602,27 @@ func (r *Repo) FindRepositoryByExternalID(ctx context.Context, repositoryExterna
 	return row, err
 }
 
+func (r *Repo) FindRepositoryByID(ctx context.Context, workspaceID, repositoryID uuid.UUID) (RepoByExternalRow, error) {
+	var row RepoByExternalRow
+	query := `
+		SELECT
+			gr.id,
+			gr.workspace_id,
+			w.slug AS workspace_slug,
+			gr.full_name,
+			gr.owner_login,
+			gr.name AS repository_slug,
+			gr.default_branch,
+			gi.github_installation_id
+		FROM github_repositories gr
+		INNER JOIN github_installations gi ON gi.id = gr.installation_id
+		INNER JOIN workspaces w ON w.workspace_id = gr.workspace_id
+		WHERE gr.workspace_id = $1 AND gr.id = $2 AND gr.is_active = true
+	`
+	err := r.db.GetContext(ctx, &row, query, workspaceID, repositoryID)
+	return row, err
+}
+
 func (r *Repo) FindIssueSyncLinkByRepositoryID(ctx context.Context, repositoryID uuid.UUID) (syncLinkRow, error) {
 	var row syncLinkRow
 	query := `

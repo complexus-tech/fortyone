@@ -270,6 +270,51 @@ func (h *Handlers) PostStoryGitHubComment(ctx context.Context, w http.ResponseWr
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
+func (h *Handlers) GetRequestGitHubComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	comments, err := h.service.GetRequestGitHubComments(ctx, workspace.ID, requestID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, comments, http.StatusOK)
+}
+
+func (h *Handlers) PostRequestGitHubComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppPostGitHubCommentRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	authorName := "Someone"
+	if h.users != nil {
+		if name, err := h.users.GetUserName(ctx, userID); err == nil {
+			authorName = name
+		}
+	}
+	if err := h.service.PostRequestCommentToGitHub(ctx, workspace.ID, requestID, userID, authorName, input.Body); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
 func (h *Handlers) CreateUserLinkSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {

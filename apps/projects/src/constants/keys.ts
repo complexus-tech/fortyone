@@ -140,6 +140,8 @@ export const githubKeys = {
     ["github", workspaceSlug, "story-links", storyId] as const,
   storyComments: (workspaceSlug: string, storyId: string) =>
     ["github", workspaceSlug, "story-comments", storyId] as const,
+  requestComments: (workspaceSlug: string, requestId: string) =>
+    ["github", workspaceSlug, "request-comments", requestId] as const,
 };
 
 export const integrationRequestKeys = {

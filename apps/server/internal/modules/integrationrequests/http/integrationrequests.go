@@ -58,6 +58,32 @@ func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
 }
 
+func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppUpdateIntegrationRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, integrationrequests.CoreUpdateRequestInput{
+		Title:       input.Title,
+		Description: input.Description,
+		StatusID:    input.StatusID,
+		Priority:    input.Priority,
+		AssigneeID:  input.AssigneeID,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
+}
+
 func (h *Handlers) AcceptRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
