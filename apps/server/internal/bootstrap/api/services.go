@@ -17,6 +17,8 @@ import (
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
+	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	invitationsrepository "github.com/complexus-tech/projects-api/internal/modules/invitations/repository"
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
@@ -58,31 +60,32 @@ import (
 )
 
 type services struct {
-	activities     *activities.Service
-	attachments    *attachments.Service
-	chatSessions   *chatsessions.Service
-	comments       *comments.Service
-	documents      *documents.Service
-	epics          *epics.Service
-	github         *github.Service
-	invitations    *invitations.Service
-	keyResults     *keyresults.Service
-	labels         *labels.Service
-	links          *links.Service
-	notifications  *notifications.Service
-	objectives     *objectives.Service
-	objectiveStats *objectivestatus.Service
-	okrActivities  *okractivities.Service
-	reports        *reports.Service
-	search         *search.Service
-	sprints        *sprints.Service
-	states         *states.Service
-	stories        *stories.Service
-	subscriptions  *subscriptions.Service
-	teams          *teams.Service
-	teamSettings   *teamsettings.Service
-	users          *users.Service
-	workspaces     *workspaces.Service
+	activities          *activities.Service
+	attachments         *attachments.Service
+	chatSessions        *chatsessions.Service
+	comments            *comments.Service
+	documents           *documents.Service
+	epics               *epics.Service
+	github              *github.Service
+	integrationRequests *integrationrequests.Service
+	invitations         *invitations.Service
+	keyResults          *keyresults.Service
+	labels              *labels.Service
+	links               *links.Service
+	notifications       *notifications.Service
+	objectives          *objectives.Service
+	objectiveStats      *objectivestatus.Service
+	okrActivities       *okractivities.Service
+	reports             *reports.Service
+	search              *search.Service
+	sprints             *sprints.Service
+	states              *states.Service
+	stories             *stories.Service
+	subscriptions       *subscriptions.Service
+	teams               *teams.Service
+	teamSettings        *teamsettings.Service
+	users               *users.Service
+	workspaces          *workspaces.Service
 }
 
 func buildServices(cfg mux.Config) services {
@@ -107,6 +110,7 @@ func buildServices(cfg mux.Config) services {
 		cfg.TasksService,
 	)
 	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
+	integrationRequestsRepo := integrationrequestsrepository.New(cfg.Log, cfg.DB)
 	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
 	workspacesService := workspaces.New(
@@ -139,7 +143,7 @@ func buildServices(cfg mux.Config) services {
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
 	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, attachmentsService, github.Config{
+	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, integrationRequestsRepo, attachmentsService, github.Config{
 		AppID:            cfg.GitHubAppID,
 		AppSlug:          cfg.GitHubAppSlug,
 		ClientID:         cfg.GitHubClientID,
@@ -154,33 +158,42 @@ func buildServices(cfg mux.Config) services {
 	if err != nil {
 		panic("failed to initialize github service: " + err.Error())
 	}
+	integrationRequestsService := integrationrequests.New(
+		cfg.Log,
+		integrationRequestsRepo,
+		storiesService,
+		map[string]integrationrequests.ProviderAccepter{
+			integrationrequests.ProviderGitHub: githubService,
+		},
+	)
 
 	return services{
-		activities:     activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
-		attachments:    attachmentsService,
-		chatSessions:   chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
-		comments:       commentsService,
-		documents:      documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
-		epics:          epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
-		github:         githubService,
-		invitations:    invitationsService,
-		keyResults:     keyResultsService,
-		labels:         labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB)),
-		links:          linksService,
-		notifications:  notifications.New(cfg.Log, notificationsrepository.New(cfg.Log, cfg.DB), cfg.Redis, cfg.TasksService),
-		objectives:     objectivesService,
-		objectiveStats: objectiveStatusService,
-		okrActivities:  okrActivitiesService,
-		reports:        reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB)),
-		search:         search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB)),
-		sprints:        sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
-		states:         statesService,
-		stories:        storiesService,
-		subscriptions:  subscriptionsService,
-		teams:          teamsService,
-		teamSettings:   teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService),
-		users:          usersService,
-		workspaces:     workspacesService,
+		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
+		attachments:         attachmentsService,
+		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
+		comments:            commentsService,
+		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
+		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
+		github:              githubService,
+		integrationRequests: integrationRequestsService,
+		invitations:         invitationsService,
+		keyResults:          keyResultsService,
+		labels:              labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB)),
+		links:               linksService,
+		notifications:       notifications.New(cfg.Log, notificationsrepository.New(cfg.Log, cfg.DB), cfg.Redis, cfg.TasksService),
+		objectives:          objectivesService,
+		objectiveStats:      objectiveStatusService,
+		okrActivities:       okrActivitiesService,
+		reports:             reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB)),
+		search:              search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB)),
+		sprints:             sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
+		states:              statesService,
+		stories:             storiesService,
+		subscriptions:       subscriptionsService,
+		teams:               teamsService,
+		teamSettings:        teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService),
+		users:               usersService,
+		workspaces:          workspacesService,
 	}
 }
 
@@ -205,6 +218,9 @@ func (s services) validate() error {
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")
+	}
+	if s.integrationRequests == nil {
+		return fmt.Errorf("missing service: integrationRequests")
 	}
 	if s.invitations == nil {
 		return fmt.Errorf("missing service: invitations")
