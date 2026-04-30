@@ -25,6 +25,7 @@ import (
 	"unicode"
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -42,6 +43,7 @@ type Service struct {
 	log                 *logger.Logger
 	repo                *githubrepository.Repo
 	stories             StoryService
+	requests            RequestSink
 	avatars             AvatarResolver
 	httpClient          *http.Client
 	cfg                 Config
@@ -49,7 +51,7 @@ type Service struct {
 	privateKeyLoadError string
 }
 
-func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, avatarResolver AvatarResolver, cfg Config) (*Service, error) {
+func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryService, requestSink RequestSink, avatarResolver AvatarResolver, cfg Config) (*Service, error) {
 	var privateKey *rsa.PrivateKey
 	var err error
 	if cfg.AppID != 0 && strings.TrimSpace(cfg.PrivateKeyBase64) != "" {
@@ -70,11 +72,12 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 		}
 	}
 	return &Service{
-		log:     log,
-		repo:    repo,
-		stories: storyService,
-		avatars: avatarResolver,
-		cfg:     cfg,
+		log:      log,
+		repo:     repo,
+		stories:  storyService,
+		requests: requestSink,
+		avatars:  avatarResolver,
+		cfg:      cfg,
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
 		},
@@ -746,7 +749,6 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	issueDescription := githubString(payload.Issue.Body)
 	var story stories.CoreSingleStory
 	var getErr error
-	var createErr error
 	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
 	switch {
 	case err == nil:
@@ -762,26 +764,7 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 			return updateErr
 		}
 	case errors.Is(err, sql.ErrNoRows):
-		statusID, statusErr := s.repo.FindFirstStatusByCategory(ctx, link.TeamID, "unstarted")
-		if statusErr != nil {
-			return statusErr
-		}
-		if statusID == nil {
-			return errors.New("team has no unstarted status configured")
-		}
-
-		story, createErr = s.stories.CreateExternal(ctx, s.cfg.GitHubUserID, stories.CoreNewStory{
-			Title:       payload.Issue.Title,
-			Description: issueDescription,
-			Status:      statusID,
-			Reporter:    &s.cfg.GitHubUserID,
-			Team:        link.TeamID,
-			Priority:    "No Priority",
-		}, repository.WorkspaceID)
-		if createErr != nil {
-			return createErr
-		}
-		storyID = story.ID
+		return s.upsertIssueIntegrationRequest(ctx, repository, link.TeamID, payload)
 	default:
 		return err
 	}
@@ -815,6 +798,102 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	default:
 		return nil
 	}
+}
+
+func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository githubrepository.RepoByExternalRow, teamID uuid.UUID, payload webhookEnvelope) error {
+	if s.requests == nil {
+		return errors.New("integration request service is not configured")
+	}
+	description := githubString(payload.Issue.Body)
+	sourceURL := payload.Issue.HTMLURL
+	sourceNumber := payload.Issue.Number
+	createdBy := s.resolveActorID(ctx, payload.Sender.ID)
+	_, err := s.requests.UpsertPending(ctx, integrationrequests.CoreUpsertRequestInput{
+		WorkspaceID:      repository.WorkspaceID,
+		TeamID:           teamID,
+		Provider:         integrationrequests.ProviderGitHub,
+		SourceType:       integrationrequests.SourceTypeIssue,
+		SourceExternalID: strconv.FormatInt(payload.Issue.ID, 10),
+		SourceNumber:     &sourceNumber,
+		SourceURL:        &sourceURL,
+		Title:            payload.Issue.Title,
+		Description:      description,
+		CreatedByUserID:  &createdBy,
+		Metadata: map[string]any{
+			"repository_id":          repository.ID.String(),
+			"repository_external_id": payload.Repository.ID,
+			"repository_full_name":   repository.FullName,
+			"issue_id":               payload.Issue.ID,
+			"issue_number":           payload.Issue.Number,
+			"issue_state":            payload.Issue.State,
+			"sender_id":              payload.Sender.ID,
+			"sender_login":           payload.Sender.Login,
+		},
+	})
+	return err
+}
+
+func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrationrequests.CoreIntegrationRequest, story stories.CoreSingleStory) error {
+	if request.Provider != integrationrequests.ProviderGitHub || request.SourceType != integrationrequests.SourceTypeIssue {
+		return nil
+	}
+	repositoryID, err := metadataUUID(request.Metadata, "repository_id")
+	if err != nil {
+		return err
+	}
+	githubID, err := strconv.ParseInt(request.SourceExternalID, 10, 64)
+	if err != nil {
+		return err
+	}
+	githubNumber := 0
+	if request.SourceNumber != nil {
+		githubNumber = *request.SourceNumber
+	}
+	sourceURL := ""
+	if request.SourceURL != nil {
+		sourceURL = *request.SourceURL
+	}
+	state := metadataString(request.Metadata, "issue_state")
+	if state == "" {
+		state = "open"
+	}
+	metadata := map[string]any{}
+	for key, value := range request.Metadata {
+		metadata[key] = value
+	}
+	if err := s.repo.UpsertStoryLink(ctx, request.WorkspaceID, story.ID, repositoryID, "issue", githubID, githubNumber, nil, sourceURL, request.Title, state, metadata); err != nil {
+		return err
+	}
+	if sourceURL != "" {
+		if err := s.repo.EnsureStoryLink(ctx, story.ID, githubIssueStoryLinkTitle(githubNumber), sourceURL); err != nil {
+			return err
+		}
+	}
+	return s.recordLinkActivity(ctx, request.WorkspaceID, story.ID, "github_issue", fmt.Sprintf("issue %d", githubNumber), sourceURL)
+}
+
+func metadataUUID(metadata map[string]any, key string) (uuid.UUID, error) {
+	value, ok := metadata[key]
+	if !ok {
+		return uuid.Nil, fmt.Errorf("metadata %q is required", key)
+	}
+	text, ok := value.(string)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("metadata %q must be a string", key)
+	}
+	return uuid.Parse(text)
+}
+
+func metadataString(metadata map[string]any, key string) string {
+	value, ok := metadata[key]
+	if !ok {
+		return ""
+	}
+	text, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	return text
 }
 
 func (s *Service) handlePullRequestEvent(ctx context.Context, repository githubrepository.RepoByExternalRow, payload webhookEnvelope) error {

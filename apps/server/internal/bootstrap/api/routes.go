@@ -10,6 +10,7 @@ import (
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
 	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
+	integrationrequestshttp "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/http"
 	invitationshttp "github.com/complexus-tech/projects-api/internal/modules/invitations/http"
 	keyresultshttp "github.com/complexus-tech/projects-api/internal/modules/keyresults/http"
 	labelshttp "github.com/complexus-tech/projects-api/internal/modules/labels/http"
@@ -19,7 +20,6 @@ import (
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	sprintshttp "github.com/complexus-tech/projects-api/internal/modules/sprints/http"
 	stateshttp "github.com/complexus-tech/projects-api/internal/modules/states/http"
 	storieshttp "github.com/complexus-tech/projects-api/internal/modules/stories/http"
@@ -27,6 +27,7 @@ import (
 	teamshttp "github.com/complexus-tech/projects-api/internal/modules/teams/http"
 	teamsettingshttp "github.com/complexus-tech/projects-api/internal/modules/teamsettings/http"
 	usershttp "github.com/complexus-tech/projects-api/internal/modules/users/http"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspaceshttp "github.com/complexus-tech/projects-api/internal/modules/workspaces/http"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	ssehttp "github.com/complexus-tech/projects-api/internal/sse/http"
@@ -83,6 +84,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 		Service:   svcs.github,
 		Users:     &userLookupAdapter{svc: svcs.users},
+	}, app)
+
+	integrationrequestshttp.Routes(integrationrequestshttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.integrationRequests,
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{
