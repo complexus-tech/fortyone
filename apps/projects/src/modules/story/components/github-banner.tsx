@@ -68,9 +68,17 @@ const BannerRow = ({
     >
       <Flex align="center" gap={2}>
         <GitHubIcon className="text-primary h-5 shrink-0" />
-        <Text className="text-primary font-medium">
-          {label} {number}
-        </Text>
+        <a
+          className="hover:underline"
+          href={link.url}
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Open on GitHub"
+        >
+          <Text as="span" color="primary" fontWeight="medium">
+            {label} {number}
+          </Text>
+        </a>
       </Flex>
       <Flex align="center" gap={1}>
         <a
