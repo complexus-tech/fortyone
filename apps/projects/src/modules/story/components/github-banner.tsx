@@ -69,7 +69,6 @@ const BannerRow = ({
       <Flex align="center" gap={2}>
         <GitHubIcon className="text-primary h-5 shrink-0" />
         <a
-          className="hover:underline"
           href={link.url}
           rel="noopener noreferrer"
           target="_blank"
