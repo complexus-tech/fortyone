@@ -941,7 +941,10 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	if title == "" {
 		title = "New task"
 	}
-	metadataPayload, err := json.Marshal(input.Source)
+	metadataPayload, err := json.Marshal(slackModalPrivateMetadata{
+		Source:         input.Source,
+		SelectedTeamID: selectedTeam.ID.String(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1197,14 +1200,16 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 		return nil
 	}
 
-	var source requestSourceContext
-	if strings.TrimSpace(payload.View.PrivateMetadata) != "" {
-		if err := json.Unmarshal([]byte(payload.View.PrivateMetadata), &source); err != nil {
-			return viewSubmissionData{}, err
-		}
+	metadata, err := parseSlackModalPrivateMetadata(payload.View.PrivateMetadata)
+	if err != nil {
+		return viewSubmissionData{}, err
 	}
+	source := metadata.Source
 
 	selectedTeamID := readSelectedOption(modalBlockTeam)
+	if selectedTeamID == "" {
+		selectedTeamID = strings.TrimSpace(metadata.SelectedTeamID)
+	}
 	if selectedTeamID == "" {
 		return viewSubmissionData{}, ErrSlackTeamSelectionRequired
 	}
@@ -1271,14 +1276,11 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 }
 
 func parseSourceFromPrivateMetadata(privateMetadata string) (requestSourceContext, error) {
-	var source requestSourceContext
-	if strings.TrimSpace(privateMetadata) == "" {
-		return source, nil
-	}
-	if err := json.Unmarshal([]byte(privateMetadata), &source); err != nil {
+	metadata, err := parseSlackModalPrivateMetadata(privateMetadata)
+	if err != nil {
 		return requestSourceContext{}, err
 	}
-	return source, nil
+	return metadata.Source, nil
 }
 
 func selectedTeamIDFromState(values map[string]map[string]struct {
@@ -1302,6 +1304,15 @@ func selectedTeamIDFromState(values map[string]map[string]struct {
 }
 
 func (s *Service) resolveTeamIDForSuggestion(ctx context.Context, payload interactionPayload, workspaceID uuid.UUID) (uuid.UUID, error) {
+	if metadata, err := parseSlackModalPrivateMetadata(payload.View.PrivateMetadata); err == nil {
+		if selectedFromMetadata := strings.TrimSpace(metadata.SelectedTeamID); selectedFromMetadata != "" {
+			teamID, parseErr := uuid.Parse(selectedFromMetadata)
+			if parseErr == nil && teamID != uuid.Nil {
+				return teamID, nil
+			}
+		}
+	}
+
 	if selectedFromState := selectedTeamIDFromState(payload.View.State.Values); selectedFromState != "" {
 		teamID, err := uuid.Parse(selectedFromState)
 		if err == nil && teamID != uuid.Nil {
@@ -2215,6 +2226,41 @@ type slackWorkspaceUser struct {
 	Username string
 	FullName string
 	Email    string
+}
+
+type slackModalPrivateMetadata struct {
+	Source         requestSourceContext `json:"source"`
+	SelectedTeamID string               `json:"selected_team_id,omitempty"`
+}
+
+func parseSlackModalPrivateMetadata(raw string) (slackModalPrivateMetadata, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return slackModalPrivateMetadata{}, nil
+	}
+
+	var structured slackModalPrivateMetadata
+	if err := json.Unmarshal([]byte(trimmed), &structured); err == nil && !isZeroRequestSource(structured.Source) {
+		return structured, nil
+	}
+
+	var legacy requestSourceContext
+	if err := json.Unmarshal([]byte(trimmed), &legacy); err != nil {
+		return slackModalPrivateMetadata{}, err
+	}
+	return slackModalPrivateMetadata{Source: legacy}, nil
+}
+
+func isZeroRequestSource(source requestSourceContext) bool {
+	return strings.TrimSpace(source.SlackTeamID) == "" &&
+		strings.TrimSpace(source.SlackTeamDomain) == "" &&
+		strings.TrimSpace(source.SlackChannelID) == "" &&
+		strings.TrimSpace(source.SlackChannel) == "" &&
+		strings.TrimSpace(source.SlackMessageTS) == "" &&
+		strings.TrimSpace(source.SlackThreadTS) == "" &&
+		strings.TrimSpace(source.SlackUserID) == "" &&
+		strings.TrimSpace(source.SlackUsername) == "" &&
+		strings.TrimSpace(source.SlackText) == ""
 }
 
 type interactionPayload struct {
