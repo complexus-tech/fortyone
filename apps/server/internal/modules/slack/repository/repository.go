@@ -362,7 +362,6 @@ func (r *Repo) ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([
 		SELECT team_id, code, name, color
 		FROM teams
 		WHERE workspace_id = $1
-		  AND deleted_at IS NULL
 		ORDER BY name ASC
 	`, workspaceID)
 	if err != nil {
@@ -377,7 +376,6 @@ func (r *Repo) ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]Status
 		SELECT status_id, name, category
 		FROM statuses
 		WHERE team_id = $1
-		  AND deleted_at IS NULL
 		ORDER BY order_index ASC, name ASC
 	`, teamID)
 	if err != nil {
@@ -424,7 +422,6 @@ func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, 
 		FROM statuses
 		WHERE team_id = $1
 		  AND category = $2
-		  AND deleted_at IS NULL
 		ORDER BY order_index ASC
 		LIMIT 1
 	`, teamID, category)
