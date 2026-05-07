@@ -834,18 +834,18 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	priorityOption := toSlackOption(normalizeSlackPriority(input.Selection.Priority), normalizeSlackPriority(input.Selection.Priority))
 
 	blocks := []map[string]any{
-		selectInputBlock(modalBlockTeam, modalActionTeamSelect, "Team", teamOptions, selectedTeamOption, false),
+		selectInputBlock(modalBlockTeam, modalActionTeamSelect, "Team", teamOptions, selectedTeamOption, false, true),
 		plainInputBlock(modalBlockTitle, modalActionTitleInput, "Title", title, false, ""),
 		plainInputBlock(modalBlockDescription, modalActionDescriptionInput, "Description", input.Description, true, ""),
-		selectInputBlock(modalBlockStatus, modalActionStatusSelect, "Status", statusOptions, selectedStatusOption, true),
+		selectInputBlock(modalBlockStatus, modalActionStatusSelect, "Status", statusOptions, selectedStatusOption, true, false),
 	}
 	if len(assigneeOptions) > 0 {
-		blocks = append(blocks, selectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", assigneeOptions, selectedAssigneeOption, true))
+		blocks = append(blocks, selectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", assigneeOptions, selectedAssigneeOption, true, false))
 	}
 	if len(labelOptions) > 0 {
 		blocks = append(blocks, multiSelectInputBlock(modalBlockLabels, modalActionLabelsMultiSelect, "Labels", labelOptions, selectedLabelOptions, true))
 	}
-	blocks = append(blocks, selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true))
+	blocks = append(blocks, selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true, false))
 
 	return map[string]any{
 		"type":             "modal",
@@ -867,7 +867,7 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	}, nil
 }
 
-func selectInputBlock(blockID, actionID, label string, options []map[string]any, initialOption map[string]any, optional bool) map[string]any {
+func selectInputBlock(blockID, actionID, label string, options []map[string]any, initialOption map[string]any, optional, dispatchAction bool) map[string]any {
 	element := map[string]any{
 		"type":      "static_select",
 		"action_id": actionID,
@@ -888,6 +888,9 @@ func selectInputBlock(blockID, actionID, label string, options []map[string]any,
 	}
 	if optional {
 		block["optional"] = true
+	}
+	if dispatchAction {
+		block["dispatch_action"] = true
 	}
 	return block
 }
