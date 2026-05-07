@@ -692,12 +692,19 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 		return interactionOptionsResponse(nil)
 	}
 
-	submission, err := parseViewSubmission(payload)
+	source, err := parseSourceFromPrivateMetadata(payload.View.PrivateMetadata)
 	if err != nil {
 		return interactionOptionsResponse(nil)
 	}
+	if strings.TrimSpace(source.SlackTeamID) == "" {
+		source.SlackTeamID = strings.TrimSpace(payload.Team.ID)
+	}
 
-	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, submission.Source.SlackTeamID)
+	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, source.SlackTeamID)
+	if err != nil {
+		return interactionOptionsResponse(nil)
+	}
+	teamID, err := s.resolveTeamIDForSuggestion(ctx, payload, slackWorkspace.WorkspaceID)
 	if err != nil {
 		return interactionOptionsResponse(nil)
 	}
@@ -710,7 +717,7 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 	const optionsLimit = 25
 	switch payload.ActionID {
 	case modalActionAssigneeSelect:
-		members, membersErr := s.repo.SearchTeamMembers(ctx, submission.TeamID, query, optionsLimit)
+		members, membersErr := s.repo.SearchTeamMembers(ctx, teamID, query, optionsLimit)
 		if membersErr != nil {
 			return interactionOptionsResponse(nil)
 		}
@@ -720,7 +727,7 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 		}
 		return interactionOptionsResponse(options)
 	case modalActionLabelsMultiSelect:
-		labels, labelsErr := s.repo.SearchTeamLabels(ctx, slackWorkspace.WorkspaceID, submission.TeamID, query, optionsLimit)
+		labels, labelsErr := s.repo.SearchTeamLabels(ctx, slackWorkspace.WorkspaceID, teamID, query, optionsLimit)
 		if labelsErr != nil {
 			return interactionOptionsResponse(nil)
 		}
@@ -730,7 +737,7 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 		}
 		return interactionOptionsResponse(options)
 	case modalActionObjectiveSelect:
-		objectives, objectivesErr := s.repo.SearchTeamObjectives(ctx, slackWorkspace.WorkspaceID, submission.TeamID, query, optionsLimit)
+		objectives, objectivesErr := s.repo.SearchTeamObjectives(ctx, slackWorkspace.WorkspaceID, teamID, query, optionsLimit)
 		if objectivesErr != nil {
 			return interactionOptionsResponse(nil)
 		}
@@ -1229,6 +1236,69 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 		ObjectiveID: objectiveID,
 		Source:      source,
 	}, nil
+}
+
+func parseSourceFromPrivateMetadata(privateMetadata string) (requestSourceContext, error) {
+	var source requestSourceContext
+	if strings.TrimSpace(privateMetadata) == "" {
+		return source, nil
+	}
+	if err := json.Unmarshal([]byte(privateMetadata), &source); err != nil {
+		return requestSourceContext{}, err
+	}
+	return source, nil
+}
+
+func selectedTeamIDFromState(values map[string]map[string]struct {
+	Type           string `json:"type"`
+	Value          string `json:"value"`
+	SelectedOption struct {
+		Value string `json:"value"`
+	} `json:"selected_option"`
+	SelectedOptions []struct {
+		Value string `json:"value"`
+	} `json:"selected_options"`
+}) string {
+	block := values[modalBlockTeam]
+	for _, action := range block {
+		value := strings.TrimSpace(action.SelectedOption.Value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func (s *Service) resolveTeamIDForSuggestion(ctx context.Context, payload interactionPayload, workspaceID uuid.UUID) (uuid.UUID, error) {
+	if selectedFromState := selectedTeamIDFromState(payload.View.State.Values); selectedFromState != "" {
+		teamID, err := uuid.Parse(selectedFromState)
+		if err == nil && teamID != uuid.Nil {
+			return teamID, nil
+		}
+	}
+
+	for _, block := range payload.View.Blocks {
+		if strings.TrimSpace(block.BlockID) != modalBlockTeam {
+			continue
+		}
+		value := strings.TrimSpace(block.Element.InitialOption.Value)
+		if value == "" {
+			continue
+		}
+		teamID, err := uuid.Parse(value)
+		if err == nil && teamID != uuid.Nil {
+			return teamID, nil
+		}
+	}
+
+	teams, err := s.repo.ListWorkspaceTeams(ctx, workspaceID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if len(teams) == 0 {
+		return uuid.Nil, ErrSlackNoTeamsAvailable
+	}
+	return teams[0].ID, nil
 }
 
 func (s *Service) postSlackRequestAck(ctx context.Context, source requestSourceContext, botToken, workspaceSlug, teamID, requestID string) {
@@ -2007,7 +2077,17 @@ type interactionPayload struct {
 		Hash            string `json:"hash"`
 		CallbackID      string `json:"callback_id"`
 		PrivateMetadata string `json:"private_metadata"`
-		State           struct {
+		Blocks          []struct {
+			BlockID string `json:"block_id"`
+			Element struct {
+				Type          string `json:"type"`
+				ActionID      string `json:"action_id"`
+				InitialOption struct {
+					Value string `json:"value"`
+				} `json:"initial_option"`
+			} `json:"element"`
+		} `json:"blocks"`
+		State struct {
 			Values map[string]map[string]struct {
 				Type           string `json:"type"`
 				Value          string `json:"value"`

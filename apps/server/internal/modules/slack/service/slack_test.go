@@ -886,6 +886,65 @@ func TestHandleInteractivityBlockSuggestionReturnsTeamScopedAssigneeOptions(t *t
 	require.Contains(t, string(resp.Body), memberID.String())
 }
 
+func TestHandleInteractivityBlockSuggestionUsesViewInitialTeamWhenStateEmpty(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	installedBy := uuid.New()
+	memberID := uuid.New()
+
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			teamID: {{UserID: memberID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:       workspaceID,
+			SlackTeamID:       "T123",
+			SlackTeamDomain:   "acme",
+			BotAccessToken:    "xoxb-token",
+			InstalledByUserID: &installedBy,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	interaction := map[string]any{
+		"type":      "block_suggestion",
+		"action_id": modalActionAssigneeSelect,
+		"block_id":  modalBlockAssignee,
+		"value":     "jo",
+		"team":      map[string]any{"id": "T123", "domain": "acme"},
+		"view": map[string]any{
+			"callback_id":      "fortyone_create_task",
+			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme"}`,
+			"blocks": []map[string]any{
+				{
+					"block_id": modalBlockTeam,
+					"element": map[string]any{
+						"type":      "static_select",
+						"action_id": modalActionTeamSelect,
+						"initial_option": map[string]any{
+							"value": teamID.String(),
+						},
+					},
+				},
+			},
+			"state": map[string]any{
+				"values": map[string]any{},
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(interaction)
+	require.NoError(t, err)
+	form := url.Values{}
+	form.Set("payload", string(payloadBytes))
+
+	resp, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Contains(t, string(resp.Body), memberID.String())
+}
+
 func TestHandleInteractivityBlockSuggestionReturnsNoOptionsBeforeTwoCharacters(t *testing.T) {
 	teamID := uuid.New()
 	interaction := map[string]any{
