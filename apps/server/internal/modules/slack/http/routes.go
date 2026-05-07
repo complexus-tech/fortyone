@@ -24,6 +24,7 @@ func Routes(cfg Config, app *web.App) {
 
 	app.Get("/workspaces/{workspaceSlug}/integrations/slack", h.GetIntegration, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/slack/install-session", h.CreateInstallSession, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/integrations/slack", h.DisconnectWorkspace, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/slack/channels/resync", h.ResyncChannels, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/integrations/slack/settings", h.UpdateWorkspaceSettings, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/slack/channel-links", h.CreateChannelLink, auth, workspace)

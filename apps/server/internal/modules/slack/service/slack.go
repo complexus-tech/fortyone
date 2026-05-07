@@ -40,6 +40,9 @@ var (
 
 const (
 	slackPriorityNoPriority = "No Priority"
+	slackRequestStatusValue = "__fortyone_request__"
+	slackStatusKindRequest  = "request"
+	slackStatusKindStory    = "story"
 
 	modalBlockTeam        = "team"
 	modalBlockTitle       = "title"
@@ -279,6 +282,17 @@ func (s *Service) DeleteChannelLink(ctx context.Context, workspaceID, linkID uui
 	return s.repo.DeleteChannelLink(ctx, workspaceID, linkID)
 }
 
+func (s *Service) DisconnectWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	if workspaceID == uuid.Nil {
+		return errors.New("workspace id is required")
+	}
+	return s.repo.DisconnectSlackWorkspace(ctx, workspaceID)
+}
+
+func IsNotFound(err error) bool {
+	return slackrepository.IsNotFound(err)
+}
+
 func (s *Service) VerifyRequest(rawBody []byte, headers http.Header) error {
 	secret := strings.TrimSpace(s.cfg.SigningSecret)
 	if secret == "" {
@@ -455,6 +469,7 @@ func (s *Service) handleBlockActions(ctx context.Context, payload interactionPay
 		Source:      submission.Source,
 		WorkspaceID: slackWorkspace.WorkspaceID,
 		Selection: createTaskModalSelection{
+			StatusKind: submission.StatusKind,
 			TeamID:     submission.TeamID,
 			StatusID:   submission.StatusID,
 			Priority:   submission.Priority,
@@ -525,12 +540,6 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 	}
 
-	settings, err := s.repo.GetWorkspaceSettings(ctx, workspace.ID)
-	if err != nil {
-		s.log.Error(ctx, "failed loading workspace slack settings", "error", err, "workspace_id", workspace.ID)
-		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
-	}
-
 	sourceURL := permalinkFromContext(submission.Source)
 	sourceExternalID := buildSourceExternalID(submission.Source)
 	if sourceExternalID == "" {
@@ -559,8 +568,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		"slack_text":        submission.Source.SlackText,
 	}
 
-	mode := normalizeCreateMode(settings.DefaultCreateMode)
-	sendToRequests := mode == CreateModeSendToRequests
+	sendToRequests := submission.StatusKind == slackStatusKindRequest
 
 	if submission.StatusID != nil {
 		statuses, statusErr := s.repo.ListTeamStatuses(ctx, team.ID)
@@ -568,16 +576,15 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 			s.log.Error(ctx, "failed loading team statuses for slack submission", "error", statusErr, "workspace_id", workspace.ID, "team_id", team.ID)
 			return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(statusErr)})
 		}
-		selectedStatus, found := findStatusByID(statuses, *submission.StatusID)
+		_, found := findStatusByID(statuses, *submission.StatusID)
 		if found {
-			if isTriageStatus(selectedStatus.Name) {
-				sendToRequests = true
-			} else {
-				sendToRequests = false
-			}
+			sendToRequests = false
 		} else {
 			submission.StatusID = nil
 		}
+	}
+	if submission.StatusKind == slackStatusKindStory && submission.StatusID == nil {
+		return interactionValidationErrors(map[string]string{modalBlockStatus: "Selected status is no longer available"})
 	}
 
 	if sendToRequests {
@@ -733,6 +740,7 @@ type createTaskModalViewInput struct {
 }
 
 type createTaskModalSelection struct {
+	StatusKind string
 	TeamID     uuid.UUID
 	StatusID   *uuid.UUID
 	Priority   string
@@ -773,28 +781,19 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 		return nil, err
 	}
 
-	statusOptions := make([]map[string]any, 0, len(statuses))
+	statusOptions := make([]map[string]any, 0, len(statuses)+1)
 	assigneeOptions := make([]map[string]any, 0, len(members))
 	labelOptions := make([]map[string]any, 0, len(labels))
 
-	var selectedStatusOption map[string]any
+	requestStatusOption := toSlackOption("Request", slackRequestStatusValue)
+	statusOptions = append(statusOptions, requestStatusOption)
+	selectedStatusOption := requestStatusOption
 	for _, status := range statuses {
-		option := toSlackOption(slackStatusDisplayName(status.Name), status.ID.String())
+		option := toSlackOption(status.Name, status.ID.String())
 		statusOptions = append(statusOptions, option)
-		if input.Selection.StatusID != nil && *input.Selection.StatusID == status.ID {
+		if input.Selection.StatusKind == slackStatusKindStory && input.Selection.StatusID != nil && *input.Selection.StatusID == status.ID {
 			selectedStatusOption = option
 		}
-	}
-	if selectedStatusOption == nil {
-		for _, status := range statuses {
-			if isTriageStatus(status.Name) {
-				selectedStatusOption = toSlackOption(slackStatusDisplayName(status.Name), status.ID.String())
-				break
-			}
-		}
-	}
-	if selectedStatusOption == nil && len(statusOptions) > 0 {
-		selectedStatusOption = statusOptions[0]
 	}
 
 	var selectedAssigneeOption map[string]any
@@ -1039,12 +1038,16 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 	}
 
 	var statusID *uuid.UUID
+	statusKind := slackStatusKindRequest
 	selectedStatusID := readSelectedOption(modalBlockStatus)
-	if selectedStatusID != "" {
+	if selectedStatusID == slackRequestStatusValue || selectedStatusID == "" {
+		statusKind = slackStatusKindRequest
+	} else {
 		parsedStatusID, parseErr := uuid.Parse(selectedStatusID)
 		if parseErr != nil {
 			return viewSubmissionData{}, errors.New("invalid selected status")
 		}
+		statusKind = slackStatusKindStory
 		statusID = &parsedStatusID
 	}
 
@@ -1071,6 +1074,7 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 		Title:       read(modalBlockTitle),
 		Description: read(modalBlockDescription),
 		TeamID:      teamID,
+		StatusKind:  statusKind,
 		StatusID:    statusID,
 		Priority:    readSelectedOption(modalBlockPriority),
 		AssigneeID:  assigneeID,
@@ -1449,10 +1453,6 @@ func findStatusByID(statuses []slackrepository.StatusRecord, statusID uuid.UUID)
 	return slackrepository.StatusRecord{}, false
 }
 
-func isTriageStatus(name string) bool {
-	return strings.EqualFold(strings.TrimSpace(name), "triage")
-}
-
 func normalizeSlackPriority(value string) string {
 	switch strings.TrimSpace(value) {
 	case "Low", "Medium", "High", "Urgent", slackPriorityNoPriority:
@@ -1460,13 +1460,6 @@ func normalizeSlackPriority(value string) string {
 	default:
 		return slackPriorityNoPriority
 	}
-}
-
-func slackStatusDisplayName(name string) string {
-	if isTriageStatus(name) {
-		return "Request"
-	}
-	return strings.TrimSpace(name)
 }
 
 func selectTeam(teams []slackrepository.TeamRecord, preferredTeamID uuid.UUID) slackrepository.TeamRecord {

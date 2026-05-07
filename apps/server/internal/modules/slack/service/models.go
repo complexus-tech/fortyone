@@ -32,6 +32,7 @@ type Repository interface {
 	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error)
+	DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error
 	UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error
 	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelRecord, error)
 	UpsertChannelLink(ctx context.Context, workspaceID uuid.UUID, slackChannelID string, teamID, createdByUserID uuid.UUID) (slackrepository.SlackChannelLinkRecord, error)
@@ -144,6 +145,7 @@ type viewSubmissionData struct {
 	Title       string
 	Description string
 	TeamID      uuid.UUID
+	StatusKind  string
 	StatusID    *uuid.UUID
 	Priority    string
 	AssigneeID  *uuid.UUID

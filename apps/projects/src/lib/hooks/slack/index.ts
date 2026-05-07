@@ -1,5 +1,6 @@
 export { useSlackIntegration } from "./use-integration";
 export { useCreateSlackInstallSession } from "./use-create-install-session";
+export { useDisconnectSlackWorkspace } from "./use-disconnect-workspace";
 export { useResyncSlackChannels } from "./use-resync-channels";
 export { useUpdateSlackWorkspaceSettings } from "./use-update-workspace-settings";
 export { useCreateSlackChannelLink } from "./use-create-channel-link";

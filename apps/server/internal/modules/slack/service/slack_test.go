@@ -41,6 +41,7 @@ type mockRepo struct {
 	slackWorkspace slackrepository.SlackWorkspaceRecord
 	settings       slackrepository.SlackWorkspaceSettingsRecord
 	err            error
+	disconnected   bool
 }
 
 func (m *mockRepo) FindWorkspaceBySlug(ctx context.Context, slug string) (slackrepository.WorkspaceRecord, error) {
@@ -174,6 +175,15 @@ func (m *mockRepo) GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID st
 	return m.slackWorkspace, nil
 }
 
+func (m *mockRepo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	if m.err != nil {
+		return m.err
+	}
+	m.disconnected = true
+	m.slackWorkspace.IsActive = false
+	return nil
+}
+
 func (m *mockRepo) UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error {
 	return m.err
 }
@@ -253,15 +263,6 @@ func (m *mockStoryService) UpdateLabels(ctx context.Context, id uuid.UUID, works
 	return nil
 }
 
-type statusLookupErrorRepo struct {
-	*mockRepo
-	statusErr error
-}
-
-func (r *statusLookupErrorRepo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
-	return nil, r.statusErr
-}
-
 func newTestService(repo Repository, requests RequestStore, storyService StoryService, cfg Config) *Service {
 	testLogger := logger.NewWithJSON(io.Discard, slog.LevelError, "test")
 	service := New(testLogger, repo, requests, storyService, cfg)
@@ -283,16 +284,32 @@ func TestVerifyRequest(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestHandleViewSubmissionCreatesSlackRequestWhenModeIsRequests(t *testing.T) {
+func TestDisconnectWorkspaceDeactivatesSlackWorkspace(t *testing.T) {
+	workspaceID := uuid.New()
+	repo := &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID: workspaceID,
+			IsActive:    true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	err := service.DisconnectWorkspace(context.Background(), workspaceID)
+
+	require.NoError(t, err)
+	require.True(t, repo.disconnected)
+	require.False(t, repo.slackWorkspace.IsActive)
+}
+
+func TestHandleViewSubmissionCreatesSlackRequestWhenRequestStatusSelected(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
-	triageStatusID := uuid.New()
 	installeBy := uuid.New()
 	repo := &mockRepo{
 		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
 		team:      slackrepository.TeamRecord{ID: teamID, Code: "ENG", Name: "Engineering"},
 		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
-		statuses:  []slackrepository.StatusRecord{{ID: triageStatusID, Name: "Triage", Category: "unstarted"}},
+		statuses:  []slackrepository.StatusRecord{{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
 		slackWorkspace: slackrepository.SlackWorkspaceRecord{
 			WorkspaceID:       workspaceID,
 			SlackTeamID:       "T123",
@@ -302,7 +319,7 @@ func TestHandleViewSubmissionCreatesSlackRequestWhenModeIsRequests(t *testing.T)
 		},
 		settings: slackrepository.SlackWorkspaceSettingsRecord{
 			WorkspaceID:       workspaceID,
-			DefaultCreateMode: CreateModeSendToRequests,
+			DefaultCreateMode: CreateModeCreateTaskNow,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		},
@@ -321,7 +338,7 @@ func TestHandleViewSubmissionCreatesSlackRequestWhenModeIsRequests(t *testing.T)
 					"team":        map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": teamID.String()}}},
 					"title":       map[string]any{"value": map[string]any{"type": "plain_text_input", "value": "Fix login bug"}},
 					"description": map[string]any{"value": map[string]any{"type": "plain_text_input", "value": "User cannot log in from iOS"}},
-					"status":      map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": triageStatusID.String()}}},
+					"status":      map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": slackRequestStatusValue}}},
 					"priority":    map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": "High"}}},
 				},
 			},
@@ -471,8 +488,9 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 	blocks := view["blocks"].([]map[string]any)
 	statusElement := findBlockElement(blocks, modalBlockStatus)
 	statusOptions := statusElement["options"].([]map[string]any)
-	require.Len(t, statusOptions, 1)
-	require.Equal(t, teamTwoStatusID.String(), selectedOptionValue(t, statusOptions[0]))
+	require.Len(t, statusOptions, 2)
+	require.Equal(t, slackRequestStatusValue, selectedOptionValue(t, statusOptions[0]))
+	require.Equal(t, teamTwoStatusID.String(), selectedOptionValue(t, statusOptions[1]))
 
 	assigneeElement := findBlockElement(blocks, modalBlockAssignee)
 	assigneeOptions := assigneeElement["options"].([]map[string]any)
@@ -485,17 +503,17 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 	require.Equal(t, teamTwoLabelID.String(), selectedOptionValue(t, labelOptions[0]))
 }
 
-func TestBuildCreateTaskModalViewShowsRequestLabelForTriageStatus(t *testing.T) {
+func TestBuildCreateTaskModalViewShowsRequestAsFirstSyntheticStatus(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
-	triageStatusID := uuid.New()
+	toDoStatusID := uuid.New()
 
 	repo := &mockRepo{
 		teams: []slackrepository.TeamRecord{
 			{ID: teamID, Code: "ENG", Name: "Engineering"},
 		},
 		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
-			teamID: {{ID: triageStatusID, Name: "Triage", Category: "unstarted"}},
+			teamID: {{ID: toDoStatusID, Name: "To Do", Category: "unstarted"}},
 		},
 	}
 
@@ -514,9 +532,11 @@ func TestBuildCreateTaskModalViewShowsRequestLabelForTriageStatus(t *testing.T) 
 	blocks := view["blocks"].([]map[string]any)
 	statusElement := findBlockElement(blocks, modalBlockStatus)
 	statusOptions := statusElement["options"].([]map[string]any)
-	require.Len(t, statusOptions, 1)
-	require.Equal(t, triageStatusID.String(), selectedOptionValue(t, statusOptions[0]))
+	require.Len(t, statusOptions, 2)
+	require.Equal(t, slackRequestStatusValue, selectedOptionValue(t, statusOptions[0]))
 	require.Equal(t, "Request", optionText(t, statusOptions[0]))
+	require.Equal(t, toDoStatusID.String(), selectedOptionValue(t, statusOptions[1]))
+	require.Equal(t, "To Do", optionText(t, statusOptions[1]))
 }
 
 func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {
@@ -530,12 +550,12 @@ func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {
 	require.Equal(t, "New task", title)
 }
 
-func TestHandleViewSubmissionReturnsValidationErrorWhenStatusLookupFails(t *testing.T) {
+func TestHandleViewSubmissionDefaultsClearedStatusToRequest(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 	installedBy := uuid.New()
 
-	baseRepo := &mockRepo{
+	repo := &mockRepo{
 		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
 		team:      slackrepository.TeamRecord{ID: teamID, Code: "ENG", Name: "Engineering"},
 		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
@@ -553,12 +573,9 @@ func TestHandleViewSubmissionReturnsValidationErrorWhenStatusLookupFails(t *test
 			UpdatedAt:         time.Now(),
 		},
 	}
-	repo := &statusLookupErrorRepo{
-		mockRepo:  baseRepo,
-		statusErr: errors.New("no unstarted status configured for this team"),
-	}
 
-	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://fortyone.app"})
+	requests := &mockRequestStore{}
+	service := newTestService(repo, requests, &mockStoryService{}, Config{WebsiteURL: "https://fortyone.app"})
 
 	interaction := map[string]any{
 		"type": "view_submission",
@@ -584,8 +601,10 @@ func TestHandleViewSubmissionReturnsValidationErrorWhenStatusLookupFails(t *test
 	resp, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Contains(t, string(resp.Body), `"response_action":"errors"`)
-	require.Contains(t, string(resp.Body), "no unstarted status configured for this team")
+	require.Contains(t, string(resp.Body), `"response_action":"clear"`)
+	require.Equal(t, integrationrequests.ProviderSlack, requests.last.Provider)
+	require.Equal(t, SourceTypeSlackMessage, requests.last.SourceType)
+	require.Equal(t, teamID, requests.last.TeamID)
 }
 
 func TestBuildWorkspaceURLSupportsSubdomainsAndLocalhost(t *testing.T) {

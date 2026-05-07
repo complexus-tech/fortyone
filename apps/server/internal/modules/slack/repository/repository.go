@@ -302,6 +302,30 @@ func (r *Repo) GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string
 	return row, nil
 }
 
+func (r *Repo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE slack_workspaces
+		SET is_active = false,
+		    bot_access_token = '',
+		    bot_user_id = NULL,
+		    scope = NULL,
+		    updated_at = NOW()
+		WHERE workspace_id = $1
+		  AND is_active = true
+	`, workspaceID)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (r *Repo) UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []SlackChannelPayload) error {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {

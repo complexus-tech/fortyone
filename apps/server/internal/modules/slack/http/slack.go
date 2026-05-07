@@ -50,6 +50,20 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, AppCreateInstallSession{InstallURL: session.InstallURL}, http.StatusOK)
 }
 
+func (h *Handlers) DisconnectWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if err := h.service.DisconnectWorkspace(ctx, workspace.ID); err != nil {
+		if slack.IsNotFound(err) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) HandleSetup(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
