@@ -248,6 +248,64 @@ func (s *Service) DisconnectWorkspace(ctx context.Context, workspaceID uuid.UUID
 	return s.repo.DisconnectSlackWorkspace(ctx, workspaceID)
 }
 
+func (s *Service) LinkSlackAccount(ctx context.Context, workspaceID, userID uuid.UUID, token string) error {
+	if workspaceID == uuid.Nil {
+		return errors.New("workspace id is required")
+	}
+	if userID == uuid.Nil {
+		return errors.New("user id is required")
+	}
+	if strings.TrimSpace(s.cfg.SecretKey) == "" {
+		return errors.New("slack link token signing secret is not configured")
+	}
+
+	values, err := s.verifyState(strings.TrimSpace(token))
+	if err != nil {
+		return err
+	}
+	if values["kind"] != "slack_user_link" {
+		return errors.New("invalid slack link token")
+	}
+
+	expiresAt, err := strconv.ParseInt(values["expires"], 10, 64)
+	if err != nil {
+		return errors.New("invalid slack link token expiry")
+	}
+	if !s.clock.Now().Before(time.Unix(expiresAt, 0)) {
+		return errors.New("slack link token has expired")
+	}
+
+	tokenWorkspaceID, err := uuid.Parse(values["workspace_id"])
+	if err != nil {
+		return errors.New("invalid slack link token workspace id")
+	}
+	if tokenWorkspaceID != workspaceID {
+		return errors.New("slack link token workspace mismatch")
+	}
+
+	slackTeamID := strings.TrimSpace(values["slack_team_id"])
+	slackUserID := strings.TrimSpace(values["slack_user_id"])
+	if slackTeamID == "" || slackUserID == "" {
+		return errors.New("invalid slack link token")
+	}
+
+	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, slackTeamID)
+	if err != nil {
+		return err
+	}
+	if slackWorkspace.WorkspaceID != workspaceID {
+		return errors.New("slack workspace does not belong to this workspace")
+	}
+
+	return s.repo.UpsertSlackUserLinks(ctx, workspaceID, slackWorkspace.ID, slackTeamID, []slackrepository.SlackUserLinkUpsert{
+		{
+			SlackUserID: slackUserID,
+			UserID:      userID,
+			LinkedVia:   "manual_link",
+		},
+	})
+}
+
 func IsNotFound(err error) bool {
 	return slackrepository.IsNotFound(err)
 }
@@ -329,6 +387,17 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 		return CommandResponse{}, err
 	}
 
+	linkedUserID, connectURL, err := s.resolveLinkedSlackUser(ctx, slackWorkspace.WorkspaceID, source)
+	if err != nil {
+		return CommandResponse{}, err
+	}
+	if linkedUserID == uuid.Nil {
+		return CommandResponse{
+			ResponseType: "ephemeral",
+			Text:         buildConnectSlackAccountMessage(connectURL),
+		}, nil
+	}
+
 	title := parseCommandTitle(values.Get("text"))
 	responseURL := strings.TrimSpace(values.Get("response_url"))
 	s.openCreateTaskModalForCommand(triggerID, title, source, slackWorkspace.WorkspaceID, slackWorkspace.BotAccessToken, responseURL)
@@ -406,10 +475,16 @@ func (s *Service) RecordRequestLog(ctx context.Context, input CoreRequestLogInpu
 }
 
 func (s *Service) handleMessageAction(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
+	messageAuthorID := strings.TrimSpace(payload.Message.User)
+	messageAuthor := messageAuthorID
+	if strings.EqualFold(messageAuthorID, strings.TrimSpace(payload.User.ID)) && strings.TrimSpace(payload.User.Username) != "" {
+		messageAuthor = strings.TrimSpace(payload.User.Username)
+	}
+
 	title := messageToTitle(payload.Message.Text)
 	description := buildPrefilledDescription(requestSourceContext{
-		SlackUserID:   strings.TrimSpace(payload.Message.User),
-		SlackUsername: strings.TrimSpace(payload.User.Username),
+		SlackUserID:   messageAuthorID,
+		SlackUsername: messageAuthor,
 		SlackText:     strings.TrimSpace(payload.Message.Text),
 	})
 	source := requestSourceContext{
@@ -419,7 +494,7 @@ func (s *Service) handleMessageAction(ctx context.Context, payload interactionPa
 		SlackChannel:    strings.TrimSpace(payload.Channel.Name),
 		SlackMessageTS:  strings.TrimSpace(payload.Message.TS),
 		SlackThreadTS:   strings.TrimSpace(payload.Message.ThreadTS),
-		SlackUserID:     strings.TrimSpace(payload.Message.User),
+		SlackUserID:     strings.TrimSpace(payload.User.ID),
 		SlackUsername:   strings.TrimSpace(payload.User.Username),
 		SlackText:       strings.TrimSpace(payload.Message.Text),
 	}
@@ -430,6 +505,24 @@ func (s *Service) handleMessageAction(ctx context.Context, payload interactionPa
 			return InteractionResponse{StatusCode: http.StatusOK}, nil
 		}
 		return InteractionResponse{}, err
+	}
+
+	linkedUserID, connectURL, err := s.resolveLinkedSlackUser(ctx, slackWorkspace.WorkspaceID, source)
+	if err != nil {
+		return InteractionResponse{}, err
+	}
+	if linkedUserID == uuid.Nil {
+		message := buildConnectSlackAccountMessage(connectURL)
+		if responseURL := strings.TrimSpace(payload.ResponseURL); responseURL != "" {
+			if responseErr := s.postCommandResponse(ctx, responseURL, message); responseErr != nil {
+				s.log.Error(ctx, "failed posting slack connect prompt via response_url", "error", responseErr)
+			}
+		} else {
+			if responseErr := s.postEphemeralMessage(ctx, slackWorkspace.BotAccessToken, source.SlackChannelID, source.SlackUserID, message); responseErr != nil {
+				s.log.Error(ctx, "failed posting slack connect prompt", "error", responseErr)
+			}
+		}
+		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	}
 
 	if err := s.openCreateTaskModal(ctx, payload.TriggerID, title, description, source, slackWorkspace.WorkspaceID, slackWorkspace.BotAccessToken); err != nil {
@@ -612,13 +705,17 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		return interactionClearResponse()
 	}
 
-	actorID, err := s.resolveActorForSlackSubmission(ctx, workspace.ID, slackWorkspace, submission.Source)
+	actorID, connectURL, err := s.resolveLinkedSlackUser(ctx, workspace.ID, submission.Source)
 	if err != nil {
 		s.log.Error(ctx, "failed resolving slack actor user", "error", err, "workspace_id", workspace.ID)
 		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 	}
 	if actorID == uuid.Nil {
-		return interactionValidationErrors(map[string]string{"title": "Slack user is not linked to a FortyOne account. Reconnect Slack to refresh user links."})
+		message := buildConnectSlackAccountMessage(connectURL)
+		if promptErr := s.postEphemeralMessage(ctx, slackWorkspace.BotAccessToken, submission.Source.SlackChannelID, submission.Source.SlackUserID, message); promptErr != nil {
+			s.log.Error(ctx, "failed posting slack connect prompt for view submission", "error", promptErr)
+		}
+		return interactionValidationErrors(map[string]string{"title": "Connect your FortyOne account first, then submit again."})
 	}
 	var statusID *uuid.UUID
 	if submission.StatusID != nil {
@@ -1543,6 +1640,24 @@ func (s *Service) postMessage(ctx context.Context, botToken, channelID, threadTS
 	return s.callSlackAPI(ctx, botToken, "https://slack.com/api/chat.postMessage", payload, nil)
 }
 
+func (s *Service) postEphemeralMessage(ctx context.Context, botToken, channelID, userID, text string) error {
+	if strings.TrimSpace(botToken) == "" {
+		return errors.New("missing slack bot token")
+	}
+	channelID = strings.TrimSpace(channelID)
+	userID = strings.TrimSpace(userID)
+	if channelID == "" || userID == "" {
+		return nil
+	}
+
+	payload := map[string]any{
+		"channel": channelID,
+		"user":    userID,
+		"text":    strings.TrimSpace(text),
+	}
+	return s.callSlackAPI(ctx, botToken, "https://slack.com/api/chat.postEphemeral", payload, nil)
+}
+
 func (s *Service) postCommandResponse(ctx context.Context, responseURL, text string) error {
 	if strings.TrimSpace(responseURL) == "" {
 		return nil
@@ -1733,24 +1848,63 @@ func (s *Service) fetchWorkspaceUsers(ctx context.Context, botToken string) ([]s
 	return users, nil
 }
 
-func (s *Service) resolveActorForSlackSubmission(ctx context.Context, workspaceID uuid.UUID, slackWorkspace slackrepository.SlackWorkspaceRecord, source requestSourceContext) (uuid.UUID, error) {
+func (s *Service) resolveLinkedSlackUser(ctx context.Context, workspaceID uuid.UUID, source requestSourceContext) (uuid.UUID, string, error) {
 	slackTeamID := strings.TrimSpace(source.SlackTeamID)
 	slackUserID := strings.TrimSpace(source.SlackUserID)
 	if slackTeamID != "" && slackUserID != "" {
 		mappedUserID, err := s.repo.FindLinkedUserIDBySlackUser(ctx, workspaceID, slackTeamID, slackUserID)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, "", err
 		}
 		if mappedUserID != nil && *mappedUserID != uuid.Nil {
-			return *mappedUserID, nil
+			return *mappedUserID, "", nil
 		}
 	}
 
-	if slackWorkspace.InstalledByUserID != nil && *slackWorkspace.InstalledByUserID != uuid.Nil {
-		return *slackWorkspace.InstalledByUserID, nil
+	connectURL, err := s.buildSlackUserLinkURL(ctx, workspaceID, slackTeamID, slackUserID)
+	if err != nil {
+		return uuid.Nil, "", err
+	}
+	return uuid.Nil, connectURL, nil
+}
+
+func (s *Service) buildSlackUserLinkURL(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (string, error) {
+	if workspaceID == uuid.Nil {
+		return "", errors.New("workspace id is required")
+	}
+	if strings.TrimSpace(s.cfg.SecretKey) == "" {
+		return "", errors.New("slack link token signing secret is not configured")
+	}
+	slackTeamID = strings.TrimSpace(slackTeamID)
+	slackUserID = strings.TrimSpace(slackUserID)
+	if slackTeamID == "" || slackUserID == "" {
+		return "", nil
 	}
 
-	return uuid.Nil, nil
+	workspace, err := s.repo.FindWorkspaceByID(ctx, workspaceID)
+	if err != nil {
+		return "", err
+	}
+	token, err := s.signState(map[string]string{
+		"kind":          "slack_user_link",
+		"workspace_id":  workspaceID.String(),
+		"slack_team_id": slackTeamID,
+		"slack_user_id": slackUserID,
+		"expires":       strconv.FormatInt(s.clock.Now().Add(30*time.Minute).Unix(), 10),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	baseLink := s.buildWorkspaceIntegrationURL(workspace.Slug)
+	linkURL, err := url.Parse(baseLink)
+	if err != nil {
+		return "", nil
+	}
+	query := linkURL.Query()
+	query.Set("slack_link_token", token)
+	linkURL.RawQuery = query.Encode()
+	return linkURL.String(), nil
 }
 
 func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (oauthAccessResponse, error) {
@@ -1967,6 +2121,13 @@ func messageToTitle(message string) string {
 		return firstLine
 	}
 	return strings.TrimSpace(firstLine[:120])
+}
+
+func buildConnectSlackAccountMessage(connectURL string) string {
+	if strings.TrimSpace(connectURL) == "" {
+		return "Connect your FortyOne account before creating tasks from Slack."
+	}
+	return fmt.Sprintf("Connect your FortyOne account to continue: <%s|Connect FortyOne account>", connectURL)
 }
 
 func buildPrefilledDescription(source requestSourceContext) string {
@@ -2429,12 +2590,13 @@ func isZeroRequestSource(source requestSourceContext) bool {
 }
 
 type interactionPayload struct {
-	Type      string `json:"type"`
-	TriggerID string `json:"trigger_id"`
-	ActionID  string `json:"action_id"`
-	BlockID   string `json:"block_id"`
-	Value     string `json:"value"`
-	Team      struct {
+	Type        string `json:"type"`
+	TriggerID   string `json:"trigger_id"`
+	ResponseURL string `json:"response_url"`
+	ActionID    string `json:"action_id"`
+	BlockID     string `json:"block_id"`
+	Value       string `json:"value"`
+	Team        struct {
 		ID     string `json:"id"`
 		Domain string `json:"domain"`
 	} `json:"team"`

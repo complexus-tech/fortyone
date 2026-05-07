@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
 import { MoreHorizontalIcon, ReloadIcon, UnlinkIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
@@ -9,6 +10,7 @@ import { SectionHeader } from "@/modules/settings/components";
 import {
   useCreateSlackInstallSession,
   useDisconnectSlackWorkspace,
+  useLinkSlackAccount,
   useResyncSlackChannels,
   useSlackIntegration,
 } from "@/lib/hooks/slack";
@@ -38,17 +40,36 @@ const SlackIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   </svg>
 );
 
+let slackLinkTokenConsumed = false;
+
 export const SlackIntegrationSettings = () => {
+  const searchParams = useSearchParams();
   const { data: integration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
 
   const createInstallSession = useCreateSlackInstallSession();
   const disconnectWorkspace = useDisconnectSlackWorkspace();
+  const linkSlackAccount = useLinkSlackAccount();
   const resyncChannels = useResyncSlackChannels();
   const [isDisconnectOpen, setIsDisconnectOpen] = useState(false);
 
   const isConnected = Boolean(integration?.slackWorkspace?.isActive);
   const slackWorkspace = integration?.slackWorkspace;
+
+  useEffect(() => {
+    const token = searchParams.get("slack_link_token");
+    if (!token || slackLinkTokenConsumed) {
+      return;
+    }
+    slackLinkTokenConsumed = true;
+    linkSlackAccount.mutate(token, {
+      onSettled: () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("slack_link_token");
+        window.history.replaceState({}, "", url.toString());
+      },
+    });
+  }, [linkSlackAccount, searchParams]);
 
   return (
     <Box>

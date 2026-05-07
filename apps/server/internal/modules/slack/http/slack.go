@@ -71,6 +71,27 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, AppCreateInstallSession{InstallURL: session.InstallURL}, http.StatusOK)
 }
 
+func (h *Handlers) LinkAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var input AppLinkSlackAccountRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.service.LinkSlackAccount(ctx, workspace.ID, userID, input.Token); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
 func (h *Handlers) DisconnectWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {

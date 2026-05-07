@@ -39,6 +39,10 @@ type AppCreateInstallSession struct {
 	InstallURL string `json:"installUrl"`
 }
 
+type AppLinkSlackAccountRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
 type AppRequestLog struct {
 	ID           string            `json:"id"`
 	RequestType  string            `json:"requestType"`

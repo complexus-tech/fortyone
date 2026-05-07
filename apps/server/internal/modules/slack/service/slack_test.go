@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -736,6 +737,9 @@ func TestHandleCommandRespondsEvenWhenOpeningModalFails(t *testing.T) {
 			BotAccessToken: "xoxb-token",
 			IsActive:       true,
 		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": uuid.New(),
+		},
 	}
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	service.client = &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
@@ -756,6 +760,80 @@ func TestHandleCommandRespondsEvenWhenOpeningModalFails(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "ephemeral", resp.ResponseType)
 	require.Contains(t, resp.Text, "Opening")
+}
+
+func TestHandleCommandPromptsAccountLinkWhenSlackUserIsUnmapped(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:    workspaceID,
+			SlackTeamID:    "T123",
+			BotAccessToken: "xoxb-token",
+			IsActive:       true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{
+		WebsiteURL: "https://fortyone.app",
+		SecretKey:  "test-secret",
+	})
+
+	form := url.Values{}
+	form.Set("team_id", "T123")
+	form.Set("team_domain", "acme")
+	form.Set("channel_id", "C123")
+	form.Set("channel_name", "general")
+	form.Set("user_id", "U456")
+	form.Set("user_name", "joseph")
+	form.Set("trigger_id", "trigger")
+	form.Set("text", "create task Ship it")
+
+	resp, err := service.HandleCommand(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, "ephemeral", resp.ResponseType)
+	require.Contains(t, resp.Text, "Connect FortyOne account")
+	require.Contains(t, resp.Text, "slack_link_token=")
+}
+
+func TestLinkSlackAccountCreatesManualMapping(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{
+			ID:   workspaceID,
+			Slug: "acme",
+			Name: "Acme",
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          uuid.New(),
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T123",
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{
+		SecretKey: "test-secret",
+	})
+
+	token, err := service.signState(map[string]string{
+		"kind":          "slack_user_link",
+		"workspace_id":  workspaceID.String(),
+		"slack_team_id": "T123",
+		"slack_user_id": "U999",
+		"expires":       strconv.FormatInt(service.clock.Now().Add(10*time.Minute).Unix(), 10),
+	})
+	require.NoError(t, err)
+
+	err = service.LinkSlackAccount(context.Background(), workspaceID, userID, token)
+	require.NoError(t, err)
+
+	require.NotNil(t, repo.slackUserLinks)
+	require.Equal(t, userID, repo.slackUserLinks["T123:U999"])
 }
 
 func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {
