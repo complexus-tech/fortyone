@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "lib";
-import { CheckIcon, CloseIcon, GitHubIcon } from "icons";
+import { ChatIcon, CheckIcon, CloseIcon, GitHubIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -70,6 +70,8 @@ export const IntegrationRequestCard = ({
               <Flex align="center" className="min-w-0" gap={2}>
                 {request.provider === "github" ? (
                   <GitHubIcon className="h-4 shrink-0" />
+                ) : request.provider === "slack" ? (
+                  <ChatIcon className="h-4 shrink-0" />
                 ) : null}
                 <Text className="line-clamp-1" color="muted">
                   {providerLabel(request.provider)} {request.sourceType}{" "}

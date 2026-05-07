@@ -139,6 +139,10 @@ type Config struct {
 		WebhookURL       string `env:"GITHUB_WEBHOOK_URL"`
 		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
+	Slack struct {
+		BotToken      string `env:"SLACK_BOT_TOKEN"`
+		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
+	}
 }
 
 func main() {
@@ -372,25 +376,25 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:             db,
-		Redis:          rdb,
-		Publisher:      publisher,
-		Shutdown:       shutdown,
-		Log:            log,
-		Tracer:         tracer,
-		SecretKey:      cfg.Auth.SecretKey,
-		CookieDomain:   cfg.Auth.CookieDomain,
-		EmailService:   mailerService,
-		BrevoService:   brevoService,
-		GoogleService:  googleService,
-		Validate:       validate,
-		StorageConfig:  storageConfig,
-		StorageService: storageService,
-		Cache:          cacheService,
-		TasksService:   tasksService,
-		StripeClient:   stripeClient,
-		WebhookSecret:  cfg.Stripe.WebhookSecret,
-		WebsiteURL:     cfg.Website.URL,
+		DB:                 db,
+		Redis:              rdb,
+		Publisher:          publisher,
+		Shutdown:           shutdown,
+		Log:                log,
+		Tracer:             tracer,
+		SecretKey:          cfg.Auth.SecretKey,
+		CookieDomain:       cfg.Auth.CookieDomain,
+		EmailService:       mailerService,
+		BrevoService:       brevoService,
+		GoogleService:      googleService,
+		Validate:           validate,
+		StorageConfig:      storageConfig,
+		StorageService:     storageService,
+		Cache:              cacheService,
+		TasksService:       tasksService,
+		StripeClient:       stripeClient,
+		WebhookSecret:      cfg.Stripe.WebhookSecret,
+		WebsiteURL:         cfg.Website.URL,
 		GitHubAppID:        cfg.GitHub.AppID,
 		GitHubAppSlug:      cfg.GitHub.AppSlug,
 		GitHubClientID:     cfg.GitHub.ClientID,
@@ -399,8 +403,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubKeyBase64:    cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect:     cfg.GitHub.RedirectURL,
 		GitHubWebhook:      cfg.GitHub.WebhookSecret,
-		SSEHub:         sseHub,
-		CorsOrigin:     "*",
+		SlackBotToken:      cfg.Slack.BotToken,
+		SlackSigningSecret: cfg.Slack.SigningSecret,
+		SSEHub:             sseHub,
+		CorsOrigin:         "*",
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

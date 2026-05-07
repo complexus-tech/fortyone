@@ -14,6 +14,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useParams, useRouter } from "next/navigation";
 import {
+  ChatIcon,
   CheckIcon,
   CloseIcon,
   ClockIcon,
@@ -209,6 +210,43 @@ const RequestGitHubBanner = ({
   </Box>
 );
 
+const RequestSlackBanner = ({
+  sourceUrl,
+  channel,
+}: {
+  sourceUrl?: string;
+  channel: string | null;
+}) => (
+  <Box className="mb-3 space-y-2">
+    <Flex
+      align="center"
+      className="border-border bg-surface-muted/40 rounded-xl border px-4 py-3"
+      justify="between"
+    >
+      <Flex align="center" className="min-w-0" gap={2}>
+        <ChatIcon className="h-5 shrink-0" />
+        <Text className="line-clamp-1 font-medium">Story from Slack</Text>
+        {channel ? (
+          <Text className="line-clamp-1" color="muted">
+            #{channel}
+          </Text>
+        ) : null}
+      </Flex>
+      {sourceUrl ? (
+        <a
+          className="text-muted hover:text-foreground rounded-md p-1 transition"
+          href={sourceUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Open in Slack"
+        >
+          <NewTabIcon className="h-5 text-current" />
+        </a>
+      ) : null}
+    </Flex>
+  </Box>
+);
+
 const GitHubComments = ({ requestId }: { requestId: string }) => {
   const { data: comments = [], isLoading } =
     useRequestGitHubComments(requestId);
@@ -346,6 +384,7 @@ export const IntegrationRequestDetails = ({
   }
 
   const repositoryName = metadataText(request.metadata.repository_full_name);
+  const slackChannel = metadataText(request.metadata.slack_channel);
   const issueNumber = request.sourceNumber ? `#${request.sourceNumber}` : "";
   const selectedStatus = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === request.assigneeId);
@@ -367,11 +406,19 @@ export const IntegrationRequestDetails = ({
         <Box className="min-w-0 flex-1">
           <BodyContainer className="h-dvh overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
-              <RequestGitHubBanner
-                issueNumber={issueNumber}
-                repositoryName={repositoryName}
-                sourceUrl={request.sourceUrl}
-              />
+              {request.provider === "github" ? (
+                <RequestGitHubBanner
+                  issueNumber={issueNumber}
+                  repositoryName={repositoryName}
+                  sourceUrl={request.sourceUrl}
+                />
+              ) : null}
+              {request.provider === "slack" ? (
+                <RequestSlackBanner
+                  channel={slackChannel}
+                  sourceUrl={request.sourceUrl}
+                />
+              ) : null}
               <TextEditor
                 asTitle
                 className="text-foreground mb-8 text-3xl md:text-4xl"
@@ -379,30 +426,47 @@ export const IntegrationRequestDetails = ({
               />
               <TextEditor className="text-lg" editor={descriptionEditor} />
               <Divider className="my-6" />
-              <Box>
-                <Text
-                  as="h4"
-                  className="mb-4 flex items-center gap-1"
-                  fontWeight="medium"
-                >
-                  <ClockIcon className="relative -top-px" />
-                  Activity feed
-                </Text>
-                <Tabs defaultValue="github">
-                  <Tabs.List className="mx-0 mb-5 md:mx-0">
-                    <Tabs.Tab
-                      className="gap-1 px-2"
-                      leftIcon={<GitHubIcon className="h-[1.05rem]" />}
-                      value="github"
-                    >
-                      GitHub
-                    </Tabs.Tab>
-                  </Tabs.List>
-                  <Tabs.Panel value="github">
-                    <GitHubComments requestId={request.id} />
-                  </Tabs.Panel>
-                </Tabs>
-              </Box>
+              {request.provider === "github" ? (
+                <Box>
+                  <Text
+                    as="h4"
+                    className="mb-4 flex items-center gap-1"
+                    fontWeight="medium"
+                  >
+                    <ClockIcon className="relative -top-px" />
+                    Activity feed
+                  </Text>
+                  <Tabs defaultValue="github">
+                    <Tabs.List className="mx-0 mb-5 md:mx-0">
+                      <Tabs.Tab
+                        className="gap-1 px-2"
+                        leftIcon={<GitHubIcon className="h-[1.05rem]" />}
+                        value="github"
+                      >
+                        GitHub
+                      </Tabs.Tab>
+                    </Tabs.List>
+                    <Tabs.Panel value="github">
+                      <GitHubComments requestId={request.id} />
+                    </Tabs.Panel>
+                  </Tabs>
+                </Box>
+              ) : (
+                <Box>
+                  <Text
+                    as="h4"
+                    className="mb-2 flex items-center gap-1"
+                    fontWeight="medium"
+                  >
+                    <ClockIcon className="relative -top-px" />
+                    Activity feed
+                  </Text>
+                  <Text color="muted">
+                    Slack story details are captured in the source link and
+                    metadata.
+                  </Text>
+                </Box>
+              )}
             </Container>
           </BodyContainer>
         </Box>
@@ -457,9 +521,17 @@ export const IntegrationRequestDetails = ({
                 label="Source"
                 value={
                   <Flex align="center" className="gap-2 md:ml-0.5">
-                    <GitHubIcon className="h-4" />
+                    {request.provider === "github" ? (
+                      <GitHubIcon className="h-4" />
+                    ) : request.provider === "slack" ? (
+                      <ChatIcon className="h-4" />
+                    ) : null}
                     <Text className="line-clamp-1">
-                      GitHub issue {issueNumber || request.sourceExternalId}
+                      {request.provider === "github"
+                        ? `GitHub issue ${issueNumber || request.sourceExternalId}`
+                        : request.provider === "slack"
+                          ? `Slack message ${request.sourceExternalId}`
+                          : `${request.provider} ${request.sourceExternalId}`}
                     </Text>
                   </Flex>
                 }

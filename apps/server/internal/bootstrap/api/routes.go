@@ -20,6 +20,7 @@ import (
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
+	slackhttp "github.com/complexus-tech/projects-api/internal/modules/slack/http"
 	sprintshttp "github.com/complexus-tech/projects-api/internal/modules/sprints/http"
 	stateshttp "github.com/complexus-tech/projects-api/internal/modules/states/http"
 	storieshttp "github.com/complexus-tech/projects-api/internal/modules/stories/http"
@@ -84,6 +85,10 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 		Service:   svcs.github,
 		Users:     &userLookupAdapter{svc: svcs.users},
+	}, app)
+	slackhttp.Routes(slackhttp.Config{
+		Log:     cfg.Log,
+		Service: svcs.slack,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{

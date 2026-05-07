@@ -40,6 +40,8 @@ import (
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
+	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	sprintsrepository "github.com/complexus-tech/projects-api/internal/modules/sprints/repository"
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
@@ -67,6 +69,7 @@ type services struct {
 	documents           *documents.Service
 	epics               *epics.Service
 	github              *github.Service
+	slack               *slack.Service
 	integrationRequests *integrationrequests.Service
 	invitations         *invitations.Service
 	keyResults          *keyresults.Service
@@ -158,12 +161,23 @@ func buildServices(cfg mux.Config) services {
 	if err != nil {
 		panic("failed to initialize github service: " + err.Error())
 	}
+	slackService := slack.New(
+		cfg.Log,
+		slackrepository.New(cfg.Log, cfg.DB),
+		integrationRequestsRepo,
+		slack.Config{
+			SigningSecret: cfg.SlackSigningSecret,
+			BotToken:      cfg.SlackBotToken,
+			WebsiteURL:    cfg.WebsiteURL,
+		},
+	)
 	integrationRequestsService := integrationrequests.New(
 		cfg.Log,
 		integrationRequestsRepo,
 		storiesService,
 		map[string]integrationrequests.ProviderAccepter{
 			integrationrequests.ProviderGitHub: githubService,
+			integrationrequests.ProviderSlack:  slackService,
 		},
 	)
 
@@ -175,6 +189,7 @@ func buildServices(cfg mux.Config) services {
 		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
 		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
 		github:              githubService,
+		slack:               slackService,
 		integrationRequests: integrationRequestsService,
 		invitations:         invitationsService,
 		keyResults:          keyResultsService,
@@ -218,6 +233,9 @@ func (s services) validate() error {
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")
+	}
+	if s.slack == nil {
+		return fmt.Errorf("missing service: slack")
 	}
 	if s.integrationRequests == nil {
 		return fmt.Errorf("missing service: integrationRequests")
