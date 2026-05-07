@@ -699,11 +699,19 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 
 func (s *Service) handleBlockSuggestion(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
 	if callbackID := strings.TrimSpace(payload.View.CallbackID); callbackID != "" && callbackID != "fortyone_create_task" {
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome: "suggestion_skipped_invalid_callback",
+			Reason:  "callback_id_not_supported",
+		})
 		return interactionOptionsResponse(nil)
 	}
 
 	source, err := parseSourceFromPrivateMetadata(payload.View.PrivateMetadata)
 	if err != nil {
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome: "suggestion_skipped_invalid_metadata",
+			Reason:  err.Error(),
+		})
 		return interactionOptionsResponse(nil)
 	}
 	if strings.TrimSpace(source.SlackTeamID) == "" {
@@ -712,15 +720,37 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 
 	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, source.SlackTeamID)
 	if err != nil {
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_skipped_workspace_not_found",
+			Reason:       err.Error(),
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  uuid.Nil,
+			ResolvedTeam: uuid.Nil,
+		})
 		return interactionOptionsResponse(nil)
 	}
 	teamID, err := s.resolveTeamIDForSuggestion(ctx, payload, slackWorkspace.WorkspaceID)
 	if err != nil {
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_skipped_team_resolution_failed",
+			Reason:       err.Error(),
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: uuid.Nil,
+		})
 		return interactionOptionsResponse(nil)
 	}
 
 	query := suggestionQuery(payload)
 	if len([]rune(query)) < 2 {
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_skipped_query_too_short",
+			Query:        query,
+			ActionID:     suggestionActionID(payload),
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: teamID,
+		})
 		return interactionOptionsResponse(nil)
 	}
 
@@ -729,35 +759,154 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 	case modalActionAssigneeSelect:
 		members, membersErr := s.repo.SearchTeamMembers(ctx, teamID, query, optionsLimit)
 		if membersErr != nil {
+			s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+				Outcome:      "suggestion_search_error_members",
+				Reason:       membersErr.Error(),
+				Query:        query,
+				ActionID:     modalActionAssigneeSelect,
+				SlackTeamID:  source.SlackTeamID,
+				WorkspaceID:  slackWorkspace.WorkspaceID,
+				ResolvedTeam: teamID,
+			})
 			return interactionOptionsResponse(nil)
 		}
 		options := make([]map[string]any, 0, len(members))
 		for _, member := range members {
 			options = append(options, toSlackOption(teamMemberDisplayName(member), member.UserID.String()))
 		}
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_search_members",
+			Query:        query,
+			ActionID:     modalActionAssigneeSelect,
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: teamID,
+			ResultCount:  len(options),
+		})
 		return interactionOptionsResponse(options)
 	case modalActionLabelsMultiSelect:
 		labels, labelsErr := s.repo.SearchTeamLabels(ctx, slackWorkspace.WorkspaceID, teamID, query, optionsLimit)
 		if labelsErr != nil {
+			s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+				Outcome:      "suggestion_search_error_labels",
+				Reason:       labelsErr.Error(),
+				Query:        query,
+				ActionID:     modalActionLabelsMultiSelect,
+				SlackTeamID:  source.SlackTeamID,
+				WorkspaceID:  slackWorkspace.WorkspaceID,
+				ResolvedTeam: teamID,
+			})
 			return interactionOptionsResponse(nil)
 		}
 		options := make([]map[string]any, 0, len(labels))
 		for _, label := range labels {
 			options = append(options, toSlackOption(label.Name, label.ID.String()))
 		}
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_search_labels",
+			Query:        query,
+			ActionID:     modalActionLabelsMultiSelect,
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: teamID,
+			ResultCount:  len(options),
+		})
 		return interactionOptionsResponse(options)
 	case modalActionObjectiveSelect:
 		objectives, objectivesErr := s.repo.SearchTeamObjectives(ctx, slackWorkspace.WorkspaceID, teamID, query, optionsLimit)
 		if objectivesErr != nil {
+			s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+				Outcome:      "suggestion_search_error_objectives",
+				Reason:       objectivesErr.Error(),
+				Query:        query,
+				ActionID:     modalActionObjectiveSelect,
+				SlackTeamID:  source.SlackTeamID,
+				WorkspaceID:  slackWorkspace.WorkspaceID,
+				ResolvedTeam: teamID,
+			})
 			return interactionOptionsResponse(nil)
 		}
 		options := make([]map[string]any, 0, len(objectives))
 		for _, objective := range objectives {
 			options = append(options, toSlackOption(objective.Name, objective.ID.String()))
 		}
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_search_objectives",
+			Query:        query,
+			ActionID:     modalActionObjectiveSelect,
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: teamID,
+			ResultCount:  len(options),
+		})
 		return interactionOptionsResponse(options)
 	default:
+		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
+			Outcome:      "suggestion_skipped_unknown_action",
+			Query:        query,
+			ActionID:     suggestionActionID(payload),
+			SlackTeamID:  source.SlackTeamID,
+			WorkspaceID:  slackWorkspace.WorkspaceID,
+			ResolvedTeam: teamID,
+		})
 		return interactionOptionsResponse(nil)
+	}
+}
+
+type suggestionDebugInput struct {
+	Outcome      string
+	Reason       string
+	Query        string
+	ActionID     string
+	SlackTeamID  string
+	WorkspaceID  uuid.UUID
+	ResolvedTeam uuid.UUID
+	ResultCount  int
+}
+
+func (s *Service) recordSuggestionDebug(ctx context.Context, payload interactionPayload, input suggestionDebugInput) {
+	details := map[string]any{
+		"type":          payload.Type,
+		"action_id":     strings.TrimSpace(input.ActionID),
+		"query":         strings.TrimSpace(input.Query),
+		"team_id":       strings.TrimSpace(input.SlackTeamID),
+		"resolved_team": strings.TrimSpace(input.ResolvedTeam.String()),
+		"result_count":  input.ResultCount,
+		"reason":        strings.TrimSpace(input.Reason),
+		"user_id":       strings.TrimSpace(payload.User.ID),
+		"channel_id":    strings.TrimSpace(payload.Channel.ID),
+	}
+	body, err := json.Marshal(details)
+	if err != nil {
+		return
+	}
+
+	var workspaceIDPtr *uuid.UUID
+	if input.WorkspaceID != uuid.Nil {
+		workspaceIDPtr = &input.WorkspaceID
+	}
+	slackTeamID := optionalString(input.SlackTeamID)
+	slackUserID := optionalString(payload.User.ID)
+	slackChannelID := optionalString(payload.Channel.ID)
+	triggerID := optionalString(payload.TriggerID)
+	requestBody := optionalString(string(body))
+	errorMessage := optionalString(input.Reason)
+
+	if insertErr := s.repo.InsertRequestLog(ctx, slackrepository.SlackRequestLogInsert{
+		RequestType:  "suggestion_search",
+		Endpoint:     "/integrations/slack/interactivity",
+		WorkspaceID:  workspaceIDPtr,
+		SlackTeamID:  slackTeamID,
+		SlackUserID:  slackUserID,
+		SlackChannel: slackChannelID,
+		TriggerID:    triggerID,
+		RequestBody:  requestBody,
+		Headers:      []byte("{}"),
+		ResponseCode: http.StatusOK,
+		Outcome:      truncateForLog(strings.TrimSpace(input.Outcome), 120),
+		ErrorMessage: errorMessage,
+	}); insertErr != nil {
+		s.log.Warn(ctx, "failed writing suggestion diagnostic log", "error", insertErr)
 	}
 }
 
