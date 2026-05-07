@@ -51,6 +51,11 @@ type LabelRecord struct {
 	Name string    `db:"name"`
 }
 
+type ObjectiveRecord struct {
+	ID   uuid.UUID `db:"objective_id"`
+	Name string    `db:"name"`
+}
+
 type SlackWorkspaceRecord struct {
 	ID                uuid.UUID  `db:"id"`
 	WorkspaceID       uuid.UUID  `db:"workspace_id"`
@@ -413,6 +418,131 @@ func (r *Repo) ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID
 		return nil, err
 	}
 	return rows, nil
+}
+
+func (r *Repo) FindTeamMemberByID(ctx context.Context, teamID, userID uuid.UUID) (TeamMemberRecord, error) {
+	var row TeamMemberRecord
+	err := r.db.GetContext(ctx, &row, `
+		SELECT u.user_id, u.username, COALESCE(u.full_name, '') AS full_name, u.email
+		FROM team_members tm
+		JOIN users u ON u.user_id = tm.user_id
+		WHERE tm.team_id = $1
+		  AND tm.user_id = $2
+		  AND u.is_active = true
+		LIMIT 1
+	`, teamID, userID)
+	if err != nil {
+		return TeamMemberRecord{}, err
+	}
+	return row, nil
+}
+
+func (r *Repo) FindTeamLabelByID(ctx context.Context, workspaceID, teamID, labelID uuid.UUID) (LabelRecord, error) {
+	var row LabelRecord
+	err := r.db.GetContext(ctx, &row, `
+		SELECT label_id, name
+		FROM labels
+		WHERE workspace_id = $1
+		  AND label_id = $2
+		  AND (team_id = $3 OR team_id IS NULL)
+		LIMIT 1
+	`, workspaceID, labelID, teamID)
+	if err != nil {
+		return LabelRecord{}, err
+	}
+	return row, nil
+}
+
+func (r *Repo) FindTeamObjectiveByID(ctx context.Context, workspaceID, teamID, objectiveID uuid.UUID) (ObjectiveRecord, error) {
+	var row ObjectiveRecord
+	err := r.db.GetContext(ctx, &row, `
+		SELECT objective_id, name
+		FROM objectives
+		WHERE workspace_id = $1
+		  AND team_id = $2
+		  AND objective_id = $3
+		LIMIT 1
+	`, workspaceID, teamID, objectiveID)
+	if err != nil {
+		return ObjectiveRecord{}, err
+	}
+	return row, nil
+}
+
+func (r *Repo) SearchTeamMembers(ctx context.Context, teamID uuid.UUID, query string, limit int) ([]TeamMemberRecord, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 25
+	}
+	rows := make([]TeamMemberRecord, 0)
+	searchQuery := "%" + query + "%"
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT u.user_id, u.username, COALESCE(u.full_name, '') AS full_name, u.email
+		FROM team_members tm
+		JOIN users u ON u.user_id = tm.user_id
+		WHERE tm.team_id = $1
+		  AND u.is_active = true
+		  AND (
+			LOWER(COALESCE(u.full_name, '')) LIKE LOWER($2)
+			OR LOWER(COALESCE(u.username, '')) LIKE LOWER($2)
+			OR LOWER(COALESCE(u.email, '')) LIKE LOWER($2)
+		  )
+		ORDER BY COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(u.username), ''), u.email) ASC
+		LIMIT $3
+	`, teamID, searchQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) SearchTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]LabelRecord, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 25
+	}
+	rows := make([]LabelRecord, 0)
+	searchQuery := "%" + query + "%"
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT label_id, name
+		FROM labels
+		WHERE workspace_id = $1
+		  AND (team_id = $2 OR team_id IS NULL)
+		  AND LOWER(name) LIKE LOWER($3)
+		ORDER BY name ASC
+		LIMIT $4
+	`, workspaceID, teamID, searchQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) SearchTeamObjectives(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]ObjectiveRecord, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 25
+	}
+	rows := make([]ObjectiveRecord, 0)
+	searchQuery := "%" + query + "%"
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT objective_id, name
+		FROM objectives
+		WHERE workspace_id = $1
+		  AND team_id = $2
+		  AND LOWER(name) LIKE LOWER($3)
+		ORDER BY name ASC
+		LIMIT $4
+	`, workspaceID, teamID, searchQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) CreateStoryLink(ctx context.Context, storyID uuid.UUID, title, linkURL string) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO story_links (title, url, story_id)
+		VALUES ($1, $2, $3)
+	`, title, linkURL, storyID)
+	return err
 }
 
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {

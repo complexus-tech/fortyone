@@ -29,18 +29,25 @@ type fixedClock struct{ now time.Time }
 func (f fixedClock) Now() time.Time { return f.now }
 
 type mockRepo struct {
-	workspace      slackrepository.WorkspaceRecord
-	team           slackrepository.TeamRecord
-	teams          []slackrepository.TeamRecord
-	statuses       []slackrepository.StatusRecord
-	statusesByTeam map[uuid.UUID][]slackrepository.StatusRecord
-	teamMembers    []slackrepository.TeamMemberRecord
-	membersByTeam  map[uuid.UUID][]slackrepository.TeamMemberRecord
-	labels         []slackrepository.LabelRecord
-	labelsByTeam   map[uuid.UUID][]slackrepository.LabelRecord
-	slackWorkspace slackrepository.SlackWorkspaceRecord
-	err            error
-	disconnected   bool
+	workspace        slackrepository.WorkspaceRecord
+	team             slackrepository.TeamRecord
+	teams            []slackrepository.TeamRecord
+	statuses         []slackrepository.StatusRecord
+	statusesByTeam   map[uuid.UUID][]slackrepository.StatusRecord
+	teamMembers      []slackrepository.TeamMemberRecord
+	membersByTeam    map[uuid.UUID][]slackrepository.TeamMemberRecord
+	labels           []slackrepository.LabelRecord
+	labelsByTeam     map[uuid.UUID][]slackrepository.LabelRecord
+	objectives       []slackrepository.ObjectiveRecord
+	objectivesByTeam map[uuid.UUID][]slackrepository.ObjectiveRecord
+	slackWorkspace   slackrepository.SlackWorkspaceRecord
+	err              error
+	disconnected     bool
+	lastStoryLink    struct {
+		storyID uuid.UUID
+		title   string
+		url     string
+	}
 }
 
 func (m *mockRepo) FindWorkspaceBySlug(ctx context.Context, slug string) (slackrepository.WorkspaceRecord, error) {
@@ -131,6 +138,120 @@ func (m *mockRepo) ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.
 	return m.labels, nil
 }
 
+func (m *mockRepo) FindTeamMemberByID(ctx context.Context, teamID, userID uuid.UUID) (slackrepository.TeamMemberRecord, error) {
+	if m.err != nil {
+		return slackrepository.TeamMemberRecord{}, m.err
+	}
+	members, err := m.ListTeamMembers(ctx, teamID)
+	if err != nil {
+		return slackrepository.TeamMemberRecord{}, err
+	}
+	for _, member := range members {
+		if member.UserID == userID {
+			return member, nil
+		}
+	}
+	return slackrepository.TeamMemberRecord{}, errors.New("member not found")
+}
+
+func (m *mockRepo) FindTeamLabelByID(ctx context.Context, workspaceID, teamID, labelID uuid.UUID) (slackrepository.LabelRecord, error) {
+	if m.err != nil {
+		return slackrepository.LabelRecord{}, m.err
+	}
+	labels, err := m.ListTeamLabels(ctx, workspaceID, teamID)
+	if err != nil {
+		return slackrepository.LabelRecord{}, err
+	}
+	for _, label := range labels {
+		if label.ID == labelID {
+			return label, nil
+		}
+	}
+	return slackrepository.LabelRecord{}, errors.New("label not found")
+}
+
+func (m *mockRepo) FindTeamObjectiveByID(ctx context.Context, workspaceID, teamID, objectiveID uuid.UUID) (slackrepository.ObjectiveRecord, error) {
+	if m.err != nil {
+		return slackrepository.ObjectiveRecord{}, m.err
+	}
+	rows := m.objectives
+	if len(m.objectivesByTeam) > 0 {
+		rows = m.objectivesByTeam[teamID]
+	}
+	for _, objective := range rows {
+		if objective.ID == objectiveID {
+			return objective, nil
+		}
+	}
+	return slackrepository.ObjectiveRecord{}, errors.New("objective not found")
+}
+
+func (m *mockRepo) SearchTeamMembers(ctx context.Context, teamID uuid.UUID, query string, limit int) ([]slackrepository.TeamMemberRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	members, err := m.ListTeamMembers(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]slackrepository.TeamMemberRecord, 0)
+	q := strings.ToLower(strings.TrimSpace(query))
+	for _, member := range members {
+		name := strings.ToLower(member.FullName)
+		username := strings.ToLower(member.Username)
+		email := strings.ToLower(member.Email)
+		if strings.Contains(name, q) || strings.Contains(username, q) || strings.Contains(email, q) {
+			filtered = append(filtered, member)
+		}
+	}
+	if limit > 0 && len(filtered) > limit {
+		filtered = filtered[:limit]
+	}
+	return filtered, nil
+}
+
+func (m *mockRepo) SearchTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.LabelRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	labels, err := m.ListTeamLabels(ctx, workspaceID, teamID)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]slackrepository.LabelRecord, 0)
+	q := strings.ToLower(strings.TrimSpace(query))
+	for _, label := range labels {
+		if strings.Contains(strings.ToLower(label.Name), q) {
+			filtered = append(filtered, label)
+		}
+	}
+	if limit > 0 && len(filtered) > limit {
+		filtered = filtered[:limit]
+	}
+	return filtered, nil
+}
+
+func (m *mockRepo) SearchTeamObjectives(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.ObjectiveRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	rows := m.objectives
+	if len(m.objectivesByTeam) > 0 {
+		rows = m.objectivesByTeam[teamID]
+	}
+	filtered := make([]slackrepository.ObjectiveRecord, 0)
+	q := strings.ToLower(strings.TrimSpace(query))
+	for _, objective := range rows {
+		if strings.Contains(strings.ToLower(objective.Name), q) {
+			filtered = append(filtered, objective)
+		}
+	}
+	if limit > 0 && len(filtered) > limit {
+		filtered = filtered[:limit]
+	}
+	return filtered, nil
+}
+
 func (m *mockRepo) GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error) {
 	if m.err != nil {
 		return slackrepository.WorkspaceRecord{}, m.err
@@ -184,6 +305,16 @@ func (m *mockRepo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UU
 		return nil, m.err
 	}
 	return nil, nil
+}
+
+func (m *mockRepo) CreateStoryLink(ctx context.Context, storyID uuid.UUID, title, linkURL string) error {
+	if m.err != nil {
+		return m.err
+	}
+	m.lastStoryLink.storyID = storyID
+	m.lastStoryLink.title = title
+	m.lastStoryLink.url = linkURL
+	return nil
 }
 
 func (m *mockRepo) InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error {
@@ -329,6 +460,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	installedBy := uuid.New()
 	assigneeID := uuid.New()
 	labelID := uuid.New()
+	objectiveID := uuid.New()
 
 	repo := &mockRepo{
 		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
@@ -340,6 +472,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 		},
 		teamMembers: []slackrepository.TeamMemberRecord{{UserID: assigneeID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
 		labels:      []slackrepository.LabelRecord{{ID: labelID, Name: "Bug"}},
+		objectives:  []slackrepository.ObjectiveRecord{{ID: objectiveID, Name: "Improve reliability"}},
 		slackWorkspace: slackrepository.SlackWorkspaceRecord{
 			WorkspaceID:       workspaceID,
 			SlackTeamID:       "T123",
@@ -366,6 +499,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 					"status":      map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": doneStatusID.String()}}},
 					"assignee":    map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": assigneeID.String()}}},
 					"labels":      map[string]any{"value": map[string]any{"type": "multi_static_select", "selected_options": []map[string]any{{"value": labelID.String()}}}},
+					"objective":   map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": objectiveID.String()}}},
 					"priority":    map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": "Urgent"}}},
 				},
 			},
@@ -388,8 +522,11 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	require.Equal(t, doneStatusID, *storyService.lastStory.Status)
 	require.NotNil(t, storyService.lastStory.Assignee)
 	require.Equal(t, assigneeID, *storyService.lastStory.Assignee)
+	require.NotNil(t, storyService.lastStory.Objective)
+	require.Equal(t, objectiveID, *storyService.lastStory.Objective)
 	require.Equal(t, "Urgent", storyService.lastStory.Priority)
 	require.Equal(t, []uuid.UUID{labelID}, storyService.lastLabelIDs)
+	require.Contains(t, repo.lastStoryLink.url, "https://acme.slack.com/archives/C123/")
 }
 
 func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
@@ -399,6 +536,7 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 	teamTwoStatusID := uuid.New()
 	teamTwoAssigneeID := uuid.New()
 	teamTwoLabelID := uuid.New()
+	teamTwoObjectiveID := uuid.New()
 
 	repo := &mockRepo{
 		teams: []slackrepository.TeamRecord{
@@ -415,6 +553,9 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 		labelsByTeam: map[uuid.UUID][]slackrepository.LabelRecord{
 			teamTwoID: {{ID: teamTwoLabelID, Name: "Operations"}},
 		},
+		objectivesByTeam: map[uuid.UUID][]slackrepository.ObjectiveRecord{
+			teamTwoID: {{ID: teamTwoObjectiveID, Name: "Ship reliability"}},
+		},
 	}
 
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com"})
@@ -430,8 +571,11 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 		},
 		WorkspaceID: workspaceID,
 		Selection: createTaskModalSelection{
-			TeamID:   teamTwoID,
-			Priority: "High",
+			TeamID:      teamTwoID,
+			Priority:    "High",
+			AssigneeID:  &teamTwoAssigneeID,
+			LabelIDs:    []uuid.UUID{teamTwoLabelID},
+			ObjectiveID: &teamTwoObjectiveID,
 		},
 	})
 	require.NoError(t, err)
@@ -444,14 +588,22 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 	require.Equal(t, teamTwoStatusID.String(), selectedOptionValue(t, statusOptions[1]))
 
 	assigneeElement := findBlockElement(blocks, modalBlockAssignee)
-	assigneeOptions := assigneeElement["options"].([]map[string]any)
-	require.Len(t, assigneeOptions, 1)
-	require.Equal(t, teamTwoAssigneeID.String(), selectedOptionValue(t, assigneeOptions[0]))
+	require.Equal(t, "external_select", fmt.Sprint(assigneeElement["type"]))
+	require.Equal(t, "2", fmt.Sprint(assigneeElement["min_query_length"]))
+	initialAssignee := assigneeElement["initial_option"].(map[string]any)
+	require.Equal(t, teamTwoAssigneeID.String(), selectedOptionValue(t, initialAssignee))
 
 	labelsElement := findBlockElement(blocks, modalBlockLabels)
-	labelOptions := labelsElement["options"].([]map[string]any)
-	require.Len(t, labelOptions, 1)
-	require.Equal(t, teamTwoLabelID.String(), selectedOptionValue(t, labelOptions[0]))
+	require.Equal(t, "multi_external_select", fmt.Sprint(labelsElement["type"]))
+	require.Equal(t, "2", fmt.Sprint(labelsElement["min_query_length"]))
+	initialLabels := labelsElement["initial_options"].([]map[string]any)
+	require.Len(t, initialLabels, 1)
+	require.Equal(t, teamTwoLabelID.String(), selectedOptionValue(t, initialLabels[0]))
+
+	objectiveElement := findBlockElement(blocks, modalBlockObjective)
+	require.Equal(t, "external_select", fmt.Sprint(objectiveElement["type"]))
+	initialObjective := objectiveElement["initial_option"].(map[string]any)
+	require.Equal(t, teamTwoObjectiveID.String(), selectedOptionValue(t, initialObjective))
 }
 
 func TestBuildCreateTaskModalViewShowsRequestAsFirstSyntheticStatus(t *testing.T) {
@@ -490,7 +642,7 @@ func TestBuildCreateTaskModalViewShowsRequestAsFirstSyntheticStatus(t *testing.T
 	require.Equal(t, "To Do", optionText(t, statusOptions[1]))
 }
 
-func TestBuildCreateTaskModalViewOmitsEmptyOptionalSelects(t *testing.T) {
+func TestBuildCreateTaskModalViewRendersExternalOptionalSelects(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 
@@ -516,8 +668,14 @@ func TestBuildCreateTaskModalViewOmitsEmptyOptionalSelects(t *testing.T) {
 	require.NoError(t, err)
 
 	blocks := view["blocks"].([]map[string]any)
-	require.Empty(t, findBlockElement(blocks, modalBlockAssignee))
-	require.Empty(t, findBlockElement(blocks, modalBlockLabels))
+	assigneeElement := findBlockElement(blocks, modalBlockAssignee)
+	require.Equal(t, "external_select", fmt.Sprint(assigneeElement["type"]))
+
+	labelsElement := findBlockElement(blocks, modalBlockLabels)
+	require.Equal(t, "multi_external_select", fmt.Sprint(labelsElement["type"]))
+
+	objectiveElement := findBlockElement(blocks, modalBlockObjective)
+	require.Equal(t, "external_select", fmt.Sprint(objectiveElement["type"]))
 }
 
 func TestHandleCommandRespondsEvenWhenOpeningModalFails(t *testing.T) {
@@ -637,6 +795,130 @@ func TestBuildWorkspaceURLSupportsSubdomainsAndLocalhost(t *testing.T) {
 	})
 }
 
+func TestBuildPrefilledDescriptionUsesLinearStyleFormat(t *testing.T) {
+	description := buildPrefilledDescription(requestSourceContext{
+		SlackUserID:   "U12345",
+		SlackUsername: "joseph",
+		SlackText:     "hey",
+	})
+	require.Equal(t, "@[joseph](U12345) said:\n> hey", description)
+}
+
+func TestBuildCreateTaskModalViewMarksDescriptionOptional(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &mockRepo{
+		teams: []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	view, err := service.buildCreateTaskModalView(context.Background(), createTaskModalViewInput{
+		Title:       "Title",
+		Description: "Description",
+		WorkspaceID: workspaceID,
+		Selection:   createTaskModalSelection{TeamID: teamID},
+	})
+	require.NoError(t, err)
+
+	blocks := view["blocks"].([]map[string]any)
+	descriptionBlock := findBlock(blocks, modalBlockDescription)
+	require.Equal(t, true, descriptionBlock["optional"])
+}
+
+func TestHandleInteractivityBlockSuggestionReturnsTeamScopedAssigneeOptions(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	installedBy := uuid.New()
+	memberID := uuid.New()
+
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			teamID: {{UserID: memberID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:       workspaceID,
+			SlackTeamID:       "T123",
+			SlackTeamDomain:   "acme",
+			BotAccessToken:    "xoxb-token",
+			InstalledByUserID: &installedBy,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	interaction := map[string]any{
+		"type":      "block_suggestion",
+		"action_id": modalActionAssigneeSelect,
+		"block_id":  modalBlockAssignee,
+		"value":     "jo",
+		"team":      map[string]any{"id": "T123", "domain": "acme"},
+		"view": map[string]any{
+			"callback_id":      "fortyone_create_task",
+			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme"}`,
+			"state": map[string]any{
+				"values": map[string]any{
+					"team": map[string]any{
+						"value": map[string]any{
+							"type":            "static_select",
+							"selected_option": map[string]any{"value": teamID.String()},
+						},
+					},
+				},
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(interaction)
+	require.NoError(t, err)
+	form := url.Values{}
+	form.Set("payload", string(payloadBytes))
+
+	resp, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "application/json", resp.ContentType)
+	require.Contains(t, string(resp.Body), memberID.String())
+}
+
+func TestHandleInteractivityBlockSuggestionReturnsNoOptionsBeforeTwoCharacters(t *testing.T) {
+	teamID := uuid.New()
+	interaction := map[string]any{
+		"type":      "block_suggestion",
+		"action_id": modalActionAssigneeSelect,
+		"value":     "j",
+		"view": map[string]any{
+			"callback_id":      "fortyone_create_task",
+			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme"}`,
+			"state": map[string]any{
+				"values": map[string]any{
+					"team": map[string]any{
+						"value": map[string]any{
+							"type":            "static_select",
+							"selected_option": map[string]any{"value": teamID.String()},
+						},
+					},
+				},
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(interaction)
+	require.NoError(t, err)
+	form := url.Values{}
+	form.Set("payload", string(payloadBytes))
+
+	service := newTestService(&mockRepo{}, &mockRequestStore{}, &mockStoryService{}, Config{})
+	resp, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.JSONEq(t, `{"options":[]}`, string(resp.Body))
+}
+
 func slackSignature(secret, timestamp string, body []byte) string {
 	base := "v0:" + timestamp + ":" + string(body)
 	h := hmac.New(sha256.New, []byte(secret))
@@ -648,6 +930,15 @@ func findBlockElement(blocks []map[string]any, blockID string) map[string]any {
 	for _, block := range blocks {
 		if fmt.Sprint(block["block_id"]) == blockID {
 			return block["element"].(map[string]any)
+		}
+	}
+	return map[string]any{}
+}
+
+func findBlock(blocks []map[string]any, blockID string) map[string]any {
+	for _, block := range blocks {
+		if fmt.Sprint(block["block_id"]) == blockID {
+			return block
 		}
 	}
 	return map[string]any{}

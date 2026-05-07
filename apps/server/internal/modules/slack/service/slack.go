@@ -49,6 +49,7 @@ const (
 	modalBlockPriority    = "priority"
 	modalBlockAssignee    = "assignee"
 	modalBlockLabels      = "labels"
+	modalBlockObjective   = "objective"
 
 	modalActionTeamSelect        = "team_select"
 	modalActionTitleInput        = "title_input"
@@ -57,6 +58,7 @@ const (
 	modalActionPrioritySelect    = "priority_select"
 	modalActionAssigneeSelect    = "assignee_select"
 	modalActionLabelsMultiSelect = "labels_multi_select"
+	modalActionObjectiveSelect   = "objective_select"
 )
 
 type realClock struct{}
@@ -353,6 +355,8 @@ func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (Inte
 		return s.handleViewSubmission(ctx, payload)
 	case "block_actions":
 		return s.handleBlockActions(ctx, payload)
+	case "block_suggestion":
+		return s.handleBlockSuggestion(ctx, payload)
 	default:
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	}
@@ -397,7 +401,11 @@ func (s *Service) RecordRequestLog(ctx context.Context, input CoreRequestLogInpu
 
 func (s *Service) handleMessageAction(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
 	title := messageToTitle(payload.Message.Text)
-	description := strings.TrimSpace(payload.Message.Text)
+	description := buildPrefilledDescription(requestSourceContext{
+		SlackUserID:   strings.TrimSpace(payload.Message.User),
+		SlackUsername: strings.TrimSpace(payload.User.Username),
+		SlackText:     strings.TrimSpace(payload.Message.Text),
+	})
 	source := requestSourceContext{
 		SlackTeamID:     strings.TrimSpace(payload.Team.ID),
 		SlackTeamDomain: strings.TrimSpace(payload.Team.Domain),
@@ -456,12 +464,13 @@ func (s *Service) handleBlockActions(ctx context.Context, payload interactionPay
 		Source:      submission.Source,
 		WorkspaceID: slackWorkspace.WorkspaceID,
 		Selection: createTaskModalSelection{
-			StatusKind: submission.StatusKind,
-			TeamID:     submission.TeamID,
-			StatusID:   submission.StatusID,
-			Priority:   submission.Priority,
-			AssigneeID: submission.AssigneeID,
-			LabelIDs:   submission.LabelIDs,
+			StatusKind:  submission.StatusKind,
+			TeamID:      submission.TeamID,
+			StatusID:    submission.StatusID,
+			Priority:    submission.Priority,
+			AssigneeID:  submission.AssigneeID,
+			LabelIDs:    submission.LabelIDs,
+			ObjectiveID: submission.ObjectiveID,
 		},
 	})
 	if err != nil {
@@ -623,6 +632,18 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		}
 	}
 
+	var objectiveID *uuid.UUID
+	if submission.ObjectiveID != nil {
+		if _, objectiveErr := s.repo.FindTeamObjectiveByID(ctx, workspace.ID, team.ID, *submission.ObjectiveID); objectiveErr != nil {
+			if !slackrepository.IsNotFound(objectiveErr) {
+				s.log.Error(ctx, "failed validating objective for slack submission", "error", objectiveErr, "workspace_id", workspace.ID, "team_id", team.ID)
+				return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(objectiveErr)})
+			}
+		} else {
+			objectiveID = submission.ObjectiveID
+		}
+	}
+
 	priority := normalizeSlackPriority(submission.Priority)
 	actorID := *slackWorkspace.InstalledByUserID
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
@@ -630,6 +651,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		Description: descriptionPtr,
 		Status:      statusID,
 		Assignee:    assigneeID,
+		Objective:   objectiveID,
 		Team:        team.ID,
 		Reporter:    &actorID,
 		Priority:    priority,
@@ -654,8 +676,72 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		}
 	}
 
+	if sourceURL != "" {
+		linkTitle := buildSlackStoryLinkTitle(submission.Source)
+		if linkErr := s.repo.CreateStoryLink(ctx, story.ID, linkTitle, sourceURL); linkErr != nil {
+			s.log.Error(ctx, "failed creating slack story link", "error", linkErr, "workspace_id", workspace.ID, "story_id", story.ID)
+		}
+	}
+
 	s.postSlackTaskAck(ctx, submission.Source, slackWorkspace.BotAccessToken, workspace.Slug, story)
 	return interactionClearResponse()
+}
+
+func (s *Service) handleBlockSuggestion(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
+	if payload.View.CallbackID != "fortyone_create_task" {
+		return interactionOptionsResponse(nil)
+	}
+
+	submission, err := parseViewSubmission(payload)
+	if err != nil {
+		return interactionOptionsResponse(nil)
+	}
+
+	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, submission.Source.SlackTeamID)
+	if err != nil {
+		return interactionOptionsResponse(nil)
+	}
+
+	query := strings.TrimSpace(payload.Value)
+	if len([]rune(query)) < 2 {
+		return interactionOptionsResponse(nil)
+	}
+
+	const optionsLimit = 25
+	switch payload.ActionID {
+	case modalActionAssigneeSelect:
+		members, membersErr := s.repo.SearchTeamMembers(ctx, submission.TeamID, query, optionsLimit)
+		if membersErr != nil {
+			return interactionOptionsResponse(nil)
+		}
+		options := make([]map[string]any, 0, len(members))
+		for _, member := range members {
+			options = append(options, toSlackOption(teamMemberDisplayName(member), member.UserID.String()))
+		}
+		return interactionOptionsResponse(options)
+	case modalActionLabelsMultiSelect:
+		labels, labelsErr := s.repo.SearchTeamLabels(ctx, slackWorkspace.WorkspaceID, submission.TeamID, query, optionsLimit)
+		if labelsErr != nil {
+			return interactionOptionsResponse(nil)
+		}
+		options := make([]map[string]any, 0, len(labels))
+		for _, label := range labels {
+			options = append(options, toSlackOption(label.Name, label.ID.String()))
+		}
+		return interactionOptionsResponse(options)
+	case modalActionObjectiveSelect:
+		objectives, objectivesErr := s.repo.SearchTeamObjectives(ctx, slackWorkspace.WorkspaceID, submission.TeamID, query, optionsLimit)
+		if objectivesErr != nil {
+			return interactionOptionsResponse(nil)
+		}
+		options := make([]map[string]any, 0, len(objectives))
+		for _, objective := range objectives {
+			options = append(options, toSlackOption(objective.Name, objective.ID.String()))
+		}
+		return interactionOptionsResponse(options)
+	default:
+		return interactionOptionsResponse(nil)
+	}
 }
 
 func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrationrequests.CoreIntegrationRequest, story stories.CoreSingleStory) error {
@@ -741,12 +827,13 @@ type createTaskModalViewInput struct {
 }
 
 type createTaskModalSelection struct {
-	StatusKind string
-	TeamID     uuid.UUID
-	StatusID   *uuid.UUID
-	Priority   string
-	AssigneeID *uuid.UUID
-	LabelIDs   []uuid.UUID
+	StatusKind  string
+	TeamID      uuid.UUID
+	StatusID    *uuid.UUID
+	Priority    string
+	AssigneeID  *uuid.UUID
+	LabelIDs    []uuid.UUID
+	ObjectiveID *uuid.UUID
 }
 
 func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTaskModalViewInput) (map[string]any, error) {
@@ -773,18 +860,8 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	if err != nil {
 		return nil, err
 	}
-	members, err := s.repo.ListTeamMembers(ctx, selectedTeam.ID)
-	if err != nil {
-		return nil, err
-	}
-	labels, err := s.repo.ListTeamLabels(ctx, input.WorkspaceID, selectedTeam.ID)
-	if err != nil {
-		return nil, err
-	}
 
 	statusOptions := make([]map[string]any, 0, len(statuses)+1)
-	assigneeOptions := make([]map[string]any, 0, len(members))
-	labelOptions := make([]map[string]any, 0, len(labels))
 
 	requestStatusOption := toSlackOption("Request", slackRequestStatusValue)
 	statusOptions = append(statusOptions, requestStatusOption)
@@ -798,28 +875,27 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	}
 
 	var selectedAssigneeOption map[string]any
-	for _, member := range members {
-		displayName := teamMemberDisplayName(member)
-		option := toSlackOption(displayName, member.UserID.String())
-		assigneeOptions = append(assigneeOptions, option)
-		if input.Selection.AssigneeID != nil && *input.Selection.AssigneeID == member.UserID {
-			selectedAssigneeOption = option
+	if input.Selection.AssigneeID != nil && *input.Selection.AssigneeID != uuid.Nil {
+		member, memberErr := s.repo.FindTeamMemberByID(ctx, selectedTeam.ID, *input.Selection.AssigneeID)
+		if memberErr == nil {
+			selectedAssigneeOption = toSlackOption(teamMemberDisplayName(member), member.UserID.String())
 		}
-	}
-
-	labelOptionByID := make(map[uuid.UUID]map[string]any, len(labels))
-	for _, label := range labels {
-		option := toSlackOption(label.Name, label.ID.String())
-		labelOptions = append(labelOptions, option)
-		labelOptionByID[label.ID] = option
 	}
 	selectedLabelOptions := make([]map[string]any, 0, len(input.Selection.LabelIDs))
 	for _, labelID := range input.Selection.LabelIDs {
-		option, ok := labelOptionByID[labelID]
-		if !ok {
+		label, labelErr := s.repo.FindTeamLabelByID(ctx, input.WorkspaceID, selectedTeam.ID, labelID)
+		if labelErr != nil {
 			continue
 		}
-		selectedLabelOptions = append(selectedLabelOptions, option)
+		selectedLabelOptions = append(selectedLabelOptions, toSlackOption(label.Name, label.ID.String()))
+	}
+
+	var selectedObjectiveOption map[string]any
+	if input.Selection.ObjectiveID != nil && *input.Selection.ObjectiveID != uuid.Nil {
+		objective, objectiveErr := s.repo.FindTeamObjectiveByID(ctx, input.WorkspaceID, selectedTeam.ID, *input.Selection.ObjectiveID)
+		if objectiveErr == nil {
+			selectedObjectiveOption = toSlackOption(objective.Name, objective.ID.String())
+		}
 	}
 
 	title := strings.TrimSpace(input.Title)
@@ -835,15 +911,12 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 
 	blocks := []map[string]any{
 		selectInputBlock(modalBlockTeam, modalActionTeamSelect, "Team", teamOptions, selectedTeamOption, false, true),
-		plainInputBlock(modalBlockTitle, modalActionTitleInput, "Title", title, false, ""),
-		plainInputBlock(modalBlockDescription, modalActionDescriptionInput, "Description", input.Description, true, ""),
+		plainInputBlock(modalBlockTitle, modalActionTitleInput, "Title", title, false, "", false),
+		plainInputBlock(modalBlockDescription, modalActionDescriptionInput, "Description", input.Description, true, "", true),
 		selectInputBlock(modalBlockStatus, modalActionStatusSelect, "Status", statusOptions, selectedStatusOption, true, false),
-	}
-	if len(assigneeOptions) > 0 {
-		blocks = append(blocks, selectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", assigneeOptions, selectedAssigneeOption, true, false))
-	}
-	if len(labelOptions) > 0 {
-		blocks = append(blocks, multiSelectInputBlock(modalBlockLabels, modalActionLabelsMultiSelect, "Labels", labelOptions, selectedLabelOptions, true))
+		externalSelectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", selectedAssigneeOption, true, 2),
+		externalMultiSelectInputBlock(modalBlockLabels, modalActionLabelsMultiSelect, "Labels", selectedLabelOptions, true, 2),
+		externalSelectInputBlock(modalBlockObjective, modalActionObjectiveSelect, "Objective", selectedObjectiveOption, true, 2),
 	}
 	blocks = append(blocks, selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true, false))
 
@@ -920,6 +993,58 @@ func multiSelectInputBlock(blockID, actionID, label string, options []map[string
 	return block
 }
 
+func externalSelectInputBlock(blockID, actionID, label string, initialOption map[string]any, optional bool, minQueryLength int) map[string]any {
+	element := map[string]any{
+		"type":      "external_select",
+		"action_id": actionID,
+	}
+	if initialOption != nil {
+		element["initial_option"] = initialOption
+	}
+	if minQueryLength > 0 {
+		element["min_query_length"] = minQueryLength
+	}
+	block := map[string]any{
+		"type":     "input",
+		"block_id": blockID,
+		"label": map[string]string{
+			"type": "plain_text",
+			"text": label,
+		},
+		"element": element,
+	}
+	if optional {
+		block["optional"] = true
+	}
+	return block
+}
+
+func externalMultiSelectInputBlock(blockID, actionID, label string, initialOptions []map[string]any, optional bool, minQueryLength int) map[string]any {
+	element := map[string]any{
+		"type":      "multi_external_select",
+		"action_id": actionID,
+	}
+	if len(initialOptions) > 0 {
+		element["initial_options"] = initialOptions
+	}
+	if minQueryLength > 0 {
+		element["min_query_length"] = minQueryLength
+	}
+	block := map[string]any{
+		"type":     "input",
+		"block_id": blockID,
+		"label": map[string]string{
+			"type": "plain_text",
+			"text": label,
+		},
+		"element": element,
+	}
+	if optional {
+		block["optional"] = true
+	}
+	return block
+}
+
 func toSlackOption(text, value string) map[string]any {
 	trimmedText := strings.TrimSpace(text)
 	trimmedValue := strings.TrimSpace(value)
@@ -947,7 +1072,7 @@ func slackPriorityOptions() []map[string]any {
 	return options
 }
 
-func plainInputBlock(blockID, actionID, label, initial string, multiline bool, placeholder string) map[string]any {
+func plainInputBlock(blockID, actionID, label, initial string, multiline bool, placeholder string, optional bool) map[string]any {
 	element := map[string]any{
 		"type":      "plain_text_input",
 		"action_id": actionID,
@@ -964,7 +1089,7 @@ func plainInputBlock(blockID, actionID, label, initial string, multiline bool, p
 			"text": placeholder,
 		}
 	}
-	return map[string]any{
+	block := map[string]any{
 		"type":     "input",
 		"block_id": blockID,
 		"label": map[string]string{
@@ -973,6 +1098,10 @@ func plainInputBlock(blockID, actionID, label, initial string, multiline bool, p
 		},
 		"element": element,
 	}
+	if optional {
+		block["optional"] = true
+	}
+	return block
 }
 
 func parseCommandTitle(text string) string {
@@ -1078,6 +1207,16 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 		selectedLabelIDs = append(selectedLabelIDs, parsedLabelID)
 	}
 
+	var objectiveID *uuid.UUID
+	selectedObjectiveID := readSelectedOption(modalBlockObjective)
+	if selectedObjectiveID != "" {
+		parsedObjectiveID, parseErr := uuid.Parse(selectedObjectiveID)
+		if parseErr != nil {
+			return viewSubmissionData{}, errors.New("invalid selected objective")
+		}
+		objectiveID = &parsedObjectiveID
+	}
+
 	return viewSubmissionData{
 		Title:       read(modalBlockTitle),
 		Description: read(modalBlockDescription),
@@ -1087,6 +1226,7 @@ func parseViewSubmission(payload interactionPayload) (viewSubmissionData, error)
 		Priority:    readSelectedOption(modalBlockPriority),
 		AssigneeID:  assigneeID,
 		LabelIDs:    selectedLabelIDs,
+		ObjectiveID: objectiveID,
 		Source:      source,
 	}, nil
 }
@@ -1416,6 +1556,17 @@ func interactionClearResponse() (InteractionResponse, error) {
 	return InteractionResponse{StatusCode: http.StatusOK, ContentType: "application/json", Body: body}, nil
 }
 
+func interactionOptionsResponse(options []map[string]any) (InteractionResponse, error) {
+	if options == nil {
+		options = make([]map[string]any, 0)
+	}
+	body, err := json.Marshal(map[string]any{"options": options})
+	if err != nil {
+		return InteractionResponse{}, err
+	}
+	return InteractionResponse{StatusCode: http.StatusOK, ContentType: "application/json", Body: body}, nil
+}
+
 func messageToTitle(message string) string {
 	trimmed := strings.TrimSpace(message)
 	if trimmed == "" {
@@ -1427,6 +1578,45 @@ func messageToTitle(message string) string {
 		return firstLine
 	}
 	return strings.TrimSpace(firstLine[:120])
+}
+
+func buildPrefilledDescription(source requestSourceContext) string {
+	message := strings.TrimSpace(source.SlackText)
+	if message == "" {
+		return ""
+	}
+	identity := strings.TrimSpace(source.SlackUsername)
+	if identity == "" {
+		identity = strings.TrimSpace(source.SlackUserID)
+	}
+	if identity == "" {
+		return "> " + message
+	}
+	if strings.TrimSpace(source.SlackUserID) == "" {
+		return fmt.Sprintf("@%s said:\n> %s", identity, message)
+	}
+	return fmt.Sprintf("@[%s](%s) said:\n> %s", identity, strings.TrimSpace(source.SlackUserID), message)
+}
+
+func buildSlackStoryLinkTitle(source requestSourceContext) string {
+	name := strings.TrimSpace(source.SlackUsername)
+	if name == "" {
+		name = strings.TrimSpace(source.SlackUserID)
+	}
+	channel := strings.TrimSpace(source.SlackChannel)
+	if channel == "" {
+		channel = strings.TrimSpace(source.SlackChannelID)
+	}
+	switch {
+	case name != "" && channel != "":
+		return fmt.Sprintf("Slack message from %s in #%s", name, channel)
+	case name != "":
+		return fmt.Sprintf("Slack message from %s", name)
+	case channel != "":
+		return fmt.Sprintf("Slack message in #%s", channel)
+	default:
+		return "Slack message"
+	}
 }
 
 func buildSourceExternalID(source requestSourceContext) string {
@@ -1790,6 +1980,9 @@ type oauthAccessResponse struct {
 type interactionPayload struct {
 	Type      string `json:"type"`
 	TriggerID string `json:"trigger_id"`
+	ActionID  string `json:"action_id"`
+	BlockID   string `json:"block_id"`
+	Value     string `json:"value"`
 	Team      struct {
 		ID     string `json:"id"`
 		Domain string `json:"domain"`
