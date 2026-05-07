@@ -27,8 +27,27 @@ type WorkspaceRecord struct {
 }
 
 type TeamRecord struct {
-	ID   uuid.UUID `db:"team_id"`
-	Code string    `db:"code"`
+	ID    uuid.UUID `db:"team_id"`
+	Code  string    `db:"code"`
+	Name  string    `db:"name"`
+	Color string    `db:"color"`
+}
+
+type StatusRecord struct {
+	ID       uuid.UUID `db:"status_id"`
+	Name     string    `db:"name"`
+	Category string    `db:"category"`
+}
+
+type TeamMemberRecord struct {
+	UserID   uuid.UUID `db:"user_id"`
+	Username string    `db:"username"`
+	FullName string    `db:"full_name"`
+	Email    string    `db:"email"`
+}
+
+type LabelRecord struct {
+	ID   uuid.UUID `db:"label_id"`
 	Name string    `db:"name"`
 }
 
@@ -128,7 +147,7 @@ func (r *Repo) FindWorkspaceByID(ctx context.Context, workspaceID uuid.UUID) (Wo
 func (r *Repo) FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code string) (TeamRecord, error) {
 	var row TeamRecord
 	err := r.db.GetContext(ctx, &row, `
-		SELECT team_id, code, name
+		SELECT team_id, code, name, color
 		FROM teams
 		WHERE workspace_id = $1 AND LOWER(code) = LOWER($2)
 		LIMIT 1
@@ -142,7 +161,7 @@ func (r *Repo) FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code s
 func (r *Repo) FindTeamByID(ctx context.Context, workspaceID, teamID uuid.UUID) (TeamRecord, error) {
 	var row TeamRecord
 	err := r.db.GetContext(ctx, &row, `
-		SELECT team_id, code, name
+		SELECT team_id, code, name, color
 		FROM teams
 		WHERE workspace_id = $1 AND team_id = $2
 		LIMIT 1
@@ -434,7 +453,7 @@ func (r *Repo) DeleteChannelLink(ctx context.Context, workspaceID, linkID uuid.U
 func (r *Repo) FindTeamByChannel(ctx context.Context, workspaceID uuid.UUID, slackChannelID string) (TeamRecord, error) {
 	var row TeamRecord
 	err := r.db.GetContext(ctx, &row, `
-		SELECT t.team_id, t.code, t.name
+		SELECT t.team_id, t.code, t.name, t.color
 		FROM slack_team_channel_links l
 		JOIN teams t ON t.team_id = l.team_id
 		WHERE l.workspace_id = $1
@@ -448,6 +467,67 @@ func (r *Repo) FindTeamByChannel(ctx context.Context, workspaceID uuid.UUID, sla
 	return row, nil
 }
 
+func (r *Repo) ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([]TeamRecord, error) {
+	rows := make([]TeamRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT team_id, code, name, color
+		FROM teams
+		WHERE workspace_id = $1
+		  AND deleted_at IS NULL
+		ORDER BY name ASC
+	`, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]StatusRecord, error) {
+	rows := make([]StatusRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT status_id, name, category
+		FROM statuses
+		WHERE team_id = $1
+		  AND deleted_at IS NULL
+		ORDER BY order_index ASC, name ASC
+	`, teamID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]TeamMemberRecord, error) {
+	rows := make([]TeamMemberRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT u.user_id, u.username, COALESCE(u.full_name, '') AS full_name, u.email
+		FROM team_members tm
+		JOIN users u ON u.user_id = tm.user_id
+		WHERE tm.team_id = $1
+		  AND u.is_active = true
+		ORDER BY COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(u.username), ''), u.email) ASC
+	`, teamID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]LabelRecord, error) {
+	rows := make([]LabelRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT label_id, name
+		FROM labels
+		WHERE workspace_id = $1
+		  AND (team_id = $2 OR team_id IS NULL)
+		ORDER BY name ASC
+	`, workspaceID, teamID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
 	var statusID uuid.UUID
 	err := r.db.GetContext(ctx, &statusID, `
@@ -456,7 +536,7 @@ func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, 
 		WHERE team_id = $1
 		  AND category = $2
 		  AND deleted_at IS NULL
-		ORDER BY "index" ASC
+		ORDER BY order_index ASC
 		LIMIT 1
 	`, teamID, category)
 	if errors.Is(err, sql.ErrNoRows) {

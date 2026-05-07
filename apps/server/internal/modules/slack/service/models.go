@@ -22,6 +22,10 @@ type Repository interface {
 	FindWorkspaceByID(ctx context.Context, workspaceID uuid.UUID) (slackrepository.WorkspaceRecord, error)
 	FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code string) (slackrepository.TeamRecord, error)
 	FindTeamByID(ctx context.Context, workspaceID, teamID uuid.UUID) (slackrepository.TeamRecord, error)
+	ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.TeamRecord, error)
+	ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackrepository.StatusRecord, error)
+	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackrepository.TeamMemberRecord, error)
+	ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]slackrepository.LabelRecord, error)
 	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error)
 	GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceSettingsRecord, error)
 	UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, defaultCreateMode string) (slackrepository.SlackWorkspaceSettingsRecord, error)
@@ -44,6 +48,7 @@ type RequestStore interface {
 
 type StoryService interface {
 	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
+	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
 }
 
 type Config struct {
@@ -138,6 +143,11 @@ type EventResponse struct {
 type viewSubmissionData struct {
 	Title       string
 	Description string
+	TeamID      uuid.UUID
+	StatusID    *uuid.UUID
+	Priority    string
+	AssigneeID  *uuid.UUID
+	LabelIDs    []uuid.UUID
 	Source      requestSourceContext
 }
 
