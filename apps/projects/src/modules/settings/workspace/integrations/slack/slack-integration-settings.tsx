@@ -11,7 +11,6 @@ import {
   useDisconnectSlackWorkspace,
   useResyncSlackChannels,
   useSlackIntegration,
-  useSlackRequestLogs,
 } from "@/lib/hooks/slack";
 
 const SlackIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
@@ -41,7 +40,6 @@ const SlackIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 
 export const SlackIntegrationSettings = () => {
   const { data: integration } = useSlackIntegration();
-  const { data: requestLogs } = useSlackRequestLogs(20);
   const { withWorkspace } = useWorkspacePath();
 
   const createInstallSession = useCreateSlackInstallSession();
@@ -157,43 +155,6 @@ export const SlackIntegrationSettings = () => {
         <Link href={withWorkspace("/settings/workspace/integrations")}>
           <Text color="muted">Back to integrations</Text>
         </Link>
-      </Box>
-
-      <Box className="border-border bg-surface mt-6 rounded-2xl border">
-        <SectionHeader
-          description="Recent inbound requests from Slack to help diagnose slash command or modal failures."
-          title="Recent Slack request logs"
-        />
-        <Box className="space-y-2 px-6 pb-6">
-          {requestLogs?.length ? (
-            requestLogs.map((item) => (
-              <Box
-                className="border-border bg-surface-muted rounded-xl border px-3 py-2"
-                key={item.id}
-              >
-                <Flex align="center" justify="between">
-                  <Text className="text-sm font-medium">
-                    {item.requestType.toUpperCase()} · {item.responseCode}
-                  </Text>
-                  <Text className="text-xs" color="muted">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </Text>
-                </Flex>
-                <Text className="mt-1 text-sm">
-                  {item.outcome}
-                  {item.errorMessage ? `: ${item.errorMessage}` : ""}
-                </Text>
-                <Text className="mt-1 text-xs" color="muted">
-                  {item.endpoint}
-                  {item.command ? ` · ${item.command}` : ""}
-                  {item.slackTeamId ? ` · team ${item.slackTeamId}` : ""}
-                </Text>
-              </Box>
-            ))
-          ) : (
-            <Text color="muted">No Slack request logs yet.</Text>
-          )}
-        </Box>
       </Box>
 
       <Dialog onOpenChange={setIsDisconnectOpen} open={isDisconnectOpen}>
