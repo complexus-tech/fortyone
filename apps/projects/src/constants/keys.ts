@@ -144,6 +144,11 @@ export const githubKeys = {
     ["github", workspaceSlug, "request-comments", requestId] as const,
 };
 
+export const slackKeys = {
+  integration: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "integration"] as const,
+};
+
 export const integrationRequestKeys = {
   all: (workspaceSlug: string) =>
     ["integration-requests", workspaceSlug] as const,

@@ -140,8 +140,10 @@ type Config struct {
 		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 	Slack struct {
-		BotToken      string `env:"SLACK_BOT_TOKEN"`
+		ClientID      string `env:"SLACK_CLIENT_ID"`
+		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
 		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
+		RedirectURL   string `env:"SLACK_REDIRECT_URL"`
 	}
 }
 
@@ -403,8 +405,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubKeyBase64:    cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect:     cfg.GitHub.RedirectURL,
 		GitHubWebhook:      cfg.GitHub.WebhookSecret,
-		SlackBotToken:      cfg.Slack.BotToken,
 		SlackSigningSecret: cfg.Slack.SigningSecret,
+		SlackClientID:      cfg.Slack.ClientID,
+		SlackClientSecret:  cfg.Slack.ClientSecret,
+		SlackRedirectURL:   cfg.Slack.RedirectURL,
 		SSEHub:             sseHub,
 		CorsOrigin:         "*",
 	}

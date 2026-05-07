@@ -165,10 +165,14 @@ func buildServices(cfg mux.Config) services {
 		cfg.Log,
 		slackrepository.New(cfg.Log, cfg.DB),
 		integrationRequestsRepo,
+		storiesService,
 		slack.Config{
 			SigningSecret: cfg.SlackSigningSecret,
-			BotToken:      cfg.SlackBotToken,
+			ClientID:      cfg.SlackClientID,
+			ClientSecret:  cfg.SlackClientSecret,
+			RedirectURL:   cfg.SlackRedirectURL,
 			WebsiteURL:    cfg.WebsiteURL,
+			SecretKey:     cfg.SecretKey,
 		},
 	)
 	integrationRequestsService := integrationrequests.New(

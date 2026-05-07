@@ -87,8 +87,11 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Users:     &userLookupAdapter{svc: svcs.users},
 	}, app)
 	slackhttp.Routes(slackhttp.Config{
-		Log:     cfg.Log,
-		Service: svcs.slack,
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.slack,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{

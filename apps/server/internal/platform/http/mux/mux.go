@@ -57,8 +57,10 @@ type Config struct {
 	GitHubKeyBase64    string
 	GitHubRedirect     string
 	GitHubWebhook      string
-	SlackBotToken      string
 	SlackSigningSecret string
+	SlackClientID      string
+	SlackClientSecret  string
+	SlackRedirectURL   string
 	SSEHub             *sse.Hub
 	CorsOrigin         string
 }

@@ -6,6 +6,7 @@ import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { SearchIcon } from "icons";
 import { useGitHubIntegration } from "@/lib/hooks/github";
+import { useSlackIntegration } from "@/lib/hooks/slack";
 import { useWorkspacePath } from "@/hooks";
 
 const GitHubIcon = () => (
@@ -145,7 +146,11 @@ const IntegrationCard = ({
         <Box>
           <Text className="font-medium">{integration.name}</Text>
           <Text color="muted">
-            {integration.enabled ? "Installed" : "Coming soon"}
+            {integration.href
+              ? integration.enabled
+                ? "Installed"
+                : "Not connected"
+              : "Coming soon"}
           </Text>
         </Box>
       </Flex>
@@ -166,11 +171,13 @@ const IntegrationCard = ({
 
 export const IntegrationsIndex = () => {
   const { data: integration } = useGitHubIntegration();
+  const { data: slackIntegration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
   const [search, setSearch] = useState("");
 
   const basePath = withWorkspace("/settings/workspace/integrations");
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
+  const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
 
   const allIntegrations: Integration[] = [
     {
@@ -186,7 +193,8 @@ export const IntegrationsIndex = () => {
       name: "Slack",
       description: "Turn conversations into stories from Slack.",
       icon: <SlackIcon />,
-      enabled: false,
+      enabled: isSlackEnabled,
+      href: "slack",
     },
     {
       id: "gitlab",
