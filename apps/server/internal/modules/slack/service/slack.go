@@ -2191,10 +2191,26 @@ func parseInteractivityLogDetails(rawBody []byte) requestLogDetails {
 		return requestLogDetails{}
 	}
 
+	teamID := strings.TrimSpace(payload.Team.ID)
+	if teamID == "" {
+		if metadata, metadataErr := parseSlackModalPrivateMetadata(payload.View.PrivateMetadata); metadataErr == nil {
+			teamID = strings.TrimSpace(metadata.Source.SlackTeamID)
+		}
+	}
+	actionID := suggestionActionID(payload)
+	if actionID == "" && len(payload.Actions) > 0 {
+		actionID = strings.TrimSpace(payload.Actions[0].ActionID)
+	}
+	userID := strings.TrimSpace(payload.User.ID)
+	if userID == "" {
+		userID = strings.TrimSpace(payload.Message.User)
+	}
+
 	return requestLogDetails{
-		SlackTeamID:    strings.TrimSpace(payload.Team.ID),
-		SlackUserID:    strings.TrimSpace(payload.User.ID),
+		SlackTeamID:    teamID,
+		SlackUserID:    userID,
 		SlackChannelID: strings.TrimSpace(payload.Channel.ID),
+		Command:        actionID,
 		TriggerID:      strings.TrimSpace(payload.TriggerID),
 	}
 }
