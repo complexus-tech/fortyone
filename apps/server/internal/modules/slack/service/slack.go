@@ -698,7 +698,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 }
 
 func (s *Service) handleBlockSuggestion(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
-	if payload.View.CallbackID != "fortyone_create_task" {
+	if callbackID := strings.TrimSpace(payload.View.CallbackID); callbackID != "" && callbackID != "fortyone_create_task" {
 		return interactionOptionsResponse(nil)
 	}
 
@@ -719,13 +719,13 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 		return interactionOptionsResponse(nil)
 	}
 
-	query := strings.TrimSpace(payload.Value)
+	query := suggestionQuery(payload)
 	if len([]rune(query)) < 2 {
 		return interactionOptionsResponse(nil)
 	}
 
 	const optionsLimit = 25
-	switch payload.ActionID {
+	switch suggestionActionID(payload) {
 	case modalActionAssigneeSelect:
 		members, membersErr := s.repo.SearchTeamMembers(ctx, teamID, query, optionsLimit)
 		if membersErr != nil {
@@ -759,6 +759,28 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 	default:
 		return interactionOptionsResponse(nil)
 	}
+}
+
+func suggestionActionID(payload interactionPayload) string {
+	if actionID := strings.TrimSpace(payload.ActionID); actionID != "" {
+		return actionID
+	}
+	if len(payload.Actions) > 0 {
+		return strings.TrimSpace(payload.Actions[0].ActionID)
+	}
+	return ""
+}
+
+func suggestionQuery(payload interactionPayload) string {
+	if query := strings.TrimSpace(payload.Value); query != "" {
+		return query
+	}
+	if len(payload.Actions) > 0 {
+		if query := strings.TrimSpace(payload.Actions[0].Value); query != "" {
+			return query
+		}
+	}
+	return ""
 }
 
 func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrationrequests.CoreIntegrationRequest, story stories.CoreSingleStory) error {
@@ -2252,6 +2274,7 @@ type interactionPayload struct {
 		ActionID       string `json:"action_id"`
 		BlockID        string `json:"block_id"`
 		Type           string `json:"type"`
+		Value          string `json:"value"`
 		SelectedOption struct {
 			Value string `json:"value"`
 		} `json:"selected_option"`

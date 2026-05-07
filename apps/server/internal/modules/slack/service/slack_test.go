@@ -1021,6 +1021,64 @@ func TestHandleInteractivityBlockSuggestionReturnsNoOptionsBeforeTwoCharacters(t
 	require.JSONEq(t, `{"options":[]}`, string(resp.Body))
 }
 
+func TestHandleInteractivityBlockSuggestionUsesActionFallbackFromActionsArray(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	memberID := uuid.New()
+
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			teamID: {{UserID: memberID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:     workspaceID,
+			SlackTeamID:     "T123",
+			SlackTeamDomain: "acme",
+			BotAccessToken:  "xoxb-token",
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	interaction := map[string]any{
+		"type": "block_suggestion",
+		"team": map[string]any{"id": "T123", "domain": "acme"},
+		"view": map[string]any{
+			"callback_id":      "",
+			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme"}`,
+			"blocks": []map[string]any{
+				{
+					"block_id": modalBlockTeam,
+					"element": map[string]any{
+						"type":      "static_select",
+						"action_id": modalActionTeamSelect,
+						"initial_option": map[string]any{
+							"value": teamID.String(),
+						},
+					},
+				},
+			},
+			"state": map[string]any{"values": map[string]any{}},
+		},
+		"actions": []map[string]any{
+			{
+				"action_id": modalActionAssigneeSelect,
+				"value":     "jo",
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(interaction)
+	require.NoError(t, err)
+	form := url.Values{}
+	form.Set("payload", string(payloadBytes))
+
+	resp, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Contains(t, string(resp.Body), memberID.String())
+}
+
 func slackSignature(secret, timestamp string, body []byte) string {
 	base := "v0:" + timestamp + ":" + string(body)
 	h := hmac.New(sha256.New, []byte(secret))
