@@ -371,9 +371,8 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 	}
 
 	title := parseCommandTitle(values.Get("text"))
-	if err := s.openCreateTaskModal(ctx, triggerID, title, "", source, slackWorkspace.WorkspaceID, slackWorkspace.BotAccessToken); err != nil {
-		return CommandResponse{}, err
-	}
+	responseURL := strings.TrimSpace(values.Get("response_url"))
+	s.openCreateTaskModalForCommand(triggerID, title, source, slackWorkspace.WorkspaceID, slackWorkspace.BotAccessToken, responseURL)
 
 	return CommandResponse{
 		ResponseType: "ephemeral",
@@ -731,6 +730,20 @@ func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, des
 	return s.callSlackAPI(ctx, botToken, "https://slack.com/api/views.open", payload, nil)
 }
 
+func (s *Service) openCreateTaskModalForCommand(triggerID, title string, source requestSourceContext, workspaceID uuid.UUID, botToken, responseURL string) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		if err := s.openCreateTaskModal(ctx, triggerID, title, "", source, workspaceID, botToken); err != nil {
+			s.log.Error(ctx, "failed opening slack create task modal from command", "error", err, "workspace_id", workspaceID, "slack_team_id", source.SlackTeamID)
+			if notifyErr := s.postCommandResponse(ctx, responseURL, "Unable to open the FortyOne create task form. Please try again."); notifyErr != nil {
+				s.log.Error(ctx, "failed posting slack command failure response", "error", notifyErr, "workspace_id", workspaceID, "slack_team_id", source.SlackTeamID)
+			}
+		}
+	}()
+}
+
 type createTaskModalViewInput struct {
 	Title       string
 	Description string
@@ -837,10 +850,14 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 		plainInputBlock(modalBlockTitle, modalActionTitleInput, "Title", title, false, ""),
 		plainInputBlock(modalBlockDescription, modalActionDescriptionInput, "Description", input.Description, true, ""),
 		selectInputBlock(modalBlockStatus, modalActionStatusSelect, "Status", statusOptions, selectedStatusOption, true),
-		selectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", assigneeOptions, selectedAssigneeOption, true),
-		multiSelectInputBlock(modalBlockLabels, modalActionLabelsMultiSelect, "Labels", labelOptions, selectedLabelOptions, true),
-		selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true),
 	}
+	if len(assigneeOptions) > 0 {
+		blocks = append(blocks, selectInputBlock(modalBlockAssignee, modalActionAssigneeSelect, "Assignee", assigneeOptions, selectedAssigneeOption, true))
+	}
+	if len(labelOptions) > 0 {
+		blocks = append(blocks, multiSelectInputBlock(modalBlockLabels, modalActionLabelsMultiSelect, "Labels", labelOptions, selectedLabelOptions, true))
+	}
+	blocks = append(blocks, selectInputBlock(modalBlockPriority, modalActionPrioritySelect, "Priority", slackPriorityOptions(), priorityOption, true))
 
 	return map[string]any{
 		"type":             "modal",
@@ -1131,6 +1148,38 @@ func (s *Service) postMessage(ctx context.Context, botToken, channelID, threadTS
 		payload["thread_ts"] = threadTS
 	}
 	return s.callSlackAPI(ctx, botToken, "https://slack.com/api/chat.postMessage", payload, nil)
+}
+
+func (s *Service) postCommandResponse(ctx context.Context, responseURL, text string) error {
+	if strings.TrimSpace(responseURL) == "" {
+		return nil
+	}
+	payload := CommandResponse{
+		ResponseType: "ephemeral",
+		Text:         text,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, responseURL, strings.NewReader(string(body)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		respBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return readErr
+		}
+		return fmt.Errorf("slack command response failed with status %d: %s", resp.StatusCode, string(respBytes))
+	}
+	return nil
 }
 
 func (s *Service) fetchChannels(ctx context.Context, botToken string) ([]slackrepository.SlackChannelPayload, error) {

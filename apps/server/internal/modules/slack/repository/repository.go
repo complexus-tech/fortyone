@@ -303,15 +303,33 @@ func (r *Repo) GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string
 }
 
 func (r *Repo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
-	result, err := r.db.ExecContext(ctx, `
-		UPDATE slack_workspaces
-		SET is_active = false,
-		    bot_access_token = '',
-		    bot_user_id = NULL,
-		    scope = NULL,
-		    updated_at = NOW()
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if _, err = tx.ExecContext(ctx, `
+		DELETE FROM slack_team_channel_links
 		WHERE workspace_id = $1
-		  AND is_active = true
+	`, workspaceID); err != nil {
+		return err
+	}
+
+	if _, err = tx.ExecContext(ctx, `
+		DELETE FROM slack_workspace_settings
+		WHERE workspace_id = $1
+	`, workspaceID); err != nil {
+		return err
+	}
+
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM slack_workspaces
+		WHERE workspace_id = $1
 	`, workspaceID)
 	if err != nil {
 		return err
@@ -323,7 +341,7 @@ func (r *Repo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UU
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (r *Repo) UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []SlackChannelPayload) error {

@@ -180,7 +180,7 @@ func (m *mockRepo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uui
 		return m.err
 	}
 	m.disconnected = true
-	m.slackWorkspace.IsActive = false
+	m.slackWorkspace = slackrepository.SlackWorkspaceRecord{}
 	return nil
 }
 
@@ -284,7 +284,7 @@ func TestVerifyRequest(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDisconnectWorkspaceDeactivatesSlackWorkspace(t *testing.T) {
+func TestDisconnectWorkspaceDeletesSlackWorkspace(t *testing.T) {
 	workspaceID := uuid.New()
 	repo := &mockRepo{
 		slackWorkspace: slackrepository.SlackWorkspaceRecord{
@@ -298,7 +298,7 @@ func TestDisconnectWorkspaceDeactivatesSlackWorkspace(t *testing.T) {
 
 	require.NoError(t, err)
 	require.True(t, repo.disconnected)
-	require.False(t, repo.slackWorkspace.IsActive)
+	require.Equal(t, slackrepository.SlackWorkspaceRecord{}, repo.slackWorkspace)
 }
 
 func TestHandleViewSubmissionCreatesSlackRequestWhenRequestStatusSelected(t *testing.T) {
@@ -539,6 +539,73 @@ func TestBuildCreateTaskModalViewShowsRequestAsFirstSyntheticStatus(t *testing.T
 	require.Equal(t, "To Do", optionText(t, statusOptions[1]))
 }
 
+func TestBuildCreateTaskModalViewOmitsEmptyOptionalSelects(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+
+	repo := &mockRepo{
+		teams: []slackrepository.TeamRecord{
+			{ID: teamID, Code: "ENG", Name: "Engineering"},
+		},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+	}
+
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com"})
+
+	view, err := service.buildCreateTaskModalView(context.Background(), createTaskModalViewInput{
+		Title:       "Title",
+		Description: "Description",
+		WorkspaceID: workspaceID,
+		Selection: createTaskModalSelection{
+			TeamID: teamID,
+		},
+	})
+	require.NoError(t, err)
+
+	blocks := view["blocks"].([]map[string]any)
+	require.Empty(t, findBlockElement(blocks, modalBlockAssignee))
+	require.Empty(t, findBlockElement(blocks, modalBlockLabels))
+}
+
+func TestHandleCommandRespondsEvenWhenOpeningModalFails(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:    workspaceID,
+			SlackTeamID:    "T123",
+			BotAccessToken: "xoxb-token",
+			IsActive:       true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	service.client = &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return nil, errors.New("slack api unavailable")
+	})}
+
+	form := url.Values{}
+	form.Set("team_id", "T123")
+	form.Set("team_domain", "acme")
+	form.Set("channel_id", "C123")
+	form.Set("channel_name", "general")
+	form.Set("user_id", "U123")
+	form.Set("user_name", "joseph")
+	form.Set("trigger_id", "trigger")
+	form.Set("text", "create task Ship it")
+
+	resp, err := service.HandleCommand(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, "ephemeral", resp.ResponseType)
+	require.Contains(t, resp.Text, "Opening")
+}
+
 func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {
 	title := parseCommandTitle("create task Improve onboarding")
 	require.Equal(t, "Improve onboarding", title)
@@ -659,3 +726,11 @@ func optionText(t *testing.T, raw any) string {
 		return fmt.Sprint(option["text"])
 	}
 }
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+var _ http.RoundTripper = roundTripFunc(nil)
