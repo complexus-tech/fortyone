@@ -485,6 +485,40 @@ func TestBuildCreateTaskModalViewRefreshesTeamDependentFields(t *testing.T) {
 	require.Equal(t, teamTwoLabelID.String(), selectedOptionValue(t, labelOptions[0]))
 }
 
+func TestBuildCreateTaskModalViewShowsRequestLabelForTriageStatus(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	triageStatusID := uuid.New()
+
+	repo := &mockRepo{
+		teams: []slackrepository.TeamRecord{
+			{ID: teamID, Code: "ENG", Name: "Engineering"},
+		},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			teamID: {{ID: triageStatusID, Name: "Triage", Category: "unstarted"}},
+		},
+	}
+
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com"})
+
+	view, err := service.buildCreateTaskModalView(context.Background(), createTaskModalViewInput{
+		Title:       "Title",
+		Description: "Description",
+		WorkspaceID: workspaceID,
+		Selection: createTaskModalSelection{
+			TeamID: teamID,
+		},
+	})
+	require.NoError(t, err)
+
+	blocks := view["blocks"].([]map[string]any)
+	statusElement := findBlockElement(blocks, modalBlockStatus)
+	statusOptions := statusElement["options"].([]map[string]any)
+	require.Len(t, statusOptions, 1)
+	require.Equal(t, triageStatusID.String(), selectedOptionValue(t, statusOptions[0]))
+	require.Equal(t, "Request", optionText(t, statusOptions[0]))
+}
+
 func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {
 	title := parseCommandTitle("create task Improve onboarding")
 	require.Equal(t, "Improve onboarding", title)
@@ -592,4 +626,17 @@ func selectedOptionValue(t *testing.T, raw any) string {
 	t.Helper()
 	option := raw.(map[string]any)
 	return fmt.Sprint(option["value"])
+}
+
+func optionText(t *testing.T, raw any) string {
+	t.Helper()
+	option := raw.(map[string]any)
+	switch text := option["text"].(type) {
+	case map[string]any:
+		return fmt.Sprint(text["text"])
+	case map[string]string:
+		return text["text"]
+	default:
+		return fmt.Sprint(option["text"])
+	}
 }

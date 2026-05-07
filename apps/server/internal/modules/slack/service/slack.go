@@ -779,7 +779,7 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 
 	var selectedStatusOption map[string]any
 	for _, status := range statuses {
-		option := toSlackOption(status.Name, status.ID.String())
+		option := toSlackOption(slackStatusDisplayName(status.Name), status.ID.String())
 		statusOptions = append(statusOptions, option)
 		if input.Selection.StatusID != nil && *input.Selection.StatusID == status.ID {
 			selectedStatusOption = option
@@ -788,7 +788,7 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	if selectedStatusOption == nil {
 		for _, status := range statuses {
 			if isTriageStatus(status.Name) {
-				selectedStatusOption = toSlackOption(status.Name, status.ID.String())
+				selectedStatusOption = toSlackOption(slackStatusDisplayName(status.Name), status.ID.String())
 				break
 			}
 		}
@@ -1460,6 +1460,13 @@ func normalizeSlackPriority(value string) string {
 	default:
 		return slackPriorityNoPriority
 	}
+}
+
+func slackStatusDisplayName(name string) string {
+	if isTriageStatus(name) {
+		return "Request"
+	}
+	return strings.TrimSpace(name)
 }
 
 func selectTeam(teams []slackrepository.TeamRecord, preferredTeamID uuid.UUID) slackrepository.TeamRecord {
