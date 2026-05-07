@@ -157,6 +157,8 @@ func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID 
 			"groups:read",
 			"channels:history",
 			"groups:history",
+			"users:read",
+			"users:read.email",
 		}, ",")),
 		url.QueryEscape(state),
 		url.QueryEscape(s.cfg.RedirectURL),
@@ -204,7 +206,7 @@ func (s *Service) HandleSetup(ctx context.Context, code, state, slackError strin
 		return "", err
 	}
 
-	_, err = s.repo.UpsertSlackWorkspace(ctx, workspaceID, installedByUserID, slackrepository.OAuthInstallPayload{
+	slackWorkspace, err := s.repo.UpsertSlackWorkspace(ctx, workspaceID, installedByUserID, slackrepository.OAuthInstallPayload{
 		SlackTeamID:     strings.TrimSpace(oauthResp.Team.ID),
 		SlackTeamName:   strings.TrimSpace(oauthResp.Team.Name),
 		SlackTeamDomain: strings.TrimSpace(oauthResp.Team.Domain),
@@ -214,6 +216,10 @@ func (s *Service) HandleSetup(ctx context.Context, code, state, slackError strin
 	})
 	if err != nil {
 		return "", err
+	}
+
+	if autoLinkErr := s.autoLinkWorkspaceMembers(ctx, slackWorkspace); autoLinkErr != nil {
+		s.log.Warn(ctx, "slack connect succeeded but user auto-link failed", "workspace_id", workspaceID, "error", autoLinkErr)
 	}
 
 	if err := s.SyncChannels(ctx, workspaceID); err != nil {
@@ -606,8 +612,13 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		return interactionClearResponse()
 	}
 
-	if slackWorkspace.InstalledByUserID == nil || *slackWorkspace.InstalledByUserID == uuid.Nil {
-		return interactionValidationErrors(map[string]string{"title": "Slack install user is missing. Reconnect Slack from FortyOne settings."})
+	actorID, err := s.resolveActorForSlackSubmission(ctx, workspace.ID, slackWorkspace, submission.Source)
+	if err != nil {
+		s.log.Error(ctx, "failed resolving slack actor user", "error", err, "workspace_id", workspace.ID)
+		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
+	}
+	if actorID == uuid.Nil {
+		return interactionValidationErrors(map[string]string{"title": "Slack user is not linked to a FortyOne account. Reconnect Slack to refresh user links."})
 	}
 	var statusID *uuid.UUID
 	if submission.StatusID != nil {
@@ -645,7 +656,6 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 	}
 
 	priority := normalizeSlackPriority(submission.Priority)
-	actorID := *slackWorkspace.InstalledByUserID
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
 		Title:       submission.Title,
 		Description: descriptionPtr,
@@ -1434,6 +1444,133 @@ func (s *Service) fetchChannels(ctx context.Context, botToken string) ([]slackre
 	return channels, nil
 }
 
+func (s *Service) autoLinkWorkspaceMembers(ctx context.Context, slackWorkspace slackrepository.SlackWorkspaceRecord) error {
+	slackUsers, err := s.fetchWorkspaceUsers(ctx, slackWorkspace.BotAccessToken)
+	if err != nil {
+		return err
+	}
+	if len(slackUsers) == 0 {
+		return nil
+	}
+
+	workspaceMembers, err := s.repo.ListWorkspaceMembersForSlackLinking(ctx, slackWorkspace.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	if len(workspaceMembers) == 0 {
+		return nil
+	}
+
+	memberByEmail := make(map[string]uuid.UUID, len(workspaceMembers))
+	for _, member := range workspaceMembers {
+		normalizedEmail := normalizeEmail(member.Email)
+		if normalizedEmail == "" {
+			continue
+		}
+		memberByEmail[normalizedEmail] = member.UserID
+	}
+	if len(memberByEmail) == 0 {
+		return nil
+	}
+
+	links := make([]slackrepository.SlackUserLinkUpsert, 0, len(slackUsers))
+	for _, slackUser := range slackUsers {
+		normalizedEmail := normalizeEmail(slackUser.Email)
+		if normalizedEmail == "" {
+			continue
+		}
+		userID, ok := memberByEmail[normalizedEmail]
+		if !ok || userID == uuid.Nil {
+			continue
+		}
+		links = append(links, slackrepository.SlackUserLinkUpsert{
+			SlackUserID: slackUser.ID,
+			UserID:      userID,
+			LinkedVia:   "email_match",
+		})
+	}
+	if len(links) == 0 {
+		return nil
+	}
+
+	return s.repo.UpsertSlackUserLinks(ctx, slackWorkspace.WorkspaceID, slackWorkspace.ID, slackWorkspace.SlackTeamID, links)
+}
+
+func (s *Service) fetchWorkspaceUsers(ctx context.Context, botToken string) ([]slackWorkspaceUser, error) {
+	cursor := ""
+	users := make([]slackWorkspaceUser, 0)
+
+	for {
+		endpoint := "https://slack.com/api/users.list?limit=200"
+		if cursor != "" {
+			endpoint += "&cursor=" + url.QueryEscape(cursor)
+		}
+		var response struct {
+			OK      bool   `json:"ok"`
+			Error   string `json:"error"`
+			Members []struct {
+				ID       string `json:"id"`
+				Name     string `json:"name"`
+				RealName string `json:"real_name"`
+				Deleted  bool   `json:"deleted"`
+				IsBot    bool   `json:"is_bot"`
+				Profile  struct {
+					Email string `json:"email"`
+				} `json:"profile"`
+			} `json:"members"`
+			ResponseMetadata struct {
+				NextCursor string `json:"next_cursor"`
+			} `json:"response_metadata"`
+		}
+		if err := s.callSlackAPI(ctx, botToken, endpoint, nil, &response); err != nil {
+			return nil, err
+		}
+
+		for _, member := range response.Members {
+			if member.Deleted || member.IsBot {
+				continue
+			}
+			memberID := strings.TrimSpace(member.ID)
+			if memberID == "" {
+				continue
+			}
+			users = append(users, slackWorkspaceUser{
+				ID:       memberID,
+				Username: strings.TrimSpace(member.Name),
+				FullName: strings.TrimSpace(member.RealName),
+				Email:    strings.TrimSpace(member.Profile.Email),
+			})
+		}
+
+		cursor = strings.TrimSpace(response.ResponseMetadata.NextCursor)
+		if cursor == "" {
+			break
+		}
+	}
+
+	return users, nil
+}
+
+func (s *Service) resolveActorForSlackSubmission(ctx context.Context, workspaceID uuid.UUID, slackWorkspace slackrepository.SlackWorkspaceRecord, source requestSourceContext) (uuid.UUID, error) {
+	slackTeamID := strings.TrimSpace(source.SlackTeamID)
+	slackUserID := strings.TrimSpace(source.SlackUserID)
+	if slackTeamID != "" && slackUserID != "" {
+		mappedUserID, err := s.repo.FindLinkedUserIDBySlackUser(ctx, workspaceID, slackTeamID, slackUserID)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		if mappedUserID != nil && *mappedUserID != uuid.Nil {
+			return *mappedUserID, nil
+		}
+	}
+
+	if slackWorkspace.InstalledByUserID != nil && *slackWorkspace.InstalledByUserID != uuid.Nil {
+		return *slackWorkspace.InstalledByUserID, nil
+	}
+
+	return uuid.Nil, nil
+}
+
 func (s *Service) exchangeOAuthCode(ctx context.Context, code string) (oauthAccessResponse, error) {
 	form := url.Values{}
 	form.Set("code", code)
@@ -1978,6 +2115,10 @@ func optionalString(value string) *string {
 	return &trimmed
 }
 
+func normalizeEmail(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
 func toCoreSlackWorkspace(record slackrepository.SlackWorkspaceRecord) CoreSlackWorkspace {
 	return CoreSlackWorkspace{
 		ID:                record.ID,
@@ -2045,6 +2186,13 @@ type oauthAccessResponse struct {
 		Name   string `json:"name"`
 		Domain string `json:"domain"`
 	} `json:"team"`
+}
+
+type slackWorkspaceUser struct {
+	ID       string
+	Username string
+	FullName string
+	Email    string
 }
 
 type interactionPayload struct {

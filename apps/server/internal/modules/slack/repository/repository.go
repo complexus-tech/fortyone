@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -54,6 +55,17 @@ type LabelRecord struct {
 type ObjectiveRecord struct {
 	ID   uuid.UUID `db:"objective_id"`
 	Name string    `db:"name"`
+}
+
+type WorkspaceMemberRecord struct {
+	UserID uuid.UUID `db:"user_id"`
+	Email  string    `db:"email"`
+}
+
+type SlackUserLinkUpsert struct {
+	SlackUserID string
+	UserID      uuid.UUID
+	LinkedVia   string
 }
 
 type SlackWorkspaceRecord struct {
@@ -543,6 +555,91 @@ func (r *Repo) CreateStoryLink(ctx context.Context, storyID uuid.UUID, title, li
 		VALUES ($1, $2, $3)
 	`, title, linkURL, storyID)
 	return err
+}
+
+func (r *Repo) ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]WorkspaceMemberRecord, error) {
+	rows := make([]WorkspaceMemberRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT u.user_id, u.email
+		FROM workspace_members wm
+		JOIN users u ON u.user_id = wm.user_id
+		WHERE wm.workspace_id = $1
+		  AND u.is_active = true
+		  AND u.is_system = false
+		  AND TRIM(COALESCE(u.email, '')) <> ''
+	`, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (r *Repo) UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []SlackUserLinkUpsert) error {
+	if len(links) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	for _, link := range links {
+		slackUserID := strings.TrimSpace(link.SlackUserID)
+		if slackUserID == "" || link.UserID == uuid.Nil {
+			continue
+		}
+		linkedVia := strings.TrimSpace(link.LinkedVia)
+		if linkedVia == "" {
+			linkedVia = "email_match"
+		}
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO slack_user_links (
+				workspace_id,
+				slack_workspace_id,
+				slack_team_id,
+				slack_user_id,
+				user_id,
+				linked_via,
+				linked_at
+			) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+			ON CONFLICT (workspace_id, slack_team_id, slack_user_id) DO UPDATE SET
+				slack_workspace_id = EXCLUDED.slack_workspace_id,
+				user_id = EXCLUDED.user_id,
+				linked_via = EXCLUDED.linked_via,
+				linked_at = NOW(),
+				updated_at = NOW()
+		`, workspaceID, slackWorkspaceID, slackTeamID, slackUserID, link.UserID, linkedVia)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *Repo) FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error) {
+	var userID uuid.UUID
+	err := r.db.GetContext(ctx, &userID, `
+		SELECT user_id
+		FROM slack_user_links
+		WHERE workspace_id = $1
+		  AND slack_team_id = $2
+		  AND slack_user_id = $3
+		LIMIT 1
+	`, workspaceID, strings.TrimSpace(slackTeamID), strings.TrimSpace(slackUserID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &userID, nil
 }
 
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {

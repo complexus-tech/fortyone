@@ -40,6 +40,8 @@ type mockRepo struct {
 	labelsByTeam     map[uuid.UUID][]slackrepository.LabelRecord
 	objectives       []slackrepository.ObjectiveRecord
 	objectivesByTeam map[uuid.UUID][]slackrepository.ObjectiveRecord
+	workspaceMembers []slackrepository.WorkspaceMemberRecord
+	slackUserLinks   map[string]uuid.UUID
 	slackWorkspace   slackrepository.SlackWorkspaceRecord
 	err              error
 	disconnected     bool
@@ -317,6 +319,42 @@ func (m *mockRepo) CreateStoryLink(ctx context.Context, storyID uuid.UUID, title
 	return nil
 }
 
+func (m *mockRepo) ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.WorkspaceMemberRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return append([]slackrepository.WorkspaceMemberRecord(nil), m.workspaceMembers...), nil
+}
+
+func (m *mockRepo) UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackrepository.SlackUserLinkUpsert) error {
+	if m.err != nil {
+		return m.err
+	}
+	if m.slackUserLinks == nil {
+		m.slackUserLinks = make(map[string]uuid.UUID)
+	}
+	for _, link := range links {
+		key := strings.TrimSpace(slackTeamID) + ":" + strings.TrimSpace(link.SlackUserID)
+		m.slackUserLinks[key] = link.UserID
+	}
+	return nil
+}
+
+func (m *mockRepo) FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.slackUserLinks == nil {
+		return nil, nil
+	}
+	key := strings.TrimSpace(slackTeamID) + ":" + strings.TrimSpace(slackUserID)
+	userID, ok := m.slackUserLinks[key]
+	if !ok {
+		return nil, nil
+	}
+	return &userID, nil
+}
+
 func (m *mockRepo) InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error {
 	return m.err
 }
@@ -458,6 +496,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	triageStatusID := uuid.New()
 	doneStatusID := uuid.New()
 	installedBy := uuid.New()
+	mappedActorID := uuid.New()
 	assigneeID := uuid.New()
 	labelID := uuid.New()
 	objectiveID := uuid.New()
@@ -480,6 +519,9 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 			BotAccessToken:    "xoxb-token",
 			InstalledByUserID: &installedBy,
 		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U999": mappedActorID,
+		},
 	}
 	requests := &mockRequestStore{}
 	storyService := &mockStoryService{}
@@ -490,7 +532,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 		"team": map[string]any{"id": "T123", "domain": "acme"},
 		"view": map[string]any{
 			"callback_id":      "fortyone_create_task",
-			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme","slack_channel_id":"C123","slack_message_ts":"171234.000100"}`,
+			"private_metadata": `{"slack_team_id":"T123","slack_team_domain":"acme","slack_channel_id":"C123","slack_message_ts":"171234.000100","slack_user_id":"U999","slack_username":"joseph"}`,
 			"state": map[string]any{
 				"values": map[string]any{
 					"team":        map[string]any{"value": map[string]any{"type": "static_select", "selected_option": map[string]any{"value": teamID.String()}}},
@@ -517,6 +559,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	require.Contains(t, string(resp.Body), `"response_action":"clear"`)
 
 	require.Equal(t, "", requests.last.Provider)
+	require.Equal(t, mappedActorID, storyService.lastActorID)
 	require.Equal(t, teamID, storyService.lastStory.Team)
 	require.NotNil(t, storyService.lastStory.Status)
 	require.Equal(t, doneStatusID, *storyService.lastStory.Status)
