@@ -39,7 +39,6 @@ type mockRepo struct {
 	labels         []slackrepository.LabelRecord
 	labelsByTeam   map[uuid.UUID][]slackrepository.LabelRecord
 	slackWorkspace slackrepository.SlackWorkspaceRecord
-	settings       slackrepository.SlackWorkspaceSettingsRecord
 	err            error
 	disconnected   bool
 }
@@ -139,21 +138,6 @@ func (m *mockRepo) GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID st
 	return m.workspace, nil
 }
 
-func (m *mockRepo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceSettingsRecord, error) {
-	if m.err != nil {
-		return slackrepository.SlackWorkspaceSettingsRecord{}, m.err
-	}
-	return m.settings, nil
-}
-
-func (m *mockRepo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, defaultCreateMode string) (slackrepository.SlackWorkspaceSettingsRecord, error) {
-	if m.err != nil {
-		return slackrepository.SlackWorkspaceSettingsRecord{}, m.err
-	}
-	m.settings.DefaultCreateMode = defaultCreateMode
-	return m.settings, nil
-}
-
 func (m *mockRepo) UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error) {
 	if m.err != nil {
 		return slackrepository.SlackWorkspaceRecord{}, m.err
@@ -195,43 +179,22 @@ func (m *mockRepo) ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]s
 	return []slackrepository.SlackChannelRecord{}, nil
 }
 
-func (m *mockRepo) UpsertChannelLink(ctx context.Context, workspaceID uuid.UUID, slackChannelID string, teamID, createdByUserID uuid.UUID) (slackrepository.SlackChannelLinkRecord, error) {
-	if m.err != nil {
-		return slackrepository.SlackChannelLinkRecord{}, m.err
-	}
-	return slackrepository.SlackChannelLinkRecord{}, nil
-}
-
-func (m *mockRepo) GetChannelLinkByID(ctx context.Context, workspaceID, linkID uuid.UUID) (slackrepository.SlackChannelLinkRecord, error) {
-	if m.err != nil {
-		return slackrepository.SlackChannelLinkRecord{}, m.err
-	}
-	return slackrepository.SlackChannelLinkRecord{}, nil
-}
-
-func (m *mockRepo) ListChannelLinks(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelLinkRecord, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return []slackrepository.SlackChannelLinkRecord{}, nil
-}
-
-func (m *mockRepo) DeleteChannelLink(ctx context.Context, workspaceID, linkID uuid.UUID) error {
-	return m.err
-}
-
-func (m *mockRepo) FindTeamByChannel(ctx context.Context, workspaceID uuid.UUID, slackChannelID string) (slackrepository.TeamRecord, error) {
-	if m.err != nil {
-		return slackrepository.TeamRecord{}, m.err
-	}
-	return m.team, nil
-}
-
 func (m *mockRepo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return nil, nil
+}
+
+func (m *mockRepo) InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error {
+	return m.err
+}
+
+func (m *mockRepo) ListRequestLogs(ctx context.Context, workspaceID uuid.UUID, limit int) ([]slackrepository.SlackRequestLogRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return []slackrepository.SlackRequestLogRecord{}, nil
 }
 
 type mockRequestStore struct {
@@ -317,12 +280,6 @@ func TestHandleViewSubmissionCreatesSlackRequestWhenRequestStatusSelected(t *tes
 			BotAccessToken:    "xoxb-token",
 			InstalledByUserID: &installeBy,
 		},
-		settings: slackrepository.SlackWorkspaceSettingsRecord{
-			WorkspaceID:       workspaceID,
-			DefaultCreateMode: CreateModeCreateTaskNow,
-			CreatedAt:         time.Now(),
-			UpdatedAt:         time.Now(),
-		},
 	}
 	requests := &mockRequestStore{}
 	service := newTestService(repo, requests, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com"})
@@ -389,12 +346,6 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 			SlackTeamDomain:   "acme",
 			BotAccessToken:    "xoxb-token",
 			InstalledByUserID: &installedBy,
-		},
-		settings: slackrepository.SlackWorkspaceSettingsRecord{
-			WorkspaceID:       workspaceID,
-			DefaultCreateMode: CreateModeSendToRequests,
-			CreatedAt:         time.Now(),
-			UpdatedAt:         time.Now(),
 		},
 	}
 	requests := &mockRequestStore{}
@@ -632,12 +583,6 @@ func TestHandleViewSubmissionDefaultsClearedStatusToRequest(t *testing.T) {
 			SlackTeamDomain:   "acme",
 			BotAccessToken:    "xoxb-token",
 			InstalledByUserID: &installedBy,
-		},
-		settings: slackrepository.SlackWorkspaceSettingsRecord{
-			WorkspaceID:       workspaceID,
-			DefaultCreateMode: CreateModeCreateTaskNow,
-			CreatedAt:         time.Now(),
-			UpdatedAt:         time.Now(),
 		},
 	}
 

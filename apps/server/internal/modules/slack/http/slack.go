@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
 type Handlers struct {
@@ -32,6 +33,26 @@ func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	return web.Respond(ctx, w, toAppIntegration(integration), http.StatusOK)
+}
+
+func (h *Handlers) GetRequestLogs(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	limit := 50
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil {
+			return web.RespondError(ctx, w, parseErr, http.StatusBadRequest)
+		}
+		limit = parsed
+	}
+	logs, err := h.service.GetRequestLogs(ctx, workspace.ID, limit)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, toAppRequestLogs(logs), http.StatusOK)
 }
 
 func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -87,111 +108,134 @@ func (h *Handlers) ResyncChannels(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
-func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-	var input AppUpdateWorkspaceSettingsRequest
-	if err := web.Decode(r, &input); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	settings, err := h.service.UpdateWorkspaceSettings(ctx, workspace.ID, slack.CoreUpdateWorkspaceSettingsInput{
-		DefaultCreateMode: input.DefaultCreateMode,
-	})
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	return web.Respond(ctx, w, toAppWorkspaceSettings(settings), http.StatusOK)
-}
-
-func (h *Handlers) CreateChannelLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-	var input AppCreateChannelLinkRequest
-	if err := web.Decode(r, &input); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	teamID, err := uuid.Parse(input.TeamID)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	link, err := h.service.CreateChannelLink(ctx, workspace.ID, userID, slack.CoreCreateChannelLinkInput{
-		SlackChannelID: input.SlackChannelID,
-		TeamID:         teamID,
-	})
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	return web.Respond(ctx, w, toAppChannelLink(link), http.StatusCreated)
-}
-
-func (h *Handlers) DeleteChannelLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	workspace, err := mid.GetWorkspace(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
-	linkID, err := uuid.Parse(web.Params(r, "linkId"))
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	if err := h.service.DeleteChannelLink(ctx, workspace.ID, linkID); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-	return web.Respond(ctx, w, nil, http.StatusNoContent)
-}
-
 func (h *Handlers) HandleEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	statusCode := http.StatusOK
+	outcome := "received"
+	errorMessage := ""
+	headers := captureSlackHeaders(r.Header)
+	var rawBody []byte
+	defer func() {
+		h.service.RecordRequestLog(ctx, slack.CoreRequestLogInput{
+			RequestType:  "events",
+			Endpoint:     r.URL.Path,
+			RawBody:      rawBody,
+			Headers:      headers,
+			ResponseCode: statusCode,
+			Outcome:      outcome,
+			ErrorMessage: errorMessage,
+		})
+	}()
+
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
+		statusCode = http.StatusBadRequest
+		outcome = "body_read_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	if err := h.service.VerifyRequest(rawBody, r.Header); err != nil {
+		statusCode = http.StatusUnauthorized
+		outcome = "signature_verification_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 	response, err := h.service.HandleEvents(rawBody)
 	if err != nil {
+		statusCode = http.StatusBadRequest
+		outcome = "event_handler_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	if response.Challenge != "" {
+		outcome = "url_verification_ack"
 		return writeRawJSON(w, http.StatusOK, response)
 	}
+	outcome = "processed"
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
 func (h *Handlers) HandleCommands(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	statusCode := http.StatusOK
+	outcome := "received"
+	errorMessage := ""
+	headers := captureSlackHeaders(r.Header)
+	var rawBody []byte
+	defer func() {
+		h.service.RecordRequestLog(ctx, slack.CoreRequestLogInput{
+			RequestType:  "commands",
+			Endpoint:     r.URL.Path,
+			RawBody:      rawBody,
+			Headers:      headers,
+			ResponseCode: statusCode,
+			Outcome:      outcome,
+			ErrorMessage: errorMessage,
+		})
+	}()
+
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
+		statusCode = http.StatusBadRequest
+		outcome = "body_read_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	if err := h.service.VerifyRequest(rawBody, r.Header); err != nil {
+		statusCode = http.StatusUnauthorized
+		outcome = "signature_verification_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 	response, err := h.service.HandleCommand(ctx, rawBody)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		outcome = "command_handler_failed"
+		errorMessage = err.Error()
+		return writeRawJSON(w, http.StatusOK, slack.CommandResponse{
+			ResponseType: "ephemeral",
+			Text:         "FortyOne could not process this command. Please try again.",
+		})
 	}
+	outcome = "acknowledged"
 	return writeRawJSON(w, http.StatusOK, response)
 }
 
 func (h *Handlers) HandleInteractivity(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	statusCode := http.StatusOK
+	outcome := "received"
+	errorMessage := ""
+	headers := captureSlackHeaders(r.Header)
+	var rawBody []byte
+	defer func() {
+		h.service.RecordRequestLog(ctx, slack.CoreRequestLogInput{
+			RequestType:  "interactivity",
+			Endpoint:     r.URL.Path,
+			RawBody:      rawBody,
+			Headers:      headers,
+			ResponseCode: statusCode,
+			Outcome:      outcome,
+			ErrorMessage: errorMessage,
+		})
+	}()
+
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
+		statusCode = http.StatusBadRequest
+		outcome = "body_read_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	if err := h.service.VerifyRequest(rawBody, r.Header); err != nil {
+		statusCode = http.StatusUnauthorized
+		outcome = "signature_verification_failed"
+		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 	response, err := h.service.HandleInteractivity(ctx, rawBody)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		outcome = "interactivity_handler_failed"
+		errorMessage = err.Error()
+		w.WriteHeader(http.StatusOK)
+		return nil
 	}
 	if response.ContentType != "" {
 		w.Header().Set("Content-Type", response.ContentType)
@@ -200,6 +244,8 @@ func (h *Handlers) HandleInteractivity(ctx context.Context, w http.ResponseWrite
 	if status == 0 {
 		status = http.StatusOK
 	}
+	statusCode = status
+	outcome = "processed"
 	if len(response.Body) > 0 {
 		w.WriteHeader(status)
 		_, writeErr := w.Write(response.Body)
@@ -218,4 +264,24 @@ func writeRawJSON(w http.ResponseWriter, status int, payload any) error {
 	w.WriteHeader(status)
 	_, err = w.Write(body)
 	return err
+}
+
+func captureSlackHeaders(headers http.Header) map[string]string {
+	keys := []string{
+		"X-Slack-Request-Timestamp",
+		"X-Slack-Signature",
+		"X-Slack-Retry-Num",
+		"X-Slack-Retry-Reason",
+		"User-Agent",
+		"Content-Type",
+	}
+	result := make(map[string]string, len(keys))
+	for _, key := range keys {
+		value := strings.TrimSpace(headers.Get(key))
+		if value == "" {
+			continue
+		}
+		result[key] = value
+	}
+	return result
 }

@@ -12,9 +12,6 @@ import (
 
 const (
 	SourceTypeSlackMessage = "slack_message"
-
-	CreateModeCreateTaskNow  = "create_task_now"
-	CreateModeSendToRequests = "send_to_requests"
 )
 
 type Repository interface {
@@ -27,19 +24,14 @@ type Repository interface {
 	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackrepository.TeamMemberRecord, error)
 	ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]slackrepository.LabelRecord, error)
 	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error)
-	GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceSettingsRecord, error)
-	UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, defaultCreateMode string) (slackrepository.SlackWorkspaceSettingsRecord, error)
 	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error)
 	DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error
 	UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error
 	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelRecord, error)
-	UpsertChannelLink(ctx context.Context, workspaceID uuid.UUID, slackChannelID string, teamID, createdByUserID uuid.UUID) (slackrepository.SlackChannelLinkRecord, error)
-	GetChannelLinkByID(ctx context.Context, workspaceID, linkID uuid.UUID) (slackrepository.SlackChannelLinkRecord, error)
-	ListChannelLinks(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelLinkRecord, error)
-	DeleteChannelLink(ctx context.Context, workspaceID, linkID uuid.UUID) error
-	FindTeamByChannel(ctx context.Context, workspaceID uuid.UUID, slackChannelID string) (slackrepository.TeamRecord, error)
+	InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error
+	ListRequestLogs(ctx context.Context, workspaceID uuid.UUID, limit int) ([]slackrepository.SlackRequestLogRecord, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
 }
 
@@ -59,13 +51,6 @@ type Config struct {
 	RedirectURL   string
 	WebsiteURL    string
 	SecretKey     string
-}
-
-type CoreWorkspaceSettings struct {
-	WorkspaceID       uuid.UUID
-	DefaultCreateMode string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
 }
 
 type CoreSlackWorkspace struct {
@@ -94,36 +79,31 @@ type CoreSlackChannel struct {
 	UpdatedAt      time.Time
 }
 
-type CoreSlackChannelLink struct {
-	ID             uuid.UUID
-	SlackChannelID string
-	TeamID         uuid.UUID
-	TeamCode       string
-	TeamName       string
-	TeamColor      string
-	IsActive       bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-}
-
 type CoreIntegration struct {
-	Settings       CoreWorkspaceSettings
 	SlackWorkspace *CoreSlackWorkspace
 	Channels       []CoreSlackChannel
-	ChannelLinks   []CoreSlackChannelLink
+}
+
+type CoreRequestLog struct {
+	ID           uuid.UUID
+	RequestType  string
+	Endpoint     string
+	WorkspaceID  *uuid.UUID
+	SlackTeamID  *string
+	SlackUserID  *string
+	SlackChannel *string
+	Command      *string
+	TriggerID    *string
+	RequestBody  *string
+	Headers      map[string]string
+	ResponseCode int
+	Outcome      string
+	ErrorMessage *string
+	CreatedAt    time.Time
 }
 
 type CoreCreateInstallSession struct {
 	InstallURL string
-}
-
-type CoreUpdateWorkspaceSettingsInput struct {
-	DefaultCreateMode *string
-}
-
-type CoreCreateChannelLinkInput struct {
-	SlackChannelID string
-	TeamID         uuid.UUID
 }
 
 type CommandResponse struct {
@@ -163,6 +143,16 @@ type requestSourceContext struct {
 	SlackUserID     string `json:"slack_user_id,omitempty"`
 	SlackUsername   string `json:"slack_username,omitempty"`
 	SlackText       string `json:"slack_text,omitempty"`
+}
+
+type CoreRequestLogInput struct {
+	RequestType  string
+	Endpoint     string
+	RawBody      []byte
+	Headers      map[string]string
+	ResponseCode int
+	Outcome      string
+	ErrorMessage string
 }
 
 type ProviderAccepter interface {

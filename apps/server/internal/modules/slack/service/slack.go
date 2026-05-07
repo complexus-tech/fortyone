@@ -32,8 +32,6 @@ var (
 	ErrSlackRequestExpired             = errors.New("slack request timestamp is too old")
 	ErrSlackInvalidSignature           = errors.New("invalid slack request signature")
 	ErrSlackNoWorkspaceLinked          = errors.New("slack workspace is not connected")
-	ErrSlackChannelNotLinked           = errors.New("this slack channel is not linked to a team")
-	ErrSlackInvalidCreateMode          = errors.New("invalid slack create mode")
 	ErrSlackNoTeamsAvailable           = errors.New("no teams are available in this workspace")
 	ErrSlackTeamSelectionRequired      = errors.New("team selection is required")
 )
@@ -92,24 +90,13 @@ func New(log *logger.Logger, repo Repository, requests RequestStore, stories Sto
 }
 
 func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (CoreIntegration, error) {
-	settingsRecord, err := s.repo.GetWorkspaceSettings(ctx, workspaceID)
-	if err != nil {
-		return CoreIntegration{}, err
-	}
-
 	integration := CoreIntegration{
-		Settings:     toCoreWorkspaceSettings(settingsRecord),
-		Channels:     make([]CoreSlackChannel, 0),
-		ChannelLinks: make([]CoreSlackChannelLink, 0),
+		Channels: make([]CoreSlackChannel, 0),
 	}
 
 	slackWorkspace, err := s.repo.GetSlackWorkspace(ctx, workspaceID)
 	if err != nil {
 		if slackrepository.IsNotFound(err) {
-			links, listErr := s.repo.ListChannelLinks(ctx, workspaceID)
-			if listErr == nil {
-				integration.ChannelLinks = toCoreChannelLinks(links)
-			}
 			return integration, nil
 		}
 		return CoreIntegration{}, err
@@ -125,15 +112,22 @@ func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (Co
 		integration.Channels = toCoreChannels(channels)
 	}
 
-	links, err := s.repo.ListChannelLinks(ctx, workspaceID)
-	if err != nil && !slackrepository.IsNotFound(err) {
-		return CoreIntegration{}, err
-	}
-	if err == nil {
-		integration.ChannelLinks = toCoreChannelLinks(links)
-	}
-
 	return integration, nil
+}
+
+func (s *Service) GetRequestLogs(ctx context.Context, workspaceID uuid.UUID, limit int) ([]CoreRequestLog, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := s.repo.ListRequestLogs(ctx, workspaceID, limit)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]CoreRequestLog, 0, len(rows))
+	for _, row := range rows {
+		logs = append(logs, toCoreRequestLog(row))
+	}
+	return logs, nil
 }
 
 func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string) (CoreCreateInstallSession, error) {
@@ -220,9 +214,6 @@ func (s *Service) HandleSetup(ctx context.Context, code, state, slackError strin
 		return "", err
 	}
 
-	if _, err := s.repo.GetWorkspaceSettings(ctx, workspaceID); err != nil {
-		return "", err
-	}
 	if err := s.SyncChannels(ctx, workspaceID); err != nil {
 		s.log.Warn(ctx, "slack connect succeeded but initial channel sync failed", "workspace_id", workspaceID, "error", err)
 	}
@@ -240,46 +231,6 @@ func (s *Service) SyncChannels(ctx context.Context, workspaceID uuid.UUID) error
 		return err
 	}
 	return s.repo.UpsertChannels(ctx, workspaceID, slackWorkspace.ID, channels)
-}
-
-func (s *Service) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID, input CoreUpdateWorkspaceSettingsInput) (CoreWorkspaceSettings, error) {
-	settings, err := s.repo.GetWorkspaceSettings(ctx, workspaceID)
-	if err != nil {
-		return CoreWorkspaceSettings{}, err
-	}
-	mode := settings.DefaultCreateMode
-	if input.DefaultCreateMode != nil {
-		mode = strings.TrimSpace(*input.DefaultCreateMode)
-	}
-	if mode != CreateModeCreateTaskNow && mode != CreateModeSendToRequests {
-		return CoreWorkspaceSettings{}, ErrSlackInvalidCreateMode
-	}
-	updated, err := s.repo.UpdateWorkspaceSettings(ctx, workspaceID, mode)
-	if err != nil {
-		return CoreWorkspaceSettings{}, err
-	}
-	return toCoreWorkspaceSettings(updated), nil
-}
-
-func (s *Service) CreateChannelLink(ctx context.Context, workspaceID, createdByUserID uuid.UUID, input CoreCreateChannelLinkInput) (CoreSlackChannelLink, error) {
-	if strings.TrimSpace(input.SlackChannelID) == "" {
-		return CoreSlackChannelLink{}, errors.New("slack channel id is required")
-	}
-	if input.TeamID == uuid.Nil {
-		return CoreSlackChannelLink{}, errors.New("team id is required")
-	}
-	if _, err := s.repo.FindTeamByID(ctx, workspaceID, input.TeamID); err != nil {
-		return CoreSlackChannelLink{}, err
-	}
-	link, err := s.repo.UpsertChannelLink(ctx, workspaceID, strings.TrimSpace(input.SlackChannelID), input.TeamID, createdByUserID)
-	if err != nil {
-		return CoreSlackChannelLink{}, err
-	}
-	return toCoreChannelLink(link), nil
-}
-
-func (s *Service) DeleteChannelLink(ctx context.Context, workspaceID, linkID uuid.UUID) error {
-	return s.repo.DeleteChannelLink(ctx, workspaceID, linkID)
 }
 
 func (s *Service) DisconnectWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
@@ -404,6 +355,43 @@ func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (Inte
 		return s.handleBlockActions(ctx, payload)
 	default:
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
+	}
+}
+
+func (s *Service) RecordRequestLog(ctx context.Context, input CoreRequestLogInput) {
+	statusCode := input.ResponseCode
+	if statusCode == 0 {
+		statusCode = http.StatusOK
+	}
+	requestDetails := parseRequestLogDetails(input.RequestType, input.RawBody)
+	workspaceID := s.resolveWorkspaceIDFromLog(ctx, requestDetails.SlackTeamID)
+	bodyText := truncateForLog(string(input.RawBody), 8000)
+	headersJSON, err := json.Marshal(input.Headers)
+	if err != nil {
+		headersJSON = []byte("{}")
+	}
+	if len(headersJSON) == 0 {
+		headersJSON = []byte("{}")
+	}
+
+	entry := slackrepository.SlackRequestLogInsert{
+		RequestType:  input.RequestType,
+		Endpoint:     strings.TrimSpace(input.Endpoint),
+		WorkspaceID:  workspaceID,
+		SlackTeamID:  optionalString(requestDetails.SlackTeamID),
+		SlackUserID:  optionalString(requestDetails.SlackUserID),
+		SlackChannel: optionalString(requestDetails.SlackChannelID),
+		Command:      optionalString(requestDetails.Command),
+		TriggerID:    optionalString(requestDetails.TriggerID),
+		RequestBody:  optionalString(bodyText),
+		Headers:      headersJSON,
+		ResponseCode: statusCode,
+		Outcome:      truncateForLog(strings.TrimSpace(input.Outcome), 120),
+		ErrorMessage: optionalString(truncateForLog(input.ErrorMessage, 1000)),
+	}
+
+	if err := s.repo.InsertRequestLog(ctx, entry); err != nil {
+		s.log.Warn(ctx, "failed to insert slack request log", "error", err, "request_type", input.RequestType)
 	}
 }
 
@@ -1572,6 +1560,101 @@ func filterValidLabelIDs(labels []slackrepository.LabelRecord, selected []uuid.U
 	return result
 }
 
+type requestLogDetails struct {
+	SlackTeamID    string
+	SlackUserID    string
+	SlackChannelID string
+	Command        string
+	TriggerID      string
+}
+
+func parseRequestLogDetails(requestType string, rawBody []byte) requestLogDetails {
+	switch strings.TrimSpace(requestType) {
+	case "commands":
+		return parseCommandLogDetails(rawBody)
+	case "interactivity":
+		return parseInteractivityLogDetails(rawBody)
+	case "events":
+		return parseEventsLogDetails(rawBody)
+	default:
+		return requestLogDetails{}
+	}
+}
+
+func parseCommandLogDetails(rawBody []byte) requestLogDetails {
+	values, err := url.ParseQuery(string(rawBody))
+	if err != nil {
+		return requestLogDetails{}
+	}
+	return requestLogDetails{
+		SlackTeamID:    strings.TrimSpace(values.Get("team_id")),
+		SlackUserID:    strings.TrimSpace(values.Get("user_id")),
+		SlackChannelID: strings.TrimSpace(values.Get("channel_id")),
+		Command:        strings.TrimSpace(values.Get("command")),
+		TriggerID:      strings.TrimSpace(values.Get("trigger_id")),
+	}
+}
+
+func parseInteractivityLogDetails(rawBody []byte) requestLogDetails {
+	values, err := url.ParseQuery(string(rawBody))
+	if err != nil {
+		return requestLogDetails{}
+	}
+	payloadText := strings.TrimSpace(values.Get("payload"))
+	if payloadText == "" {
+		return requestLogDetails{}
+	}
+	var payload interactionPayload
+	if err := json.Unmarshal([]byte(payloadText), &payload); err != nil {
+		return requestLogDetails{}
+	}
+
+	return requestLogDetails{
+		SlackTeamID:    strings.TrimSpace(payload.Team.ID),
+		SlackUserID:    strings.TrimSpace(payload.User.ID),
+		SlackChannelID: strings.TrimSpace(payload.Channel.ID),
+		TriggerID:      strings.TrimSpace(payload.TriggerID),
+	}
+}
+
+func parseEventsLogDetails(rawBody []byte) requestLogDetails {
+	var payload struct {
+		TeamID string `json:"team_id"`
+		Event  struct {
+			Channel string `json:"channel"`
+			User    string `json:"user"`
+		} `json:"event"`
+	}
+	if err := json.Unmarshal(rawBody, &payload); err != nil {
+		return requestLogDetails{}
+	}
+
+	return requestLogDetails{
+		SlackTeamID:    strings.TrimSpace(payload.TeamID),
+		SlackUserID:    strings.TrimSpace(payload.Event.User),
+		SlackChannelID: strings.TrimSpace(payload.Event.Channel),
+	}
+}
+
+func (s *Service) resolveWorkspaceIDFromLog(ctx context.Context, slackTeamID string) *uuid.UUID {
+	if strings.TrimSpace(slackTeamID) == "" {
+		return nil
+	}
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, slackTeamID)
+	if err != nil {
+		return nil
+	}
+	return &workspace.ID
+}
+
+func truncateForLog(value string, maxLength int) string {
+	trimmed := strings.TrimSpace(value)
+	if maxLength <= 0 || len(trimmed) <= maxLength {
+		return trimmed
+	}
+	return trimmed[:maxLength]
+}
+
 func buildWorkspaceURL(websiteURL, workspaceSlug string, routeSegments ...string) string {
 	baseURL, err := url.Parse(strings.TrimRight(strings.TrimSpace(websiteURL), "/"))
 	if err != nil {
@@ -1624,29 +1707,12 @@ func isLocalWebsiteHost(host string) bool {
 	return strings.EqualFold(host, "localhost") || strings.EqualFold(host, "0.0.0.0") || net.ParseIP(host) != nil
 }
 
-func normalizeCreateMode(mode string) string {
-	trimmed := strings.TrimSpace(mode)
-	if trimmed == CreateModeSendToRequests {
-		return CreateModeSendToRequests
-	}
-	return CreateModeCreateTaskNow
-}
-
 func optionalString(value string) *string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
 		return nil
 	}
 	return &trimmed
-}
-
-func toCoreWorkspaceSettings(record slackrepository.SlackWorkspaceSettingsRecord) CoreWorkspaceSettings {
-	return CoreWorkspaceSettings{
-		WorkspaceID:       record.WorkspaceID,
-		DefaultCreateMode: normalizeCreateMode(record.DefaultCreateMode),
-		CreatedAt:         record.CreatedAt,
-		UpdatedAt:         record.UpdatedAt,
-	}
 }
 
 func toCoreSlackWorkspace(record slackrepository.SlackWorkspaceRecord) CoreSlackWorkspace {
@@ -1683,25 +1749,27 @@ func toCoreChannels(records []slackrepository.SlackChannelRecord) []CoreSlackCha
 	return channels
 }
 
-func toCoreChannelLinks(records []slackrepository.SlackChannelLinkRecord) []CoreSlackChannelLink {
-	links := make([]CoreSlackChannelLink, 0, len(records))
-	for _, record := range records {
-		links = append(links, toCoreChannelLink(record))
+func toCoreRequestLog(record slackrepository.SlackRequestLogRecord) CoreRequestLog {
+	headers := map[string]string{}
+	if len(record.Headers) > 0 {
+		_ = json.Unmarshal(record.Headers, &headers)
 	}
-	return links
-}
-
-func toCoreChannelLink(record slackrepository.SlackChannelLinkRecord) CoreSlackChannelLink {
-	return CoreSlackChannelLink{
-		ID:             record.ID,
-		SlackChannelID: record.SlackChannelID,
-		TeamID:         record.TeamID,
-		TeamCode:       record.TeamCode,
-		TeamName:       record.TeamName,
-		TeamColor:      record.TeamColor,
-		IsActive:       record.IsActive,
-		CreatedAt:      record.CreatedAt,
-		UpdatedAt:      record.UpdatedAt,
+	return CoreRequestLog{
+		ID:           record.ID,
+		RequestType:  record.RequestType,
+		Endpoint:     record.Endpoint,
+		WorkspaceID:  record.WorkspaceID,
+		SlackTeamID:  record.SlackTeamID,
+		SlackUserID:  record.SlackUserID,
+		SlackChannel: record.SlackChannel,
+		Command:      record.Command,
+		TriggerID:    record.TriggerID,
+		RequestBody:  record.RequestBody,
+		Headers:      headers,
+		ResponseCode: record.ResponseCode,
+		Outcome:      record.Outcome,
+		ErrorMessage: record.ErrorMessage,
+		CreatedAt:    record.CreatedAt,
 	}
 }
 

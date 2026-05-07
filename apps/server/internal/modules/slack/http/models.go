@@ -4,12 +4,6 @@ import (
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 )
 
-type AppWorkspaceSettings struct {
-	DefaultCreateMode string `json:"defaultCreateMode"`
-	CreatedAt         string `json:"createdAt"`
-	UpdatedAt         string `json:"updatedAt"`
-}
-
 type AppSlackWorkspace struct {
 	ID                string  `json:"id"`
 	SlackTeamID       string  `json:"slackTeamId"`
@@ -36,43 +30,36 @@ type AppSlackChannel struct {
 	UpdatedAt      string  `json:"updatedAt"`
 }
 
-type AppSlackChannelLink struct {
-	ID             string `json:"id"`
-	SlackChannelID string `json:"slackChannelId"`
-	TeamID         string `json:"teamId"`
-	TeamCode       string `json:"teamCode"`
-	TeamName       string `json:"teamName"`
-	TeamColor      string `json:"teamColor"`
-	IsActive       bool   `json:"isActive"`
-	CreatedAt      string `json:"createdAt"`
-	UpdatedAt      string `json:"updatedAt"`
-}
-
 type AppIntegration struct {
-	Settings       AppWorkspaceSettings  `json:"settings"`
-	SlackWorkspace *AppSlackWorkspace    `json:"slackWorkspace,omitempty"`
-	Channels       []AppSlackChannel     `json:"channels"`
-	ChannelLinks   []AppSlackChannelLink `json:"channelLinks"`
+	SlackWorkspace *AppSlackWorkspace `json:"slackWorkspace,omitempty"`
+	Channels       []AppSlackChannel  `json:"channels"`
 }
 
 type AppCreateInstallSession struct {
 	InstallURL string `json:"installUrl"`
 }
 
-type AppUpdateWorkspaceSettingsRequest struct {
-	DefaultCreateMode *string `json:"defaultCreateMode"`
-}
-
-type AppCreateChannelLinkRequest struct {
-	SlackChannelID string `json:"slackChannelId"`
-	TeamID         string `json:"teamId"`
+type AppRequestLog struct {
+	ID           string            `json:"id"`
+	RequestType  string            `json:"requestType"`
+	Endpoint     string            `json:"endpoint"`
+	WorkspaceID  *string           `json:"workspaceId,omitempty"`
+	SlackTeamID  *string           `json:"slackTeamId,omitempty"`
+	SlackUserID  *string           `json:"slackUserId,omitempty"`
+	SlackChannel *string           `json:"slackChannelId,omitempty"`
+	Command      *string           `json:"command,omitempty"`
+	TriggerID    *string           `json:"triggerId,omitempty"`
+	RequestBody  *string           `json:"requestBody,omitempty"`
+	Headers      map[string]string `json:"headers"`
+	ResponseCode int               `json:"responseCode"`
+	Outcome      string            `json:"outcome"`
+	ErrorMessage *string           `json:"errorMessage,omitempty"`
+	CreatedAt    string            `json:"createdAt"`
 }
 
 func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	out := AppIntegration{
-		Settings:     toAppWorkspaceSettings(input.Settings),
-		Channels:     make([]AppSlackChannel, 0, len(input.Channels)),
-		ChannelLinks: make([]AppSlackChannelLink, 0, len(input.ChannelLinks)),
+		Channels: make([]AppSlackChannel, 0, len(input.Channels)),
 	}
 	if input.SlackWorkspace != nil {
 		workspace := toAppSlackWorkspace(*input.SlackWorkspace)
@@ -81,17 +68,39 @@ func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	for _, channel := range input.Channels {
 		out.Channels = append(out.Channels, toAppChannel(channel))
 	}
-	for _, link := range input.ChannelLinks {
-		out.ChannelLinks = append(out.ChannelLinks, toAppChannelLink(link))
+	return out
+}
+
+func toAppRequestLogs(input []slack.CoreRequestLog) []AppRequestLog {
+	out := make([]AppRequestLog, 0, len(input))
+	for _, item := range input {
+		out = append(out, toAppRequestLog(item))
 	}
 	return out
 }
 
-func toAppWorkspaceSettings(input slack.CoreWorkspaceSettings) AppWorkspaceSettings {
-	return AppWorkspaceSettings{
-		DefaultCreateMode: input.DefaultCreateMode,
-		CreatedAt:         input.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:         input.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+func toAppRequestLog(input slack.CoreRequestLog) AppRequestLog {
+	var workspaceID *string
+	if input.WorkspaceID != nil {
+		value := input.WorkspaceID.String()
+		workspaceID = &value
+	}
+	return AppRequestLog{
+		ID:           input.ID.String(),
+		RequestType:  input.RequestType,
+		Endpoint:     input.Endpoint,
+		WorkspaceID:  workspaceID,
+		SlackTeamID:  input.SlackTeamID,
+		SlackUserID:  input.SlackUserID,
+		SlackChannel: input.SlackChannel,
+		Command:      input.Command,
+		TriggerID:    input.TriggerID,
+		RequestBody:  input.RequestBody,
+		Headers:      input.Headers,
+		ResponseCode: input.ResponseCode,
+		Outcome:      input.Outcome,
+		ErrorMessage: input.ErrorMessage,
+		CreatedAt:    input.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -130,20 +139,6 @@ func toAppChannel(input slack.CoreSlackChannel) AppSlackChannel {
 		IsMember:       input.IsMember,
 		IsActive:       input.IsActive,
 		LastSyncedAt:   lastSyncedAt,
-		CreatedAt:      input.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:      input.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}
-}
-
-func toAppChannelLink(input slack.CoreSlackChannelLink) AppSlackChannelLink {
-	return AppSlackChannelLink{
-		ID:             input.ID.String(),
-		SlackChannelID: input.SlackChannelID,
-		TeamID:         input.TeamID.String(),
-		TeamCode:       input.TeamCode,
-		TeamName:       input.TeamName,
-		TeamColor:      input.TeamColor,
-		IsActive:       input.IsActive,
 		CreatedAt:      input.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:      input.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

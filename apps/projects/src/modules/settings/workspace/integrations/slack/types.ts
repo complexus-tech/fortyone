@@ -1,9 +1,3 @@
-export type SlackWorkspaceSettings = {
-  defaultCreateMode: "create_task_now" | "send_to_requests";
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type SlackWorkspace = {
   id: string;
   slackTeamId: string;
@@ -30,34 +24,29 @@ export type SlackChannel = {
   updatedAt: string;
 };
 
-export type SlackChannelLink = {
-  id: string;
-  slackChannelId: string;
-  teamId: string;
-  teamCode: string;
-  teamName: string;
-  teamColor: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type SlackIntegration = {
-  settings: SlackWorkspaceSettings;
   slackWorkspace?: SlackWorkspace | null;
   channels: SlackChannel[];
-  channelLinks: SlackChannelLink[];
 };
 
 export type CreateSlackInstallSessionResponse = {
   installUrl: string;
 };
 
-export type UpdateSlackWorkspaceSettingsInput = Partial<{
-  defaultCreateMode: "create_task_now" | "send_to_requests";
-}>;
-
-export type CreateSlackChannelLinkInput = {
-  slackChannelId: string;
-  teamId: string;
+export type SlackRequestLog = {
+  id: string;
+  requestType: string;
+  endpoint: string;
+  workspaceId?: string | null;
+  slackTeamId?: string | null;
+  slackUserId?: string | null;
+  slackChannelId?: string | null;
+  command?: string | null;
+  triggerId?: string | null;
+  requestBody?: string | null;
+  headers: Record<string, string>;
+  responseCode: number;
+  outcome: string;
+  errorMessage?: string | null;
+  createdAt: string;
 };

@@ -147,6 +147,8 @@ export const githubKeys = {
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,
+  logs: (workspaceSlug: string, limit = 20) =>
+    ["slack", workspaceSlug, "logs", limit] as const,
 };
 
 export const integrationRequestKeys = {

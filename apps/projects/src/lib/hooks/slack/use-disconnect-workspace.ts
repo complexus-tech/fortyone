@@ -8,6 +8,7 @@ export const useDisconnectSlackWorkspace = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const queryKey = slackKeys.integration(workspaceSlug);
+  const logsQueryKey = slackKeys.logs(workspaceSlug);
 
   return useMutation({
     mutationFn: () => disconnectSlackWorkspaceAction(workspaceSlug),
@@ -18,6 +19,7 @@ export const useDisconnectSlackWorkspace = () => {
       }
       toast.success("Slack workspace disconnected");
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: logsQueryKey });
     },
   });
 };
