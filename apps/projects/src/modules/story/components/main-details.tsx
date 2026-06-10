@@ -1,7 +1,6 @@
 "use client";
 import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Link from "@tiptap/extension-link";
@@ -19,6 +18,7 @@ import TableRow from "@tiptap/extension-table-row";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
@@ -81,7 +81,7 @@ export const MainDetails = ({
 
   const descriptionEditor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({

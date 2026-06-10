@@ -7,7 +7,7 @@ const nextConfig = {
   devIndicators: false,
   reactCompiler: true,
   experimental: {
-    turbopackFileSystemCacheForDev: true,
+    turbopackFileSystemCacheForDev: false,
     staleTimes: {
       dynamic: 30,
       static: 180,

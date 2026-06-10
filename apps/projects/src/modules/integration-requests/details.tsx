@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Link from "@tiptap/extension-link";
@@ -46,6 +45,7 @@ import {
   StoryStatusIcon,
 } from "@/components/ui";
 import { useDebounce, useWorkspacePath } from "@/hooks";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
@@ -307,7 +307,7 @@ export const IntegrationRequestDetails = ({
 
   const descriptionEditor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({ nested: true }),

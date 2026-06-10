@@ -14,7 +14,6 @@ import {
   Wrapper,
 } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -34,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import {
   useFeatures,
   useLocalStorage,
@@ -146,7 +146,7 @@ export const NewObjectiveDialog = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       Link.configure({
         autolink: true,
