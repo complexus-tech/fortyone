@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Box, Flex, Text } from "ui";
+import { cn } from "lib";
+import { Box, Button, Flex, Text } from "ui";
 import {
   Bar,
   BarChart,
@@ -71,6 +72,59 @@ const ChartSection = ({
     {children}
   </Box>
 );
+
+const KeyValueList = ({
+  rows,
+}: {
+  rows: Array<{ label: string; value: string | number | null | undefined }>;
+}) => (
+  <Box className="divide-border divide-y overflow-hidden rounded-lg border">
+    {rows.map((row) => (
+      <Flex
+        align="center"
+        className="gap-3 px-3 py-2.5 text-sm"
+        justify="between"
+        key={row.label}
+      >
+        <Text className="text-muted font-medium">{row.label}</Text>
+        <Text className="text-right font-medium">
+          {row.value === null || row.value === undefined || row.value === ""
+            ? "Not set"
+            : row.value}
+        </Text>
+      </Flex>
+    ))}
+  </Box>
+);
+
+const PillList = ({
+  emptyText,
+  items,
+}: {
+  emptyText: string;
+  items: string[];
+}) => {
+  if (!items.length) {
+    return (
+      <Text className="text-muted rounded-lg bg-gray-50 px-3 py-2 text-sm">
+        {emptyText}
+      </Text>
+    );
+  }
+
+  return (
+    <Flex className="flex-wrap gap-2">
+      {items.map((item) => (
+        <Text
+          className="border-border rounded-full border bg-gray-50 px-3 py-1.5 text-sm font-medium"
+          key={item}
+        >
+          {item}
+        </Text>
+      ))}
+    </Flex>
+  );
+};
 
 const CompactBarChart = ({
   data,
@@ -163,6 +217,204 @@ export const AnalyticsReport = ({
 }) => {
   const kind = output.kind;
   const title = String(output.title ?? "Performance report");
+
+  if (kind === "github-integration-report") {
+    const summary = asRecord(output.summary);
+    const settings = asRecord(output.settings);
+    const repositories = asRows(output.repositories);
+    const issueSyncLinks = asRows(output.issueSyncLinks);
+    const installations = asRows(output.installations);
+    const connected = Boolean(summary.connected);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Flex align="center" className="gap-3" justify="between">
+          <Box>
+            <Text className="text-xl font-semibold">{title}</Text>
+            <Text className="text-muted text-sm">
+              {connected
+                ? "GitHub is connected to this workspace."
+                : "GitHub is not connected to this workspace."}
+            </Text>
+          </Box>
+          <Text
+            className={cn(
+              "rounded-full px-3 py-1.5 text-sm font-semibold",
+              connected
+                ? "bg-green-50 text-green-700"
+                : "bg-amber-50 text-amber-700",
+            )}
+          >
+            {connected ? "Connected" : "Setup needed"}
+          </Text>
+        </Flex>
+
+        <MetricGrid
+          metrics={[
+            {
+              label: "Repositories",
+              value: Number(summary.repositories ?? 0),
+            },
+            {
+              label: "Active repos",
+              value: Number(summary.activeRepositories ?? 0),
+            },
+            {
+              label: "Sync links",
+              value: Number(summary.issueSyncLinks ?? 0),
+            },
+            {
+              label: "Installations",
+              value: Number(summary.installations ?? 0),
+            },
+          ]}
+        />
+
+        <ChartSection title="Workspace settings">
+          <KeyValueList
+            rows={[
+              {
+                label: "Branch format",
+                value: String(settings.branchFormat ?? ""),
+              },
+              {
+                label: "Magic word linking",
+                value: settings.linkCommitsByMagicWords ? "On" : "Off",
+              },
+              {
+                label: "Assignee sync",
+                value: settings.syncAssignees ? "On" : "Off",
+              },
+              {
+                label: "Label sync",
+                value: settings.syncLabels ? "On" : "Off",
+              },
+            ]}
+          />
+        </ChartSection>
+
+        <ChartSection title="Repositories">
+          <PillList
+            emptyText="No repositories have been synced yet."
+            items={repositories
+              .slice(0, 8)
+              .map((repository) => String(repository.fullName ?? ""))}
+          />
+        </ChartSection>
+
+        <ChartSection title="Issue sync">
+          <PillList
+            emptyText="No issue sync links are configured yet."
+            items={issueSyncLinks
+              .slice(0, 8)
+              .map(
+                (link) =>
+                  `${String(link.repositoryName ?? "Repository")} -> ${String(
+                    link.teamName ?? "Team",
+                  )}`,
+              )}
+          />
+        </ChartSection>
+
+        {!installations.length ? (
+          <Text className="text-muted text-sm">
+            Ask Maya to connect GitHub to generate an installation link.
+          </Text>
+        ) : null}
+      </Box>
+    );
+  }
+
+  if (kind === "github-team-automation-report") {
+    const team = asRecord(output.team);
+    const rules = asRows(output.rules);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Box>
+          <Text className="text-xl font-semibold">{title}</Text>
+          <Text className="text-muted text-sm">
+            Automation rules for {String(team.name ?? "this team")}.
+          </Text>
+        </Box>
+        <KeyValueList
+          rows={[
+            { label: "Team", value: String(team.name ?? "") },
+            { label: "Code", value: String(team.code ?? "") },
+            { label: "Rules", value: rules.length },
+            {
+              label: "Active rules",
+              value: rules.filter((rule) => Boolean(rule.isActive)).length,
+            },
+          ]}
+        />
+        <ChartSection title="Rules">
+          <PillList
+            emptyText="No GitHub automation rules are configured for this team."
+            items={rules.map(
+              (rule) =>
+                `${String(rule.eventKey ?? "GitHub event")} -> ${
+                  rule.targetStatusId ? "status mapped" : "no target status"
+                }`,
+            )}
+          />
+        </ChartSection>
+      </Box>
+    );
+  }
+
+  if (kind === "github-story-report") {
+    const story = asRecord(output.story);
+    const links = asRows(output.links);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Box>
+          <Text className="text-xl font-semibold">{title}</Text>
+          <Text className="text-muted text-sm">
+            GitHub links attached to {String(story.ref ?? "this story")}.
+          </Text>
+        </Box>
+
+        {!links.length ? (
+          <Text className="text-muted rounded-lg bg-gray-50 px-3 py-2 text-sm">
+            No GitHub links are attached to this story.
+          </Text>
+        ) : (
+          <Box className="space-y-2">
+            {links.map((link) => (
+              <Box
+                className="border-border rounded-lg border bg-gray-50/60 p-3"
+                key={String(link.id)}
+              >
+                <Flex className="gap-3" justify="between">
+                  <Box>
+                    <Text className="font-semibold">
+                      {String(link.title ?? link.refName ?? "GitHub link")}
+                    </Text>
+                    <Text className="text-muted text-sm">
+                      {String(link.repositoryFullName ?? "")}
+                      {link.number ? ` #${String(link.number)}` : ""}
+                    </Text>
+                  </Box>
+                  {typeof link.url === "string" && link.url ? (
+                    <Button
+                      color="black"
+                      href={link.url}
+                      size="sm"
+                      target="_blank"
+                    >
+                      Open
+                    </Button>
+                  ) : null}
+                </Flex>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+    );
+  }
 
   if (kind === "workspace-performance-report") {
     const overview = asRecord(output.overview);

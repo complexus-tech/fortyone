@@ -78,6 +78,20 @@ import {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
 } from "./analytics";
+import {
+  createGitHubInstallSessionTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  deleteStoryGitHubLinkTool,
+  getGitHubIntegrationTool,
+  getGitHubTeamSettingsTool,
+  getStoryGitHubCommentsTool,
+  getStoryGitHubLinksTool,
+  postStoryGitHubCommentTool,
+  resyncGitHubRepositoriesTool,
+  updateGitHubTeamSettingsTool,
+  updateGitHubWorkspaceSettingsTool,
+} from "./github";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -105,6 +119,20 @@ export {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
 } from "./analytics";
+export {
+  createGitHubInstallSessionTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  deleteStoryGitHubLinkTool,
+  getGitHubIntegrationTool,
+  getGitHubTeamSettingsTool,
+  getStoryGitHubCommentsTool,
+  getStoryGitHubLinksTool,
+  postStoryGitHubCommentTool,
+  resyncGitHubRepositoriesTool,
+  updateGitHubTeamSettingsTool,
+  updateGitHubWorkspaceSettingsTool,
+} from "./github";
 
 export const tools = {
   navigation,
@@ -120,6 +148,19 @@ export const tools = {
   teamPerformanceReportTool,
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
+  // GitHub
+  getGitHubIntegrationTool,
+  createGitHubInstallSessionTool,
+  resyncGitHubRepositoriesTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  updateGitHubWorkspaceSettingsTool,
+  getGitHubTeamSettingsTool,
+  updateGitHubTeamSettingsTool,
+  getStoryGitHubLinksTool,
+  getStoryGitHubCommentsTool,
+  postStoryGitHubCommentTool,
+  deleteStoryGitHubLinkTool,
   // Teams
   listTeams,
   listPublicTeams,
