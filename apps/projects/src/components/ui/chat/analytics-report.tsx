@@ -42,20 +42,22 @@ const MetricGrid = ({ metrics }: { metrics: Metric[] }) => (
   <Box className="grid grid-cols-2 gap-2 md:grid-cols-3">
     {metrics.map((metric) => (
       <Box
-        className="border-border bg-background rounded-lg border px-3 py-2.5"
+        className="border-border/70 bg-surface-muted/30 rounded-lg border px-3 py-2.5 dark:border-white/12 dark:bg-white/[0.03]"
         key={metric.label}
       >
-        <Text className="text-muted text-xs font-medium tracking-wide uppercase">
+        <Text className="text-foreground/55 text-xs font-medium tracking-wide uppercase dark:text-white/45">
           {metric.label}
         </Text>
-        <Text className="mt-1 text-lg font-semibold">{metric.value}</Text>
+        <Text className="text-foreground mt-1 text-lg font-semibold dark:text-white">
+          {metric.value}
+        </Text>
       </Box>
     ))}
   </Box>
 );
 
 const EmptyChart = () => (
-  <Box className="text-muted flex h-32 items-center justify-center rounded-lg bg-gray-50 text-sm">
+  <Box className="text-foreground/60 bg-surface-muted/50 flex h-32 items-center justify-center rounded-lg text-sm dark:bg-white/[0.03] dark:text-white/55">
     No chart data available
   </Box>
 );
@@ -68,7 +70,9 @@ const ChartSection = ({
   children: ReactNode;
 }) => (
   <Box className="space-y-2">
-    <Text className="font-semibold">{title}</Text>
+    <Text className="text-foreground font-semibold dark:text-white">
+      {title}
+    </Text>
     {children}
   </Box>
 );
@@ -78,16 +82,18 @@ const KeyValueList = ({
 }: {
   rows: Array<{ label: string; value: string | number | null | undefined }>;
 }) => (
-  <Box className="divide-border divide-y overflow-hidden rounded-lg border">
+  <Box className="border-border/70 divide-border/70 divide-y overflow-hidden rounded-lg border dark:divide-white/10 dark:border-white/12">
     {rows.map((row) => (
       <Flex
         align="center"
-        className="gap-3 px-3 py-2.5 text-sm"
+        className="bg-surface-muted/20 gap-3 px-3 py-2.5 text-sm dark:bg-white/[0.02]"
         justify="between"
         key={row.label}
       >
-        <Text className="text-muted font-medium">{row.label}</Text>
-        <Text className="text-right font-medium">
+        <Text className="text-foreground/55 font-medium dark:text-white/45">
+          {row.label}
+        </Text>
+        <Text className="text-foreground text-right font-medium dark:text-white">
           {row.value === null || row.value === undefined || row.value === ""
             ? "Not set"
             : row.value}
@@ -106,7 +112,7 @@ const PillList = ({
 }) => {
   if (!items.length) {
     return (
-      <Text className="text-muted rounded-lg bg-gray-50 px-3 py-2 text-sm">
+      <Text className="text-foreground/60 bg-surface-muted/50 rounded-lg px-3 py-2 text-sm dark:bg-white/[0.03] dark:text-white/55">
         {emptyText}
       </Text>
     );
@@ -116,7 +122,7 @@ const PillList = ({
     <Flex className="flex-wrap gap-2">
       {items.map((item) => (
         <Text
-          className="border-border rounded-full border bg-gray-50 px-3 py-1.5 text-sm font-medium"
+          className="border-border/70 bg-surface-muted/40 text-foreground/90 rounded-full border px-3 py-1.5 text-sm font-medium dark:border-white/12 dark:bg-white/[0.03] dark:text-white/85"
           key={item}
         >
           {item}
@@ -230,8 +236,10 @@ export const AnalyticsReport = ({
       <Box className="mt-3 space-y-4">
         <Flex align="center" className="gap-3" justify="between">
           <Box>
-            <Text className="text-xl font-semibold">{title}</Text>
-            <Text className="text-muted text-sm">
+            <Text className="text-foreground text-xl font-semibold dark:text-white">
+              {title}
+            </Text>
+            <Text className="text-foreground/60 text-sm dark:text-white/55">
               {connected
                 ? "GitHub is connected to this workspace."
                 : "GitHub is not connected to this workspace."}
@@ -239,10 +247,10 @@ export const AnalyticsReport = ({
           </Box>
           <Text
             className={cn(
-              "rounded-full px-3 py-1.5 text-sm font-semibold",
+              "rounded-full border px-3 py-1.5 text-sm font-semibold",
               connected
-                ? "bg-green-50 text-green-700"
-                : "bg-amber-50 text-amber-700",
+                ? "border-border/70 bg-surface-muted/40 text-foreground/85 dark:border-white/12 dark:bg-white/[0.03] dark:text-white/85"
+                : "border-warning/20 bg-warning/10 text-warning dark:border-warning/20 dark:bg-warning/10 dark:text-warning",
             )}
           >
             {connected ? "Connected" : "Setup needed"}
@@ -317,7 +325,7 @@ export const AnalyticsReport = ({
         </ChartSection>
 
         {!installations.length ? (
-          <Text className="text-muted text-sm">
+          <Text className="text-foreground/60 text-sm dark:text-white/55">
             Ask Maya to connect GitHub to generate an installation link.
           </Text>
         ) : null}
@@ -332,8 +340,10 @@ export const AnalyticsReport = ({
     return (
       <Box className="mt-3 space-y-4">
         <Box>
-          <Text className="text-xl font-semibold">{title}</Text>
-          <Text className="text-muted text-sm">
+          <Text className="text-foreground text-xl font-semibold dark:text-white">
+            {title}
+          </Text>
+          <Text className="text-foreground/60 text-sm dark:text-white/55">
             Automation rules for {String(team.name ?? "this team")}.
           </Text>
         </Box>
@@ -370,29 +380,31 @@ export const AnalyticsReport = ({
     return (
       <Box className="mt-3 space-y-4">
         <Box>
-          <Text className="text-xl font-semibold">{title}</Text>
-          <Text className="text-muted text-sm">
+          <Text className="text-foreground text-xl font-semibold dark:text-white">
+            {title}
+          </Text>
+          <Text className="text-foreground/60 text-sm dark:text-white/55">
             GitHub links attached to {String(story.ref ?? "this story")}.
           </Text>
         </Box>
 
         {!links.length ? (
-          <Text className="text-muted rounded-lg bg-gray-50 px-3 py-2 text-sm">
+          <Text className="text-foreground/60 bg-surface-muted/50 rounded-lg px-3 py-2 text-sm dark:bg-white/[0.03] dark:text-white/55">
             No GitHub links are attached to this story.
           </Text>
         ) : (
           <Box className="space-y-2">
             {links.map((link) => (
               <Box
-                className="border-border rounded-lg border bg-gray-50/60 p-3"
+                className="border-border/70 bg-surface-muted/40 rounded-lg border p-3 dark:border-white/12 dark:bg-white/[0.03]"
                 key={String(link.id)}
               >
                 <Flex className="gap-3" justify="between">
                   <Box>
-                    <Text className="font-semibold">
+                    <Text className="text-foreground font-semibold dark:text-white">
                       {String(link.title ?? link.refName ?? "GitHub link")}
                     </Text>
-                    <Text className="text-muted text-sm">
+                    <Text className="text-foreground/60 text-sm dark:text-white/55">
                       {String(link.repositoryFullName ?? "")}
                       {link.number ? ` #${String(link.number)}` : ""}
                     </Text>
