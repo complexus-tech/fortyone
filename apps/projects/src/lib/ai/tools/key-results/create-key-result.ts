@@ -113,8 +113,16 @@ export const createKeyResultTool = tool({
       };
     }
 
+    if (!result.data?.id) {
+      return {
+        success: false,
+        error: "Key result creation did not return a created key result.",
+      };
+    }
+
     return {
       success: true,
+      keyResult: result.data,
       message: `Successfully created key result "${name}".`,
     };
   },

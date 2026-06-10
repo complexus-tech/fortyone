@@ -281,7 +281,16 @@ export const useCreateStoryMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (story: NewStory) => createStoryAction(story, workspaceSlug),
+    mutationFn: async (story: NewStory) => {
+      const response = await createStoryAction(story, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data?.id) {
+        throw new Error("Story creation did not return a created story.");
+      }
+      return response.data;
+    },
 
     onMutate: (story) => {
       const queryCache = queryClient.getQueryCache();
@@ -325,13 +334,7 @@ export const useCreateStoryMutation = () => {
       });
     },
 
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
-      const createdStory = res.data!;
-
+    onSuccess: (createdStory) => {
       analytics.track("story_created", {
         storyId: createdStory.id,
         title: createdStory.title,

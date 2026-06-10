@@ -3,7 +3,7 @@ import { Box, Flex, Text } from "ui";
 import { cn } from "lib";
 
 export const Thinking = ({
-  message = "Maya is thinking",
+  message = "Thinking",
   icon,
   className,
 }: {
@@ -14,7 +14,7 @@ export const Thinking = ({
   return (
     <Text
       as="div"
-      className={cn("flex items-baseline gap-1.5", className)}
+      className={cn("flex min-h-6 items-baseline gap-1.5", className)}
       color="muted"
     >
       {icon && (

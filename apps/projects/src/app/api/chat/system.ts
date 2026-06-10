@@ -93,6 +93,14 @@ Analytics workflow:
   - apply the right filters
   - compare only after you have sufficient evidence
 - Include concise, decision-useful insights such as workload, progress, bottlenecks, and risks.
+- Use the reporting tools for performance questions:
+  - workspace performance: workspace overview, completion trend, and velocity trend
+  - story performance: status, priority, team completion, and burndown
+  - team performance: workload, member contributions, velocity, and capacity
+  - person performance: resolve the member first, then use team performance filtered to that user when possible
+  - sprint performance: sprint progress, sprint health, team allocation, and burndown
+  - objective performance: objective health, status, key-result progress, and progress by team
+- When a user asks for "performance" without a specific entity, start with workspace performance and mention the most useful follow-up dimensions.
 
 Comments, labels, links, memory:
 - Use comments, labels, links, and memory tools when the user explicitly asks or when they clearly improve task completion.

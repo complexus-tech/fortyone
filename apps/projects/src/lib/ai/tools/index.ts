@@ -70,6 +70,14 @@ import {
   updateMemory,
   deleteMemory,
 } from "./memory";
+import {
+  workspacePerformanceReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
+} from "./analytics";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -89,6 +97,14 @@ export {
   updateMemory,
   deleteMemory,
 } from "./memory";
+export {
+  workspacePerformanceReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
+} from "./analytics";
 
 export const tools = {
   navigation,
@@ -98,6 +114,12 @@ export const tools = {
   search: searchTool,
   notifications: notificationsTool,
   comments: commentsTool,
+  workspacePerformanceReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
   // Teams
   listTeams,
   listPublicTeams,

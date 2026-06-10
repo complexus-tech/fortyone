@@ -4,8 +4,8 @@ import { Box, Flex } from "ui";
 import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
-import { ChatMessage } from "./chat-message";
-import { ChatLoading } from "./chat-loading";
+import { ChatMessage, getMessageProgressLabel } from "./chat-message";
+import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
   messages: MayaUIMessage[];
@@ -26,6 +26,15 @@ export const ChatMessages = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const isWorking = status === "submitted" || status === "streaming";
+  const latestAssistantMessage = messages.findLast(
+    (message) => message.role === "assistant",
+  );
+  const progressLabel = isWorking
+    ? latestAssistantMessage
+      ? getMessageProgressLabel(latestAssistantMessage)
+      : "Thinking"
+    : undefined;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,11 +79,7 @@ export const ChatMessages = ({
             status={status}
           />
         ))}
-        {/* Show loading only before an assistant message exists */}
-        {status !== "ready" &&
-          messages[messages.length - 1]?.role !== "assistant" && (
-            <ChatLoading />
-          )}
+        {progressLabel ? <Thinking message={progressLabel} /> : null}
         {status === "streaming" ? <div className="h-32" /> : null}
         <div ref={messagesEndRef} />
       </Flex>

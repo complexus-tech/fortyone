@@ -1,29 +1,8 @@
-import type { ReactNode } from "react";
 import { Avatar, Box, Text, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
 import type { ChatStatus } from "ai";
 import { useState } from "react";
-import {
-  CheckIcon,
-  CopyIcon,
-  PlusIcon,
-  ReloadIcon,
-  SprintsIcon,
-  StoryIcon,
-  TeamIcon,
-  ObjectiveIcon,
-  SearchIcon,
-  NotificationsIcon,
-  CommentIcon,
-  TagsIcon,
-  LinkIcon,
-  AttachmentIcon,
-  BrainIcon,
-  SunIcon,
-  WorkflowIcon,
-  UserIcon,
-  HistoryIcon,
-} from "icons";
+import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
 import { Streamdown } from "streamdown";
 import type { User } from "@/types";
@@ -31,11 +10,10 @@ import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
-import { AiIcon } from "./ai";
-import { Thinking } from "./thinking";
 import { AttachmentsDisplay } from "./attachments-display";
 import { Reasoning } from "./reasoning";
 import { Sources } from "./sources";
+import { AnalyticsReport } from "./analytics-report";
 
 type ChatMessageProps = {
   isLast: boolean;
@@ -46,84 +24,113 @@ type ChatMessageProps = {
   onPromptSelect: (prompt: string) => void;
 };
 
-const ICON_CLASS = "size-3.5";
-
-/** Maps tool part types to label + icon */
-const TOOL_THINKING_META: Record<string, { label: string; icon: ReactNode }> = {
+/** Maps tool part types to the single progress label shown below the chat. */
+const TOOL_THINKING_LABELS: Record<string, string> = {
   // Stories
-  "tool-listTeamStories": { label: "Fetching stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-searchStories": { label: "Searching stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-getStoryDetails": { label: "Getting story details", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-createStory": { label: "Creating story", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-updateStory": { label: "Updating story", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-deleteStory": { label: "Deleting story", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-bulkCreateStories": { label: "Creating stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-bulkUpdateStories": { label: "Updating stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-bulkDeleteStories": { label: "Deleting stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-assignStoriesToUser": { label: "Assigning stories", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-duplicateStory": { label: "Duplicating story", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-restoreStory": { label: "Restoring story", icon: <StoryIcon className={ICON_CLASS} /> },
-  "tool-addStoryAssociation": { label: "Linking stories", icon: <LinkIcon className={ICON_CLASS} /> },
-  "tool-removeStoryAssociation": { label: "Unlinking stories", icon: <LinkIcon className={ICON_CLASS} /> },
+  "tool-listTeamStories": "Fetching stories",
+  "tool-searchStories": "Searching stories",
+  "tool-getStoryDetails": "Getting story details",
+  "tool-createStory": "Creating story",
+  "tool-updateStory": "Updating story",
+  "tool-deleteStory": "Deleting story",
+  "tool-bulkCreateStories": "Creating stories",
+  "tool-bulkUpdateStories": "Updating stories",
+  "tool-bulkDeleteStories": "Deleting stories",
+  "tool-assignStoriesToUser": "Assigning stories",
+  "tool-duplicateStory": "Duplicating story",
+  "tool-restoreStory": "Restoring story",
+  "tool-addStoryAssociation": "Linking stories",
+  "tool-removeStoryAssociation": "Unlinking stories",
   // Sprints
-  "tool-listSprints": { label: "Loading sprints", icon: <SprintsIcon className={ICON_CLASS} /> },
-  "tool-listRunningSprints": { label: "Getting active sprints", icon: <SprintsIcon className={ICON_CLASS} /> },
-  "tool-getSprintDetailsTool": { label: "Getting sprint details", icon: <SprintsIcon className={ICON_CLASS} /> },
-  "tool-getSprintAnalyticsTool": { label: "Analyzing sprint data", icon: <SprintsIcon className={ICON_CLASS} /> },
-  "tool-updateSprintSettings": { label: "Updating sprint settings", icon: <SprintsIcon className={ICON_CLASS} /> },
+  "tool-listSprints": "Loading sprints",
+  "tool-listRunningSprints": "Getting active sprints",
+  "tool-getSprintDetailsTool": "Getting sprint details",
+  "tool-getSprintAnalyticsTool": "Analyzing sprint data",
+  "tool-updateSprintSettings": "Updating sprint settings",
   // Teams
-  "tool-listTeams": { label: "Loading teams", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-listPublicTeams": { label: "Loading public teams", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-getTeamDetails": { label: "Getting team details", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-listTeamMembers": { label: "Loading team members", icon: <UserIcon className={ICON_CLASS} /> },
-  "tool-createTeamTool": { label: "Creating team", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-updateTeam": { label: "Updating team", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-joinTeam": { label: "Joining team", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-leaveTeam": { label: "Leaving team", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-deleteTeam": { label: "Deleting team", icon: <TeamIcon className={ICON_CLASS} /> },
-  "tool-getTeamSettingsTool": { label: "Loading team settings", icon: <TeamIcon className={ICON_CLASS} /> },
+  "tool-listTeams": "Loading teams",
+  "tool-listPublicTeams": "Loading public teams",
+  "tool-getTeamDetails": "Getting team details",
+  "tool-listTeamMembers": "Loading team members",
+  "tool-createTeamTool": "Creating team",
+  "tool-updateTeam": "Updating team",
+  "tool-joinTeam": "Joining team",
+  "tool-leaveTeam": "Leaving team",
+  "tool-deleteTeam": "Deleting team",
+  "tool-getTeamSettingsTool": "Loading team settings",
   // Objectives & Key Results
-  "tool-listObjectivesTool": { label: "Loading objectives", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-listTeamObjectivesTool": { label: "Loading team objectives", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-createObjectiveTool": { label: "Creating objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-updateObjectiveTool": { label: "Updating objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-deleteObjectiveTool": { label: "Deleting objective", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-getObjectiveDetailsTool": { label: "Getting objective details", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-objectiveAnalyticsTool": { label: "Analyzing objective data", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-getObjectiveActivitiesTool": { label: "Loading objective activity", icon: <HistoryIcon className={ICON_CLASS} /> },
-  "tool-listKeyResultsTool": { label: "Loading key results", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-createKeyResultTool": { label: "Creating key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-updateKeyResultTool": { label: "Updating key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-deleteKeyResultTool": { label: "Deleting key result", icon: <ObjectiveIcon className={ICON_CLASS} /> },
-  "tool-getKeyResultActivitiesTool": { label: "Loading key result activity", icon: <HistoryIcon className={ICON_CLASS} /> },
+  "tool-listObjectivesTool": "Loading objectives",
+  "tool-listTeamObjectivesTool": "Loading team objectives",
+  "tool-createObjectiveTool": "Creating objective",
+  "tool-updateObjectiveTool": "Updating objective",
+  "tool-deleteObjectiveTool": "Deleting objective",
+  "tool-getObjectiveDetailsTool": "Getting objective details",
+  "tool-objectiveAnalyticsTool": "Analyzing objective data",
+  "tool-getObjectiveActivitiesTool": "Loading objective activity",
+  "tool-listKeyResultsTool": "Loading key results",
+  "tool-createKeyResultTool": "Creating key result",
+  "tool-updateKeyResultTool": "Updating key result",
+  "tool-deleteKeyResultTool": "Deleting key result",
+  "tool-getKeyResultActivitiesTool": "Loading key result activity",
   // Other
-  "tool-navigation": { label: "Navigating", icon: <WorkflowIcon className={ICON_CLASS} /> },
-  "tool-search": { label: "Searching", icon: <SearchIcon className={ICON_CLASS} /> },
-  "tool-members": { label: "Loading members", icon: <UserIcon className={ICON_CLASS} /> },
-  "tool-comments": { label: "Loading comments", icon: <CommentIcon className={ICON_CLASS} /> },
-  "tool-notifications": { label: "Checking notifications", icon: <NotificationsIcon className={ICON_CLASS} /> },
-  "tool-statuses": { label: "Loading statuses", icon: <WorkflowIcon className={ICON_CLASS} /> },
-  "tool-objectiveStatuses": { label: "Loading objective statuses", icon: <WorkflowIcon className={ICON_CLASS} /> },
-  "tool-links": { label: "Loading links", icon: <LinkIcon className={ICON_CLASS} /> },
-  "tool-labels": { label: "Loading labels", icon: <TagsIcon className={ICON_CLASS} /> },
-  "tool-storyLabels": { label: "Managing labels", icon: <TagsIcon className={ICON_CLASS} /> },
-  "tool-storyActivities": { label: "Loading activity", icon: <HistoryIcon className={ICON_CLASS} /> },
-  "tool-listAttachments": { label: "Loading attachments", icon: <AttachmentIcon className={ICON_CLASS} /> },
-  "tool-deleteAttachment": { label: "Deleting attachment", icon: <AttachmentIcon className={ICON_CLASS} /> },
-  "tool-listMemories": { label: "Checking memory", icon: <BrainIcon className={ICON_CLASS} /> },
-  "tool-createMemory": { label: "Saving to memory", icon: <BrainIcon className={ICON_CLASS} /> },
-  "tool-updateMemory": { label: "Updating memory", icon: <BrainIcon className={ICON_CLASS} /> },
-  "tool-deleteMemory": { label: "Removing memory", icon: <BrainIcon className={ICON_CLASS} /> },
-  "tool-theme": { label: "Changing theme", icon: <SunIcon className={ICON_CLASS} /> },
+  "tool-navigation": "Navigating",
+  "tool-search": "Searching",
+  "tool-members": "Loading members",
+  "tool-comments": "Loading comments",
+  "tool-notifications": "Checking notifications",
+  "tool-workspacePerformanceReportTool": "Building workspace report",
+  "tool-storyPerformanceReportTool": "Building story report",
+  "tool-objectiveProgressReportTool": "Building objective report",
+  "tool-teamPerformanceReportTool": "Building team report",
+  "tool-sprintPerformanceReportTool": "Building sprint report",
+  "tool-timelineTrendsReportTool": "Building trends report",
+  "tool-statuses": "Loading statuses",
+  "tool-objectiveStatuses": "Loading objective statuses",
+  "tool-links": "Loading links",
+  "tool-labels": "Loading labels",
+  "tool-storyLabels": "Managing labels",
+  "tool-storyActivities": "Loading activity",
+  "tool-listAttachments": "Loading attachments",
+  "tool-deleteAttachment": "Deleting attachment",
+  "tool-listMemories": "Checking memory",
+  "tool-createMemory": "Saving to memory",
+  "tool-updateMemory": "Updating memory",
+  "tool-deleteMemory": "Removing memory",
+  "tool-theme": "Changing theme",
 };
 
-const DEFAULT_TOOL_META = { label: "Working on it", icon: <WorkflowIcon className={ICON_CLASS} /> };
-
-const getToolThinkingMeta = (toolType: string) => {
-  return TOOL_THINKING_META[toolType] ?? DEFAULT_TOOL_META;
-};
+const DEFAULT_PROGRESS_LABEL = "Working on it";
 
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
+
+const isAnalyticsReportOutput = (
+  output: unknown,
+): output is Record<string, unknown> => {
+  if (!output || typeof output !== "object" || !("kind" in output)) {
+    return false;
+  }
+
+  const kind = (output as { kind?: unknown }).kind;
+  return typeof kind === "string" && kind.endsWith("-report");
+};
+
+export const getMessageProgressLabel = (message: MayaUIMessage) => {
+  const lastPart = message.parts.at(-1);
+
+  if (lastPart?.type === "text" && lastPart.text.trim()) {
+    return undefined;
+  }
+
+  const latestToolPart = message.parts
+    .filter((part) => isToolPart(part.type) && "state" in part)
+    .at(-1);
+
+  if (!latestToolPart) {
+    return "Thinking";
+  }
+
+  return TOOL_THINKING_LABELS[latestToolPart.type] ?? DEFAULT_PROGRESS_LABEL;
+};
 
 const RenderMessage = ({
   message,
@@ -139,34 +146,13 @@ const RenderMessage = ({
   const pathname = usePathname();
   const isStreaming = status === "streaming";
   const isAssistant = message.role === "assistant";
-  const hasText = message.parts.some((p) => p.type === "text");
 
   const totalSources = message.parts.filter(
     (part) => part.type === "source-url",
   ).length;
 
-  // Track whether a tool-specific thinking label is being rendered
-  // so we can avoid showing the generic "Maya is thinking" at the same time
-  let hasActiveToolThinking = false;
-  if (isLast && isAssistant && status !== "ready") {
-    hasActiveToolThinking = message.parts.some(
-      (p) =>
-        isToolPart(p.type) &&
-        "state" in p &&
-        (p.state === "input-available" || p.state === "input-streaming"),
-    );
-  }
-
   return (
     <>
-      {/* Show generic thinking when streaming/submitted, no text yet,
-          and no tool-specific thinking label is active */}
-      {status !== "ready" &&
-        isLast &&
-        isAssistant &&
-        !hasText &&
-        !hasActiveToolThinking && <Thinking />}
-
       {message.parts.map((part, index) => {
         // Text content
         if (part.type === "text") {
@@ -207,16 +193,11 @@ const RenderMessage = ({
 
         // Generic tool thinking — show for any tool in progress
         if (isToolPart(part.type) && "state" in part) {
-          // Show thinking indicator while tool is executing
           if (
-            isLast &&
-            (part.state === "input-available" ||
-              part.state === "input-streaming")
+            part.state === "output-available" &&
+            isAnalyticsReportOutput(part.output)
           ) {
-            const { label, icon } = getToolThinkingMeta(part.type);
-            return (
-              <Thinking key={index} message={label} icon={icon} />
-            );
+            return <AnalyticsReport key={index} output={part.output} />;
           }
 
           // Burndown chart — custom output for sprint analytics
@@ -312,21 +293,20 @@ export const ChatMessage = ({
         className={cn({
           "flex-row-reverse": message.role === "user",
         })}
-        gap={3}
+        gap={message.role === "user" ? 3 : 0}
       >
-        {message.role === "assistant" ? (
-          <AiIcon />
-        ) : (
+        {message.role === "user" ? (
           <Avatar
             color="tertiary"
             name={profile?.fullName || profile?.username}
             src={profile?.avatarUrl}
           />
-        )}
+        ) : null}
         <Flex
-          className={cn("max-w-[80%] flex-1", {
+          className={cn("flex-1", {
             "items-end": message.role === "user",
-            "max-w-[85%]": message.role === "assistant",
+            "max-w-[80%]": message.role === "user",
+            "max-w-full": message.role === "assistant",
           })}
           direction="column"
         >

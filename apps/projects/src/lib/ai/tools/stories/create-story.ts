@@ -110,6 +110,7 @@ export const createStory = tool({
         teamId,
         statusId,
         assigneeId,
+        reporterId: session.user.id,
         priority,
         estimateValue,
         sprintId,
@@ -125,6 +126,13 @@ export const createStory = tool({
         return {
           success: false,
           error: result.error.message || "Failed to create story",
+        };
+      }
+
+      if (!result.data?.id) {
+        return {
+          success: false,
+          error: "Story creation did not return a created story.",
         };
       }
 

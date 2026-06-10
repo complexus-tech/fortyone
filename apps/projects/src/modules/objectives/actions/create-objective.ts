@@ -2,8 +2,12 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
-import type { NewObjective } from "../types";
-import type { Objective } from "../types";
+import type { KeyResult, NewObjective, Objective } from "../types";
+
+export type CreateObjectiveResponse = {
+  objective: Objective;
+  keyResults?: KeyResult[];
+};
 
 export const createObjective = async (
   params: NewObjective,
@@ -12,7 +16,7 @@ export const createObjective = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    const res = await post<NewObjective, ApiResponse<Objective>>(
+    const res = await post<NewObjective, ApiResponse<CreateObjectiveResponse>>(
       "objectives",
       params,
       ctx,

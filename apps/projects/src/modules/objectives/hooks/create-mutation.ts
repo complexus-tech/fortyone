@@ -13,8 +13,18 @@ export const useCreateObjectiveMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (newObjective: NewObjective) =>
-      createObjective(newObjective, workspaceSlug),
+    mutationFn: async (newObjective: NewObjective) => {
+      const response = await createObjective(newObjective, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data?.objective?.id) {
+        throw new Error(
+          "Objective creation did not return a created objective.",
+        );
+      }
+      return response.data.objective;
+    },
 
     onMutate: (newObjective) => {
       const optimisticObjective: Objective = {
@@ -93,16 +103,11 @@ export const useCreateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-      const objective = res.data;
-
+    onSuccess: (objective) => {
       analytics.track("objective_created", {
-        name: objective?.name,
-        startDate: objective?.startDate,
-        priority: objective?.priority,
+        name: objective.name,
+        startDate: objective.startDate,
+        priority: objective.priority,
       });
       const queryCache = queryClient.getQueryCache();
       const queries = queryCache.getAll();

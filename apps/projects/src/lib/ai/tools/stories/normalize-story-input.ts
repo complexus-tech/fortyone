@@ -7,6 +7,7 @@ type StoryInput = {
   teamId: string;
   statusId: string;
   assigneeId?: string;
+  reporterId?: string;
   priority: "No Priority" | "Low" | "Medium" | "High" | "Urgent";
   estimateValue?: number;
   sprintId?: string;
@@ -22,6 +23,7 @@ export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
     description: normalizeOptionalString(story.description),
     descriptionHTML: normalizeOptionalString(story.descriptionHTML),
     assigneeId: normalizeOptionalString(story.assigneeId),
+    reporterId: normalizeOptionalString(story.reporterId),
     sprintId: normalizeOptionalString(story.sprintId),
     objectiveId: normalizeOptionalString(story.objectiveId),
     parentId: normalizeOptionalString(story.parentId),
