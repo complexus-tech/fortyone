@@ -3,9 +3,7 @@ package objectiveshttp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -105,35 +103,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	filterKeys := make([]string, 0, len(filters))
-	for key := range filters {
-		filterKeys = append(filterKeys, key)
-	}
-	sort.Strings(filterKeys)
-
-	filtersStr := ""
-	for _, key := range filterKeys {
-		filtersStr += fmt.Sprintf("%s:%v;", key, filters[key])
-	}
-
-	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, userID, filtersStr)
-	var cachedObjectives []objectives.CoreObjective
-
-	if err := h.cache.Get(ctx, cacheKey, &cachedObjectives); err == nil {
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppObjectives(cachedObjectives), http.StatusOK)
-		return nil
-	}
-
 	objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err
-	}
-
-	if err := h.cache.Set(ctx, cacheKey, objectivesList, cache.ListTTL); err != nil {
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppObjectives(objectivesList), http.StatusOK)
