@@ -346,7 +346,8 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		teamID = &parsedTeamID
 	}
 
-	users, err := h.users.List(ctx, workspace.ID, teamID)
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	users, err := h.users.List(ctx, workspace.ID, teamID, search)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

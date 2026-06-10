@@ -50,7 +50,7 @@ type Repository interface {
 	ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
-	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error)
+	List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID, search string) ([]CoreUser, error)
 	Create(ctx context.Context, user CoreUser) (CoreUser, error)
 	// Verification token methods
 	CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (CoreVerificationToken, error)
@@ -307,11 +307,11 @@ func (s *Service) UpdateUserWorkspace(ctx context.Context, userID, workspaceID u
 }
 
 // List returns a list of users for a workspace.
-func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID) ([]CoreUser, error) {
+func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, teamID *uuid.UUID, search string) ([]CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.users.List")
 	defer span.End()
 
-	users, err := s.repo.List(ctx, workspaceID, teamID)
+	users, err := s.repo.List(ctx, workspaceID, teamID, search)
 	if err != nil {
 		return nil, fmt.Errorf("getting users list: %w", err)
 	}

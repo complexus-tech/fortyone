@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -179,7 +180,7 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 	return toCoreUser(user), nil
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUID) ([]users.CoreUser, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUID, search string) ([]users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
 	defer span.End()
 
@@ -187,6 +188,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
+	trimmedSearch := strings.TrimSpace(search)
 
 	var q string
 	if teamID != nil {
@@ -213,7 +215,6 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			AND tm.team_id = :team_id
 			AND u.is_active = TRUE
 			AND u.is_system = FALSE
-		ORDER BY u.full_name
 		`
 	} else {
 		// Query for all workspace members
@@ -236,9 +237,21 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 		WHERE wm.workspace_id = :workspace_id
 			AND u.is_active = TRUE
 			AND u.is_system = FALSE
-		ORDER BY u.full_name
 		`
 	}
+
+	if trimmedSearch != "" {
+		params["search"] = trimmedSearch
+		q += `
+			AND (
+				u.full_name ILIKE '%' || :search || '%'
+				OR u.username ILIKE '%' || :search || '%'
+				OR u.email ILIKE '%' || :search || '%'
+			)
+		`
+	}
+
+	q += " ORDER BY u.full_name"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {

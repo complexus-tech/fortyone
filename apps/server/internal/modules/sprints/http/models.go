@@ -49,6 +49,7 @@ type SprintStats struct {
 type AppFilters struct {
 	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
 	Team      *uuid.UUID `json:"teamId" db:"team_id"`
+	Search    string     `json:"search" db:"search"`
 }
 
 type AppNewSprint struct {

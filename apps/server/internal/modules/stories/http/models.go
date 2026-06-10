@@ -438,6 +438,7 @@ type StoryFilters struct {
 	StatusIDs      []uuid.UUID `json:"statusIds"`
 	AssigneeIDs    []uuid.UUID `json:"assigneeIds"`
 	ReporterIDs    []uuid.UUID `json:"reporterIds"`
+	TitleContains  *string     `json:"titleContains"`
 	Priorities     []string    `json:"priorities"`
 	Categories     []string    `json:"categories"`
 	TeamIDs        []uuid.UUID `json:"teamIds"`

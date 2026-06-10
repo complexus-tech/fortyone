@@ -1373,6 +1373,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.StatusIDs = parseUUIDArray(r, "statusIds")
 	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
 	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
+	query.Filters.TitleContains = parseStringParam(r, "titleContains")
 	query.Filters.TeamIDs = parseUUIDArray(r, "teamIds")
 	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
 	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
@@ -1408,6 +1409,13 @@ func getStringParam(r *http.Request, key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func parseStringParam(r *http.Request, key string) *string {
+	if value := strings.TrimSpace(r.URL.Query().Get(key)); value != "" {
+		return &value
+	}
+	return nil
 }
 
 func getIntParam(r *http.Request, key string, defaultValue int) int {
@@ -1525,6 +1533,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			StatusIDs:       query.Filters.StatusIDs,
 			AssigneeIDs:     query.Filters.AssigneeIDs,
 			ReporterIDs:     query.Filters.ReporterIDs,
+			TitleContains:   query.Filters.TitleContains,
 			Priorities:      query.Filters.Priorities,
 			Categories:      query.Filters.Categories,
 			TeamIDs:         query.Filters.TeamIDs,
@@ -1574,6 +1583,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if len(filters.ReporterIDs) > 0 {
 		result["reporter_ids"] = filters.ReporterIDs
+	}
+	if filters.TitleContains != nil {
+		result["title_contains"] = *filters.TitleContains
 	}
 	if len(filters.Priorities) > 0 {
 		result["priorities"] = filters.Priorities

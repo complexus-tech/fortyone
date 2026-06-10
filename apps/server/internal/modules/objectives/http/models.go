@@ -41,6 +41,7 @@ type ObjectiveStats struct {
 
 type AppFilters struct {
 	Team     uuid.UUID `json:"teamId" db:"team_id"`
+	Search   string    `json:"search" db:"search"`
 	Page     int       `json:"page"`
 	PageSize int       `json:"pageSize"`
 }

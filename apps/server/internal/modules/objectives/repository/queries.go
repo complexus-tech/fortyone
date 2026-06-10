@@ -66,11 +66,24 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
 	filters["user_id"] = userID
+	search, hasSearch := filters["search"].(string)
+	if hasSearch {
+		search = strings.TrimSpace(search)
+		if search == "" {
+			delete(filters, "search")
+			hasSearch = false
+		} else {
+			filters["search"] = search
+		}
+	}
 
 	for field := range filters {
-		if field != "user_id" { // Skip user_id since it's used in the JOIN
+		if field != "user_id" && field != "search" && field != "page" && field != "pageSize" { // Skip user_id since it's used in the JOIN
 			setClauses = append(setClauses, fmt.Sprintf("o.%s = :%s", field, field))
 		}
+	}
+	if hasSearch {
+		setClauses = append(setClauses, "o.name ILIKE '%' || :search || '%'")
 	}
 
 	q += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY o.created_at DESC;"

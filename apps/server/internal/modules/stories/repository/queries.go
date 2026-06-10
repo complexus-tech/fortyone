@@ -505,6 +505,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if reporterIds, ok := filters["reporter_ids"].([]uuid.UUID); ok {
 		coreFilters.ReporterIDs = reporterIds
 	}
+	if titleContains, ok := filters["title_contains"].(string); ok {
+		coreFilters.TitleContains = &titleContains
+	}
 	if priorities, ok := filters["priorities"].([]string); ok {
 		coreFilters.Priorities = priorities
 	}
@@ -1229,6 +1232,10 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
 
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
+	}
+
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
 	}
@@ -1655,6 +1662,9 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.LabelIDs) > 0 {
 		params["label_ids"] = filters.LabelIDs
 	}
+	if filters.TitleContains != nil {
+		params["title_contains"] = *filters.TitleContains
+	}
 
 	// Single value parameters
 	if filters.Parent != nil {
@@ -1838,6 +1848,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
+	}
+
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
 	}
 
 	if len(filters.Priorities) > 0 {
@@ -2329,6 +2343,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
+	}
+
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
 	}
 
 	if len(filters.Priorities) > 0 {

@@ -23,6 +23,10 @@ import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
 import { MemberTooltip } from "./member-tooltip";
+import {
+  getActiveStoriesFilterCount,
+  hasActiveStoriesFilters,
+} from "./stories-filter-utils";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -36,6 +40,7 @@ export type StoriesFilter = {
   objectiveId: string | null;
   epicId: string | null;
   keyResultId: string | null;
+  titleContains?: string | null;
   hasNoAssignee: boolean | null;
   assignedToMe: boolean;
   createdByMe: boolean;
@@ -94,7 +99,7 @@ const ToggleButton = ({
   );
 };
 
-const StatusSelector = ({
+export const StatusSelector = ({
   selected,
   onChange,
 }: {
@@ -142,7 +147,7 @@ const StatusSelector = ({
   );
 };
 
-const UserSelector = ({
+export const UserSelector = ({
   selected,
   onChange,
 }: {
@@ -189,7 +194,7 @@ const UserSelector = ({
   );
 };
 
-const PrioritySelector = ({
+export const PrioritySelector = ({
   selected,
   onChange,
 }: {
@@ -235,7 +240,7 @@ const PrioritySelector = ({
   );
 };
 
-const TeamSelector = ({
+export const TeamSelector = ({
   selected,
   onChange,
 }: {
@@ -280,7 +285,7 @@ const TeamSelector = ({
   );
 };
 
-const SprintSelector = ({
+export const SprintSelector = ({
   selected,
   onChange,
 }: {
@@ -335,47 +340,11 @@ export const StoriesFilterButton = ({
   const pathname = usePathname();
   const { teamId } = useParams<{ teamId: string }>();
   const isBacklog = pathname.includes("/backlog");
-  const isOnSprint = pathname.includes("/sprints/");
-
-  // filtersCount returns the number of filters applied.
-  const filtersCount = () => {
-    const arrayFilters = [
-      "statusIds",
-      "assigneeIds",
-      "reporterIds",
-      "priorities",
-      "teamIds",
-      "sprintIds",
-      "labelIds",
-    ] as const;
-
-    const stringFilters = [
-      "parentId",
-      "objectiveId",
-      "epicId",
-      "keyResultId",
-    ] as const;
-    const arrayFilterCount = arrayFilters.reduce((count, key) => {
-      const values = filters[key];
-      return values && values.length > 0 ? count + 1 : count;
-    }, 0);
-
-    const stringFilterCount = stringFilters.reduce((count, key) => {
-      return filters[key] ? count + 1 : count;
-    }, 0);
-
-    const booleanFilterCount = [
-      filters.hasNoAssignee,
-      filters.assignedToMe,
-      filters.createdByMe,
-    ].filter(Boolean).length;
-
-    return arrayFilterCount + stringFilterCount + booleanFilterCount;
-  };
+  const filtersCount = getActiveStoriesFilterCount(filters);
 
   const getButtonLabel = () => {
-    if (filtersCount()) {
-      return `${filtersCount()} filter${filtersCount() > 1 ? "s" : ""} applied`;
+    if (filtersCount) {
+      return `${filtersCount} filter${filtersCount > 1 ? "s" : ""} applied`;
     }
     return "Filters";
   };
@@ -389,6 +358,7 @@ export const StoriesFilterButton = ({
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          className="relative"
           color="tertiary"
           leftIcon={<FilterIcon className="h-4 w-auto" />}
           ref={buttonRef}
@@ -396,6 +366,14 @@ export const StoriesFilterButton = ({
           size="sm"
           variant="outline"
         >
+          {hasActiveStoriesFilters(filters) ? (
+            <span
+              aria-hidden="true"
+              className="bg-primary absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full"
+            >
+              <span className="bg-primary absolute inset-0 animate-ping rounded-full opacity-75" />
+            </span>
+          ) : null}
           <span className="hidden md:inline">{getButtonLabel()}</span>
         </Button>
       </Popover.Trigger>
@@ -412,7 +390,7 @@ export const StoriesFilterButton = ({
           >
             Apply Filters
           </Text>
-          {filtersCount() > 0 && (
+          {filtersCount > 0 && (
             <Button
               className="text-primary dark:text-primary"
               color="tertiary"
@@ -504,20 +482,6 @@ export const StoriesFilterButton = ({
             </FilterSection>
           </>
         ) : null}
-
-        {!isBacklog && !isOnSprint && (
-          <>
-            <Divider />
-            <FilterSection title="Sprint">
-              <SprintSelector
-                onChange={(sprintIds) => {
-                  setFilters({ ...filters, sprintIds });
-                }}
-                selected={filters.sprintIds}
-              />
-            </FilterSection>
-          </>
-        )}
       </Popover.Content>
     </Popover>
   );

@@ -3,10 +3,14 @@ import { get, type WorkspaceCtx } from "@/lib/http";
 import type { Sprint } from "@/modules/sprints/types";
 import type { ApiResponse } from "@/types";
 
-export const getTeamSprints = async (teamId: string, ctx: WorkspaceCtx) => {
+export const getTeamSprints = async (
+  teamId: string,
+  ctx: WorkspaceCtx,
+  search = "",
+) => {
   if (!teamId) return [];
   const query = stringify(
-    { teamId },
+    { search: search.trim() || undefined, teamId },
     {
       skipNulls: true,
       addQueryPrefix: true,

@@ -66,6 +66,7 @@ export type StoryFilters = {
   categories?: StateCategory[];
   assigneeIds?: string[] | null;
   reporterIds?: string[] | null;
+  titleContains?: string | null;
   priorities?: string[] | null;
   teamIds?: string[] | null;
   sprintIds?: string[] | null;
@@ -126,6 +127,7 @@ export type GroupedStoryParams = {
   statusIds?: string[];
   assigneeIds?: string[];
   reporterIds?: string[];
+  titleContains?: string;
   priorities?: string[];
   sprintIds?: string[];
   labelIds?: string[];
@@ -159,6 +161,7 @@ export type GroupStoryParams = {
   categories?: StateCategory[];
   assigneeIds?: string[];
   reporterIds?: string[];
+  titleContains?: string;
   priorities?: string[];
   teamIds?: string[];
   sprintIds?: string[];
