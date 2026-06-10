@@ -3,7 +3,7 @@
 @layer base {
   @supports (corner-shape: squircle) {
     :root {
-      --radius-scale: 2.4;
+      --radius-scale: 2.5;
     }
 
     [class*="rounded"]:not([class*="rounded-full"]) {
