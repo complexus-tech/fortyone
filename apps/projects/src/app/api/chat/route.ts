@@ -114,20 +114,19 @@ export async function POST(req: NextRequest) {
       providerOptions: {
         openai: {
           reasoningEffort: "low",
-          reasoningSummary: "auto",
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
             thinkingBudget: -1,
-            includeThoughts: true,
+            includeThoughts: false,
           },
         },
       },
     });
     return result.toUIMessageStreamResponse({
-      sendReasoning: true,
-      sendSources: true,
+      sendReasoning: false,
+      sendSources: false,
       originalMessages: messagesFromRequest,
       onFinish: async ({ messages }) => {
         await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });

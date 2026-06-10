@@ -1,10 +1,14 @@
 "use client";
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Box, Flex } from "ui";
 import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
-import { ChatMessage, getMessageProgressLabel } from "./chat-message";
+import {
+  ChatMessage,
+  getMessageProgressLabel,
+  hasVisibleMessageContent,
+} from "./chat-message";
 import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
@@ -29,6 +33,17 @@ export const ChatMessages = ({
   const isWorking = status === "submitted" || status === "streaming";
   const latestAssistantMessage = messages.findLast(
     (message) => message.role === "assistant",
+  );
+  const latestAssistantMessageId = latestAssistantMessage?.id;
+  const visibleMessages = useMemo(
+    () =>
+      messages.filter((message) =>
+        hasVisibleMessageContent(
+          message,
+          isWorking && message.id === latestAssistantMessageId,
+        ),
+      ),
+    [isWorking, latestAssistantMessageId, messages],
   );
   const progressLabel = isWorking
     ? latestAssistantMessage
@@ -68,17 +83,23 @@ export const ChatMessages = ({
       onScroll={handleScroll}
     >
       <Flex direction="column" gap={6}>
-        {messages.map((message, idx) => (
-          <ChatMessage
-            isLast={idx === messages.length - 1}
-            key={message.id}
-            message={message}
-            onPromptSelect={onPromptSelect}
-            profile={profile}
-            regenerate={regenerate}
-            status={status}
-          />
-        ))}
+        {visibleMessages.map((message) => {
+          const deferToolOutputs =
+            isWorking && message.id === latestAssistantMessageId;
+
+          return (
+            <ChatMessage
+              deferToolOutputs={deferToolOutputs}
+              isLast={message.id === messages.at(-1)?.id}
+              key={message.id}
+              message={message}
+              onPromptSelect={onPromptSelect}
+              profile={profile}
+              regenerate={regenerate}
+              status={status}
+            />
+          );
+        })}
         {progressLabel ? <Thinking message={progressLabel} /> : null}
         {status === "streaming" ? <div className="h-32" /> : null}
         <div ref={messagesEndRef} />

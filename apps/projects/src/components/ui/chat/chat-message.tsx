@@ -11,8 +11,6 @@ import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
-import { Reasoning } from "./reasoning";
-import { Sources } from "./sources";
 import { AnalyticsReport } from "./analytics-report";
 
 type ChatMessageProps = {
@@ -20,6 +18,7 @@ type ChatMessageProps = {
   message: MayaUIMessage;
   profile: User | undefined;
   status: ChatStatus;
+  deferToolOutputs?: boolean;
   regenerate: (messageId?: string) => void;
   onPromptSelect: (prompt: string) => void;
 };
@@ -103,6 +102,15 @@ const DEFAULT_PROGRESS_LABEL = "Working on it";
 
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
 
+type ToolMessagePart = MayaUIMessage["parts"][number] & {
+  state: string;
+  output?: unknown;
+};
+
+const isToolMessagePart = (
+  part: MayaUIMessage["parts"][number],
+): part is ToolMessagePart => isToolPart(part.type) && "state" in part;
+
 const isAnalyticsReportOutput = (
   output: unknown,
 ): output is Record<string, unknown> => {
@@ -114,6 +122,28 @@ const isAnalyticsReportOutput = (
   return typeof kind === "string" && kind.endsWith("-report");
 };
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const getSprintBurndownData = (output: unknown) => {
+  const outputRecord = asRecord(output);
+  const analyticsReport = asRecord(outputRecord.analyticsReport);
+  return Array.isArray(analyticsReport.burndown)
+    ? analyticsReport.burndown
+    : [];
+};
+
+const getSuggestions = (output: unknown) => {
+  const outputRecord = asRecord(output);
+  return Array.isArray(outputRecord.suggestions)
+    ? outputRecord.suggestions.filter(
+        (suggestion): suggestion is string => typeof suggestion === "string",
+      )
+    : [];
+};
+
 export const getMessageProgressLabel = (message: MayaUIMessage) => {
   const lastPart = message.parts.at(-1);
 
@@ -121,9 +151,7 @@ export const getMessageProgressLabel = (message: MayaUIMessage) => {
     return undefined;
   }
 
-  const latestToolPart = message.parts
-    .filter((part) => isToolPart(part.type) && "state" in part)
-    .at(-1);
+  const latestToolPart = message.parts.filter(isToolMessagePart).at(-1);
 
   if (!latestToolPart) {
     return "Thinking";
@@ -132,144 +160,140 @@ export const getMessageProgressLabel = (message: MayaUIMessage) => {
   return TOOL_THINKING_LABELS[latestToolPart.type] ?? DEFAULT_PROGRESS_LABEL;
 };
 
+export const getMessageText = (message: MayaUIMessage) =>
+  message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+
+export const hasVisibleMessageContent = (
+  message: MayaUIMessage,
+  deferToolOutputs = false,
+) => {
+  if (message.role === "user") {
+    return true;
+  }
+
+  if (getMessageText(message).trim()) {
+    return true;
+  }
+
+  if (message.parts.some((part) => part.type === "file")) {
+    return true;
+  }
+
+  if (deferToolOutputs) {
+    return false;
+  }
+
+  return message.parts.some(
+    (part) => isToolMessagePart(part) && part.state === "output-available",
+  );
+};
+
 const RenderMessage = ({
   message,
   onPromptSelect,
   status,
-  isLast,
+  deferToolOutputs = false,
 }: {
-  isLast: boolean;
   message: MayaUIMessage;
   status: ChatStatus;
+  deferToolOutputs?: boolean;
   onPromptSelect: (prompt: string) => void;
 }) => {
   const pathname = usePathname();
   const isStreaming = status === "streaming";
   const isAssistant = message.role === "assistant";
 
-  const totalSources = message.parts.filter(
-    (part) => part.type === "source-url",
-  ).length;
+  const textParts = message.parts.filter((part) => part.type === "text");
+  const toolParts = message.parts.filter(isToolMessagePart);
+  const reportParts = deferToolOutputs
+    ? []
+    : toolParts.filter(
+        (part) =>
+          part.state === "output-available" &&
+          isAnalyticsReportOutput(part.output),
+      );
+  const sprintAnalyticsParts = deferToolOutputs
+    ? []
+    : toolParts.filter(
+        (part) =>
+          part.type === "tool-getSprintAnalyticsTool" &&
+          part.state === "output-available",
+      );
+  const suggestionParts = deferToolOutputs
+    ? []
+    : toolParts.filter(
+        (part) =>
+          part.type === "tool-suggestions" && part.state === "output-available",
+      );
 
   return (
     <>
-      {message.parts.map((part, index) => {
-        // Text content
-        if (part.type === "text") {
-          return (
-            <Streamdown
-              className={cn("chat-tables", {
-                "text-foreground-inverse": message.role === "user",
-              })}
-              controls={{
-                table: true,
-                code: true,
-                mermaid: {
-                  download: true,
-                  copy: true,
-                  fullscreen: true,
-                  panZoom: true,
-                },
-              }}
-              isAnimating={isStreaming && isAssistant}
-              key={index}
-            >
-              {part.text}
-            </Streamdown>
-          );
-        }
+      {textParts.map((part, index) => (
+        <Streamdown
+          className={cn("chat-tables", {
+            "text-foreground-inverse": message.role === "user",
+          })}
+          controls={{
+            table: true,
+            code: true,
+            mermaid: {
+              download: true,
+              copy: true,
+              fullscreen: true,
+              panZoom: true,
+            },
+          }}
+          isAnimating={isStreaming && isAssistant}
+          key={`${message.id}-text-${index}`}
+        >
+          {part.text}
+        </Streamdown>
+      ))}
 
-        // Reasoning (visible while streaming and after completion)
-        if (part.type === "reasoning") {
-          return (
-            <Reasoning
-              className="mb-2"
-              content={part.text}
-              isStreaming={isStreaming && isLast}
-              key={index}
-            />
-          );
-        }
+      {reportParts.map((part, index) => (
+        <AnalyticsReport
+          key={`${message.id}-report-${index}`}
+          output={asRecord(part.output)}
+        />
+      ))}
 
-        // Generic tool thinking — show for any tool in progress
-        if (isToolPart(part.type) && "state" in part) {
-          if (
-            part.state === "output-available" &&
-            isAnalyticsReportOutput(part.output)
-          ) {
-            return <AnalyticsReport key={index} output={part.output} />;
-          }
-
-          // Burndown chart — custom output for sprint analytics
-          if (
-            part.type === "tool-getSprintAnalyticsTool" &&
-            part.state === "output-available"
-          ) {
-            return (
-              <Box className="mb-3" key={index}>
-                <Text
-                  as="h3"
-                  className="mt-4 mb-1 text-xl font-semibold antialiased"
-                >
-                  Burndown graph
-                </Text>
-                <BurndownChart
-                  burndownData={part.output.analyticsReport?.burndown ?? []}
-                  className={cn("h-72", {
-                    "h-80": pathname.includes("/maya"),
-                  })}
-                />
-              </Box>
-            );
-          }
-
-          // Suggestions — shown when ready
-          if (
-            part.type === "tool-suggestions" &&
-            part.state === "output-available"
-          ) {
-            return (
-              <Flex className="mt-2" gap={2} key={index} wrap>
-                {part.output.suggestions.map(
-                  (suggestion: string, i: number) => (
-                    <Button
-                      color="tertiary"
-                      className="truncate"
-                      key={i}
-                      onClick={() => onPromptSelect(suggestion)}
-                      size="sm"
-                    >
-                      {suggestion}
-                    </Button>
-                  ),
-                )}
-              </Flex>
-            );
-          }
-        }
-
-        return null;
-      })}
-
-      {totalSources > 0 && (
-        <Sources>
-          <Sources.Trigger count={totalSources} />
-          <Sources.Content>
-            {message.parts.map((part, index) => {
-              if (part.type === "source-url") {
-                return (
-                  <Sources.Source
-                    href={part.url}
-                    key={`${message.id}-${index}`}
-                    title={part.title}
-                  />
-                );
-              }
-              return null;
+      {sprintAnalyticsParts.map((part, index) => (
+        <Box className="mb-3" key={`${message.id}-sprint-${index}`}>
+          <Text as="h3" className="mt-4 mb-1 text-xl font-semibold antialiased">
+            Burndown graph
+          </Text>
+          <BurndownChart
+            burndownData={getSprintBurndownData(part.output)}
+            className={cn("h-72", {
+              "h-80": pathname.includes("/maya"),
             })}
-          </Sources.Content>
-        </Sources>
-      )}
+          />
+        </Box>
+      ))}
+
+      {suggestionParts.map((part, index) => (
+        <Flex
+          className="mt-4"
+          gap={2}
+          key={`${message.id}-suggestions-${index}`}
+          wrap
+        >
+          {getSuggestions(part.output).map((suggestion, i) => (
+            <Button
+              color="tertiary"
+              className="truncate"
+              key={i}
+              onClick={() => onPromptSelect(suggestion)}
+              size="sm"
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </Flex>
+      ))}
     </>
   );
 };
@@ -279,6 +303,7 @@ export const ChatMessage = ({
   message,
   profile,
   status,
+  deferToolOutputs = false,
   regenerate,
   onPromptSelect,
 }: ChatMessageProps) => {
@@ -286,7 +311,7 @@ export const ChatMessage = ({
   const [hasCopied, setHasCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { getTermDisplay } = useTerminology();
-  const content = message.parts.find((p) => p.type === "text")?.text ?? "";
+  const content = getMessageText(message);
   return (
     <>
       <Flex
@@ -317,7 +342,7 @@ export const ChatMessage = ({
             })}
           >
             <RenderMessage
-              isLast={isLast}
+              deferToolOutputs={deferToolOutputs}
               message={message}
               onPromptSelect={onPromptSelect}
               status={status}
