@@ -56,6 +56,7 @@ type StoriesFilterButtonProps = {
   filters: StoriesFilter;
   setFilters: (v: StoriesFilter) => void;
   resetFilters: () => void;
+  iconOnly?: boolean;
 };
 
 const FilterSection = ({
@@ -337,6 +338,7 @@ export const StoriesFilterButton = ({
   filters,
   setFilters,
   resetFilters,
+  iconOnly = false,
 }: StoriesFilterButtonProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
@@ -360,11 +362,14 @@ export const StoriesFilterButton = ({
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          aria-label={getButtonLabel()}
           className="relative"
           color="tertiary"
           leftIcon={<FilterIcon className="h-4 w-auto" />}
           ref={buttonRef}
-          rightIcon={<ArrowDownIcon className="h-3.5 w-auto" />}
+          rightIcon={
+            iconOnly ? undefined : <ArrowDownIcon className="h-3.5 w-auto" />
+          }
           size="sm"
           variant="outline"
         >
@@ -376,7 +381,9 @@ export const StoriesFilterButton = ({
               <span className="bg-primary absolute inset-0 animate-ping rounded-full opacity-75" />
             </span>
           ) : null}
-          <span className="hidden md:inline">{getButtonLabel()}</span>
+          {iconOnly ? null : (
+            <span className="hidden md:inline">{getButtonLabel()}</span>
+          )}
         </Button>
       </Popover.Trigger>
       <Popover.Content

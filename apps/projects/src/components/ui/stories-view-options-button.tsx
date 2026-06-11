@@ -59,6 +59,7 @@ export const StoriesViewOptionsButton = ({
   orderByOptions = ["priority", "deadline", "created", "updated"],
   layout,
   disabled,
+  iconOnly = false,
 }: {
   initialViewOptions?: StoriesViewOptions;
   viewOptions: StoriesViewOptions;
@@ -67,6 +68,7 @@ export const StoriesViewOptionsButton = ({
   orderByOptions?: ViewOptionsOrderBy[];
   layout: StoriesLayout;
   disabled?: boolean;
+  iconOnly?: boolean;
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -142,15 +144,22 @@ export const StoriesViewOptionsButton = ({
     <Popover>
       <Popover.Trigger asChild>
         <Button
+          aria-label="Customise"
           className="relative"
           color="tertiary"
           disabled={disabled}
           leftIcon={<PreferencesIcon className="text-text-muted h-4 w-auto" />}
-          rightIcon={<ArrowDownIcon className="text-text-muted h-3.5 w-auto" />}
+          rightIcon={
+            iconOnly ? undefined : (
+              <ArrowDownIcon className="text-text-muted h-3.5 w-auto" />
+            )
+          }
           size="sm"
           variant="outline"
         >
-          <span className="hidden md:inline">Customise</span>
+          {iconOnly ? null : (
+            <span className="hidden md:inline">Customise</span>
+          )}
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" className="min-w-[20rem] md:max-w-[24rem]">

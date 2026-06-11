@@ -111,6 +111,7 @@ export const Header = ({
             title="Intelligently suggest work items from backlog to fill this sprint"
           >
             <Button
+              aria-label="Smart fill"
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
@@ -121,7 +122,7 @@ export const Header = ({
               size="sm"
               variant="naked"
             >
-              Smart fill
+              {isChatOpen ? null : "Smart fill"}
             </Button>
           </Tooltip>
         )}
@@ -133,10 +134,12 @@ export const Header = ({
         />
         <StoriesFilterButton
           filters={filters}
+          iconOnly={isChatOpen}
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
+          iconOnly={isChatOpen}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
