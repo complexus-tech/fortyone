@@ -10,6 +10,7 @@ import {
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useTerminology } from "@/hooks";
 import type { StateCategory } from "@/types/states";
@@ -64,19 +65,8 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       categories,
       createdAfter,
       createdBefore,
-      statusIds: filters.statusIds ?? undefined,
-      priorities: filters.priorities ?? undefined,
-      assigneeIds: filters.assigneeIds ?? undefined,
-      reporterIds: filters.reporterIds ?? undefined,
-      titleContains: filters.titleContains?.trim() || undefined,
-      objectiveId: filters.objectiveId ?? undefined,
-      startDateAfter: filters.startDate ?? undefined,
-      startDateBefore: filters.startDate ?? undefined,
-      deadlineAfter: filters.endDate ?? undefined,
+      ...getGroupedStoryFilterParams(filters),
       deadlineBefore: filters.endDate ?? overdueDeadline,
-      teamIds: filters.teamIds ?? undefined,
-      sprintIds: filters.sprintIds ?? undefined,
-      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
       orderBy: viewOptions.orderBy,
       showSubStories: viewOptions.showSubStories ? true : undefined,
     },

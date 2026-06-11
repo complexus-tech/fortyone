@@ -3,14 +3,28 @@
 import { useEffect } from "react";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
+import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { useLocalStorage, useMediaQuery } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
 import { useSprint } from "../hooks/sprint-details";
 import { Header } from "./header";
-import { SprintStoriesProvider } from "./provider";
+import { SprintStoriesProvider, useSprintOptions } from "./provider";
 import { AllStories } from "./all-stories";
 import { Sidebar } from "./sidebar";
 import { StoriesSkeleton } from "./skeleton";
+
+const ActiveStoriesFilterBar = () => {
+  const { filters, resetFilters, setFilters } = useSprintOptions();
+
+  return (
+    <StoriesFilterBar
+      filters={filters}
+      hiddenFields={["teamIds", "sprintIds"]}
+      resetFilters={resetFilters}
+      setFilters={setFilters}
+    />
+  );
+};
 
 export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
   const [layout, setLayout] = useLocalStorage<StoriesLayout>(
@@ -43,6 +57,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
         setIsExpanded={setIsExpanded}
         setLayout={setLayout}
       />
+      <ActiveStoriesFilterBar />
 
       {isMobile ? (
         <AllStories layout={layout} />

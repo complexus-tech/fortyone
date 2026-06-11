@@ -42,7 +42,7 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
 import { hasActiveStoriesFilters } from "./stories-filter-utils";
 
-type FilterField =
+export type StoriesFilterField =
   | "titleContains"
   | "statusIds"
   | "assigneeIds"
@@ -58,17 +58,24 @@ type FilterField =
   | "hasNoAssignee";
 
 type FilterChip = {
-  field: FilterField;
+  field: StoriesFilterField;
   label: string;
   operator: string;
   value: ReactNode;
   icon?: ReactNode;
 };
 
+type FilterOption = {
+  field: StoriesFilterField;
+  icon: ReactNode;
+  label: string;
+};
+
 type StoriesFilterBarProps = {
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   resetFilters: () => void;
+  hiddenFields?: StoriesFilterField[];
 };
 
 const getNames = (
@@ -206,7 +213,7 @@ const PriorityChipValue = ({ priorities }: { priorities: StoryPriority[] }) => {
   );
 };
 
-const getEditorContentClassName = (field: FilterField) => {
+const getEditorContentClassName = (field: StoriesFilterField) => {
   if (field === "titleContains") {
     return "w-80 overflow-hidden py-2";
   }
@@ -734,7 +741,7 @@ const FilterValueEditor = ({
   filters,
   setFilters,
 }: {
-  field: FilterField;
+  field: StoriesFilterField;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
 }) => {
@@ -855,6 +862,7 @@ export const StoriesFilterBar = ({
   filters,
   setFilters,
   resetFilters,
+  hiddenFields = [],
 }: StoriesFilterBarProps) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
@@ -1060,7 +1068,9 @@ export const StoriesFilterBar = ({
     userById,
   ]);
 
-  const removeFilter = (field: FilterField) => {
+  const hiddenFieldSet = useMemo(() => new Set(hiddenFields), [hiddenFields]);
+
+  const removeFilter = (field: StoriesFilterField) => {
     if (field === "assignedToMe" || field === "createdByMe") {
       setFilters({ ...filters, [field]: false });
       return;
@@ -1069,11 +1079,7 @@ export const StoriesFilterBar = ({
     setFilters({ ...filters, [field]: null });
   };
 
-  const filterOptions: {
-    field: FilterField;
-    icon: ReactNode;
-    label: string;
-  }[] = [
+  const baseFilterOptions: FilterOption[] = [
     {
       field: "statusIds",
       icon: <StoryStatusIcon statusId={filters.statusIds?.[0] ?? ""} />,
@@ -1094,15 +1100,15 @@ export const StoriesFilterBar = ({
       icon: <PriorityIcon priority="No Priority" />,
       label: "Priority",
     },
-    ...(teamId
-      ? []
-      : [
+    ...(!teamId
+      ? ([
           {
-            field: "teamIds" as const,
+            field: "teamIds",
             icon: <TeamIcon className="h-5 w-auto" />,
             label: "Team",
           },
-        ]),
+        ] satisfies FilterOption[])
+      : []),
     {
       field: "sprintIds",
       icon: <SprintsIcon className="h-5 w-auto" />,
@@ -1129,6 +1135,9 @@ export const StoriesFilterBar = ({
       label: "Content",
     },
   ];
+  const filterOptions = baseFilterOptions.filter(
+    (option) => !hiddenFieldSet.has(option.field),
+  );
 
   if (!hasActiveStoriesFilters(filters)) {
     return null;
