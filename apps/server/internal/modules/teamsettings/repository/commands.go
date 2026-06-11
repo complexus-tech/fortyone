@@ -28,6 +28,10 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 	if updates.AutoCreateSprints != nil {
 		setClauses = append(setClauses, "auto_create_sprints = :auto_create_sprints")
 		params["auto_create_sprints"] = *updates.AutoCreateSprints
+		if *updates.AutoCreateSprints {
+			setClauses = append(setClauses, "auto_create_disabled_at = NULL")
+			setClauses = append(setClauses, "auto_create_disabled_reason = NULL")
+		}
 	}
 	if updates.UpcomingSprintsCount != nil {
 		setClauses = append(setClauses, "upcoming_sprints_count = :upcoming_sprints_count")
@@ -44,6 +48,10 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 	if updates.MoveIncompleteStoriesEnabled != nil {
 		setClauses = append(setClauses, "move_incomplete_stories_enabled = :move_incomplete_stories_enabled")
 		params["move_incomplete_stories_enabled"] = *updates.MoveIncompleteStoriesEnabled
+	}
+	if updates.NextAutoSprintNumber != nil {
+		setClauses = append(setClauses, "next_auto_sprint_number = :next_auto_sprint_number")
+		params["next_auto_sprint_number"] = *updates.NextAutoSprintNumber
 	}
 
 	setClauses = append(setClauses, "updated_at = NOW()")
@@ -266,7 +274,8 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			sprint_duration_weeks,
 			sprint_start_day,
 			move_incomplete_stories_enabled,
-			last_auto_sprint_number
+			last_auto_sprint_number,
+			next_auto_sprint_number
 		) VALUES (
 			:team_id,
 			:workspace_id,
@@ -275,7 +284,8 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			2,
 			'Monday',
 			true,
-			0
+			0,
+			1
 		)
 		RETURNING
 			team_id,
@@ -286,6 +296,9 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			sprint_start_day,
 			move_incomplete_stories_enabled,
 			last_auto_sprint_number,
+			next_auto_sprint_number,
+			auto_create_disabled_at,
+			auto_create_disabled_reason,
 			created_at,
 			updated_at
 	`

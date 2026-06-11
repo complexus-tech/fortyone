@@ -35,6 +35,12 @@ export const updateSprintSettings = tool({
       .boolean()
       .optional()
       .describe("Automatically move incomplete stories to the next sprint"),
+    nextAutoSprintNumber: z
+      .number()
+      .min(1)
+      .max(10000)
+      .optional()
+      .describe("Number to use for the next automatically created sprint"),
   }),
 
   execute: async (
@@ -45,6 +51,7 @@ export const updateSprintSettings = tool({
       sprintDurationWeeks,
       sprintStartDay,
       moveIncompleteStoriesEnabled,
+      nextAutoSprintNumber,
     },
     { experimental_context },
   ) => {
@@ -78,6 +85,7 @@ export const updateSprintSettings = tool({
         sprintDurationWeeks,
         sprintStartDay,
         moveIncompleteStoriesEnabled,
+        nextAutoSprintNumber,
       };
 
       const result = await updateSprintSettingsAction(

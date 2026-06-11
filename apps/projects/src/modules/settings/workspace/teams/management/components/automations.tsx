@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Text, Switch, Select, Flex } from "ui";
+import { Box, Text, Switch, Select, Flex, Input } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTerminology } from "@/hooks";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -51,6 +51,16 @@ export const Automations = () => {
             />
           </Flex>
 
+          {!sprintSettings?.autoCreateSprints &&
+          sprintSettings?.autoCreateDisabledReason ? (
+            <Box className="px-6 py-4">
+              <Text className="font-medium">Automation paused</Text>
+              <Text className="line-clamp-2" color="muted">
+                {sprintSettings.autoCreateDisabledReason}
+              </Text>
+            </Box>
+          ) : null}
+
           {/* Number of Sprints to Create */}
           {sprintSettings?.autoCreateSprints ? (
             <Flex align="center" className="px-6 py-4" justify="between">
@@ -91,6 +101,47 @@ export const Automations = () => {
                   </Select.Option>
                 </Select.Content>
               </Select>
+            </Flex>
+          ) : null}
+
+          {/* Next Auto Sprint Number */}
+          {sprintSettings?.autoCreateSprints ? (
+            <Flex align="center" className="px-6 py-4" justify="between">
+              <Box>
+                <Text className="font-medium">
+                  Next {getTermDisplay("sprintTerm")} number
+                </Text>
+                <Text className="line-clamp-2" color="muted">
+                  The next automated {getTermDisplay("sprintTerm")} will be
+                  named {getTermDisplay("sprintTerm", { capitalize: true })}{" "}
+                  {sprintSettings.nextAutoSprintNumber}
+                </Text>
+              </Box>
+              <Input
+                className="w-32 text-[0.9rem] md:text-base"
+                defaultValue={sprintSettings.nextAutoSprintNumber}
+                key={sprintSettings.nextAutoSprintNumber}
+                max={10000}
+                min={1}
+                onBlur={(event) => {
+                  const nextValue = Number.parseInt(event.target.value, 10);
+                  if (
+                    Number.isNaN(nextValue) ||
+                    nextValue < 1 ||
+                    nextValue > 10000 ||
+                    nextValue === sprintSettings.nextAutoSprintNumber
+                  ) {
+                    event.target.value =
+                      sprintSettings.nextAutoSprintNumber.toString();
+                    return;
+                  }
+
+                  updateSprintSettings.mutate({
+                    nextAutoSprintNumber: nextValue,
+                  });
+                }}
+                type="number"
+              />
             </Flex>
           ) : null}
 

@@ -15,9 +15,9 @@ type Repository interface {
 	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error)
 	Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error)
 	GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error)
-	Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error)
-	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint) (CoreSprint, error)
-	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error
+	Create(ctx context.Context, sprint CoreNewSprint, actorID *uuid.UUID) (CoreSprint, error)
+	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint, actorID *uuid.UUID) (CoreSprint, error)
+	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, actorID *uuid.UUID) error
 	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error)
 }
 
@@ -87,12 +87,12 @@ func (s *Service) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID u
 }
 
 // Create creates a new sprint.
-func (s *Service) Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint, error) {
+func (s *Service) Create(ctx context.Context, sprint CoreNewSprint, actorID *uuid.UUID) (CoreSprint, error) {
 	s.log.Info(ctx, "business.core.sprints.create")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.Create")
 	defer span.End()
 
-	result, err := s.repo.Create(ctx, sprint)
+	result, err := s.repo.Create(ctx, sprint, actorID)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprint{}, err
@@ -106,12 +106,12 @@ func (s *Service) Create(ctx context.Context, sprint CoreNewSprint) (CoreSprint,
 }
 
 // Update updates an existing sprint.
-func (s *Service) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint) (CoreSprint, error) {
+func (s *Service) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint, actorID *uuid.UUID) (CoreSprint, error) {
 	s.log.Info(ctx, "business.core.sprints.update")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.Update")
 	defer span.End()
 
-	result, err := s.repo.Update(ctx, sprintID, workspaceID, updates)
+	result, err := s.repo.Update(ctx, sprintID, workspaceID, updates, actorID)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprint{}, err
@@ -125,12 +125,12 @@ func (s *Service) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uu
 }
 
 // Delete removes a sprint.
-func (s *Service) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error {
+func (s *Service) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, actorID *uuid.UUID) error {
 	s.log.Info(ctx, "business.core.sprints.delete")
 	ctx, span := web.AddSpan(ctx, "business.core.sprints.Delete")
 	defer span.End()
 
-	if err := s.repo.Delete(ctx, sprintID, workspaceID); err != nil {
+	if err := s.repo.Delete(ctx, sprintID, workspaceID, actorID); err != nil {
 		span.RecordError(err)
 		return err
 	}

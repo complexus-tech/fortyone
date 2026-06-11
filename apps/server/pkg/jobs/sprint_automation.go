@@ -104,6 +104,7 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 		attribute.String("workspace.id", team.WorkspaceID.String()),
 		attribute.Int("target.upcoming.count", team.UpcomingSprintsCount),
 		attribute.Int("duration.weeks", team.SprintDurationWeeks),
+		attribute.Int("next.auto.sprint.number", team.NextAutoSprintNumber),
 		attribute.String("start.day", team.SprintStartDay),
 	)
 
@@ -161,7 +162,7 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 	// Create sprints to reach the target upcoming count
 	createdSprints := 0
 	for i := 0; i < sprintsToCreate; i++ {
-		sprintNumber := team.LastAutoSprintNumber + i + 1
+		sprintNumber := team.NextAutoSprintNumber + i
 		sprintStartDate := startDate.AddDate(0, 0, i*team.SprintDurationWeeks*7)
 		sprintEndDate := sprintStartDate.AddDate(0, 0, team.SprintDurationWeeks*7-1)
 
@@ -170,6 +171,7 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 		query := `
 			INSERT INTO sprints (name, team_id, workspace_id, start_date, end_date, created_at, updated_at)
 			VALUES (:name, :team_id, :workspace_id, :start_date, :end_date, NOW(), NOW())
+			RETURNING sprint_id
 		`
 
 		params := map[string]any{
@@ -186,11 +188,37 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 			return 0, fmt.Errorf("failed to prepare statement: %w", err)
 		}
 
-		_, err = stmt.ExecContext(ctx, params)
+		var sprintID uuid.UUID
+		err = stmt.GetContext(ctx, &sprintID, params)
 		stmt.Close()
 		if err != nil {
 			span.RecordError(err)
 			return 0, fmt.Errorf("failed to create sprint %d for team %s: %w", sprintNumber, team.TeamID, err)
+		}
+
+		metadata, err := auditMetadata(map[string]any{
+			"name":                  sprintName,
+			"sprint_number":         sprintNumber,
+			"start_date":            sprintStartDate.Format("2006-01-02"),
+			"end_date":              sprintEndDate.Format("2006-01-02"),
+			"upcoming_target":       team.UpcomingSprintsCount,
+			"sprint_duration_weeks": team.SprintDurationWeeks,
+		})
+		if err != nil {
+			span.RecordError(err)
+			return 0, err
+		}
+
+		if err := recordAuditEvent(ctx, tx, auditEvent{
+			WorkspaceID: team.WorkspaceID,
+			TeamID:      &team.TeamID,
+			ActorType:   "automation",
+			EntityType:  "sprint",
+			EntityID:    &sprintID,
+			EventType:   "sprint.auto_created",
+			Metadata:    metadata,
+		}); err != nil {
+			log.Error(ctx, "Failed to record sprint auto-created audit event", "error", err, "sprint_id", sprintID)
 		}
 
 		log.Info(ctx, "Created sprint",
@@ -222,37 +250,112 @@ func DisableAutomationForInactiveTeams(ctx context.Context, db *sqlx.DB, log *lo
 	defer span.End()
 
 	log.Info(ctx, "Processing disable automation for inactive teams")
+	const disabledReason = "No human sprint planning activity in the last 90 days"
 
 	query := `
-		WITH inactive_teams AS (
-			SELECT t.team_id, t.workspace_id, t.name
+		WITH human_sprint_planning_activity AS (
+			SELECT team_id, workspace_id, MAX(activity_at) AS last_activity_at
+			FROM (
+				SELECT s.team_id, s.workspace_id, s.created_at AS activity_at
+				FROM stories s
+				JOIN users u ON u.user_id = s.reporter_id
+				WHERE u.is_system = false
+					AND s.deleted_at IS NULL
+					AND s.archived_at IS NULL
+					AND s.is_draft = false
+
+				UNION ALL
+
+				SELECT s.team_id, s.workspace_id, sa.created_at AS activity_at
+				FROM story_activities sa
+				JOIN stories s ON s.id = sa.story_id
+				JOIN users u ON u.user_id = sa.user_id
+				WHERE u.is_system = false
+					AND sa.field_changed = 'sprint_id'
+					AND s.deleted_at IS NULL
+					AND s.archived_at IS NULL
+			) activity
+			GROUP BY team_id, workspace_id
+		),
+		inactive_teams AS (
+			SELECT
+				t.team_id,
+				t.workspace_id,
+				t.name,
+				hspa.last_activity_at
 			FROM teams t
 			INNER JOIN team_sprint_settings tss ON tss.team_id = t.team_id AND tss.workspace_id = t.workspace_id
+			LEFT JOIN human_sprint_planning_activity hspa ON hspa.team_id = t.team_id AND hspa.workspace_id = t.workspace_id
 			WHERE tss.auto_create_sprints = true
-				AND t.created_at <= NOW() - INTERVAL '30 days'
-				AND NOT EXISTS (
-					SELECT 1
-					FROM stories s
-					WHERE s.team_id = t.team_id AND s.workspace_id = t.workspace_id
-						AND s.updated_at >= NOW() - INTERVAL '30 days'
+				AND t.created_at <= NOW() - INTERVAL '90 days'
+				AND tss.updated_at <= NOW() - INTERVAL '30 days'
+				AND (
+					hspa.last_activity_at IS NULL
+					OR hspa.last_activity_at < NOW() - INTERVAL '90 days'
 				)
+		),
+		updated AS (
+			UPDATE team_sprint_settings tss
+			SET
+				auto_create_sprints = false,
+				auto_create_disabled_at = NOW(),
+				auto_create_disabled_reason = :disabled_reason,
+				updated_at = NOW()
+			FROM inactive_teams it
+			WHERE tss.team_id = it.team_id
+				AND tss.workspace_id = it.workspace_id
+			RETURNING
+				tss.team_id,
+				tss.workspace_id,
+				it.name,
+				it.last_activity_at
 		)
-		UPDATE team_sprint_settings 
-		SET auto_create_sprints = false, updated_at = NOW()
-		WHERE (team_id, workspace_id) IN (
-			SELECT team_id, workspace_id FROM inactive_teams
-		)
-		RETURNING team_id, workspace_id;
+		SELECT team_id, workspace_id, name, last_activity_at FROM updated;
 	`
 
 	var updatedTeams []struct {
-		TeamID      string `db:"team_id"`
-		WorkspaceID string `db:"workspace_id"`
+		TeamID         uuid.UUID  `db:"team_id"`
+		WorkspaceID    uuid.UUID  `db:"workspace_id"`
+		Name           string     `db:"name"`
+		LastActivityAt *time.Time `db:"last_activity_at"`
 	}
 
-	if err := db.SelectContext(ctx, &updatedTeams, query); err != nil {
+	stmt, err := db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to prepare inactive automation query: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.SelectContext(ctx, &updatedTeams, map[string]any{"disabled_reason": disabledReason}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to disable automation for inactive teams: %w", err)
+	}
+
+	for _, team := range updatedTeams {
+		metadata, err := auditMetadata(map[string]any{
+			"team_name":        team.Name,
+			"reason":           disabledReason,
+			"inactivity_days":  90,
+			"grace_days":       30,
+			"last_activity_at": team.LastActivityAt,
+		})
+		if err != nil {
+			log.Error(ctx, "Failed to marshal inactive automation audit metadata", "error", err, "team_id", team.TeamID)
+			continue
+		}
+
+		if err := recordAuditEvent(ctx, db, auditEvent{
+			WorkspaceID: team.WorkspaceID,
+			TeamID:      &team.TeamID,
+			ActorType:   "automation",
+			EntityType:  "automation_setting",
+			EntityID:    &team.TeamID,
+			EventType:   "sprint_automation.disabled",
+			Metadata:    metadata,
+		}); err != nil {
+			log.Error(ctx, "Failed to record sprint automation disabled audit event", "error", err, "team_id", team.TeamID)
+		}
 	}
 
 	log.Info(ctx, fmt.Sprintf("Disabled automation for %d inactive teams", len(updatedTeams)))
@@ -391,7 +494,8 @@ func incrementAutoSprintNumbers(ctx context.Context, db *sqlx.DB, log *logger.Lo
 	query := `
 		UPDATE team_sprint_settings
 		SET 
-			last_auto_sprint_number = last_auto_sprint_number + :sprints_created,
+			last_auto_sprint_number = next_auto_sprint_number + :sprints_created - 1,
+			next_auto_sprint_number = next_auto_sprint_number + :sprints_created,
 			updated_at = NOW()
 		WHERE team_id = :team_id
 	`

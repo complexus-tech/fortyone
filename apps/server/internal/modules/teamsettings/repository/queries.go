@@ -28,6 +28,9 @@ func (r *repo) GetSprintSettings(ctx context.Context, teamID, workspaceID uuid.U
 			sprint_start_day,
 			move_incomplete_stories_enabled,
 			last_auto_sprint_number,
+			next_auto_sprint_number,
+			auto_create_disabled_at,
+			auto_create_disabled_reason,
 			created_at,
 			updated_at
 		FROM
@@ -184,6 +187,9 @@ func (r *repo) GetTeamsWithAutoSprintCreation(ctx context.Context) ([]teamsettin
 			sprint_start_day,
 			move_incomplete_stories_enabled,
 			last_auto_sprint_number,
+			next_auto_sprint_number,
+			auto_create_disabled_at,
+			auto_create_disabled_reason,
 			created_at,
 			updated_at
 		FROM

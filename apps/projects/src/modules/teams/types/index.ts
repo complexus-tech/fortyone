@@ -26,6 +26,9 @@ export type TeamSprintSettings = {
   sprintDurationWeeks: number;
   sprintStartDay: string;
   moveIncompleteStoriesEnabled: boolean;
+  nextAutoSprintNumber: number;
+  autoCreateDisabledAt: string | null;
+  autoCreateDisabledReason: string | null;
   createdAt: string;
   updatedAt: string;
 };

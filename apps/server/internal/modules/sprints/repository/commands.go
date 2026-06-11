@@ -2,6 +2,7 @@ package sprintsrepository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) Create(ctx context.Context, sprint sprints.CoreNewSprint) (sprints.CoreSprint, error) {
+func (r *repo) Create(ctx context.Context, sprint sprints.CoreNewSprint, actorID *uuid.UUID) (sprints.CoreSprint, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.Create")
 	defer span.End()
 
@@ -87,10 +88,16 @@ func (r *repo) Create(ctx context.Context, sprint sprints.CoreNewSprint) (sprint
 		attribute.String("workspace.id", s.Workspace.String()),
 	))
 
+	r.recordSprintAuditEvent(ctx, sprint.Workspace, sprint.Team, actorID, "sprint", &s.ID, "sprint.created", map[string]any{
+		"name":       sprint.Name,
+		"start_date": sprint.StartDate.Format("2006-01-02"),
+		"end_date":   sprint.EndDate.Format("2006-01-02"),
+	})
+
 	return toCoreSprint(s), nil
 }
 
-func (r *repo) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates sprints.CoreUpdateSprint) (sprints.CoreSprint, error) {
+func (r *repo) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates sprints.CoreUpdateSprint, actorID *uuid.UUID) (sprints.CoreSprint, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.Update")
 	defer span.End()
 
@@ -204,10 +211,18 @@ func (r *repo) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		attribute.String("workspace.id", s.Workspace.String()),
 	))
 
+	r.recordSprintAuditEvent(ctx, workspaceID, s.Team, actorID, "sprint", &sprintID, "sprint.updated", map[string]any{
+		"name_changed":       updates.Name != nil,
+		"goal_changed":       updates.Goal != nil,
+		"objective_changed":  updates.Objective != nil,
+		"start_date_changed": updates.StartDate != nil,
+		"end_date_changed":   updates.EndDate != nil,
+	})
+
 	return toCoreSprint(s), nil
 }
 
-func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) error {
+func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, actorID *uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.sprints.Delete")
 	defer span.End()
 
@@ -215,6 +230,7 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		DELETE FROM sprints
 		WHERE sprint_id = :sprint_id
 		AND workspace_id = :workspace_id
+		RETURNING team_id, name, start_date::text, end_date::text
 	`
 
 	params := map[string]any{
@@ -231,21 +247,17 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, params)
-	if err != nil {
+	var deleted struct {
+		TeamID    uuid.UUID `db:"team_id"`
+		Name      string    `db:"name"`
+		StartDate string    `db:"start_date"`
+		EndDate   string    `db:"end_date"`
+	}
+	if err := stmt.GetContext(ctx, &deleted, params); err != nil {
 		errMsg := fmt.Sprintf("Failed to delete sprint: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to delete sprint"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return err
-	}
-
-	count, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return errors.New("sprint not found")
 	}
 
 	r.log.Info(ctx, "sprint deleted successfully.")
@@ -254,5 +266,56 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 
+	r.recordSprintAuditEvent(ctx, workspaceID, deleted.TeamID, actorID, "sprint", &sprintID, "sprint.deleted", map[string]any{
+		"name":       deleted.Name,
+		"start_date": deleted.StartDate,
+		"end_date":   deleted.EndDate,
+	})
+
 	return nil
+}
+
+func (r *repo) recordSprintAuditEvent(ctx context.Context, workspaceID, teamID uuid.UUID, actorID *uuid.UUID, entityType string, entityID *uuid.UUID, eventType string, metadata map[string]any) {
+	data, err := json.Marshal(metadata)
+	if err != nil {
+		r.log.Error(ctx, "failed to marshal sprint audit metadata", "error", err, "event_type", eventType)
+		return
+	}
+
+	query := `
+		INSERT INTO audit_events (
+			workspace_id,
+			team_id,
+			actor_type,
+			actor_id,
+			entity_type,
+			entity_id,
+			event_type,
+			metadata
+		) VALUES (
+			:workspace_id,
+			:team_id,
+			:user_actor_type,
+			:actor_id,
+			:entity_type,
+			:entity_id,
+			:event_type,
+			CAST(:metadata AS jsonb)
+		)
+	`
+
+	params := map[string]any{
+		"workspace_id":    workspaceID,
+		"team_id":         teamID,
+		"user_actor_type": "user",
+		"actor_id":        actorID,
+		"entity_type":     entityType,
+		"entity_id":       entityID,
+		"event_type":      eventType,
+		"metadata":        string(data),
+	}
+
+	if _, err := r.db.NamedExecContext(ctx, query, params); err != nil {
+		r.log.Error(ctx, "failed to record sprint audit event", "error", err, "event_type", eventType, "entity_id", entityID)
+	}
 }

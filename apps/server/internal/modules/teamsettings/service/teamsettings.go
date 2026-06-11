@@ -29,6 +29,7 @@ var (
 	ErrInvalidSprintStartDay = errors.New("sprint start day must be Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday")
 	ErrInvalidSprintDuration = errors.New("sprint duration must be between 1 and 8 weeks")
 	ErrInvalidUpcomingCount  = errors.New("upcoming sprints count must be between 0 and 10")
+	ErrInvalidNextAutoNumber = errors.New("next auto sprint number must be between 1 and 10000")
 	ErrInvalidCloseMonths    = errors.New("auto-close inactive months must be between 1 and 24")
 	ErrInvalidArchiveMonths  = errors.New("auto-archive months must be between 1 and 24")
 	ErrInvalidEstimateScheme = errors.New("estimate scheme must be one of: points, hours, tshirt, ideal_days")
@@ -253,6 +254,10 @@ func (s *Service) validateSprintSettingsUpdate(updates CoreUpdateTeamSprintSetti
 
 	if updates.UpcomingSprintsCount != nil && (*updates.UpcomingSprintsCount < 0 || *updates.UpcomingSprintsCount > 10) {
 		return ErrInvalidUpcomingCount
+	}
+
+	if updates.NextAutoSprintNumber != nil && (*updates.NextAutoSprintNumber < 1 || *updates.NextAutoSprintNumber > 10000) {
+		return ErrInvalidNextAutoNumber
 	}
 
 	return nil

@@ -455,6 +455,30 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 		} else {
 			activitiesRecorded = len(migratedStories)
 		}
+
+		for _, story := range migratedStories {
+			metadata, err := auditMetadata(map[string]any{
+				"previous_sprint_id": story.PreviousSprintID,
+				"new_sprint_id":      story.NewSprintID,
+			})
+			if err != nil {
+				log.Error(ctx, "Failed to marshal sprint migration audit metadata", "error", err, "story_id", story.ID)
+				continue
+			}
+
+			if err := recordAuditEvent(ctx, tx, auditEvent{
+				WorkspaceID: story.WorkspaceID,
+				TeamID:      &story.TeamID,
+				ActorType:   "automation",
+				ActorID:     &systemUserID,
+				EntityType:  "story",
+				EntityID:    &story.ID,
+				EventType:   "story.auto_moved_to_sprint",
+				Metadata:    metadata,
+			}); err != nil {
+				log.Error(ctx, "Failed to record sprint migration audit event", "error", err, "story_id", story.ID)
+			}
+		}
 	}
 
 	// Commit the transaction
