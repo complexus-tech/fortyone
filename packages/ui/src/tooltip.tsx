@@ -12,6 +12,7 @@ export const Tooltip = ({
   children,
   title,
   className = "",
+  collisionPadding = 12,
   sideOffset = 3,
   delayDuration = 600,
   ...rest
@@ -26,9 +27,10 @@ export const Tooltip = ({
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             className={cn(
-              "z-50 text-foreground border border-border bg-surface-elevated/90 px-3 text-[0.95rem] py-[0.35rem] font-medium backdrop-blur rounded-2xl mr-2",
-              className
+              "z-50 mr-2 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-surface-elevated/90 px-3 py-[0.35rem] text-[0.95rem] font-medium text-foreground backdrop-blur",
+              className,
             )}
+            collisionPadding={collisionPadding}
             sideOffset={sideOffset}
             {...rest}
           >

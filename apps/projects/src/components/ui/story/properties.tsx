@@ -85,6 +85,8 @@ export const StoryProperties = ({
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
+  const objective =
+    objectiveId && selectedObjective?.name ? selectedObjective : null;
   const completedOrCancelled = (category?: StateCategory) => {
     return ["completed", "cancelled", "paused"].includes(category || "");
   };
@@ -208,20 +210,21 @@ export const StoryProperties = ({
           />
         </PrioritiesMenu>
       )}
-      {isColumnVisible("Objective") && selectedObjective ? (
+      {isColumnVisible("Objective") && objective ? (
         <ObjectivesMenu>
           <Tooltip
-            className="max-w-80 py-3"
+            className="w-80 max-w-[calc(100vw-2rem)] py-3"
+            collisionPadding={16}
             title={
               <Flex align="start" gap={2}>
                 <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
-                <Box>
+                <Box className="min-w-0">
                   <Text className="mb-1.5" fontSize="md">
-                    {selectedObjective.name}
+                    {objective.name}
                   </Text>
                   <Box
-                    className="text-text-muted mt-1 line-clamp-4"
-                    html={selectedObjective.description}
+                    className="text-text-muted mt-1 line-clamp-4 min-w-0 break-words"
+                    html={objective.description}
                   />
                 </Box>
               </Flex>
@@ -230,7 +233,7 @@ export const StoryProperties = ({
             <span>
               <ObjectivesMenu.Trigger>
                 <Button
-                  aria-label={selectedObjective.name}
+                  aria-label={objective.name}
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
@@ -246,7 +249,7 @@ export const StoryProperties = ({
                       "hidden @7xl:inline-block": isListRow,
                     })}
                   >
-                    {selectedObjective.name}
+                    {objective.name}
                   </span>
                 </Button>
               </ObjectivesMenu.Trigger>
