@@ -16,6 +16,7 @@ import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objectiv
 import { useObjective } from "@/modules/objectives/hooks";
 import { ObjectivePageSkeleton } from "@/modules/objectives/stories/objective-page-skeleton";
 import { Header } from "@/modules/objectives/stories/header";
+import { StoriesSkeleton } from "@/modules/objectives/stories/stories-skeleton";
 import { Overview } from "./overview";
 
 export const AllStories = ({
@@ -55,7 +56,7 @@ export const AllStories = ({
       showSubStories: viewOptions.showSubStories ? true : undefined,
     });
 
-  if (isObjectivePending || isStoriesPending) {
+  if (isObjectivePending) {
     return <ObjectivePageSkeleton layout={layout} />;
   }
 
@@ -117,12 +118,16 @@ export const AllStories = ({
             resetFilters={resetFilters}
             setFilters={setFilters}
           />
-          <StoriesBoard
-            className={boardHeightClassName}
-            groupedStories={groupedStories}
-            layout={layout}
-            viewOptions={viewOptions}
-          />
+          {isStoriesPending ? (
+            <StoriesSkeleton className={boardHeightClassName} layout={layout} />
+          ) : (
+            <StoriesBoard
+              className={boardHeightClassName}
+              groupedStories={groupedStories}
+              layout={layout}
+              viewOptions={viewOptions}
+            />
+          )}
         </Tabs.Panel>
       </Tabs>
     </Box>

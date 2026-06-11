@@ -9,13 +9,13 @@ import {
 } from "nuqs";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useTerminology } from "@/hooks";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
-import { MyWorkSkeleton } from "@/modules/my-work/components/my-work-skeleton";
 import { useMyWork } from "./provider";
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
@@ -76,7 +76,17 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     ? "h-[calc(100dvh-11.3rem)]"
     : "h-[calc(100dvh-7.7rem)]";
 
-  if (isPending) return <MyWorkSkeleton layout={layout} />;
+  const renderStoriesContent = () =>
+    isPending ? (
+      <BoardSkeleton className={boardHeightClassName} layout={layout} />
+    ) : (
+      <StoriesBoard
+        className={boardHeightClassName}
+        groupedStories={groupedStories}
+        layout={layout}
+        viewOptions={viewOptions}
+      />
+    );
 
   return (
     <Box className="h-[calc(100dvh-4rem)]">
@@ -95,30 +105,9 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
-        <Tabs.Panel value="all">
-          <StoriesBoard
-            className={boardHeightClassName}
-            groupedStories={groupedStories}
-            layout={layout}
-            viewOptions={viewOptions}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="assigned">
-          <StoriesBoard
-            className={boardHeightClassName}
-            groupedStories={groupedStories}
-            layout={layout}
-            viewOptions={viewOptions}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="created">
-          <StoriesBoard
-            className={boardHeightClassName}
-            groupedStories={groupedStories}
-            layout={layout}
-            viewOptions={viewOptions}
-          />
-        </Tabs.Panel>
+        <Tabs.Panel value="all">{renderStoriesContent()}</Tabs.Panel>
+        <Tabs.Panel value="assigned">{renderStoriesContent()}</Tabs.Panel>
+        <Tabs.Panel value="created">{renderStoriesContent()}</Tabs.Panel>
       </Tabs>
     </Box>
   );
