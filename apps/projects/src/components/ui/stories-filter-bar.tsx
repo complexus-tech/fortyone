@@ -180,6 +180,32 @@ const StatusChipValue = ({ statuses }: { statuses: StatusChipSummary[] }) => {
   );
 };
 
+const PriorityChipValue = ({ priorities }: { priorities: StoryPriority[] }) => {
+  const visiblePriorities = priorities.slice(0, 2);
+
+  if (priorities.length > 2) {
+    return (
+      <Flex align="center" gap={1}>
+        <PriorityIcon priority="High" />
+        <span>
+          {getPluralLabel(priorities.length, "priority", "priorities")}
+        </span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex align="center" gap={2}>
+      {visiblePriorities.map((priority) => (
+        <Flex align="center" gap={1} key={priority}>
+          <PriorityIcon priority={priority} />
+          <span>{priority}</span>
+        </Flex>
+      ))}
+    </Flex>
+  );
+};
+
 const getEditorContentClassName = (field: FilterField) => {
   if (field === "titleContains") {
     return "w-80 overflow-hidden py-2";
@@ -972,11 +998,13 @@ export const StoriesFilterBar = ({
     }
 
     if (filters.priorities?.length) {
+      const selectedPriorities = filters.priorities as StoryPriority[];
+
       items.push({
         field: "priorities",
         label: "Priority",
         operator: "is any of",
-        value: filters.priorities.join(", "),
+        value: <PriorityChipValue priorities={selectedPriorities} />,
         icon: (
           <PriorityIcon priority={filters.priorities[0] as StoryPriority} />
         ),
