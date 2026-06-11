@@ -198,7 +198,11 @@ export const MainDetails = ({
           })}
         >
           <Divider />
-          <Options isNotifications={isNotifications} storyId={storyId} />
+          <Options
+            isNotifications={isNotifications}
+            storyId={storyId}
+            variant={isNotifications ? "inline" : "sidebar"}
+          />
         </Box>
 
         <Attachments

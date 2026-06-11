@@ -52,15 +52,17 @@ export const Option = ({
   label,
   value,
   className,
+  isCompact = false,
   isNotifications,
 }: {
   label: string;
   value: ReactNode;
   className?: string;
+  isCompact?: boolean;
   isNotifications: boolean;
 }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
-  if (isMobile) {
+  if (isMobile || isCompact) {
     return value;
   }
   return (
@@ -89,10 +91,12 @@ export const Options = ({
   storyId,
   isNotifications,
   isDialog,
+  variant = "sidebar",
 }: {
   storyId: string;
   isNotifications: boolean;
   isDialog?: boolean;
+  variant?: "sidebar" | "inline";
 }) => {
   const { data } = useStoryById(storyId);
   const {
@@ -113,6 +117,7 @@ export const Options = ({
   const features = useFeatures();
   const sprintsEnabled = useSprintsEnabled(teamId);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const isCompact = isMobile || variant === "inline";
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: statuses = [] } = useStatuses();
@@ -300,8 +305,13 @@ export const Options = ({
             </Badge>
           ) : null}
         </Box>
-        <Box className="flex flex-wrap gap-2 md:block">
+        <Box
+          className={cn("flex flex-wrap gap-2", {
+            "md:block": !isCompact,
+          })}
+        >
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Status"
             value={
@@ -314,7 +324,7 @@ export const Options = ({
                     ref={statusButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {name}
                   </Button>
@@ -330,6 +340,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Priority"
             value={
@@ -342,7 +353,7 @@ export const Options = ({
                     ref={priorityButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {priority}
                   </Button>
@@ -356,6 +367,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Assignee"
             value={
@@ -380,7 +392,7 @@ export const Options = ({
                     ref={assigneeButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {assignee?.username || (
                       <Text as="span" color="muted">
@@ -400,6 +412,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Start date"
             value={
@@ -417,7 +430,7 @@ export const Options = ({
                     }
                     ref={startDateButtonRef}
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {startDate ? (
                       format(new Date(startDate), "MMM d, yyyy")
@@ -438,6 +451,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Deadline"
             value={
@@ -479,7 +493,7 @@ export const Options = ({
                         }
                         ref={dueDateButtonRef}
                         size="sm"
-                        variant={isMobile ? "solid" : "naked"}
+                        variant={isCompact ? "solid" : "naked"}
                       >
                         {endDate ? (
                           format(new Date(endDate), "MMM d, yyyy")
@@ -503,6 +517,7 @@ export const Options = ({
           />
           {features.objectiveEnabled ? (
             <Option
+              isCompact={isCompact}
               isNotifications={isNotifications}
               label="Objective"
               value={
@@ -522,7 +537,7 @@ export const Options = ({
                       title={objectiveId ? objective?.name : undefined}
                       type="button"
                       size="sm"
-                      variant={isMobile ? "solid" : "naked"}
+                      variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[12ch] truncate">
                         {objective?.name || "Add objective"}
@@ -543,6 +558,7 @@ export const Options = ({
           ) : null}
           {sprintsEnabled ? (
             <Option
+              isCompact={isCompact}
               isNotifications={isNotifications}
               label="Sprint"
               value={
@@ -561,7 +577,7 @@ export const Options = ({
                       ref={sprintButtonRef}
                       type="button"
                       size="sm"
-                      variant={isMobile ? "solid" : "naked"}
+                      variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">
                         {sprint?.name || "Add sprint"}
@@ -584,11 +600,15 @@ export const Options = ({
             className={cn("items-start pt-1", {
               "items-center pt-0": labels.length === 0,
             })}
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Labels"
             value={
               <Box
-                className={cn("md:ml-2.5", { "md:ml-0": labels.length === 0 })}
+                className={cn({
+                  "md:ml-2.5": !isCompact,
+                  "md:ml-0": !isCompact && labels.length === 0,
+                })}
               >
                 {labels.length > 0 ? (
                   <Flex align="center" className="gap-1.5" wrap>
@@ -650,7 +670,7 @@ export const Options = ({
                             size="sm"
                             title="Add labels"
                             type="button"
-                            variant={isMobile ? "solid" : "naked"}
+                            variant={isCompact ? "solid" : "naked"}
                           >
                             <span className="sr-only">Add labels</span>
                           </Button>
@@ -675,7 +695,7 @@ export const Options = ({
                         ref={emptyLabelsButtonRef}
                         size="sm"
                         type="button"
-                        variant={isMobile ? "solid" : "naked"}
+                        variant={isCompact ? "solid" : "naked"}
                       >
                         Add labels
                       </Button>
