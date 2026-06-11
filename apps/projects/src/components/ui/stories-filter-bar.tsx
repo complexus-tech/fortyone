@@ -61,7 +61,7 @@ type FilterChip = {
   field: FilterField;
   label: string;
   operator: string;
-  value: string;
+  value: ReactNode;
   icon?: ReactNode;
 };
 
@@ -84,6 +84,101 @@ const getNames = (
 
 const normalizeArrayFilter = (values: string[]) =>
   values.length > 0 ? values : null;
+
+const getPluralLabel = (count: number, singular: string, plural: string) =>
+  `${count} ${count === 1 ? singular : plural}`;
+
+type UserChipSummary = {
+  avatarUrl: string | null;
+  id: string;
+  name: string;
+  username: string;
+};
+
+const PeopleChipValue = ({
+  label,
+  pluralLabel,
+  users,
+}: {
+  label: string;
+  pluralLabel: string;
+  users: UserChipSummary[];
+}) => {
+  const visibleUsers = users.slice(0, 2);
+
+  if (users.length > 2) {
+    return (
+      <Flex align="center" gap={1}>
+        <Flex align="center" className="-space-x-1">
+          {visibleUsers.map((user) => (
+            <Avatar
+              className="ring-background ring-1"
+              color="primary"
+              key={user.id}
+              name={user.name}
+              size="xs"
+              src={user.avatarUrl}
+            />
+          ))}
+        </Flex>
+        <span>{getPluralLabel(users.length, label, pluralLabel)}</span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex align="center" gap={2}>
+      {visibleUsers.map((user) => (
+        <Flex align="center" gap={1} key={user.id}>
+          <Avatar
+            color="primary"
+            name={user.name}
+            size="xs"
+            src={user.avatarUrl}
+          />
+          <span>{user.username}</span>
+        </Flex>
+      ))}
+    </Flex>
+  );
+};
+
+type StatusChipSummary = {
+  id: string;
+  name: string;
+};
+
+const StatusChipValue = ({ statuses }: { statuses: StatusChipSummary[] }) => {
+  const visibleStatuses = statuses.slice(0, 2);
+
+  if (statuses.length > 2) {
+    return (
+      <Flex align="center" gap={1}>
+        <Flex align="center" className="-space-x-0.5">
+          {visibleStatuses.map((status) => (
+            <StoryStatusIcon
+              className="ring-background size-3 ring-1"
+              key={status.id}
+              statusId={status.id}
+            />
+          ))}
+        </Flex>
+        <span>{getPluralLabel(statuses.length, "status", "statuses")}</span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex align="center" gap={2}>
+      {visibleStatuses.map((status) => (
+        <Flex align="center" gap={1} key={status.id}>
+          <StoryStatusIcon statusId={status.id} />
+          <span>{status.name}</span>
+        </Flex>
+      ))}
+    </Flex>
+  );
+};
 
 const getEditorContentClassName = (field: FilterField) => {
   if (field === "titleContains") {
@@ -690,7 +785,7 @@ const Chip = ({
           onClick={onEditTitle}
           type="button"
         >
-          <span className="truncate">{chip.value}</span>
+          <div className="flex min-w-0 items-center truncate">{chip.value}</div>
         </button>
       ) : isEditable ? (
         <Popover>
@@ -699,7 +794,9 @@ const Chip = ({
               className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
               type="button"
             >
-              <span className="truncate">{chip.value}</span>
+              <div className="flex min-w-0 items-center truncate">
+                {chip.value}
+              </div>
             </button>
           </Popover.Trigger>
           <Popover.Content
@@ -714,7 +811,7 @@ const Chip = ({
           </Popover.Content>
         </Popover>
       ) : (
-        <span className="flex h-full items-center px-2.5">{chip.value}</span>
+        <div className="flex h-full items-center px-2.5">{chip.value}</div>
       )}
       <button
         aria-label={`Remove ${chip.label} filter`}
@@ -755,10 +852,18 @@ export const StoriesFilterBar = ({
   const userById = useMemo(
     () =>
       new Map(
-        users.map((user) => [
-          user.id,
-          user.fullName || user.username || "Unknown user",
-        ]),
+        users.map((user) => {
+          const username = user.username || user.email || "Unknown user";
+          return [
+            user.id,
+            {
+              avatarUrl: user.avatarUrl ?? null,
+              id: user.id,
+              name: user.fullName || username,
+              username,
+            },
+          ];
+        }),
       ),
     [users],
   );
@@ -814,30 +919,55 @@ export const StoriesFilterBar = ({
     }
 
     if (filters.statusIds?.length) {
+      const selectedStatuses = filters.statusIds.map((id) => ({
+        id,
+        name: statusById.get(id) ?? id,
+      }));
+
       items.push({
         field: "statusIds",
         label: "Status",
         operator: "is any of",
-        value: getNames(filters.statusIds, statusById),
+        value: <StatusChipValue statuses={selectedStatuses} />,
         icon: <StoryStatusIcon statusId={filters.statusIds[0]} />,
       });
     }
 
     if (filters.assigneeIds?.length) {
+      const selectedUsers = filters.assigneeIds
+        .map((id) => userById.get(id))
+        .filter((user): user is UserChipSummary => Boolean(user));
+
       items.push({
         field: "assigneeIds",
         label: "Assignee",
         operator: "is any of",
-        value: getNames(filters.assigneeIds, userById),
+        value: (
+          <PeopleChipValue
+            label="assignee"
+            pluralLabel="assignees"
+            users={selectedUsers}
+          />
+        ),
       });
     }
 
     if (filters.reporterIds?.length) {
+      const selectedUsers = filters.reporterIds
+        .map((id) => userById.get(id))
+        .filter((user): user is UserChipSummary => Boolean(user));
+
       items.push({
         field: "reporterIds",
-        label: "Reporter",
+        label: "Creator",
         operator: "is any of",
-        value: getNames(filters.reporterIds, userById),
+        value: (
+          <PeopleChipValue
+            label="creator"
+            pluralLabel="creators"
+            users={selectedUsers}
+          />
+        ),
       });
     }
 
