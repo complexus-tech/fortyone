@@ -172,7 +172,8 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              Improve description
+              <span className="md:hidden">Improve</span>
+              <span className="hidden md:inline">Improve description</span>
             </Button>
             <Button
               color="tertiary"
@@ -191,10 +192,13 @@ export const SubStories = ({
                 <Thinking message="Maya is thinking" />
               ) : (
                 <>
-                  Suggest sub{" "}
-                  {getTermDisplay("storyTerm", {
-                    variant: "plural",
-                  })}
+                  <span className="md:hidden">Suggest</span>
+                  <span className="hidden md:inline">
+                    Suggest sub{" "}
+                    {getTermDisplay("storyTerm", {
+                      variant: "plural",
+                    })}
+                  </span>
                 </>
               )}
             </Button>
