@@ -197,7 +197,6 @@ export const MainDetails = ({
             "notification-story-inline-options": isNotifications,
           })}
         >
-          <Divider />
           <Options
             isNotifications={isNotifications}
             storyId={storyId}

@@ -118,6 +118,7 @@ export const Options = ({
   const sprintsEnabled = useSprintsEnabled(teamId);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isCompact = isMobile || variant === "inline";
+  const isInline = variant === "inline";
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: statuses = [] } = useStatuses();
@@ -273,10 +274,12 @@ export const Options = ({
         "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
+          "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0":
+            isInline,
         },
       )}
     >
-      <Box className="hidden md:block">
+      <Box className={cn("hidden md:block", { hidden: isInline })}>
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
           isDialog={isDialog}
@@ -284,8 +287,19 @@ export const Options = ({
           storyId={storyId}
         />
       </Box>
-      <Container className="text-text-muted px-0.5 pt-4 md:px-6">
-        <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+      <Container
+        className={cn("text-text-muted px-0.5 pt-4 md:px-6", {
+          "px-0 pt-0 md:px-0": isInline,
+        })}
+      >
+        <Box
+          className={cn(
+            "mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6",
+            {
+              "hidden md:mb-0": isInline && !isDeleted,
+            },
+          )}
+        >
           {!isNotifications && (
             <Text className="hidden md:block" fontWeight="semibold">
               Properties
@@ -749,8 +763,10 @@ export const Options = ({
           }
         /> */}
 
-        <Divider className="my-4" />
-        <AddLinks storyId={storyId} />
+        <Divider className={cn("my-4", { "mt-6 mb-4": isInline })} />
+        <Box className={cn({ "flex justify-end": isInline })}>
+          <AddLinks storyId={storyId} />
+        </Box>
       </Container>
 
       <ConfirmDialog
