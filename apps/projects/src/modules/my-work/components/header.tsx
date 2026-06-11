@@ -9,6 +9,7 @@ import {
   StoriesViewOptionsButton,
   LayoutSwitcher,
   NewStoryButton,
+  StoriesFilterButton,
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { useMyWork } from "./provider";
@@ -21,7 +22,8 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions, setViewOptions } = useMyWork();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useMyWork();
   const tabs = ["all", "assigned", "created"] as const;
   const [tab] = useQueryState(
     "tab",
@@ -71,6 +73,11 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
+        <StoriesFilterButton
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <StoriesViewOptionsButton
           groupByOptions={["status", "priority", "assignee"]}
           layout={layout}

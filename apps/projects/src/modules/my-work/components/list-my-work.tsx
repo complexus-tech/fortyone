@@ -9,6 +9,8 @@ import {
 } from "nuqs";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useTerminology } from "@/hooks";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
@@ -37,7 +39,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const [startDate] = useQueryState("startDate", parseAsIsoDate);
   const [endDate] = useQueryState("endDate", parseAsIsoDate);
   const { getTermDisplay } = useTerminology();
-  const { viewOptions } = useMyWork();
+  const { viewOptions, filters, resetFilters, setFilters } = useMyWork();
 
   const categories: StateCategory[] | undefined = overdue
     ? ["started"]
@@ -62,11 +64,27 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       categories,
       createdAfter,
       createdBefore,
-      deadlineBefore: overdueDeadline,
+      statusIds: filters.statusIds ?? undefined,
+      priorities: filters.priorities ?? undefined,
+      assigneeIds: filters.assigneeIds ?? undefined,
+      reporterIds: filters.reporterIds ?? undefined,
+      titleContains: filters.titleContains?.trim() || undefined,
+      objectiveId: filters.objectiveId ?? undefined,
+      startDateAfter: filters.startDate ?? undefined,
+      startDateBefore: filters.startDate ?? undefined,
+      deadlineAfter: filters.endDate ?? undefined,
+      deadlineBefore: filters.endDate ?? overdueDeadline,
+      teamIds: filters.teamIds ?? undefined,
+      sprintIds: filters.sprintIds ?? undefined,
+      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
       orderBy: viewOptions.orderBy,
       showSubStories: viewOptions.showSubStories ? true : undefined,
     },
   );
+  const hasAppliedFilters = hasActiveStoriesFilters(filters);
+  const boardHeightClassName = hasAppliedFilters
+    ? "h-[calc(100dvh-11.3rem)]"
+    : "h-[calc(100dvh-7.7rem)]";
 
   if (isPending) return <MyWorkSkeleton layout={layout} />;
 
@@ -82,9 +100,14 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
+        <StoriesFilterBar
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <Tabs.Panel value="all">
           <StoriesBoard
-            className="h-[calc(100dvh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
             viewOptions={viewOptions}
@@ -92,7 +115,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.Panel>
         <Tabs.Panel value="assigned">
           <StoriesBoard
-            className="h-[calc(100dvh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
             viewOptions={viewOptions}
@@ -100,7 +123,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.Panel>
         <Tabs.Panel value="created">
           <StoriesBoard
-            className="h-[calc(100dvh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
             viewOptions={viewOptions}
