@@ -81,6 +81,8 @@ export type StoryFilters = {
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
@@ -139,6 +141,8 @@ export type GroupedStoryParams = {
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
@@ -174,6 +178,8 @@ export type GroupStoryParams = {
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;

@@ -5,7 +5,9 @@ import {
   Box,
   Button,
   Command,
+  DatePicker,
   Divider,
+  Dialog,
   Flex,
   Input,
   Menu,
@@ -15,6 +17,7 @@ import {
 import {
   AssigneeIcon,
   ArrowRightIcon,
+  CalendarIcon,
   CheckIcon,
   CloseIcon,
   ListIcon,
@@ -24,6 +27,7 @@ import {
   TeamIcon,
   UserIcon,
 } from "icons";
+import { format, formatISO } from "date-fns";
 import { useParams } from "next/navigation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useMembers } from "@/lib/hooks/members";
@@ -47,6 +51,8 @@ type FilterField =
   | "teamIds"
   | "sprintIds"
   | "objectiveId"
+  | "startDate"
+  | "endDate"
   | "assignedToMe"
   | "createdByMe"
   | "hasNoAssignee";
@@ -95,30 +101,66 @@ const getEditorContentClassName = (field: FilterField) => {
   return "w-64 overflow-hidden py-2";
 };
 
-const TitleEditor = ({
+const TitleFilterDialog = ({
+  open,
+  onOpenChange,
   filters,
   setFilters,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
-}) => (
-  <Box className="w-80 p-2">
-    <Input
-      autoFocus
-      leftIcon={<ListIcon className="text-text-secondary h-4 w-auto" />}
-      onChange={(event) => {
-        const titleContains = event.target.value;
-        setFilters({
-          ...filters,
-          titleContains: titleContains.trim() ? titleContains : null,
-        });
-      }}
-      placeholder="Title contains..."
-      size="sm"
-      value={filters.titleContains ?? ""}
-    />
-  </Box>
-);
+}) => {
+  const [draft, setDraft] = useState(filters.titleContains ?? "");
+
+  const applyTitleFilter = () => {
+    const titleContains = draft.trim();
+    setFilters({
+      ...filters,
+      titleContains: titleContains ? titleContains : null,
+    });
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <Dialog.Content className="max-w-2xl" hideClose>
+        <Dialog.Header className="px-6 pt-6">
+          <Dialog.Title className="text-lg">Filter by title</Dialog.Title>
+        </Dialog.Header>
+        <Dialog.Body className="pt-0">
+          <Input
+            autoFocus
+            leftIcon={<ListIcon className="text-text-secondary h-4 w-auto" />}
+            onChange={(event) => {
+              setDraft(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                applyTitleFilter();
+              }
+            }}
+            placeholder="Title contains..."
+            value={draft}
+          />
+        </Dialog.Body>
+        <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+          <Button
+            color="tertiary"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+            variant="outline"
+          >
+            Cancel
+          </Button>
+          <Button onClick={applyTitleFilter}>Apply</Button>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog>
+  );
+};
 
 const StatusEditor = ({
   filters,
@@ -522,6 +564,59 @@ const ObjectiveEditor = ({
   );
 };
 
+const DateEditor = ({
+  field,
+  filters,
+  setFilters,
+}: {
+  field: "startDate" | "endDate";
+  filters: StoriesFilter;
+  setFilters: (value: StoriesFilter) => void;
+}) => {
+  const selectedDate = filters[field] ? new Date(filters[field]) : undefined;
+
+  return (
+    <Box className="px-3 py-1">
+      <DatePicker>
+        <DatePicker.Trigger>
+          <Button
+            className="w-full justify-start"
+            color="tertiary"
+            leftIcon={<CalendarIcon className="h-4 w-auto" />}
+            size="sm"
+            variant="outline"
+          >
+            {selectedDate ? format(selectedDate, "MMM d, yyyy") : "Select date"}
+          </Button>
+        </DatePicker.Trigger>
+        <DatePicker.Calendar
+          mode="single"
+          onDayClick={(date) => {
+            setFilters({
+              ...filters,
+              [field]: formatISO(date, { representation: "date" }),
+            });
+          }}
+          selected={selectedDate}
+        />
+      </DatePicker>
+      {selectedDate ? (
+        <Button
+          className="mt-2 w-full justify-start"
+          color="tertiary"
+          onClick={() => {
+            setFilters({ ...filters, [field]: null });
+          }}
+          size="sm"
+          variant="naked"
+        >
+          Clear date
+        </Button>
+      ) : null}
+    </Box>
+  );
+};
+
 const FilterValueEditor = ({
   field,
   filters,
@@ -531,10 +626,6 @@ const FilterValueEditor = ({
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
 }) => {
-  if (field === "titleContains") {
-    return <TitleEditor filters={filters} setFilters={setFilters} />;
-  }
-
   if (field === "statusIds") {
     return <StatusEditor filters={filters} setFilters={setFilters} />;
   }
@@ -561,6 +652,12 @@ const FilterValueEditor = ({
     return <ObjectiveEditor filters={filters} setFilters={setFilters} />;
   }
 
+  if (field === "startDate" || field === "endDate") {
+    return (
+      <DateEditor field={field} filters={filters} setFilters={setFilters} />
+    );
+  }
+
   return null;
 };
 
@@ -568,17 +665,20 @@ const Chip = ({
   chip,
   filters,
   setFilters,
+  onEditTitle,
   onRemove,
 }: {
   chip: FilterChip;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
+  onEditTitle: () => void;
   onRemove: () => void;
 }) => {
   const isEditable =
     chip.field !== "assignedToMe" &&
     chip.field !== "createdByMe" &&
     chip.field !== "hasNoAssignee";
+  const shouldUseDialog = chip.field === "titleContains";
 
   return (
     <Flex
@@ -593,7 +693,15 @@ const Chip = ({
       <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
         {chip.operator}
       </span>
-      {isEditable ? (
+      {shouldUseDialog ? (
+        <button
+          className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
+          onClick={onEditTitle}
+          type="button"
+        >
+          <span className="truncate">{chip.value}</span>
+        </button>
+      ) : isEditable ? (
         <Popover>
           <Popover.Trigger asChild>
             <button
@@ -635,6 +743,7 @@ export const StoriesFilterBar = ({
   resetFilters,
 }: StoriesFilterBarProps) => {
   const { teamId } = useParams<{ teamId?: string }>();
+  const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const { data: allStatuses = [] } = useStatuses();
   const { data: allUsers = [] } = useMembers();
   const resolvedTeamId = teamId ?? "";
@@ -690,6 +799,26 @@ export const StoriesFilterBar = ({
         operator: "contains",
         value: filters.titleContains.trim(),
         icon: <ListIcon className="h-4 w-auto" />,
+      });
+    }
+
+    if (filters.startDate) {
+      items.push({
+        field: "startDate",
+        label: "Start date",
+        operator: "is",
+        value: format(new Date(filters.startDate), "MMM d, yyyy"),
+        icon: <CalendarIcon className="h-4 w-auto" />,
+      });
+    }
+
+    if (filters.endDate) {
+      items.push({
+        field: "endDate",
+        label: "End date",
+        operator: "is",
+        value: format(new Date(filters.endDate), "MMM d, yyyy"),
+        icon: <CalendarIcon className="h-4 w-auto" />,
       });
     }
 
@@ -762,24 +891,6 @@ export const StoriesFilterBar = ({
       });
     }
 
-    if (filters.assignedToMe) {
-      items.push({
-        field: "assignedToMe",
-        label: "Assignee",
-        operator: "is",
-        value: "me",
-      });
-    }
-
-    if (filters.createdByMe) {
-      items.push({
-        field: "createdByMe",
-        label: "Reporter",
-        operator: "is",
-        value: "me",
-      });
-    }
-
     if (filters.hasNoAssignee) {
       items.push({
         field: "hasNoAssignee",
@@ -814,11 +925,6 @@ export const StoriesFilterBar = ({
     icon: ReactNode;
     label: string;
   }[] = [
-    {
-      field: "titleContains",
-      icon: <ListIcon className="h-5 w-auto" />,
-      label: "Title",
-    },
     {
       field: "statusIds",
       icon: <StoryStatusIcon statusId={filters.statusIds?.[0] ?? ""} />,
@@ -859,19 +965,19 @@ export const StoriesFilterBar = ({
       label: "Objective",
     },
     {
-      field: "assignedToMe",
-      icon: <AssigneeIcon className="h-5 w-auto" />,
-      label: "Assigned to me",
+      field: "startDate",
+      icon: <CalendarIcon className="h-5 w-auto" />,
+      label: "Start date",
     },
     {
-      field: "createdByMe",
-      icon: <UserIcon className="h-5 w-auto" />,
-      label: "Created by me",
+      field: "endDate",
+      icon: <CalendarIcon className="h-5 w-auto" />,
+      label: "End date",
     },
     {
-      field: "hasNoAssignee",
-      icon: <AssigneeIcon className="h-5 w-auto" />,
-      label: "Has no assignee",
+      field: "titleContains",
+      icon: <ListIcon className="h-5 w-auto" />,
+      label: "Title",
     },
   ];
 
@@ -894,6 +1000,9 @@ export const StoriesFilterBar = ({
             key={chip.field}
             onRemove={() => {
               removeFilter(chip.field);
+            }}
+            onEditTitle={() => {
+              setTitleDialogOpen(true);
             }}
             setFilters={setFilters}
           />
@@ -918,33 +1027,16 @@ export const StoriesFilterBar = ({
                 const isActive = chips.some(
                   (chip) => chip.field === option.field,
                 );
-                const isBooleanFilter =
-                  option.field === "assignedToMe" ||
-                  option.field === "createdByMe" ||
-                  option.field === "hasNoAssignee";
+                const shouldOpenDialog = option.field === "titleContains";
 
-                if (isBooleanFilter) {
+                if (shouldOpenDialog) {
                   return (
                     <Menu.Item
                       active={isActive}
                       className="justify-between gap-4"
                       key={option.field}
                       onSelect={() => {
-                        if (option.field === "assignedToMe") {
-                          setFilters({ ...filters, assignedToMe: true });
-                          return;
-                        }
-
-                        if (option.field === "createdByMe") {
-                          setFilters({ ...filters, createdByMe: true });
-                          return;
-                        }
-
-                        setFilters({
-                          ...filters,
-                          assigneeIds: null,
-                          hasNoAssignee: true,
-                        });
+                        setTitleDialogOpen(true);
                       }}
                     >
                       <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
@@ -993,6 +1085,15 @@ export const StoriesFilterBar = ({
             </Menu.Group>
           </Menu.Items>
         </Menu>
+        {titleDialogOpen ? (
+          <TitleFilterDialog
+            filters={filters}
+            key={filters.titleContains ?? ""}
+            onOpenChange={setTitleDialogOpen}
+            open={titleDialogOpen}
+            setFilters={setFilters}
+          />
+        ) : null}
       </Flex>
       <Flex align="center" className="shrink-0" gap={2}>
         <Button

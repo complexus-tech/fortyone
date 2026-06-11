@@ -235,6 +235,8 @@ type CoreStoryFilters struct {
 	CreatedBefore   *time.Time `json:"createdBefore"`
 	UpdatedAfter    *time.Time `json:"updatedAfter"`
 	UpdatedBefore   *time.Time `json:"updatedBefore"`
+	StartDateAfter  *time.Time `json:"startDateAfter"`
+	StartDateBefore *time.Time `json:"startDateBefore"`
 	DeadlineAfter   *time.Time `json:"deadlineAfter"`
 	DeadlineBefore  *time.Time `json:"deadlineBefore"`
 	CompletedAfter  *time.Time `json:"completedAfter"`

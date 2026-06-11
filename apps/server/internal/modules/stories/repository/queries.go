@@ -369,7 +369,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	hasComplexFilters := false
 	for key := range filters {
 		if key == "created_after" || key == "created_before" || key == "updated_after" ||
-			key == "updated_before" || key == "deadline_after" || key == "deadline_before" ||
+			key == "updated_before" || key == "start_date_after" || key == "start_date_before" ||
+			key == "deadline_after" || key == "deadline_before" ||
 			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
 			key == "current_user_id" || key == "show_sub_stories" {
 			hasComplexFilters = true
@@ -561,6 +562,12 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if updatedBefore, ok := filters["updated_before"].(time.Time); ok {
 		coreFilters.UpdatedBefore = &updatedBefore
+	}
+	if startDateAfter, ok := filters["start_date_after"].(time.Time); ok {
+		coreFilters.StartDateAfter = &startDateAfter
+	}
+	if startDateBefore, ok := filters["start_date_before"].(time.Time); ok {
+		coreFilters.StartDateBefore = &startDateBefore
 	}
 	if deadlineAfter, ok := filters["deadline_after"].(time.Time); ok {
 		coreFilters.DeadlineAfter = &deadlineAfter
@@ -1293,6 +1300,14 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
 	}
 
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
+	}
+
 	if filters.DeadlineAfter != nil {
 		whereClauses = append(whereClauses, "(s.end_date >= :deadline_after)")
 	}
@@ -1690,6 +1705,12 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if filters.UpdatedBefore != nil {
 		params["updated_before"] = *filters.UpdatedBefore
 	}
+	if filters.StartDateAfter != nil {
+		params["start_date_after"] = *filters.StartDateAfter
+	}
+	if filters.StartDateBefore != nil {
+		params["start_date_before"] = *filters.StartDateBefore
+	}
 	if filters.DeadlineAfter != nil {
 		params["deadline_after"] = *filters.DeadlineAfter
 	}
@@ -1920,6 +1941,14 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.UpdatedBefore != nil {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
 
 	if filters.DeadlineAfter != nil {
@@ -2419,6 +2448,14 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.UpdatedBefore != nil {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
 
 	if filters.DeadlineAfter != nil {

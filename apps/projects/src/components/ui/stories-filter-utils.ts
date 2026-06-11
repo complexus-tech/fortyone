@@ -16,6 +16,8 @@ const STRING_FILTER_KEYS = [
   "epicId",
   "keyResultId",
   "titleContains",
+  "startDate",
+  "endDate",
 ] as const;
 
 export const getActiveStoriesFilterCount = (filters: StoriesFilter) => {
@@ -29,11 +31,7 @@ export const getActiveStoriesFilterCount = (filters: StoriesFilter) => {
     return typeof value === "string" && value.trim() ? count + 1 : count;
   }, 0);
 
-  const booleanFilterCount = [
-    filters.hasNoAssignee,
-    filters.assignedToMe,
-    filters.createdByMe,
-  ].filter(Boolean).length;
+  const booleanFilterCount = [filters.hasNoAssignee].filter(Boolean).length;
 
   return arrayFilterCount + stringFilterCount + booleanFilterCount;
 };

@@ -53,6 +53,8 @@ export const TeamOptionsProvider = ({
     epicId: null,
     keyResultId: null,
     titleContains: null,
+    startDate: null,
+    endDate: null,
     hasNoAssignee: null,
     assignedToMe: false,
     createdByMe: false,

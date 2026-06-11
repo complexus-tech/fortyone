@@ -41,6 +41,8 @@ export type StoriesFilter = {
   epicId: string | null;
   keyResultId: string | null;
   titleContains?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   hasNoAssignee: boolean | null;
   assignedToMe: boolean;
   createdByMe: boolean;

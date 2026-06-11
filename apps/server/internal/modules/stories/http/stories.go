@@ -1396,6 +1396,8 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.CreatedBefore = parseDateParam(r, "createdBefore")
 	query.Filters.UpdatedAfter = parseDateParam(r, "updatedAfter")
 	query.Filters.UpdatedBefore = parseDateParam(r, "updatedBefore")
+	query.Filters.StartDateAfter = parseDateParam(r, "startDateAfter")
+	query.Filters.StartDateBefore = parseDateParam(r, "startDateBefore")
 	query.Filters.DeadlineAfter = parseDateParam(r, "deadlineAfter")
 	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
 	query.Filters.CompletedAfter = parseDateParam(r, "completedAfter")
@@ -1552,6 +1554,8 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			CreatedBefore:   query.Filters.CreatedBefore,
 			UpdatedAfter:    query.Filters.UpdatedAfter,
 			UpdatedBefore:   query.Filters.UpdatedBefore,
+			StartDateAfter:  query.Filters.StartDateAfter,
+			StartDateBefore: query.Filters.StartDateBefore,
 			DeadlineAfter:   query.Filters.DeadlineAfter,
 			DeadlineBefore:  query.Filters.DeadlineBefore,
 			CompletedAfter:  query.Filters.CompletedAfter,
@@ -1637,6 +1641,12 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.UpdatedBefore != nil {
 		result["updated_before"] = *filters.UpdatedBefore
+	}
+	if filters.StartDateAfter != nil {
+		result["start_date_after"] = *filters.StartDateAfter
+	}
+	if filters.StartDateBefore != nil {
+		result["start_date_before"] = *filters.StartDateBefore
 	}
 	if filters.DeadlineAfter != nil {
 		result["deadline_after"] = *filters.DeadlineAfter
