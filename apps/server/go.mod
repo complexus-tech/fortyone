@@ -32,7 +32,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v82 v82.0.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
-	golang.org/x/text v0.23.0
+	golang.org/x/image v0.28.0
+	golang.org/x/text v0.26.0
 	google.golang.org/api v0.221.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
@@ -100,7 +101,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

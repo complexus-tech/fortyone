@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
+import type { ImageCropArea } from "./image-cropper";
 import { Dialog } from "./dialog";
 import { Button } from "./button";
 import { Text } from "./text";
@@ -8,6 +9,7 @@ import { BlurImage } from "./image";
 import { DropZone } from "./drop-zone";
 import { Flex } from "./flex";
 import { Box } from "./box";
+import { ImageCropper } from "./image-cropper";
 
 interface ProfileUploadDialogProps {
   isOpen: boolean;
@@ -40,6 +42,11 @@ export const ProfileUploadDialog = ({
 }: ProfileUploadDialogProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<{
+    file: File;
+    url: string;
+  } | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,11 +71,16 @@ export const ProfileUploadDialog = ({
         return;
       }
       setError(null);
-      setSelectedFile(file);
       const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setCropSource((current) => {
+        if (current) {
+          URL.revokeObjectURL(current.url);
+        }
+        return { file, url };
+      });
+      setIsCropperOpen(true);
     },
-    [maxSizeInMB]
+    [maxSizeInMB],
   );
 
   const onDrop = useCallback(
@@ -77,7 +89,7 @@ export const ProfileUploadDialog = ({
         handleFileSelect(acceptedFiles[0]);
       }
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -94,12 +106,34 @@ export const ProfileUploadDialog = ({
   };
 
   const handleFileInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (file) {
       handleFileSelect(file);
     }
+  };
+
+  const handleCropComplete = async (croppedAreaPixels: ImageCropArea) => {
+    if (!cropSource) {
+      return;
+    }
+
+    const croppedFile = await getCroppedImageFile(
+      cropSource.file,
+      cropSource.url,
+      croppedAreaPixels,
+    );
+    const url = URL.createObjectURL(croppedFile);
+
+    setSelectedFile(croppedFile);
+    setPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return url;
+    });
+    clearCropSource();
   };
 
   const handleUpload = () => {
@@ -116,19 +150,46 @@ export const ProfileUploadDialog = ({
 
   const handleClose = () => {
     setSelectedFile(null);
-    setPreviewUrl(null);
+    setPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+    clearCropSource();
     setError(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
     onOpenChange(false);
+  };
+
+  const clearCropSource = () => {
+    setCropSource((current) => {
+      if (current) {
+        URL.revokeObjectURL(current.url);
+      }
+      return null;
+    });
+  };
+
+  const handleCropperOpenChange = (open: boolean) => {
+    setIsCropperOpen(open);
+    if (!open) {
+      clearCropSource();
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (open) {
+      onOpenChange(true);
+      return;
+    }
+    handleClose();
   };
 
   const displayImage = previewUrl || currentImage;
   const hasImage = Boolean(displayImage);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <Dialog.Content size="lg" className="max-w-2xl">
         <Dialog.Header className="px-6">
           <Dialog.Title className="text-xl">{title}</Dialog.Title>
@@ -207,6 +268,76 @@ export const ProfileUploadDialog = ({
           </Flex>
         </Dialog.Footer>
       </Dialog.Content>
+      {cropSource ? (
+        <ImageCropper
+          isOpen={isCropperOpen}
+          onOpenChange={handleCropperOpenChange}
+          imageSrc={cropSource.url}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
+      ) : null}
     </Dialog>
   );
+};
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", reject);
+    image.crossOrigin = "anonymous";
+    image.src = url;
+  });
+
+const getCroppedImageFile = async (
+  file: File,
+  imageSrc: string,
+  crop: ImageCropArea,
+) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Could not create image crop canvas context");
+  }
+
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  context.drawImage(
+    image,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    crop.width,
+    crop.height,
+  );
+
+  const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (nextBlob) => {
+        if (!nextBlob) {
+          reject(new Error("Could not crop image"));
+          return;
+        }
+        resolve(nextBlob);
+      },
+      outputType,
+      0.9,
+    );
+  });
+
+  const extension = outputType === "image/png" ? ".png" : ".jpg";
+  const filename = replaceExtension(file.name, extension);
+  return new File([blob], filename, { type: outputType });
+};
+
+const replaceExtension = (filename: string, extension: string) => {
+  const basename = filename.replace(/\.[^/.]+$/, "");
+  return `${basename}${extension}`;
 };

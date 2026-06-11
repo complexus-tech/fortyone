@@ -61,14 +61,19 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 
 	// Generate a unique filename
 	blobName := validate.GenerateFileName(fileHeader.Filename)
+	upload, err := prepareUploadFile(file, fileHeader, attachmentImagePolicy)
+	if err != nil {
+		span.RecordError(err)
+		return FileInfo{}, fmt.Errorf("failed to prepare attachment upload: %w", err)
+	}
 
 	// Upload to storage
-	_, err := s.storage.UploadFile(
+	_, err = s.storage.UploadFile(
 		ctx,
 		s.config.AttachmentsBucket,
 		blobName,
-		file,
-		fileHeader.Header.Get("Content-Type"),
+		bytes.NewReader(upload.Data),
+		upload.ContentType,
 	)
 	if err != nil {
 		span.RecordError(err)
@@ -79,8 +84,8 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
 		Filename:    fileHeader.Filename,
 		BlobName:    blobName,
-		Size:        fileHeader.Size,
-		MimeType:    fileHeader.Header.Get("Content-Type"),
+		Size:        int64(len(upload.Data)),
+		MimeType:    upload.ContentType,
 		UploadedBy:  userID,
 		WorkspaceID: workspaceID,
 	})
@@ -276,14 +281,19 @@ func (s *Service) UploadProfileImage(ctx context.Context, file multipart.File, f
 
 	// Generate a unique filename for profile images
 	blobName := validate.GenerateFileName(fileHeader.Filename)
+	upload, err := prepareUploadFile(file, fileHeader, avatarImagePolicy)
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to prepare profile image upload: %w", err)
+	}
 
 	// Upload to storage profile images container
-	_, err := s.storage.UploadFile(
+	_, err = s.storage.UploadFile(
 		ctx,
 		s.config.ProfilesBucket,
 		blobName,
-		file,
-		fileHeader.Header.Get("Content-Type"),
+		bytes.NewReader(upload.Data),
+		upload.ContentType,
 	)
 	if err != nil {
 		span.RecordError(err)
@@ -344,6 +354,11 @@ func (s *Service) UploadProfileImageFromURL(ctx context.Context, imageURL string
 	filename := "image" + ext
 	blobName := validate.GenerateFileName(filename)
 
+	if optimized, ok := optimizeImageBytes(data, mimeType, avatarImagePolicy); ok {
+		data = optimized.Data
+		mimeType = optimized.ContentType
+	}
+
 	if _, err := s.storage.UploadFile(ctx, s.config.ProfilesBucket, blobName, bytes.NewReader(data), mimeType); err != nil {
 		return "", fmt.Errorf("failed to upload profile image to storage: %w", err)
 	}
@@ -394,8 +409,13 @@ func (s *Service) UploadWorkspaceLogo(ctx context.Context, file multipart.File, 
 	}
 
 	blobName := validate.GenerateFileName(fileHeader.Filename)
+	upload, err := prepareUploadFile(file, fileHeader, avatarImagePolicy)
+	if err != nil {
+		span.RecordError(err)
+		return "", fmt.Errorf("failed to prepare workspace logo upload: %w", err)
+	}
 
-	if _, err := s.storage.UploadFile(ctx, s.config.LogosBucket, blobName, file, fileHeader.Header.Get("Content-Type")); err != nil {
+	if _, err := s.storage.UploadFile(ctx, s.config.LogosBucket, blobName, bytes.NewReader(upload.Data), upload.ContentType); err != nil {
 		span.RecordError(err)
 		return "", fmt.Errorf("failed to upload workspace logo: %w", err)
 	}
@@ -492,6 +512,37 @@ func isAllowedImageType(mimeType string) bool {
 	default:
 		return false
 	}
+}
+
+type preparedUpload struct {
+	Data        []byte
+	ContentType string
+}
+
+func prepareUploadFile(file multipart.File, fileHeader *multipart.FileHeader, policy imageOptimizationPolicy) (preparedUpload, error) {
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return preparedUpload{}, err
+	}
+
+	contentType := fileHeader.Header.Get("Content-Type")
+	detectedContentType := http.DetectContentType(data)
+	if isAllowedImageType(detectedContentType) {
+		contentType = detectedContentType
+	}
+	if contentType == "" {
+		contentType = detectedContentType
+	}
+
+	if optimized, ok := optimizeImageBytes(data, contentType, policy); ok {
+		data = optimized.Data
+		contentType = optimized.ContentType
+	}
+
+	return preparedUpload{
+		Data:        data,
+		ContentType: contentType,
+	}, nil
 }
 
 func imageExtensionForContentType(mimeType string) string {
