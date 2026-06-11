@@ -1240,7 +1240,7 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	}
 
 	if filters.TitleContains != nil {
-		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
 
 	if len(filters.Priorities) > 0 {
@@ -1872,7 +1872,7 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	}
 
 	if filters.TitleContains != nil {
-		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
 
 	if len(filters.Priorities) > 0 {
@@ -2375,7 +2375,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	}
 
 	if filters.TitleContains != nil {
-		whereClauses = append(whereClauses, "s.title ILIKE '%' || :title_contains || '%'")
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
 
 	if len(filters.Priorities) > 0 {

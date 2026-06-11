@@ -4,8 +4,8 @@ import {
   Avatar,
   Box,
   Button,
+  Calendar,
   Command,
-  DatePicker,
   Divider,
   Dialog,
   Flex,
@@ -98,6 +98,10 @@ const getEditorContentClassName = (field: FilterField) => {
     return "w-80 overflow-hidden py-2";
   }
 
+  if (field === "startDate" || field === "endDate") {
+    return "w-auto overflow-hidden py-2";
+  }
+
   return "w-64 overflow-hidden py-2";
 };
 
@@ -125,14 +129,13 @@ const TitleFilterDialog = ({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <Dialog.Content className="max-w-2xl" hideClose>
+      <Dialog.Content className="max-w-lg" hideClose>
         <Dialog.Header className="px-6 pt-6">
-          <Dialog.Title className="text-lg">Filter by title</Dialog.Title>
+          <Dialog.Title className="text-lg">Filter by content</Dialog.Title>
         </Dialog.Header>
-        <Dialog.Body className="pt-0">
+        <Dialog.Body className="pt-1">
           <Input
             autoFocus
-            leftIcon={<ListIcon className="text-text-secondary h-4 w-auto" />}
             onChange={(event) => {
               setDraft(event.target.value);
             }}
@@ -141,7 +144,7 @@ const TitleFilterDialog = ({
                 applyTitleFilter();
               }
             }}
-            placeholder="Title contains..."
+            placeholder="Content contains..."
             value={draft}
           />
         </Dialog.Body>
@@ -576,33 +579,21 @@ const DateEditor = ({
   const selectedDate = filters[field] ? new Date(filters[field]) : undefined;
 
   return (
-    <Box className="px-3 py-1">
-      <DatePicker>
-        <DatePicker.Trigger>
-          <Button
-            className="w-full justify-start"
-            color="tertiary"
-            leftIcon={<CalendarIcon className="h-4 w-auto" />}
-            size="sm"
-            variant="outline"
-          >
-            {selectedDate ? format(selectedDate, "MMM d, yyyy") : "Select date"}
-          </Button>
-        </DatePicker.Trigger>
-        <DatePicker.Calendar
-          mode="single"
-          onDayClick={(date) => {
-            setFilters({
-              ...filters,
-              [field]: formatISO(date, { representation: "date" }),
-            });
-          }}
-          selected={selectedDate}
-        />
-      </DatePicker>
+    <Box>
+      <Calendar
+        className="px-3 py-3 shadow-none"
+        mode="single"
+        onDayClick={(date) => {
+          setFilters({
+            ...filters,
+            [field]: formatISO(date, { representation: "date" }),
+          });
+        }}
+        selected={selectedDate}
+      />
       {selectedDate ? (
         <Button
-          className="mt-2 w-full justify-start"
+          className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-start"
           color="tertiary"
           onClick={() => {
             setFilters({ ...filters, [field]: null });
@@ -795,7 +786,7 @@ export const StoriesFilterBar = ({
     if (filters.titleContains?.trim()) {
       items.push({
         field: "titleContains",
-        label: "Title",
+        label: "Content",
         operator: "contains",
         value: filters.titleContains.trim(),
         icon: <ListIcon className="h-4 w-auto" />,
@@ -977,7 +968,7 @@ export const StoriesFilterBar = ({
     {
       field: "titleContains",
       icon: <ListIcon className="h-5 w-auto" />,
-      label: "Title",
+      label: "Content",
     },
   ];
 
