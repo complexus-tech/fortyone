@@ -160,6 +160,15 @@ export const MainDetails = ({
           "md:pt-2": isDialog,
         })}
       >
+        {isNotifications ? (
+          <Box className="notification-story-top-options-header hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0 [&>div]:pb-3">
+            <OptionsHeader
+              isAdminOrOwner={isAdminOrOwner}
+              isNotifications={isNotifications}
+              storyId={storyId}
+            />
+          </Box>
+        ) : null}
         <GitHubSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
@@ -190,6 +199,7 @@ export const MainDetails = ({
         )}
         <Box
           className={cn("md:hidden", {
+            "mt-4": isNotifications && isLinksOpen && links.length > 0,
             "notification-story-inline-options": isNotifications,
           })}
         >

@@ -279,14 +279,16 @@ export const Options = ({
         },
       )}
     >
-      <Box className={cn("hidden md:block", { hidden: isInline })}>
-        <OptionsHeader
-          isAdminOrOwner={isAdminOrOwner}
-          isDialog={isDialog}
-          isNotifications={isNotifications}
-          storyId={storyId}
-        />
-      </Box>
+      {!isInline ? (
+        <Box className="hidden md:block">
+          <OptionsHeader
+            isAdminOrOwner={isAdminOrOwner}
+            isDialog={isDialog}
+            isNotifications={isNotifications}
+            storyId={storyId}
+          />
+        </Box>
+      ) : null}
       <Container
         className={cn("text-text-muted px-0.5 pt-4 md:px-6", {
           "px-0 pt-0 md:px-0": isInline,
