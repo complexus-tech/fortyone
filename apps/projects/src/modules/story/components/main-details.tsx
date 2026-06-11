@@ -147,7 +147,11 @@ export const MainDetails = ({
       })}
     >
       {mainHeader}
-      <Box className="md:hidden">
+      <Box
+        className={cn("md:hidden", {
+          "notification-story-inline-options-header": isNotifications,
+        })}
+      >
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
           isNotifications={isNotifications}
@@ -188,7 +192,11 @@ export const MainDetails = ({
             storyId={storyId}
           />
         )}
-        <Box className="md:hidden">
+        <Box
+          className={cn("md:hidden", {
+            "notification-story-inline-options": isNotifications,
+          })}
+        >
           <Divider />
           <Options isNotifications={isNotifications} storyId={storyId} />
         </Box>

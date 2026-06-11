@@ -232,6 +232,21 @@ th {
   position: absolute;
 }
 
+.notification-story-container {
+  container: notification-story / inline-size;
+}
+
+@container notification-story (max-width: 60rem) {
+  .notification-story-sidebar {
+    display: none;
+  }
+
+  .notification-story-inline-options,
+  .notification-story-inline-options-header {
+    display: block;
+  }
+}
+
 /* Chat Table Styling */
 .chat-tables table {
   @apply w-full rounded-lg;

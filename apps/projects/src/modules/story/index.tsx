@@ -50,21 +50,32 @@ export const StoryPage = ({
               storyId={storyId}
             />
           </Box>
-          <Box className="hidden h-full md:flex">
+          <Box
+            className={cn("hidden h-full md:flex", {
+              "notification-story-container": isNotifications,
+            })}
+          >
             <Box className="min-w-0 flex-1">
-                <MainDetails
-                  isDialog={isDialog}
-                  isNotifications={Boolean(isNotifications)}
-                  mainHeader={mainHeader}
-                  storyId={storyId}
-                />
+              <MainDetails
+                isDialog={isDialog}
+                isNotifications={Boolean(isNotifications)}
+                mainHeader={mainHeader}
+                storyId={storyId}
+              />
             </Box>
-            <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]">
-                <Options
-                  isDialog={isDialog}
-                  isNotifications={Boolean(isNotifications)}
-                  storyId={storyId}
-                />
+            <Box
+              className={cn(
+                "border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]",
+                {
+                  "notification-story-sidebar": isNotifications,
+                },
+              )}
+            >
+              <Options
+                isDialog={isDialog}
+                isNotifications={Boolean(isNotifications)}
+                storyId={storyId}
+              />
             </Box>
           </Box>
         </>
