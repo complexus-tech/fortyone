@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Text, Switch, Select, Flex, Input } from "ui";
+import { useEffect, useState } from "react";
+import { Box, Text, Switch, Select, Flex, Input, Button, Dialog } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTerminology } from "@/hooks";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -20,6 +21,32 @@ export const Automations = () => {
   const sprintSettings = teamSettings?.sprintSettings;
   const storySettings = teamSettings?.storyAutomationSettings;
   const estimationSettings = teamSettings?.estimationSettings;
+  const [isNextSprintDialogOpen, setIsNextSprintDialogOpen] = useState(false);
+  const [nextSprintNumber, setNextSprintNumber] = useState("");
+  const currentNextSprintNumber = sprintSettings?.nextAutoSprintNumber ?? 1;
+
+  useEffect(() => {
+    if (isNextSprintDialogOpen) {
+      setNextSprintNumber(currentNextSprintNumber.toString());
+    }
+  }, [currentNextSprintNumber, isNextSprintDialogOpen]);
+
+  const handleUpdateNextSprintNumber = () => {
+    const nextValue = Number.parseInt(nextSprintNumber, 10);
+    if (
+      Number.isNaN(nextValue) ||
+      nextValue < 1 ||
+      nextValue > 10000 ||
+      nextValue === currentNextSprintNumber
+    ) {
+      setIsNextSprintDialogOpen(false);
+      setNextSprintNumber(currentNextSprintNumber.toString());
+      return;
+    }
+
+    updateSprintSettings.mutate({ nextAutoSprintNumber: nextValue });
+    setIsNextSprintDialogOpen(false);
+  };
 
   return (
     <>
@@ -117,31 +144,17 @@ export const Automations = () => {
                   {sprintSettings.nextAutoSprintNumber}
                 </Text>
               </Box>
-              <Input
-                className="w-32 text-[0.9rem] md:text-base"
-                defaultValue={sprintSettings.nextAutoSprintNumber}
-                key={sprintSettings.nextAutoSprintNumber}
-                max={10000}
-                min={1}
-                onBlur={(event) => {
-                  const nextValue = Number.parseInt(event.target.value, 10);
-                  if (
-                    Number.isNaN(nextValue) ||
-                    nextValue < 1 ||
-                    nextValue > 10000 ||
-                    nextValue === sprintSettings.nextAutoSprintNumber
-                  ) {
-                    event.target.value =
-                      sprintSettings.nextAutoSprintNumber.toString();
-                    return;
-                  }
-
-                  updateSprintSettings.mutate({
-                    nextAutoSprintNumber: nextValue,
-                  });
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsNextSprintDialogOpen(true);
                 }}
-                type="number"
-              />
+                size="sm"
+                variant="outline"
+              >
+                {getTermDisplay("sprintTerm", { capitalize: true })}{" "}
+                {sprintSettings.nextAutoSprintNumber}
+              </Button>
             </Flex>
           ) : null}
 
@@ -259,6 +272,52 @@ export const Automations = () => {
           ) : null}
         </Box>
       </Box>
+
+      <Dialog
+        onOpenChange={setIsNextSprintDialogOpen}
+        open={isNextSprintDialogOpen}
+      >
+        <Dialog.Content size="sm">
+          <Dialog.Header className="px-6 pt-6 pb-2">
+            <Dialog.Title className="text-lg">
+              Next {getTermDisplay("sprintTerm")} number
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="px-6 pt-2 pb-4">
+            <Input
+              autoFocus
+              label={`Next ${getTermDisplay("sprintTerm")} number`}
+              max={10000}
+              min={1}
+              onChange={(event) => {
+                setNextSprintNumber(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  handleUpdateNextSprintNumber();
+                }
+              }}
+              type="number"
+              value={nextSprintNumber}
+            />
+          </Dialog.Body>
+          <Dialog.Footer className="gap-2">
+            <Button
+              color="tertiary"
+              onClick={() => {
+                setIsNextSprintDialogOpen(false);
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateNextSprintNumber} size="sm">
+              Update
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
 
       {/* Story Automations Section */}
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
