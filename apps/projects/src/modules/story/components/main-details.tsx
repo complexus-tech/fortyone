@@ -161,7 +161,7 @@ export const MainDetails = ({
         })}
       >
         {isNotifications ? (
-          <Box className="notification-story-top-options-header hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0 [&>div]:pb-3">
+          <Box className="notification-story-top-options-header relative -top-4.5 -mb-2 hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0">
             <OptionsHeader
               isAdminOrOwner={isAdminOrOwner}
               isNotifications={isNotifications}
