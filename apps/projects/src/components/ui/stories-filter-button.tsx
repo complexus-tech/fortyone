@@ -23,34 +23,11 @@ import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
 import { MemberTooltip } from "./member-tooltip";
+import type { StoriesFilter } from "./stories-filter-types";
 import {
   getActiveStoriesFilterCount,
   hasActiveStoriesFilters,
 } from "./stories-filter-utils";
-
-export type StoriesFilter = {
-  statusIds: string[] | null;
-  assigneeIds: string[] | null;
-  reporterIds: string[] | null;
-  priorities: string[] | null;
-  teamIds: string[] | null;
-  sprintIds: string[] | null;
-  labelIds: string[] | null;
-  parentId: string | null;
-  objectiveId: string | null;
-  epicId: string | null;
-  keyResultId: string | null;
-  titleContains?: string | null;
-  startDate?: string | null;
-  endDate?: string | null;
-  hasNoAssignee: boolean | null;
-  assignedToMe: boolean;
-  createdByMe: boolean;
-  completedAfter?: string;
-  completedBefore?: string;
-  isCompleted?: boolean;
-  isNotCompleted?: boolean;
-};
 
 type StoriesFilterButtonProps = {
   filters: StoriesFilter;

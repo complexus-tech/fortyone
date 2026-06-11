@@ -24,6 +24,7 @@ import {
   ObjectiveIcon,
   PlusIcon,
   SprintsIcon,
+  TagsIcon,
   TeamIcon,
   UserIcon,
 } from "icons";
@@ -36,20 +37,22 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { StoryPriority } from "@/modules/stories/types";
-import type { StoriesFilter } from "./stories-filter-button";
+import { useLabels } from "@/lib/hooks/labels";
+import type { StoriesFilter } from "./stories-filter-types";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
 import { hasActiveStoriesFilters } from "./stories-filter-utils";
 
 export type StoriesFilterField =
-  | "titleContains"
+  | "contentContains"
   | "statusIds"
   | "assigneeIds"
   | "reporterIds"
   | "priorities"
   | "teamIds"
   | "sprintIds"
+  | "labelIds"
   | "objectiveId"
   | "startDate"
   | "endDate"
@@ -213,8 +216,41 @@ const PriorityChipValue = ({ priorities }: { priorities: StoryPriority[] }) => {
   );
 };
 
+type LabelChipSummary = {
+  color: string;
+  id: string;
+  name: string;
+};
+
+const LabelChipValue = ({ labels }: { labels: LabelChipSummary[] }) => {
+  const visibleLabels = labels.slice(0, 2);
+
+  if (labels.length > 2) {
+    return (
+      <Flex align="center" gap={1}>
+        <TagsIcon
+          className="h-4 w-auto"
+          style={{ color: visibleLabels[0]?.color }}
+        />
+        <span>{getPluralLabel(labels.length, "label", "labels")}</span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex align="center" gap={2}>
+      {visibleLabels.map((label) => (
+        <Flex align="center" gap={1} key={label.id}>
+          <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
+          <span>{label.name}</span>
+        </Flex>
+      ))}
+    </Flex>
+  );
+};
+
 const getEditorContentClassName = (field: StoriesFilterField) => {
-  if (field === "titleContains") {
+  if (field === "contentContains") {
     return "w-80 overflow-hidden py-2";
   }
 
@@ -244,13 +280,13 @@ const TitleFilterDialog = ({
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
 }) => {
-  const [draft, setDraft] = useState(filters.titleContains ?? "");
+  const [draft, setDraft] = useState(filters.contentContains ?? "");
 
   const applyTitleFilter = () => {
-    const titleContains = draft.trim();
+    const contentContains = draft.trim();
     setFilters({
       ...filters,
-      titleContains: titleContains ? titleContains : null,
+      contentContains: contentContains ? contentContains : null,
     });
     onOpenChange(false);
   };
@@ -695,6 +731,70 @@ const ObjectiveEditor = ({
   );
 };
 
+const LabelEditor = ({
+  filters,
+  setFilters,
+}: {
+  filters: StoriesFilter;
+  setFilters: (value: StoriesFilter) => void;
+}) => {
+  const { teamId } = useParams<{ teamId?: string }>();
+  const [query, setQuery] = useState("");
+  const { data: allLabels = [] } = useLabels();
+  const labels = allLabels.filter(
+    (label) =>
+      (label.teamId === teamId || label.teamId === null) &&
+      label.name.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  const toggleLabel = (labelId: string) => {
+    const selected = filters.labelIds ?? [];
+    const labelIds = selected.includes(labelId)
+      ? selected.filter((id) => id !== labelId)
+      : [...selected, labelId];
+    setFilters({ ...filters, labelIds: normalizeArrayFilter(labelIds) });
+  };
+
+  return (
+    <Command>
+      <Command.Input
+        autoFocus
+        onValueChange={setQuery}
+        placeholder="Search labels..."
+        value={query}
+      />
+      <Divider className="my-2" />
+      <Command.Empty className="py-2">
+        <Text color="muted">No labels found.</Text>
+      </Command.Empty>
+      <Command.Group className="max-h-80 overflow-y-auto">
+        {labels.map((label, idx) => (
+          <Command.Item
+            active={Boolean(filters.labelIds?.includes(label.id))}
+            className="justify-between gap-4"
+            key={label.id}
+            onSelect={() => {
+              toggleLabel(label.id);
+            }}
+            value={label.name}
+          >
+            <Flex align="center" className="min-w-0 flex-1" gap={2}>
+              <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
+              <Text className="max-w-48 truncate">{label.name}</Text>
+            </Flex>
+            <Flex align="center" className="shrink-0" gap={2}>
+              {filters.labelIds?.includes(label.id) ? (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              ) : null}
+              <Text color="muted">{idx}</Text>
+            </Flex>
+          </Command.Item>
+        ))}
+      </Command.Group>
+    </Command>
+  );
+};
+
 const DateEditor = ({
   field,
   filters,
@@ -771,6 +871,10 @@ const FilterValueEditor = ({
     return <ObjectiveEditor filters={filters} setFilters={setFilters} />;
   }
 
+  if (field === "labelIds") {
+    return <LabelEditor filters={filters} setFilters={setFilters} />;
+  }
+
   if (field === "startDate" || field === "endDate") {
     return (
       <DateEditor field={field} filters={filters} setFilters={setFilters} />
@@ -797,7 +901,7 @@ const Chip = ({
     chip.field !== "assignedToMe" &&
     chip.field !== "createdByMe" &&
     chip.field !== "hasNoAssignee";
-  const shouldUseDialog = chip.field === "titleContains";
+  const shouldUseDialog = chip.field === "contentContains";
 
   return (
     <Flex
@@ -873,6 +977,7 @@ export const StoriesFilterBar = ({
   const { data: teams = [] } = useTeams();
   const { data: sprints = [] } = useTeamSprints(resolvedTeamId);
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
+  const { data: allLabels = [] } = useLabels();
 
   const users = teamId ? teamMembers : allUsers;
   const statuses = teamId
@@ -918,16 +1023,30 @@ export const StoriesFilterBar = ({
       new Map(objectives.map((objective) => [objective.id, objective.name])),
     [objectives],
   );
+  const labelById = useMemo(
+    () =>
+      new Map(
+        allLabels.map((label) => [
+          label.id,
+          {
+            color: label.color,
+            id: label.id,
+            name: label.name,
+          },
+        ]),
+      ),
+    [allLabels],
+  );
 
   const chips = useMemo(() => {
     const items: FilterChip[] = [];
 
-    if (filters.titleContains?.trim()) {
+    if (filters.contentContains?.trim()) {
       items.push({
-        field: "titleContains",
+        field: "contentContains",
         label: "Content",
         operator: "contains",
-        value: filters.titleContains.trim(),
+        value: filters.contentContains.trim(),
         icon: <ListIcon className="h-4 w-auto" />,
       });
     }
@@ -1038,6 +1157,25 @@ export const StoriesFilterBar = ({
       });
     }
 
+    if (filters.labelIds?.length) {
+      const selectedLabels = filters.labelIds
+        .map((id) => labelById.get(id))
+        .filter((label): label is LabelChipSummary => Boolean(label));
+
+      items.push({
+        field: "labelIds",
+        label: "Label",
+        operator: "is any of",
+        value: <LabelChipValue labels={selectedLabels} />,
+        icon: (
+          <TagsIcon
+            className="h-4 w-auto"
+            style={{ color: selectedLabels[0]?.color }}
+          />
+        ),
+      });
+    }
+
     if (filters.objectiveId) {
       items.push({
         field: "objectiveId",
@@ -1060,6 +1198,7 @@ export const StoriesFilterBar = ({
     return items;
   }, [
     filters,
+    labelById,
     objectiveById,
     sprintById,
     statusById,
@@ -1115,6 +1254,11 @@ export const StoriesFilterBar = ({
       label: "Sprint",
     },
     {
+      field: "labelIds",
+      icon: <TagsIcon className="h-5 w-auto" />,
+      label: "Label",
+    },
+    {
       field: "objectiveId",
       icon: <ObjectiveIcon className="h-5 w-auto" />,
       label: "Objective",
@@ -1130,7 +1274,7 @@ export const StoriesFilterBar = ({
       label: "End date",
     },
     {
-      field: "titleContains",
+      field: "contentContains",
       icon: <ListIcon className="h-5 w-auto" />,
       label: "Content",
     },
@@ -1185,7 +1329,7 @@ export const StoriesFilterBar = ({
                 const isActive = chips.some(
                   (chip) => chip.field === option.field,
                 );
-                const shouldOpenDialog = option.field === "titleContains";
+                const shouldOpenDialog = option.field === "contentContains";
 
                 if (shouldOpenDialog) {
                   return (
@@ -1246,7 +1390,7 @@ export const StoriesFilterBar = ({
         {titleDialogOpen ? (
           <TitleFilterDialog
             filters={filters}
-            key={filters.titleContains ?? ""}
+            key={filters.contentContains ?? ""}
             onOpenChange={setTitleDialogOpen}
             open={titleDialogOpen}
             setFilters={setFilters}

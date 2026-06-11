@@ -1,5 +1,5 @@
 import type { GroupedStoryParams } from "@/modules/stories/types";
-import type { StoriesFilter } from "./stories-filter-button";
+import type { StoriesFilter } from "./stories-filter-types";
 
 export const getGroupedStoryFilterParams = (
   filters: StoriesFilter,
@@ -8,7 +8,7 @@ export const getGroupedStoryFilterParams = (
   priorities: filters.priorities ?? undefined,
   assigneeIds: filters.assigneeIds ?? undefined,
   reporterIds: filters.reporterIds ?? undefined,
-  titleContains: filters.titleContains?.trim() || undefined,
+  titleContains: filters.contentContains?.trim() || undefined,
   objectiveId: filters.objectiveId ?? undefined,
   startDateAfter: filters.startDate ?? undefined,
   startDateBefore: filters.startDate ?? undefined,
@@ -16,5 +16,6 @@ export const getGroupedStoryFilterParams = (
   deadlineBefore: filters.endDate ?? undefined,
   teamIds: filters.teamIds ?? undefined,
   sprintIds: filters.sprintIds ?? undefined,
+  labelIds: filters.labelIds ?? undefined,
   hasNoAssignee: filters.hasNoAssignee ? true : undefined,
 });

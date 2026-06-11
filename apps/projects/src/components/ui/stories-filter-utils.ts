@@ -1,4 +1,4 @@
-import type { StoriesFilter } from "./stories-filter-button";
+import type { StoriesFilter } from "./stories-filter-types";
 
 const ARRAY_FILTER_KEYS = [
   "statusIds",
@@ -15,7 +15,7 @@ const STRING_FILTER_KEYS = [
   "objectiveId",
   "epicId",
   "keyResultId",
-  "titleContains",
+  "contentContains",
   "startDate",
   "endDate",
 ] as const;

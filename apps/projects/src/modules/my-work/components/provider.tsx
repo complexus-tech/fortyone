@@ -4,7 +4,8 @@ import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
 import type { StoriesLayout } from "@/components/ui";
-import type { StoriesFilter } from "@/components/ui/stories-filter-button";
+import { useStoriesFilters } from "@/components/ui/stories-filter-state";
+import type { StoriesFilter } from "@/components/ui/stories-filter-types";
 
 type MyWork = {
   viewOptions: StoriesViewOptions;
@@ -45,33 +46,7 @@ export const MyWorkProvider = ({
     `my-work:view-options:${layout}`,
     initialOptions,
   );
-  const initialFilters: StoriesFilter = {
-    statusIds: null,
-    assigneeIds: null,
-    reporterIds: null,
-    priorities: null,
-    teamIds: null,
-    sprintIds: null,
-    labelIds: null,
-    parentId: null,
-    objectiveId: null,
-    epicId: null,
-    keyResultId: null,
-    titleContains: null,
-    startDate: null,
-    endDate: null,
-    hasNoAssignee: null,
-    assignedToMe: false,
-    createdByMe: false,
-  };
-  const [filters, setFilters] = useLocalStorage<StoriesFilter>(
-    "my-work:stories:filters",
-    initialFilters,
-  );
-
-  const resetFilters = () => {
-    setFilters(initialFilters);
-  };
+  const { filters, resetFilters, setFilters } = useStoriesFilters();
 
   return (
     <MyWorkContext.Provider
