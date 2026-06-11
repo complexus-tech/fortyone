@@ -241,8 +241,7 @@ th {
     display: none;
   }
 
-  .notification-story-inline-options,
-  .notification-story-inline-options-header {
+  .notification-story-inline-options {
     display: block;
   }
 }

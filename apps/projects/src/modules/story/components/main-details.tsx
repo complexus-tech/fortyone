@@ -147,11 +147,7 @@ export const MainDetails = ({
       })}
     >
       {mainHeader}
-      <Box
-        className={cn("md:hidden", {
-          "notification-story-inline-options-header": isNotifications,
-        })}
-      >
+      <Box className="md:hidden">
         <OptionsHeader
           isAdminOrOwner={isAdminOrOwner}
           isNotifications={isNotifications}

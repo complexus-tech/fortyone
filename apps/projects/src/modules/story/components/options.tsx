@@ -46,7 +46,7 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
-import { AddLinks, OptionsHeader } from ".";
+import { OptionsHeader } from ".";
 
 export const Option = ({
   label,
@@ -271,11 +271,11 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+        isInline
+          ? "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0"
+          : "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
-          "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0":
-            isInline,
         },
       )}
     >
@@ -763,10 +763,7 @@ export const Options = ({
           }
         /> */}
 
-        <Divider className={cn("my-4", { "mt-6 mb-4": isInline })} />
-        <Box className={cn({ "flex justify-end": isInline })}>
-          <AddLinks storyId={storyId} />
-        </Box>
+        {!isInline ? <Divider className="my-4" /> : null}
       </Container>
 
       <ConfirmDialog
