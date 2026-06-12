@@ -30,6 +30,21 @@ func (r *requestRepoStub) ListByTeam(ctx context.Context, workspaceID, teamID uu
 			result = append(result, request)
 		}
 	}
+	if filter.PageSize > 0 {
+		page := filter.Page
+		if page <= 0 {
+			page = 1
+		}
+		offset := (page - 1) * filter.PageSize
+		if offset >= len(result) {
+			return []CoreIntegrationRequest{}, nil
+		}
+		end := offset + filter.PageSize
+		if end > len(result) {
+			end = len(result)
+		}
+		result = result[offset:end]
+	}
 	return result, nil
 }
 
@@ -114,6 +129,32 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 	require.Len(t, repo.createdStories, 2)
 	require.Equal(t, "High", repo.createdStories[0].Priority)
 	require.Equal(t, "No Priority", repo.createdStories[1].Priority)
+}
+
+func TestListByTeamSupportsPagination(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &requestRepoStub{
+		requests: []CoreIntegrationRequest{
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "First", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Second", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Third", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "4", Title: "Fourth", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "5", Title: "Fifth", Status: StatusPending},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{})
+
+	requests, err := service.ListByTeam(context.Background(), workspaceID, teamID, CoreListRequestsFilter{
+		Status:   StatusPending,
+		Page:     2,
+		PageSize: 2,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, requests, 2)
+	require.Equal(t, "Third", requests[0].Title)
+	require.Equal(t, "Fourth", requests[1].Title)
 }
 
 func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {

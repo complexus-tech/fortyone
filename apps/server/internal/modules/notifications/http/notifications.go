@@ -45,16 +45,39 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	limit := 10
 	offset := 0
+	page := 1
+	pageSize := 25
 
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 {
+			page = parsed
 		}
 	}
+	if pageSizeStr := r.URL.Query().Get("pageSize"); pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 
+	limit = pageSize + 1
+	offset = (page - 1) * pageSize
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed + 1
+			pageSize = parsed
+			page = 1
+			offset = 0
+		}
+	}
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
-		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
-			offset = o
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+			offset = parsed
+			if pageSize > 0 {
+				page = (offset / pageSize) + 1
+			}
 		}
 	}
 
@@ -62,12 +85,16 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
+	hasMore := len(notifications) > pageSize
+	if hasMore {
+		notifications = notifications[:pageSize]
+	}
 
 	span.AddEvent("notifications retrieved", trace.WithAttributes(
 		attribute.Int("notifications.count", len(notifications)),
 	))
 
-	return web.Respond(ctx, w, toAppNotifications(notifications), http.StatusOK)
+	return web.Respond(ctx, w, toAppNotificationsResponse(notifications, page, pageSize, hasMore), http.StatusOK)
 }
 
 func (h *Handlers) GetUnreadCount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

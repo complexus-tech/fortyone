@@ -25,6 +25,16 @@ export type AppNotification = {
   readAt: string | null;
 };
 
+export type NotificationsPage = {
+  notifications: AppNotification[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 type NotificationChannel = {
   email: boolean;
   inApp: boolean;

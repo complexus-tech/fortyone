@@ -53,6 +53,18 @@ type AppBulkRequestResult struct {
 	RequestIDs []uuid.UUID `json:"requestIds"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppIntegrationRequestsResponse struct {
+	Requests   []AppIntegrationRequest `json:"requests"`
+	Pagination AppPagination           `json:"pagination"`
+}
+
 func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegrationRequest {
 	return AppIntegrationRequest{
 		ID:               core.ID,
@@ -95,4 +107,16 @@ func toAppRequests(core []integrationrequests.CoreIntegrationRequest) []AppInteg
 		result = append(result, toAppRequest(request))
 	}
 	return result
+}
+
+func toAppRequestsResponse(core []integrationrequests.CoreIntegrationRequest, page, pageSize int, hasMore bool) AppIntegrationRequestsResponse {
+	return AppIntegrationRequestsResponse{
+		Requests: toAppRequests(core),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: page + 1,
+		},
+	}
 }

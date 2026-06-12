@@ -76,7 +76,9 @@ type CoreUpsertRequestInput struct {
 }
 
 type CoreListRequestsFilter struct {
-	Status string
+	Status   string
+	Page     int
+	PageSize int
 }
 
 type CoreBulkRequestResult struct {

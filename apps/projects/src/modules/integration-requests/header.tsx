@@ -79,7 +79,7 @@ export const IntegrationRequestsHeader = ({
 
       <ConfirmDialog
         confirmText="Accept all requests"
-        description={`Accept ${requestCount} pending request${requestCount === 1 ? "" : "s"} into this team. Each accepted request will become a story.`}
+        description="Accept every pending request in this team. Each accepted request will become a story."
         isLoading={acceptAllRequests.isPending}
         isOpen={isAcceptingAll}
         loadingText="Accepting..."
@@ -98,7 +98,7 @@ export const IntegrationRequestsHeader = ({
 
       <ConfirmDialog
         confirmText="Decline all requests"
-        description={`Decline ${requestCount} pending request${requestCount === 1 ? "" : "s"} in this team. Original items remain available in their source integrations when supported.`}
+        description="Decline every pending request in this team. Original items remain available in their source integrations when supported."
         isLoading={declineAllRequests.isPending}
         isOpen={isDecliningAll}
         loadingText="Declining..."

@@ -177,12 +177,22 @@ func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, fi
 		status = integrationrequests.StatusPending
 	}
 	var rows []requestRow
-	err := r.db.SelectContext(ctx, &rows, `
+	query := `
 		SELECT *
 		FROM integration_requests
 		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
 		ORDER BY created_at DESC
-	`, workspaceID, teamID, status)
+	`
+	args := []any{workspaceID, teamID, status}
+	if filter.PageSize > 0 {
+		page := filter.Page
+		if page <= 0 {
+			page = 1
+		}
+		query += ` LIMIT $4 OFFSET $5`
+		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
+	}
+	err := r.db.SelectContext(ctx, &rows, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -16,6 +17,9 @@ type Handlers struct {
 	requests *integrationrequests.Service
 	log      *logger.Logger
 }
+
+const defaultRequestsPageSize = 25
+const maxRequestsPageSize = 100
 
 func New(requests *integrationrequests.Service, log *logger.Logger) *Handlers {
 	return &Handlers{requests: requests, log: log}
@@ -31,11 +35,20 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	status := r.URL.Query().Get("status")
-	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, integrationrequests.CoreListRequestsFilter{Status: status})
+	page, pageSize := paginationParams(r, defaultRequestsPageSize, maxRequestsPageSize)
+	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, integrationrequests.CoreListRequestsFilter{
+		Status:   status,
+		Page:     page,
+		PageSize: pageSize + 1,
+	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	return web.Respond(ctx, w, toAppRequests(requests), http.StatusOK)
+	hasMore := len(requests) > pageSize
+	if hasMore {
+		requests = requests[:pageSize]
+	}
+	return web.Respond(ctx, w, toAppRequestsResponse(requests, page, pageSize, hasMore), http.StatusOK)
 }
 
 func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -181,4 +194,23 @@ func requestErrorStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func paginationParams(r *http.Request, defaultPageSize, maxPageSize int) (int, int) {
+	page := 1
+	pageSize := defaultPageSize
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if pageSizeStr := r.URL.Query().Get("pageSize"); pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	return page, pageSize
 }

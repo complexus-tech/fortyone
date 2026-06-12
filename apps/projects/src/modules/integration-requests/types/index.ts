@@ -29,6 +29,16 @@ export type IntegrationRequest = {
   updatedAt: string;
 };
 
+export type IntegrationRequestsPage = {
+  requests: IntegrationRequest[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type UpdateIntegrationRequestInput = Partial<
   Pick<
     IntegrationRequest,
