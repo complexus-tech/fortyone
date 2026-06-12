@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Button, Flex, Text } from "ui";
+import { Box, Button, Flex, Popover, Text } from "ui";
 import { cn } from "lib";
+import { MoreHorizontalIcon } from "icons";
 import { useParams } from "next/navigation";
 import type {
   GroupedStoriesResponse,
@@ -15,7 +16,7 @@ import type { StoriesViewOptions } from "@/components/ui/stories-view-options-bu
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
-import { KanbanGroupTitle, StoriesKanbanHeader } from "./kanban-header";
+import { StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
 import {
@@ -119,6 +120,43 @@ const GroupedKanbanStories = ({
   );
 };
 
+const getHiddenGroupLabel = ({
+  group,
+  groupBy,
+  members,
+  statuses,
+}: {
+  group: StoryGroup;
+  groupBy: StoriesViewOptions["groupBy"];
+  members: Member[];
+  statuses: State[];
+}) => {
+  const { member, priority, status } = getKanbanGroupIdentity({
+    group,
+    groupBy,
+    members,
+    statuses,
+  });
+
+  if (groupBy === "status") return status?.name ?? group.key;
+  if (groupBy === "priority") return priority ?? group.key;
+  if (groupBy === "assignee") return member?.username ?? "Unassigned";
+  return group.key;
+};
+
+const HiddenKanbanHeader = ({ count }: { count: number }) => {
+  if (count === 0) return null;
+
+  return (
+    <Flex align="center" className="w-[340px] pl-1" gap={2}>
+      <Text color="muted" fontWeight="medium">
+        Hidden columns
+      </Text>
+      <Text color="muted">{count}</Text>
+    </Flex>
+  );
+};
+
 const HiddenKanbanGroups = ({
   groups,
   groupBy,
@@ -135,16 +173,10 @@ const HiddenKanbanGroups = ({
   if (groups.length === 0) return null;
 
   return (
-    <Box className="w-[340px] shrink-0 pt-1">
-      <Flex align="center" className="h-9 px-1" gap={2}>
-        <Text color="muted" fontWeight="medium">
-          Hidden columns
-        </Text>
-        <Text color="muted">{groups.length}</Text>
-      </Flex>
-      <Flex className="mt-3" direction="column" gap={3}>
+    <Box className="w-[340px] shrink-0">
+      <Flex direction="column" gap={3}>
         {groups.map((group) => {
-          const { member, priority, status } = getKanbanGroupIdentity({
+          const label = getHiddenGroupLabel({
             group,
             groupBy,
             members,
@@ -152,28 +184,61 @@ const HiddenKanbanGroups = ({
           });
 
           return (
-            <Button
-              align="center"
-              className="border-border bg-surface-muted/60 hover:bg-surface-muted min-h-14 justify-between rounded-md px-4"
-              color="tertiary"
-              fullWidth
+            <Box
+              className="border-border bg-surface hover:bg-surface-elevated group flex min-h-14 cursor-pointer items-center justify-between rounded-xl border-[0.5px] px-4 transition duration-200 ease-linear select-none"
               key={group.key}
               onClick={() => {
                 onShow(group.key);
               }}
-              size="md"
-              variant="outline"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onShow(group.key);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
-              <Flex align="center" className="min-w-0" gap={2}>
-                <KanbanGroupTitle
-                  groupBy={groupBy}
-                  member={member}
-                  priority={priority}
-                  status={status}
-                />
+              <Text className="min-w-0 truncate" title={label}>
+                {label}
+              </Text>
+              <Flex align="center" className="shrink-0" gap={1}>
+                <Text color="muted">{group.totalCount}</Text>
+                <Popover>
+                  <Popover.Trigger asChild>
+                    <Button
+                      aria-label="Hidden column options"
+                      className="opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+                      color="tertiary"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      size="sm"
+                      variant="naked"
+                    >
+                      <MoreHorizontalIcon
+                        className="h-[1.15rem] w-auto"
+                        strokeWidth={4}
+                      />
+                    </Button>
+                  </Popover.Trigger>
+                  <Popover.Content align="end" className="w-40 p-1.5">
+                    <Button
+                      className="justify-start px-2"
+                      color="tertiary"
+                      fullWidth
+                      onClick={() => {
+                        onShow(group.key);
+                      }}
+                      size="sm"
+                      variant="naked"
+                    >
+                      Show column
+                    </Button>
+                  </Popover.Content>
+                </Popover>
               </Flex>
-              <Text color="muted">{group.totalCount}</Text>
-            </Button>
+            </Box>
           );
         })}
       </Flex>
@@ -238,7 +303,7 @@ export const KanbanBoard = ({
               viewOptions={viewOptions}
             />
           ))}
-          {hiddenGroups.length > 0 ? <Box className="w-[340px]" /> : null}
+          <HiddenKanbanHeader count={hiddenGroups.length} />
         </Flex>
       </Box>
       <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">

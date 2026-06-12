@@ -160,7 +160,6 @@ func (r *repo) GetByID(ctx context.Context, workspaceID uuid.UUID) (workspaces.C
 			w.slug,
 			w.color,
 			w.avatar_url,
-			w.is_active,
 			w.created_by,
 			w.created_at,
 			w.updated_at,
