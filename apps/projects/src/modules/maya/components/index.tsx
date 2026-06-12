@@ -16,11 +16,14 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { LimitReached } from "@/components/ui/chat/limit-reached";
 
 export const MayaChat = () => {
-  const { chatRef, getInitialChatId, isNewChat } = useMayaNavigation();
+  const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
+    useMayaNavigation();
   const config: MayaChatConfig = {
     currentChatId: getInitialChatId(),
     hasSelectedChat: Boolean(chatRef),
     isNewChat: isNewChat(),
+    updateChatRef,
+    clearChatRef,
   };
   const {
     // Chat state

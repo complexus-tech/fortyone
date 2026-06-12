@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Box, Flex } from "ui";
 import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
@@ -35,15 +35,11 @@ export const ChatMessages = ({
     (message) => message.role === "assistant",
   );
   const latestAssistantMessageId = latestAssistantMessage?.id;
-  const visibleMessages = useMemo(
-    () =>
-      messages.filter((message) =>
-        hasVisibleMessageContent(
-          message,
-          isWorking && message.id === latestAssistantMessageId,
-        ),
-      ),
-    [isWorking, latestAssistantMessageId, messages],
+  const visibleMessages = messages.filter((message) =>
+    hasVisibleMessageContent(
+      message,
+      isWorking && message.id === latestAssistantMessageId,
+    ),
   );
   const progressLabel = isWorking
     ? latestAssistantMessage
@@ -56,14 +52,14 @@ export const ChatMessages = ({
   };
 
   // Handle scroll position detection
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     const threshold = 100; // 100px threshold
 
     const isNearBottom = distanceFromBottom < threshold;
     setShouldAutoScroll(isNearBottom);
-  }, []);
+  };
 
   useEffect(() => {
     if (messages.length > 0 && shouldAutoScroll) {

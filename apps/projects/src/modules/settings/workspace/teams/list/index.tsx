@@ -93,7 +93,15 @@ export const TeamsList = () => {
         </Flex>
 
         {filteredTeams.map((team) => (
-          <WorkspaceTeam {...team} key={team.id} />
+          <WorkspaceTeam
+            code={team.code}
+            color={team.color}
+            createdAt={team.createdAt}
+            id={team.id}
+            key={team.id}
+            memberCount={team.memberCount}
+            name={team.name}
+          />
         ))}
       </Box>
     </Box>

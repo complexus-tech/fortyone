@@ -179,47 +179,53 @@ export const IntegrationsIndex = () => {
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
   const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
 
-  const allIntegrations: Integration[] = [
-    {
-      id: "github",
-      name: "GitHub",
-      description: "Link PRs, branches, and commits to stories.",
-      icon: <GitHubIcon />,
-      enabled: isGitHubEnabled,
-      href: "github",
-    },
-    {
-      id: "slack",
-      name: "Slack",
-      description: "Turn conversations into stories from Slack.",
-      icon: <SlackIcon />,
-      enabled: isSlackEnabled,
-      href: "slack",
-    },
-    {
-      id: "gitlab",
-      name: "GitLab",
-      description: "Connect merge requests and pipelines to stories.",
-      icon: <GitLabIcon />,
-      enabled: false,
-    },
-    {
-      id: "figma",
-      name: "Figma",
-      description: "Attach designs to stories from Figma.",
-      icon: <FigmaIcon />,
-      enabled: false,
-    },
-    {
-      id: "intercom",
-      name: "Intercom",
-      description: "Route customer conversations into stories.",
-      icon: <IntercomIcon />,
-      enabled: false,
-    },
-  ];
+  const allIntegrations = useMemo<Integration[]>(
+    () => [
+      {
+        id: "github",
+        name: "GitHub",
+        description: "Link PRs, branches, and commits to stories.",
+        icon: <GitHubIcon />,
+        enabled: isGitHubEnabled,
+        href: "github",
+      },
+      {
+        id: "slack",
+        name: "Slack",
+        description: "Turn conversations into stories from Slack.",
+        icon: <SlackIcon />,
+        enabled: isSlackEnabled,
+        href: "slack",
+      },
+      {
+        id: "gitlab",
+        name: "GitLab",
+        description: "Connect merge requests and pipelines to stories.",
+        icon: <GitLabIcon />,
+        enabled: false,
+      },
+      {
+        id: "figma",
+        name: "Figma",
+        description: "Attach designs to stories from Figma.",
+        icon: <FigmaIcon />,
+        enabled: false,
+      },
+      {
+        id: "intercom",
+        name: "Intercom",
+        description: "Route customer conversations into stories.",
+        icon: <IntercomIcon />,
+        enabled: false,
+      },
+    ],
+    [isGitHubEnabled, isSlackEnabled],
+  );
 
-  const enabledIntegrations = allIntegrations.filter((i) => i.enabled);
+  const enabledIntegrations = useMemo(
+    () => allIntegrations.filter((i) => i.enabled),
+    [allIntegrations],
+  );
 
   const filteredIntegrations = useMemo(() => {
     if (!search.trim()) return allIntegrations;

@@ -22,10 +22,15 @@ type ChatContextType = {
 const ChatContext = createContext<ChatContextType | null>(null);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-  const [chatId] = useState(() => generateId());
+  const [chatId, setChatId] = useState(() => generateId());
   const chat = useMayaChat({
     currentChatId: chatId,
+    updateChatRef: setChatId,
+    clearChatRef: (nextChatId = generateId()) => {
+      setChatId(nextChatId);
+    },
   });
+  const { handleSuggestedPrompt } = chat;
   const [isOpen, setIsOpen] = useState(false);
   const pendingInitialMessageRef = useRef<string | null>(null);
 
@@ -36,13 +41,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
     const message = pendingInitialMessageRef.current;
     pendingInitialMessageRef.current = null;
-    chat.handleSuggestedPrompt(message);
-  }, [chat.handleSuggestedPrompt, isOpen]);
+    handleSuggestedPrompt(message);
+  }, [handleSuggestedPrompt, isOpen]);
 
   const openChat = (message?: string) => {
     if (message) {
       if (isOpen) {
-        chat.handleSuggestedPrompt(message);
+        handleSuggestedPrompt(message);
       } else {
         pendingInitialMessageRef.current = message;
       }

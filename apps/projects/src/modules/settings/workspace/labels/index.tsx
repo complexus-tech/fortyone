@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Text, Button } from "ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { generateRandomColor } from "lib";
 import { TagsIcon } from "icons";
 import { useLabels } from "@/lib/hooks/labels";
@@ -12,22 +12,19 @@ import { WorkspaceLabel } from "./components/label";
 export const WorkspaceLabelsSettings = () => {
   const { data: labels = [] } = useLabels();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const newLabelTemplate: Partial<Label> = {
-    id: "new",
-    name: "",
-    color: generateRandomColor({ exclude: labels.map((l) => l.color) }),
-    createdAt: new Date().toISOString(),
-  };
-  const [newLabel, setNewLabel] = useState(newLabelTemplate);
+  const [newLabel, setNewLabel] = useState<Partial<Label> | null>(null);
 
-  useEffect(() => {
-    if (isCreateOpen) {
-      setNewLabel((prev) => ({
-        ...prev,
-        color: generateRandomColor({ exclude: labels.map((l) => l.color) }),
-      }));
-    }
-  }, [isCreateOpen, labels]);
+  const handleCreateLabel = () => {
+    setNewLabel({
+      id: "new",
+      name: "",
+      color: generateRandomColor({
+        exclude: labels.map((label) => label.color),
+      }),
+      createdAt: new Date().toISOString(),
+    });
+    setIsCreateOpen(true);
+  };
 
   return (
     <Box>
@@ -38,12 +35,7 @@ export const WorkspaceLabelsSettings = () => {
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
-            <Button
-              className="shrink-0"
-              onClick={() => {
-                setIsCreateOpen(true);
-              }}
-            >
+            <Button className="shrink-0" onClick={handleCreateLabel}>
               Create Label
             </Button>
           }
@@ -62,7 +54,7 @@ export const WorkspaceLabelsSettings = () => {
             </Box>
           ) : (
             <Box className="divide-border divide-y">
-              {isCreateOpen ? (
+              {isCreateOpen && newLabel ? (
                 <WorkspaceLabel
                   {...newLabel}
                   setIsCreateOpen={setIsCreateOpen}

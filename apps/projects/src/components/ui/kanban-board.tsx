@@ -32,25 +32,25 @@ const GroupedKanbanHeader = ({
   members: Member[];
   statuses: State[];
 }) => {
-  const getGroupProps = () => {
-    switch (groupBy) {
-      case "priority":
-        return { priority: group.key as StoryPriority };
-      case "status":
-        return { status: statuses.find((status) => status.id === group.key) };
-      case "assignee":
-        return { member: members.find((member) => member.id === group.key) };
-      case "none":
-        return {};
-    }
-  };
+  const status =
+    groupBy === "status"
+      ? statuses.find((status) => status.id === group.key)
+      : undefined;
+  const member =
+    groupBy === "assignee"
+      ? members.find((member) => member.id === group.key)
+      : undefined;
+  const priority =
+    groupBy === "priority" ? (group.key as StoryPriority) : undefined;
 
   return (
     <StoriesKanbanHeader
       groupBy={groupBy}
-      {...getGroupProps()}
       group={group}
       key={group.key}
+      member={member}
+      priority={priority}
+      status={status}
     />
   );
 };
@@ -70,26 +70,26 @@ const GroupedKanbanStories = ({
   members: Member[];
   statuses: State[];
 }) => {
-  const getGroupProps = () => {
-    switch (groupBy) {
-      case "priority":
-        return { priority: group.key as StoryPriority };
-      case "status":
-        return { status: statuses.find((status) => status.id === group.key) };
-      case "assignee":
-        return { member: members.find((member) => member.id === group.key) };
-      case "none":
-        return {};
-    }
-  };
+  const status =
+    groupBy === "status"
+      ? statuses.find((status) => status.id === group.key)
+      : undefined;
+  const member =
+    groupBy === "assignee"
+      ? members.find((member) => member.id === group.key)
+      : undefined;
+  const priority =
+    groupBy === "priority" ? (group.key as StoryPriority) : undefined;
 
   return (
     <KanbanGroup
       groupBy={groupBy}
-      {...getGroupProps()}
       group={group}
       key={group.key}
+      member={member}
       meta={meta}
+      priority={priority}
+      status={status}
     />
   );
 };

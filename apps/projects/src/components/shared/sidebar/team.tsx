@@ -41,7 +41,7 @@ export const Team = ({
   isPrivate,
   totalTeams,
   idx,
-}: TeamType & {
+}: Pick<TeamType, "id" | "name" | "color" | "isPrivate"> & {
   totalTeams: number;
   idx: number;
 }) => {

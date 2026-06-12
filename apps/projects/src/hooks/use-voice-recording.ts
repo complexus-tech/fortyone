@@ -12,6 +12,11 @@ export const useVoiceRecording = (onAutoStop?: () => void) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onAutoStopRef = useRef(onAutoStop);
+
+  useEffect(() => {
+    onAutoStopRef.current = onAutoStop;
+  }, [onAutoStop]);
 
   // Helper function to format duration
   const formatDuration = useCallback((seconds: number) => {
@@ -19,6 +24,37 @@ export const useVoiceRecording = (onAutoStop?: () => void) => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   }, []);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+
+    mediaRecorder.stop();
+    setIsRecording(false);
+    setRecordingState("processing");
+    stopTimer();
+  }, [stopTimer]);
+
+  const getAudioBlob = useCallback(() => {
+    if (audioChunksRef.current.length === 0) return null;
+
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    return audioBlob;
+  }, []);
+
+  const resetRecording = useCallback(() => {
+    audioChunksRef.current = [];
+    setRecordingState("idle");
+    setRecordingDuration(0);
+    stopTimer();
+  }, [stopTimer]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -46,62 +82,26 @@ export const useVoiceRecording = (onAutoStop?: () => void) => {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingState("recording");
-
-      // Start timer
       setRecordingDuration(0);
+      stopTimer();
       timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        setRecordingDuration((prev) => {
+          const nextDuration = prev + 1;
+
+          if (nextDuration >= MAX_RECORDING_TIME) {
+            stopRecording();
+            onAutoStopRef.current?.();
+          }
+
+          return nextDuration;
+        });
       }, 1000);
     } catch (error) {
       toast.error("Failed to start recording", {
         description: "Please allow microphone access and try again.",
       });
     }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setRecordingState("processing");
-
-      // Stop timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-  }, [isRecording]);
-
-  const getAudioBlob = useCallback(() => {
-    if (audioChunksRef.current.length === 0) return null;
-
-    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-    return audioBlob;
-  }, []);
-
-  const resetRecording = useCallback(() => {
-    audioChunksRef.current = [];
-    setRecordingState("idle");
-    setRecordingDuration(0);
-
-    // Clear timer if it's still running
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  // Auto-stop when max duration is reached
-  useEffect(() => {
-    if (recordingDuration >= MAX_RECORDING_TIME) {
-      stopRecording();
-      // Call the callback only for auto-stop
-      if (onAutoStop) {
-        onAutoStop();
-      }
-    }
-  }, [recordingDuration, stopRecording, onAutoStop]);
+  }, [stopRecording, stopTimer]);
 
   return {
     isRecording,

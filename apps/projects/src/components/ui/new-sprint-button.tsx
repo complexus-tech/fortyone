@@ -10,7 +10,7 @@ export const NewSprintButton = ({
   teamId,
   size = "sm",
   children,
-  leftIcon = <PlusIcon className="h-[1.1rem]" />,
+  leftIcon,
   ...rest
 }: ButtonProps & {
   teamId?: string;
@@ -18,13 +18,14 @@ export const NewSprintButton = ({
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const icon = leftIcon ?? <PlusIcon className="h-[1.1rem]" />;
 
   return (
     <>
       <Button
         color="tertiary"
         disabled={rest.disabled || userRole === "guest"}
-        leftIcon={leftIcon}
+        leftIcon={icon}
         onClick={() => {
           if (userRole !== "guest") {
             setIsOpen(true);

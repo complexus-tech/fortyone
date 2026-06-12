@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -21,7 +21,6 @@ import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
-import { useMayaNavigation } from "./use-maya-navigation";
 import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -39,15 +38,14 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { getLimit, displayTier } = useSubscriptionFeatures();
   const { workspace } = useCurrentWorkspace();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
-  const { updateChatRef, clearChatRef } = useMayaNavigation();
   const { resolvedTheme, theme, setTheme } = useTheme();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const { getTermDisplay } = useTerminology();
-  const idRef = useRef(config.currentChatId);
-  const { data: aiChatMessages = [] } = useAiChatMessages(idRef.current);
+  const currentChatId = config.currentChatId;
+  const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId);
   const [input, setInput] = useState("");
 
   const terminology = {
@@ -59,15 +57,13 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
   const handleNewChat = () => {
     const newChatId = generateId();
-    idRef.current = newChatId;
+    config.clearChatRef(newChatId);
     setMessages([]);
     setInput("");
     setAttachments([]);
-    clearChatRef();
   };
 
   const handleChatSelect = async (chatId: string) => {
-    idRef.current = chatId;
     // Fetch messages for the new chat ID directly
     const newMessages = await queryClient.fetchQuery({
       queryKey: aiChatKeys.messages(chatId),
@@ -77,11 +73,12 @@ export const useMayaChat = (config: MayaChatConfig) => {
     setMessages(newMessages);
     setInput("");
     setAttachments([]);
-    updateChatRef(chatId);
+    config.updateChatRef(chatId);
   };
 
   // Map tool types to the query keys they should invalidate
-  const toolInvalidationMap: Record<string, () => readonly unknown[]> = {
+  const toolInvalidationMap: Partial<Record<string, () => readonly unknown[]>> =
+    {
     // Teams
     "tool-createTeamTool": () => teamKeys.all(workspaceSlug),
     "tool-updateTeam": () => teamKeys.all(workspaceSlug),
@@ -113,7 +110,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     "tool-createMemory": () => aiChatKeys.memories(),
     // Objective statuses
     "tool-objectiveStatuses": () => objectiveKeys.statuses(workspaceSlug),
-  };
+    };
 
   const {
     messages,
@@ -124,7 +121,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     error,
     setMessages,
   } = useChat<MayaUIMessage>({
-    id: idRef.current,
+    id: currentChatId,
     onFinish: ({ message }) => {
       message.parts.forEach((part) => {
         // Handle side effects for navigation and theme
@@ -138,13 +135,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
         if (part.type === "tool-theme") {
           if (part.state === "output-available") {
             const requested = part.output.theme;
-            setTheme(
-              requested === "toggle"
-                ? resolvedTheme === "dark"
-                  ? "light"
-                  : "dark"
-                : requested,
-            );
+            if (requested === "toggle") {
+              setTheme(resolvedTheme === "dark" ? "light" : "dark");
+            } else {
+              setTheme(requested);
+            }
           }
           return;
         }
@@ -160,7 +155,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
         // Invalidate queries for tool completions via the map
         const getQueryKey = toolInvalidationMap[part.type];
-        if (getQueryKey && "state" in part && part.state === "output-available") {
+        if (
+          getQueryKey &&
+          "state" in part &&
+          part.state === "output-available"
+        ) {
           queryClient.invalidateQueries({ queryKey: getQueryKey() });
         }
       });
@@ -190,19 +189,10 @@ export const useMayaChat = (config: MayaChatConfig) => {
         },
         workspace,
         terminology,
-        id: idRef.current,
+        id: currentChatId,
       },
     });
   };
-
-  // Clear messages when starting a new chat (no chatRef)
-  useEffect(() => {
-    if (config.isNewChat) {
-      setMessages([]);
-      setInput("");
-      setAttachments([]);
-    }
-  }, [config.isNewChat, setMessages, setInput, setAttachments]);
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
@@ -257,7 +247,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
             current: totalMessages,
             limit: getLimit("maxAiMessages"),
           },
-          id: idRef.current,
+          id: currentChatId,
         },
       },
     );
@@ -282,7 +272,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     status,
     error,
     attachments,
-    currentChatId: idRef.current,
+    currentChatId,
 
     // Chat actions
     setInput,

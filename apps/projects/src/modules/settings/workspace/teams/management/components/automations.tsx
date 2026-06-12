@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Box, Text, Switch, Select, Flex, Input, Button, Dialog } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTerminology } from "@/hooks";
@@ -25,11 +25,12 @@ export const Automations = () => {
   const [nextSprintNumber, setNextSprintNumber] = useState("");
   const currentNextSprintNumber = sprintSettings?.nextAutoSprintNumber ?? 1;
 
-  useEffect(() => {
-    if (isNextSprintDialogOpen) {
+  const handleNextSprintDialogOpenChange = (open: boolean) => {
+    if (open) {
       setNextSprintNumber(currentNextSprintNumber.toString());
     }
-  }, [currentNextSprintNumber, isNextSprintDialogOpen]);
+    setIsNextSprintDialogOpen(open);
+  };
 
   const handleUpdateNextSprintNumber = () => {
     const nextValue = Number.parseInt(nextSprintNumber, 10);
@@ -147,7 +148,7 @@ export const Automations = () => {
               <Button
                 color="tertiary"
                 onClick={() => {
-                  setIsNextSprintDialogOpen(true);
+                  handleNextSprintDialogOpenChange(true);
                 }}
                 size="sm"
                 variant="outline"
@@ -274,7 +275,7 @@ export const Automations = () => {
       </Box>
 
       <Dialog
-        onOpenChange={setIsNextSprintDialogOpen}
+        onOpenChange={handleNextSprintDialogOpenChange}
         open={isNextSprintDialogOpen}
       >
         <Dialog.Content size="sm">

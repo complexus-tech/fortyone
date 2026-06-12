@@ -1,6 +1,8 @@
 "use client";
 import { Box, Flex, Skeleton, Wrapper } from "ui";
 
+const PRIORITY_SKELETON_BAR_HEIGHTS = [132, 88, 158, 104];
+
 export const PrioritySkeleton = () => {
   return (
     <Wrapper>
@@ -20,7 +22,7 @@ export const PrioritySkeleton = () => {
                 <Skeleton
                   className="w-full rounded-t"
                   style={{
-                    height: `${Math.max(30, Math.random() * 150)}px`,
+                    height: `${PRIORITY_SKELETON_BAR_HEIGHTS[index]}px`,
                   }}
                 />
                 <Skeleton className="h-4 w-full rounded" />

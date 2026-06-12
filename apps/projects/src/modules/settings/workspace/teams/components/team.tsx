@@ -14,7 +14,10 @@ export const WorkspaceTeam = ({
   code,
   createdAt,
   memberCount,
-}: Team) => {
+}: Pick<
+  Team,
+  "id" | "name" | "color" | "code" | "createdAt" | "memberCount"
+>) => {
   const { mutate: deleteTeam } = useDeleteTeamMutation();
   const { withWorkspace } = useWorkspacePath();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

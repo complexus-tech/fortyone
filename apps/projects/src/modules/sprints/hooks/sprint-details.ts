@@ -6,7 +6,7 @@ import { getSprint } from "../queries/get-sprint-details";
 import { useSprints } from "./sprints";
 import { useTeamSprints } from "./team-sprints";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import { Sprint } from "../types";
+import type { Sprint } from "../types";
 
 export const useSprint = (sprintId: string | null, teamId?: string) => {
   const { data: session } = useSession();
@@ -22,7 +22,7 @@ export const useSprint = (sprintId: string | null, teamId?: string) => {
 
   const existingSprint = sprints.find((sprint) => sprint.id === sprintId);
 
-  const query = useQuery({
+  const { data: fetchedSprint, isPending: isSprintPending } = useQuery({
     queryKey: sprintKeys.detail(workspaceSlug, sprintId ?? ""),
     queryFn: () =>
       getSprint(sprintId ?? "", { session: session!, workspaceSlug }),
@@ -31,8 +31,7 @@ export const useSprint = (sprintId: string | null, teamId?: string) => {
   });
 
   return {
-    ...query,
-    data: existingSprint || (query.data as Sprint), // Return existing sprint if found
-    isPending: isSprintsPending || (!existingSprint && query.isPending),
+    data: existingSprint || (fetchedSprint as Sprint | undefined),
+    isPending: isSprintsPending || (!existingSprint && isSprintPending),
   };
 };

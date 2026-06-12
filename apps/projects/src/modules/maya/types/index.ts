@@ -5,6 +5,8 @@ export type MayaChatConfig = {
   initialMessages?: MayaUIMessage[];
   hasSelectedChat?: boolean;
   isNewChat?: boolean;
+  updateChatRef: (chatId: string) => void;
+  clearChatRef: (nextChatId?: string) => void;
 };
 
 export type MayaNavigationConfig = {
