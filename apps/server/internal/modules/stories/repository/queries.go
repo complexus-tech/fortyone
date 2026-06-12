@@ -122,8 +122,16 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -176,11 +184,14 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 						sl.story_id = s.id
 				), '[]'
 			) AS labels
-		FROM
-			stories s
-			INNER JOIN team_members tm ON 
-				tm.team_id = s.team_id 
-				AND tm.user_id = :current_user
+			FROM
+				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
+				INNER JOIN team_members tm ON
+					tm.team_id = s.team_id
+					AND tm.user_id = :current_user
 		WHERE s.workspace_id = :workspace_id 
 		AND s.deleted_at IS NULL
 		AND s.parent_id IS NULL
@@ -423,8 +434,16 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -447,6 +466,9 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 	var setClauses []string
 
@@ -959,8 +981,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.start_date,
 				s.end_date,
 				s.sprint_id,
+				sp.name AS sprint_name,
+				sp.goal AS sprint_goal,
+				sp.start_date AS sprint_start_date,
+				sp.end_date AS sprint_end_date,
 				s.team_id,
+				t.code AS team_code,
+				t.name AS team_name,
 				s.objective_id,
+				o.name AS objective_name,
+				o.description AS objective_description,
 				s.workspace_id,
 				s.assignee_id,
 				s.reporter_id,
@@ -973,6 +1003,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
 			FROM stories s
+			INNER JOIN teams t ON s.team_id = t.team_id
+			LEFT JOIN objectives o ON s.objective_id = o.objective_id
+			LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 			%s
 			%s
 		),
@@ -996,8 +1029,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'start_date', ls.start_date,
 						'end_date', ls.end_date,
 						'sprint_id', ls.sprint_id,
+						'sprint_name', ls.sprint_name,
+						'sprint_goal', ls.sprint_goal,
+						'sprint_start_date', ls.sprint_start_date,
+						'sprint_end_date', ls.sprint_end_date,
 						'team_id', ls.team_id,
+						'team_code', ls.team_code,
+						'team_name', ls.team_name,
 						'objective_id', ls.objective_id,
+						'objective_name', ls.objective_name,
+						'objective_description', ls.objective_description,
 						'workspace_id', ls.workspace_id,
 						'assignee_id', ls.assignee_id,
 						'reporter_id', ls.reporter_id,
@@ -1404,6 +1445,50 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		}
 	}
 
+	if teamCode, ok := storyMap["team_code"].(string); ok && story.Team != uuid.Nil {
+		if teamName, ok := storyMap["team_name"].(string); ok {
+			story.TeamSummary = &stories.CoreTeamSummary{
+				ID:   story.Team,
+				Name: teamName,
+				Code: teamCode,
+			}
+		}
+	}
+
+	if story.Objective != nil {
+		if objectiveName, ok := storyMap["objective_name"].(string); ok {
+			var objectiveDescription *string
+			if value, ok := storyMap["objective_description"].(string); ok {
+				objectiveDescription = &value
+			}
+			story.ObjectiveSummary = &stories.CoreObjectiveSummary{
+				ID:          *story.Objective,
+				Name:        objectiveName,
+				Description: objectiveDescription,
+			}
+		}
+	}
+
+	if story.Sprint != nil {
+		if sprintName, ok := storyMap["sprint_name"].(string); ok {
+			startDate, startOk := parseStoryMapTime(storyMap["sprint_start_date"])
+			endDate, endOk := parseStoryMapTime(storyMap["sprint_end_date"])
+			if startOk && endOk {
+				var sprintGoal *string
+				if value, ok := storyMap["sprint_goal"].(string); ok {
+					sprintGoal = &value
+				}
+				story.SprintSummary = &stories.CoreSprintSummary{
+					ID:        *story.Sprint,
+					Name:      sprintName,
+					Goal:      sprintGoal,
+					StartDate: startDate,
+					EndDate:   endDate,
+				}
+			}
+		}
+	}
+
 	// Handle time fields
 	if createdAt, ok := storyMap["created_at"].(string); ok {
 		if parsed, err := time.Parse(time.RFC3339, createdAt); err == nil {
@@ -1470,6 +1555,22 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	}
 
 	return story
+}
+
+func parseStoryMapTime(value any) (time.Time, bool) {
+	raw, ok := value.(string)
+	if !ok || raw == "" {
+		return time.Time{}, false
+	}
+
+	for _, layout := range []string{time.RFC3339, "2006-01-02"} {
+		parsed, err := time.Parse(layout, raw)
+		if err == nil {
+			return parsed, true
+		}
+	}
+
+	return time.Time{}, false
 }
 
 // buildAllGroupsCTE builds a CTE that returns all possible group values
@@ -1753,8 +1854,16 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 							'start_date', sub.start_date,
 							'end_date', sub.end_date,
 							'sprint_id', sub.sprint_id,
+							'sprint_name', sub_sprint.name,
+							'sprint_goal', sub_sprint.goal,
+							'sprint_start_date', sub_sprint.start_date,
+							'sprint_end_date', sub_sprint.end_date,
 							'team_id', sub.team_id,
+							'team_code', sub_team.code,
+							'team_name', sub_team.name,
 							'objective_id', sub.objective_id,
+							'objective_name', sub_objective.name,
+							'objective_description', sub_objective.description,
 							'workspace_id', sub.workspace_id,
 							'assignee_id', sub.assignee_id,
 							'reporter_id', sub.reporter_id,
@@ -1768,6 +1877,9 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 					)
 				FROM
 					stories sub
+					LEFT JOIN teams sub_team ON sub.team_id = sub_team.team_id
+					LEFT JOIN objectives sub_objective ON sub.objective_id = sub_objective.objective_id
+					LEFT JOIN sprints sub_sprint ON sub.sprint_id = sub_sprint.sprint_id
 				WHERE
 					sub.parent_id = %s.id
 					AND sub.deleted_at IS NULL
@@ -1794,8 +1906,16 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -1818,6 +1938,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters
@@ -2302,8 +2425,16 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -2326,6 +2457,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters

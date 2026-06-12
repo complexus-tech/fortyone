@@ -8,6 +8,26 @@ export type StoryPriority =
   | "Medium"
   | "Low";
 
+export type StoryTeamSummary = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+export type StoryObjectiveSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export type StorySprintSummary = {
+  id: string;
+  name: string;
+  goal: string | null;
+  startDate: string;
+  endDate: string;
+};
+
 export type Story = {
   id: string;
   title: string;
@@ -17,9 +37,12 @@ export type Story = {
   description?: string;
   statusId: string;
   sprintId: string | null;
+  sprint?: StorySprintSummary | null;
   objectiveId: string | null;
+  objective?: StoryObjectiveSummary | null;
   keyResultId: string | null;
   teamId: string;
+  team?: StoryTeamSummary | null;
   workspaceId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
