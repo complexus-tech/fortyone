@@ -13,7 +13,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     sprintId: string;
     teamId: string;
   }>();
-  const { viewOptions, filters } = useSprintOptions();
+  const { viewOptions, setViewOptions, filters } = useSprintOptions();
   const boardHeightClassName = hasActiveStoriesFilters(filters)
     ? "h-[calc(100dvh-7.2rem)]"
     : "h-[calc(100dvh-3.6rem)]";
@@ -38,6 +38,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       className={boardHeightClassName}
       groupedStories={groupedStories}
       layout={layout}
+      setViewOptions={setViewOptions}
       viewOptions={viewOptions}
     />
   );

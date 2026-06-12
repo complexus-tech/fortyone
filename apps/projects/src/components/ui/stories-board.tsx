@@ -138,6 +138,7 @@ export const StoriesBoard = ({
   groupedStories: allStories,
   className,
   viewOptions,
+  setViewOptions,
   rowClassName,
 }: {
   isInSearch?: boolean;
@@ -145,6 +146,7 @@ export const StoriesBoard = ({
   groupedStories?: GroupedStoriesResponse;
   className?: string;
   viewOptions: StoriesViewOptions;
+  setViewOptions?: (value: StoriesViewOptions) => void;
   rowClassName?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -272,9 +274,10 @@ export const StoriesBoard = ({
       selectedStories,
       setSelectedStories,
       viewOptions,
+      setViewOptions,
       isColumnVisible,
     }),
-    [selectedStories, viewOptions, isColumnVisible],
+    [selectedStories, setViewOptions, viewOptions, isColumnVisible],
   );
 
   const hasStories = groupedStories?.groups.some(

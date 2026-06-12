@@ -31,6 +31,9 @@ export type StoriesViewOptions = {
   showEmptyGroups: boolean;
   showSubStories: boolean;
   displayColumns: DisplayColumn[];
+  hiddenKanbanGroups?: Partial<
+    Record<Exclude<ViewOptionsGroupBy, "none">, string[]>
+  >;
 };
 
 const defaultViewOptions: StoriesViewOptions = {

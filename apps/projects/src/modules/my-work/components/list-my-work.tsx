@@ -31,7 +31,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     "paused",
     "completed",
     "cancelled",
-  ] as const satisfies ReadonlyArray<StateCategory>;
+  ] as const satisfies readonly StateCategory[];
   const [category] = useQueryState(
     "category",
     parseAsStringLiteral(validCategories),
@@ -40,13 +40,15 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const [startDate] = useQueryState("startDate", parseAsIsoDate);
   const [endDate] = useQueryState("endDate", parseAsIsoDate);
   const { getTermDisplay } = useTerminology();
-  const { viewOptions, filters, resetFilters, setFilters } = useMyWork();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useMyWork();
 
-  const categories: StateCategory[] | undefined = overdue
-    ? ["started"]
-    : category
-      ? [category]
-      : undefined;
+  let categories: StateCategory[] | undefined;
+  if (overdue) {
+    categories = ["started"];
+  } else if (category) {
+    categories = [category];
+  }
   const overdueDeadline = overdue
     ? formatISO(new Date(), { representation: "date" })
     : undefined;
@@ -84,6 +86,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         className={boardHeightClassName}
         groupedStories={groupedStories}
         layout={layout}
+        setViewOptions={setViewOptions}
         viewOptions={viewOptions}
       />
     );

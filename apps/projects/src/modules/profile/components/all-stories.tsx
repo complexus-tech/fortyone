@@ -4,7 +4,6 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import type { Story } from "@/modules/stories/types";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
@@ -18,7 +17,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     "tab",
     parseAsStringLiteral(tabs).withDefault("assigned"),
   );
-  const { viewOptions } = useProfile();
+  const { viewOptions, setViewOptions } = useProfile();
 
   const { data: groupedStories, isPending } = useGroupedStories({
     groupBy: viewOptions.groupBy,
@@ -44,6 +43,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
             className="h-[calc(100vh-7.7rem)]"
             groupedStories={groupedStories}
             layout={layout}
+            setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
@@ -52,6 +52,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
             className="h-[calc(100vh-7.7rem)]"
             groupedStories={groupedStories}
             layout={layout}
+            setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>

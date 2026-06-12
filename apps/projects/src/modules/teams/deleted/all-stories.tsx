@@ -9,7 +9,7 @@ import { useTeamOptions } from "./provider";
 
 export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { viewOptions, filters } = useTeamOptions();
+  const { viewOptions, setViewOptions, filters } = useTeamOptions();
   const boardHeightClassName = hasActiveStoriesFilters(filters)
     ? "h-[calc(100dvh-7.2rem)]"
     : "h-[calc(100dvh-3.6rem)]";
@@ -34,6 +34,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
       className={boardHeightClassName}
       groupedStories={groupedStories}
       layout={layout}
+      setViewOptions={setViewOptions}
       viewOptions={viewOptions}
     />
   );

@@ -4,11 +4,12 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
+import { useChatContext } from "@/context/chat-context";
+import { useMediaQuery, useWorkspacePath } from "@/hooks";
 import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
 import { StorySkeleton } from "./components/story-skeleton";
-import { useWorkspacePath } from "@/hooks";
 
 const MainDetails = dynamic(
   () => import("./components/main-details").then((mod) => mod.MainDetails),
@@ -31,9 +32,14 @@ export const StoryPage = ({
 }) => {
   const { isPending, data: story } = useStoryById(storyId);
   const { withWorkspace } = useWorkspacePath();
+  const { isOpen: isChatOpen } = useChatContext();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const shouldUseNotificationBodyOnlySkeleton = Boolean(
+    isNotifications && isChatOpen && isDesktop && !isDialog,
+  );
 
   if (isPending) {
-    return <StorySkeleton isNotifications={isNotifications} />;
+    return <StorySkeleton bodyOnly={shouldUseNotificationBodyOnlySkeleton} />;
   }
 
   return (

@@ -40,7 +40,7 @@ export const AllStories = ({
   );
   type Tab = (typeof tabs)[number];
 
-  const { viewOptions, filters, resetFilters, setFilters } =
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
     useObjectiveOptions();
   const hasAppliedFilters = hasActiveStoriesFilters(filters);
   const boardHeightClassName = hasAppliedFilters
@@ -125,6 +125,7 @@ export const AllStories = ({
               className={boardHeightClassName}
               groupedStories={groupedStories}
               layout={layout}
+              setViewOptions={setViewOptions}
               viewOptions={viewOptions}
             />
           )}
