@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { Button, Flex, Menu, Text } from "ui";
-import {
-  CheckIcon,
-  CloseIcon,
-  FilterIcon,
-  MoreVerticalIcon,
-  RequestsIcon,
-} from "icons";
+import { CheckIcon, CloseIcon, MoreVerticalIcon, RequestsIcon } from "icons";
 import { ConfirmDialog } from "@/components/ui";
 import { MobileMenuButton } from "@/components/shared";
 import { useAcceptAllIntegrationRequests } from "./hooks/use-accept-all-requests";
@@ -35,45 +29,10 @@ export const IntegrationRequestsHeader = ({
     >
       <Flex align="center" className="gap-2">
         <MobileMenuButton />
-        <RequestsIcon className="h-5 w-auto" strokeWidth={2} />
+        <RequestsIcon className="h-5 w-auto" />
         <Text>Requests</Text>
       </Flex>
       <Flex align="center" gap={2}>
-        <Menu>
-          <Menu.Button>
-            <Button
-              asIcon
-              className="aspect-square"
-              color="tertiary"
-              leftIcon={<FilterIcon className="h-[1.15rem]" />}
-              size="sm"
-            >
-              <div className="sr-only">Filter</div>
-            </Button>
-          </Menu.Button>
-          <Menu.Items className="w-54">
-            <Menu.Group className="mt-1 mb-3 px-4">
-              <Text color="muted" textOverflow="truncate">
-                Filter requests
-              </Text>
-            </Menu.Group>
-            <Menu.Separator />
-            <Menu.Group>
-              <Menu.Item>
-                <RequestsIcon />
-                Pending requests
-              </Menu.Item>
-              <Menu.Item>
-                <CheckIcon />
-                Accepted requests
-              </Menu.Item>
-              <Menu.Item>
-                <CloseIcon />
-                Declined requests
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
         <Menu>
           <Menu.Button>
             <Button

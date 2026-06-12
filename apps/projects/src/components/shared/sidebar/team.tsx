@@ -7,12 +7,12 @@ import {
   ArchiveIcon,
   ArrowRight2Icon,
   BacklogIcon,
-  CheckListIcon,
   DeleteIcon,
   DragIcon,
   LogoutIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
+  RequestsIcon,
   SettingsIcon,
   SprintsIcon,
   StoryIcon,
@@ -84,7 +84,7 @@ export const Team = ({
   const links = [
     {
       name: "Requests",
-      icon: <CheckListIcon className="h-[1.05rem]" />,
+      icon: <RequestsIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/requests`),
       count: pendingRequests.length,
       disabled: !hasRequests,
@@ -256,7 +256,7 @@ export const Team = ({
                       <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                         <span className="capitalize">{name}</span>
                         {count ? (
-                          <span className="text-muted-foreground text-[0.8rem]">
+                          <span className="text-foreground-inverse bg-background-inverse flex size-4.5 items-center justify-center rounded-full text-[0.8rem] font-bold">
                             {count}
                           </span>
                         ) : null}
