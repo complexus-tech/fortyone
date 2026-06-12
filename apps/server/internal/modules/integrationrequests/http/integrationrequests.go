@@ -104,6 +104,26 @@ func (h *Handlers) AcceptRequest(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
 }
 
+func (h *Handlers) AcceptAllTeamRequests(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	teamID, err := uuid.Parse(web.Params(r, "teamId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	result, err := h.requests.AcceptAllPendingByTeam(ctx, workspace.ID, teamID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppBulkRequestResult(result), http.StatusOK)
+}
+
 func (h *Handlers) DeclineRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -122,6 +142,26 @@ func (h *Handlers) DeclineRequest(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
 	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
+}
+
+func (h *Handlers) DeclineAllTeamRequests(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	teamID, err := uuid.Parse(web.Params(r, "teamId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	result, err := h.requests.DeclineAllPendingByTeam(ctx, workspace.ID, teamID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppBulkRequestResult(result), http.StatusOK)
 }
 
 func requestErrorStatus(err error) int {

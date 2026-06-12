@@ -145,6 +145,9 @@ type Config struct {
 		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
 		RedirectURL   string `env:"SLACK_REDIRECT_URL"`
 	}
+	Bot struct {
+		Token string `env:"FORTYONE_BOT_TOKEN"`
+	}
 }
 
 func main() {
@@ -409,6 +412,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SlackClientID:      cfg.Slack.ClientID,
 		SlackClientSecret:  cfg.Slack.ClientSecret,
 		SlackRedirectURL:   cfg.Slack.RedirectURL,
+		BotToken:           cfg.Bot.Token,
 		SSEHub:             sseHub,
 		CorsOrigin:         "*",
 	}

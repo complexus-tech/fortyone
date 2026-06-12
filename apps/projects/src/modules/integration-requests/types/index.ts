@@ -29,3 +29,8 @@ export type UpdateIntegrationRequestInput = Partial<
     "title" | "description" | "statusId" | "priority" | "assigneeId"
   >
 >;
+
+export type BulkIntegrationRequestResult = {
+  count: number;
+  requestIds: string[];
+};

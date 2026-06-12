@@ -1,29 +1,72 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
-import { tools } from "@/lib/tools";
+import { generateText, streamText } from "ai";
+
+import type { BotConfig } from "@/lib/config";
+import type { FortyOneClient, SlackActor } from "@/lib/fortyone-client";
+import { createTools } from "@/lib/tools";
 
 const createMissingKeyStream = () =>
   (async function* fallback() {
     yield "OPENAI_API_KEY is missing. Add it to apps/bot/.env.";
   })();
 
-export const createAgentStream = (prompt: string) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const modelName = process.env.BOT_OPENAI_MODEL ?? "gpt-5.4-mini";
+const createMissingKeyText = () =>
+  "OPENAI_API_KEY is missing. Add it to apps/bot/.env.";
 
-  if (!apiKey) {
+const getOpenAIClient = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  return apiKey ? createOpenAI({ apiKey }) : null;
+};
+
+const createAgentRequest = (
+  prompt: string,
+  _config: BotConfig,
+  client: FortyOneClient,
+  actor: SlackActor,
+) => ({
+  system:
+    "You are Maya, the FortyOne Slack assistant. Keep answers concise and useful for Slack. Use tools when relevant. Do not create or update stories unless a tool explicitly does it.",
+  prompt: prompt.trim() || "Help me with my workspace.",
+  tools: createTools(client, actor),
+  maxOutputTokens: 600,
+});
+
+export const createAgentStream = (
+  prompt: string,
+  config: BotConfig,
+  client: FortyOneClient,
+  actor: SlackActor,
+) => {
+  const openai = getOpenAIClient();
+
+  if (!openai) {
     return createMissingKeyStream();
   }
 
-  const openai = createOpenAI({ apiKey });
   const result = streamText({
-    model: openai(modelName),
-    system:
-      "You are Photon, the FortyOne Slack assistant. Keep answers concise and helpful. Use tools when relevant.",
-    prompt: prompt.trim() || "Help me with my workspace.",
-    tools,
-    maxOutputTokens: 600,
+    ...createAgentRequest(prompt, config, client, actor),
+    model: openai(config.openAIModel),
   });
 
   return result.fullStream;
+};
+
+export const generateAgentReply = async (
+  prompt: string,
+  config: BotConfig,
+  client: FortyOneClient,
+  actor: SlackActor,
+) => {
+  const openai = getOpenAIClient();
+
+  if (!openai) {
+    return createMissingKeyText();
+  }
+
+  const result = await generateText({
+    ...createAgentRequest(prompt, config, client, actor),
+    model: openai(config.openAIModel),
+  });
+
+  return result.text.trim() || "I couldn't generate a response.";
 };

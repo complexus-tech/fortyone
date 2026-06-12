@@ -34,6 +34,11 @@ type AppUpdateIntegrationRequest struct {
 	AssigneeID  *uuid.UUID `json:"assigneeId,omitempty"`
 }
 
+type AppBulkRequestResult struct {
+	Count      int         `json:"count"`
+	RequestIDs []uuid.UUID `json:"requestIds"`
+}
+
 func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegrationRequest {
 	return AppIntegrationRequest{
 		ID:               core.ID,
@@ -54,6 +59,13 @@ func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegratio
 		AcceptedStoryID:  core.AcceptedStoryID,
 		CreatedAt:        core.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:        core.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+func toAppBulkRequestResult(core integrationrequests.CoreBulkRequestResult) AppBulkRequestResult {
+	return AppBulkRequestResult{
+		Count:      core.Count,
+		RequestIDs: core.RequestIDs,
 	}
 }
 

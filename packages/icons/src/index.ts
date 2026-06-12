@@ -4,6 +4,7 @@ export * from "./analytics";
 export * from "./dashboard";
 export * from "./stories";
 export * from "./notifications";
+export * from "./requests";
 export * from "./objective";
 export * from "./docs";
 export * from "./settings";

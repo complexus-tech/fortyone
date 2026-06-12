@@ -31,17 +31,20 @@ importers:
         specifier: ^3.0.41
         version: 3.0.41(zod@4.2.1)
       '@chat-adapter/slack':
-        specifier: ^4.27.0
-        version: 4.28.1
+        specifier: ^4.30.0
+        version: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
       '@chat-adapter/state-memory':
-        specifier: ^4.27.0
-        version: 4.28.1
+        specifier: ^4.30.0
+        version: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
+      '@chat-adapter/state-redis':
+        specifier: ^4.30.0
+        version: 4.30.0(@opentelemetry/api@1.9.0)(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
       ai:
-        specifier: ^6.0.116
-        version: 6.0.116(zod@4.2.1)
+        specifier: ^6.0.202
+        version: 6.0.202(zod@4.2.1)
       chat:
-        specifier: ^4.27.0
-        version: 4.28.1
+        specifier: ^4.30.0
+        version: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
       next:
         specifier: 16.2.0
         version: 16.2.0(@babel/core@7.24.4)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -498,7 +501,7 @@ importers:
         version: 10.0.0(@dnd-kit/core@6.1.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
       '@posthog/ai':
         specifier: ^7.3.0
-        version: 7.3.0(@ai-sdk/provider@3.0.8)(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(posthog-node@5.28.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.18.3)(zod-to-json-schema@3.25.0(zod@4.0.15))
+        version: 7.3.0(@ai-sdk/provider@3.0.10)(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(posthog-node@5.28.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.18.3)(zod-to-json-schema@3.25.0(zod@4.0.15))
       '@tailwindcss/postcss':
         specifier: ^4.1.18
         version: 4.1.18
@@ -1018,6 +1021,12 @@ packages:
     resolution: {integrity: sha512-k0hB7mpERi/k/ffih9P4NGWNEzliSWgauPsY3D8dWM7whCH5PlGZRAQvM9qtKEVwor+5m/q7Is9z23HXsVfsFw==}
     hasBin: true
 
+  '@ai-sdk/gateway@3.0.128':
+    resolution: {integrity: sha512-t9Dyqk5thSmIzsNvVTQtZZiO3xqKGkk1hX3+GNpYmro+GuEdW+E6mKFHihb9Y1vCEt3rEyd4pbGUcin4D57FfQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/gateway@3.0.66':
     resolution: {integrity: sha512-SIQ0YY0iMuv+07HLsZ+bB990zUJ6S4ujORAh+Jv1V2KGNn73qQKnGO0JBk+w+Res8YqOFSycwDoWcFlQrVxS4A==}
     engines: {node: '>=18'}
@@ -1042,8 +1051,18 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@4.0.28':
+    resolution: {integrity: sha512-nCtGJY43Kqwoyk0rYLj80a3eyXxcaWwyu+lYZDHgY+U6JbYYyvRdRTSy+XCDIB91rFH0Ul0eMDHmDr+YMYtrSw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider@3.0.0':
     resolution: {integrity: sha512-m9ka3ptkPQbaHHZHqDXDF9C9B5/Mav0KTdky1k2HZ3/nrW2t1AgObxIVPyGDWQNS9FXT/FS6PIoSjpcP/No8rQ==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@3.0.10':
+    resolution: {integrity: sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw==}
     engines: {node: '>=18'}
 
   '@ai-sdk/provider@3.0.8':
@@ -1762,14 +1781,21 @@ packages:
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
-  '@chat-adapter/shared@4.28.1':
-    resolution: {integrity: sha512-v7AcZMrvS2gxFlRiUO1o9Nta2iipnnmV54Gie8e3nQTQvnghENfSf7j7nimA5DOUWCgj+e4DV7LE0x1pakNtkA==}
+  '@chat-adapter/shared@4.30.0':
+    resolution: {integrity: sha512-IuYtbn/p1FBXvp7JYGEMLCt07GHOMlyjx7OlZXPJwLTravcyJuP7Q6N31r6c1yubMhM8PLb8eT8l/YnjwYjs9Q==}
+    engines: {node: '>=20'}
 
-  '@chat-adapter/slack@4.28.1':
-    resolution: {integrity: sha512-JxgV7+cRXXeKpj0MzS7nzG3JvpnfhIgnPo9r/sdEIzeWhIb8tUcT2PbLl/fpSu/cb+WkICS0bCENn1I0PS39Hg==}
+  '@chat-adapter/slack@4.30.0':
+    resolution: {integrity: sha512-ZB+G/JBKmaXzvl+DuUQPBb/gCwXP3fOtUK5Cyj6wLbbeeDYzi3NQPvpvieVum/GI4iuR8OUVcNAnVQiH6P6DOQ==}
+    engines: {node: '>=20'}
 
-  '@chat-adapter/state-memory@4.28.1':
-    resolution: {integrity: sha512-KMKrPPU9inr+GVH5pIL81aSW0+LXulxZMktSzf5JOgE6C8WHmUAcGN9B0C80edyeC5qeXOyl0Vl3ZecPZsWDqQ==}
+  '@chat-adapter/state-memory@4.30.0':
+    resolution: {integrity: sha512-huYnGBKBiY6s/GaYgtAmr0zM6ihvGl8/NOEV9oqY89jr6Zdnm/ZXdpXvDKdXoaxmDXCiZr2U54DbSDzpvGQ6fA==}
+    engines: {node: '>=20'}
+
+  '@chat-adapter/state-redis@4.30.0':
+    resolution: {integrity: sha512-Fj5g7UjIl8r0J4WUZnVgljije2yFd0/ZmOaIo5VXDs1TDz4X8I73xxYtLUmyHe5uNM2pGOu0DeYliy+mupaCGA==}
+    engines: {node: '>=20'}
 
   '@chevrotain/cst-dts-gen@11.0.3':
     resolution: {integrity: sha512-BvIKpRLeS/8UbfxXxgC33xOumsacaeCKAjAeLyOn7Pcp95HiRbrpl14S+9vaZLolnbssPIUuiUd8IvgkRyt6NQ==}
@@ -4110,6 +4136,42 @@ packages:
   '@react-navigation/routers@7.5.1':
     resolution: {integrity: sha512-pxipMW/iEBSUrjxz2cDD7fNwkqR4xoi0E/PcfTQGCcdJwLoaxzab5kSadBLj1MTJyT0YRrOXL9umHpXtp+Dv4w==}
 
+  '@redis/bloom@5.12.1':
+    resolution: {integrity: sha512-PUUfv+ms7jgPSBVoo/DN4AkPHj4D5TZSd6SbJX7egzBplkYUcKmHRE8RKia7UtZ8bSQbLguLvxVO+asKtQfZWA==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.1
+
+  '@redis/client@5.12.1':
+    resolution: {integrity: sha512-7aPGWeqA3uFm43o19umzdl16CEjK/JQGtSXVPevplTaOU3VJA/rseBC1QvYUz9lLDIMBimc4SW/zrW4S89BaCA==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@node-rs/xxhash': ^1.1.0
+      '@opentelemetry/api': '>=1 <2'
+    peerDependenciesMeta:
+      '@node-rs/xxhash':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+
+  '@redis/json@5.12.1':
+    resolution: {integrity: sha512-eOze75esLve4vfqDel7aMX08CNaiLLQS2fV8mpRN9NxPe1rVR4vQyYiW/OgtGUysF6QOr9ANhfxABKNOJfXdKg==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.1
+
+  '@redis/search@5.12.1':
+    resolution: {integrity: sha512-ItlxbxC9cKI6IU1TLWoczwJCRb6TdmkEpWv05UrPawqaAnWGRu3rcIqsc5vN483T2fSociuyV1UkWIL5I4//2w==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.1
+
+  '@redis/time-series@5.12.1':
+    resolution: {integrity: sha512-c6JL6E3EcZJuNqKFz+KM+l9l5mpcQiKvTwgA3blt5glWJ8hjDk0yeHN3beE/MpqYIQ8UEX44ItQzgkE/gCBELQ==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.1
+
   '@remirror/core-constants@3.0.0':
     resolution: {integrity: sha512-42aWfPrimMfDKDi4YegyS7x+/0tlzaqwPQCULLanv3DMIlu96KTJR0fM5isWX2UViOqlGnX6YFgqWepcX+XMNg==}
 
@@ -5257,6 +5319,10 @@ packages:
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
     engines: {node: '>= 20'}
 
+  '@vercel/oidc@3.2.0':
+    resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
+    engines: {node: '>= 20'}
+
   '@vercel/style-guide@5.2.0':
     resolution: {integrity: sha512-fNSKEaZvSkiBoF6XEefs8CcgAV9K9e+MbcsDZjUsktHycKdA0jvjAzQi1W/FzLS+Nr5zZ6oejCwq/97dHUKe0g==}
     engines: {node: '>=16'}
@@ -5393,6 +5459,12 @@ packages:
 
   ai@6.0.116:
     resolution: {integrity: sha512-7yM+cTmyRLeNIXwt4Vj+mrrJgVQ9RMIW5WO0ydoLoYkewIvsMcvUmqS4j2RJTUXaF1HphwmSKUMQ/HypNRGOmA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@6.0.202:
+    resolution: {integrity: sha512-14O7uyHVa5lXyt1RzduRqM1zwOnLBN+EaE+btWiP2R7GLHd5oh+Z9uaebR785V/Y2hXlxvuQGsw2Gj6iHpkxsg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5870,8 +5942,17 @@ packages:
   character-reference-invalid@2.0.1:
     resolution: {integrity: sha512-iBZ4F4wRbyORVsu0jPV7gXkOsGYjGHPmAyv+HiHG8gi5PtC9KI2j1+v8/tlibRvjoWX027ypmG/n0HtO5t7unw==}
 
-  chat@4.28.1:
-    resolution: {integrity: sha512-oKBeLQ746rSmHWGoXmPgDOqMVdIe9cWFQBQ1G2pw0l2vV4sAsZgfEJmc1UYqSJR4kYy4PxKgRFy31pe4RJ644Q==}
+  chat@4.30.0:
+    resolution: {integrity: sha512-8LXrauKckMmR83FcYC/R8nNEda5VJDDdIhZwUUu+hzaSbk4lqsro0IWm7rB1GGYXONRrUOG2XJlkNr4C15vgMA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      ai: ^6.0.182
+      zod: ^3.0.0 || ^4.0.0
+    peerDependenciesMeta:
+      ai:
+        optional: true
+      zod:
+        optional: true
 
   cheerio-select@2.1.0:
     resolution: {integrity: sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g==}
@@ -5954,6 +6035,10 @@ packages:
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
+
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
 
   cmdk@0.2.1:
     resolution: {integrity: sha512-U6//9lQ6JvT47+6OF6Gi8BvkxYQ8SCRRSKIJkthIMsFsLZRG0cKvTtuTaefyIKMQb8rvvXy0wGdpTNq/jPtm+g==}
@@ -7108,6 +7193,10 @@ packages:
 
   eventsource-parser@3.0.6:
     resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
+    engines: {node: '>=18.0.0'}
+
+  eventsource-parser@3.1.0:
+    resolution: {integrity: sha512-kJezFj9YFAMLeORyi7aCLxLbD5/qWMQnoMVlVPyHIll7lgRJCc3JVln9Vgl9nwQi0YkMnhdGTMNn7CkRRAptMg==}
     engines: {node: '>=18.0.0'}
 
   exec-async@2.2.0:
@@ -10515,6 +10604,10 @@ packages:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
     engines: {node: '>=8'}
 
+  redis@5.12.1:
+    resolution: {integrity: sha512-LDsoVvb/CpoV9EN3FXvgvSHNJWuCIzl9MiO3ppOevuGLpSGJhwfQjpEwfFJcQvNSddHADDdZaWx0HnmMxRXG7g==}
+    engines: {node: '>= 18.19.0'}
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
@@ -12114,19 +12207,19 @@ snapshots:
       '@hono/node-server': 1.19.7(hono@4.11.1)
       hono: 4.11.1
 
+  '@ai-sdk/gateway@3.0.128(zod@4.2.1)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.28(zod@4.2.1)
+      '@vercel/oidc': 3.2.0
+      zod: 4.2.1
+
   '@ai-sdk/gateway@3.0.66(zod@4.0.15)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.19(zod@4.0.15)
       '@vercel/oidc': 3.1.0
       zod: 4.0.15
-
-  '@ai-sdk/gateway@3.0.66(zod@4.2.1)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.19(zod@4.2.1)
-      '@vercel/oidc': 3.1.0
-      zod: 4.2.1
 
   '@ai-sdk/google@3.0.43(zod@4.0.15)':
     dependencies:
@@ -12160,7 +12253,18 @@ snapshots:
       eventsource-parser: 3.0.6
       zod: 4.2.1
 
+  '@ai-sdk/provider-utils@4.0.28(zod@4.2.1)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.0
+      zod: 4.2.1
+
   '@ai-sdk/provider@3.0.0':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@3.0.10':
     dependencies:
       json-schema: 0.4.0
 
@@ -13117,29 +13221,46 @@ snapshots:
 
   '@cfworker/json-schema@4.1.1': {}
 
-  '@chat-adapter/shared@4.28.1':
+  '@chat-adapter/shared@4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)':
     dependencies:
-      chat: 4.28.1
+      chat: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
     transitivePeerDependencies:
+      - ai
       - supports-color
+      - zod
 
-  '@chat-adapter/slack@4.28.1':
+  '@chat-adapter/slack@4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)':
     dependencies:
-      '@chat-adapter/shared': 4.28.1
+      '@chat-adapter/shared': 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
       '@slack/socket-mode': 2.0.7
       '@slack/web-api': 7.15.2
-      chat: 4.28.1
+      chat: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
     transitivePeerDependencies:
+      - ai
       - bufferutil
       - debug
       - supports-color
       - utf-8-validate
+      - zod
 
-  '@chat-adapter/state-memory@4.28.1':
+  '@chat-adapter/state-memory@4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)':
     dependencies:
-      chat: 4.28.1
+      chat: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
     transitivePeerDependencies:
+      - ai
       - supports-color
+      - zod
+
+  '@chat-adapter/state-redis@4.30.0(@opentelemetry/api@1.9.0)(ai@6.0.202(zod@4.2.1))(zod@4.2.1)':
+    dependencies:
+      chat: 4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1)
+      redis: 5.12.1(@opentelemetry/api@1.9.0)
+    transitivePeerDependencies:
+      - '@node-rs/xxhash'
+      - '@opentelemetry/api'
+      - ai
+      - supports-color
+      - zod
 
   '@chevrotain/cst-dts-gen@11.0.3':
     dependencies:
@@ -14958,7 +15079,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@posthog/ai@7.3.0(@ai-sdk/provider@3.0.8)(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(posthog-node@5.28.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.18.3)(zod-to-json-schema@3.25.0(zod@4.0.15))':
+  '@posthog/ai@7.3.0(@ai-sdk/provider@3.0.10)(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(posthog-node@5.28.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.18.3)(zod-to-json-schema@3.25.0(zod@4.0.15))':
     dependencies:
       '@anthropic-ai/sdk': 0.71.2(zod@4.2.1)
       '@google/genai': 1.34.0
@@ -14969,7 +15090,7 @@ snapshots:
       uuid: 11.1.0
       zod: 4.2.1
     optionalDependencies:
-      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider': 3.0.10
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - '@opentelemetry/api'
@@ -16163,6 +16284,28 @@ snapshots:
   '@react-navigation/routers@7.5.1':
     dependencies:
       nanoid: 3.3.11
+
+  '@redis/bloom@5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 5.12.1(@opentelemetry/api@1.9.0)
+
+  '@redis/client@5.12.1(@opentelemetry/api@1.9.0)':
+    dependencies:
+      cluster-key-slot: 1.1.2
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.0
+
+  '@redis/json@5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 5.12.1(@opentelemetry/api@1.9.0)
+
+  '@redis/search@5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 5.12.1(@opentelemetry/api@1.9.0)
+
+  '@redis/time-series@5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 5.12.1(@opentelemetry/api@1.9.0)
 
   '@remirror/core-constants@3.0.0': {}
 
@@ -17481,6 +17624,8 @@ snapshots:
 
   '@vercel/oidc@3.1.0': {}
 
+  '@vercel/oidc@3.2.0': {}
+
   '@vercel/style-guide@5.2.0(@next/eslint-plugin-next@14.2.8)(eslint@9.39.2(jiti@2.6.1))(jest@29.7.0)(prettier@3.2.5)(typescript@5.9.2)':
     dependencies:
       '@babel/core': 7.24.4
@@ -17677,11 +17822,11 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.0.15
 
-  ai@6.0.116(zod@4.2.1):
+  ai@6.0.202(zod@4.2.1):
     dependencies:
-      '@ai-sdk/gateway': 3.0.66(zod@4.2.1)
-      '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.19(zod@4.2.1)
+      '@ai-sdk/gateway': 3.0.128(zod@4.2.1)
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.28(zod@4.2.1)
       '@opentelemetry/api': 1.9.0
       zod: 4.2.1
 
@@ -18306,7 +18451,7 @@ snapshots:
 
   character-reference-invalid@2.0.1: {}
 
-  chat@4.28.1:
+  chat@4.30.0(ai@6.0.202(zod@4.2.1))(zod@4.2.1):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
       mdast-util-to-string: 4.0.0
@@ -18315,6 +18460,9 @@ snapshots:
       remark-stringify: 11.0.0
       remend: 1.3.0
       unified: 11.0.5
+    optionalDependencies:
+      ai: 6.0.202(zod@4.2.1)
+      zod: 4.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -18419,6 +18567,8 @@ snapshots:
   clone@1.0.4: {}
 
   clsx@2.1.1: {}
+
+  cluster-key-slot@1.1.2: {}
 
   cmdk@0.2.1(@types/react@19.1.9)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
@@ -19952,6 +20102,8 @@ snapshots:
     optional: true
 
   eventsource-parser@3.0.6: {}
+
+  eventsource-parser@3.1.0: {}
 
   exec-async@2.2.0: {}
 
@@ -24542,6 +24694,17 @@ snapshots:
     dependencies:
       indent-string: 4.0.0
       strip-indent: 3.0.0
+
+  redis@5.12.1(@opentelemetry/api@1.9.0):
+    dependencies:
+      '@redis/bloom': 5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))
+      '@redis/client': 5.12.1(@opentelemetry/api@1.9.0)
+      '@redis/json': 5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))
+      '@redis/search': 5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))
+      '@redis/time-series': 5.12.1(@redis/client@5.12.1(@opentelemetry/api@1.9.0))
+    transitivePeerDependencies:
+      - '@node-rs/xxhash'
+      - '@opentelemetry/api'
 
   reflect.getprototypeof@1.0.10:
     dependencies:

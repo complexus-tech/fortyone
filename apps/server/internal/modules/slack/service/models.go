@@ -166,6 +166,48 @@ type CoreRequestLogInput struct {
 	ErrorMessage string
 }
 
+type CoreRuntimeActor struct {
+	SlackTeamID    string
+	SlackUserID    string
+	SlackUserName  string
+	SlackChannelID string
+	SlackChannel   string
+	SlackMessageTS string
+	SlackThreadTS  string
+}
+
+type CoreRuntimeOption struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+}
+
+type CoreRuntimeCreateStoryInput struct {
+	Title       string
+	Description string
+	TeamID      string
+	StatusID    string
+	Priority    string
+	AssigneeID  string
+	ObjectiveID string
+	Source      struct {
+		SlackTeamID    string `json:"teamId"`
+		SlackUserID    string `json:"userId"`
+		SlackUserName  string `json:"userName"`
+		SlackChannelID string `json:"channelId"`
+		SlackChannel   string `json:"channelName"`
+		SlackMessageTS string `json:"messageTs"`
+		SlackThreadTS  string `json:"threadTs"`
+		SlackText      string `json:"messageText"`
+	} `json:"source"`
+}
+
+type CoreRuntimeCreatedStory struct {
+	ID    string `json:"id"`
+	Ref   string `json:"ref"`
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+
 type ProviderAccepter interface {
 	AcceptIntegrationRequest(ctx context.Context, request integrationrequests.CoreIntegrationRequest, story stories.CoreSingleStory) error
 }

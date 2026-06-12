@@ -15,10 +15,11 @@ type Config struct {
 	SecretKey string
 	Cache     *cache.Service
 	Service   *slack.Service
+	BotToken  string
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Log, cfg.Service)
+	h := New(cfg.Log, cfg.Service, cfg.BotToken)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
@@ -33,4 +34,13 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/integrations/slack/events", h.HandleEvents)
 	app.Post("/integrations/slack/interactivity", h.HandleInteractivity)
 	app.Post("/integrations/slack/commands", h.HandleCommands)
+
+	app.Post("/internal/bot/slack/options/teams", h.RuntimeSearchTeams, h.BotAuth)
+	app.Post("/internal/bot/slack/options/statuses", h.RuntimeSearchStatuses, h.BotAuth)
+	app.Post("/internal/bot/slack/options/members", h.RuntimeSearchMembers, h.BotAuth)
+	app.Post("/internal/bot/slack/options/objectives", h.RuntimeSearchObjectives, h.BotAuth)
+	app.Post("/internal/bot/slack/stories", h.RuntimeCreateStory, h.BotAuth)
+	app.Post("/internal/bot/slack/thread-comments", h.RuntimeRecordThreadComment, h.BotAuth)
+	app.Post("/internal/bot/slack/unfurls/story", h.RuntimeStoryUnfurl, h.BotAuth)
+	app.Post("/internal/bot/slack/notifications/mentions", h.RuntimeMentionNotifications, h.BotAuth)
 }

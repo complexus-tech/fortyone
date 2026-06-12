@@ -67,6 +67,11 @@ type CoreListRequestsFilter struct {
 	Status string
 }
 
+type CoreBulkRequestResult struct {
+	Count      int
+	RequestIDs []uuid.UUID
+}
+
 type CoreUpdateRequestInput struct {
 	Title       *string
 	Description *string

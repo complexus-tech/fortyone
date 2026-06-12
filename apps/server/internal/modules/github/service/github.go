@@ -39,6 +39,27 @@ var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
 
 const githubIssueLinkPrefix = "GitHub issue: "
 
+var githubPriorityLabels = map[string]string{
+	"blocker":         "Urgent",
+	"critical":        "Urgent",
+	"p0":              "Urgent",
+	"priority p0":     "Urgent",
+	"priority urgent": "Urgent",
+	"urgent":          "Urgent",
+	"high":            "High",
+	"p1":              "High",
+	"priority high":   "High",
+	"priority p1":     "High",
+	"medium":          "Medium",
+	"p2":              "Medium",
+	"priority medium": "Medium",
+	"priority p2":     "Medium",
+	"low":             "Low",
+	"p3":              "Low",
+	"priority low":    "Low",
+	"priority p3":     "Low",
+}
+
 type Service struct {
 	log                 *logger.Logger
 	repo                *githubrepository.Repo
@@ -84,6 +105,41 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 		privateKey:          privateKey,
 		privateKeyLoadError: errorString(err),
 	}, nil
+}
+
+func githubPriorityFromLabelNames(labels []string) string {
+	priority := "No Priority"
+	priorityRank := map[string]int{
+		"No Priority": 0,
+		"Low":         1,
+		"Medium":      2,
+		"High":        3,
+		"Urgent":      4,
+	}
+
+	for _, label := range labels {
+		candidate, ok := githubPriorityLabels[normalizeGitHubPriorityLabel(label)]
+		if !ok {
+			continue
+		}
+		if priorityRank[candidate] > priorityRank[priority] {
+			priority = candidate
+		}
+	}
+
+	return priority
+}
+
+func normalizeGitHubPriorityLabel(label string) string {
+	normalized := strings.ToLower(strings.TrimSpace(label))
+	normalized = strings.TrimPrefix(normalized, "priority:")
+	normalized = strings.TrimPrefix(normalized, "priority/")
+	normalized = strings.TrimPrefix(normalized, "priority-")
+	normalized = strings.TrimPrefix(normalized, "prio:")
+	normalized = strings.TrimPrefix(normalized, "prio/")
+	normalized = strings.TrimPrefix(normalized, "prio-")
+	normalized = strings.NewReplacer("-", " ", "_", " ", "/", " ", ":", " ").Replace(normalized)
+	return strings.Join(strings.Fields(normalized), " ")
 }
 
 func (s *Service) canInstall() bool {
@@ -848,6 +904,11 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 
 	issueDescription := githubString(payload.Issue.Body)
+	labelNames := make([]string, 0, len(payload.Issue.Labels))
+	for _, label := range payload.Issue.Labels {
+		labelNames = append(labelNames, label.Name)
+	}
+	priority := githubPriorityFromLabelNames(labelNames)
 	var story stories.CoreSingleStory
 	var getErr error
 	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
@@ -860,6 +921,7 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 		updates := map[string]any{
 			"title":       payload.Issue.Title,
 			"description": issueDescription,
+			"priority":    priority,
 		}
 		if updateErr := s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates); updateErr != nil {
 			return updateErr
@@ -909,6 +971,11 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 	sourceURL := payload.Issue.HTMLURL
 	sourceNumber := payload.Issue.Number
 	createdBy := s.resolveActorID(ctx, payload.Sender.ID)
+	labelNames := make([]string, 0, len(payload.Issue.Labels))
+	for _, label := range payload.Issue.Labels {
+		labelNames = append(labelNames, label.Name)
+	}
+	priority := githubPriorityFromLabelNames(labelNames)
 	_, err := s.requests.UpsertPending(ctx, integrationrequests.CoreUpsertRequestInput{
 		WorkspaceID:      repository.WorkspaceID,
 		TeamID:           teamID,
@@ -919,6 +986,7 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 		SourceURL:        &sourceURL,
 		Title:            payload.Issue.Title,
 		Description:      description,
+		Priority:         priority,
 		CreatedByUserID:  &createdBy,
 		Metadata: map[string]any{
 			"repository_id":          repository.ID.String(),
@@ -927,6 +995,8 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 			"issue_id":               payload.Issue.ID,
 			"issue_number":           payload.Issue.Number,
 			"issue_state":            payload.Issue.State,
+			"priority":               priority,
+			"priority_labels":        labelNames,
 			"sender_id":              payload.Sender.ID,
 			"sender_login":           payload.Sender.Login,
 		},

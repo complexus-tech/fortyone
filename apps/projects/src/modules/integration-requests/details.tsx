@@ -17,10 +17,10 @@ import {
   CheckIcon,
   CloseIcon,
   ClockIcon,
+  CopyIcon,
   GitHubIcon,
   LinkIcon,
   MoreHorizontalIcon,
-  NewTabIcon,
 } from "icons";
 import {
   Avatar,
@@ -50,6 +50,8 @@ import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { BodyContainer } from "@/components/shared";
+import type { Member } from "@/types";
+import type { State } from "@/types/states";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { Option } from "@/modules/story/components/options";
@@ -63,7 +65,10 @@ import { useIntegrationRequest } from "./hooks/use-request";
 import { usePostRequestGitHubComment } from "./hooks/use-post-request-github-comment";
 import { useRequestGitHubComments } from "./hooks/use-request-github-comments";
 import { useUpdateIntegrationRequest } from "./hooks/use-update-request";
-import type { UpdateIntegrationRequestInput } from "./types";
+import type {
+  IntegrationRequest,
+  UpdateIntegrationRequestInput,
+} from "./types";
 
 const DEBOUNCE_DELAY = 1000;
 
@@ -170,23 +175,29 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
 };
 
 const RequestGitHubBanner = ({
+  canEditRequest,
   issueNumber,
+  onAccept,
+  onDecline,
   repositoryName,
   sourceUrl,
 }: {
+  canEditRequest: boolean;
   issueNumber: string;
+  onAccept: () => void;
+  onDecline: () => void;
   repositoryName: string | null;
   sourceUrl?: string;
 }) => (
   <Box className="mb-3 space-y-2">
     <Flex
       align="center"
-      className="border-border bg-surface-muted/40 rounded-xl border px-4 py-3"
+      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
       justify="between"
     >
       <Flex align="center" className="min-w-0" gap={2}>
-        <GitHubIcon className="h-5 shrink-0" />
-        <Text className="line-clamp-1 font-medium">
+        <GitHubIcon className="text-primary h-5 shrink-0" />
+        <Text className="line-clamp-1" color="primary" fontWeight="medium">
           Issue synced with GitHub {issueNumber}
         </Text>
         {repositoryName ? (
@@ -196,26 +207,78 @@ const RequestGitHubBanner = ({
         ) : null}
       </Flex>
       {sourceUrl ? (
-        <a
-          className="text-muted hover:text-foreground rounded-md p-1 transition"
-          href={sourceUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-          title="Open on GitHub"
-        >
-          <NewTabIcon className="h-5 text-current" />
-        </a>
+        <Flex align="center" gap={1}>
+          <a
+            className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+            href={sourceUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+            title="Open on GitHub"
+          >
+            <LinkIcon className="text-current" />
+          </a>
+          <Menu>
+            <Menu.Button>
+              <button
+                className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+                type="button"
+              >
+                <MoreHorizontalIcon className="h-5 text-current" />
+              </button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item
+                  onSelect={() => {
+                    window.open(sourceUrl, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <GitHubIcon className="h-5 w-auto" />
+                  Open on GitHub
+                </Menu.Item>
+                <Menu.Item
+                  onSelect={() => {
+                    navigator.clipboard.writeText(sourceUrl);
+                  }}
+                >
+                  <CopyIcon />
+                  Copy link
+                </Menu.Item>
+                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
+                  <CheckIcon />
+                  Accept request
+                </Menu.Item>
+                <Menu.Item
+                  className="text-danger"
+                  disabled={!canEditRequest}
+                  onSelect={onDecline}
+                >
+                  <CloseIcon className="text-danger" />
+                  Decline request...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
       ) : null}
     </Flex>
   </Box>
 );
 
-const RequestSlackBanner = ({
-  sourceUrl,
+const RequestSourceBanner = ({
+  canEditRequest,
   channel,
+  onAccept,
+  onDecline,
+  provider,
+  sourceUrl,
 }: {
+  canEditRequest: boolean;
   sourceUrl?: string;
   channel: string | null;
+  onAccept: () => void;
+  onDecline: () => void;
+  provider: "slack" | "intercom";
 }) => (
   <Box className="mb-3 space-y-2">
     <Flex
@@ -225,7 +288,9 @@ const RequestSlackBanner = ({
     >
       <Flex align="center" className="min-w-0" gap={2}>
         <ChatIcon className="h-5 shrink-0" />
-        <Text className="line-clamp-1 font-medium">Story from Slack</Text>
+        <Text className="line-clamp-1 font-medium">
+          Story from {provider === "slack" ? "Slack" : "Intercom"}
+        </Text>
         {channel ? (
           <Text className="line-clamp-1" color="muted">
             #{channel}
@@ -233,15 +298,59 @@ const RequestSlackBanner = ({
         ) : null}
       </Flex>
       {sourceUrl ? (
-        <a
-          className="text-muted hover:text-foreground rounded-md p-1 transition"
-          href={sourceUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-          title="Open in Slack"
-        >
-          <NewTabIcon className="h-5 text-current" />
-        </a>
+        <Flex align="center" gap={1}>
+          <a
+            className="text-muted hover:text-foreground rounded-md p-1 transition"
+            href={sourceUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+            title="Open source"
+          >
+            <LinkIcon className="h-5 text-current" />
+          </a>
+          <Menu>
+            <Menu.Button>
+              <button
+                className="text-muted hover:text-foreground rounded-md p-1 transition"
+                type="button"
+              >
+                <MoreHorizontalIcon className="h-5 text-current" />
+              </button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item
+                  onSelect={() => {
+                    window.open(sourceUrl, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <LinkIcon className="h-5 w-auto" />
+                  Open source
+                </Menu.Item>
+                <Menu.Item
+                  onSelect={() => {
+                    navigator.clipboard.writeText(sourceUrl);
+                  }}
+                >
+                  <CopyIcon />
+                  Copy link
+                </Menu.Item>
+                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
+                  <CheckIcon />
+                  Accept request
+                </Menu.Item>
+                <Menu.Item
+                  className="text-danger"
+                  disabled={!canEditRequest}
+                  onSelect={onDecline}
+                >
+                  <CloseIcon className="text-danger" />
+                  Decline request...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
       ) : null}
     </Flex>
   </Box>
@@ -277,6 +386,262 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
   );
 };
 
+type RequestPropertiesProps = {
+  assignee?: Member;
+  canEditRequest: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+  onUpdate: (payload: UpdateIntegrationRequestInput) => void;
+  priority: StoryPriority;
+  request: IntegrationRequest;
+  selectedStatus?: State;
+  statusId?: string;
+  teamId: string;
+};
+
+const RequestProperties = ({
+  assignee,
+  canEditRequest,
+  onAccept,
+  onDecline,
+  onUpdate,
+  priority,
+  request,
+  selectedStatus,
+  statusId,
+  teamId,
+}: RequestPropertiesProps) => {
+  const issueNumber = request.sourceNumber ? `#${request.sourceNumber}` : "";
+
+  return (
+    <Container className="text-text-muted px-0.5 pt-4 md:px-6">
+      <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+        <Text className="hidden md:block" fontWeight="semibold">
+          Properties
+        </Text>
+        <Flex justify="end">
+          <Menu>
+            <Menu.Button>
+              <Button
+                asIcon
+                color="tertiary"
+                rounded="full"
+                size="sm"
+                variant="naked"
+              >
+                <MoreHorizontalIcon className="h-5" />
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="end">
+              <Menu.Group>
+                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
+                  <CheckIcon />
+                  Accept
+                </Menu.Item>
+                <Menu.Item
+                  className="text-danger"
+                  disabled={!canEditRequest}
+                  onSelect={onDecline}
+                >
+                  <CloseIcon className="text-danger" />
+                  Decline...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
+      </Box>
+
+      <Box className="flex flex-wrap gap-2 md:block">
+        <Option
+          isNotifications={false}
+          label="Source"
+          value={
+            <Flex align="center" className="gap-2 md:ml-0.5">
+              {request.provider === "github" ? (
+                <GitHubIcon className="h-4" />
+              ) : request.provider === "slack" ? (
+                <ChatIcon className="h-4" />
+              ) : null}
+              <Text className="line-clamp-1">
+                {request.provider === "github"
+                  ? `GitHub issue ${issueNumber || request.sourceExternalId}`
+                  : request.provider === "slack"
+                    ? `Slack message ${request.sourceExternalId}`
+                    : `${request.provider} ${request.sourceExternalId}`}
+              </Text>
+            </Flex>
+          }
+        />
+        <Option
+          isNotifications={false}
+          label="Status"
+          value={
+            <StatusesMenu>
+              <StatusesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<StoryStatusIcon statusId={statusId} />}
+                  size="sm"
+                  variant="naked"
+                >
+                  {selectedStatus?.name ?? "Todo"}
+                </Button>
+              </StatusesMenu.Trigger>
+              <StatusesMenu.Items
+                setStatusId={(nextStatusId) => {
+                  onUpdate({ statusId: nextStatusId });
+                }}
+                statusId={statusId}
+                teamId={teamId}
+              />
+            </StatusesMenu>
+          }
+        />
+        <Option
+          isNotifications={false}
+          label="Priority"
+          value={
+            <PrioritiesMenu>
+              <PrioritiesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<PriorityIcon priority={priority} />}
+                  size="sm"
+                  variant="naked"
+                >
+                  {priority}
+                </Button>
+              </PrioritiesMenu.Trigger>
+              <PrioritiesMenu.Items
+                priority={priority}
+                setPriority={(nextPriority: StoryPriority) => {
+                  onUpdate({ priority: nextPriority });
+                }}
+              />
+            </PrioritiesMenu>
+          }
+        />
+        <Option
+          isNotifications={false}
+          label="Assignee"
+          value={
+            <AssigneesMenu>
+              <AssigneesMenu.Trigger>
+                <Button
+                  className="font-medium"
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={
+                    <Avatar
+                      className="text-foreground/80"
+                      name={assignee?.fullName}
+                      size="xs"
+                      src={assignee?.avatarUrl}
+                    />
+                  }
+                  size="sm"
+                  variant="naked"
+                >
+                  {assignee?.username ?? (
+                    <Text as="span" color="muted">
+                      Assign
+                    </Text>
+                  )}
+                </Button>
+              </AssigneesMenu.Trigger>
+              <AssigneesMenu.Items
+                assigneeId={request.assigneeId}
+                onAssigneeSelected={(assigneeId) => {
+                  onUpdate({ assigneeId: assigneeId ?? undefined });
+                }}
+                teamId={teamId}
+              />
+            </AssigneesMenu>
+          }
+        />
+      </Box>
+    </Container>
+  );
+};
+
+type RequestAttachment = {
+  name: string;
+  url?: string;
+};
+
+const metadataAttachments = (
+  metadata: Record<string, unknown>,
+): RequestAttachment[] => {
+  const raw = metadata.attachments ?? metadata.files;
+  if (!Array.isArray(raw)) return [];
+
+  return raw.flatMap((item): RequestAttachment[] => {
+    if (typeof item === "string") {
+      return [{ name: item, url: item }];
+    }
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const record = item as Record<string, unknown>;
+    const name = record.name ?? record.filename ?? record.title ?? record.url;
+    if (typeof name !== "string" || !name.trim()) {
+      return [];
+    }
+    return [
+      {
+        name,
+        url: typeof record.url === "string" ? record.url : undefined,
+      },
+    ];
+  });
+};
+
+const RequestAttachments = ({
+  metadata,
+}: {
+  metadata: Record<string, unknown>;
+}) => {
+  const attachments = metadataAttachments(metadata);
+  if (attachments.length === 0) return null;
+
+  return (
+    <Box className="border-border mt-5 border-t-[0.5px] pt-4">
+      <Text as="h4" className="mb-3" fontWeight="medium">
+        Attachments
+      </Text>
+      <Box className="space-y-2">
+        {attachments.map((attachment) =>
+          attachment.url ? (
+            <a
+              className="border-border hover:bg-surface-muted flex items-center gap-2 rounded-lg border px-3 py-2 transition"
+              href={attachment.url}
+              key={`${attachment.name}-${attachment.url}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <LinkIcon className="h-4 shrink-0" />
+              <Text className="line-clamp-1">{attachment.name}</Text>
+            </a>
+          ) : (
+            <Flex
+              align="center"
+              className="border-border rounded-lg border px-3 py-2"
+              gap={2}
+              key={attachment.name}
+            >
+              <LinkIcon className="h-4 shrink-0" />
+              <Text className="line-clamp-1">{attachment.name}</Text>
+            </Flex>
+          ),
+        )}
+      </Box>
+    </Box>
+  );
+};
+
 export const IntegrationRequestDetails = ({
   requestId,
 }: {
@@ -297,7 +662,7 @@ export const IntegrationRequestDetails = ({
     statuses.find((status) => status.category === "unstarted") ||
     statuses.at(0);
   const statusId = request?.statusId ?? defaultStatus?.id;
-  const priority = request?.priority ?? "No Priority";
+  const priority: StoryPriority = request?.priority ?? "No Priority";
 
   const handleUpdate = (payload: UpdateIntegrationRequestInput) => {
     if (!request) return;
@@ -400,22 +765,34 @@ export const IntegrationRequestDetails = ({
     });
   };
 
+  const handleDecline = () => {
+    setIsDeclining(true);
+  };
+
   return (
     <Box className="h-dvh">
-      <Box className="hidden h-full md:flex">
+      <Box className="notification-story-container hidden h-full md:flex">
         <Box className="min-w-0 flex-1">
           <BodyContainer className="h-dvh overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
               {request.provider === "github" ? (
                 <RequestGitHubBanner
+                  canEditRequest={canEditRequest}
                   issueNumber={issueNumber}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
                   repositoryName={repositoryName}
                   sourceUrl={request.sourceUrl}
                 />
               ) : null}
-              {request.provider === "slack" ? (
-                <RequestSlackBanner
+              {request.provider === "slack" ||
+              request.provider === "intercom" ? (
+                <RequestSourceBanner
+                  canEditRequest={canEditRequest}
                   channel={slackChannel}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                  provider={request.provider}
                   sourceUrl={request.sourceUrl}
                 />
               ) : null}
@@ -425,6 +802,21 @@ export const IntegrationRequestDetails = ({
                 editor={titleEditor}
               />
               <TextEditor className="text-lg" editor={descriptionEditor} />
+              <Box className="notification-story-inline-options mt-6 hidden">
+                <RequestProperties
+                  assignee={assignee}
+                  canEditRequest={canEditRequest}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                  onUpdate={handleUpdate}
+                  priority={priority}
+                  request={request}
+                  selectedStatus={selectedStatus}
+                  statusId={statusId}
+                  teamId={teamId}
+                />
+              </Box>
+              <RequestAttachments metadata={request.metadata} />
               <Divider className="my-6" />
               {request.provider === "github" ? (
                 <Box>
@@ -471,162 +863,19 @@ export const IntegrationRequestDetails = ({
           </BodyContainer>
         </Box>
 
-        <Box className="from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
-          <Container className="text-text-muted px-0.5 pt-4 md:px-6">
-            <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
-              <Text className="hidden md:block" fontWeight="semibold">
-                Properties
-              </Text>
-              <Flex justify="end">
-                <Menu>
-                  <Menu.Button>
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      rounded="full"
-                      size="sm"
-                      variant="naked"
-                    >
-                      <MoreHorizontalIcon className="h-5" />
-                    </Button>
-                  </Menu.Button>
-                  <Menu.Items align="end">
-                    <Menu.Group>
-                      <Menu.Item
-                        disabled={!canEditRequest}
-                        onSelect={handleAccept}
-                      >
-                        <CheckIcon />
-                        Accept
-                      </Menu.Item>
-                      <Menu.Item
-                        className="text-danger"
-                        disabled={!canEditRequest}
-                        onSelect={() => {
-                          setIsDeclining(true);
-                        }}
-                      >
-                        <CloseIcon className="text-danger" />
-                        Decline...
-                      </Menu.Item>
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              </Flex>
-            </Box>
-
-            <Box className="flex flex-wrap gap-2 md:block">
-              <Option
-                isNotifications={false}
-                label="Source"
-                value={
-                  <Flex align="center" className="gap-2 md:ml-0.5">
-                    {request.provider === "github" ? (
-                      <GitHubIcon className="h-4" />
-                    ) : request.provider === "slack" ? (
-                      <ChatIcon className="h-4" />
-                    ) : null}
-                    <Text className="line-clamp-1">
-                      {request.provider === "github"
-                        ? `GitHub issue ${issueNumber || request.sourceExternalId}`
-                        : request.provider === "slack"
-                          ? `Slack message ${request.sourceExternalId}`
-                          : `${request.provider} ${request.sourceExternalId}`}
-                    </Text>
-                  </Flex>
-                }
-              />
-              <Option
-                isNotifications={false}
-                label="Status"
-                value={
-                  <StatusesMenu>
-                    <StatusesMenu.Trigger>
-                      <Button
-                        color="tertiary"
-                        disabled={!canEditRequest}
-                        leftIcon={<StoryStatusIcon statusId={statusId} />}
-                        size="sm"
-                        variant="naked"
-                      >
-                        {selectedStatus?.name ?? "Todo"}
-                      </Button>
-                    </StatusesMenu.Trigger>
-                    <StatusesMenu.Items
-                      setStatusId={(nextStatusId) => {
-                        handleUpdate({ statusId: nextStatusId });
-                      }}
-                      statusId={statusId}
-                      teamId={teamId}
-                    />
-                  </StatusesMenu>
-                }
-              />
-              <Option
-                isNotifications={false}
-                label="Priority"
-                value={
-                  <PrioritiesMenu>
-                    <PrioritiesMenu.Trigger>
-                      <Button
-                        color="tertiary"
-                        disabled={!canEditRequest}
-                        leftIcon={<PriorityIcon priority={priority} />}
-                        size="sm"
-                        variant="naked"
-                      >
-                        {priority}
-                      </Button>
-                    </PrioritiesMenu.Trigger>
-                    <PrioritiesMenu.Items
-                      priority={priority}
-                      setPriority={(nextPriority: StoryPriority) => {
-                        handleUpdate({ priority: nextPriority });
-                      }}
-                    />
-                  </PrioritiesMenu>
-                }
-              />
-              <Option
-                isNotifications={false}
-                label="Assignee"
-                value={
-                  <AssigneesMenu>
-                    <AssigneesMenu.Trigger>
-                      <Button
-                        className="font-medium"
-                        color="tertiary"
-                        disabled={!canEditRequest}
-                        leftIcon={
-                          <Avatar
-                            className="text-foreground/80"
-                            name={assignee?.fullName}
-                            size="xs"
-                            src={assignee?.avatarUrl}
-                          />
-                        }
-                        size="sm"
-                        variant="naked"
-                      >
-                        {assignee?.username ?? (
-                          <Text as="span" color="muted">
-                            Assign
-                          </Text>
-                        )}
-                      </Button>
-                    </AssigneesMenu.Trigger>
-                    <AssigneesMenu.Items
-                      assigneeId={request.assigneeId}
-                      onAssigneeSelected={(assigneeId) => {
-                        handleUpdate({ assigneeId: assigneeId ?? undefined });
-                      }}
-                      teamId={teamId}
-                    />
-                  </AssigneesMenu>
-                }
-              />
-            </Box>
-          </Container>
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
+          <RequestProperties
+            assignee={assignee}
+            canEditRequest={canEditRequest}
+            onAccept={handleAccept}
+            onDecline={handleDecline}
+            onUpdate={handleUpdate}
+            priority={priority}
+            request={request}
+            selectedStatus={selectedStatus}
+            statusId={statusId}
+            teamId={teamId}
+          />
         </Box>
       </Box>
       <ConfirmDialog

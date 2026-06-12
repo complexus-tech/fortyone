@@ -92,7 +92,7 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
 			status_id = COALESCE(integration_requests.status_id, EXCLUDED.status_id),
-			priority = COALESCE(NULLIF(integration_requests.priority, ''), EXCLUDED.priority),
+			priority = EXCLUDED.priority,
 			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
 			metadata = EXCLUDED.metadata,
 			updated_at = NOW()

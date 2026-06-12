@@ -76,3 +76,23 @@ func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
 	require.True(t, isFortyOneAuthoredCommentBody(body))
 	require.Equal(t, "Ship it", stripFortyOneCommentMarker(body))
 }
+
+func TestGitHubPriorityFromLabels(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   []string
+		expected string
+	}{
+		{name: "urgent beats lower priority labels", labels: []string{"enhancement", "priority: high", "P0"}, expected: "Urgent"},
+		{name: "high maps common priority labels", labels: []string{"type: bug", "priority/high"}, expected: "High"},
+		{name: "medium maps p2 labels", labels: []string{"P2"}, expected: "Medium"},
+		{name: "low maps low labels", labels: []string{"good first issue", "priority: low"}, expected: "Low"},
+		{name: "unknown labels are not treated as priority", labels: []string{"bug", "backend"}, expected: "No Priority"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, githubPriorityFromLabelNames(tt.labels))
+		})
+	}
+}

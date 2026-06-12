@@ -61,6 +61,78 @@ type AppRequestLog struct {
 	CreatedAt    string            `json:"createdAt"`
 }
 
+type AppRuntimeActor struct {
+	SlackTeamID    string `json:"teamId"`
+	SlackUserID    string `json:"userId"`
+	SlackUserName  string `json:"userName"`
+	SlackChannelID string `json:"channelId"`
+	SlackChannel   string `json:"channelName"`
+	SlackMessageTS string `json:"messageTs"`
+	SlackThreadTS  string `json:"threadTs"`
+}
+
+type AppRuntimeOptionsRequest struct {
+	Actor  AppRuntimeActor `json:"actor"`
+	Query  string          `json:"query"`
+	TeamID string          `json:"teamId"`
+}
+
+type AppRuntimeCreateStoryRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	TeamID      string `json:"teamId"`
+	StatusID    string `json:"statusId"`
+	Priority    string `json:"priority"`
+	AssigneeID  string `json:"assigneeId"`
+	ObjectiveID string `json:"objectiveId"`
+	Source      struct {
+		SlackTeamID    string `json:"teamId"`
+		SlackUserID    string `json:"userId"`
+		SlackUserName  string `json:"userName"`
+		SlackChannelID string `json:"channelId"`
+		SlackChannel   string `json:"channelName"`
+		SlackMessageTS string `json:"messageTs"`
+		SlackThreadTS  string `json:"threadTs"`
+		SlackText      string `json:"messageText"`
+	} `json:"source"`
+}
+
+type AppRuntimeThreadCommentRequest struct {
+	Actor       AppRuntimeActor `json:"actor"`
+	MessageText string          `json:"messageText"`
+	StoryID     string          `json:"storyId"`
+}
+
+type AppRuntimeStoryUnfurlRequest struct {
+	Actor AppRuntimeActor `json:"actor"`
+	URL   string          `json:"url"`
+}
+
+func toCoreRuntimeActor(input AppRuntimeActor) slack.CoreRuntimeActor {
+	return slack.CoreRuntimeActor{
+		SlackTeamID:    input.SlackTeamID,
+		SlackUserID:    input.SlackUserID,
+		SlackUserName:  input.SlackUserName,
+		SlackChannelID: input.SlackChannelID,
+		SlackChannel:   input.SlackChannel,
+		SlackMessageTS: input.SlackMessageTS,
+		SlackThreadTS:  input.SlackThreadTS,
+	}
+}
+
+func toCoreRuntimeCreateStoryInput(input AppRuntimeCreateStoryRequest) slack.CoreRuntimeCreateStoryInput {
+	return slack.CoreRuntimeCreateStoryInput{
+		Title:       input.Title,
+		Description: input.Description,
+		TeamID:      input.TeamID,
+		StatusID:    input.StatusID,
+		Priority:    input.Priority,
+		AssigneeID:  input.AssigneeID,
+		ObjectiveID: input.ObjectiveID,
+		Source:      input.Source,
+	}
+}
+
 func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	out := AppIntegration{
 		Channels: make([]AppSlackChannel, 0, len(input.Channels)),

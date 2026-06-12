@@ -61,6 +61,7 @@ type Config struct {
 	SlackClientID      string
 	SlackClientSecret  string
 	SlackRedirectURL   string
+	BotToken           string
 	SSEHub             *sse.Hub
 	CorsOrigin         string
 }

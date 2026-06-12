@@ -92,6 +92,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.slack,
+		BotToken:  cfg.BotToken,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{

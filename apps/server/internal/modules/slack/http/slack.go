@@ -2,7 +2,9 @@ package slackhttp
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -15,12 +17,27 @@ import (
 )
 
 type Handlers struct {
-	log     *logger.Logger
-	service *slack.Service
+	log      *logger.Logger
+	service  *slack.Service
+	botToken string
 }
 
-func New(log *logger.Logger, service *slack.Service) *Handlers {
-	return &Handlers{log: log, service: service}
+func New(log *logger.Logger, service *slack.Service, botToken string) *Handlers {
+	return &Handlers{log: log, service: service, botToken: strings.TrimSpace(botToken)}
+}
+
+func (h *Handlers) BotAuth(next web.Handler) web.Handler {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		if h.botToken == "" {
+			return web.RespondError(ctx, w, slack.ErrSlackNotConfigured, http.StatusServiceUnavailable)
+		}
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+		if subtle.ConstantTimeCompare([]byte(token), []byte(h.botToken)) != 1 {
+			return web.RespondError(ctx, w, errors.New("unauthorized bot request"), http.StatusUnauthorized)
+		}
+		return next(ctx, w, r)
+	}
 }
 
 func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -53,6 +70,92 @@ func (h *Handlers) GetRequestLogs(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 	return web.Respond(ctx, w, toAppRequestLogs(logs), http.StatusOK)
+}
+
+func (h *Handlers) RuntimeSearchTeams(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeOptionsRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	options, err := h.service.RuntimeSearchTeams(ctx, toCoreRuntimeActor(input.Actor), input.Query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, options, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeSearchStatuses(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeOptionsRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	options, err := h.service.RuntimeSearchStatuses(ctx, toCoreRuntimeActor(input.Actor), input.TeamID, input.Query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, options, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeSearchMembers(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeOptionsRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	options, err := h.service.RuntimeSearchMembers(ctx, toCoreRuntimeActor(input.Actor), input.TeamID, input.Query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, options, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeSearchObjectives(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeOptionsRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	options, err := h.service.RuntimeSearchObjectives(ctx, toCoreRuntimeActor(input.Actor), input.TeamID, input.Query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, options, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeCreateStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeCreateStoryRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	story, err := h.service.RuntimeCreateStory(ctx, toCoreRuntimeCreateStoryInput(input))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, story, http.StatusCreated)
+}
+
+func (h *Handlers) RuntimeRecordThreadComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeThreadCommentRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) RuntimeStoryUnfurl(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeStoryUnfurlRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeMentionNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input struct {
+		Actor AppRuntimeActor `json:"actor"`
+	}
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, []any{}, http.StatusOK)
 }
 
 func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

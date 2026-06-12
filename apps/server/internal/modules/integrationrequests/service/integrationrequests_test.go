@@ -1,0 +1,142 @@
+package integrationrequests
+
+import (
+	"context"
+	"database/sql"
+	"testing"
+
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+)
+
+type requestRepoStub struct {
+	requests       []CoreIntegrationRequest
+	markedAccepted []uuid.UUID
+	markedDeclined []uuid.UUID
+	statusID       uuid.UUID
+	createdStories []stories.CoreNewStory
+}
+
+func (r *requestRepoStub) UpsertPending(ctx context.Context, input CoreUpsertRequestInput) (CoreIntegrationRequest, error) {
+	return CoreIntegrationRequest{}, nil
+}
+
+func (r *requestRepoStub) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error) {
+	result := make([]CoreIntegrationRequest, 0, len(r.requests))
+	for _, request := range r.requests {
+		if request.WorkspaceID == workspaceID && request.TeamID == teamID && request.Status == filter.Status {
+			result = append(result, request)
+		}
+	}
+	return result, nil
+}
+
+func (r *requestRepoStub) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error) {
+	for _, request := range r.requests {
+		if request.WorkspaceID == workspaceID && request.ID == requestID {
+			return request, nil
+		}
+	}
+	return CoreIntegrationRequest{}, sql.ErrNoRows
+}
+
+func (r *requestRepoStub) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
+	return &r.statusID, nil
+}
+
+func (r *requestRepoStub) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error) {
+	return CoreIntegrationRequest{}, nil
+}
+
+func (r *requestRepoStub) MarkAccepted(ctx context.Context, workspaceID, requestID, storyID, acceptedByUserID uuid.UUID) (CoreIntegrationRequest, error) {
+	r.markedAccepted = append(r.markedAccepted, requestID)
+	request, err := r.Get(ctx, workspaceID, requestID)
+	if err != nil {
+		return CoreIntegrationRequest{}, err
+	}
+	request.Status = StatusAccepted
+	request.AcceptedStoryID = &storyID
+	return request, nil
+}
+
+func (r *requestRepoStub) MarkDeclined(ctx context.Context, workspaceID, requestID, declinedByUserID uuid.UUID) (CoreIntegrationRequest, error) {
+	r.markedDeclined = append(r.markedDeclined, requestID)
+	request, err := r.Get(ctx, workspaceID, requestID)
+	if err != nil {
+		return CoreIntegrationRequest{}, err
+	}
+	request.Status = StatusDeclined
+	return request, nil
+}
+
+type storyServiceStub struct {
+	repo *requestRepoStub
+}
+
+func (s storyServiceStub) CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
+	s.repo.createdStories = append(s.repo.createdStories, ns)
+	return stories.CoreSingleStory{ID: uuid.New()}, nil
+}
+
+type providerAccepterStub struct{}
+
+func (providerAccepterStub) AcceptIntegrationRequest(ctx context.Context, request CoreIntegrationRequest, story stories.CoreSingleStory) error {
+	return nil
+}
+
+func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	firstID := uuid.New()
+	secondID := uuid.New()
+	repo := &requestRepoStub{
+		statusID: uuid.New(),
+		requests: []CoreIntegrationRequest{
+			{ID: firstID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "First", Priority: "High", Status: StatusPending},
+			{ID: secondID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Second", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: uuid.New(), Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Other team", Status: StatusPending},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderGitHub: providerAccepterStub{},
+		ProviderSlack:  providerAccepterStub{},
+	})
+
+	result, err := service.AcceptAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
+
+	require.NoError(t, err)
+	require.Equal(t, 2, result.Count)
+	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, result.RequestIDs)
+	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, repo.markedAccepted)
+	require.Len(t, repo.createdStories, 2)
+	require.Equal(t, "High", repo.createdStories[0].Priority)
+	require.Equal(t, "No Priority", repo.createdStories[1].Priority)
+}
+
+func TestDeclineAllPendingByTeamDeclinesEveryPendingRequest(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	firstID := uuid.New()
+	secondID := uuid.New()
+	repo := &requestRepoStub{
+		requests: []CoreIntegrationRequest{
+			{ID: firstID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "First", Status: StatusPending},
+			{ID: secondID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Second", Status: StatusPending},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Handled", Status: StatusAccepted},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderGitHub: providerAccepterStub{},
+		ProviderSlack:  providerAccepterStub{},
+	})
+
+	result, err := service.DeclineAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
+
+	require.NoError(t, err)
+	require.Equal(t, 2, result.Count)
+	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, result.RequestIDs)
+	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, repo.markedDeclined)
+}

@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { Box, Flex, Text } from "ui";
 import { IntegrationRequestCard } from "./card";
+import { IntegrationRequestsHeader } from "./header";
 import { useTeamIntegrationRequests } from "./hooks/use-team-requests";
 
 export const ListIntegrationRequests = () => {
@@ -11,18 +12,10 @@ export const ListIntegrationRequests = () => {
 
   return (
     <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
-      <Flex
-        align="center"
-        className="border-border/60 h-16 border-b-[0.5px] px-5"
-        justify="between"
-      >
-        <Text className="font-semibold" fontSize="lg">
-          Requests
-        </Text>
-        {requests.length > 0 ? (
-          <Text color="muted">{requests.length}</Text>
-        ) : null}
-      </Flex>
+      <IntegrationRequestsHeader
+        requestCount={requests.length}
+        teamId={teamId}
+      />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {isPending ? (
           <Box className="space-y-0">

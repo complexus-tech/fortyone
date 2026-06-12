@@ -132,6 +132,203 @@ func (s *Service) GetRequestLogs(ctx context.Context, workspaceID uuid.UUID, lim
 	return logs, nil
 }
 
+func (s *Service) RuntimeSearchTeams(ctx context.Context, actor CoreRuntimeActor, query string) ([]CoreRuntimeOption, error) {
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, strings.TrimSpace(actor.SlackTeamID))
+	if err != nil {
+		return nil, err
+	}
+	teams, err := s.repo.ListWorkspaceTeams(ctx, workspace.ID)
+	if err != nil {
+		return nil, err
+	}
+	query = strings.ToLower(strings.TrimSpace(query))
+	options := make([]CoreRuntimeOption, 0, len(teams))
+	for _, team := range teams {
+		label := fmt.Sprintf("%s (%s)", team.Name, team.Code)
+		if query != "" && !strings.Contains(strings.ToLower(label), query) {
+			continue
+		}
+		options = append(options, CoreRuntimeOption{
+			Label: label,
+			Value: team.ID.String(),
+		})
+	}
+	return options, nil
+}
+
+func (s *Service) RuntimeSearchStatuses(ctx context.Context, actor CoreRuntimeActor, teamIDRaw, query string) ([]CoreRuntimeOption, error) {
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, strings.TrimSpace(actor.SlackTeamID))
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := uuid.Parse(strings.TrimSpace(teamIDRaw))
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.repo.FindTeamByID(ctx, workspace.ID, teamID); err != nil {
+		return nil, err
+	}
+	statuses, err := s.repo.ListTeamStatuses(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+	query = strings.ToLower(strings.TrimSpace(query))
+	options := make([]CoreRuntimeOption, 0, len(statuses))
+	for _, status := range statuses {
+		if query != "" && !strings.Contains(strings.ToLower(status.Name), query) {
+			continue
+		}
+		options = append(options, CoreRuntimeOption{
+			Label: status.Name,
+			Value: status.ID.String(),
+		})
+	}
+	return options, nil
+}
+
+func (s *Service) RuntimeSearchMembers(ctx context.Context, actor CoreRuntimeActor, teamIDRaw, query string) ([]CoreRuntimeOption, error) {
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, strings.TrimSpace(actor.SlackTeamID))
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := uuid.Parse(strings.TrimSpace(teamIDRaw))
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.repo.FindTeamByID(ctx, workspace.ID, teamID); err != nil {
+		return nil, err
+	}
+	members, err := s.repo.SearchTeamMembers(ctx, teamID, query, 25)
+	if err != nil {
+		return nil, err
+	}
+	options := make([]CoreRuntimeOption, 0, len(members))
+	for _, member := range members {
+		options = append(options, CoreRuntimeOption{
+			Label: teamMemberDisplayName(member),
+			Value: member.UserID.String(),
+		})
+	}
+	return options, nil
+}
+
+func (s *Service) RuntimeSearchObjectives(ctx context.Context, actor CoreRuntimeActor, teamIDRaw, query string) ([]CoreRuntimeOption, error) {
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, strings.TrimSpace(actor.SlackTeamID))
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := uuid.Parse(strings.TrimSpace(teamIDRaw))
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.repo.FindTeamByID(ctx, workspace.ID, teamID); err != nil {
+		return nil, err
+	}
+	objectives, err := s.repo.SearchTeamObjectives(ctx, workspace.ID, teamID, query, 25)
+	if err != nil {
+		return nil, err
+	}
+	options := make([]CoreRuntimeOption, 0, len(objectives))
+	for _, objective := range objectives {
+		options = append(options, CoreRuntimeOption{
+			Label: objective.Name,
+			Value: objective.ID.String(),
+		})
+	}
+	return options, nil
+}
+
+func (s *Service) RuntimeCreateStory(ctx context.Context, input CoreRuntimeCreateStoryInput) (CoreRuntimeCreatedStory, error) {
+	source := requestSourceContext{
+		SlackTeamID:    strings.TrimSpace(input.Source.SlackTeamID),
+		SlackChannelID: strings.TrimSpace(input.Source.SlackChannelID),
+		SlackChannel:   strings.TrimSpace(input.Source.SlackChannel),
+		SlackMessageTS: strings.TrimSpace(input.Source.SlackMessageTS),
+		SlackThreadTS:  strings.TrimSpace(input.Source.SlackThreadTS),
+		SlackUserID:    strings.TrimSpace(input.Source.SlackUserID),
+		SlackUsername:  strings.TrimSpace(input.Source.SlackUserName),
+		SlackText:      strings.TrimSpace(input.Source.SlackText),
+	}
+	if strings.TrimSpace(input.Title) == "" {
+		return CoreRuntimeCreatedStory{}, errors.New("title is required")
+	}
+	workspace, err := s.repo.GetWorkspaceBySlackTeamID(ctx, source.SlackTeamID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, err
+	}
+	teamID, err := uuid.Parse(strings.TrimSpace(input.TeamID))
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, err
+	}
+	team, err := s.repo.FindTeamByID(ctx, workspace.ID, teamID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, err
+	}
+	actorID, _, err := s.resolveLinkedSlackUser(ctx, workspace.ID, source)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, err
+	}
+
+	description := strings.TrimSpace(input.Description)
+	sourceDescription := buildPrefilledDescription(source)
+	if description == "" {
+		description = sourceDescription
+	} else if sourceDescription != "" {
+		description = strings.TrimSpace(description + "\n\n" + sourceDescription)
+	}
+	var descriptionPtr *string
+	if description != "" {
+		descriptionPtr = &description
+	}
+
+	statusID, err := parseOptionalUUID(input.StatusID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, fmt.Errorf("invalid status: %w", err)
+	}
+	if statusID == nil {
+		statusID, err = s.repo.FindFirstStatusByCategory(ctx, team.ID, "unstarted")
+		if err != nil {
+			return CoreRuntimeCreatedStory{}, err
+		}
+	}
+	assigneeID, err := parseOptionalUUID(input.AssigneeID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, fmt.Errorf("invalid assignee: %w", err)
+	}
+	objectiveID, err := parseOptionalUUID(input.ObjectiveID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, fmt.Errorf("invalid objective: %w", err)
+	}
+
+	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
+		Title:       strings.TrimSpace(input.Title),
+		Description: descriptionPtr,
+		Objective:   objectiveID,
+		Status:      statusID,
+		Assignee:    assigneeID,
+		Reporter:    &actorID,
+		Priority:    normalizeSlackPriority(input.Priority),
+		Team:        team.ID,
+	}, workspace.ID)
+	if err != nil {
+		return CoreRuntimeCreatedStory{}, err
+	}
+
+	if sourceURL := permalinkFromContext(source); sourceURL != "" {
+		if err := s.repo.CreateStoryLink(ctx, story.ID, buildSlackStoryLinkTitle(source), sourceURL); err != nil {
+			s.log.Warn(ctx, "failed creating slack source link", "error", err, "story_id", story.ID)
+		}
+	}
+
+	ref := fmt.Sprintf("%s-%d", team.Code, story.SequenceID)
+	return CoreRuntimeCreatedStory{
+		ID:    story.ID.String(),
+		Ref:   ref,
+		Title: story.Title,
+		URL:   buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, story.ID.String()),
+	}, nil
+}
+
 func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string) (CoreCreateInstallSession, error) {
 	if !s.canUseOAuth() {
 		return CoreCreateInstallSession{}, ErrSlackNotConfigured
@@ -2240,6 +2437,18 @@ func normalizeSlackPriority(value string) string {
 	default:
 		return slackPriorityNoPriority
 	}
+}
+
+func parseOptionalUUID(value string) (*uuid.UUID, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := uuid.Parse(value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
 }
 
 func selectTeam(teams []slackrepository.TeamRecord, preferredTeamID uuid.UUID) slackrepository.TeamRecord {
