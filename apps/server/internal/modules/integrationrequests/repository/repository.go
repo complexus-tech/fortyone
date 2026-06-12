@@ -35,6 +35,12 @@ type requestRow struct {
 	StatusID         *uuid.UUID   `db:"status_id"`
 	Priority         string       `db:"priority"`
 	AssigneeID       *uuid.UUID   `db:"assignee_id"`
+	EstimateValue    *int16       `db:"estimate_unit"`
+	ObjectiveID      *uuid.UUID   `db:"objective_id"`
+	KeyResultID      *uuid.UUID   `db:"key_result_id"`
+	SprintID         *uuid.UUID   `db:"sprint_id"`
+	StartDate        *time.Time   `db:"start_date"`
+	EndDate          *time.Time   `db:"end_date"`
 	Status           string       `db:"status"`
 	Metadata         mapJSON      `db:"metadata"`
 	AcceptedStoryID  *uuid.UUID   `db:"accepted_story_id"`
@@ -83,8 +89,9 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 	query := `
 		INSERT INTO integration_requests (
 			workspace_id, team_id, provider, source_type, source_external_id, source_number,
-			source_url, title, description, status_id, priority, assignee_id, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13::jsonb, $14)
+			source_url, title, description, status_id, priority, assignee_id, estimate_unit,
+			objective_id, key_result_id, sprint_id, start_date, end_date, metadata, created_by_user_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20)
 		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
 			team_id = EXCLUDED.team_id,
 			source_number = EXCLUDED.source_number,
@@ -94,6 +101,12 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 			status_id = COALESCE(integration_requests.status_id, EXCLUDED.status_id),
 			priority = EXCLUDED.priority,
 			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
+			estimate_unit = COALESCE(integration_requests.estimate_unit, EXCLUDED.estimate_unit),
+			objective_id = COALESCE(integration_requests.objective_id, EXCLUDED.objective_id),
+			key_result_id = COALESCE(integration_requests.key_result_id, EXCLUDED.key_result_id),
+			sprint_id = COALESCE(integration_requests.sprint_id, EXCLUDED.sprint_id),
+			start_date = COALESCE(integration_requests.start_date, EXCLUDED.start_date),
+			end_date = COALESCE(integration_requests.end_date, EXCLUDED.end_date),
 			metadata = EXCLUDED.metadata,
 			updated_at = NOW()
 		WHERE integration_requests.status = 'pending'
@@ -115,6 +128,12 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		input.StatusID,
 		input.Priority,
 		input.AssigneeID,
+		input.EstimateValue,
+		input.ObjectiveID,
+		input.KeyResultID,
+		input.SprintID,
+		input.StartDate,
+		input.EndDate,
 		string(metadata),
 		input.CreatedByUserID,
 	)
@@ -136,10 +155,16 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UU
 			status_id = COALESCE($5, status_id),
 			priority = COALESCE(NULLIF($6, ''), priority),
 			assignee_id = COALESCE($7, assignee_id),
+			estimate_unit = COALESCE($8, estimate_unit),
+			objective_id = COALESCE($9, objective_id),
+			key_result_id = COALESCE($10, key_result_id),
+			sprint_id = COALESCE($11, sprint_id),
+			start_date = COALESCE($12, start_date),
+			end_date = COALESCE($13, end_date),
 			updated_at = NOW()
 		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
 		RETURNING *
-	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID)
+	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID, input.EstimateValue, input.ObjectiveID, input.KeyResultID, input.SprintID, input.StartDate, input.EndDate)
 	if err != nil {
 		return integrationrequests.CoreIntegrationRequest{}, err
 	}
@@ -252,6 +277,12 @@ func toCore(row requestRow) integrationrequests.CoreIntegrationRequest {
 		StatusID:         row.StatusID,
 		Priority:         row.Priority,
 		AssigneeID:       row.AssigneeID,
+		EstimateValue:    row.EstimateValue,
+		ObjectiveID:      row.ObjectiveID,
+		KeyResultID:      row.KeyResultID,
+		SprintID:         row.SprintID,
+		StartDate:        row.StartDate,
+		EndDate:          row.EndDate,
 		Status:           row.Status,
 		Metadata:         map[string]any(row.Metadata),
 		AcceptedStoryID:  row.AcceptedStoryID,

@@ -92,13 +92,19 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	}
 
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
-		Title:       request.Title,
-		Description: request.Description,
-		Status:      statusID,
-		Reporter:    &actorID,
-		Assignee:    request.AssigneeID,
-		Team:        request.TeamID,
-		Priority:    priority,
+		Title:         request.Title,
+		Description:   request.Description,
+		Status:        statusID,
+		Reporter:      &actorID,
+		Assignee:      request.AssigneeID,
+		Team:          request.TeamID,
+		Priority:      priority,
+		EstimateValue: request.EstimateValue,
+		Objective:     request.ObjectiveID,
+		KeyResult:     request.KeyResultID,
+		Sprint:        request.SprintID,
+		StartDate:     request.StartDate,
+		EndDate:       request.EndDate,
 	}, workspaceID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err

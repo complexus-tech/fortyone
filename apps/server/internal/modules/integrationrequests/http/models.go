@@ -2,7 +2,9 @@ package integrationrequestshttp
 
 import (
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
+	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/google/uuid"
+	"time"
 )
 
 type AppIntegrationRequest struct {
@@ -19,6 +21,12 @@ type AppIntegrationRequest struct {
 	StatusID         *uuid.UUID     `json:"statusId,omitempty"`
 	Priority         string         `json:"priority"`
 	AssigneeID       *uuid.UUID     `json:"assigneeId,omitempty"`
+	EstimateValue    *int16         `json:"estimateValue,omitempty"`
+	ObjectiveID      *uuid.UUID     `json:"objectiveId,omitempty"`
+	KeyResultID      *uuid.UUID     `json:"keyResultId,omitempty"`
+	SprintID         *uuid.UUID     `json:"sprintId,omitempty"`
+	StartDate        *time.Time     `json:"startDate,omitempty"`
+	EndDate          *time.Time     `json:"endDate,omitempty"`
 	Status           string         `json:"status"`
 	Metadata         map[string]any `json:"metadata"`
 	AcceptedStoryID  *uuid.UUID     `json:"acceptedStoryId,omitempty"`
@@ -27,11 +35,17 @@ type AppIntegrationRequest struct {
 }
 
 type AppUpdateIntegrationRequest struct {
-	Title       *string    `json:"title,omitempty"`
-	Description *string    `json:"description,omitempty"`
-	StatusID    *uuid.UUID `json:"statusId,omitempty"`
-	Priority    *string    `json:"priority,omitempty"`
-	AssigneeID  *uuid.UUID `json:"assigneeId,omitempty"`
+	Title         *string    `json:"title,omitempty"`
+	Description   *string    `json:"description,omitempty"`
+	StatusID      *uuid.UUID `json:"statusId,omitempty"`
+	Priority      *string    `json:"priority,omitempty"`
+	AssigneeID    *uuid.UUID `json:"assigneeId,omitempty"`
+	EstimateValue *int16     `json:"estimateValue,omitempty"`
+	ObjectiveID   *uuid.UUID `json:"objectiveId,omitempty"`
+	KeyResultID   *uuid.UUID `json:"keyResultId,omitempty"`
+	SprintID      *uuid.UUID `json:"sprintId,omitempty"`
+	StartDate     *date.Date `json:"startDate,omitempty"`
+	EndDate       *date.Date `json:"endDate,omitempty"`
 }
 
 type AppBulkRequestResult struct {
@@ -54,6 +68,12 @@ func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegratio
 		StatusID:         core.StatusID,
 		Priority:         core.Priority,
 		AssigneeID:       core.AssigneeID,
+		EstimateValue:    core.EstimateValue,
+		ObjectiveID:      core.ObjectiveID,
+		KeyResultID:      core.KeyResultID,
+		SprintID:         core.SprintID,
+		StartDate:        core.StartDate,
+		EndDate:          core.EndDate,
 		Status:           core.Status,
 		Metadata:         core.Metadata,
 		AcceptedStoryID:  core.AcceptedStoryID,

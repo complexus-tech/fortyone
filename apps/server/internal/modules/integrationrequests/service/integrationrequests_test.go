@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
@@ -113,6 +114,58 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 	require.Len(t, repo.createdStories, 2)
 	require.Equal(t, "High", repo.createdStories[0].Priority)
 	require.Equal(t, "No Priority", repo.createdStories[1].Priority)
+}
+
+func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	requestID := uuid.New()
+	statusID := uuid.New()
+	objectiveID := uuid.New()
+	keyResultID := uuid.New()
+	sprintID := uuid.New()
+	estimateValue := int16(5)
+	startDate := time.Date(2026, 6, 15, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2026, 6, 22, 0, 0, 0, 0, time.UTC)
+	repo := &requestRepoStub{
+		statusID: statusID,
+		requests: []CoreIntegrationRequest{
+			{
+				ID:               requestID,
+				WorkspaceID:      workspaceID,
+				TeamID:           teamID,
+				Provider:         ProviderGitHub,
+				SourceType:       SourceTypeIssue,
+				SourceExternalID: "123",
+				Title:            "Import customer escalation",
+				StatusID:         &statusID,
+				Priority:         "Urgent",
+				EstimateValue:    &estimateValue,
+				ObjectiveID:      &objectiveID,
+				KeyResultID:      &keyResultID,
+				SprintID:         &sprintID,
+				StartDate:        &startDate,
+				EndDate:          &endDate,
+				Status:           StatusPending,
+			},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderGitHub: providerAccepterStub{},
+	})
+
+	_, err := service.Accept(context.Background(), workspaceID, requestID, actorID)
+
+	require.NoError(t, err)
+	require.Len(t, repo.createdStories, 1)
+	createdStory := repo.createdStories[0]
+	require.Equal(t, &estimateValue, createdStory.EstimateValue)
+	require.Equal(t, &objectiveID, createdStory.Objective)
+	require.Equal(t, &keyResultID, createdStory.KeyResult)
+	require.Equal(t, &sprintID, createdStory.Sprint)
+	require.Equal(t, &startDate, createdStory.StartDate)
+	require.Equal(t, &endDate, createdStory.EndDate)
 }
 
 func TestDeclineAllPendingByTeamDeclinesEveryPendingRequest(t *testing.T) {

@@ -34,6 +34,12 @@ type CoreIntegrationRequest struct {
 	StatusID         *uuid.UUID
 	Priority         string
 	AssigneeID       *uuid.UUID
+	EstimateValue    *int16
+	ObjectiveID      *uuid.UUID
+	KeyResultID      *uuid.UUID
+	SprintID         *uuid.UUID
+	StartDate        *time.Time
+	EndDate          *time.Time
 	Status           string
 	Metadata         map[string]any
 	AcceptedStoryID  *uuid.UUID
@@ -59,6 +65,12 @@ type CoreUpsertRequestInput struct {
 	StatusID         *uuid.UUID
 	Priority         string
 	AssigneeID       *uuid.UUID
+	EstimateValue    *int16
+	ObjectiveID      *uuid.UUID
+	KeyResultID      *uuid.UUID
+	SprintID         *uuid.UUID
+	StartDate        *time.Time
+	EndDate          *time.Time
 	Metadata         map[string]any
 	CreatedByUserID  *uuid.UUID
 }
@@ -73,11 +85,17 @@ type CoreBulkRequestResult struct {
 }
 
 type CoreUpdateRequestInput struct {
-	Title       *string
-	Description *string
-	StatusID    *uuid.UUID
-	Priority    *string
-	AssigneeID  *uuid.UUID
+	Title         *string
+	Description   *string
+	StatusID      *uuid.UUID
+	Priority      *string
+	AssigneeID    *uuid.UUID
+	EstimateValue *int16
+	ObjectiveID   *uuid.UUID
+	KeyResultID   *uuid.UUID
+	SprintID      *uuid.UUID
+	StartDate     *time.Time
+	EndDate       *time.Time
 }
 
 type StoryService interface {

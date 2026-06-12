@@ -12,8 +12,10 @@ import TextExtension from "@tiptap/extension-text";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useParams, useRouter } from "next/navigation";
+import { format, formatISO } from "date-fns";
 import { cn } from "lib";
 import {
+  CalendarIcon,
   ChatIcon,
   CheckIcon,
   CloseIcon,
@@ -22,12 +24,15 @@ import {
   GitHubIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  ObjectiveIcon,
+  SprintsIcon,
 } from "icons";
 import {
   Avatar,
   Box,
   Button,
   Container,
+  DatePicker,
   Divider,
   Flex,
   Menu,
@@ -45,7 +50,9 @@ import {
   StatusesMenu,
   StoryStatusIcon,
 } from "@/components/ui";
-import { useDebounce, useWorkspacePath } from "@/hooks";
+import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import { SprintsMenu } from "@/components/ui/story/sprints-menu";
+import { useDebounce, useTerminology, useWorkspacePath } from "@/hooks";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
@@ -56,6 +63,9 @@ import type { State } from "@/types/states";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { Option } from "@/modules/story/components/options";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import {
   getStoryCommentEditorExtensions,
   serializeStoryCommentToGitHubMarkdown,
@@ -73,8 +83,46 @@ import type {
 
 const DEBOUNCE_DELAY = 1000;
 
+type EstimateScheme = "points" | "hours" | "tshirt" | "ideal_days";
+
+const estimateValues = [1, 2, 3, 5, 8] as const;
+
+const estimateLabels: Record<EstimateScheme, Record<number, string>> = {
+  points: {
+    1: "1",
+    2: "2",
+    3: "3",
+    5: "5",
+    8: "8",
+  },
+  hours: {
+    1: "0.5h",
+    2: "1h",
+    3: "2h",
+    5: "4h",
+    8: "8h",
+  },
+  tshirt: {
+    1: "XS",
+    2: "S",
+    3: "M",
+    5: "L",
+    8: "XL",
+  },
+  ideal_days: {
+    1: "0.5d",
+    2: "1d",
+    3: "2d",
+    5: "3d",
+    8: "5d",
+  },
+};
+
 const metadataText = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
+
+const estimateLabel = (scheme: EstimateScheme, value?: number) =>
+  value ? estimateLabels[scheme][value] ?? String(value) : "Estimate";
 
 const CommentRow = ({ comment }: { comment: GitHubComment }) => (
   <Box className="relative pb-4">
@@ -411,6 +459,18 @@ const RequestProperties = ({
   variant = "sidebar",
 }: RequestPropertiesProps) => {
   const isInline = variant === "inline";
+  const { getTermDisplay } = useTerminology();
+  const { data: teamSettings } = useTeamSettings(teamId);
+  const { data: selectedObjective } = useObjective(
+    request.objectiveId ?? null,
+    teamId,
+  );
+  const { data: selectedSprint } = useSprint(request.sprintId ?? null, teamId);
+  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+  const requestEstimateLabel = estimateLabel(
+    estimateScheme,
+    request.estimateValue,
+  );
 
   return (
     <Container
@@ -519,6 +579,167 @@ const RequestProperties = ({
             </AssigneesMenu>
           }
         />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Estimate"
+          value={
+            <Menu>
+              <Menu.Button>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  {requestEstimateLabel}
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="start">
+                <Menu.Group>
+                  {estimateValues.map((value) => (
+                    <Menu.Item
+                      key={value}
+                      onSelect={() => {
+                        onUpdate({ estimateValue: value });
+                      }}
+                    >
+                      {estimateLabel(estimateScheme, value)}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label={getTermDisplay("objectiveTerm", { capitalize: true })}
+          value={
+            <ObjectivesMenu>
+              <ObjectivesMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<ObjectiveIcon className="h-4" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  <span className="max-w-40 truncate">
+                    {selectedObjective?.name ??
+                      getTermDisplay("objectiveTerm", { capitalize: true })}
+                  </span>
+                </Button>
+              </ObjectivesMenu.Trigger>
+              <ObjectivesMenu.Items
+                objectiveId={request.objectiveId}
+                setObjectiveId={(objectiveId) => {
+                  if (objectiveId) {
+                    onUpdate({ objectiveId });
+                  }
+                }}
+                teamId={teamId}
+              />
+            </ObjectivesMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label={getTermDisplay("sprintTerm", { capitalize: true })}
+          value={
+            <SprintsMenu>
+              <SprintsMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<SprintsIcon className="h-[1.05rem]" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  <span className="max-w-40 truncate">
+                    {selectedSprint?.name ??
+                      getTermDisplay("sprintTerm", { capitalize: true })}
+                  </span>
+                </Button>
+              </SprintsMenu.Trigger>
+              <SprintsMenu.Items
+                setSprintId={(sprintId) => {
+                  if (sprintId) {
+                    onUpdate({ sprintId });
+                  }
+                }}
+                sprintId={request.sprintId}
+                teamId={teamId}
+              />
+            </SprintsMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Start"
+          value={
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<CalendarIcon className="h-4" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  {request.startDate
+                    ? format(new Date(request.startDate), "MMM d")
+                    : "Start"}
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar
+                onDayClick={(day) => {
+                  onUpdate({
+                    startDate: formatISO(day, { representation: "date" }),
+                  });
+                }}
+                selected={
+                  request.startDate ? new Date(request.startDate) : undefined
+                }
+              />
+            </DatePicker>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Deadline"
+          value={
+            <DatePicker>
+              <DatePicker.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<CalendarIcon className="h-4" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  {request.endDate
+                    ? format(new Date(request.endDate), "MMM d")
+                    : "Deadline"}
+                </Button>
+              </DatePicker.Trigger>
+              <DatePicker.Calendar
+                onDayClick={(day) => {
+                  onUpdate({
+                    endDate: formatISO(day, { representation: "date" }),
+                  });
+                }}
+                selected={
+                  request.endDate ? new Date(request.endDate) : undefined
+                }
+              />
+            </DatePicker>
+          }
+        />
       </Box>
     </Container>
   );
@@ -527,6 +748,70 @@ const RequestProperties = ({
 type RequestAttachment = {
   name: string;
   url?: string;
+};
+
+type RequestExternalLink = {
+  title: string;
+  url: string;
+};
+
+const metadataLinks = (
+  metadata: Record<string, unknown>,
+): RequestExternalLink[] => {
+  const raw = metadata.links ?? metadata.urls ?? metadata.external_links;
+  if (!Array.isArray(raw)) return [];
+
+  return raw.flatMap((item): RequestExternalLink[] => {
+    if (typeof item === "string" && item.trim()) {
+      return [{ title: item, url: item }];
+    }
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const record = item as Record<string, unknown>;
+    const url = record.url ?? record.href;
+    if (typeof url !== "string" || !url.trim()) {
+      return [];
+    }
+    const title = record.title ?? record.name ?? record.label ?? url;
+    return [
+      {
+        title: typeof title === "string" && title.trim() ? title : url,
+        url,
+      },
+    ];
+  });
+};
+
+const RequestExternalLinks = ({
+  metadata,
+}: {
+  metadata: Record<string, unknown>;
+}) => {
+  const links = metadataLinks(metadata);
+  if (links.length === 0) return null;
+
+  return (
+    <Box className="border-border mt-5 border-t-[0.5px] pt-4">
+      <Text as="h4" className="mb-3" fontWeight="medium">
+        External links
+      </Text>
+      <Box className="space-y-2">
+        {links.map((link) => (
+          <a
+            className="border-border hover:bg-surface-muted flex items-center gap-2 rounded-lg border px-3 py-2 transition"
+            href={link.url}
+            key={`${link.title}-${link.url}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <LinkIcon className="h-4 shrink-0" />
+            <Text className="line-clamp-1">{link.title}</Text>
+          </a>
+        ))}
+      </Box>
+    </Box>
+  );
 };
 
 const metadataAttachments = (
@@ -772,6 +1057,7 @@ export const IntegrationRequestDetails = ({
                   variant="inline"
                 />
               </Box>
+              <RequestExternalLinks metadata={request.metadata} />
               <RequestAttachments metadata={request.metadata} />
               <Divider className="my-6" />
               {request.provider === "github" ? (

@@ -72,11 +72,17 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, integrationrequests.CoreUpdateRequestInput{
-		Title:       input.Title,
-		Description: input.Description,
-		StatusID:    input.StatusID,
-		Priority:    input.Priority,
-		AssigneeID:  input.AssigneeID,
+		Title:         input.Title,
+		Description:   input.Description,
+		StatusID:      input.StatusID,
+		Priority:      input.Priority,
+		AssigneeID:    input.AssigneeID,
+		EstimateValue: input.EstimateValue,
+		ObjectiveID:   input.ObjectiveID,
+		KeyResultID:   input.KeyResultID,
+		SprintID:      input.SprintID,
+		StartDate:     input.StartDate.TimePtr(),
+		EndDate:       input.EndDate.TimePtr(),
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, requestErrorStatus(err))

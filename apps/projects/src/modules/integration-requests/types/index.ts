@@ -16,6 +16,12 @@ export type IntegrationRequest = {
   statusId?: string;
   priority: "No Priority" | "Low" | "Medium" | "High" | "Urgent";
   assigneeId?: string;
+  estimateValue?: number;
+  objectiveId?: string;
+  keyResultId?: string;
+  sprintId?: string;
+  startDate?: string;
+  endDate?: string;
   status: IntegrationRequestStatus;
   metadata: Record<string, unknown>;
   acceptedStoryId?: string;
@@ -26,7 +32,17 @@ export type IntegrationRequest = {
 export type UpdateIntegrationRequestInput = Partial<
   Pick<
     IntegrationRequest,
-    "title" | "description" | "statusId" | "priority" | "assigneeId"
+    | "title"
+    | "description"
+    | "statusId"
+    | "priority"
+    | "assigneeId"
+    | "estimateValue"
+    | "objectiveId"
+    | "keyResultId"
+    | "sprintId"
+    | "startDate"
+    | "endDate"
   >
 >;
 
