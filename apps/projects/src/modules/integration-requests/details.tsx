@@ -12,6 +12,7 @@ import TextExtension from "@tiptap/extension-text";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useParams, useRouter } from "next/navigation";
+import { cn } from "lib";
 import {
   ChatIcon,
   CheckIcon,
@@ -233,7 +234,7 @@ const RequestGitHubBanner = ({
                     window.open(sourceUrl, "_blank", "noopener,noreferrer");
                   }}
                 >
-                  <GitHubIcon className="h-5 w-auto" />
+                  <GitHubIcon className="text-icon h-5 w-auto" />
                   Open on GitHub
                 </Menu.Item>
                 <Menu.Item
@@ -241,11 +242,11 @@ const RequestGitHubBanner = ({
                     navigator.clipboard.writeText(sourceUrl);
                   }}
                 >
-                  <CopyIcon />
+                  <CopyIcon className="text-icon h-5 w-auto" />
                   Copy link
                 </Menu.Item>
                 <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon />
+                  <CheckIcon className="text-icon h-5 w-auto" />
                   Accept request
                 </Menu.Item>
                 <Menu.Item
@@ -324,7 +325,7 @@ const RequestSourceBanner = ({
                     window.open(sourceUrl, "_blank", "noopener,noreferrer");
                   }}
                 >
-                  <LinkIcon className="h-5 w-auto" />
+                  <LinkIcon className="text-icon h-5 w-auto" />
                   Open source
                 </Menu.Item>
                 <Menu.Item
@@ -332,11 +333,11 @@ const RequestSourceBanner = ({
                     navigator.clipboard.writeText(sourceUrl);
                   }}
                 >
-                  <CopyIcon />
+                  <CopyIcon className="text-icon h-5 w-auto" />
                   Copy link
                 </Menu.Item>
                 <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon />
+                  <CheckIcon className="text-icon h-5 w-auto" />
                   Accept request
                 </Menu.Item>
                 <Menu.Item
@@ -389,92 +390,46 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
 type RequestPropertiesProps = {
   assignee?: Member;
   canEditRequest: boolean;
-  onAccept: () => void;
-  onDecline: () => void;
   onUpdate: (payload: UpdateIntegrationRequestInput) => void;
   priority: StoryPriority;
   request: IntegrationRequest;
   selectedStatus?: State;
   statusId?: string;
   teamId: string;
+  variant?: "sidebar" | "inline";
 };
 
 const RequestProperties = ({
   assignee,
   canEditRequest,
-  onAccept,
-  onDecline,
   onUpdate,
   priority,
   request,
   selectedStatus,
   statusId,
   teamId,
+  variant = "sidebar",
 }: RequestPropertiesProps) => {
-  const issueNumber = request.sourceNumber ? `#${request.sourceNumber}` : "";
+  const isInline = variant === "inline";
 
   return (
-    <Container className="text-text-muted px-0.5 pt-4 md:px-6">
-      <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
-        <Text className="hidden md:block" fontWeight="semibold">
-          Properties
-        </Text>
-        <Flex justify="end">
-          <Menu>
-            <Menu.Button>
-              <Button
-                asIcon
-                color="tertiary"
-                rounded="full"
-                size="sm"
-                variant="naked"
-              >
-                <MoreHorizontalIcon className="h-5" />
-              </Button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
-                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon />
-                  Accept
-                </Menu.Item>
-                <Menu.Item
-                  className="text-danger"
-                  disabled={!canEditRequest}
-                  onSelect={onDecline}
-                >
-                  <CloseIcon className="text-danger" />
-                  Decline...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
-      </Box>
+    <Container
+      className={cn("text-text-muted px-0.5 pt-4 md:px-6", {
+        "px-0 pt-0 md:px-0": isInline,
+      })}
+    >
+      {!isInline ? (
+        <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+          <Text className="hidden md:block" fontWeight="semibold">
+            Properties
+          </Text>
+        </Box>
+      ) : null}
 
-      <Box className="flex flex-wrap gap-2 md:block">
+      <Box className={cn("flex flex-wrap gap-2", { "md:block": !isInline })}>
         <Option
-          isNotifications={false}
-          label="Source"
-          value={
-            <Flex align="center" className="gap-2 md:ml-0.5">
-              {request.provider === "github" ? (
-                <GitHubIcon className="h-4" />
-              ) : request.provider === "slack" ? (
-                <ChatIcon className="h-4" />
-              ) : null}
-              <Text className="line-clamp-1">
-                {request.provider === "github"
-                  ? `GitHub issue ${issueNumber || request.sourceExternalId}`
-                  : request.provider === "slack"
-                    ? `Slack message ${request.sourceExternalId}`
-                    : `${request.provider} ${request.sourceExternalId}`}
-              </Text>
-            </Flex>
-          }
-        />
-        <Option
-          isNotifications={false}
+          isCompact={isInline}
+          isNotifications={isInline}
           label="Status"
           value={
             <StatusesMenu>
@@ -484,7 +439,7 @@ const RequestProperties = ({
                   disabled={!canEditRequest}
                   leftIcon={<StoryStatusIcon statusId={statusId} />}
                   size="sm"
-                  variant="naked"
+                  variant={isInline ? "solid" : "naked"}
                 >
                   {selectedStatus?.name ?? "Todo"}
                 </Button>
@@ -500,7 +455,8 @@ const RequestProperties = ({
           }
         />
         <Option
-          isNotifications={false}
+          isCompact={isInline}
+          isNotifications={isInline}
           label="Priority"
           value={
             <PrioritiesMenu>
@@ -510,7 +466,7 @@ const RequestProperties = ({
                   disabled={!canEditRequest}
                   leftIcon={<PriorityIcon priority={priority} />}
                   size="sm"
-                  variant="naked"
+                  variant={isInline ? "solid" : "naked"}
                 >
                   {priority}
                 </Button>
@@ -525,7 +481,8 @@ const RequestProperties = ({
           }
         />
         <Option
-          isNotifications={false}
+          isCompact={isInline}
+          isNotifications={isInline}
           label="Assignee"
           value={
             <AssigneesMenu>
@@ -543,7 +500,7 @@ const RequestProperties = ({
                     />
                   }
                   size="sm"
-                  variant="naked"
+                  variant={isInline ? "solid" : "naked"}
                 >
                   {assignee?.username ?? (
                     <Text as="span" color="muted">
@@ -806,14 +763,13 @@ export const IntegrationRequestDetails = ({
                 <RequestProperties
                   assignee={assignee}
                   canEditRequest={canEditRequest}
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
                   onUpdate={handleUpdate}
                   priority={priority}
                   request={request}
                   selectedStatus={selectedStatus}
                   statusId={statusId}
                   teamId={teamId}
+                  variant="inline"
                 />
               </Box>
               <RequestAttachments metadata={request.metadata} />
@@ -867,8 +823,6 @@ export const IntegrationRequestDetails = ({
           <RequestProperties
             assignee={assignee}
             canEditRequest={canEditRequest}
-            onAccept={handleAccept}
-            onDecline={handleDecline}
             onUpdate={handleUpdate}
             priority={priority}
             request={request}
