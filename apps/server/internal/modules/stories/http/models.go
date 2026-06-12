@@ -445,6 +445,7 @@ type StoryFilters struct {
 	TeamIDs        []uuid.UUID `json:"teamIds"`
 	SprintIDs      []uuid.UUID `json:"sprintIds"`
 	LabelIDs       []uuid.UUID `json:"labelIds"`
+	EstimateValues []int16     `json:"estimateValues"`
 	Parent         *uuid.UUID  `json:"parentId"`
 	Objective      *uuid.UUID  `json:"objectiveId"`
 	Epic           *uuid.UUID  `json:"epicId"`

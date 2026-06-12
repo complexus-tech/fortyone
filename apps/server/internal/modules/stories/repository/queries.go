@@ -524,6 +524,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if labelIds, ok := filters["label_ids"].([]uuid.UUID); ok {
 		coreFilters.LabelIDs = labelIds
 	}
+	if estimateValues, ok := filters["estimate_values"].([]int16); ok {
+		coreFilters.EstimateValues = estimateValues
+	}
 	if parentId, ok := filters["parent_id"].(uuid.UUID); ok {
 		coreFilters.Parent = &parentId
 	}
@@ -1677,6 +1680,9 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.LabelIDs) > 0 {
 		params["label_ids"] = filters.LabelIDs
 	}
+	if len(filters.EstimateValues) > 0 {
+		params["estimate_values"] = filters.EstimateValues
+	}
 	if filters.TitleContains != nil {
 		params["title_contains"] = *filters.TitleContains
 	}
@@ -1899,6 +1905,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			INNER JOIN story_labels sl_filter ON sl_filter.story_id = s.id
 		`
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
+	}
+
+	if len(filters.EstimateValues) > 0 {
+		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
 	}
 
 	if filters.Objective != nil {
@@ -2399,6 +2409,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if len(filters.LabelIDs) > 0 {
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
+	}
+
+	if len(filters.EstimateValues) > 0 {
+		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
 	}
 
 	if filters.Parent != nil {

@@ -1,3 +1,5 @@
+/* global describe, expect, it -- Jest globals are provided by the projects test runner. */
+
 import type { StoriesFilter } from "./stories-filter-types";
 import { getGroupedStoryFilterParams } from "./stories-filter-query";
 import { getActiveStoriesFilterCount } from "./stories-filter-utils";
@@ -10,6 +12,7 @@ const baseFilters = {
   teamIds: null,
   sprintIds: null,
   labelIds: null,
+  estimateValues: null,
   parentId: null,
   objectiveId: null,
   epicId: null,
@@ -36,6 +39,17 @@ describe("story filter query mapping", () => {
     });
   });
 
+  it("maps estimate values into grouped story query params", () => {
+    const filters = {
+      ...baseFilters,
+      estimateValues: [1, 5, 8],
+    } as unknown as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      estimateValues: [1, 5, 8],
+    });
+  });
+
   it("counts content and labels as active filters", () => {
     const filters = {
       ...baseFilters,
@@ -44,5 +58,14 @@ describe("story filter query mapping", () => {
     } as unknown as StoriesFilter;
 
     expect(getActiveStoriesFilterCount(filters)).toBe(2);
+  });
+
+  it("counts estimate values as an active filter", () => {
+    const filters = {
+      ...baseFilters,
+      estimateValues: [3],
+    } as unknown as StoriesFilter;
+
+    expect(getActiveStoriesFilterCount(filters)).toBe(1);
   });
 });

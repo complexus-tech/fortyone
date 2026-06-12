@@ -20,6 +20,7 @@ import {
   CalendarIcon,
   CheckIcon,
   CloseIcon,
+  EstimateIcon,
   ListIcon,
   ObjectiveIcon,
   PlusIcon,
@@ -37,7 +38,13 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { StoryPriority } from "@/modules/stories/types";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useLabels } from "@/lib/hooks/labels";
+import {
+  formatEstimate,
+  getEstimateOptions,
+  type EstimateScheme,
+} from "@/lib/estimate";
 import type { StoriesFilter } from "./stories-filter-types";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -53,6 +60,7 @@ export type StoriesFilterField =
   | "teamIds"
   | "sprintIds"
   | "labelIds"
+  | "estimateValues"
   | "objectiveId"
   | "startDate"
   | "endDate"
@@ -81,6 +89,8 @@ type StoriesFilterBarProps = {
   hiddenFields?: StoriesFilterField[];
 };
 
+const EMPTY_FILTER_FIELDS: StoriesFilterField[] = [];
+
 const getNames = (
   ids: string[] | null | undefined,
   labelsById: Map<string, string>,
@@ -93,6 +103,9 @@ const getNames = (
 };
 
 const normalizeArrayFilter = (values: string[]) =>
+  values.length > 0 ? values : null;
+
+const normalizeNumberArrayFilter = (values: number[]) =>
   values.length > 0 ? values : null;
 
 const getPluralLabel = (count: number, singular: string, plural: string) =>
@@ -243,6 +256,38 @@ const LabelChipValue = ({ labels }: { labels: LabelChipSummary[] }) => {
         <Flex align="center" gap={1} key={label.id}>
           <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
           <span>{label.name}</span>
+        </Flex>
+      ))}
+    </Flex>
+  );
+};
+
+const EstimateChipValue = ({
+  estimateScheme,
+  estimateValues,
+}: {
+  estimateScheme: EstimateScheme;
+  estimateValues: number[];
+}) => {
+  const visibleValues = estimateValues.slice(0, 2);
+
+  if (estimateValues.length > 2) {
+    return (
+      <Flex align="center" gap={1}>
+        <EstimateIcon className="h-4 w-auto" />
+        <span>
+          {getPluralLabel(estimateValues.length, "estimate", "estimates")}
+        </span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex align="center" gap={2}>
+      {visibleValues.map((estimateValue) => (
+        <Flex align="center" gap={1} key={estimateValue}>
+          <EstimateIcon className="h-4 w-auto" />
+          <span>{formatEstimate(estimateScheme, estimateValue, "full")}</span>
         </Flex>
       ))}
     </Flex>
@@ -795,6 +840,65 @@ const LabelEditor = ({
   );
 };
 
+const EstimateEditor = ({
+  estimateScheme,
+  filters,
+  setFilters,
+}: {
+  estimateScheme: EstimateScheme;
+  filters: StoriesFilter;
+  setFilters: (value: StoriesFilter) => void;
+}) => {
+  const options = getEstimateOptions(estimateScheme);
+
+  const toggleEstimate = (estimateValue: number) => {
+    const selected = filters.estimateValues ?? [];
+    const estimateValues = selected.includes(estimateValue)
+      ? selected.filter((value) => value !== estimateValue)
+      : [...selected, estimateValue];
+    setFilters({
+      ...filters,
+      estimateValues: normalizeNumberArrayFilter(estimateValues),
+    });
+  };
+
+  return (
+    <Command>
+      <Command.Input autoFocus placeholder="Change estimate..." />
+      <Divider className="my-2" />
+      <Command.Empty className="py-2">
+        <Text color="muted">No estimate found.</Text>
+      </Command.Empty>
+      <Command.Group>
+        {options.map(({ label, value }, idx) => (
+          <Command.Item
+            active={Boolean(filters.estimateValues?.includes(value))}
+            className="justify-between gap-4"
+            key={value}
+            onSelect={() => {
+              toggleEstimate(value);
+            }}
+            value={label}
+          >
+            <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
+              <EstimateIcon className="text-text-secondary h-4 w-auto" />
+              <Text className="truncate">
+                {formatEstimate(estimateScheme, value, "full")}
+              </Text>
+            </Box>
+            <Flex align="center" className="shrink-0" gap={2}>
+              {filters.estimateValues?.includes(value) ? (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              ) : null}
+              <Text color="muted">{idx}</Text>
+            </Flex>
+          </Command.Item>
+        ))}
+      </Command.Group>
+    </Command>
+  );
+};
+
 const DateEditor = ({
   field,
   filters,
@@ -838,10 +942,12 @@ const DateEditor = ({
 
 const FilterValueEditor = ({
   field,
+  estimateScheme,
   filters,
   setFilters,
 }: {
   field: StoriesFilterField;
+  estimateScheme: EstimateScheme;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
 }) => {
@@ -875,6 +981,16 @@ const FilterValueEditor = ({
     return <LabelEditor filters={filters} setFilters={setFilters} />;
   }
 
+  if (field === "estimateValues") {
+    return (
+      <EstimateEditor
+        estimateScheme={estimateScheme}
+        filters={filters}
+        setFilters={setFilters}
+      />
+    );
+  }
+
   if (field === "startDate" || field === "endDate") {
     return (
       <DateEditor field={field} filters={filters} setFilters={setFilters} />
@@ -886,12 +1002,14 @@ const FilterValueEditor = ({
 
 const Chip = ({
   chip,
+  estimateScheme,
   filters,
   setFilters,
   onEditTitle,
   onRemove,
 }: {
   chip: FilterChip;
+  estimateScheme: EstimateScheme;
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   onEditTitle: () => void;
@@ -902,6 +1020,48 @@ const Chip = ({
     chip.field !== "createdByMe" &&
     chip.field !== "hasNoAssignee";
   const shouldUseDialog = chip.field === "contentContains";
+  const valueContent = (
+    <div className="flex min-w-0 items-center truncate">{chip.value}</div>
+  );
+  let valueControl: ReactNode = (
+    <div className="flex h-full items-center px-2.5">{chip.value}</div>
+  );
+
+  if (shouldUseDialog) {
+    valueControl = (
+      <button
+        className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
+        onClick={onEditTitle}
+        type="button"
+      >
+        {valueContent}
+      </button>
+    );
+  } else if (isEditable) {
+    valueControl = (
+      <Popover>
+        <Popover.Trigger asChild>
+          <button
+            className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
+            type="button"
+          >
+            {valueContent}
+          </button>
+        </Popover.Trigger>
+        <Popover.Content
+          align="start"
+          className={getEditorContentClassName(chip.field)}
+        >
+          <FilterValueEditor
+            estimateScheme={estimateScheme}
+            field={chip.field}
+            filters={filters}
+            setFilters={setFilters}
+          />
+        </Popover.Content>
+      </Popover>
+    );
+  }
 
   return (
     <Flex
@@ -916,40 +1076,7 @@ const Chip = ({
       <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
         {chip.operator}
       </span>
-      {shouldUseDialog ? (
-        <button
-          className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
-          onClick={onEditTitle}
-          type="button"
-        >
-          <div className="flex min-w-0 items-center truncate">{chip.value}</div>
-        </button>
-      ) : isEditable ? (
-        <Popover>
-          <Popover.Trigger asChild>
-            <button
-              className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
-              type="button"
-            >
-              <div className="flex min-w-0 items-center truncate">
-                {chip.value}
-              </div>
-            </button>
-          </Popover.Trigger>
-          <Popover.Content
-            align="start"
-            className={getEditorContentClassName(chip.field)}
-          >
-            <FilterValueEditor
-              field={chip.field}
-              filters={filters}
-              setFilters={setFilters}
-            />
-          </Popover.Content>
-        </Popover>
-      ) : (
-        <div className="flex h-full items-center px-2.5">{chip.value}</div>
-      )}
+      {valueControl}
       <button
         aria-label={`Remove ${chip.label} filter`}
         className="hover:bg-state-hover border-border flex h-full w-9 items-center justify-center border-l transition"
@@ -966,7 +1093,7 @@ export const StoriesFilterBar = ({
   filters,
   setFilters,
   resetFilters,
-  hiddenFields = [],
+  hiddenFields = EMPTY_FILTER_FIELDS,
 }: StoriesFilterBarProps) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
@@ -978,6 +1105,8 @@ export const StoriesFilterBar = ({
   const { data: sprints = [] } = useTeamSprints(resolvedTeamId);
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
   const { data: allLabels = [] } = useLabels();
+  const { data: teamSettings } = useTeamSettings(teamId);
+  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
 
   const users = teamId ? teamMembers : allUsers;
   const statuses = teamId
@@ -1176,6 +1305,21 @@ export const StoriesFilterBar = ({
       });
     }
 
+    if (filters.estimateValues?.length) {
+      items.push({
+        field: "estimateValues",
+        label: "Estimate",
+        operator: "is any of",
+        value: (
+          <EstimateChipValue
+            estimateScheme={estimateScheme}
+            estimateValues={filters.estimateValues}
+          />
+        ),
+        icon: <EstimateIcon className="h-4 w-auto" />,
+      });
+    }
+
     if (filters.objectiveId) {
       items.push({
         field: "objectiveId",
@@ -1198,6 +1342,7 @@ export const StoriesFilterBar = ({
     return items;
   }, [
     filters,
+    estimateScheme,
     labelById,
     objectiveById,
     sprintById,
@@ -1259,6 +1404,11 @@ export const StoriesFilterBar = ({
       label: "Label",
     },
     {
+      field: "estimateValues",
+      icon: <EstimateIcon className="h-5 w-auto" />,
+      label: "Estimate",
+    },
+    {
       field: "objectiveId",
       icon: <ObjectiveIcon className="h-5 w-auto" />,
       label: "Objective",
@@ -1298,13 +1448,14 @@ export const StoriesFilterBar = ({
         {chips.map((chip) => (
           <Chip
             chip={chip}
+            estimateScheme={estimateScheme}
             filters={filters}
             key={chip.field}
-            onRemove={() => {
-              removeFilter(chip.field);
-            }}
             onEditTitle={() => {
               setTitleDialogOpen(true);
+            }}
+            onRemove={() => {
+              removeFilter(chip.field);
             }}
             setFilters={setFilters}
           />
@@ -1376,6 +1527,7 @@ export const StoriesFilterBar = ({
                       sideOffset={8}
                     >
                       <FilterValueEditor
+                        estimateScheme={estimateScheme}
                         field={option.field}
                         filters={filters}
                         setFilters={setFilters}

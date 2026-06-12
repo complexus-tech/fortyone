@@ -6,6 +6,7 @@ export type StoriesFilter = {
   teamIds: string[] | null;
   sprintIds: string[] | null;
   labelIds: string[] | null;
+  estimateValues: number[] | null;
   parentId: string | null;
   objectiveId: string | null;
   epicId: string | null;
@@ -30,6 +31,7 @@ export const DEFAULT_STORIES_FILTER: StoriesFilter = {
   teamIds: null,
   sprintIds: null,
   labelIds: null,
+  estimateValues: null,
   parentId: null,
   objectiveId: null,
   epicId: null,

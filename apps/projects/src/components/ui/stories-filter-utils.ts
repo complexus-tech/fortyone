@@ -8,6 +8,7 @@ const ARRAY_FILTER_KEYS = [
   "teamIds",
   "sprintIds",
   "labelIds",
+  "estimateValues",
 ] as const;
 
 const STRING_FILTER_KEYS = [

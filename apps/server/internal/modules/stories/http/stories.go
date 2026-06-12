@@ -1377,6 +1377,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.TeamIDs = parseUUIDArray(r, "teamIds")
 	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
 	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
+	query.Filters.EstimateValues = parseInt16Array(r, "estimateValues")
 
 	query.Filters.Priorities = parseStringArray(r, "priorities")
 	query.Filters.Categories = parseStringArray(r, "categories")
@@ -1470,6 +1471,32 @@ func parseStringArray(r *http.Request, key string) []string {
 	return result
 }
 
+func parseInt16Array(r *http.Request, key string) []int16 {
+	values := r.URL.Query()[key]
+	if len(values) == 0 {
+		return nil
+	}
+
+	var result []int16
+	for _, raw := range values {
+		for _, part := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			parsed, err := strconv.ParseInt(trimmed, 10, 16)
+			if err == nil {
+				result = append(result, int16(parsed))
+			}
+		}
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 func parseUUIDParam(r *http.Request, key string) *uuid.UUID {
 	if value := r.URL.Query().Get(key); value != "" {
 		if parsed, err := uuid.Parse(value); err == nil {
@@ -1541,6 +1568,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			TeamIDs:         query.Filters.TeamIDs,
 			SprintIDs:       query.Filters.SprintIDs,
 			LabelIDs:        query.Filters.LabelIDs,
+			EstimateValues:  query.Filters.EstimateValues,
 			Parent:          query.Filters.Parent,
 			Objective:       query.Filters.Objective,
 			Epic:            query.Filters.Epic,
@@ -1602,6 +1630,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if len(filters.LabelIDs) > 0 {
 		result["label_ids"] = filters.LabelIDs
+	}
+	if len(filters.EstimateValues) > 0 {
+		result["estimate_values"] = filters.EstimateValues
 	}
 	if filters.Parent != nil {
 		result["parent_id"] = *filters.Parent

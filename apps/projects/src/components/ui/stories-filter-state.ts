@@ -1,93 +1,79 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import {
-  parseAsArrayOf,
-  parseAsBoolean,
-  parseAsString,
-  type UrlKeys,
-  useQueryStates,
-} from "nuqs";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { StoriesFilter } from "./stories-filter-types";
 import { DEFAULT_STORIES_FILTER } from "./stories-filter-types";
+import {
+  getStoriesFilterStorageKey,
+  mergeStoriesFilterDefaults,
+} from "./stories-filter-storage";
 
-const storiesFilterParsers = {
-  statusIds: parseAsArrayOf(parseAsString),
-  assigneeIds: parseAsArrayOf(parseAsString),
-  reporterIds: parseAsArrayOf(parseAsString),
-  priorities: parseAsArrayOf(parseAsString),
-  teamIds: parseAsArrayOf(parseAsString),
-  sprintIds: parseAsArrayOf(parseAsString),
-  labelIds: parseAsArrayOf(parseAsString),
-  parentId: parseAsString,
-  objectiveId: parseAsString,
-  epicId: parseAsString,
-  keyResultId: parseAsString,
-  contentContains: parseAsString,
-  startDate: parseAsString,
-  endDate: parseAsString,
-  hasNoAssignee: parseAsBoolean,
-  assignedToMe: parseAsBoolean.withDefault(false),
-  createdByMe: parseAsBoolean.withDefault(false),
-  completedAfter: parseAsString,
-  completedBefore: parseAsString,
-  isCompleted: parseAsBoolean,
-  isNotCompleted: parseAsBoolean,
+const readStoredFilters = (storageKey: string): StoriesFilter => {
+  if (typeof window === "undefined") {
+    return DEFAULT_STORIES_FILTER;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(storageKey);
+    if (!storedValue) {
+      return DEFAULT_STORIES_FILTER;
+    }
+
+    return mergeStoriesFilterDefaults(
+      JSON.parse(storedValue) as Partial<StoriesFilter>,
+    );
+  } catch {
+    return DEFAULT_STORIES_FILTER;
+  }
 };
 
-const storiesFilterUrlKeys = {
-  statusIds: "status",
-  assigneeIds: "assignee",
-  reporterIds: "creator",
-  priorities: "priority",
-  teamIds: "team",
-  sprintIds: "sprint",
-  labelIds: "label",
-  parentId: "parent",
-  objectiveId: "objective",
-  epicId: "epic",
-  keyResultId: "keyResult",
-  contentContains: "content",
-  startDate: "storyStartDate",
-  endDate: "storyDeadline",
-  hasNoAssignee: "noAssignee",
-  assignedToMe: "assignedToMe",
-  createdByMe: "createdByMe",
-  completedAfter: "completedAfter",
-  completedBefore: "completedBefore",
-  isCompleted: "isCompleted",
-  isNotCompleted: "isNotCompleted",
-} satisfies UrlKeys<typeof storiesFilterParsers>;
+const writeStoredFilters = (storageKey: string, filters: StoriesFilter) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(storageKey, JSON.stringify(filters));
+};
+
+const clearStoredFilters = (storageKey: string) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(storageKey);
+};
 
 export const useStoriesFilters = () => {
-  const [queryFilters, setQueryFilters] = useQueryStates(
-    storiesFilterParsers,
-    {
-      urlKeys: storiesFilterUrlKeys,
-    },
+  const pathname = usePathname();
+  const storageKey = useMemo(
+    () => getStoriesFilterStorageKey(pathname),
+    [pathname],
+  );
+  const [storedFilters, setStoredFilters] = useState<StoriesFilter>(() =>
+    readStoredFilters(storageKey),
   );
 
-  const filters = useMemo<StoriesFilter>(
-    () => ({
-      ...DEFAULT_STORIES_FILTER,
-      ...queryFilters,
-    }),
-    [queryFilters],
-  );
+  useEffect(() => {
+    setStoredFilters(readStoredFilters(storageKey));
+  }, [storageKey]);
 
   const setFilters = useCallback(
     (value: StoriesFilter) => {
-      void setQueryFilters(value);
+      const nextFilters = mergeStoriesFilterDefaults(value);
+      setStoredFilters(nextFilters);
+      writeStoredFilters(storageKey, nextFilters);
     },
-    [setQueryFilters],
+    [storageKey],
   );
 
   const resetFilters = useCallback(() => {
-    void setQueryFilters(DEFAULT_STORIES_FILTER);
-  }, [setQueryFilters]);
+    setStoredFilters(DEFAULT_STORIES_FILTER);
+    clearStoredFilters(storageKey);
+  }, [storageKey]);
 
   return {
-    filters,
+    filters: storedFilters,
     setFilters,
     resetFilters,
   };

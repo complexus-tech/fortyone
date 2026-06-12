@@ -71,6 +71,7 @@ export type StoryFilters = {
   teamIds?: string[] | null;
   sprintIds?: string[] | null;
   labelIds?: string[] | null;
+  estimateValues?: number[] | null;
   parentId?: string | null;
   objectiveId?: string | null;
   epicId?: string | null;
@@ -133,6 +134,7 @@ export type GroupedStoryParams = {
   priorities?: string[];
   sprintIds?: string[];
   labelIds?: string[];
+  estimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
   epicId?: string;
@@ -170,6 +172,7 @@ export type GroupStoryParams = {
   teamIds?: string[];
   sprintIds?: string[];
   labelIds?: string[];
+  estimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
   epicId?: string;
