@@ -30,6 +30,18 @@ type AppFilter struct {
 	TeamID *uuid.UUID `json:"teamId"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppMembersResponse struct {
+	Members    []AppUser     `json:"members"`
+	Pagination AppPagination `json:"pagination"`
+}
+
 type UpdateProfileRequest struct {
 	Username           string  `json:"username"`
 	FullName           *string `json:"fullName,omitempty"`
@@ -121,6 +133,23 @@ func toAppUsers(users []users.CoreUser) []AppUser {
 		appUsers[i] = toAppUser(user)
 	}
 	return appUsers
+}
+
+func toAppMembersResponse(users []users.CoreUser, page, pageSize int, hasMore bool) AppMembersResponse {
+	nextPage := 0
+	if hasMore {
+		nextPage = page + 1
+	}
+
+	return AppMembersResponse{
+		Members: toAppUsers(users),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
 }
 
 // Convert core automation preferences to app model

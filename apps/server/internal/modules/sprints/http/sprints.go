@@ -55,6 +55,25 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	userID, _ := mid.GetUserID(ctx)
 
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filters["limit"] = pageSize + 1
+		filters["offset"] = (page - 1) * pageSize
+
+		sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
+		if err != nil {
+			return err
+		}
+
+		hasMore := len(sprints) > pageSize
+		if hasMore {
+			sprints = sprints[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppSprintsResponse(sprints, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
 	sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err

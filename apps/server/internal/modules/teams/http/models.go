@@ -21,6 +21,18 @@ type AppTeamsList struct {
 	SprintsEnabled bool      `json:"sprintsEnabled"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppTeamsResponse struct {
+	Teams      []AppTeamsList `json:"teams"`
+	Pagination AppPagination  `json:"pagination"`
+}
+
 // toAppTeams converts a list of core teams to a list of application teams.
 func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 	appTeams := make([]AppTeamsList, len(teams))
@@ -39,6 +51,23 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 		}
 	}
 	return appTeams
+}
+
+func toAppTeamsResponse(teams []teams.CoreTeam, page, pageSize int, hasMore bool) AppTeamsResponse {
+	nextPage := 0
+	if hasMore {
+		nextPage = page + 1
+	}
+
+	return AppTeamsResponse{
+		Teams: toAppTeams(teams),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
 }
 
 type AppNewTeam struct {

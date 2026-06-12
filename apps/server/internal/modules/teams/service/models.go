@@ -26,6 +26,12 @@ type CoreTeam struct {
 	SprintsEnabled bool
 }
 
+type CoreListTeamsFilter struct {
+	Search string
+	Limit  int
+	Offset int
+}
+
 type DefaultStatus struct {
 	Name       string
 	Category   string

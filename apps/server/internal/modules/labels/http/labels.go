@@ -42,6 +42,25 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filters["limit"] = pageSize + 1
+		filters["offset"] = (page - 1) * pageSize
+
+		labels, err := h.labels.GetLabels(ctx, workspace.ID, filters)
+		if err != nil {
+			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			return nil
+		}
+
+		hasMore := len(labels) > pageSize
+		if hasMore {
+			labels = labels[:pageSize]
+		}
+
+		return web.Respond(ctx, w, toAppLabelsResponse(labels, page, pageSize, hasMore), http.StatusOK)
+	}
+
 	labels, err := h.labels.GetLabels(ctx, workspace.ID, filters)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)

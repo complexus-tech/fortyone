@@ -1,5 +1,11 @@
 "use client";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import {
   Avatar,
   Box,
@@ -22,6 +28,7 @@ import {
   CloseIcon,
   EstimateIcon,
   ListIcon,
+  LoadingIcon,
   ObjectiveIcon,
   PlusIcon,
   SprintsIcon,
@@ -32,14 +39,37 @@ import {
 import { format, formatISO } from "date-fns";
 import { useParams } from "next/navigation";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useMembers } from "@/lib/hooks/members";
-import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useTeams } from "@/modules/teams/hooks/teams";
-import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import {
+  MEMBER_MENU_PAGE_SIZE,
+  useMembers,
+  useMembersInfinite,
+} from "@/lib/hooks/members";
+import {
+  useTeamMembers,
+  useTeamMembersInfinite,
+} from "@/lib/hooks/team-members";
+import {
+  TEAM_MENU_PAGE_SIZE,
+  useTeams,
+  useTeamsInfinite,
+} from "@/modules/teams/hooks/teams";
+import {
+  SPRINT_MENU_PAGE_SIZE,
+  useTeamSprints,
+  useTeamSprintsInfinite,
+} from "@/modules/sprints/hooks/team-sprints";
+import {
+  OBJECTIVE_MENU_PAGE_SIZE,
+  useTeamObjectives,
+  useTeamObjectivesInfinite,
+} from "@/modules/objectives/hooks/use-objectives";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
-import { useLabels } from "@/lib/hooks/labels";
+import {
+  LABEL_MENU_PAGE_SIZE,
+  useLabels,
+  useLabelsInfinite,
+} from "@/lib/hooks/labels";
 import {
   formatEstimate,
   getEstimateOptions,
@@ -452,9 +482,20 @@ const PeopleEditor = ({
 }) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
-  const { data: workspaceMembers = [] } = useMembers(query);
-  const { data: teamMembers = [] } = useTeamMembers(teamId, query);
-  const members = teamId ? teamMembers : workspaceMembers;
+  const deferredQuery = useDeferredValue(query);
+  const workspaceMembersQuery = useMembersInfinite(
+    deferredQuery,
+    MEMBER_MENU_PAGE_SIZE,
+    !teamId,
+  );
+  const teamMembersQuery = useTeamMembersInfinite(
+    teamId,
+    deferredQuery,
+    MEMBER_MENU_PAGE_SIZE,
+    Boolean(teamId),
+  );
+  const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
+  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
 
   const toggleMember = (memberId: string) => {
     const selected = filters[field] ?? [];
@@ -462,6 +503,20 @@ const PeopleEditor = ({
       ? selected.filter((id) => id !== memberId)
       : [...selected, memberId];
     setFilters({ ...filters, [field]: normalizeArrayFilter(memberIds) });
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (
+      distanceToBottom <= 80 &&
+      membersQuery.hasNextPage &&
+      !membersQuery.isFetchingNextPage
+    ) {
+      void membersQuery.fetchNextPage();
+    }
   };
 
   return (
@@ -476,7 +531,10 @@ const PeopleEditor = ({
       <Command.Empty className="py-2">
         <Text color="muted">No user found.</Text>
       </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto md:max-h-100">
+      <Command.Group
+        className="max-h-80 overflow-y-auto md:max-h-100"
+        onScroll={handleScroll}
+      >
         {field === "assigneeIds" ? (
           <Command.Item
             active={Boolean(filters.hasNoAssignee)}
@@ -538,6 +596,14 @@ const PeopleEditor = ({
             </Command.Item>
           );
         })}
+        {membersQuery.isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <Text className="flex items-center gap-2" color="muted">
+              <LoadingIcon className="animate-spin" />
+              Loading more users...
+            </Text>
+          </Command.Loading>
+        ) : null}
       </Command.Group>
     </Command>
   );
@@ -609,10 +675,24 @@ const TeamEditor = ({
   setFilters: (value: StoriesFilter) => void;
 }) => {
   const [query, setQuery] = useState("");
-  const { data: teams = [] } = useTeams();
-  const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(query.toLowerCase()),
-  );
+  const deferredQuery = useDeferredValue(query);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTeamsInfinite(deferredQuery, TEAM_MENU_PAGE_SIZE);
+  const teams = data?.pages.flatMap((page) => page.teams) ?? [];
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  };
 
   const toggleTeam = (teamId: string) => {
     const selected = filters.teamIds ?? [];
@@ -634,8 +714,11 @@ const TeamEditor = ({
       <Command.Empty className="py-2">
         <Text color="muted">No teams found.</Text>
       </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto">
-        {filteredTeams.map((team, idx) => (
+      <Command.Group
+        className="max-h-80 overflow-y-auto"
+        onScroll={handleScroll}
+      >
+        {teams.map((team, idx) => (
           <Command.Item
             active={Boolean(filters.teamIds?.includes(team.id))}
             className="justify-between gap-4"
@@ -657,6 +740,14 @@ const TeamEditor = ({
             </Flex>
           </Command.Item>
         ))}
+        {isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <Text className="flex items-center gap-2" color="muted">
+              <LoadingIcon className="animate-spin" />
+              Loading more teams...
+            </Text>
+          </Command.Loading>
+        ) : null}
       </Command.Group>
     </Command>
   );
@@ -671,7 +762,18 @@ const SprintEditor = ({
 }) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
-  const { data: sprints = [] } = useTeamSprints(teamId ?? "", query);
+  const deferredQuery = useDeferredValue(query);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTeamSprintsInfinite(
+    teamId ?? "",
+    deferredQuery,
+    SPRINT_MENU_PAGE_SIZE,
+  );
+  const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
 
   const toggleSprint = (sprintId: string) => {
     const selected = filters.sprintIds ?? [];
@@ -679,6 +781,16 @@ const SprintEditor = ({
       ? selected.filter((id) => id !== sprintId)
       : [...selected, sprintId];
     setFilters({ ...filters, sprintIds: normalizeArrayFilter(sprintIds) });
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
   };
 
   return (
@@ -693,7 +805,10 @@ const SprintEditor = ({
       <Command.Empty className="py-2">
         <Text color="muted">No sprints found.</Text>
       </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto">
+      <Command.Group
+        className="max-h-80 overflow-y-auto"
+        onScroll={handleScroll}
+      >
         {sprints.map((sprint, idx) => (
           <Command.Item
             active={Boolean(filters.sprintIds?.includes(sprint.id))}
@@ -730,7 +845,28 @@ const ObjectiveEditor = ({
 }) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
-  const { data: objectives = [] } = useTeamObjectives(teamId ?? "", query);
+  const deferredQuery = useDeferredValue(query);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTeamObjectivesInfinite(
+    teamId ?? "",
+    deferredQuery,
+    OBJECTIVE_MENU_PAGE_SIZE,
+  );
+  const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  };
 
   return (
     <Command>
@@ -744,7 +880,10 @@ const ObjectiveEditor = ({
       <Command.Empty className="py-2">
         <Text color="muted">No objectives found.</Text>
       </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto">
+      <Command.Group
+        className="max-h-80 overflow-y-auto"
+        onScroll={handleScroll}
+      >
         {objectives.map((objective, idx) => (
           <Command.Item
             active={filters.objectiveId === objective.id}
@@ -785,12 +924,17 @@ const LabelEditor = ({
 }) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
-  const { data: allLabels = [] } = useLabels();
-  const labels = allLabels.filter(
-    (label) =>
-      (label.teamId === teamId || label.teamId === null) &&
-      label.name.toLowerCase().includes(query.toLowerCase()),
+  const deferredQuery = useDeferredValue(query);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLabelsInfinite(
+    { search: deferredQuery, teamId },
+    LABEL_MENU_PAGE_SIZE,
   );
+  const labels = data?.pages.flatMap((page) => page.labels) ?? [];
 
   const toggleLabel = (labelId: string) => {
     const selected = filters.labelIds ?? [];
@@ -798,6 +942,16 @@ const LabelEditor = ({
       ? selected.filter((id) => id !== labelId)
       : [...selected, labelId];
     setFilters({ ...filters, labelIds: normalizeArrayFilter(labelIds) });
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
   };
 
   return (
@@ -812,7 +966,10 @@ const LabelEditor = ({
       <Command.Empty className="py-2">
         <Text color="muted">No labels found.</Text>
       </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto">
+      <Command.Group
+        className="max-h-80 overflow-y-auto"
+        onScroll={handleScroll}
+      >
         {labels.map((label, idx) => (
           <Command.Item
             active={Boolean(filters.labelIds?.includes(label.id))}
@@ -835,6 +992,14 @@ const LabelEditor = ({
             </Flex>
           </Command.Item>
         ))}
+        {isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <Text className="flex items-center gap-2" color="muted">
+              <LoadingIcon className="animate-spin" />
+              Loading more labels...
+            </Text>
+          </Command.Loading>
+        ) : null}
       </Command.Group>
     </Command>
   );

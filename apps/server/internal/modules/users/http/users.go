@@ -346,8 +346,32 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		teamID = &parsedTeamID
 	}
 
-	search := strings.TrimSpace(r.URL.Query().Get("search"))
-	users, err := h.users.List(ctx, workspace.ID, teamID, search)
+	filter := users.CoreListUsersFilter{
+		TeamID: teamID,
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		users, err := h.users.List(ctx, workspace.ID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(users) > pageSize
+		if hasMore {
+			users = users[:pageSize]
+		}
+
+		h.resolveUserAvatars(ctx, users)
+		web.Respond(ctx, w, toAppMembersResponse(users, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	users, err := h.users.List(ctx, workspace.ID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

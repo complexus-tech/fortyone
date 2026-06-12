@@ -39,6 +39,13 @@ type CoreUser struct {
 	Role                *string
 }
 
+type CoreListUsersFilter struct {
+	TeamID *uuid.UUID
+	Search string
+	Limit  int
+	Offset int
+}
+
 // CoreUpdateUser represents the fields that can be updated for a user.
 type CoreUpdateUser struct {
 	Username           *string

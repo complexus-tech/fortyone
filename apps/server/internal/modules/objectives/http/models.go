@@ -46,6 +46,18 @@ type AppFilters struct {
 	PageSize int       `json:"pageSize"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppObjectivesResponse struct {
+	Objectives []AppObjectiveList `json:"objectives"`
+	Pagination AppPagination      `json:"pagination"`
+}
+
 // toAppObjectives converts a list of core objectives to a list of application objectives.
 func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 	appObjectives := make([]AppObjectiveList, len(objectives))
@@ -83,6 +95,23 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 		}
 	}
 	return appObjectives
+}
+
+func toAppObjectivesResponse(objectives []objectives.CoreObjective, page, pageSize int, hasMore bool) AppObjectivesResponse {
+	nextPage := 0
+	if hasMore {
+		nextPage = page + 1
+	}
+
+	return AppObjectivesResponse{
+		Objectives: toAppObjectives(objectives),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
 }
 
 // AppNewObjective represents the data needed to create a new objective

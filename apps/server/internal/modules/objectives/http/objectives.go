@@ -103,6 +103,25 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filters["limit"] = pageSize + 1
+		filters["offset"] = (page - 1) * pageSize
+
+		objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
+		if err != nil {
+			return err
+		}
+
+		hasMore := len(objectivesList) > pageSize
+		if hasMore {
+			objectivesList = objectivesList[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppObjectivesResponse(objectivesList, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
 	objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err

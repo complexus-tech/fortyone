@@ -1,11 +1,21 @@
 "use client";
 
 import { Command, Flex, Popover, Text, Divider, Button, Box } from "ui";
-import type { ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
-import { TeamIcon, PlusIcon } from "icons";
+import {
+  createContext,
+  use,
+  useDeferredValue,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
+import { LoadingIcon, PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
-import { useTeams, usePublicTeams } from "@/modules/teams/hooks/teams";
+import {
+  TEAM_MENU_PAGE_SIZE,
+  usePublicTeamsInfinite,
+  useTeamsInfinite,
+} from "@/modules/teams/hooks/teams";
 import { useWorkspacePath } from "@/hooks";
 
 type TeamContextType = {
@@ -19,7 +29,7 @@ const TeamsContext = createContext<TeamContextType>({
 });
 
 export const useTeamsMenu = () => {
-  const context = useContext(TeamsContext);
+  const context = use(TeamsContext);
   return context;
 };
 
@@ -50,23 +60,61 @@ const Items = ({
 }) => {
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
-  const { data: teams = [] } = useTeams();
-  const { data: publicTeams = [] } = usePublicTeams();
-  const { setOpen } = useTeamsMenu();
+  const { open, setOpen } = useTeamsMenu();
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const joinedTeamsQuery = useTeamsInfinite(
+    deferredQuery,
+    TEAM_MENU_PAGE_SIZE,
+    open,
+  );
+  const publicTeamsQuery = usePublicTeamsInfinite(
+    deferredQuery,
+    TEAM_MENU_PAGE_SIZE,
+    open,
+  );
+  const teams = joinedTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
+  const publicTeams =
+    publicTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
+  const canLeaveTeam = teams.length > 1 || Boolean(joinedTeamsQuery.hasNextPage);
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom > 80) {
+      return;
+    }
+
+    if (joinedTeamsQuery.hasNextPage && !joinedTeamsQuery.isFetchingNextPage) {
+      void joinedTeamsQuery.fetchNextPage();
+    }
+    if (publicTeamsQuery.hasNextPage && !publicTeamsQuery.isFetchingNextPage) {
+      void publicTeamsQuery.fetchNextPage();
+    }
+  };
 
   return (
     <Popover.Content align="start" className="w-72" sideOffset={5}>
       <Command>
-        <Command.Input placeholder="Join or manage teams..." />
+        <Command.Input
+          onValueChange={setQuery}
+          placeholder="Join or manage teams..."
+          value={query}
+        />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
           <Text color="muted">No teams found.</Text>
         </Command.Empty>
-        <Command.Group>
+        <Command.Group
+          className="max-h-80 overflow-y-auto"
+          onScroll={handleScroll}
+        >
           {teams.map((team) => (
             <Command.Item
               className="justify-between py-1 pr-1"
-              disabled={teams.length === 1}
+              disabled={!canLeaveTeam}
               key={team.id}
               onSelect={() => {
                 setTeam(team.id, "leave");
@@ -84,13 +132,21 @@ const Items = ({
               <Button
                 className="border-border/80 px-2"
                 color="tertiary"
-                disabled={teams.length === 1}
+                disabled={!canLeaveTeam}
                 size="xs"
               >
                 Leave
               </Button>
             </Command.Item>
           ))}
+          {joinedTeamsQuery.isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Loading more teams...
+              </Text>
+            </Command.Loading>
+          ) : null}
 
           {publicTeams.length > 0 && teams.length > 0 && (
             <Divider className="my-1.5" />
@@ -122,6 +178,14 @@ const Items = ({
               </Button>
             </Command.Item>
           ))}
+          {publicTeamsQuery.isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Loading more public teams...
+              </Text>
+            </Command.Loading>
+          ) : null}
         </Command.Group>
         {!hideManageTeams && (
           <>

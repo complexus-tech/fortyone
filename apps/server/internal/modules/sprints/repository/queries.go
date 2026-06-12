@@ -75,7 +75,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	}
 
 	for field := range filters {
-		if field != "user_id" && field != "search" { // Skip user_id since it's used in the JOIN
+		if field != "user_id" && field != "search" && field != "page" && field != "pageSize" && field != "limit" && field != "offset" { // Skip user_id since it's used in the JOIN
 			setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
 		}
 	}
@@ -83,7 +83,14 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 		setClauses = append(setClauses, "s.name ILIKE '%' || :search || '%'")
 	}
 
-	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.end_date DESC;"
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.end_date DESC"
+	if limit, ok := positiveIntFilter(filters, "limit"); ok {
+		offset, _ := nonNegativeIntFilter(filters, "offset")
+		filters["limit"] = limit
+		filters["offset"] = offset
+		query += " LIMIT :limit OFFSET :offset"
+	}
+	query += ";"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

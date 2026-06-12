@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -13,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]teams.CoreTeam, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filter teams.CoreListTeamsFilter) ([]teams.CoreTeam, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.List")
 	defer span.End()
 
@@ -22,6 +23,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 		"user_id":      userID,
 	}
 	var teams []dbTeam
+	search := strings.TrimSpace(filter.Search)
 	q := `
 		SELECT
 			t.team_id,
@@ -57,14 +59,31 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 				WHERE tm.team_id = t.team_id
 				AND tm.user_id = :user_id
 			)
+	`
+	if search != "" {
+		params["search"] = search
+		q += `
+			AND (
+				t.name ILIKE '%' || :search || '%'
+				OR t.code ILIKE '%' || :search || '%'
+			)
+		`
+	}
+	q += `
 		ORDER BY
 			CASE
 				WHEN uto.order_index IS NOT NULL THEN 0
 				ELSE 1
 			END,
 			uto.order_index ASC NULLS LAST,
-			t.created_at DESC;
+			t.created_at DESC
 	`
+	if filter.Limit > 0 {
+		params["limit"] = filter.Limit
+		params["offset"] = filter.Offset
+		q += " LIMIT :limit OFFSET :offset"
+	}
+	q += ";"
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
@@ -168,7 +187,7 @@ func (r *repo) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.U
 	return toCoreTeam(team), nil
 }
 
-func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID) ([]teams.CoreTeam, error) {
+func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filter teams.CoreListTeamsFilter) ([]teams.CoreTeam, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.teams.ListPublicTeams")
 	defer span.End()
 
@@ -178,6 +197,7 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 	}
 
 	var teams []dbTeam
+	search := strings.TrimSpace(filter.Search)
 	q := `
 		SELECT
 			t.team_id,
@@ -210,8 +230,23 @@ func (r *repo) ListPublicTeams(ctx context.Context, workspaceId uuid.UUID, userI
 				WHERE tm.team_id = t.team_id
 				AND tm.user_id = :user_id
 			)
-		ORDER BY t.created_at DESC;
 	`
+	if search != "" {
+		params["search"] = search
+		q += `
+			AND (
+				t.name ILIKE '%' || :search || '%'
+				OR t.code ILIKE '%' || :search || '%'
+			)
+		`
+	}
+	q += " ORDER BY t.created_at DESC"
+	if filter.Limit > 0 {
+		params["limit"] = filter.Limit
+		params["offset"] = filter.Offset
+		q += " LIMIT :limit OFFSET :offset"
+	}
+	q += ";"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {

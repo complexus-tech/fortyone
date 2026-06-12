@@ -50,6 +50,20 @@ type AppFilters struct {
 	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
 	Team      *uuid.UUID `json:"teamId" db:"team_id"`
 	Search    string     `json:"search" db:"search"`
+	Page      int        `json:"page"`
+	PageSize  int        `json:"pageSize"`
+}
+
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppSprintsResponse struct {
+	Sprints    []AppSprintsList `json:"sprints"`
+	Pagination AppPagination    `json:"pagination"`
 }
 
 type AppNewSprint struct {
@@ -95,6 +109,23 @@ func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 		}
 	}
 	return appSprints
+}
+
+func toAppSprintsResponse(sprints []sprints.CoreSprint, page, pageSize int, hasMore bool) AppSprintsResponse {
+	nextPage := 0
+	if hasMore {
+		nextPage = page + 1
+	}
+
+	return AppSprintsResponse{
+		Sprints: toAppSprints(sprints),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
 }
 
 // toAppSprint converts a core sprint to a simple application sprint (without stats).

@@ -13,8 +13,8 @@ import (
 
 // Repository provides access to the teams storage.
 type Repository interface {
-	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
-	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
+	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filter CoreListTeamsFilter) ([]CoreTeam, error)
+	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filter CoreListTeamsFilter) ([]CoreTeam, error)
 	GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
 	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
@@ -42,12 +42,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
-func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error) {
+func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.list")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.List")
 	defer span.End()
 
-	teams, err := s.repo.List(ctx, workspaceID, userID)
+	teams, err := s.repo.List(ctx, workspaceID, userID, firstListTeamsFilter(filters))
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -60,12 +60,12 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.U
 	return teams, nil
 }
 
-func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error) {
+func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.listPublicTeams")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.ListPublicTeams")
 	defer span.End()
 
-	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID)
+	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID, firstListTeamsFilter(filters))
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -76,6 +76,13 @@ func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, us
 		attribute.Int("teams.count", len(teams)),
 	))
 	return teams, nil
+}
+
+func firstListTeamsFilter(filters []CoreListTeamsFilter) CoreListTeamsFilter {
+	if len(filters) == 0 {
+		return CoreListTeamsFilter{}
+	}
+	return filters[0]
 }
 
 func (s *Service) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error) {

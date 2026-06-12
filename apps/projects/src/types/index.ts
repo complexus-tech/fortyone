@@ -45,6 +45,16 @@ export type Member = {
   updatedAt: string;
 };
 
+export type MembersPage = {
+  members: Member[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type Label = {
   id: string;
   name: string;
@@ -53,6 +63,16 @@ export type Label = {
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type LabelsPage = {
+  labels: Label[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 export type Link = {

@@ -1,10 +1,20 @@
 "use client";
 import { CheckIcon, LoadingIcon } from "icons";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useDeferredValue,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "@/lib/auth/client";
-import { useMembers } from "@/lib/hooks/members";
-import { useTeamMembers } from "@/lib/hooks/team-members";
+import {
+  MEMBER_MENU_PAGE_SIZE,
+  useMembersInfinite,
+} from "@/lib/hooks/members";
+import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -14,8 +24,10 @@ const AssigneesContext = createContext<{
   setOpen: () => {},
 });
 
+const EMPTY_EXCLUDED_USERS: string[] = [];
+
 export const useAssigneesMenu = () => {
-  const { open, setOpen } = useContext(AssigneesContext);
+  const { open, setOpen } = use(AssigneesContext);
   return { open, setOpen };
 };
 
@@ -47,7 +59,7 @@ const Items = ({
   assigneeId,
   onAssigneeSelected,
   disallowEmptySelection = false,
-  excludeUsers = [],
+  excludeUsers = EMPTY_EXCLUDED_USERS,
   teamId,
 }: {
   placeholder?: string;
@@ -59,24 +71,61 @@ const Items = ({
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
   const { data: session } = useSession();
-  const { setOpen } = useAssigneesMenu();
-  const { data: allMembers = [], isPending: isLoadingMembers } = useMembers();
-  const { data: teamMembers = [], isPending: isLoadingTeamMembers } =
-    useTeamMembers(teamId);
+  const { open, setOpen } = useAssigneesMenu();
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const workspaceMembersQuery = useMembersInfinite(
+    deferredQuery,
+    MEMBER_MENU_PAGE_SIZE,
+    open && !teamId,
+  );
+  const teamMembersQuery = useTeamMembersInfinite(
+    teamId,
+    deferredQuery,
+    MEMBER_MENU_PAGE_SIZE,
+    open && Boolean(teamId),
+  );
+  const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
+  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
+  const isPending = membersQuery.isPending;
+  const currentUserId = session?.user.id ?? null;
+  const self = members.find(({ id }) => id === currentUserId);
+  const visibleMembers = members.filter(
+    ({ id }) => !excludeUsers.includes(id) && id !== currentUserId,
+  );
+  const indexOffset = (disallowEmptySelection ? 0 : 1) + (self ? 1 : 0);
 
-  const members = teamId ? teamMembers : allMembers;
-  const isPending = teamId ? isLoadingTeamMembers : isLoadingMembers;
-  const self = members.find(({ id }) => id === session?.user?.id);
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (
+      distanceToBottom <= 80 &&
+      membersQuery.hasNextPage &&
+      !membersQuery.isFetchingNextPage
+    ) {
+      void membersQuery.fetchNextPage();
+    }
+  };
 
   return (
     <Popover.Content align={align} className="w-80">
       <Command>
-        <Command.Input autoFocus placeholder={placeholder} />
+        <Command.Input
+          autoFocus
+          onValueChange={setQuery}
+          placeholder={placeholder}
+          value={query}
+        />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
           <Text color="muted">No user found.</Text>
         </Command.Empty>
-        <Command.Group className="max-h-80 overflow-y-auto md:max-h-100">
+        <Command.Group
+          className="max-h-80 overflow-y-auto md:max-h-100"
+          onScroll={handleScroll}
+        >
           {isPending ? (
             <Command.Loading className="p-2">
               <Text className="flex items-center gap-2" color="muted">
@@ -115,75 +164,82 @@ const Items = ({
                   </Flex>
                 </Command.Item>
               ) : null}
-              <Command.Item
-                active={self?.id === assigneeId}
-                className="justify-between"
-                onSelect={() => {
-                  if (self?.id !== assigneeId) {
-                    onAssigneeSelected(self?.id ?? null);
-                  }
-                  setOpen(false);
-                }}
-              >
-                <Flex align="center" gap={2}>
-                  <Avatar
-                    color="primary"
-                    name={self?.fullName}
-                    size="sm"
-                    src={self?.avatarUrl}
-                  />
-                  <Text className="max-w-48 truncate">
-                    {self?.fullName || self?.username}{" "}
-                    <Text as="span" color="muted">
-                      (You)
+              {self ? (
+                <Command.Item
+                  active={self.id === assigneeId}
+                  className="justify-between"
+                  onSelect={() => {
+                    if (self.id !== assigneeId) {
+                      onAssigneeSelected(self.id);
+                    }
+                    setOpen(false);
+                  }}
+                  value={self.fullName || self.username || self.email}
+                >
+                  <Flex align="center" gap={2}>
+                    <Avatar
+                      color="primary"
+                      name={self.fullName}
+                      size="sm"
+                      src={self.avatarUrl}
+                    />
+                    <Text className="max-w-48 truncate">
+                      {self.fullName || self.username}{" "}
+                      <Text as="span" color="muted">
+                        (You)
+                      </Text>
                     </Text>
-                  </Text>
-                </Flex>
-                <Flex align="center" gap={1}>
-                  {self?.id === assigneeId && (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  )}
-                  <Text color="muted">{1}</Text>
-                </Flex>
-              </Command.Item>
+                  </Flex>
+                  <Flex align="center" gap={1}>
+                    {self.id === assigneeId && (
+                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                    )}
+                    <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
+                  </Flex>
+                </Command.Item>
+              ) : null}
             </>
           )}
-          {members
-            .filter(
-              ({ id }) =>
-                !excludeUsers.includes(id) && id !== session?.user?.id,
-            )
-            .map(({ id, fullName, username, avatarUrl }, idx) => (
-              <Command.Item
-                active={id === assigneeId}
-                className="justify-between"
-                key={id}
-                onSelect={() => {
-                  if (id !== assigneeId) {
-                    onAssigneeSelected(id);
-                  }
-                  setOpen(false);
-                }}
-              >
-                <Flex align="center" gap={2}>
-                  <Avatar
-                    color="primary"
-                    name={fullName || username}
-                    size="sm"
-                    src={avatarUrl}
-                  />
-                  <Text className="max-w-48 truncate">
-                    {fullName || username}
-                  </Text>
-                </Flex>
-                <Flex align="center" gap={1}>
-                  {id === assigneeId && (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  )}
-                  <Text color="muted">{idx + 2}</Text>
-                </Flex>
-              </Command.Item>
-            ))}
+          {visibleMembers.map(({ id, fullName, username, avatarUrl }, idx) => (
+            <Command.Item
+              active={id === assigneeId}
+              className="justify-between"
+              key={id}
+              onSelect={() => {
+                if (id !== assigneeId) {
+                  onAssigneeSelected(id);
+                }
+                setOpen(false);
+              }}
+              value={fullName || username}
+            >
+              <Flex align="center" gap={2}>
+                <Avatar
+                  color="primary"
+                  name={fullName || username}
+                  size="sm"
+                  src={avatarUrl}
+                />
+                <Text className="max-w-48 truncate">
+                  {fullName || username}
+                </Text>
+              </Flex>
+              <Flex align="center" gap={1}>
+                {id === assigneeId && (
+                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                )}
+                <Text color="muted">{idx + indexOffset}</Text>
+              </Flex>
+            </Command.Item>
+          ))}
+          {membersQuery.isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Loading more users...
+              </Text>
+            </Command.Loading>
+          ) : null}
         </Command.Group>
       </Command>
     </Popover.Content>

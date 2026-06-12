@@ -1,9 +1,19 @@
 "use client";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useDeferredValue,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import { Button, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, PlusIcon } from "icons";
+import { CheckIcon, LoadingIcon, PlusIcon } from "icons";
 import { generateRandomColor } from "lib";
-import { useLabels } from "@/lib/hooks/labels";
+import {
+  LABEL_MENU_PAGE_SIZE,
+  useLabelsInfinite,
+} from "@/lib/hooks/labels";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
 import { Dot } from "../dot";
 
@@ -16,7 +26,7 @@ const LabelsContext = createContext<{
 });
 
 export const useLabelsMenu = () => {
-  const { open, setOpen } = useContext(LabelsContext);
+  const { open, setOpen } = use(LabelsContext);
   return { open, setOpen };
 };
 
@@ -54,12 +64,21 @@ const Items = ({
   align?: "center" | "start" | "end" | undefined;
 }) => {
   const { mutateAsync: createLabel } = useCreateLabelMutation();
-  const { data: allLabels = [] } = useLabels();
-  const labels = allLabels.filter(
-    (label) => label.teamId === teamId || label.teamId === null,
-  );
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [isLoading, setIsLoading] = useState(false);
+  const { open } = useLabelsMenu();
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLabelsInfinite(
+    { search: deferredQuery, teamId },
+    LABEL_MENU_PAGE_SIZE,
+    open,
+  );
+  const labels = data?.pages.flatMap((page) => page.labels) ?? [];
 
   const handleCreateLabel = async () => {
     const usedColors = labels.map((label) => label.color);
@@ -81,6 +100,16 @@ const Items = ({
       .finally(() => {
         setIsLoading(false);
       });
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
   };
 
   return (
@@ -110,7 +139,10 @@ const Items = ({
             </span>
           </Button>
         </Command.Empty>
-        <Command.Group>
+        <Command.Group
+          className="max-h-80 overflow-y-auto"
+          onScroll={handleScroll}
+        >
           {labels.map(({ id, name, color }) => (
             <Command.Item
               className="justify-between gap-4"
@@ -135,6 +167,14 @@ const Items = ({
               </Flex>
             </Command.Item>
           ))}
+          {isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <Text className="flex items-center gap-2" color="muted">
+                <LoadingIcon className="animate-spin" />
+                Loading more labels...
+              </Text>
+            </Command.Loading>
+          ) : null}
         </Command.Group>
       </Command>
     </Popover.Content>

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -43,7 +44,30 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	teams, err := h.teams.List(ctx, workspace.ID, userID)
+	filter := teams.CoreListTeamsFilter{
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		teams, err := h.teams.List(ctx, workspace.ID, userID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(teams) > pageSize
+		if hasMore {
+			teams = teams[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppTeamsResponse(teams, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	teams, err := h.teams.List(ctx, workspace.ID, userID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -99,7 +123,30 @@ func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID)
+	filter := teams.CoreListTeamsFilter{
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(teams) > pageSize
+		if hasMore {
+			teams = teams[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppTeamsResponse(teams, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

@@ -180,7 +180,7 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 	return toCoreUser(user), nil
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUID, search string) ([]users.CoreUser, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
 	defer span.End()
 
@@ -188,12 +188,12 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
-	trimmedSearch := strings.TrimSpace(search)
+	trimmedSearch := strings.TrimSpace(filter.Search)
 
 	var q string
-	if teamID != nil {
+	if filter.TeamID != nil {
 		// Query for specific team members
-		params["team_id"] = *teamID
+		params["team_id"] = *filter.TeamID
 		q = `
 		SELECT DISTINCT
 			u.user_id,
@@ -252,6 +252,11 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	}
 
 	q += " ORDER BY u.full_name"
+	if filter.Limit > 0 {
+		params["limit"] = filter.Limit
+		params["offset"] = filter.Offset
+		q += " LIMIT :limit OFFSET :offset"
+	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
