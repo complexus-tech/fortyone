@@ -11,6 +11,7 @@ import {
 import {
   ArrowRight2Icon,
   CalendarIcon,
+  EstimateIcon,
   ObjectiveIcon,
   SprintsIcon,
   SubStoryIcon,
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
+import { EstimateMenu } from "@/components/ui/story/estimate-menu";
 import { Labels } from "@/components/ui/story/labels";
 import { sprintTooltip } from "@/components/ui/story/sprint-tooltip";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
@@ -42,6 +44,7 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { hexToRgba, slugify } from "@/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatEstimate } from "@/lib/estimate";
 import { RowWrapper } from "../row-wrapper";
 
 type StoryPropertiesProps = Story & {
@@ -56,6 +59,8 @@ export const StoryProperties = ({
   handleUpdate,
   statusId,
   priority,
+  estimateValue,
+  estimateScheme,
   objectiveId,
   sprintId,
   id,
@@ -210,6 +215,43 @@ export const StoryProperties = ({
           />
         </PrioritiesMenu>
       )}
+      {isColumnVisible("Estimate") && estimateValue ? (
+        <EstimateMenu>
+          <Tooltip
+            className="pointer-events-none py-3"
+            title={formatEstimate(estimateScheme, estimateValue, "full")}
+          >
+            <span>
+              <EstimateMenu.Trigger>
+                <Button
+                  aria-label={formatEstimate(
+                    estimateScheme,
+                    estimateValue,
+                    "full",
+                  )}
+                  className="gap-1 px-2"
+                  color="tertiary"
+                  disabled={isGuest}
+                  rounded={asKanban ? "md" : "xl"}
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <EstimateIcon className="h-4" />
+                  <span>{formatEstimate(estimateScheme, estimateValue)}</span>
+                </Button>
+              </EstimateMenu.Trigger>
+            </span>
+          </Tooltip>
+          <EstimateMenu.Items
+            estimateScheme={estimateScheme}
+            estimateValue={estimateValue}
+            setEstimateValue={(estimateValue) => {
+              handleUpdate({ estimateValue });
+            }}
+          />
+        </EstimateMenu>
+      ) : null}
       {isColumnVisible("Objective") && objective ? (
         <ObjectivesMenu>
           <Tooltip

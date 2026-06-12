@@ -53,6 +53,11 @@ import {
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { useDebounce, useTerminology, useWorkspacePath } from "@/hooks";
+import {
+  formatEstimate,
+  getEstimateOptions,
+  type EstimateScheme,
+} from "@/lib/estimate";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
@@ -83,46 +88,8 @@ import type {
 
 const DEBOUNCE_DELAY = 1000;
 
-type EstimateScheme = "points" | "hours" | "tshirt" | "ideal_days";
-
-const estimateValues = [1, 2, 3, 5, 8] as const;
-
-const estimateLabels: Record<EstimateScheme, Record<number, string>> = {
-  points: {
-    1: "1",
-    2: "2",
-    3: "3",
-    5: "5",
-    8: "8",
-  },
-  hours: {
-    1: "0.5h",
-    2: "1h",
-    3: "2h",
-    5: "4h",
-    8: "8h",
-  },
-  tshirt: {
-    1: "XS",
-    2: "S",
-    3: "M",
-    5: "L",
-    8: "XL",
-  },
-  ideal_days: {
-    1: "0.5d",
-    2: "1d",
-    3: "2d",
-    5: "3d",
-    8: "5d",
-  },
-};
-
 const metadataText = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
-
-const estimateLabel = (scheme: EstimateScheme, value?: number) =>
-  value ? estimateLabels[scheme][value] ?? String(value) : "Estimate";
 
 const CommentRow = ({ comment }: { comment: GitHubComment }) => (
   <Box className="relative pb-4">
@@ -466,10 +433,12 @@ const RequestProperties = ({
     teamId,
   );
   const { data: selectedSprint } = useSprint(request.sprintId ?? null, teamId);
-  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
-  const requestEstimateLabel = estimateLabel(
+  const estimateScheme = (teamSettings?.estimationSettings.scheme ??
+    "points") as EstimateScheme;
+  const requestEstimateLabel = formatEstimate(
     estimateScheme,
     request.estimateValue,
+    "compact",
   );
 
   return (
@@ -597,16 +566,18 @@ const RequestProperties = ({
               </Menu.Button>
               <Menu.Items align="start">
                 <Menu.Group>
-                  {estimateValues.map((value) => (
-                    <Menu.Item
-                      key={value}
-                      onSelect={() => {
-                        onUpdate({ estimateValue: value });
-                      }}
-                    >
-                      {estimateLabel(estimateScheme, value)}
-                    </Menu.Item>
-                  ))}
+                  {getEstimateOptions(estimateScheme).map(
+                    ({ label, value }) => (
+                      <Menu.Item
+                        key={value}
+                        onSelect={() => {
+                          onUpdate({ estimateValue: value });
+                        }}
+                      >
+                        {label}
+                      </Menu.Item>
+                    ),
+                  )}
                 </Menu.Group>
               </Menu.Items>
             </Menu>

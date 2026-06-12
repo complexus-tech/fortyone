@@ -33,6 +33,7 @@ export const MyWorkProvider = ({
       "ID",
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",

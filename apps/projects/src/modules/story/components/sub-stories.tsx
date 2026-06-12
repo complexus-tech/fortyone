@@ -341,7 +341,13 @@ export const SubStories = ({
             orderBy: "priority",
             showEmptyGroups: false,
             showSubStories: false,
-            displayColumns: ["ID", "Status", "Priority", "Assignee"],
+            displayColumns: [
+              "ID",
+              "Status",
+              "Assignee",
+              "Estimate",
+              "Priority",
+            ],
           }}
         />
       ) : null}

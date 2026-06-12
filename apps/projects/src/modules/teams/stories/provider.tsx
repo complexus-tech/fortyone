@@ -33,6 +33,7 @@ export const TeamOptionsProvider = ({
       "ID",
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",

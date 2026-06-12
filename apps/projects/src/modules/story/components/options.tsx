@@ -13,9 +13,16 @@ import {
 } from "ui";
 import { type ReactNode, useRef, useState } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
-import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
+import {
+  CalendarIcon,
+  EstimateIcon,
+  ObjectiveIcon,
+  PlusIcon,
+  SprintsIcon,
+} from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
+import { formatEstimate } from "@/lib/estimate";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -23,6 +30,7 @@ import {
   StatusesMenu,
   AssigneesMenu,
   SprintsMenu,
+  EstimateMenu,
   StoryStatusIcon,
   PriorityIcon,
   LabelsMenu,
@@ -108,6 +116,8 @@ export const Options = ({
     assigneeId,
     reporterId,
     teamId,
+    estimateValue,
+    estimateScheme,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -142,6 +152,7 @@ export const Options = ({
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const priorityButtonRef = useRef<HTMLButtonElement>(null);
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
+  const estimateButtonRef = useRef<HTMLButtonElement>(null);
   const startDateButtonRef = useRef<HTMLButtonElement>(null);
   const dueDateButtonRef = useRef<HTMLButtonElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
@@ -226,6 +237,13 @@ export const Options = ({
     e.preventDefault();
     if (!isDeleted && !isGuest) {
       assigneeButtonRef.current?.click();
+    }
+  });
+
+  useHotkeys("e", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      estimateButtonRef.current?.click();
     }
   });
 
@@ -425,6 +443,50 @@ export const Options = ({
                   teamId={teamId}
                 />
               </AssigneesMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Estimate"
+            value={
+              <EstimateMenu>
+                <EstimateMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-text-muted": !estimateValue,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <EstimateIcon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-text-muted": !estimateValue,
+                        })}
+                      />
+                    }
+                    ref={estimateButtonRef}
+                    type="button"
+                    size="sm"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {estimateValue ? (
+                      formatEstimate(estimateScheme, estimateValue, "full")
+                    ) : (
+                      <Text as="span" color="muted">
+                        Add estimate
+                      </Text>
+                    )}
+                  </Button>
+                </EstimateMenu.Trigger>
+                <EstimateMenu.Items
+                  estimateScheme={estimateScheme}
+                  estimateValue={estimateValue}
+                  setEstimateValue={(estimateValue) => {
+                    handleUpdate({ estimateValue });
+                  }}
+                />
+              </EstimateMenu>
             }
           />
           <Option

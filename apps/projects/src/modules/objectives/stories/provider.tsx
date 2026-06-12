@@ -35,6 +35,7 @@ export const ObjectiveOptionsProvider = ({
       "ID",
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",

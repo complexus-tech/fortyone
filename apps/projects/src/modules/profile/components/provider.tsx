@@ -27,6 +27,7 @@ export const ProfileProvider = ({
     displayColumns: [
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",

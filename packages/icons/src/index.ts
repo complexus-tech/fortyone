@@ -1,4 +1,5 @@
 export * from "./sprints";
+export * from "./estimate";
 export * from "./avatar";
 export * from "./analytics";
 export * from "./dashboard";

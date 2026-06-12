@@ -34,6 +34,7 @@ export const SprintStoriesProvider = ({
       "ID",
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",

@@ -10,6 +10,7 @@ export type DisplayColumn =
   | "ID"
   | "Status"
   | "Assignee"
+  | "Estimate"
   | "Priority"
   | "Deadline"
   | "Created"
@@ -41,6 +42,7 @@ const defaultViewOptions: StoriesViewOptions = {
     "ID",
     "Status",
     "Assignee",
+    "Estimate",
     "Priority",
     "Deadline",
     "Created",
@@ -83,6 +85,7 @@ export const StoriesViewOptionsButton = ({
     "Labels",
     "Status",
     "Assignee",
+    "Estimate",
     "Priority",
     ...(layout === "list" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
@@ -102,10 +105,10 @@ export const StoriesViewOptionsButton = ({
         );
       }
 
-      // For mobile and not kanban, only keep Status, Assignee, Priority
+      // For mobile and not kanban, only keep compact metadata columns.
       if (isMobile && layout === "list") {
         filteredColumns = filteredColumns.filter((column) =>
-          ["Status", "Assignee", "Priority"].includes(column),
+          ["Status", "Assignee", "Estimate", "Priority"].includes(column),
         );
       }
 
