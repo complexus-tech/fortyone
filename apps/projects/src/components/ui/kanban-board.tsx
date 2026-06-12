@@ -16,7 +16,7 @@ import type { StoriesViewOptions } from "@/components/ui/stories-view-options-bu
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
 import { BodyContainer } from "../shared/body";
-import { StoriesKanbanHeader } from "./kanban-header";
+import { KanbanGroupTitle, StoriesKanbanHeader } from "./kanban-header";
 import { KanbanGroup } from "./kanban-group";
 import { useBoard } from "./board-context";
 import {
@@ -120,30 +120,6 @@ const GroupedKanbanStories = ({
   );
 };
 
-const getHiddenGroupLabel = ({
-  group,
-  groupBy,
-  members,
-  statuses,
-}: {
-  group: StoryGroup;
-  groupBy: StoriesViewOptions["groupBy"];
-  members: Member[];
-  statuses: State[];
-}) => {
-  const { member, priority, status } = getKanbanGroupIdentity({
-    group,
-    groupBy,
-    members,
-    statuses,
-  });
-
-  if (groupBy === "status") return status?.name ?? group.key;
-  if (groupBy === "priority") return priority ?? group.key;
-  if (groupBy === "assignee") return member?.username ?? "Unassigned";
-  return group.key;
-};
-
 const HiddenKanbanHeader = ({ count }: { count: number }) => {
   if (count === 0) return null;
 
@@ -176,7 +152,7 @@ const HiddenKanbanGroups = ({
     <Box className="w-[340px] shrink-0">
       <Flex direction="column" gap={3}>
         {groups.map((group) => {
-          const label = getHiddenGroupLabel({
+          const { member, priority, status } = getKanbanGroupIdentity({
             group,
             groupBy,
             members,
@@ -199,11 +175,15 @@ const HiddenKanbanGroups = ({
               role="button"
               tabIndex={0}
             >
-              <Text className="min-w-0 truncate" title={label}>
-                {label}
-              </Text>
+              <Flex align="center" className="min-w-0" gap={2}>
+                <KanbanGroupTitle
+                  groupBy={groupBy}
+                  member={member}
+                  priority={priority}
+                  status={status}
+                />
+              </Flex>
               <Flex align="center" className="shrink-0" gap={1}>
-                <Text color="muted">{group.totalCount}</Text>
                 <Popover>
                   <Popover.Trigger asChild>
                     <Button
@@ -237,6 +217,7 @@ const HiddenKanbanGroups = ({
                     </Button>
                   </Popover.Content>
                 </Popover>
+                <Text color="muted">{group.totalCount}</Text>
               </Flex>
             </Box>
           );

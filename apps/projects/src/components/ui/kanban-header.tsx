@@ -1,12 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Flex, Button, Text, Box, Tooltip, Avatar, Popover } from "ui";
-import {
-  MoreHorizontalIcon,
-  PlusIcon,
-  SidebarCollapseIcon,
-  StoryIcon,
-} from "icons";
+import { MoreHorizontalIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
@@ -139,14 +134,13 @@ export const StoriesKanbanHeader = ({
               </Popover.Trigger>
               <Popover.Content align="end" className="w-44 p-1.5">
                 <Button
-                  className="justify-start gap-2 px-2"
+                  className="justify-start px-2"
                   color="tertiary"
                   fullWidth
                   onClick={onHide}
                   size="sm"
                   variant="naked"
                 >
-                  <SidebarCollapseIcon className="h-4 w-auto" />
                   Hide column
                 </Button>
               </Popover.Content>
