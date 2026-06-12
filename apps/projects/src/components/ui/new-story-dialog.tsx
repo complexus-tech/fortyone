@@ -88,7 +88,6 @@ import { ObjectivesMenu } from "./story/objectives-menu";
 import { SprintsMenu } from "./story/sprints-menu";
 import { EstimateMenu } from "./story/estimate-menu";
 import { LabelsMenu } from "./story/labels-menu";
-import { StoryLabel } from "./label";
 import { FeatureGuard } from "./feature-guard";
 import { buildNewStoryDialogPayload } from "./new-story-dialog-form";
 
@@ -742,9 +741,23 @@ export const NewStoryDialog = ({
                   {selectedLabels.map((label) => (
                     <LabelsMenu key={label.id}>
                       <LabelsMenu.Trigger>
-                        <span>
-                          <StoryLabel {...label} isRectangular size="sm" />
-                        </span>
+                        <Button
+                          className="dark:bg-surface-elevated/90 gap-1.5 px-2.5"
+                          color="tertiary"
+                          leftIcon={
+                            <TagsIcon
+                              className="h-4.5 w-auto"
+                              style={{ color: label.color }}
+                            />
+                          }
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <span className="inline-block max-w-[12ch] truncate">
+                            {label.name}
+                          </span>
+                        </Button>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
                         labelIds={selectedLabelIds}
