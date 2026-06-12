@@ -4,6 +4,7 @@ import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
 import { CalendarIcon, SprintsIcon } from "icons";
+import { formatEstimate } from "@/lib/estimate";
 import { useMembers } from "@/lib/hooks/members";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -12,6 +13,27 @@ import { StoryStatusIcon } from "./story-status-icon";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useWorkspacePath } from "@/hooks";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+
+const DisplayEstimate = ({
+  value,
+  teamId,
+}: {
+  value: string;
+  teamId?: string;
+}) => {
+  const { data: teamSettings } = useTeamSettings(teamId);
+  const estimateValue = Number.parseInt(value, 10);
+  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+
+  return (
+    <span>
+      {Number.isNaN(estimateValue)
+        ? "No estimate"
+        : formatEstimate(estimateScheme, estimateValue, "full")}
+    </span>
+  );
+};
 
 const DisplaySprint = ({
   sprintId,
@@ -116,7 +138,9 @@ export const Activity = ({
     },
     estimate_unit: {
       label: "Estimate",
-      render: (value: string) => <span>{value || "No estimate"}</span>,
+      render: (value: string) => (
+        <DisplayEstimate teamId={teamId} value={value} />
+      ),
     },
     assignee_id: {
       label: "Assignee",
