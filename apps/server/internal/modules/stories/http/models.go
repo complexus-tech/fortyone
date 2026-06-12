@@ -394,20 +394,21 @@ type AppUpdateStory struct {
 }
 
 type AppNewStory struct {
-	Title           string     `json:"title" validate:"required"`
-	EstimateValue   *int16     `json:"estimateValue"`
-	Description     *string    `json:"description"`
-	DescriptionHTML *string    `json:"descriptionHTML"`
-	Parent          *uuid.UUID `json:"parentId"`
-	Objective       *uuid.UUID `json:"objectiveId"`
-	Status          *uuid.UUID `json:"statusId"`
-	Assignee        *uuid.UUID `json:"assigneeId"`
-	Priority        string     `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
-	Sprint          *uuid.UUID `json:"sprintId"`
-	KeyResult       *uuid.UUID `json:"keyResultId"`
-	Team            uuid.UUID  `json:"teamId" validate:"required"`
-	StartDate       *date.Date `json:"startDate"`
-	EndDate         *date.Date `json:"endDate"`
+	Title           string      `json:"title" validate:"required"`
+	EstimateValue   *int16      `json:"estimateValue"`
+	Description     *string     `json:"description"`
+	DescriptionHTML *string     `json:"descriptionHTML"`
+	Parent          *uuid.UUID  `json:"parentId"`
+	Objective       *uuid.UUID  `json:"objectiveId"`
+	Status          *uuid.UUID  `json:"statusId"`
+	Assignee        *uuid.UUID  `json:"assigneeId"`
+	Priority        string      `json:"priority" validate:"oneof='No Priority' Low Medium High Urgent"`
+	Sprint          *uuid.UUID  `json:"sprintId"`
+	KeyResult       *uuid.UUID  `json:"keyResultId"`
+	LabelIDs        []uuid.UUID `json:"labelIds"`
+	Team            uuid.UUID   `json:"teamId" validate:"required"`
+	StartDate       *date.Date  `json:"startDate"`
+	EndDate         *date.Date  `json:"endDate"`
 }
 
 type AppNewComment struct {
@@ -595,6 +596,7 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		Priority:        a.Priority,
 		Sprint:          a.Sprint,
 		KeyResult:       a.KeyResult,
+		LabelIDs:        a.LabelIDs,
 		StartDate:       a.StartDate.TimePtr(),
 		EndDate:         a.EndDate.TimePtr(),
 		Team:            a.Team,

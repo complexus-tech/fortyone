@@ -166,6 +166,13 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	if len(ns.LabelIDs) > 0 {
+		if err := s.repo.UpdateLabels(ctx, cs.ID, workspaceId, ns.LabelIDs); err != nil {
+			span.RecordError(err)
+			return CoreSingleStory{}, err
+		}
+		cs.Labels = ns.LabelIDs
+	}
 	cs.EstimateScheme = estimateScheme
 	cs.EstimateLabel = EstimateLabelFromValue(estimateScheme, cs.EstimateValue)
 

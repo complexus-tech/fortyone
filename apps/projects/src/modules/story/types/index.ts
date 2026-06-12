@@ -46,7 +46,9 @@ export type DetailedStory = {
   associations: StoryAssociation[];
 };
 
-export type NewStory = Partial<DetailedStory>;
+export type NewStory = Partial<DetailedStory> & {
+  labelIds?: string[];
+};
 
 export type StoryAttachment = {
   id: string;

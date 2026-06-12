@@ -35,7 +35,7 @@ const updateDetailQuery = (
               sequenceId: data.subStories.length + 1,
               updatedAt: new Date().toISOString(),
               createdAt: new Date().toISOString(),
-              labels: [],
+              labels: story.labelIds ?? [],
               subStories: [],
             },
           ],
@@ -60,8 +60,8 @@ const updateInfiniteQuery = (
         id: "123",
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
-        estimateValue: story.estimateValue || null,
-        estimateScheme: story.estimateScheme || "points",
+        estimateValue: story.estimateValue ?? null,
+        estimateScheme: story.estimateScheme ?? "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -91,7 +91,7 @@ const updateInfiniteQuery = (
         completedAt: null,
         deletedAt: null,
         archivedAt: null,
-        labels: [],
+        labels: story.labelIds ?? [],
         subStories: [],
       };
 
@@ -126,8 +126,8 @@ const updateGroupedQuery = (
         id: "123",
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
-        estimateValue: story.estimateValue || null,
-        estimateScheme: story.estimateScheme || "points",
+        estimateValue: story.estimateValue ?? null,
+        estimateScheme: story.estimateScheme ?? "points",
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -157,7 +157,7 @@ const updateGroupedQuery = (
         completedAt: null,
         deletedAt: null,
         archivedAt: null,
-        labels: [],
+        labels: story.labelIds ?? [],
         subStories: [],
       };
 

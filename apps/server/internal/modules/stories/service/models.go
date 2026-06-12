@@ -85,24 +85,25 @@ type CoreSingleStory struct {
 }
 
 type CoreNewStory struct {
-	Title           string     `json:"title"`
-	EstimateValue   *int16     `json:"estimateValue"`
-	Description     *string    `json:"description"`
-	DescriptionHTML *string    `json:"descriptionHTML"`
-	Parent          *uuid.UUID `json:"parentId"`
-	Objective       *uuid.UUID `json:"objectiveId"`
-	Status          *uuid.UUID `json:"statusId"`
-	Assignee        *uuid.UUID `json:"assigneeId"`
-	BlockedBy       *uuid.UUID `json:"blockedById"`
-	Blocking        *uuid.UUID `json:"blockingId"`
-	Related         *uuid.UUID `json:"relatedId"`
-	Reporter        *uuid.UUID `json:"reporterId"`
-	Priority        string     `json:"priority"`
-	Sprint          *uuid.UUID `json:"sprintId"`
-	KeyResult       *uuid.UUID `json:"keyResultId"`
-	StartDate       *time.Time `json:"startDate"`
-	EndDate         *time.Time `json:"endDate"`
-	Team            uuid.UUID  `json:"teamId"`
+	Title           string      `json:"title"`
+	EstimateValue   *int16      `json:"estimateValue"`
+	Description     *string     `json:"description"`
+	DescriptionHTML *string     `json:"descriptionHTML"`
+	Parent          *uuid.UUID  `json:"parentId"`
+	Objective       *uuid.UUID  `json:"objectiveId"`
+	Status          *uuid.UUID  `json:"statusId"`
+	Assignee        *uuid.UUID  `json:"assigneeId"`
+	BlockedBy       *uuid.UUID  `json:"blockedById"`
+	Blocking        *uuid.UUID  `json:"blockingId"`
+	Related         *uuid.UUID  `json:"relatedId"`
+	Reporter        *uuid.UUID  `json:"reporterId"`
+	Priority        string      `json:"priority"`
+	Sprint          *uuid.UUID  `json:"sprintId"`
+	KeyResult       *uuid.UUID  `json:"keyResultId"`
+	LabelIDs        []uuid.UUID `json:"labelIds"`
+	StartDate       *time.Time  `json:"startDate"`
+	EndDate         *time.Time  `json:"endDate"`
+	Team            uuid.UUID   `json:"teamId"`
 }
 
 type CoreUpdateStory struct {
