@@ -3,17 +3,17 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, SprintsIcon } from "icons";
+import { CalendarIcon, EstimateIcon, SprintsIcon } from "icons";
 import { formatEstimate } from "@/lib/estimate";
+import { useWorkspacePath } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
-import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
-import { useSprint } from "@/modules/sprints/hooks/sprint-details";
-import { useObjective } from "@/modules/objectives/hooks/use-objective";
-import { useWorkspacePath } from "@/hooks";
-import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 
 const DisplayEstimate = ({
   value,
@@ -27,7 +27,8 @@ const DisplayEstimate = ({
   const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
 
   return (
-    <span>
+    <span className="flex items-center gap-1">
+      <EstimateIcon className="h-5" />
       {Number.isNaN(estimateValue)
         ? "No estimate"
         : formatEstimate(estimateScheme, estimateValue, "full")}
@@ -89,6 +90,12 @@ const DisplayObjective = ({
   );
 };
 
+const getActivityVerb = (type: StoryActivity["type"]) => {
+  if (type === "create") return "created the story";
+  if (type === "link") return "linked";
+  return "changed";
+};
+
 export const Activity = ({
   teamId,
   field,
@@ -102,6 +109,38 @@ export const Activity = ({
   const { data: statuses = [] } = useStatuses();
   const { withWorkspace } = useWorkspacePath();
   const member = user;
+  const activityVerb = getActivityVerb(type);
+  const isLinkedUrl =
+    type === "link" &&
+    currentValue &&
+    typeof newValue === "string" &&
+    newValue.startsWith("http");
+  let linkedValue: ReactNode = null;
+
+  if (type === "link" && currentValue) {
+    if (isLinkedUrl && typeof newValue === "string") {
+      linkedValue = (
+        <a
+          className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
+          href={newValue}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {currentValue}
+        </a>
+      );
+    } else {
+      linkedValue = (
+        <Text
+          as="span"
+          className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+          fontWeight="medium"
+        >
+          {currentValue}
+        </Text>
+      );
+    }
+  }
 
   if (field === "completed_at") {
     return null;
@@ -240,71 +279,61 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? (
-              <Box>
-                <Flex gap={2}>
-                  <Avatar
-                    className="mt-0.5"
-                    name={member.fullName}
-                    src={member.avatarUrl}
-                  />
-                  <Box>
-                    <Link
-                      className={cn("mb-2 flex gap-1", {
-                        "mb-0": member.isSystem,
-                      })}
-                      href={member.isSystem ? "" : `/profile/${member.id}`}
+            <Box>
+              <Flex gap={2}>
+                <Avatar
+                  className="mt-0.5"
+                  name={member.fullName}
+                  src={member.avatarUrl}
+                />
+                <Box>
+                  <Link
+                    className={cn("mb-2 flex gap-1", {
+                      "mb-0": member.isSystem,
+                    })}
+                    href={member.isSystem ? "" : `/profile/${member.id}`}
+                  >
+                    <Text fontSize="md" fontWeight="medium">
+                      {member.fullName}
+                    </Text>
+                    <Text color="muted" fontSize="md">
+                      ({member.username})
+                    </Text>
+                  </Link>
+                  {!member.isSystem ? (
+                    <Button
+                      className="mb-0.5 ml-px px-2"
+                      color="tertiary"
+                      href={withWorkspace(`/profile/${member.id}`)}
+                      size="xs"
                     >
-                      <Text fontSize="md" fontWeight="medium">
-                        {member.fullName}
-                      </Text>
-                      <Text color="muted" fontSize="md">
-                        ({member.username})
-                      </Text>
-                    </Link>
-                    {!member.isSystem ? (
-                      <Button
-                        className="mb-0.5 ml-px px-2"
-                        color="tertiary"
-                        href={withWorkspace(`/profile/${member.id}`)}
-                        size="xs"
-                      >
-                        Go to profile
-                      </Button>
-                    ) : (
-                      <Text color="muted" fontSize="md">
-                        (System Account)
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
-              </Box>
-            ) : null
+                      Go to profile
+                    </Button>
+                  ) : (
+                    <Text color="muted" fontSize="md">
+                      (System Account)
+                    </Text>
+                  )}
+                </Box>
+              </Flex>
+            </Box>
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
             <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
-              <Avatar
-                name={member?.fullName}
-                size="xs"
-                src={member?.avatarUrl}
-              />
+              <Avatar name={member.fullName} size="xs" src={member.avatarUrl} />
             </Box>
             <Text
               className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
               fontWeight="medium"
             >
-              {member?.username}
+              {member.username}
             </Text>
           </Flex>
         </Tooltip>
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
           <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {type === "create"
-              ? "created the story"
-              : type === "link"
-                ? "linked"
-                : "changed"}
+            {activityVerb}
           </Text>
           {type === "update" && (
             <>
@@ -335,26 +364,7 @@ export const Activity = ({
               ) : null}
             </>
           )}
-          {type === "link" && currentValue ? (
-            typeof newValue === "string" && newValue.startsWith("http") ? (
-              <a
-                className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
-                href={newValue}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {currentValue}
-              </a>
-            ) : (
-              <Text
-                as="span"
-                className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                fontWeight="medium"
-              >
-                {currentValue}
-              </Text>
-            )
-          ) : null}
+          {linkedValue}
           <Text
             as="span"
             className="mx-0.5 text-sm md:text-[0.95rem]"
