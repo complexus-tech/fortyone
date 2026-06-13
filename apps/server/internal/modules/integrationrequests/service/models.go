@@ -76,9 +76,14 @@ type CoreUpsertRequestInput struct {
 }
 
 type CoreListRequestsFilter struct {
-	Status   string
-	Page     int
-	PageSize int
+	Status        string
+	Provider      string
+	Priority      string
+	AssigneeID    *uuid.UUID
+	CreatedAfter  *time.Time
+	CreatedBefore *time.Time
+	Page          int
+	PageSize      int
 }
 
 type CoreBulkRequestResult struct {

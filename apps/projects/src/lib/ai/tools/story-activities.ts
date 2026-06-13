@@ -2,6 +2,7 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
+import { filterActivityTimeline, paginateRecords } from "./tool-helpers";
 
 export const storyActivitiesTool = tool({
   description:
@@ -35,9 +36,14 @@ export const storyActivitiesTool = tool({
         "objective",
         "sprint",
         "labels",
+        "estimate",
       ])
       .optional()
       .describe("Filter activities by specific field changes"),
+    fields: z
+      .array(z.string())
+      .optional()
+      .describe("Filter activities by one or more field names."),
 
     includeDetails: z
       .boolean()
@@ -57,11 +63,35 @@ export const storyActivitiesTool = tool({
       .describe(
         "Filter activities since this date (ISO date string e.g 2005-06-13)",
       ),
+    until: z
+      .string()
+      .optional()
+      .describe(
+        "Filter activities until this date (ISO date string e.g 2005-06-13)",
+      ),
+    page: z.number().min(1).optional().describe("Page number. Default 1."),
+    pageSize: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe("Number of activities per page. Default 20, max 100."),
   }),
 
   execute: async (
-    { action, storyId, limit = 20 },
-    { experimental_context },
+    {
+      action,
+      storyId,
+      userId,
+      field,
+      fields,
+      limit = 20,
+      since,
+      until,
+      page,
+      pageSize,
+    },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -73,7 +103,7 @@ export const storyActivitiesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -88,13 +118,23 @@ export const storyActivitiesTool = tool({
           }
 
           const response = await getStoryActivities(storyId, ctx);
-          const activities = response.activities;
+          const activities = filterActivityTimeline(response.activities, {
+            userId,
+            fields: fields ?? (field ? [field] : undefined),
+            since,
+            until,
+          });
+          const result = paginateRecords(activities, {
+            page,
+            pageSize: pageSize ?? limit,
+          });
 
           return {
             success: true,
-            activities,
-            count: activities.length,
-            message: `Found ${activities.length} activity${activities.length !== 1 ? "s" : ""} for this story.`,
+            activities: result.records,
+            count: result.records.length,
+            pagination: result.pagination,
+            message: `Found ${result.records.length} activity${result.records.length !== 1 ? "s" : ""} for this story.`,
           };
         }
 
@@ -107,7 +147,12 @@ export const storyActivitiesTool = tool({
           }
 
           const response = await getStoryActivities(storyId, ctx);
-          const activities = response.activities;
+          const activities = filterActivityTimeline(response.activities, {
+            userId,
+            fields: fields ?? (field ? [field] : undefined),
+            since,
+            until,
+          });
 
           // Sort by creation date (oldest first for timeline)
           activities.sort(
@@ -152,7 +197,12 @@ export const storyActivitiesTool = tool({
           }
 
           const response = await getStoryActivities(storyId, ctx);
-          const activities = response.activities;
+          const activities = filterActivityTimeline(response.activities, {
+            userId,
+            fields: fields ?? (field ? [field] : undefined),
+            since,
+            until,
+          });
 
           // Sort by creation date (newest first)
           activities.sort(

@@ -1183,6 +1183,160 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	}, nil
 }
 
+func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreWorkloadAnalysis, error) {
+	r.log.Info(ctx, "reportsrepository.GetWorkloadAnalysis")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetWorkloadAnalysis")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	storyFilter := buildWorkloadStoryFilter(filters, namedParams)
+	openStoryCondition := "category IS NULL OR category NOT IN ('completed', 'cancelled')"
+	workloadStoriesCTE := fmt.Sprintf(`
+		WITH workload_stories AS (
+			SELECT
+				s.id,
+				s.team_id,
+				t.name AS team_name,
+				t.code AS team_code,
+				s.assignee_id,
+				s.priority,
+				s.end_date,
+				s.estimate_unit,
+				stat.category
+			FROM stories s
+			INNER JOIN teams t ON t.team_id = s.team_id
+			LEFT JOIN statuses stat ON stat.status_id = s.status_id
+			WHERE s.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+				AND s.is_draft = false
+				%s
+		)
+	`, storyFilter)
+
+	summaryQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			COUNT(*) FILTER (WHERE %s)::int AS total_open_stories,
+			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS total_estimate,
+			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
+			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories,
+			COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL)::int AS unassigned_stories
+		FROM workload_stories
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	summaryStmt, err := r.db.PrepareNamedContext(ctx, summaryQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare workload summary query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing workload summary query: %w", err)
+	}
+	defer summaryStmt.Close()
+
+	var summary reports.CoreWorkloadSummary
+	if err := summaryStmt.GetContext(ctx, &summary, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute workload summary query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing workload summary query: %w", err)
+	}
+
+	memberQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			u.user_id,
+			COALESCE(u.full_name, '') AS full_name,
+			u.username,
+			COALESCE(u.avatar_url, '') AS avatar_url,
+			COUNT(*) FILTER (WHERE %s)::int AS open_stories,
+			COUNT(*) FILTER (WHERE category = 'started')::int AS started_stories,
+			COUNT(*) FILTER (WHERE category = 'paused')::int AS paused_stories,
+			COUNT(*) FILTER (WHERE category = 'completed')::int AS completed_stories,
+			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
+			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories,
+			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total
+		FROM workload_stories ws
+		INNER JOIN users u ON u.user_id = ws.assignee_id
+		WHERE ws.assignee_id IS NOT NULL
+		GROUP BY u.user_id, u.full_name, u.username, u.avatar_url
+		ORDER BY estimate_total DESC, open_stories DESC, u.username
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	memberStmt, err := r.db.PrepareNamedContext(ctx, memberQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare member workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing member workload query: %w", err)
+	}
+	defer memberStmt.Close()
+
+	var members []reports.CoreMemberWorkload
+	if err := memberStmt.SelectContext(ctx, &members, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute member workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing member workload query: %w", err)
+	}
+
+	teamQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			team_id,
+			team_name,
+			team_code,
+			COUNT(*) FILTER (WHERE %s)::int AS open_stories,
+			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total,
+			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
+			COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL)::int AS unassigned_stories,
+			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories
+		FROM workload_stories
+		GROUP BY team_id, team_name, team_code
+		ORDER BY team_name
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	teamStmt, err := r.db.PrepareNamedContext(ctx, teamQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare team workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing team workload query: %w", err)
+	}
+	defer teamStmt.Close()
+
+	var teams []reports.CoreTeamWorkloadSummary
+	if err := teamStmt.SelectContext(ctx, &teams, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute team workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing team workload query: %w", err)
+	}
+
+	unassignedQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			COUNT(*) FILTER (WHERE %s)::int AS stories,
+			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total,
+			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
+			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
+			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories
+		FROM workload_stories
+		WHERE assignee_id IS NULL
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	unassignedStmt, err := r.db.PrepareNamedContext(ctx, unassignedQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare unassigned workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing unassigned workload query: %w", err)
+	}
+	defer unassignedStmt.Close()
+
+	var unassigned reports.CoreUnassignedWorkload
+	if err := unassignedStmt.GetContext(ctx, &unassigned, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute unassigned workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing unassigned workload query: %w", err)
+	}
+
+	return reports.CoreWorkloadAnalysis{
+		Summary:    summary,
+		Members:    members,
+		Teams:      teams,
+		Unassigned: unassigned,
+	}, nil
+}
+
 func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreSprintAnalyticsWorkspace, error) {
 	r.log.Info(ctx, "reportsrepository.GetSprintAnalytics")
 	ctx, span := web.AddSpan(ctx, "reportsrepository.GetSprintAnalytics")

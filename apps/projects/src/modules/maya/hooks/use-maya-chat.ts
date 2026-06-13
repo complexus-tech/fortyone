@@ -7,7 +7,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { FileUIPart } from "ai";
 import { generateId } from "ai";
 import { useSession } from "@/lib/auth/client";
-import { notificationKeys, teamKeys } from "@/constants/keys";
+import {
+  githubKeys,
+  integrationRequestKeys,
+  labelKeys,
+  notificationKeys,
+  teamKeys,
+} from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
@@ -19,11 +25,11 @@ import { aiChatKeys } from "@/modules/ai-chats/constants";
 import { useProfile } from "@/lib/hooks/profile";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
-import type { MayaUIMessage } from "@/lib/ai/tools/types";
-import type { MayaChatConfig } from "../types";
 import { useMemories } from "@/modules/ai-chats/hooks/use-memory";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import type { MayaChatConfig } from "../types";
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -79,37 +85,69 @@ export const useMayaChat = (config: MayaChatConfig) => {
   // Map tool types to the query keys they should invalidate
   const toolInvalidationMap: Partial<Record<string, () => readonly unknown[]>> =
     {
-    // Teams
-    "tool-createTeamTool": () => teamKeys.all(workspaceSlug),
-    "tool-updateTeam": () => teamKeys.all(workspaceSlug),
-    "tool-joinTeam": () => teamKeys.all(workspaceSlug),
-    "tool-leaveTeam": () => teamKeys.all(workspaceSlug),
-    "tool-deleteTeam": () => teamKeys.all(workspaceSlug),
-    // Stories
-    "tool-createStory": () => storyKeys.all(workspaceSlug),
-    "tool-updateStory": () => storyKeys.all(workspaceSlug),
-    "tool-deleteStory": () => storyKeys.all(workspaceSlug),
-    "tool-bulkUpdateStories": () => storyKeys.all(workspaceSlug),
-    "tool-bulkDeleteStories": () => storyKeys.all(workspaceSlug),
-    "tool-bulkCreateStories": () => storyKeys.all(workspaceSlug),
-    "tool-assignStoriesToUser": () => storyKeys.all(workspaceSlug),
-    "tool-duplicateStory": () => storyKeys.all(workspaceSlug),
-    "tool-restoreStory": () => storyKeys.all(workspaceSlug),
-    // Objectives & Key Results
-    "tool-createKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-    "tool-updateKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-    "tool-deleteKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-    "tool-createObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-    "tool-updateObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-    "tool-deleteObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-    // Notifications
-    "tool-notifications": () => notificationKeys.all(workspaceSlug),
-    // Memory
-    "tool-deleteMemory": () => aiChatKeys.memories(),
-    "tool-updateMemory": () => aiChatKeys.memories(),
-    "tool-createMemory": () => aiChatKeys.memories(),
-    // Objective statuses
-    "tool-objectiveStatuses": () => objectiveKeys.statuses(workspaceSlug),
+      // Teams
+      "tool-createTeamTool": () => teamKeys.all(workspaceSlug),
+      "tool-updateTeam": () => teamKeys.all(workspaceSlug),
+      "tool-joinTeam": () => teamKeys.all(workspaceSlug),
+      "tool-leaveTeam": () => teamKeys.all(workspaceSlug),
+      "tool-deleteTeam": () => teamKeys.all(workspaceSlug),
+      // Stories
+      "tool-createStory": () => storyKeys.all(workspaceSlug),
+      "tool-updateStory": () => storyKeys.all(workspaceSlug),
+      "tool-deleteStory": () => storyKeys.all(workspaceSlug),
+      "tool-bulkUpdateStories": () => storyKeys.all(workspaceSlug),
+      "tool-bulkDeleteStories": () => storyKeys.all(workspaceSlug),
+      "tool-bulkCreateStories": () => storyKeys.all(workspaceSlug),
+      "tool-assignStoriesToUser": () => storyKeys.all(workspaceSlug),
+      "tool-duplicateStory": () => storyKeys.all(workspaceSlug),
+      "tool-restoreStory": () => storyKeys.all(workspaceSlug),
+      "tool-addStoryAssociation": () => storyKeys.all(workspaceSlug),
+      "tool-removeStoryAssociation": () => storyKeys.all(workspaceSlug),
+      "tool-comments": () => storyKeys.all(workspaceSlug),
+      "tool-storyLabels": () => storyKeys.all(workspaceSlug),
+      "tool-links": () => storyKeys.all(workspaceSlug),
+      "tool-labels": () => labelKeys.all(workspaceSlug),
+      // Integration requests
+      "tool-updateIntegrationRequestTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      "tool-acceptIntegrationRequestTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      "tool-declineIntegrationRequestTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      "tool-acceptAllIntegrationRequestsTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      "tool-declineAllIntegrationRequestsTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      "tool-postRequestGitHubCommentTool": () =>
+        integrationRequestKeys.all(workspaceSlug),
+      // Objectives & Key Results
+      "tool-createKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+      "tool-updateKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+      "tool-deleteKeyResultTool": () => objectiveKeys.all(workspaceSlug),
+      "tool-createObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+      "tool-updateObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+      "tool-deleteObjectiveTool": () => objectiveKeys.all(workspaceSlug),
+      // Notifications
+      "tool-notifications": () => notificationKeys.all(workspaceSlug),
+      // GitHub
+      "tool-resyncGitHubRepositoriesTool": () =>
+        githubKeys.integration(workspaceSlug),
+      "tool-createGitHubIssueSyncLinkTool": () =>
+        githubKeys.integration(workspaceSlug),
+      "tool-deleteGitHubIssueSyncLinkTool": () =>
+        githubKeys.integration(workspaceSlug),
+      "tool-updateGitHubWorkspaceSettingsTool": () =>
+        githubKeys.integration(workspaceSlug),
+      "tool-updateGitHubTeamSettingsTool": () =>
+        githubKeys.integration(workspaceSlug),
+      "tool-postStoryGitHubCommentTool": () => storyKeys.all(workspaceSlug),
+      "tool-deleteStoryGitHubLinkTool": () => storyKeys.all(workspaceSlug),
+      // Memory
+      "tool-deleteMemory": () => aiChatKeys.memories(),
+      "tool-updateMemory": () => aiChatKeys.memories(),
+      "tool-createMemory": () => aiChatKeys.memories(),
+      // Objective statuses
+      "tool-objectiveStatuses": () => objectiveKeys.statuses(workspaceSlug),
     };
 
   const {

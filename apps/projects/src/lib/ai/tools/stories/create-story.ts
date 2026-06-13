@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { requireToolConfirmation } from "../tool-helpers";
 import { normalizeStoryInput } from "./normalize-story-input";
 
 export const createStory = tool({
@@ -10,6 +11,12 @@ export const createStory = tool({
     "Create a new story. Guests cannot create stories. Members and admins can create stories for teams they belong to.",
   inputSchema: z.object({
     title: z.string().describe("Story title (required)"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms creating the story.",
+      ),
     description: z.string().optional().describe("Story description"),
     descriptionHTML: z
       .string()
@@ -35,8 +42,12 @@ export const createStory = tool({
       .int()
       .optional()
       .describe(
-        "Canonical estimate value (allowed: 1, 2, 3, 5, 8) for the team's estimation scheme",
+        "Canonical estimate value for the team's estimation scheme. Use the team's configured estimate scale.",
       ),
+    labelIds: z
+      .array(z.string())
+      .optional()
+      .describe("Label IDs to attach to the story."),
     sprintId: z
       .string()
       .optional()
@@ -62,6 +73,7 @@ export const createStory = tool({
   execute: async (
     {
       title,
+      confirmed,
       description,
       descriptionHTML,
       teamId,
@@ -69,15 +81,20 @@ export const createStory = tool({
       assigneeId,
       priority,
       estimateValue,
+      labelIds,
       sprintId,
       objectiveId,
       parentId,
       startDate,
       endDate,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("create this story");
+      }
+
       const session = await auth();
 
       if (!session) {
@@ -87,7 +104,7 @@ export const createStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -113,6 +130,7 @@ export const createStory = tool({
         reporterId: session.user.id,
         priority,
         estimateValue,
+        labelIds,
         sprintId,
         objectiveId,
         parentId,

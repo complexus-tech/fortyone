@@ -3,12 +3,19 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { requireToolConfirmation } from "../tool-helpers";
 import { normalizeStoryInput } from "./normalize-story-input";
 
 export const bulkCreateStories = tool({
   description:
     "Bulk create multiple stories at once. Only admins and members can perform bulk operations. always use this tool when creating multiple stories at once but create in batches of 10.",
   inputSchema: z.object({
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms the bulk creation.",
+      ),
     storiesData: z
       .array(
         z.object({
@@ -24,6 +31,17 @@ export const bulkCreateStories = tool({
           priority: z
             .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
             .describe("Story priority (required)"),
+          estimateValue: z
+            .number()
+            .int()
+            .optional()
+            .describe(
+              "Canonical estimate value for the team's estimation scheme.",
+            ),
+          labelIds: z
+            .array(z.string())
+            .optional()
+            .describe("Label IDs to attach to the story."),
           sprintId: z.string().optional().describe("Sprint ID to assign story"),
           objectiveId: z
             .string()
@@ -46,8 +64,15 @@ export const bulkCreateStories = tool({
       .describe("Array of story data for bulk creation (required)"),
   }),
 
-  execute: async ({ storiesData }, { experimental_context }) => {
+  execute: async (
+    { confirmed, storiesData },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("create these stories");
+      }
+
       const session = await auth();
 
       if (!session) {
@@ -57,7 +82,7 @@ export const bulkCreateStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

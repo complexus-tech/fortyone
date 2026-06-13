@@ -1,10 +1,73 @@
 // Common filter types
 export type AnalyticsFilters = {
   teamIds?: string[];
+  assigneeIds?: string[];
   startDate?: string;
   endDate?: string;
   sprintIds?: string[];
   objectiveIds?: string[];
+};
+
+export type WorkloadSummary = {
+  totalOpenStories: number;
+  totalEstimate: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+  unassignedStories: number;
+};
+
+export type MemberWorkload = {
+  userId: string;
+  fullName: string;
+  username: string;
+  avatarUrl: string;
+  openStories: number;
+  startedStories: number;
+  pausedStories: number;
+  completedStories: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+  estimateTotal: number;
+};
+
+export type TeamWorkloadSummary = {
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  openStories: number;
+  estimateTotal: number;
+  overdueStories: number;
+  unassignedStories: number;
+  unestimatedStories: number;
+};
+
+export type UnassignedWorkload = {
+  stories: number;
+  estimateTotal: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+};
+
+export type WorkloadRisks = {
+  overloadedMembers: MemberWorkload[];
+  overdueMembers: MemberWorkload[];
+  unassignedStories: number;
+  unestimatedStories: number;
+  highPriorityStories: number;
+};
+
+export type WorkloadAnalysis = {
+  summary: WorkloadSummary;
+  members: MemberWorkload[];
+  teams: TeamWorkloadSummary[];
+  unassigned: UnassignedWorkload;
+  risks: WorkloadRisks;
 };
 
 // Workspace Overview Types

@@ -42,4 +42,40 @@ func buildFilters(filters reports.ReportFilters, namedParams map[string]any) (te
 	return tb.String(), sb.String(), ob.String()
 }
 
+func buildWorkloadStoryFilter(filters reports.ReportFilters, namedParams map[string]any) string {
+	var where strings.Builder
+
+	if len(filters.TeamIDs) > 0 {
+		where.WriteString("AND s.team_id = ANY(:team_ids)")
+		namedParams["team_ids"] = filters.TeamIDs
+	}
+
+	if len(filters.AssigneeIDs) > 0 {
+		where.WriteString(" AND s.assignee_id = ANY(:assignee_ids)")
+		namedParams["assignee_ids"] = filters.AssigneeIDs
+	}
+
+	if len(filters.SprintIDs) > 0 {
+		where.WriteString(" AND s.sprint_id = ANY(:sprint_ids)")
+		namedParams["sprint_ids"] = filters.SprintIDs
+	}
+
+	if len(filters.ObjectiveIDs) > 0 {
+		where.WriteString(" AND s.objective_id = ANY(:objective_ids)")
+		namedParams["objective_ids"] = filters.ObjectiveIDs
+	}
+
+	if filters.StartDate != nil {
+		where.WriteString(" AND s.created_at >= :start_date")
+		namedParams["start_date"] = *filters.StartDate
+	}
+
+	if filters.EndDate != nil {
+		where.WriteString(" AND s.created_at <= :end_date")
+		namedParams["end_date"] = *filters.EndDate
+	}
+
+	return where.String()
+}
+
 // Workspace Reports Repository Methods

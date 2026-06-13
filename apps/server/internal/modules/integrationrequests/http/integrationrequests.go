@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -35,11 +36,30 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	status := r.URL.Query().Get("status")
+	provider := r.URL.Query().Get("provider")
+	priority := r.URL.Query().Get("priority")
+	assigneeID, err := optionalUUIDQuery(r, "assigneeId")
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	createdAfter, err := optionalDateQuery(r, "createdAfter")
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	createdBefore, err := optionalDateQuery(r, "createdBefore")
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 	page, pageSize := paginationParams(r, defaultRequestsPageSize, maxRequestsPageSize)
 	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, integrationrequests.CoreListRequestsFilter{
-		Status:   status,
-		Page:     page,
-		PageSize: pageSize + 1,
+		Status:        status,
+		Provider:      provider,
+		Priority:      priority,
+		AssigneeID:    assigneeID,
+		CreatedAfter:  createdAfter,
+		CreatedBefore: createdBefore,
+		Page:          page,
+		PageSize:      pageSize + 1,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -213,4 +233,32 @@ func paginationParams(r *http.Request, defaultPageSize, maxPageSize int) (int, i
 		pageSize = maxPageSize
 	}
 	return page, pageSize
+}
+
+func optionalUUIDQuery(r *http.Request, key string) (*uuid.UUID, error) {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := uuid.Parse(value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func optionalDateQuery(r *http.Request, key string) (*time.Time, error) {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err == nil {
+		return &parsed, nil
+	}
+	parsed, err = time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
 }

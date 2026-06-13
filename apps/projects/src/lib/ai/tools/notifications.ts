@@ -10,6 +10,7 @@ import { deleteReadNotifications } from "@/modules/notifications/actions/delete-
 import { markUnread } from "@/modules/notifications/actions/mark-unread";
 import { updateNotificationPreferences } from "@/modules/notifications/actions/update-preferences";
 import type { AppNotification } from "@/modules/notifications/types";
+import { paginateRecords } from "./tool-helpers";
 
 export const notificationsTool = tool({
   description:
@@ -61,6 +62,15 @@ export const notificationsTool = tool({
         "Limit number of notifications returned (default: 20, max: 100)",
       ),
 
+    page: z.number().min(1).optional().describe("Page number. Default 1."),
+
+    pageSize: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe("Notifications per page. Default 20, max 100."),
+
     preferenceType: z
       .enum([
         "story_update",
@@ -96,12 +106,14 @@ export const notificationsTool = tool({
       filterType,
       unreadOnly = false,
       limit = 20,
+      page,
+      pageSize,
       preferenceType,
       emailEnabled,
       inAppEnabled,
       includeDetails = false,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -113,7 +125,7 @@ export const notificationsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -155,18 +167,22 @@ export const notificationsTool = tool({
             notifications = notifications.filter((n) => !n.readAt);
           }
 
-          // Apply limit
-          if (limit) {
-            notifications = notifications.slice(0, limit);
-          }
+          const totalFilteredCount = notifications.length;
+          const pagedNotifications = paginateRecords(notifications, {
+            page,
+            pageSize: pageSize ?? limit,
+          });
 
-          const formattedNotifications = notifications.map(formatNotification);
+          const formattedNotifications =
+            pagedNotifications.records.map(formatNotification);
 
           return {
             success: true,
             notifications: formattedNotifications,
             count: formattedNotifications.length,
+            totalCount: totalFilteredCount,
             unreadCount: notifications.filter((n) => !n.readAt).length,
+            pagination: pagedNotifications.pagination,
             message: `Found ${formattedNotifications.length} notifications.`,
           };
         }

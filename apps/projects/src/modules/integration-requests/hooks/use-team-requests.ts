@@ -6,10 +6,11 @@ import {
   getTeamIntegrationRequests,
   getTeamIntegrationRequestsPage,
 } from "../queries/get-team-requests";
+import type { IntegrationRequestStatus } from "../types";
 
 export const useTeamIntegrationRequests = (
   teamId: string,
-  status = "pending",
+  status: IntegrationRequestStatus = "pending",
 ) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
@@ -28,7 +29,7 @@ export const useTeamIntegrationRequests = (
 
 export const useTeamIntegrationRequestsInfinite = (
   teamId: string,
-  status = "pending",
+  status: IntegrationRequestStatus = "pending",
 ) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();

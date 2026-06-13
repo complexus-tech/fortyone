@@ -26,9 +26,28 @@ func (r *requestRepoStub) UpsertPending(ctx context.Context, input CoreUpsertReq
 func (r *requestRepoStub) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error) {
 	result := make([]CoreIntegrationRequest, 0, len(r.requests))
 	for _, request := range r.requests {
-		if request.WorkspaceID == workspaceID && request.TeamID == teamID && request.Status == filter.Status {
-			result = append(result, request)
+		if request.WorkspaceID != workspaceID || request.TeamID != teamID {
+			continue
 		}
+		if filter.Status != "" && request.Status != filter.Status {
+			continue
+		}
+		if filter.Provider != "" && request.Provider != filter.Provider {
+			continue
+		}
+		if filter.Priority != "" && request.Priority != filter.Priority {
+			continue
+		}
+		if filter.AssigneeID != nil && (request.AssigneeID == nil || *request.AssigneeID != *filter.AssigneeID) {
+			continue
+		}
+		if filter.CreatedAfter != nil && request.CreatedAt.Before(*filter.CreatedAfter) {
+			continue
+		}
+		if filter.CreatedBefore != nil && request.CreatedAt.After(*filter.CreatedBefore) {
+			continue
+		}
+		result = append(result, request)
 	}
 	if filter.PageSize > 0 {
 		page := filter.Page
@@ -155,6 +174,34 @@ func TestListByTeamSupportsPagination(t *testing.T) {
 	require.Len(t, requests, 2)
 	require.Equal(t, "Third", requests[0].Title)
 	require.Equal(t, "Fourth", requests[1].Title)
+}
+
+func TestListByTeamSupportsTriageFilters(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	assigneeID := uuid.New()
+	createdAfter := time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC)
+	repo := &requestRepoStub{
+		requests: []CoreIntegrationRequest{
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "Keep", Priority: "Urgent", AssigneeID: &assigneeID, Status: StatusPending, CreatedAt: time.Date(2026, 6, 11, 0, 0, 0, 0, time.UTC)},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Wrong provider", Priority: "Urgent", AssigneeID: &assigneeID, Status: StatusPending, CreatedAt: time.Date(2026, 6, 11, 0, 0, 0, 0, time.UTC)},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Wrong priority", Priority: "Low", AssigneeID: &assigneeID, Status: StatusPending, CreatedAt: time.Date(2026, 6, 11, 0, 0, 0, 0, time.UTC)},
+			{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "4", Title: "Too old", Priority: "Urgent", AssigneeID: &assigneeID, Status: StatusPending, CreatedAt: time.Date(2026, 6, 9, 0, 0, 0, 0, time.UTC)},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{})
+
+	requests, err := service.ListByTeam(context.Background(), workspaceID, teamID, CoreListRequestsFilter{
+		Status:       StatusPending,
+		Provider:     ProviderGitHub,
+		Priority:     "Urgent",
+		AssigneeID:   &assigneeID,
+		CreatedAfter: &createdAfter,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, requests, 1)
+	require.Equal(t, "Keep", requests[0].Title)
 }
 
 func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {

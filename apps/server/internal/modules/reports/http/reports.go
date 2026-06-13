@@ -289,6 +289,67 @@ func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, er
 	return filters, nil
 }
 
+func parseWorkloadAnalysisFilters(query map[string]interface{}) (reports.ReportFilters, error) {
+	filters := reports.ReportFilters{}
+
+	if teamIds, ok := query["teamIds"].(string); ok {
+		filters.TeamIDs = parseCommaSeparatedUUIDs(teamIds)
+	}
+	if assigneeIds, ok := query["assigneeIds"].(string); ok {
+		filters.AssigneeIDs = parseCommaSeparatedUUIDs(assigneeIds)
+	}
+	if sprintIds, ok := query["sprintIds"].(string); ok {
+		filters.SprintIDs = parseCommaSeparatedUUIDs(sprintIds)
+	}
+	if objectiveIds, ok := query["objectiveIds"].(string); ok {
+		filters.ObjectiveIDs = parseCommaSeparatedUUIDs(objectiveIds)
+	}
+	if startDate, ok := query["startDate"].(string); ok && startDate != "" {
+		parsedDate, err := parseReportDate(startDate)
+		if err != nil {
+			return reports.ReportFilters{}, ErrInvalidDate
+		}
+		filters.StartDate = &parsedDate
+	}
+	if endDate, ok := query["endDate"].(string); ok && endDate != "" {
+		parsedDate, err := parseReportDate(endDate)
+		if err != nil {
+			return reports.ReportFilters{}, ErrInvalidDate
+		}
+		filters.EndDate = &parsedDate
+	}
+
+	return filters, nil
+}
+
+func parseReportDate(value string) (time.Time, error) {
+	if parsedDate, err := time.Parse(time.RFC3339, value); err == nil {
+		return parsedDate, nil
+	}
+
+	return time.Parse("2006-01-02", value)
+}
+
+func parseCommaSeparatedUUIDs(value string) []uuid.UUID {
+	if value == "" {
+		return nil
+	}
+
+	ids := strings.Split(value, ",")
+	result := make([]uuid.UUID, 0, len(ids))
+	for _, idStr := range ids {
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			continue
+		}
+		if id, err := uuid.Parse(idStr); err == nil {
+			result = append(result, id)
+		}
+	}
+
+	return result
+}
+
 func (h *Handlers) GetWorkspaceOverview(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.reports.GetWorkspaceOverview")
 	defer span.End()
@@ -403,6 +464,44 @@ func (h *Handlers) GetTeamPerformance(ctx context.Context, w http.ResponseWriter
 	}
 
 	return web.Respond(ctx, w, toAppTeamPerformance(performance), http.StatusOK)
+}
+
+func (h *Handlers) GetWorkloadAnalysis(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetWorkloadAnalysis")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseWorkloadAnalysisFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	analysis, err := h.reports.GetWorkloadAnalysis(ctx, workspace.ID, filters)
+	if err != nil {
+		return fmt.Errorf("getting workload analysis: %w", err)
+	}
+
+	for i := range analysis.Members {
+		analysis.Members[i].AvatarURL = h.resolveUserAvatarURL(ctx, analysis.Members[i].AvatarURL)
+	}
+	for i := range analysis.Risks.OverloadedMembers {
+		analysis.Risks.OverloadedMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, analysis.Risks.OverloadedMembers[i].AvatarURL)
+	}
+	for i := range analysis.Risks.OverdueMembers {
+		analysis.Risks.OverdueMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, analysis.Risks.OverdueMembers[i].AvatarURL)
+	}
+
+	return web.Respond(ctx, w, toAppWorkloadAnalysis(analysis), http.StatusOK)
 }
 
 func (h *Handlers) GetSprintAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

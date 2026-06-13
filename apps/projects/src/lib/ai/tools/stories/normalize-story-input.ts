@@ -12,6 +12,7 @@ type StoryInput = {
   estimateValue?: number;
   sprintId?: string;
   objectiveId?: string;
+  labelIds?: string[];
   parentId?: string;
   startDate?: string;
   endDate?: string;

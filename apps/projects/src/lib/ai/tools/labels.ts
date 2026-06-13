@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getLabels } from "@/lib/queries/labels/get-labels";
+import { getLabelsPage } from "@/lib/queries/labels/get-labels";
 import { createLabelAction } from "@/lib/actions/labels/create-label";
 import { editLabelAction } from "@/lib/actions/labels/edit-label";
 import { deleteLabelAction } from "@/lib/actions/labels/delete-label";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { resolvePaginationInput } from "./tool-helpers";
 
 export const labelsTool = tool({
   description: "Manage workspace/team labels: list, create, edit, delete.",
@@ -21,15 +22,23 @@ export const labelsTool = tool({
     name: z.string().optional(),
     color: z.string().optional(),
     teamId: z.string().optional(),
+    searchQuery: z.string().optional(),
+    page: z.number().min(1).optional().describe("Page number. Default 1."),
+    pageSize: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe("Number of labels per page. Default 20, max 100."),
   }),
   execute: async (
-    { action, labelId, name, color, teamId },
-    { experimental_context },
+    { action, labelId, name, color, teamId, searchQuery, page, pageSize },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -43,11 +52,21 @@ export const labelsTool = tool({
       }
 
       switch (action) {
-        case "list-labels":
+        case "list-labels": {
+          const pagination = resolvePaginationInput({ page, pageSize });
+          const response = await getLabelsPage(ctx, {
+            teamId: normalizeOptionalString(teamId),
+            search: normalizeOptionalString(searchQuery),
+            page: pagination.page,
+            pageSize: pagination.pageSize,
+          });
           return {
             success: true,
-            labels: await getLabels(ctx, teamId ? { teamId } : {}),
+            labels: response.labels,
+            count: response.labels.length,
+            pagination: response.pagination,
           };
+        }
 
         case "create-label":
           if (!name || !color)

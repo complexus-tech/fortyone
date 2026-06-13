@@ -78,6 +78,8 @@ import {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
 } from "./analytics";
+import { workloadPlanningTool } from "./workload";
+import { activitySummaryTool } from "./activity-summary";
 import {
   createGitHubInstallSessionTool,
   createGitHubIssueSyncLinkTool,
@@ -92,6 +94,17 @@ import {
   updateGitHubTeamSettingsTool,
   updateGitHubWorkspaceSettingsTool,
 } from "./github";
+import {
+  acceptAllIntegrationRequestsTool,
+  acceptIntegrationRequestTool,
+  declineAllIntegrationRequestsTool,
+  declineIntegrationRequestTool,
+  getIntegrationRequestTool,
+  getRequestGitHubCommentsTool,
+  listIntegrationRequestsTool,
+  postRequestGitHubCommentTool,
+  updateIntegrationRequestTool,
+} from "./integration-requests";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -119,6 +132,8 @@ export {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
 } from "./analytics";
+export { workloadPlanningTool } from "./workload";
+export { activitySummaryTool } from "./activity-summary";
 export {
   createGitHubInstallSessionTool,
   createGitHubIssueSyncLinkTool,
@@ -133,6 +148,17 @@ export {
   updateGitHubTeamSettingsTool,
   updateGitHubWorkspaceSettingsTool,
 } from "./github";
+export {
+  acceptAllIntegrationRequestsTool,
+  acceptIntegrationRequestTool,
+  declineAllIntegrationRequestsTool,
+  declineIntegrationRequestTool,
+  getIntegrationRequestTool,
+  getRequestGitHubCommentsTool,
+  listIntegrationRequestsTool,
+  postRequestGitHubCommentTool,
+  updateIntegrationRequestTool,
+} from "./integration-requests";
 
 export const tools = {
   navigation,
@@ -148,6 +174,8 @@ export const tools = {
   teamPerformanceReportTool,
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
+  workloadPlanningTool,
+  activitySummaryTool,
   // GitHub
   getGitHubIntegrationTool,
   createGitHubInstallSessionTool,
@@ -161,6 +189,16 @@ export const tools = {
   getStoryGitHubCommentsTool,
   postStoryGitHubCommentTool,
   deleteStoryGitHubLinkTool,
+  // Integration requests
+  listIntegrationRequestsTool,
+  getIntegrationRequestTool,
+  updateIntegrationRequestTool,
+  acceptIntegrationRequestTool,
+  declineIntegrationRequestTool,
+  acceptAllIntegrationRequestsTool,
+  declineAllIntegrationRequestsTool,
+  getRequestGitHubCommentsTool,
+  postRequestGitHubCommentTool,
   // Teams
   listTeams,
   listPublicTeams,

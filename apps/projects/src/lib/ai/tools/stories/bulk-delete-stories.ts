@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { requireToolConfirmation } from "../tool-helpers";
 
 export const bulkDeleteStories = tool({
   description:
@@ -11,10 +12,23 @@ export const bulkDeleteStories = tool({
     storyIds: z
       .array(z.string())
       .describe("Array of story IDs to delete (required)"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms the bulk deletion.",
+      ),
   }),
 
-  execute: async ({ storyIds }, { experimental_context }) => {
+  execute: async (
+    { storyIds, confirmed },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("delete these stories");
+      }
+
       const session = await auth();
       if (!session) {
         return {
@@ -23,7 +37,7 @@ export const bulkDeleteStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

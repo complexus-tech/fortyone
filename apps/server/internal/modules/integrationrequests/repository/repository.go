@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
@@ -181,16 +182,36 @@ func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, fi
 		SELECT *
 		FROM integration_requests
 		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
-		ORDER BY created_at DESC
 	`
 	args := []any{workspaceID, teamID, status}
+	if filter.Provider != "" {
+		args = append(args, filter.Provider)
+		query += ` AND provider = $` + strconv.Itoa(len(args))
+	}
+	if filter.Priority != "" {
+		args = append(args, filter.Priority)
+		query += ` AND priority = $` + strconv.Itoa(len(args))
+	}
+	if filter.AssigneeID != nil {
+		args = append(args, *filter.AssigneeID)
+		query += ` AND assignee_id = $` + strconv.Itoa(len(args))
+	}
+	if filter.CreatedAfter != nil {
+		args = append(args, *filter.CreatedAfter)
+		query += ` AND created_at >= $` + strconv.Itoa(len(args))
+	}
+	if filter.CreatedBefore != nil {
+		args = append(args, *filter.CreatedBefore)
+		query += ` AND created_at <= $` + strconv.Itoa(len(args))
+	}
+	query += ` ORDER BY created_at DESC`
 	if filter.PageSize > 0 {
 		page := filter.Page
 		if page <= 0 {
 			page = 1
 		}
-		query += ` LIMIT $4 OFFSET $5`
 		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
+		query += ` LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
 	}
 	err := r.db.SelectContext(ctx, &rows, query, args...)
 	if err != nil {
