@@ -74,6 +74,7 @@ import {
   getEstimateOptions,
   type EstimateScheme,
 } from "@/lib/estimate";
+import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
 import type { StoriesFilter } from "./stories-filter-types";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 import { PriorityIcon } from "./priority-icon";
@@ -117,6 +118,7 @@ type StoriesFilterBarProps = {
   setFilters: (value: StoriesFilter) => void;
   resetFilters: () => void;
   hiddenFields?: StoriesFilterField[];
+  showWhenEmpty?: boolean;
 };
 
 const EMPTY_FILTER_FIELDS: StoriesFilterField[] = [];
@@ -771,10 +773,17 @@ const SprintEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
+  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useTeamSprintsInfinite(teamId ?? "", deferredQuery, SPRINT_MENU_PAGE_SIZE);
+    useTeamSprintsInfinite(
+      scopedTeamId ?? "",
+      deferredQuery,
+      SPRINT_MENU_PAGE_SIZE,
+    );
   const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
-  const isLoadingSprints = Boolean(teamId) && isFetching && !isFetchingNextPage;
+  const isLoadingSprints =
+    Boolean(scopedTeamId) && isFetching && !isFetchingNextPage;
+  const needsSingleTeam = !scopedTeamId;
 
   const toggleSprint = (sprintId: string) => {
     const selected = filters.sprintIds ?? [];
@@ -805,7 +814,9 @@ const SprintEditor = ({
       <Divider className="my-2" />
       {!isLoadingSprints ? (
         <Command.Empty className="py-2">
-          <Text color="muted">No sprints found.</Text>
+          <Text color="muted">
+            {needsSingleTeam ? "Select one team first." : "No sprints found."}
+          </Text>
         </Command.Empty>
       ) : null}
       <Command.Group
@@ -817,28 +828,30 @@ const SprintEditor = ({
             <MenuLoadingSkeleton rows={5} />
           </Command.Loading>
         ) : null}
-        {sprints.map((sprint, idx) => (
-          <Command.Item
-            active={Boolean(filters.sprintIds?.includes(sprint.id))}
-            className="justify-between gap-4"
-            key={sprint.id}
-            onSelect={() => {
-              toggleSprint(sprint.id);
-            }}
-            value={sprint.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <SprintsIcon className="text-text-secondary h-4 w-auto" />
-              <Text className="max-w-48 truncate">{sprint.name}</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.sprintIds?.includes(sprint.id) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
+        {!needsSingleTeam
+          ? sprints.map((sprint, idx) => (
+              <Command.Item
+                active={Boolean(filters.sprintIds?.includes(sprint.id))}
+                className="justify-between gap-4"
+                key={sprint.id}
+                onSelect={() => {
+                  toggleSprint(sprint.id);
+                }}
+                value={sprint.name}
+              >
+                <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                  <SprintsIcon className="text-text-secondary h-4 w-auto" />
+                  <Text className="max-w-48 truncate">{sprint.name}</Text>
+                </Flex>
+                <Flex align="center" className="shrink-0" gap={2}>
+                  {filters.sprintIds?.includes(sprint.id) ? (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  ) : null}
+                  <Text color="muted">{idx}</Text>
+                </Flex>
+              </Command.Item>
+            ))
+          : null}
         {isFetchingNextPage ? (
           <Command.Loading className="p-2">
             <MenuLoadingSkeleton rows={2} />
@@ -859,15 +872,17 @@ const ObjectiveEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
+  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useTeamObjectivesInfinite(
-      teamId ?? "",
+      scopedTeamId ?? "",
       deferredQuery,
       OBJECTIVE_MENU_PAGE_SIZE,
     );
   const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
   const isLoadingObjectives =
-    Boolean(teamId) && isFetching && !isFetchingNextPage;
+    Boolean(scopedTeamId) && isFetching && !isFetchingNextPage;
+  const needsSingleTeam = !scopedTeamId;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -890,7 +905,11 @@ const ObjectiveEditor = ({
       <Divider className="my-2" />
       {!isLoadingObjectives ? (
         <Command.Empty className="py-2">
-          <Text color="muted">No objectives found.</Text>
+          <Text color="muted">
+            {needsSingleTeam
+              ? "Select one team first."
+              : "No objectives found."}
+          </Text>
         </Command.Empty>
       ) : null}
       <Command.Group
@@ -902,32 +921,36 @@ const ObjectiveEditor = ({
             <MenuLoadingSkeleton rows={5} />
           </Command.Loading>
         ) : null}
-        {objectives.map((objective, idx) => (
-          <Command.Item
-            active={filters.objectiveId === objective.id}
-            className="justify-between gap-4"
-            key={objective.id}
-            onSelect={() => {
-              setFilters({
-                ...filters,
-                objectiveId:
-                  filters.objectiveId === objective.id ? null : objective.id,
-              });
-            }}
-            value={objective.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <ObjectiveIcon className="text-text-secondary h-4 w-auto" />
-              <Text className="max-w-64 truncate">{objective.name}</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.objectiveId === objective.id ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
+        {!needsSingleTeam
+          ? objectives.map((objective, idx) => (
+              <Command.Item
+                active={filters.objectiveId === objective.id}
+                className="justify-between gap-4"
+                key={objective.id}
+                onSelect={() => {
+                  setFilters({
+                    ...filters,
+                    objectiveId:
+                      filters.objectiveId === objective.id
+                        ? null
+                        : objective.id,
+                  });
+                }}
+                value={objective.name}
+              >
+                <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                  <ObjectiveIcon className="text-text-secondary h-4 w-auto" />
+                  <Text className="max-w-64 truncate">{objective.name}</Text>
+                </Flex>
+                <Flex align="center" className="shrink-0" gap={2}>
+                  {filters.objectiveId === objective.id ? (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  ) : null}
+                  <Text color="muted">{idx}</Text>
+                </Flex>
+              </Command.Item>
+            ))
+          : null}
         {isFetchingNextPage ? (
           <Command.Loading className="p-2">
             <MenuLoadingSkeleton rows={2} />
@@ -1280,23 +1303,25 @@ export const StoriesFilterBar = ({
   setFilters,
   resetFilters,
   hiddenFields = EMPTY_FILTER_FIELDS,
+  showWhenEmpty = false,
 }: StoriesFilterBarProps) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
+  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
   const { data: allStatuses = [] } = useStatuses();
   const { data: allUsers = [] } = useMembers();
-  const resolvedTeamId = teamId ?? "";
+  const resolvedTeamId = scopedTeamId ?? "";
   const { data: teamMembers = [] } = useTeamMembers(resolvedTeamId);
   const { data: teams = [] } = useTeams();
   const { data: sprints = [] } = useTeamSprints(resolvedTeamId);
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
   const { data: allLabels = [] } = useLabels();
-  const { data: teamSettings } = useTeamSettings(teamId);
+  const { data: teamSettings } = useTeamSettings(scopedTeamId);
   const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
 
-  const users = teamId ? teamMembers : allUsers;
-  const statuses = teamId
-    ? allStatuses.filter((status) => status.teamId === teamId)
+  const users = scopedTeamId ? teamMembers : allUsers;
+  const statuses = scopedTeamId
+    ? allStatuses.filter((status) => status.teamId === scopedTeamId)
     : allStatuses;
 
   const statusById = useMemo(
@@ -1619,7 +1644,7 @@ export const StoriesFilterBar = ({
     (option) => !hiddenFieldSet.has(option.field),
   );
 
-  if (!hasActiveStoriesFilters(filters)) {
+  if (!showWhenEmpty && !hasActiveStoriesFilters(filters)) {
     return null;
   }
 
@@ -1735,16 +1760,18 @@ export const StoriesFilterBar = ({
           />
         ) : null}
       </Flex>
-      <Flex align="center" className="shrink-0" gap={2}>
-        <Button
-          color="tertiary"
-          onClick={resetFilters}
-          size="sm"
-          variant="outline"
-        >
-          Clear all
-        </Button>
-      </Flex>
+      {hasActiveStoriesFilters(filters) ? (
+        <Flex align="center" className="shrink-0" gap={2}>
+          <Button
+            color="tertiary"
+            onClick={resetFilters}
+            size="sm"
+            variant="outline"
+          >
+            Clear all
+          </Button>
+        </Flex>
+      ) : null}
     </Flex>
   );
 };

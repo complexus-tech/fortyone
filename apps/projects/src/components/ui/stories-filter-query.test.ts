@@ -1,7 +1,10 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import type { StoriesFilter } from "./stories-filter-types";
-import { getGroupedStoryFilterParams } from "./stories-filter-query";
+import {
+  getGroupedStoryFilterParams,
+  getScopedStoriesFilterTeamId,
+} from "./stories-filter-query";
 import { getActiveStoriesFilterCount } from "./stories-filter-utils";
 
 const baseFilters = {
@@ -67,5 +70,26 @@ describe("story filter query mapping", () => {
     } as unknown as StoriesFilter;
 
     expect(getActiveStoriesFilterCount(filters)).toBe(1);
+  });
+});
+
+describe("getScopedStoriesFilterTeamId", () => {
+  it("uses the route team before selected team filters", () => {
+    expect(getScopedStoriesFilterTeamId("team-route", ["team-filter"])).toBe(
+      "team-route",
+    );
+  });
+
+  it("uses the selected team filter when exactly one team is selected", () => {
+    expect(getScopedStoriesFilterTeamId(undefined, ["team-filter"])).toBe(
+      "team-filter",
+    );
+  });
+
+  it("does not infer a team when the filter has no selected team or multiple selected teams", () => {
+    expect(getScopedStoriesFilterTeamId(undefined, null)).toBeUndefined();
+    expect(
+      getScopedStoriesFilterTeamId(undefined, ["team-a", "team-b"]),
+    ).toBeUndefined();
   });
 });

@@ -4,6 +4,7 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
@@ -17,10 +18,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     "tab",
     parseAsStringLiteral(tabs).withDefault("assigned"),
   );
-  const { viewOptions, setViewOptions } = useProfile();
+  const { viewOptions, setViewOptions, filters } = useProfile();
+  const boardHeightClassName = "h-[calc(100dvh-11.3rem)]";
 
   const { data: groupedStories, isPending } = useGroupedStories({
     groupBy: viewOptions.groupBy,
+    ...getGroupedStoryFilterParams(filters),
     assigneeIds: tab === "assigned" ? [userId] : undefined,
     reporterIds: tab === "created" ? [userId] : undefined,
     orderBy: viewOptions.orderBy,
@@ -30,7 +33,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   if (isPending) return <Skeleton layout={layout} />;
 
   return (
-    <Box className="h-[calc(100vh-4rem)]">
+    <Box className="h-[calc(100dvh-7.6rem)]">
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
         <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b backdrop-blur-lg">
           <Tabs.List>
@@ -40,7 +43,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
         </Box>
         <Tabs.Panel value="assigned">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
             setViewOptions={setViewOptions}
@@ -49,7 +52,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
         </Tabs.Panel>
         <Tabs.Panel value="created">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
             setViewOptions={setViewOptions}

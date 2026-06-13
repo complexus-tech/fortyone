@@ -8,7 +8,7 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 export const Skeleton = ({ layout }: { layout: StoriesLayout }) => {
   const [tab] = useQueryState("tab", parseAsString.withDefault("assigned"));
   return (
-    <Box className="h-[calc(100dvh-4rem)]">
+    <Box className="h-[calc(100dvh-7.6rem)]">
       <Tabs defaultValue={tab}>
         <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px]">
           <Tabs.List>
@@ -19,7 +19,7 @@ export const Skeleton = ({ layout }: { layout: StoriesLayout }) => {
       </Tabs>
       <BoardSkeleton
         className={cn({
-          "h-[calc(100dvh-7.7rem)]": layout === "kanban",
+          "h-[calc(100dvh-11.3rem)]": layout === "kanban",
         })}
         layout={layout}
       />

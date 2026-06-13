@@ -20,3 +20,14 @@ export const getGroupedStoryFilterParams = (
   estimateValues: filters.estimateValues ?? undefined,
   hasNoAssignee: filters.hasNoAssignee ? true : undefined,
 });
+
+export const getScopedStoriesFilterTeamId = (
+  routeTeamId: string | undefined,
+  selectedTeamIds: string[] | null | undefined,
+) => {
+  if (routeTeamId) {
+    return routeTeamId;
+  }
+
+  return selectedTeamIds?.length === 1 ? selectedTeamIds[0] : undefined;
+};
