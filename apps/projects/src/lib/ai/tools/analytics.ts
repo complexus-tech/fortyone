@@ -8,6 +8,7 @@ import { getObjectiveProgress } from "@/modules/analytics/queries/get-objective-
 import { getTeamPerformance } from "@/modules/analytics/queries/get-team-performance";
 import { getSprintAnalytics } from "@/modules/analytics/queries/get-sprint-analytics";
 import { getTimelineTrends } from "@/modules/analytics/queries/get-timeline-trends";
+import { getPulseReport } from "@/modules/analytics/queries/get-pulse-report";
 import type { AnalyticsFilters } from "@/modules/analytics/types";
 
 const analyticsFiltersSchema = z.object({
@@ -15,6 +16,10 @@ const analyticsFiltersSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Team IDs to filter by. Use listTeams first when needed."),
+  assigneeIds: z
+    .array(z.string())
+    .optional()
+    .describe("User IDs to filter by. Use members first when needed."),
   startDate: z
     .string()
     .optional()
@@ -91,6 +96,39 @@ export const workspacePerformanceReportTool = tool({
           error instanceof Error
             ? error.message
             : "Failed to build workspace performance report",
+      };
+    }
+  },
+});
+
+export const pulseReportTool = tool({
+  description:
+    "Build the deterministic workspace Pulse report for current health, risks, workload, sprint health, objective health, pending integration requests, blocked work, overdue work, and what needs attention next. Use this for workspace, team, person, or group-of-teams pulse questions.",
+  inputSchema: z.object({
+    filters: analyticsFiltersSchema.optional(),
+  }),
+  execute: async ({ filters }, { experimental_context }) => {
+    try {
+      const ctx = await getAuthenticatedContext(experimental_context);
+      if ("error" in ctx) return { success: false, error: ctx.error };
+
+      const report = await getPulseReport(ctx, compactFilters(filters));
+
+      return {
+        success: true,
+        kind: "pulse-report",
+        title: "Workspace pulse",
+        filters: compactFilters(filters),
+        report,
+        message: `Found ${report.risks.length} active risk${report.risks.length === 1 ? "" : "s"} across ${report.summary.openStories} open stor${report.summary.openStories === 1 ? "y" : "ies"}.`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build pulse report",
       };
     }
   },

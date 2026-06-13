@@ -70,6 +70,89 @@ export type WorkloadAnalysis = {
   risks: WorkloadRisks;
 };
 
+export type PulseRiskSeverity = "high" | "medium" | "low";
+
+export type PulseRiskKind =
+  | "overdue_stories"
+  | "blocked_stories"
+  | "overloaded_members"
+  | "at_risk_sprints"
+  | "at_risk_objectives"
+  | "pending_requests"
+  | "unassigned_stories";
+
+export type PulseSummary = {
+  openStories: number;
+  overdueStories: number;
+  blockedStories: number;
+  atRiskSprints: number;
+  atRiskObjectives: number;
+  pendingRequests: number;
+  overloadedMembers: number;
+};
+
+export type PulseStoryHealth = {
+  openStories: number;
+  startedStories: number;
+  pausedStories: number;
+  completedStories: number;
+  cancelledStories: number;
+  blockedStories: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unassignedStories: number;
+  unestimatedStories: number;
+};
+
+export type PulseSprintHealth = {
+  activeSprints: number;
+  upcomingSprints: number;
+  completedSprints: number;
+  atRiskSprints: number;
+  overdueSprints: number;
+  unestimatedStories: number;
+};
+
+export type PulseObjectiveHealth = {
+  activeObjectives: number;
+  atRiskObjectives: number;
+  offTrackObjectives: number;
+  overdueObjectives: number;
+  objectivesDueSoon: number;
+};
+
+export type PulseRequestHealth = {
+  pendingRequests: number;
+  urgentRequests: number;
+  highRequests: number;
+  gitHubRequests: number;
+  slackRequests: number;
+  intercomRequests: number;
+  staleRequests: number;
+};
+
+export type PulseRisk = {
+  kind: PulseRiskKind;
+  severity: PulseRiskSeverity;
+  title: string;
+  description: string;
+  count: number;
+};
+
+export type PulseReport = {
+  workspaceId: string;
+  reportDate: string;
+  filters: AnalyticsFilters;
+  summary: PulseSummary;
+  stories: PulseStoryHealth;
+  sprints: PulseSprintHealth;
+  objectives: PulseObjectiveHealth;
+  requests: PulseRequestHealth;
+  workload: WorkloadAnalysis;
+  risks: PulseRisk[];
+};
+
 // Workspace Overview Types
 export type WorkspaceOverviewMetrics = {
   totalStories: number;

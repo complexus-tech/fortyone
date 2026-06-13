@@ -134,6 +134,8 @@ export const analyticsKeys = {
       "workload-analysis",
       filters,
     ] as const,
+  pulseReport: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "pulse-report", filters] as const,
   sprintAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "sprint-analytics", filters] as const,
   timelineTrends: (workspaceSlug: string, filters?: Record<string, unknown>) =>

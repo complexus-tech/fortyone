@@ -26,6 +26,10 @@ type Repository interface {
 	GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error)
 	GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error)
 	GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error)
+	GetPulseStoryHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseStoryHealth, error)
+	GetPulseSprintHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseSprintHealth, error)
+	GetPulseObjectiveHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseObjectiveHealth, error)
+	GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseRequestHealth, error)
 	GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error)
 	GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error)
 }

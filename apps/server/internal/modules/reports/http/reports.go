@@ -504,6 +504,44 @@ func (h *Handlers) GetWorkloadAnalysis(ctx context.Context, w http.ResponseWrite
 	return web.Respond(ctx, w, toAppWorkloadAnalysis(analysis), http.StatusOK)
 }
 
+func (h *Handlers) GetPulseReport(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetPulseReport")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseWorkloadAnalysisFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	report, err := h.reports.GetPulseReport(ctx, workspace.ID, filters)
+	if err != nil {
+		return fmt.Errorf("getting pulse report: %w", err)
+	}
+
+	for i := range report.Workload.Members {
+		report.Workload.Members[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Members[i].AvatarURL)
+	}
+	for i := range report.Workload.Risks.OverloadedMembers {
+		report.Workload.Risks.OverloadedMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Risks.OverloadedMembers[i].AvatarURL)
+	}
+	for i := range report.Workload.Risks.OverdueMembers {
+		report.Workload.Risks.OverdueMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Risks.OverdueMembers[i].AvatarURL)
+	}
+
+	return web.Respond(ctx, w, toAppPulseReport(report), http.StatusOK)
+}
+
 func (h *Handlers) GetSprintAnalytics(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.reports.GetSprintAnalytics")
 	defer span.End()
