@@ -117,11 +117,11 @@ type StoriesFilterBarProps = {
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   resetFilters: () => void;
-  hiddenFields?: StoriesFilterField[];
+  hiddenFields?: readonly StoriesFilterField[];
   showWhenEmpty?: boolean;
 };
 
-const EMPTY_FILTER_FIELDS: StoriesFilterField[] = [];
+const EMPTY_FILTER_FIELDS: readonly StoriesFilterField[] = [];
 
 const getNames = (
   ids: string[] | null | undefined,
@@ -1318,6 +1318,7 @@ export const StoriesFilterBar = ({
   const { data: allLabels = [] } = useLabels();
   const { data: teamSettings } = useTeamSettings(scopedTeamId);
   const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+  const hiddenFieldSet = useMemo(() => new Set(hiddenFields), [hiddenFields]);
 
   const users = scopedTeamId ? teamMembers : allUsers;
   const statuses = scopedTeamId
@@ -1550,10 +1551,11 @@ export const StoriesFilterBar = ({
       });
     }
 
-    return items;
+    return items.filter((item) => !hiddenFieldSet.has(item.field));
   }, [
     filters,
     estimateScheme,
+    hiddenFieldSet,
     labelById,
     objectiveById,
     sprintById,
@@ -1562,8 +1564,6 @@ export const StoriesFilterBar = ({
     teamColorById,
     userById,
   ]);
-
-  const hiddenFieldSet = useMemo(() => new Set(hiddenFields), [hiddenFields]);
 
   const removeFilter = (field: StoriesFilterField) => {
     if (field === "assignedToMe" || field === "createdByMe") {
@@ -1644,7 +1644,7 @@ export const StoriesFilterBar = ({
     (option) => !hiddenFieldSet.has(option.field),
   );
 
-  if (!showWhenEmpty && !hasActiveStoriesFilters(filters)) {
+  if (!showWhenEmpty && chips.length === 0) {
     return null;
   }
 

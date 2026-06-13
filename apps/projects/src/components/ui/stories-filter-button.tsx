@@ -28,12 +28,18 @@ import {
   getActiveStoriesFilterCount,
   hasActiveStoriesFilters,
 } from "./stories-filter-utils";
+import type { StoriesFilterField } from "./stories-filter-bar";
+import {
+  getVisibleStoriesFilterButtonFields,
+  type StoriesFilterButtonField,
+} from "./stories-filter-button-options";
 
 type StoriesFilterButtonProps = {
   filters: StoriesFilter;
   setFilters: (v: StoriesFilter) => void;
   resetFilters: () => void;
   iconOnly?: boolean;
+  hiddenFields?: readonly StoriesFilterField[];
 };
 
 const FilterSection = ({
@@ -316,12 +322,28 @@ export const StoriesFilterButton = ({
   setFilters,
   resetFilters,
   iconOnly = false,
+  hiddenFields = [],
 }: StoriesFilterButtonProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const { teamId } = useParams<{ teamId: string }>();
   const isBacklog = pathname.includes("/backlog");
-  const filtersCount = getActiveStoriesFilterCount(filters);
+  const visibleFilters = { ...filters };
+  hiddenFields.forEach((field) => {
+    if (field === "assignedToMe" || field === "createdByMe") {
+      visibleFilters[field] = false;
+      return;
+    }
+
+    visibleFilters[field] = null;
+  });
+  const filtersCount = getActiveStoriesFilterCount(visibleFilters);
+  const visibleFields = getVisibleStoriesFilterButtonFields({
+    hasRouteTeam: Boolean(teamId),
+    hiddenFields,
+  });
+  const shouldShow = (field: StoriesFilterButtonField) =>
+    visibleFields.includes(field);
 
   const getButtonLabel = () => {
     if (filtersCount) {
@@ -350,7 +372,7 @@ export const StoriesFilterButton = ({
           size="sm"
           variant="outline"
         >
-          {hasActiveStoriesFilters(filters) ? (
+          {hasActiveStoriesFilters(visibleFilters) ? (
             <span
               aria-hidden="true"
               className="bg-primary absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full"
@@ -389,33 +411,49 @@ export const StoriesFilterButton = ({
           )}
         </Flex>
         <Divider className="mt-1.5" />
-        <Box>
-          <ToggleButton
-            icon={<AssigneeIcon />}
-            isActive={filters.assignedToMe}
-            label="Assigned to me"
-            onClick={() => {
-              setFilters({ ...filters, assignedToMe: !filters.assignedToMe });
-            }}
-          />
-          <ToggleButton
-            icon={<UserIcon />}
-            isActive={filters.createdByMe}
-            label="Created by me"
-            onClick={() => {
-              setFilters({ ...filters, createdByMe: !filters.createdByMe });
-            }}
-          />
-          <ToggleButton
-            icon={<AssigneeIcon />}
-            isActive={filters.hasNoAssignee || false}
-            label="Has no assignee"
-            onClick={() => {
-              setFilters({ ...filters, hasNoAssignee: !filters.hasNoAssignee });
-            }}
-          />
-        </Box>
-        {!isBacklog && (
+        {shouldShow("assignedToMe") ||
+        shouldShow("createdByMe") ||
+        shouldShow("hasNoAssignee") ? (
+          <Box>
+            {shouldShow("assignedToMe") ? (
+              <ToggleButton
+                icon={<AssigneeIcon />}
+                isActive={filters.assignedToMe}
+                label="Assigned to me"
+                onClick={() => {
+                  setFilters({
+                    ...filters,
+                    assignedToMe: !filters.assignedToMe,
+                  });
+                }}
+              />
+            ) : null}
+            {shouldShow("createdByMe") ? (
+              <ToggleButton
+                icon={<UserIcon />}
+                isActive={filters.createdByMe}
+                label="Created by me"
+                onClick={() => {
+                  setFilters({ ...filters, createdByMe: !filters.createdByMe });
+                }}
+              />
+            ) : null}
+            {shouldShow("hasNoAssignee") ? (
+              <ToggleButton
+                icon={<AssigneeIcon />}
+                isActive={filters.hasNoAssignee || false}
+                label="Has no assignee"
+                onClick={() => {
+                  setFilters({
+                    ...filters,
+                    hasNoAssignee: !filters.hasNoAssignee,
+                  });
+                }}
+              />
+            ) : null}
+          </Box>
+        ) : null}
+        {!isBacklog && shouldShow("statusIds") ? (
           <>
             <Divider />
             <FilterSection title="Status">
@@ -427,35 +465,47 @@ export const StoriesFilterButton = ({
               />
             </FilterSection>
           </>
-        )}
+        ) : null}
 
-        <Divider />
-        <FilterSection title="Assignee">
-          <UserSelector
-            onChange={(assigneeIds) => {
-              setFilters({ ...filters, assigneeIds });
-            }}
-            selected={filters.assigneeIds}
-          />
-        </FilterSection>
-        <FilterSection title="Reporter">
-          <UserSelector
-            onChange={(reporterIds) => {
-              setFilters({ ...filters, reporterIds });
-            }}
-            selected={filters.reporterIds}
-          />
-        </FilterSection>
-        <Divider />
-        <FilterSection title="Priority">
-          <PrioritySelector
-            onChange={(priorities) => {
-              setFilters({ ...filters, priorities });
-            }}
-            selected={filters.priorities}
-          />
-        </FilterSection>
-        {!teamId ? (
+        {shouldShow("assigneeIds") || shouldShow("reporterIds") ? (
+          <>
+            <Divider />
+            {shouldShow("assigneeIds") ? (
+              <FilterSection title="Assignee">
+                <UserSelector
+                  onChange={(assigneeIds) => {
+                    setFilters({ ...filters, assigneeIds });
+                  }}
+                  selected={filters.assigneeIds}
+                />
+              </FilterSection>
+            ) : null}
+            {shouldShow("reporterIds") ? (
+              <FilterSection title="Reporter">
+                <UserSelector
+                  onChange={(reporterIds) => {
+                    setFilters({ ...filters, reporterIds });
+                  }}
+                  selected={filters.reporterIds}
+                />
+              </FilterSection>
+            ) : null}
+          </>
+        ) : null}
+        {shouldShow("priorities") ? (
+          <>
+            <Divider />
+            <FilterSection title="Priority">
+              <PrioritySelector
+                onChange={(priorities) => {
+                  setFilters({ ...filters, priorities });
+                }}
+                selected={filters.priorities}
+              />
+            </FilterSection>
+          </>
+        ) : null}
+        {shouldShow("teamIds") ? (
           <>
             <Divider />
             <FilterSection title="Team">

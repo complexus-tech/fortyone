@@ -5,8 +5,13 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
-import { StoriesViewOptionsButton, LayoutSwitcher } from "@/components/ui";
+import {
+  StoriesViewOptionsButton,
+  LayoutSwitcher,
+  StoriesFilterButton,
+} from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
+import { PROFILE_HIDDEN_FILTER_FIELDS } from "./filter-fields";
 import { useProfile } from "./provider";
 
 export const Header = ({
@@ -16,7 +21,8 @@ export const Header = ({
   layout: StoriesLayout;
   setLayout: (value: StoriesLayout) => void;
 }) => {
-  const { viewOptions, setViewOptions } = useProfile();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useProfile();
   const { userId } = useParams<{
     userId: string;
   }>();
@@ -57,6 +63,12 @@ export const Header = ({
           layout={layout}
           options={["list", "kanban"]}
           setLayout={setLayout}
+        />
+        <StoriesFilterButton
+          filters={filters}
+          hiddenFields={PROFILE_HIDDEN_FILTER_FIELDS}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
         />
         <StoriesViewOptionsButton
           groupByOptions={["status", "priority"]}

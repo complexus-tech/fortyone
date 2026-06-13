@@ -4,8 +4,13 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
+import {
+  hasActiveProfileStoriesFilters,
+  PROFILE_HIDDEN_FILTER_FIELDS,
+} from "./filter-fields";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
 
@@ -18,8 +23,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     "tab",
     parseAsStringLiteral(tabs).withDefault("assigned"),
   );
-  const { viewOptions, setViewOptions, filters } = useProfile();
-  const boardHeightClassName = "h-[calc(100dvh-11.3rem)]";
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useProfile();
+  const hasAppliedFilters = hasActiveProfileStoriesFilters(filters);
+  const boardHeightClassName = hasAppliedFilters
+    ? "h-[calc(100dvh-11.3rem)]"
+    : "h-[calc(100dvh-7.7rem)]";
 
   const { data: groupedStories, isPending } = useGroupedStories({
     groupBy: viewOptions.groupBy,
@@ -41,6 +50,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
+        <StoriesFilterBar
+          filters={filters}
+          hiddenFields={PROFILE_HIDDEN_FILTER_FIELDS}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <Tabs.Panel value="assigned">
           <StoriesBoard
             className={boardHeightClassName}
