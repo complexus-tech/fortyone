@@ -1218,13 +1218,13 @@ func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, f
 
 	summaryQuery := workloadStoriesCTE + fmt.Sprintf(`
 		SELECT
-			COUNT(*) FILTER (WHERE %s)::int AS total_open_stories,
-			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS total_estimate,
-			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
-			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories,
-			COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL)::int AS unassigned_stories
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS total_open_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS total_estimate,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL) AS int) AS unassigned_stories
 		FROM workload_stories
 	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
 
@@ -1247,15 +1247,15 @@ func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, f
 			COALESCE(u.full_name, '') AS full_name,
 			u.username,
 			COALESCE(u.avatar_url, '') AS avatar_url,
-			COUNT(*) FILTER (WHERE %s)::int AS open_stories,
-			COUNT(*) FILTER (WHERE category = 'started')::int AS started_stories,
-			COUNT(*) FILTER (WHERE category = 'paused')::int AS paused_stories,
-			COUNT(*) FILTER (WHERE category = 'completed')::int AS completed_stories,
-			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
-			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories,
-			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS open_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'started') AS int) AS started_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'paused') AS int) AS paused_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'completed') AS int) AS completed_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total
 		FROM workload_stories ws
 		INNER JOIN users u ON u.user_id = ws.assignee_id
 		WHERE ws.assignee_id IS NOT NULL
@@ -1281,11 +1281,11 @@ func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, f
 			team_id,
 			team_name,
 			team_code,
-			COUNT(*) FILTER (WHERE %s)::int AS open_stories,
-			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total,
-			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
-			COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL)::int AS unassigned_stories,
-			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS open_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL) AS int) AS unassigned_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories
 		FROM workload_stories
 		GROUP BY team_id, team_name, team_code
 		ORDER BY team_name
@@ -1306,12 +1306,12 @@ func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, f
 
 	unassignedQuery := workloadStoriesCTE + fmt.Sprintf(`
 		SELECT
-			COUNT(*) FILTER (WHERE %s)::int AS stories,
-			COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0)::int AS estimate_total,
-			COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE)::int AS overdue_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent')::int AS urgent_stories,
-			COUNT(*) FILTER (WHERE (%s) AND priority = 'High')::int AS high_priority_stories,
-			COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL)::int AS unestimated_stories
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories
 		FROM workload_stories
 		WHERE assignee_id IS NULL
 	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
