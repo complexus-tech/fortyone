@@ -8,14 +8,12 @@ import {
   type UIEvent,
 } from "react";
 import { Button, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, LoadingIcon, PlusIcon } from "icons";
+import { CheckIcon, PlusIcon } from "icons";
 import { generateRandomColor } from "lib";
-import {
-  LABEL_MENU_PAGE_SIZE,
-  useLabelsInfinite,
-} from "@/lib/hooks/labels";
+import { LABEL_MENU_PAGE_SIZE, useLabelsInfinite } from "@/lib/hooks/labels";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
 import { Dot } from "../dot";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const LabelsContext = createContext<{
   open: boolean;
@@ -68,16 +66,12 @@ const Items = ({
   const deferredQuery = useDeferredValue(query);
   const [isLoading, setIsLoading] = useState(false);
   const { open } = useLabelsMenu();
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useLabelsInfinite(
-    { search: deferredQuery, teamId },
-    LABEL_MENU_PAGE_SIZE,
-    open,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useLabelsInfinite(
+      { search: deferredQuery, teamId },
+      LABEL_MENU_PAGE_SIZE,
+      open,
+    );
   const labels = data?.pages.flatMap((page) => page.labels) ?? [];
 
   const handleCreateLabel = async () => {
@@ -124,25 +118,32 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="justify-center px-1 py-0">
-          <Button
-            className="mx-0 border-0 text-base font-medium"
-            color="tertiary"
-            fullWidth
-            loading={isLoading}
-            loadingText="Creating label..."
-            onClick={handleCreateLabel}
-          >
-            <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
-            <span className="text-text-muted font-medium">
-              &ldquo;{query}&rdquo;
-            </span>
-          </Button>
-        </Command.Empty>
+        {!isPending ? (
+          <Command.Empty className="justify-center px-1 py-0">
+            <Button
+              className="mx-0 border-0 text-base font-medium"
+              color="tertiary"
+              fullWidth
+              loading={isLoading}
+              loadingText="Creating label..."
+              onClick={handleCreateLabel}
+            >
+              <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
+              <span className="text-text-muted font-medium">
+                &ldquo;{query}&rdquo;
+              </span>
+            </Button>
+          </Command.Empty>
+        ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
+          {isPending ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={5} />
+            </Command.Loading>
+          ) : null}
           {labels.map(({ id, name, color }) => (
             <Command.Item
               className="justify-between gap-4"
@@ -169,10 +170,7 @@ const Items = ({
           ))}
           {isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more labels...
-              </Text>
+              <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
         </Command.Group>

@@ -8,13 +8,14 @@ import {
   type UIEvent,
 } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, LoadingIcon, SprintsIcon } from "icons";
+import { CheckIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
 import {
   SPRINT_MENU_PAGE_SIZE,
   useTeamSprintsInfinite,
 } from "@/modules/sprints/hooks/team-sprints";
 import { useTerminology } from "@/hooks";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -143,10 +144,7 @@ const Items = ({
           {sprints.length > 0 && <Divider className="my-2" />}
           {isTeamSprintsPending ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Fetching {getTermDisplay("sprintTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={5} />
             </Command.Loading>
           ) : null}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
@@ -182,10 +180,7 @@ const Items = ({
           ))}
           {isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more {getTermDisplay("sprintTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
         </Command.Group>

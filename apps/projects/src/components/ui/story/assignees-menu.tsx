@@ -1,5 +1,5 @@
 "use client";
-import { CheckIcon, LoadingIcon } from "icons";
+import { CheckIcon } from "icons";
 import {
   createContext,
   use,
@@ -10,11 +10,9 @@ import {
 } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "@/lib/auth/client";
-import {
-  MEMBER_MENU_PAGE_SIZE,
-  useMembersInfinite,
-} from "@/lib/hooks/members";
+import { MEMBER_MENU_PAGE_SIZE, useMembersInfinite } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const AssigneesContext = createContext<{
   open: boolean;
@@ -86,7 +84,8 @@ const Items = ({
     open && Boolean(teamId),
   );
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
-  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
+  const members =
+    membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
   const isPending = membersQuery.isPending;
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
@@ -128,10 +127,7 @@ const Items = ({
         >
           {isPending ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Please wait...
-              </Text>
+              <MenuLoadingSkeleton avatar rows={5} />
             </Command.Loading>
           ) : null}
 
@@ -234,10 +230,7 @@ const Items = ({
           ))}
           {membersQuery.isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more users...
-              </Text>
+              <MenuLoadingSkeleton avatar rows={2} />
             </Command.Loading>
           ) : null}
         </Command.Group>

@@ -8,12 +8,13 @@ import {
   type UIEvent,
 } from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, ObjectiveIcon, LoadingIcon } from "icons";
+import { CheckIcon, ObjectiveIcon } from "icons";
 import {
   OBJECTIVE_MENU_PAGE_SIZE,
   useTeamObjectivesInfinite,
 } from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -66,18 +67,13 @@ const Items = ({
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const { open, setOpen } = useObjectivesMenu();
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending,
-  } = useTeamObjectivesInfinite(
-    teamId ?? "",
-    deferredQuery,
-    OBJECTIVE_MENU_PAGE_SIZE,
-    open,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useTeamObjectivesInfinite(
+      teamId ?? "",
+      deferredQuery,
+      OBJECTIVE_MENU_PAGE_SIZE,
+      open,
+    );
   const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -142,10 +138,7 @@ const Items = ({
           {objectives.length > 0 && <Divider className="my-2" />}
           {isPending ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Fetching {getTermDisplay("objectiveTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={5} />
             </Command.Loading>
           ) : null}
           {objectives.map(({ id, name }, idx) => (
@@ -175,10 +168,7 @@ const Items = ({
           ))}
           {isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more {getTermDisplay("objectiveTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
         </Command.Group>

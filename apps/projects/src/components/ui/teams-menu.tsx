@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type UIEvent,
 } from "react";
-import { LoadingIcon, PlusIcon, TeamIcon } from "icons";
+import { PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import {
   TEAM_MENU_PAGE_SIZE,
@@ -17,6 +17,7 @@ import {
   useTeamsInfinite,
 } from "@/modules/teams/hooks/teams";
 import { useWorkspacePath } from "@/hooks";
+import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 
 type TeamContextType = {
   open: boolean;
@@ -73,10 +74,14 @@ const Items = ({
     TEAM_MENU_PAGE_SIZE,
     open,
   );
-  const teams = joinedTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
+  const teams =
+    joinedTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
   const publicTeams =
     publicTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
-  const canLeaveTeam = teams.length > 1 || Boolean(joinedTeamsQuery.hasNextPage);
+  const canLeaveTeam =
+    teams.length > 1 || Boolean(joinedTeamsQuery.hasNextPage);
+  const isInitialLoading =
+    joinedTeamsQuery.isPending || publicTeamsQuery.isPending;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -104,13 +109,20 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No teams found.</Text>
-        </Command.Empty>
+        {!isInitialLoading ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">No teams found.</Text>
+          </Command.Empty>
+        ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
+          {joinedTeamsQuery.isPending ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={4} />
+            </Command.Loading>
+          ) : null}
           {teams.map((team) => (
             <Command.Item
               className="justify-between py-1 pr-1"
@@ -141,16 +153,19 @@ const Items = ({
           ))}
           {joinedTeamsQuery.isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more teams...
-              </Text>
+              <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
 
           {publicTeams.length > 0 && teams.length > 0 && (
             <Divider className="my-1.5" />
           )}
+
+          {publicTeamsQuery.isPending ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={4} />
+            </Command.Loading>
+          ) : null}
 
           {publicTeams.map((team) => (
             <Command.Item
@@ -180,10 +195,7 @@ const Items = ({
           ))}
           {publicTeamsQuery.isFetchingNextPage ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Loading more public teams...
-              </Text>
+              <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
         </Command.Group>

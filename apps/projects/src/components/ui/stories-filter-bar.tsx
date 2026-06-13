@@ -28,7 +28,6 @@ import {
   CloseIcon,
   EstimateIcon,
   ListIcon,
-  LoadingIcon,
   ObjectiveIcon,
   PlusIcon,
   SprintsIcon,
@@ -76,6 +75,7 @@ import {
   type EstimateScheme,
 } from "@/lib/estimate";
 import type { StoriesFilter } from "./stories-filter-types";
+import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 import { TeamColor } from "./team-color";
@@ -495,7 +495,8 @@ const PeopleEditor = ({
     Boolean(teamId),
   );
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
-  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
+  const members =
+    membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
 
   const toggleMember = (memberId: string) => {
     const selected = filters[field] ?? [];
@@ -528,13 +529,20 @@ const PeopleEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No user found.</Text>
-      </Command.Empty>
+      {!membersQuery.isPending ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No user found.</Text>
+        </Command.Empty>
+      ) : null}
       <Command.Group
         className="max-h-80 overflow-y-auto md:max-h-100"
         onScroll={handleScroll}
       >
+        {membersQuery.isPending ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton avatar rows={5} />
+          </Command.Loading>
+        ) : null}
         {field === "assigneeIds" ? (
           <Command.Item
             active={Boolean(filters.hasNoAssignee)}
@@ -598,10 +606,7 @@ const PeopleEditor = ({
         })}
         {membersQuery.isFetchingNextPage ? (
           <Command.Loading className="p-2">
-            <Text className="flex items-center gap-2" color="muted">
-              <LoadingIcon className="animate-spin" />
-              Loading more users...
-            </Text>
+            <MenuLoadingSkeleton avatar rows={2} />
           </Command.Loading>
         ) : null}
       </Command.Group>
@@ -676,12 +681,8 @@ const TeamEditor = ({
 }) => {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useTeamsInfinite(deferredQuery, TEAM_MENU_PAGE_SIZE);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useTeamsInfinite(deferredQuery, TEAM_MENU_PAGE_SIZE);
   const teams = data?.pages.flatMap((page) => page.teams) ?? [];
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -711,13 +712,20 @@ const TeamEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No teams found.</Text>
-      </Command.Empty>
+      {!isPending ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No teams found.</Text>
+        </Command.Empty>
+      ) : null}
       <Command.Group
         className="max-h-80 overflow-y-auto"
         onScroll={handleScroll}
       >
+        {isPending ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={5} />
+          </Command.Loading>
+        ) : null}
         {teams.map((team, idx) => (
           <Command.Item
             active={Boolean(filters.teamIds?.includes(team.id))}
@@ -742,10 +750,7 @@ const TeamEditor = ({
         ))}
         {isFetchingNextPage ? (
           <Command.Loading className="p-2">
-            <Text className="flex items-center gap-2" color="muted">
-              <LoadingIcon className="animate-spin" />
-              Loading more teams...
-            </Text>
+            <MenuLoadingSkeleton rows={2} />
           </Command.Loading>
         ) : null}
       </Command.Group>
@@ -763,17 +768,10 @@ const SprintEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useTeamSprintsInfinite(
-    teamId ?? "",
-    deferredQuery,
-    SPRINT_MENU_PAGE_SIZE,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useTeamSprintsInfinite(teamId ?? "", deferredQuery, SPRINT_MENU_PAGE_SIZE);
   const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
+  const isLoadingSprints = Boolean(teamId) && isPending;
 
   const toggleSprint = (sprintId: string) => {
     const selected = filters.sprintIds ?? [];
@@ -802,13 +800,20 @@ const SprintEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No sprints found.</Text>
-      </Command.Empty>
+      {!isLoadingSprints ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No sprints found.</Text>
+        </Command.Empty>
+      ) : null}
       <Command.Group
         className="max-h-80 overflow-y-auto"
         onScroll={handleScroll}
       >
+        {isLoadingSprints ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={5} />
+          </Command.Loading>
+        ) : null}
         {sprints.map((sprint, idx) => (
           <Command.Item
             active={Boolean(filters.sprintIds?.includes(sprint.id))}
@@ -831,6 +836,11 @@ const SprintEditor = ({
             </Flex>
           </Command.Item>
         ))}
+        {isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={2} />
+          </Command.Loading>
+        ) : null}
       </Command.Group>
     </Command>
   );
@@ -846,17 +856,14 @@ const ObjectiveEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useTeamObjectivesInfinite(
-    teamId ?? "",
-    deferredQuery,
-    OBJECTIVE_MENU_PAGE_SIZE,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useTeamObjectivesInfinite(
+      teamId ?? "",
+      deferredQuery,
+      OBJECTIVE_MENU_PAGE_SIZE,
+    );
   const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
+  const isLoadingObjectives = Boolean(teamId) && isPending;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -877,13 +884,20 @@ const ObjectiveEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No objectives found.</Text>
-      </Command.Empty>
+      {!isLoadingObjectives ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No objectives found.</Text>
+        </Command.Empty>
+      ) : null}
       <Command.Group
         className="max-h-80 overflow-y-auto"
         onScroll={handleScroll}
       >
+        {isLoadingObjectives ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={5} />
+          </Command.Loading>
+        ) : null}
         {objectives.map((objective, idx) => (
           <Command.Item
             active={filters.objectiveId === objective.id}
@@ -910,6 +924,11 @@ const ObjectiveEditor = ({
             </Flex>
           </Command.Item>
         ))}
+        {isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={2} />
+          </Command.Loading>
+        ) : null}
       </Command.Group>
     </Command>
   );
@@ -925,15 +944,8 @@ const LabelEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useLabelsInfinite(
-    { search: deferredQuery, teamId },
-    LABEL_MENU_PAGE_SIZE,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useLabelsInfinite({ search: deferredQuery, teamId }, LABEL_MENU_PAGE_SIZE);
   const labels = data?.pages.flatMap((page) => page.labels) ?? [];
 
   const toggleLabel = (labelId: string) => {
@@ -963,13 +975,20 @@ const LabelEditor = ({
         value={query}
       />
       <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No labels found.</Text>
-      </Command.Empty>
+      {!isPending ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No labels found.</Text>
+        </Command.Empty>
+      ) : null}
       <Command.Group
         className="max-h-80 overflow-y-auto"
         onScroll={handleScroll}
       >
+        {isPending ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={5} />
+          </Command.Loading>
+        ) : null}
         {labels.map((label, idx) => (
           <Command.Item
             active={Boolean(filters.labelIds?.includes(label.id))}
@@ -994,10 +1013,7 @@ const LabelEditor = ({
         ))}
         {isFetchingNextPage ? (
           <Command.Loading className="p-2">
-            <Text className="flex items-center gap-2" color="muted">
-              <LoadingIcon className="animate-spin" />
-              Loading more labels...
-            </Text>
+            <MenuLoadingSkeleton rows={2} />
           </Command.Loading>
         ) : null}
       </Command.Group>
