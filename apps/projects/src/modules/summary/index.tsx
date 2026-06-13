@@ -13,15 +13,17 @@ import { Priority } from "./components/priority";
 import { Status } from "./components/status";
 import { Contributions } from "./components/contributions";
 
+const getTimeOfDay = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+};
+
 export const SummaryPage = () => {
   const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
-  const timeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
-  };
+
   return (
     <>
       <Header />
@@ -34,7 +36,7 @@ export const SummaryPage = () => {
                 className="mb-1 text-2xl @3xl:text-3xl"
                 fontWeight="medium"
               >
-                Good {timeOfDay()}, {session?.user?.name}.
+                Good {getTimeOfDay()}, {session?.user.name}.
               </Text>
               <Text color="muted" fontSize="lg">
                 Here&rsquo;s what&rsquo;s happening with your{" "}

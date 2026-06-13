@@ -13,24 +13,21 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
-import { PulseReportPanel } from "./pulse-report";
 import { useMyWork } from "./provider";
 
-const adminTabs = ["pulse", "all", "assigned", "created"] as const;
-const storyTabs = ["all", "assigned", "created"] as const;
+const tabs = ["all", "assigned", "created"] as const;
 
-type MyWorkTab = (typeof adminTabs)[number];
-type StoriesTab = Exclude<MyWorkTab, "pulse">;
+type MyWorkTab = (typeof tabs)[number];
 
 const StoriesPanelContent = ({
   layout,
   tab,
 }: {
   layout: StoriesLayout;
-  tab: StoriesTab;
+  tab: MyWorkTab;
 }) => {
   const validCategories = [
     "backlog",
@@ -98,13 +95,9 @@ const StoriesPanelContent = ({
 };
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
-  const { userRole } = useUserRole();
-  const isAdmin = userRole === "admin";
   const [tab, setTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(isAdmin ? adminTabs : storyTabs).withDefault(
-      isAdmin ? "pulse" : "all",
-    ),
+    parseAsStringLiteral(tabs).withDefault("all"),
   );
   const { getTermDisplay } = useTerminology();
   const { filters, resetFilters, setFilters } = useMyWork();
@@ -114,7 +107,6 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
       <Tabs onValueChange={(v) => setTab(v as MyWorkTab)} value={tab}>
         <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px]">
           <Tabs.List>
-            {isAdmin ? <Tabs.Tab value="pulse">Pulse</Tabs.Tab> : null}
             <Tabs.Tab value="all">
               All {getTermDisplay("storyTerm", { variant: "plural" })}
             </Tabs.Tab>
@@ -122,18 +114,11 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
-        {tab !== "pulse" ? (
-          <StoriesFilterBar
-            filters={filters}
-            resetFilters={resetFilters}
-            setFilters={setFilters}
-          />
-        ) : null}
-        {isAdmin ? (
-          <Tabs.Panel value="pulse">
-            {tab === "pulse" ? <PulseReportPanel /> : null}
-          </Tabs.Panel>
-        ) : null}
+        <StoriesFilterBar
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <Tabs.Panel value="all">
           {tab === "all" ? (
             <StoriesPanelContent layout={layout} tab="all" />

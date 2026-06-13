@@ -15,17 +15,7 @@ import {
 } from "recharts";
 import { WarningIcon } from "icons";
 import { cn } from "lib";
-import {
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  Container,
-  Flex,
-  Skeleton,
-  Text,
-  Wrapper,
-} from "ui";
+import { Avatar, Badge, Box, Button, Flex, Skeleton, Text, Wrapper } from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { usePulseReport } from "@/modules/analytics/hooks/pulse-report";
 import type {
@@ -116,7 +106,7 @@ const getRiskHref = ({
     case "pending_requests":
       return firstTeam
         ? withWorkspace(`/teams/${firstTeam.teamId}/requests`)
-        : withWorkspace("/my-work?tab=pulse");
+        : withWorkspace("/analytics?tab=pulse");
     case "unassigned_stories":
       return withWorkspace("/my-work?tab=all");
   }
@@ -272,7 +262,7 @@ const WorkloadRow = ({
 
 const PulseSkeleton = () => {
   return (
-    <Container className="@container py-4">
+    <Box className="py-3">
       <Skeleton className="mb-3 h-8 w-72" />
       <Skeleton className="mb-5 h-5 w-full max-w-xl" />
       <Box className="mb-4 grid grid-cols-2 gap-3 @3xl:grid-cols-3 @4xl:grid-cols-4 @7xl:grid-cols-5">
@@ -284,7 +274,7 @@ const PulseSkeleton = () => {
         <Skeleton className="h-80" />
         <Skeleton className="h-80" />
       </Box>
-    </Container>
+    </Box>
   );
 };
 
@@ -306,19 +296,17 @@ export const PulseReportPanel = () => {
 
   if (isError) {
     return (
-      <Container className="@container py-4">
-        <Wrapper>
-          <Text className="mb-1" fontSize="lg" fontWeight="medium">
-            Pulse is unavailable
-          </Text>
-          <Text color="muted">
-            The workspace health report could not be loaded right now.
-          </Text>
-          <Button className="mt-4" onClick={() => void refetch()}>
-            Try again
-          </Button>
-        </Wrapper>
-      </Container>
+      <Wrapper className="mt-3">
+        <Text className="mb-1" fontSize="lg" fontWeight="medium">
+          Workspace pulse is unavailable
+        </Text>
+        <Text color="muted">
+          The workspace health report could not be loaded right now.
+        </Text>
+        <Button className="mt-4" onClick={() => void refetch()}>
+          Try again
+        </Button>
+      </Wrapper>
     );
   }
 
@@ -356,219 +344,214 @@ export const PulseReportPanel = () => {
   };
 
   return (
-    <Box className="h-[calc(100dvh-7.7rem)] overflow-y-auto">
-      <Container className="@container pt-3 pb-4">
-        <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
-          <Box>
-            <Text
-              as="h2"
-              className="mb-1 text-2xl @3xl:text-3xl"
-              fontWeight="medium"
-            >
-              Workspace health
-            </Text>
-            <Text color="muted" fontSize="lg">
-              Workspace health across {storyTermPlural}, workload,{" "}
-              {sprintTermPlural}, {objectiveTermPlural}, and requests.
+    <Box className="pt-3 pb-4">
+      <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
+        <Box>
+          <Text
+            as="h2"
+            className="mb-1 text-2xl @3xl:text-3xl"
+            fontWeight="medium"
+          >
+            Workspace health
+          </Text>
+          <Text color="muted" fontSize="lg">
+            Workspace health across {storyTermPlural}, workload,{" "}
+            {sprintTermPlural}, {objectiveTermPlural}, and requests.
+          </Text>
+        </Box>
+        <Button
+          color="tertiary"
+          disabled={isFetching}
+          onClick={() => void refetch()}
+          variant="outline"
+        >
+          Refresh
+        </Button>
+      </Flex>
+
+      <Box className="mt-3 mb-4 grid grid-cols-2 gap-3 @3xl:grid-cols-3 @4xl:grid-cols-4 @7xl:grid-cols-5 @7xl:gap-4">
+        <MetricCard
+          count={report.summary.openStories}
+          href={withWorkspace("/my-work?tab=all")}
+          icon={<LinkArrow />}
+          title={`Open ${storyTermPlural}`}
+        />
+        <MetricCard
+          count={report.summary.overdueStories}
+          href={withWorkspace("/my-work?tab=all&overdue=true")}
+          icon={<LinkArrow />}
+          title={`Overdue ${storyTermPlural}`}
+        />
+        <MetricCard
+          count={report.summary.blockedStories}
+          href={withWorkspace("/my-work?tab=all&category=paused")}
+          icon={<LinkArrow />}
+          title={`Blocked ${storyTermPlural}`}
+        />
+        <MetricCard
+          count={report.summary.atRiskSprints}
+          href={withWorkspace("/sprints")}
+          icon={<LinkArrow />}
+          title={`At-risk ${sprintTermPlural}`}
+        />
+        <MetricCard
+          count={report.summary.atRiskObjectives}
+          href={withWorkspace("/roadmaps")}
+          icon={<LinkArrow />}
+          title={`At-risk ${objectiveTermPlural}`}
+        />
+      </Box>
+
+      <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-5">
+        <Wrapper className="@5xl:col-span-3">
+          <Box className="mb-6">
+            <Flex align="center" className="mb-1 gap-2">
+              <Text fontSize="lg">Needs attention</Text>
+              <Badge
+                className="bg-transparent"
+                color="tertiary"
+                rounded="full"
+                size="sm"
+              >
+                {formatNumber(report.risks.length)}
+              </Badge>
+            </Flex>
+            <Text color="muted">
+              Click any item to open the screen where that risk can be handled.
             </Text>
           </Box>
-          <Button
-            color="tertiary"
-            disabled={isFetching}
-            onClick={() => void refetch()}
-            variant="outline"
-          >
-            Refresh
-          </Button>
-        </Flex>
-
-        <Box className="mt-3 mb-4 grid grid-cols-2 gap-3 @3xl:grid-cols-3 @4xl:grid-cols-4 @7xl:grid-cols-5 @7xl:gap-4">
-          <MetricCard
-            count={report.summary.openStories}
-            href={withWorkspace("/my-work?tab=all")}
-            icon={<LinkArrow />}
-            title={`Open ${storyTermPlural}`}
-          />
-          <MetricCard
-            count={report.summary.overdueStories}
-            href={withWorkspace("/my-work?tab=all&overdue=true")}
-            icon={<LinkArrow />}
-            title={`Overdue ${storyTermPlural}`}
-          />
-          <MetricCard
-            count={report.summary.blockedStories}
-            href={withWorkspace("/my-work?tab=all&category=paused")}
-            icon={<LinkArrow />}
-            title={`Blocked ${storyTermPlural}`}
-          />
-          <MetricCard
-            count={report.summary.atRiskSprints}
-            href={withWorkspace("/sprints")}
-            icon={<LinkArrow />}
-            title={`At-risk ${sprintTermPlural}`}
-          />
-          <MetricCard
-            count={report.summary.atRiskObjectives}
-            href={withWorkspace("/roadmaps")}
-            icon={<LinkArrow />}
-            title={`At-risk ${objectiveTermPlural}`}
-          />
-        </Box>
-
-        <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-5">
-          <Wrapper className="@5xl:col-span-3">
-            <Box className="mb-6">
-              <Flex align="center" className="mb-1 gap-2">
-                <Text fontSize="lg">Needs attention</Text>
-                <Badge
-                  className="bg-transparent"
-                  color="tertiary"
-                  rounded="full"
-                  size="sm"
-                >
-                  {formatNumber(report.risks.length)}
-                </Badge>
-              </Flex>
-              <Text color="muted">
-                Click any item to open the screen where that risk can be
-                handled.
-              </Text>
-            </Box>
-            <Box className="grid grid-cols-1 gap-3 @3xl:grid-cols-2">
-              {report.risks.length > 0 ? (
-                report.risks.map((risk) => (
-                  <RiskCard
-                    href={getRiskHref({ report, risk, withWorkspace })}
-                    key={risk.kind}
-                    objectiveTermPlural={objectiveTermPlural}
-                    risk={risk}
-                    sprintTermPlural={sprintTermPlural}
-                    storyTermPlural={storyTermPlural}
-                  />
-                ))
-              ) : (
-                <Box className="border-border bg-surface-muted rounded-2xl border-[0.5px] px-4 py-6 text-center @3xl:col-span-2">
-                  <Text fontWeight="medium">No active risks</Text>
-                  <Text className="mt-1" color="muted">
-                    Nothing needs immediate attention right now.
-                  </Text>
-                </Box>
-              )}
-            </Box>
-          </Wrapper>
-
-          <Wrapper className="@5xl:col-span-2">
-            <Box className="mb-6">
-              <Text className="mb-1" fontSize="lg">
-                Workload pressure
-              </Text>
-              <Text color="muted">Members above workload thresholds.</Text>
-            </Box>
-            {overloadedMembers.length > 0 ? (
-              overloadedMembers.map((member) => (
-                <WorkloadRow
-                  href={withWorkspace(`/profile/${member.userId}`)}
-                  key={member.userId}
-                  member={member}
+          <Box className="grid grid-cols-1 gap-3 @3xl:grid-cols-2">
+            {report.risks.length > 0 ? (
+              report.risks.map((risk) => (
+                <RiskCard
+                  href={getRiskHref({ report, risk, withWorkspace })}
+                  key={risk.kind}
+                  objectiveTermPlural={objectiveTermPlural}
+                  risk={risk}
+                  sprintTermPlural={sprintTermPlural}
+                  storyTermPlural={storyTermPlural}
                 />
               ))
             ) : (
-              <Text color="muted">No overloaded members right now.</Text>
+              <Box className="border-border bg-surface-muted rounded-2xl border-[0.5px] px-4 py-6 text-center @3xl:col-span-2">
+                <Text fontWeight="medium">No active risks</Text>
+                <Text className="mt-1" color="muted">
+                  Nothing needs immediate attention right now.
+                </Text>
+              </Box>
             )}
-          </Wrapper>
-        </Box>
+          </Box>
+        </Wrapper>
 
-        <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
-          <Wrapper>
-            <Box className="mb-6">
-              <Text className="mb-1" fontSize="lg">
-                {titleCase(storyTerm)} health
-              </Text>
-              <Text color="muted">
-                Current work that may need intervention.
-              </Text>
-            </Box>
-            <ResponsiveContainer height={260} width="100%">
-              <BarChart
-                data={storyHealthData}
-                margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
-              >
-                <CartesianGrid
-                  stroke={gridStroke}
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-                <XAxis
-                  axisLine={{ stroke: gridStroke }}
-                  dataKey="label"
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  cursor={{ fill: "transparent" }}
-                />
-                <Bar barSize={35} dataKey="value" radius={[6, 6, 0, 0]}>
-                  {storyHealthData.map((entry) => (
-                    <Cell fill={entry.fill} key={entry.label} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Wrapper>
+        <Wrapper className="@5xl:col-span-2">
+          <Box className="mb-6">
+            <Text className="mb-1" fontSize="lg">
+              Workload pressure
+            </Text>
+            <Text color="muted">Members above workload thresholds.</Text>
+          </Box>
+          {overloadedMembers.length > 0 ? (
+            overloadedMembers.map((member) => (
+              <WorkloadRow
+                href={withWorkspace(`/profile/${member.userId}`)}
+                key={member.userId}
+                member={member}
+              />
+            ))
+          ) : (
+            <Text color="muted">No overloaded members right now.</Text>
+          )}
+        </Wrapper>
+      </Box>
 
-          <Wrapper>
-            <Box className="mb-6">
-              <Text className="mb-1" fontSize="lg">
-                Team load
-              </Text>
-              <Text color="muted">Open and overdue work by assignee.</Text>
-            </Box>
-            <ResponsiveContainer height={260} width="100%">
-              <BarChart
-                data={workloadData}
-                margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
-              >
-                <CartesianGrid
-                  stroke={gridStroke}
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-                <XAxis
-                  axisLine={{ stroke: gridStroke }}
-                  dataKey="name"
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  cursor={{ fill: "transparent" }}
-                />
-                <Bar
-                  barSize={28}
-                  dataKey="open"
-                  fill="#6366F1"
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar
-                  barSize={28}
-                  dataKey="overdue"
-                  fill="#EA6060"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </Wrapper>
-        </Box>
-      </Container>
+      <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
+        <Wrapper>
+          <Box className="mb-6">
+            <Text className="mb-1" fontSize="lg">
+              {titleCase(storyTerm)} health
+            </Text>
+            <Text color="muted">Current work that may need intervention.</Text>
+          </Box>
+          <ResponsiveContainer height={260} width="100%">
+            <BarChart
+              data={storyHealthData}
+              margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
+            >
+              <CartesianGrid
+                stroke={gridStroke}
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={{ stroke: gridStroke }}
+                dataKey="label"
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "transparent" }}
+              />
+              <Bar barSize={35} dataKey="value" radius={[6, 6, 0, 0]}>
+                {storyHealthData.map((entry) => (
+                  <Cell fill={entry.fill} key={entry.label} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Wrapper>
+
+        <Wrapper>
+          <Box className="mb-6">
+            <Text className="mb-1" fontSize="lg">
+              Team load
+            </Text>
+            <Text color="muted">Open and overdue work by assignee.</Text>
+          </Box>
+          <ResponsiveContainer height={260} width="100%">
+            <BarChart
+              data={workloadData}
+              margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
+            >
+              <CartesianGrid
+                stroke={gridStroke}
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={{ stroke: gridStroke }}
+                dataKey="name"
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "transparent" }}
+              />
+              <Bar
+                barSize={28}
+                dataKey="open"
+                fill="#6366F1"
+                radius={[6, 6, 0, 0]}
+              />
+              <Bar
+                barSize={28}
+                dataKey="overdue"
+                fill="#EA6060"
+                radius={[6, 6, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </Wrapper>
+      </Box>
     </Box>
   );
 };
