@@ -49,6 +49,7 @@ export const Navigation = () => {
     };
   };
 
+  const sprintItem = getSprintsItem();
   const links: MenuItem[] = [
     {
       name: "My work",
@@ -72,7 +73,7 @@ export const Navigation = () => {
       icon: <AiIcon />,
       href: withWorkspace("/maya"),
     },
-    ...(getSprintsItem() ? [getSprintsItem()!] : []),
+    ...(sprintItem ? [sprintItem] : []),
 
     {
       name: "Analytics",
@@ -82,34 +83,28 @@ export const Navigation = () => {
     },
   ];
 
+  const visibleLinks: ReactNode[] = [];
+  for (const { name, icon, href, disabled } of links) {
+    if (disabled) continue;
+    const isActive = pathname === href;
+    visibleLinks.push(
+      <NavLink
+        active={isActive}
+        data-nav-ai-assistant={href === withWorkspace("/maya") ? "" : undefined}
+        data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
+        data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
+        href={href}
+        key={name}
+      >
+        <span className="shrink-0">{icon}</span>
+        <span className="line-clamp-1 first-letter:capitalize">{name}</span>
+      </NavLink>,
+    );
+  }
+
   return (
     <Flex className="gap-1.5" direction="column">
-      {links
-        .filter(({ disabled }) => !disabled)
-        .map(({ name, icon, href }) => {
-          const isActive = pathname === href;
-          return (
-            <NavLink
-              active={isActive}
-              data-nav-my-work={
-                href === withWorkspace("/my-work") ? "" : undefined
-              }
-              data-nav-summary={
-                href === withWorkspace("/summary") ? "" : undefined
-              }
-              data-nav-ai-assistant={
-                href === withWorkspace("/maya") ? "" : undefined
-              }
-              href={href}
-              key={name}
-            >
-              <span className="shrink-0">{icon}</span>
-              <span className="line-clamp-1 first-letter:capitalize">
-                {name}
-              </span>
-            </NavLink>
-          );
-        })}
+      {visibleLinks}
     </Flex>
   );
 };

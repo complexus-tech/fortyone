@@ -13,17 +13,25 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
+import { PulseReportPanel } from "./pulse-report";
 import { useMyWork } from "./provider";
 
-export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
-  const tabs = ["all", "assigned", "created"] as const;
-  const [tab, setTab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
-  );
+const adminTabs = ["pulse", "all", "assigned", "created"] as const;
+const storyTabs = ["all", "assigned", "created"] as const;
+
+type MyWorkTab = (typeof adminTabs)[number];
+type StoriesTab = Exclude<MyWorkTab, "pulse">;
+
+const StoriesPanelContent = ({
+  layout,
+  tab,
+}: {
+  layout: StoriesLayout;
+  tab: StoriesTab;
+}) => {
   const validCategories = [
     "backlog",
     "unstarted",
@@ -39,9 +47,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const [overdue] = useQueryState("overdue", parseAsBoolean);
   const [startDate] = useQueryState("startDate", parseAsIsoDate);
   const [endDate] = useQueryState("endDate", parseAsIsoDate);
-  const { getTermDisplay } = useTerminology();
-  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
-    useMyWork();
+  const { viewOptions, setViewOptions, filters } = useMyWork();
 
   let categories: StateCategory[] | undefined;
   if (overdue) {
@@ -78,24 +84,37 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     ? "h-[calc(100dvh-11.3rem)]"
     : "h-[calc(100dvh-7.7rem)]";
 
-  const renderStoriesContent = () =>
-    isPending ? (
-      <BoardSkeleton className={boardHeightClassName} layout={layout} />
-    ) : (
-      <StoriesBoard
-        className={boardHeightClassName}
-        groupedStories={groupedStories}
-        layout={layout}
-        setViewOptions={setViewOptions}
-        viewOptions={viewOptions}
-      />
-    );
+  return isPending ? (
+    <BoardSkeleton className={boardHeightClassName} layout={layout} />
+  ) : (
+    <StoriesBoard
+      className={boardHeightClassName}
+      groupedStories={groupedStories}
+      layout={layout}
+      setViewOptions={setViewOptions}
+      viewOptions={viewOptions}
+    />
+  );
+};
+
+export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
+  const { userRole } = useUserRole();
+  const isAdmin = userRole === "admin";
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(isAdmin ? adminTabs : storyTabs).withDefault(
+      isAdmin ? "pulse" : "all",
+    ),
+  );
+  const { getTermDisplay } = useTerminology();
+  const { filters, resetFilters, setFilters } = useMyWork();
 
   return (
     <Box className="h-[calc(100dvh-4rem)]">
-      <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
+      <Tabs onValueChange={(v) => setTab(v as MyWorkTab)} value={tab}>
         <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px]">
           <Tabs.List>
+            {isAdmin ? <Tabs.Tab value="pulse">Pulse</Tabs.Tab> : null}
             <Tabs.Tab value="all">
               All {getTermDisplay("storyTerm", { variant: "plural" })}
             </Tabs.Tab>
@@ -103,14 +122,33 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
-        <StoriesFilterBar
-          filters={filters}
-          resetFilters={resetFilters}
-          setFilters={setFilters}
-        />
-        <Tabs.Panel value="all">{renderStoriesContent()}</Tabs.Panel>
-        <Tabs.Panel value="assigned">{renderStoriesContent()}</Tabs.Panel>
-        <Tabs.Panel value="created">{renderStoriesContent()}</Tabs.Panel>
+        {tab !== "pulse" ? (
+          <StoriesFilterBar
+            filters={filters}
+            resetFilters={resetFilters}
+            setFilters={setFilters}
+          />
+        ) : null}
+        {isAdmin ? (
+          <Tabs.Panel value="pulse">
+            {tab === "pulse" ? <PulseReportPanel /> : null}
+          </Tabs.Panel>
+        ) : null}
+        <Tabs.Panel value="all">
+          {tab === "all" ? (
+            <StoriesPanelContent layout={layout} tab="all" />
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel value="assigned">
+          {tab === "assigned" ? (
+            <StoriesPanelContent layout={layout} tab="assigned" />
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel value="created">
+          {tab === "created" ? (
+            <StoriesPanelContent layout={layout} tab="created" />
+          ) : null}
+        </Tabs.Panel>
       </Tabs>
     </Box>
   );

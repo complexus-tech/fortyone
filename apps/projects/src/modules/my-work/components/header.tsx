@@ -1,6 +1,6 @@
 "use client";
 import { Box, BreadCrumbs, Flex } from "ui";
-import { StoryIcon, UserIcon } from "icons";
+import { HealthIcon, StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
@@ -11,7 +11,7 @@ import {
   NewStoryButton,
   StoriesFilterButton,
 } from "@/components/ui";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useUserRole } from "@/hooks";
 import { useMyWork } from "./provider";
 
 export const Header = ({
@@ -24,11 +24,24 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
     useMyWork();
-  const tabs = ["all", "assigned", "created"] as const;
+  const { userRole } = useUserRole();
+  const isAdmin = userRole === "admin";
+  const adminTabs = ["pulse", "all", "assigned", "created"] as const;
+  const storyTabs = ["all", "assigned", "created"] as const;
   const [tab] = useQueryState(
     "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
+    parseAsStringLiteral(isAdmin ? adminTabs : storyTabs).withDefault(
+      isAdmin ? "pulse" : "all",
+    ),
   );
+  const isPulseTab = tab === "pulse";
+  const tabLabel = (() => {
+    if (tab === "pulse") return "Pulse";
+    if (tab === "all") {
+      return `All ${getTermDisplay("storyTerm", { variant: "plural" })}`;
+    }
+    return tab;
+  })();
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -60,11 +73,12 @@ export const Header = ({
                 icon: <UserIcon />,
               },
               {
-                name:
-                  tab === "all"
-                    ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
-                    : tab,
-                icon: <StoryIcon strokeWidth={2} />,
+                name: tabLabel,
+                icon: isPulseTab ? (
+                  <HealthIcon strokeWidth={2} />
+                ) : (
+                  <StoryIcon strokeWidth={2} />
+                ),
                 className: "capitalize",
               },
             ]}
@@ -72,19 +86,23 @@ export const Header = ({
         </Box>
       </Flex>
       <Flex align="center" gap={2}>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
-        <StoriesFilterButton
-          filters={filters}
-          resetFilters={resetFilters}
-          setFilters={setFilters}
-        />
-        <StoriesViewOptionsButton
-          groupByOptions={["status", "priority", "assignee"]}
-          layout={layout}
-          setViewOptions={setViewOptions}
-          viewOptions={viewOptions}
-        />
-        <span className="text-text-secondary hidden md:inline">|</span>
+        {!isPulseTab ? (
+          <>
+            <LayoutSwitcher layout={layout} setLayout={setLayout} />
+            <StoriesFilterButton
+              filters={filters}
+              resetFilters={resetFilters}
+              setFilters={setFilters}
+            />
+            <StoriesViewOptionsButton
+              groupByOptions={["status", "priority", "assignee"]}
+              layout={layout}
+              setViewOptions={setViewOptions}
+              viewOptions={viewOptions}
+            />
+            <span className="text-text-secondary hidden md:inline">|</span>
+          </>
+        ) : null}
         <Box className="hidden md:block">
           <NewStoryButton data-header-new-story-button />
         </Box>
