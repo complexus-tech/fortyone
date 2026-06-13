@@ -72,6 +72,7 @@ const Items = ({
     data,
     fetchNextPage,
     hasNextPage,
+    isFetching: isTeamSprintsFetching,
     isFetchingNextPage,
     isPending: isTeamSprintsPending,
   } = useTeamSprintsInfinite(
@@ -81,6 +82,8 @@ const Items = ({
     open,
   );
   const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
+  const isLoadingSprints =
+    (isTeamSprintsPending || isTeamSprintsFetching) && !isFetchingNextPage;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -111,14 +114,16 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No {getTermDisplay("sprintTerm")} found.</Text>
-        </Command.Empty>
+        {!isLoadingSprints ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">No {getTermDisplay("sprintTerm")} found.</Text>
+          </Command.Empty>
+        ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
-          {!isTeamSprintsPending ? (
+          {!isLoadingSprints ? (
             <Command.Item
               active={!sprintId}
               className="justify-between gap-4 opacity-70"
@@ -142,7 +147,7 @@ const Items = ({
             </Command.Item>
           ) : null}
           {sprints.length > 0 && <Divider className="my-2" />}
-          {isTeamSprintsPending ? (
+          {isLoadingSprints ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={5} />
             </Command.Loading>

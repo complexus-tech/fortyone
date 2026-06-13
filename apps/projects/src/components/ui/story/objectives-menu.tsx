@@ -67,14 +67,21 @@ const Items = ({
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const { open, setOpen } = useObjectivesMenu();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useTeamObjectivesInfinite(
-      teamId ?? "",
-      deferredQuery,
-      OBJECTIVE_MENU_PAGE_SIZE,
-      open,
-    );
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isPending,
+  } = useTeamObjectivesInfinite(
+    teamId ?? "",
+    deferredQuery,
+    OBJECTIVE_MENU_PAGE_SIZE,
+    open,
+  );
   const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
+  const isLoadingObjectives = (isPending || isFetching) && !isFetchingNextPage;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -105,14 +112,18 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No {getTermDisplay("objectiveTerm")} found.</Text>
-        </Command.Empty>
+        {!isLoadingObjectives ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">
+              No {getTermDisplay("objectiveTerm")} found.
+            </Text>
+          </Command.Empty>
+        ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
-          {!isPending && (
+          {!isLoadingObjectives && (
             <Command.Item
               active={!objectiveId}
               className="justify-between gap-4 opacity-70"
@@ -136,7 +147,7 @@ const Items = ({
             </Command.Item>
           )}
           {objectives.length > 0 && <Divider className="my-2" />}
-          {isPending ? (
+          {isLoadingObjectives ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={5} />
             </Command.Loading>

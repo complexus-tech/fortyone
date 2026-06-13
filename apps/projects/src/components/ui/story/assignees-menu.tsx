@@ -86,7 +86,8 @@ const Items = ({
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
-  const isPending = membersQuery.isPending;
+  const isLoadingMembers =
+    membersQuery.isFetching && !membersQuery.isFetchingNextPage;
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
   const visibleMembers = members.filter(
@@ -118,20 +119,22 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No user found.</Text>
-        </Command.Empty>
+        {!isLoadingMembers ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">No user found.</Text>
+          </Command.Empty>
+        ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto md:max-h-100"
           onScroll={handleScroll}
         >
-          {isPending ? (
+          {isLoadingMembers ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton avatar rows={5} />
             </Command.Loading>
           ) : null}
 
-          {!isPending && (
+          {!isLoadingMembers && (
             <>
               {!disallowEmptySelection ? (
                 <Command.Item

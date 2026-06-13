@@ -81,7 +81,12 @@ const Items = ({
   const canLeaveTeam =
     teams.length > 1 || Boolean(joinedTeamsQuery.hasNextPage);
   const isInitialLoading =
-    joinedTeamsQuery.isPending || publicTeamsQuery.isPending;
+    (joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage) ||
+    (publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage);
+  const isLoadingJoinedTeams =
+    joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage;
+  const isLoadingPublicTeams =
+    publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -118,7 +123,7 @@ const Items = ({
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
-          {joinedTeamsQuery.isPending ? (
+          {isLoadingJoinedTeams ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={4} />
             </Command.Loading>
@@ -161,7 +166,7 @@ const Items = ({
             <Divider className="my-1.5" />
           )}
 
-          {publicTeamsQuery.isPending ? (
+          {isLoadingPublicTeams ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={4} />
             </Command.Loading>

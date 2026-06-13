@@ -66,13 +66,14 @@ const Items = ({
   const deferredQuery = useDeferredValue(query);
   const [isLoading, setIsLoading] = useState(false);
   const { open } = useLabelsMenu();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useLabelsInfinite(
       { search: deferredQuery, teamId },
       LABEL_MENU_PAGE_SIZE,
       open,
     );
   const labels = data?.pages.flatMap((page) => page.labels) ?? [];
+  const isLoadingLabels = isFetching && !isFetchingNextPage;
 
   const handleCreateLabel = async () => {
     const usedColors = labels.map((label) => label.color);
@@ -118,7 +119,7 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        {!isPending ? (
+        {!isLoadingLabels ? (
           <Command.Empty className="justify-center px-1 py-0">
             <Button
               className="mx-0 border-0 text-base font-medium"
@@ -139,7 +140,7 @@ const Items = ({
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
-          {isPending ? (
+          {isLoadingLabels ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={5} />
             </Command.Loading>
