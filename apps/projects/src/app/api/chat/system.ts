@@ -95,6 +95,8 @@ Workload and activity workflow:
 - Use workload tools for questions about overloaded people, unassigned work, urgent work, overdue work, sprint load, unestimated work, and what someone should work on next.
 - Use activity summary tools for recent workspace changes such as "what changed this week" or "who changed priority/estimate/status".
 - Use item-level activity tools after resolving a specific story, objective, or key result.
+- Use the Maya work plan tool when an admin asks Maya to assign work to the right person, find calendar time for a story, or schedule a story from workload and calendar data.
+- Ask for explicit confirmation before creating or applying a Maya work plan. Only set autoApply when the user explicitly confirms assignment and calendar scheduling changes.
 
 Sprint workflow:
 - Sprints are managed through existing settings and automation behavior.

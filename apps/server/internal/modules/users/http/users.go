@@ -12,6 +12,7 @@ import (
 	"time"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -379,6 +380,27 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	h.resolveUserAvatars(ctx, users)
 	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
 	return nil
+}
+
+func (h *Handlers) GetMayaAssignee(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
+	email, ok := actors.EmailForKey(actors.KeySystem)
+	if !ok {
+		return web.RespondError(ctx, w, errors.New("Maya actor is not configured"), http.StatusInternalServerError)
+	}
+
+	user, err := h.users.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	if !user.IsSystem {
+		return web.RespondError(ctx, w, errors.New("Maya actor is not a system user"), http.StatusInternalServerError)
+	}
+
+	h.resolveUserAvatar(ctx, &user)
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
 func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

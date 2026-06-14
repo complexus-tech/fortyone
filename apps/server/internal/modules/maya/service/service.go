@@ -1,0 +1,324 @@
+package maya
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"time"
+
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
+)
+
+var (
+	ErrNotConfigured = errors.New("maya agent is not configured")
+	ErrPlanNotFound  = errors.New("maya plan not found")
+)
+
+const defaultCandidateLimit = 15
+
+type StoriesService interface {
+	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
+	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
+}
+
+type ReportsService interface {
+	GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreWorkloadAnalysis, error)
+}
+
+type CalendarService interface {
+	ListSchedule(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error)
+	CreateScheduleBlock(ctx context.Context, input calendar.CoreScheduleBlockInput) (calendar.CoreScheduleBlock, error)
+}
+
+type UsersService interface {
+	List(ctx context.Context, workspaceID uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error)
+}
+
+type Dependencies struct {
+	Repository  Repository
+	Stories     StoriesService
+	Reports     ReportsService
+	Calendar    CalendarService
+	Users       UsersService
+	Planner     Planner
+	MayaActorID uuid.UUID
+}
+
+type Service struct {
+	repo        Repository
+	stories     StoriesService
+	reports     ReportsService
+	calendar    CalendarService
+	users       UsersService
+	planner     Planner
+	mayaActorID uuid.UUID
+}
+
+type CreateWorkPlanInput struct {
+	WorkspaceID      uuid.UUID   `json:"workspaceId"`
+	StoryID          uuid.UUID   `json:"storyId"`
+	TriggeredBy      uuid.UUID   `json:"triggeredBy"`
+	Trigger          RunTrigger  `json:"trigger"`
+	WindowStart      time.Time   `json:"windowStart"`
+	WindowEnd        time.Time   `json:"windowEnd"`
+	DurationMinutes  int         `json:"durationMinutes"`
+	CandidateUserIDs []uuid.UUID `json:"candidateUserIds"`
+	AutoApply        bool        `json:"autoApply"`
+}
+
+type WorkPlan struct {
+	Run     CoreRun      `json:"run"`
+	Actions []CoreAction `json:"actions"`
+}
+
+func New(deps Dependencies) *Service {
+	planner := deps.Planner
+	return &Service{
+		repo:        deps.Repository,
+		stories:     deps.Stories,
+		reports:     deps.Reports,
+		calendar:    deps.Calendar,
+		users:       deps.Users,
+		planner:     planner,
+		mayaActorID: deps.MayaActorID,
+	}
+}
+
+func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput) (WorkPlan, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.maya.CreateWorkPlan")
+	defer span.End()
+
+	if err := s.validate(); err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, err
+	}
+	if input.Trigger == "" {
+		input.Trigger = RunTriggerManual
+	}
+
+	story, err := s.stories.Get(ctx, input.StoryID, input.WorkspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, fmt.Errorf("get story for maya plan: %w", err)
+	}
+	candidates, contextPayload, err := s.buildCandidates(ctx, input, story)
+	if err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, err
+	}
+
+	run, err := s.repo.CreateRun(ctx, CreateRunInput{
+		WorkspaceID: input.WorkspaceID,
+		StoryID:     input.StoryID,
+		TriggeredBy: input.TriggeredBy,
+		Trigger:     input.Trigger,
+		Context:     contextPayload,
+	})
+	if err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, fmt.Errorf("create maya run: %w", err)
+	}
+
+	result, err := s.planner.Plan(PlanInput{
+		WorkspaceID:     input.WorkspaceID,
+		Story:           story,
+		DurationMinutes: input.DurationMinutes,
+		WindowStart:     input.WindowStart,
+		WindowEnd:       input.WindowEnd,
+		Candidates:      candidates,
+	})
+	if err != nil {
+		message := err.Error()
+		completed, completeErr := s.repo.CompleteRun(ctx, run.ID, RunStatusFailed, "", &message)
+		if completeErr != nil {
+			return WorkPlan{}, fmt.Errorf("complete failed maya run: %w", completeErr)
+		}
+		return WorkPlan{Run: completed}, err
+	}
+
+	for i := range result.Actions {
+		result.Actions[i].RunID = run.ID
+		result.Actions[i].WorkspaceID = input.WorkspaceID
+		result.Actions[i].StoryID = input.StoryID
+	}
+	actions, err := s.repo.CreateActions(ctx, result.Actions)
+	if err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, fmt.Errorf("create maya actions: %w", err)
+	}
+	if input.AutoApply {
+		actions = s.applyActions(ctx, actions)
+	}
+
+	completed, err := s.repo.CompleteRun(ctx, run.ID, RunStatusSucceeded, result.Summary, nil)
+	if err != nil {
+		span.RecordError(err)
+		return WorkPlan{}, fmt.Errorf("complete maya run: %w", err)
+	}
+	return WorkPlan{Run: completed, Actions: actions}, nil
+}
+
+func (s *Service) validate() error {
+	if s == nil || s.repo == nil || s.stories == nil || s.reports == nil || s.calendar == nil || s.users == nil || s.mayaActorID == uuid.Nil {
+		return ErrNotConfigured
+	}
+	return nil
+}
+
+func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput, story stories.CoreSingleStory) ([]CandidateSchedule, json.RawMessage, error) {
+	usersFilter := users.CoreListUsersFilter{TeamID: &story.Team}
+	if len(input.CandidateUserIDs) == 0 {
+		usersFilter.Limit = defaultCandidateLimit
+	}
+	members, err := s.users.List(ctx, input.WorkspaceID, usersFilter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list team members for maya plan: %w", err)
+	}
+	workload, err := s.reports.GetWorkloadAnalysis(ctx, input.WorkspaceID, reports.ReportFilters{TeamIDs: []uuid.UUID{story.Team}})
+	if err != nil {
+		return nil, nil, fmt.Errorf("get workload for maya plan: %w", err)
+	}
+	workloadByUserID := make(map[uuid.UUID]reports.CoreMemberWorkload, len(workload.Members))
+	for _, member := range workload.Members {
+		workloadByUserID[member.UserID] = member
+	}
+
+	candidateIDs := make(map[uuid.UUID]struct{})
+	orderedCandidateIDs := make([]uuid.UUID, 0, len(members))
+	for _, member := range members {
+		if shouldIncludeCandidate(member.ID, input.CandidateUserIDs) {
+			if _, exists := candidateIDs[member.ID]; !exists {
+				candidateIDs[member.ID] = struct{}{}
+				orderedCandidateIDs = append(orderedCandidateIDs, member.ID)
+			}
+		}
+	}
+	if len(orderedCandidateIDs) == 0 {
+		for _, member := range workload.Members {
+			if !shouldIncludeCandidate(member.UserID, input.CandidateUserIDs) {
+				continue
+			}
+			if _, exists := candidateIDs[member.UserID]; exists {
+				continue
+			}
+			candidateIDs[member.UserID] = struct{}{}
+			orderedCandidateIDs = append(orderedCandidateIDs, member.UserID)
+			if len(input.CandidateUserIDs) == 0 && len(orderedCandidateIDs) >= defaultCandidateLimit {
+				break
+			}
+		}
+	}
+
+	candidates := make([]CandidateSchedule, 0, len(orderedCandidateIDs))
+	for _, userID := range orderedCandidateIDs {
+		member := workloadByUserID[userID]
+		if member.UserID == uuid.Nil {
+			member = reports.CoreMemberWorkload{UserID: userID}
+			for _, user := range members {
+				if user.ID == userID {
+					member.FullName = user.FullName
+					member.Username = user.Username
+					member.AvatarURL = user.AvatarURL
+					break
+				}
+			}
+		}
+		schedule, err := s.calendar.ListSchedule(ctx, input.WorkspaceID, userID, input.WindowStart, input.WindowEnd)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list calendar schedule for candidate %s: %w", userID, err)
+		}
+		candidates = append(candidates, CandidateSchedule{
+			Member:      member,
+			BusyWindows: schedule.BusyWindows,
+			Blocks:      schedule.Blocks,
+		})
+	}
+
+	contextPayload, err := json.Marshal(map[string]any{
+		"storyId":          story.ID,
+		"teamId":           story.Team,
+		"windowStart":      input.WindowStart,
+		"windowEnd":        input.WindowEnd,
+		"durationMinutes":  input.DurationMinutes,
+		"candidateCount":   len(candidates),
+		"candidateUserIds": input.CandidateUserIDs,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshal maya plan context: %w", err)
+	}
+	return candidates, contextPayload, nil
+}
+
+func shouldIncludeCandidate(userID uuid.UUID, candidateUserIDs []uuid.UUID) bool {
+	if userID == uuid.Nil {
+		return false
+	}
+	if len(candidateUserIDs) == 0 {
+		return true
+	}
+	return slices.Contains(candidateUserIDs, userID)
+}
+
+func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []CoreAction {
+	applied := make([]CoreAction, len(actions))
+	copy(applied, actions)
+	for i, action := range applied {
+		if err := s.applyAction(ctx, action); err != nil {
+			message := err.Error()
+			applied[i].Status = ActionStatusFailed
+			applied[i].Error = &message
+			_ = s.repo.MarkActionFailed(ctx, action.ID, message)
+			continue
+		}
+		now := time.Now().UTC()
+		applied[i].Status = ActionStatusApplied
+		applied[i].AppliedAt = &now
+		_ = s.repo.MarkActionApplied(ctx, action.ID)
+	}
+	return applied
+}
+
+func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
+	switch action.Type {
+	case ActionTypeAssignStory:
+		if action.Payload.AssignStory == nil {
+			return fmt.Errorf("missing assign story payload")
+		}
+		return s.stories.UpdateExternal(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
+			"assignee_id": action.Payload.AssignStory.AssigneeID,
+		})
+	case ActionTypeScheduleWorkBlock:
+		if action.Payload.ScheduleBlock == nil {
+			return fmt.Errorf("missing schedule block payload")
+		}
+		scheduleBlock := action.Payload.ScheduleBlock
+		if _, err := s.calendar.CreateScheduleBlock(ctx, calendar.CoreScheduleBlockInput{
+			WorkspaceID: action.WorkspaceID,
+			UserID:      scheduleBlock.UserID,
+			StoryID:     &action.StoryID,
+			BlockType:   calendar.ScheduleBlockTypeWork,
+			Title:       scheduleBlock.Title,
+			StartAt:     scheduleBlock.StartAt,
+			EndAt:       scheduleBlock.EndAt,
+			IsLocked:    true,
+			Source:      calendar.ScheduleBlockSourceMaya,
+		}); err != nil {
+			return err
+		}
+		return s.stories.UpdateExternal(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
+			"start_date": scheduleBlock.StartAt,
+			"end_date":   scheduleBlock.EndAt,
+		})
+	case ActionTypeFlagScheduleRisk:
+		return nil
+	default:
+		return fmt.Errorf("unsupported maya action type: %s", action.Type)
+	}
+}

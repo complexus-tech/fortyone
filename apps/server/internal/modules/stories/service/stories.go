@@ -75,11 +75,12 @@ type CoreSingleStoryWithSubs struct {
 
 // Service provides story-related operations.
 type Service struct {
-	repo         Repository
-	mentionsRepo MentionsRepository
-	log          *logger.Logger
-	publisher    *publisher.Publisher
-	tasksService *tasks.Service
+	repo           Repository
+	mentionsRepo   MentionsRepository
+	log            *logger.Logger
+	publisher      *publisher.Publisher
+	tasksService   *tasks.Service
+	mayaAssignment *mayaAssignmentAutomation
 }
 
 type createOptions struct {
@@ -214,6 +215,7 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 	}
+	s.triggerMayaAssignment(ctx, cs, nil, actorID)
 
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -454,6 +456,14 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	}
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
+	}
+	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
+		updatedStory, err := storyWithAssignee(story, assigneeID)
+		if err != nil {
+			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			return nil
+		}
+		s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID)
 	}
 
 	return nil

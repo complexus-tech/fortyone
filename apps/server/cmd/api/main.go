@@ -46,11 +46,12 @@ var (
 
 type Config struct {
 	Auth struct {
-		SecretKey          string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		CookieDomain       string `env:"APP_AUTH_COOKIE_DOMAIN"`
-		GoogleClientIDs    string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
-		GoogleClientSecret string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
-		GoogleRedirectURL  string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
+		SecretKey                 string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		CookieDomain              string `env:"APP_AUTH_COOKIE_DOMAIN"`
+		GoogleClientIDs           string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleRedirectURL         string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
+		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
@@ -357,9 +358,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Initialize Google service
 	googleService, err := google.NewService(google.Config{
-		ClientIDs:    googleClientIDs,
-		ClientSecret: cfg.Auth.GoogleClientSecret,
-		RedirectURL:  cfg.Auth.GoogleRedirectURL,
+		ClientIDs:           googleClientIDs,
+		ClientSecret:        cfg.Auth.GoogleClientSecret,
+		RedirectURL:         cfg.Auth.GoogleRedirectURL,
+		CalendarRedirectURL: cfg.Auth.GoogleCalendarRedirectURL,
 	})
 	if err != nil {
 		return fmt.Errorf("error initializing google service: %w", err)

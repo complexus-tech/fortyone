@@ -36,6 +36,8 @@ export const memberKeys = {
     [...memberKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, id: string) =>
     [...memberKeys.details(workspaceSlug), id] as const,
+  maya: (workspaceSlug: string) =>
+    [...memberKeys.details(workspaceSlug), "maya"] as const,
   team: (workspaceSlug: string, teamId: string) =>
     [...memberKeys.lists(workspaceSlug), teamId] as const,
 };
@@ -158,6 +160,14 @@ export const githubKeys = {
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,
+};
+
+export const calendarKeys = {
+  all: (workspaceSlug: string) => ["calendar", workspaceSlug] as const,
+  integration: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "integration"] as const,
+  schedule: (workspaceSlug: string, startAt: string, endAt: string) =>
+    [...calendarKeys.all(workspaceSlug), "schedule", startAt, endAt] as const,
 };
 
 export const integrationRequestKeys = {

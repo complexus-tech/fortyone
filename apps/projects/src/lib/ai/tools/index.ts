@@ -80,6 +80,7 @@ import {
   timelineTrendsReportTool,
 } from "./analytics";
 import { workloadPlanningTool } from "./workload";
+import { mayaWorkPlanTool } from "./maya";
 import { activitySummaryTool } from "./activity-summary";
 import {
   createGitHubInstallSessionTool,
@@ -135,6 +136,7 @@ export {
   timelineTrendsReportTool,
 } from "./analytics";
 export { workloadPlanningTool } from "./workload";
+export { mayaWorkPlanTool } from "./maya";
 export { activitySummaryTool } from "./activity-summary";
 export {
   createGitHubInstallSessionTool,
@@ -178,6 +180,7 @@ export const tools = {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
   workloadPlanningTool,
+  mayaWorkPlanTool,
   activitySummaryTool,
   // GitHub
   getGitHubIntegrationTool,

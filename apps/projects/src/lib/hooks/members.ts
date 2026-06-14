@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import {
+  getMayaAssignee,
   getMembers,
   getMembersPage,
 } from "@/lib/queries/members/get-members";
@@ -50,6 +51,18 @@ export const useMembersInfinite = (
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     initialPageParam: 1,
+    enabled: Boolean(session && enabled),
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
+  });
+};
+
+export const useMayaAssignee = (enabled = true) => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+
+  return useQuery({
+    queryKey: memberKeys.maya(workspaceSlug),
+    queryFn: () => getMayaAssignee({ session: session!, workspaceSlug }),
     enabled: Boolean(session && enabled),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });

@@ -1,5 +1,5 @@
 "use client";
-import { CheckIcon } from "icons";
+import { CheckIcon, RobotIcon } from "icons";
 import {
   createContext,
   use,
@@ -10,7 +10,11 @@ import {
 } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "@/lib/auth/client";
-import { MEMBER_MENU_PAGE_SIZE, useMembersInfinite } from "@/lib/hooks/members";
+import {
+  MEMBER_MENU_PAGE_SIZE,
+  useMayaAssignee,
+  useMembersInfinite,
+} from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
@@ -84,16 +88,30 @@ const Items = ({
     open && Boolean(teamId),
   );
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
+  const mayaQuery = useMayaAssignee(open);
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
   const isLoadingMembers =
     membersQuery.isFetching && !membersQuery.isFetchingNextPage;
+  const mayaAssignee = mayaQuery.data;
+  const normalizedQuery = deferredQuery.trim().toLowerCase();
+  const showMayaAssignee =
+    mayaAssignee !== undefined &&
+    !excludeUsers.includes(mayaAssignee.id) &&
+    (normalizedQuery === "" ||
+      "maya ai assistant".includes(normalizedQuery));
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
   const visibleMembers = members.filter(
-    ({ id }) => !excludeUsers.includes(id) && id !== currentUserId,
+    ({ id }) =>
+      !excludeUsers.includes(id) &&
+      id !== currentUserId &&
+      id !== mayaAssignee?.id,
   );
-  const indexOffset = (disallowEmptySelection ? 0 : 1) + (self ? 1 : 0);
+  const indexOffset =
+    (disallowEmptySelection ? 0 : 1) +
+    (showMayaAssignee ? 1 : 0) +
+    (self ? 1 : 0);
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -160,6 +178,43 @@ const Items = ({
                       <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                     )}
                     <Text color="muted">0</Text>
+                  </Flex>
+                </Command.Item>
+              ) : null}
+              {showMayaAssignee && mayaAssignee ? (
+                <Command.Item
+                  active={mayaAssignee.id === assigneeId}
+                  className="justify-between"
+                  onSelect={() => {
+                    if (mayaAssignee.id !== assigneeId) {
+                      onAssigneeSelected(mayaAssignee.id);
+                    }
+                    setOpen(false);
+                  }}
+                  value="Maya AI assistant"
+                >
+                  <Flex align="center" gap={2}>
+                    <Flex
+                      align="center"
+                      className="size-6 rounded-full bg-surface text-text-muted"
+                      justify="center"
+                    >
+                      <RobotIcon className="size-4" strokeWidth={2} />
+                    </Flex>
+                    <Text className="max-w-48 truncate">
+                      Maya{" "}
+                      <Text as="span" color="muted">
+                        (AI)
+                      </Text>
+                    </Text>
+                  </Flex>
+                  <Flex align="center" gap={1}>
+                    {mayaAssignee.id === assigneeId && (
+                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                    )}
+                    <Text color="muted">
+                      {disallowEmptySelection ? 0 : 1}
+                    </Text>
                   </Flex>
                 </Command.Item>
               ) : null}

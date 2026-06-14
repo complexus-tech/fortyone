@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { SearchIcon } from "icons";
@@ -28,23 +28,23 @@ const FigmaIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M19 28.5C19 23.2533 23.2533 19 28.5 19C33.7467 19 38 23.2533 38 28.5C38 33.7467 33.7467 38 28.5 38C23.2533 38 19 33.7467 19 28.5Z"
+      d="M19 28.5C19 23.3 23.3 19 28.5 19S38 23.3 38 28.5 33.7 38 28.5 38 19 33.7 19 28.5Z"
       fill="#1ABCFE"
     />
     <path
-      d="M0 47.5C0 42.2533 4.25329 38 9.5 38H19V47.5C19 52.7467 14.7467 57 9.5 57C4.25329 57 0 52.7467 0 47.5Z"
+      d="M0 47.5C0 42.3 4.3 38 9.5 38H19v9.5C19 52.7 14.7 57 9.5 57S0 52.7 0 47.5Z"
       fill="#0ACF83"
     />
     <path
-      d="M19 0V19H28.5C33.7467 19 38 14.7467 38 9.5C38 4.25329 33.7467 0 28.5 0H19Z"
+      d="M19 0v19h9.5C33.7 19 38 14.7 38 9.5S33.7 0 28.5 0H19Z"
       fill="#FF7262"
     />
     <path
-      d="M0 9.5C0 14.7467 4.25329 19 9.5 19H19V0H9.5C4.25329 0 0 4.25329 0 9.5Z"
+      d="M0 9.5C0 14.7 4.3 19 9.5 19H19V0H9.5C4.3 0 0 4.3 0 9.5Z"
       fill="#F24E1E"
     />
     <path
-      d="M0 28.5C0 33.7467 4.25329 38 9.5 38H19V19H9.5C4.25329 19 0 23.2533 0 28.5Z"
+      d="M0 28.5C0 33.7 4.3 38 9.5 38H19V19H9.5C4.3 19 0 23.3 0 28.5Z"
       fill="#A259FF"
     />
   </svg>
@@ -123,6 +123,11 @@ type Integration = {
   href?: string;
 };
 
+const getIntegrationStatus = (integration: Integration) => {
+  if (!integration.href) return "Coming soon";
+  return integration.enabled ? "Installed" : "Not connected";
+};
+
 const IntegrationCard = ({
   integration,
   basePath,
@@ -145,20 +150,14 @@ const IntegrationCard = ({
         {integration.icon}
         <Box>
           <Text className="font-medium">{integration.name}</Text>
-          <Text color="muted">
-            {integration.href
-              ? integration.enabled
-                ? "Installed"
-                : "Not connected"
-              : "Coming soon"}
-          </Text>
+          <Text color="muted">{getIntegrationStatus(integration)}</Text>
         </Box>
       </Flex>
-      {showDescription && (
+      {showDescription ? (
         <Text className="mt-3 line-clamp-2" color="muted">
           {integration.description}
         </Text>
-      )}
+      ) : null}
     </Box>
   );
 
@@ -179,67 +178,54 @@ export const IntegrationsIndex = () => {
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
   const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
 
-  const allIntegrations = useMemo<Integration[]>(
-    () => [
-      {
-        id: "github",
-        name: "GitHub",
-        description: "Link PRs, branches, and commits to stories.",
-        icon: <GitHubIcon />,
-        enabled: isGitHubEnabled,
-        href: "github",
-      },
-      {
-        id: "slack",
-        name: "Slack",
-        description: "Turn conversations into stories from Slack.",
-        icon: <SlackIcon />,
-        enabled: isSlackEnabled,
-        href: "slack",
-      },
-      {
-        id: "gitlab",
-        name: "GitLab",
-        description: "Connect merge requests and pipelines to stories.",
-        icon: <GitLabIcon />,
-        enabled: false,
-      },
-      {
-        id: "figma",
-        name: "Figma",
-        description: "Attach designs to stories from Figma.",
-        icon: <FigmaIcon />,
-        enabled: false,
-      },
-      {
-        id: "intercom",
-        name: "Intercom",
-        description: "Route customer conversations into stories.",
-        icon: <IntercomIcon />,
-        enabled: false,
-      },
-    ],
-    [isGitHubEnabled, isSlackEnabled],
-  );
+  const allIntegrations: Integration[] = [
+    {
+      id: "github",
+      name: "GitHub",
+      description: "Link PRs, branches, and commits to stories.",
+      icon: <GitHubIcon />,
+      enabled: isGitHubEnabled,
+      href: "github",
+    },
+    {
+      id: "slack",
+      name: "Slack",
+      description: "Turn conversations into stories from Slack.",
+      icon: <SlackIcon />,
+      enabled: isSlackEnabled,
+      href: "slack",
+    },
+    {
+      id: "gitlab",
+      name: "GitLab",
+      description: "Connect merge requests and pipelines to stories.",
+      icon: <GitLabIcon />,
+      enabled: false,
+    },
+    {
+      id: "figma",
+      name: "Figma",
+      description: "Attach designs to stories from Figma.",
+      icon: <FigmaIcon />,
+      enabled: false,
+    },
+    {
+      id: "intercom",
+      name: "Intercom",
+      description: "Route customer conversations into stories.",
+      icon: <IntercomIcon />,
+      enabled: false,
+    },
+  ];
 
-  const enabledIntegrations = useMemo(
-    () => allIntegrations.filter((i) => i.enabled),
-    [allIntegrations],
-  );
-
-  const filteredIntegrations = useMemo(() => {
-    if (!search.trim()) return allIntegrations;
-    const query = search.toLowerCase();
-    return allIntegrations.filter((i) => i.name.toLowerCase().includes(query));
-  }, [search, allIntegrations]);
-
-  const filteredEnabled = useMemo(() => {
-    if (!search.trim()) return enabledIntegrations;
-    const query = search.toLowerCase();
-    return enabledIntegrations.filter((i) =>
-      i.name.toLowerCase().includes(query),
-    );
-  }, [search, enabledIntegrations]);
+  const enabledIntegrations = allIntegrations.filter((i) => i.enabled);
+  const query = search.trim().toLowerCase();
+  const filteredIntegrations = query
+    ? allIntegrations.filter((i) => i.name.toLowerCase().includes(query))
+    : allIntegrations;
+  const filteredEnabled = query
+    ? enabledIntegrations.filter((i) => i.name.toLowerCase().includes(query))
+    : enabledIntegrations;
 
   return (
     <Box>
@@ -253,7 +239,9 @@ export const IntegrationsIndex = () => {
       <Box className="mt-6">
         <Input
           leftIcon={<SearchIcon className="h-4.5" />}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
           placeholder="Search integrations"
           rounded="xl"
           size="lg"

@@ -83,6 +83,7 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-teamPerformanceReportTool": "Building team report",
   "tool-sprintPerformanceReportTool": "Building sprint report",
   "tool-timelineTrendsReportTool": "Building trends report",
+  "tool-mayaWorkPlanTool": "Planning work",
   "tool-getGitHubIntegrationTool": "Checking GitHub integration",
   "tool-createGitHubInstallSessionTool": "Creating GitHub install link",
   "tool-resyncGitHubRepositoriesTool": "Resyncing GitHub repositories",

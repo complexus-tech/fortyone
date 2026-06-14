@@ -54,6 +54,11 @@ export const getMembersPage = async (
   return members.data ?? emptyMembersPage(page, pageSize);
 };
 
+export const getMayaAssignee = async (ctx: WorkspaceCtx) => {
+  const member = await get<ApiResponse<Member>>("members/maya", ctx);
+  return member.data!;
+};
+
 export const getTeamMembersPage = async (
   teamId: string,
   ctx: WorkspaceCtx,

@@ -13,6 +13,7 @@ import {
   labelKeys,
   notificationKeys,
   teamKeys,
+  calendarKeys,
 } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
@@ -179,6 +180,19 @@ export const useMayaChat = (config: MayaChatConfig) => {
               setTheme(requested);
             }
           }
+          return;
+        }
+
+        if (
+          part.type === "tool-mayaWorkPlanTool" &&
+          part.state === "output-available"
+        ) {
+          queryClient.invalidateQueries({
+            queryKey: calendarKeys.all(workspaceSlug),
+          });
+          queryClient.invalidateQueries({
+            queryKey: storyKeys.all(workspaceSlug),
+          });
           return;
         }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
+	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
@@ -15,6 +16,7 @@ import (
 	keyresultshttp "github.com/complexus-tech/projects-api/internal/modules/keyresults/http"
 	labelshttp "github.com/complexus-tech/projects-api/internal/modules/labels/http"
 	linkshttp "github.com/complexus-tech/projects-api/internal/modules/links/http"
+	mayahttp "github.com/complexus-tech/projects-api/internal/modules/maya/http"
 	notificationshttp "github.com/complexus-tech/projects-api/internal/modules/notifications/http"
 	objectiveshttp "github.com/complexus-tech/projects-api/internal/modules/objectives/http"
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
@@ -93,6 +95,20 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 		Service:   svcs.slack,
 		BotToken:  cfg.BotToken,
+	}, app)
+	calendarhttp.Routes(calendarhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.calendar,
+	}, app)
+	mayahttp.Routes(mayahttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.maya,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{
