@@ -11,12 +11,12 @@ import {
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn, getReadableTextColor } from "lib";
 import { useAnalytics, useLocalStorage, useWorkspacePath } from "@/hooks";
 import { useUserRole } from "@/hooks/role";
 import { useCurrentWorkspace, useWorkspaces } from "@/lib/hooks/workspaces";
 import { changeWorkspace, logOut } from "@/components/shared/sidebar/actions";
 import { clearAllStorage } from "@/components/shared/sidebar/utils";
-import { cn, getReadableTextColor } from "lib";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -35,6 +35,7 @@ export const WorkspacesMenu = () => {
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
   const { withWorkspace } = useWorkspacePath();
+  const workspaceName = workspace?.name ?? "Loading workspace";
 
   const handleLogout = async () => {
     const mainDomain = isFortyOneApp ? "https://fortyone.app" : "/";
@@ -90,21 +91,26 @@ export const WorkspacesMenu = () => {
           suppressHydrationWarning
           variant="naked"
         >
-          <span className="max-w-[18ch] truncate">{workspace?.name}</span>
+          <span className="max-w-[18ch] truncate">{workspaceName}</span>
         </Button>
       </Menu.Button>
       <Menu.Items align="start" className="min-w-80 pt-0">
         <Menu.Group className="space-y-1 pt-1.5">
           <Menu.Item
             className="justify-between gap-6"
-            onSelect={() =>
-              handleChangeWorkspace(workspace!.id, workspace!.slug)
-            }
+            disabled={!workspace}
+            onSelect={() => {
+              if (!workspace) {
+                return;
+              }
+
+              handleChangeWorkspace(workspace.id, workspace.slug);
+            }}
           >
             <span className="flex items-center gap-2">
               <Avatar
                 className="h-[1.6rem] text-xs font-semibold tracking-wide"
-                name={workspace?.name}
+                name={workspaceName}
                 rounded="md"
                 src={workspace?.avatarUrl}
                 style={{
@@ -113,16 +119,20 @@ export const WorkspacesMenu = () => {
                 }}
               />
               <span className="inline-block max-w-[20ch] truncate">
-                {workspace?.name}
+                {workspaceName}
               </span>
-              <Badge
-                className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
-                color="tertiary"
-              >
-                {userRole}
-              </Badge>
+              {userRole ? (
+                <Badge
+                  className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
+                  color="tertiary"
+                >
+                  {userRole}
+                </Badge>
+              ) : null}
             </span>
-            <CheckIcon className="shrink-0" strokeWidth={2.1} />
+            {workspace ? (
+              <CheckIcon className="shrink-0" strokeWidth={2.1} />
+            ) : null}
           </Menu.Item>
           {workspaces.length > 1 && (
             <Menu.SubMenu>
