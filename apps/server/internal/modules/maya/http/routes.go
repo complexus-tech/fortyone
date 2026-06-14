@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Log, cfg.Service)
+	h := New(cfg.DB, cfg.Log, cfg.Service)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	admin := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)

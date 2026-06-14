@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -131,6 +132,8 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 			AND s.assignee_id IS NOT NULL
 			AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
 			AND u.is_active = true
+			AND u.is_system = false
+			AND NULLIF(TRIM(u.email), '') IS NOT NULL
 			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY s.assignee_id
 		LIMIT :batch_size OFFSET :offset`
@@ -200,6 +203,8 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
         AND s.completed_at IS NULL
         AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
         AND u.is_active = true
+        AND u.is_system = false
+        AND NULLIF(TRIM(u.email), '') IS NOT NULL
 		)
 		SELECT * 
 		FROM story_deadlines 
@@ -238,6 +243,11 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	defer span.End()
 
 	if len(stories) == 0 {
+		return nil
+	}
+
+	if strings.TrimSpace(stories[0].AssigneeEmail) == "" {
+		log.Info(ctx, "Skipping overdue stories email because assignee email is empty", "assignee_id", stories[0].AssigneeID)
 		return nil
 	}
 

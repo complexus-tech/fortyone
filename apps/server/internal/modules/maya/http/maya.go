@@ -3,25 +3,33 @@ package mayahttp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 const defaultPlanningWindow = 14 * 24 * time.Hour
 
+var ErrMayaAccessRequired = errors.New("maya agent is available on paid plans and active trials")
+
 type Handlers struct {
+	db      *sqlx.DB
 	log     *logger.Logger
 	service *maya.Service
 	now     func() time.Time
 }
 
-func New(log *logger.Logger, service *maya.Service) *Handlers {
+func New(db *sqlx.DB, log *logger.Logger, service *maya.Service) *Handlers {
 	return &Handlers{
+		db:      db,
 		log:     log,
 		service: service,
 		now:     time.Now,
@@ -36,6 +44,11 @@ func (h *Handlers) CreateWorkPlan(ctx context.Context, w http.ResponseWriter, r 
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if ok, err := h.workspaceCanUseMaya(ctx, workspace.ID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	} else if !ok {
+		return web.RespondError(ctx, w, ErrMayaAccessRequired, http.StatusPaymentRequired)
 	}
 
 	var req AppCreateWorkPlanRequest
@@ -77,4 +90,21 @@ func (h *Handlers) statusCode(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func (h *Handlers) workspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM workspaces w
+			WHERE w.workspace_id = $1
+				AND ` + billing.WorkspaceMayaAccessSQL("w") + `
+		)
+	`
+
+	var allowed bool
+	if err := h.db.GetContext(ctx, &allowed, query, workspaceID); err != nil {
+		return false, fmt.Errorf("check maya access: %w", err)
+	}
+	return allowed, nil
 }

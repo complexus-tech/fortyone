@@ -6,6 +6,7 @@ import (
 	"time"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -79,19 +80,13 @@ func (h *handlers) listMayaAssignmentCandidates(ctx context.Context, cursor uuid
 			s.workspace_id,
 			s.team_id
 		FROM stories s
+		INNER JOIN workspaces w ON w.workspace_id = s.workspace_id
 		WHERE s.assignee_id = $1
 			AND s.id > $2
 			AND s.deleted_at IS NULL
 			AND s.archived_at IS NULL
 			AND s.is_draft = FALSE
-			AND EXISTS (
-				SELECT 1
-				FROM workspace_subscriptions ws
-				WHERE ws.workspace_id = s.workspace_id
-					AND ws.subscription_tier <> 'free'
-					AND ws.subscription_status IN ('active', 'trialing', 'past_due')
-				LIMIT 1
-			)
+			AND ` + billing.WorkspaceMayaAccessSQL("w") + `
 			AND NOT EXISTS (
 				SELECT 1
 				FROM statuses stat

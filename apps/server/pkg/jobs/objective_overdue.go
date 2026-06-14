@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -165,6 +166,8 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 		)
 		AND o.lead_user_id IS NOT NULL
 		AND u.is_active = true
+		AND u.is_system = false
+		AND NULLIF(TRIM(u.email), '') IS NOT NULL
 		AND os.category NOT IN ('completed', 'cancelled', 'paused')
 		AND ws.objective_enabled = true
 		AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
@@ -289,6 +292,8 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 					))
 				)
 				AND u.is_active = true
+				AND u.is_system = false
+				AND NULLIF(TRIM(u.email), '') IS NOT NULL
 				AND os.category NOT IN ('completed', 'cancelled', 'paused')
 				AND ws.objective_enabled = true
 		)
@@ -330,6 +335,11 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	defer span.End()
 
 	if len(objectives) == 0 {
+		return nil
+	}
+
+	if strings.TrimSpace(objectives[0].LeadEmail) == "" {
+		log.Info(ctx, "Skipping objective overdue email because lead email is empty", "lead_id", objectives[0].LeadUserID)
 		return nil
 	}
 

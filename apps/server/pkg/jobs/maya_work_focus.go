@@ -7,6 +7,7 @@ import (
 	"time"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -94,19 +95,13 @@ func listMayaWorkFocusCandidates(ctx context.Context, db *sqlx.DB) ([]mayaWorkFo
 			tm.ai_role_description
 		FROM team_members tm
 		INNER JOIN teams t ON t.team_id = tm.team_id
+		INNER JOIN workspaces w ON w.workspace_id = t.workspace_id
 		INNER JOIN users u ON u.user_id = tm.user_id
 		WHERE u.is_active = TRUE
 			AND u.is_system = FALSE
 			AND tm.ai_role_title = ''
 			AND tm.ai_role_description = ''
-			AND EXISTS (
-				SELECT 1
-				FROM workspace_subscriptions ws
-				WHERE ws.workspace_id = t.workspace_id
-					AND ws.subscription_tier <> 'free'
-					AND ws.subscription_status IN ('active', 'trialing', 'past_due')
-				LIMIT 1
-			)
+			AND ` + billing.WorkspaceMayaAccessSQL("w") + `
 		ORDER BY tm.inferred_ai_role_generated_at ASC NULLS FIRST, tm.updated_at ASC
 		LIMIT $1
 	`

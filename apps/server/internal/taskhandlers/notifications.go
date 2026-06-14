@@ -101,7 +101,9 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 		WHERE
 			n.notification_id = :notification_id
 			AND n.read_at IS NULL
-			AND u.is_active = true;
+			AND u.is_active = true
+			AND u.is_system = false
+			AND NULLIF(TRIM(u.email), '') IS NOT NULL;
 		`
 
 	params := map[string]any{
@@ -151,7 +153,7 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 	}
 
 	if data == nil {
-		h.log.Info(ctx, "Notification not found, already read, or user inactive - skipping email",
+		h.log.Info(ctx, "Notification not found, already read, recipient inactive, system recipient, or missing email - skipping email",
 			"notification_id", p.NotificationID,
 			"task_id", t.ResultWriter().TaskID())
 		return nil
