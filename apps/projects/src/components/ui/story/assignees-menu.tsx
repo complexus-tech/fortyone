@@ -1,5 +1,5 @@
 "use client";
-import { AiIcon, CheckIcon } from "icons";
+import { CheckIcon } from "icons";
 import {
   createContext,
   use,
@@ -10,12 +10,14 @@ import {
 } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "@/lib/auth/client";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import {
   MEMBER_MENU_PAGE_SIZE,
   useMayaAssignee,
   useMembersInfinite,
 } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
+import { MayaAvatar } from "../maya-avatar";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const AssigneesContext = createContext<{
@@ -73,6 +75,7 @@ const Items = ({
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
   const { data: session } = useSession();
+  const { hasFeature } = useSubscriptionFeatures();
   const { open, setOpen } = useAssigneesMenu();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -94,10 +97,12 @@ const Items = ({
   const isLoadingMembers =
     membersQuery.isFetching && !membersQuery.isFetchingNextPage;
   const mayaAssignee = mayaQuery.data;
+  const canUseBackgroundMaya = hasFeature("backgroundMaya");
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const visibleMayaAssignee =
     mayaAssignee !== undefined &&
     !excludeUsers.includes(mayaAssignee.id) &&
+    (canUseBackgroundMaya || mayaAssignee.id === assigneeId) &&
     (normalizedQuery === "" ||
       "maya ai assistant".includes(normalizedQuery))
       ? mayaAssignee
@@ -188,19 +193,15 @@ const Items = ({
                   active={visibleMayaAssignee.id === assigneeId}
                   className="justify-between"
                   onSelect={() => {
-                    onAssigneeSelected(visibleMayaAssignee.id);
+                    if (visibleMayaAssignee.id !== assigneeId) {
+                      onAssigneeSelected(visibleMayaAssignee.id);
+                    }
                     setOpen(false);
                   }}
                   value="Maya AI assistant"
                 >
                   <Flex align="center" gap={2}>
-                    <Flex
-                      align="center"
-                      className="size-6 rounded-full bg-black text-white dark:bg-white dark:text-black"
-                      justify="center"
-                    >
-                      <AiIcon className="size-3.5 text-current" />
-                    </Flex>
+                    <MayaAvatar size="sm" />
                     <Text className="max-w-48 truncate">
                       Maya{" "}
                       <Text as="span" color="muted">

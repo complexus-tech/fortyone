@@ -92,7 +92,6 @@ type updateOptions struct {
 	publishEvents            bool
 	enqueueGitHubSync        bool
 	recordDescriptionUpdates bool
-	onlyChangedFields        bool
 }
 
 type commentOptions struct {
@@ -348,7 +347,6 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
-		onlyChangedFields:        true,
 	})
 }
 
@@ -383,14 +381,24 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 
-	if options.onlyChangedFields {
-		for field, value := range updates {
-			if s.valuesEqual(s.getOldValue(story, field), value) {
-				delete(updates, field)
-			}
+	for field, value := range updates {
+		if s.valuesEqual(s.getOldValue(story, field), value) {
+			delete(updates, field)
 		}
-		if len(updates) == 0 {
-			return nil
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
+		updatedStory, err := storyWithAssignee(story, assigneeID)
+		if err != nil {
+			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			return err
+		}
+		if err := s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+			span.RecordError(err)
+			return err
 		}
 	}
 
@@ -459,17 +467,6 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	}
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
-	}
-	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
-		updatedStory, err := storyWithAssignee(story, assigneeID)
-		if err != nil {
-			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
-			return err
-		}
-		if err := s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
-			span.RecordError(err)
-			return err
-		}
 	}
 
 	return nil

@@ -77,7 +77,7 @@ func shouldTriggerMayaAssignment(previousAssignee, nextAssignee *uuid.UUID, maya
 	if mayaAssigneeID == uuid.Nil || nextAssignee == nil || *nextAssignee != mayaAssigneeID {
 		return false
 	}
-	return true
+	return previousAssignee == nil || *previousAssignee != mayaAssigneeID
 }
 
 func storyWithAssignee(story CoreSingleStory, assigneeID *uuid.UUID) (CoreSingleStory, error) {

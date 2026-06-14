@@ -12,6 +12,7 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
 
@@ -200,12 +201,16 @@ export const Activity = ({
 
         const content = (
           <>
-            <Avatar
-              className="relative top-px"
-              name={assignee?.fullName || assigneeLabel}
-              size="xs"
-              src={assignee?.avatarUrl}
-            />
+            {assignee?.isSystem ? (
+              <MayaAvatar className="relative top-px" size="xs" />
+            ) : (
+              <Avatar
+                className="relative top-px"
+                name={assignee?.fullName || assigneeLabel}
+                size="xs"
+                src={assignee?.avatarUrl}
+              />
+            )}
             {assigneeLabel}
           </>
         );
@@ -303,11 +308,15 @@ export const Activity = ({
           title={
             <Box>
               <Flex gap={2}>
-                <Avatar
-                  className="mt-0.5"
-                  name={member.fullName}
-                  src={member.avatarUrl}
-                />
+                {member.isSystem ? (
+                  <MayaAvatar className="mt-0.5" size="md" />
+                ) : (
+                  <Avatar
+                    className="mt-0.5"
+                    name={member.fullName}
+                    src={member.avatarUrl}
+                  />
+                )}
                 <Box>
                   <Link
                     className={cn("mb-2 flex gap-1", {
@@ -343,7 +352,15 @@ export const Activity = ({
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
             <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
-              <Avatar name={member.fullName} size="xs" src={member.avatarUrl} />
+              {member.isSystem ? (
+                <MayaAvatar size="xs" />
+              ) : (
+                <Avatar
+                  name={member.fullName}
+                  size="xs"
+                  src={member.avatarUrl}
+                />
+              )}
             </Box>
             <Text
               className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
