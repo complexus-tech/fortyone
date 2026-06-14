@@ -202,7 +202,12 @@ export const Activity = ({
         const content = (
           <>
             {assignee?.isSystem ? (
-              <MayaAvatar className="relative top-px" size="xs" />
+              <MayaAvatar
+                className="relative top-px"
+                name={assignee.fullName || assigneeLabel}
+                size="xs"
+                src={assignee.avatarUrl}
+              />
             ) : (
               <Avatar
                 className="relative top-px"
@@ -309,7 +314,12 @@ export const Activity = ({
             <Box>
               <Flex gap={2}>
                 {member.isSystem ? (
-                  <MayaAvatar className="mt-0.5" size="md" />
+                  <MayaAvatar
+                    className="mt-0.5"
+                    name={member.fullName}
+                    size="md"
+                    src={member.avatarUrl}
+                  />
                 ) : (
                   <Avatar
                     className="mt-0.5"
@@ -353,7 +363,11 @@ export const Activity = ({
           <Flex align="center" className="cursor-pointer" gap={1}>
             <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
               {member.isSystem ? (
-                <MayaAvatar size="xs" />
+                <MayaAvatar
+                  name={member.fullName}
+                  size="xs"
+                  src={member.avatarUrl}
+                />
               ) : (
                 <Avatar
                   name={member.fullName}

@@ -201,7 +201,11 @@ const Items = ({
                   value="Maya AI assistant"
                 >
                   <Flex align="center" gap={2}>
-                    <MayaAvatar size="sm" />
+                    <MayaAvatar
+                      name={visibleMayaAssignee.fullName}
+                      size="sm"
+                      src={visibleMayaAssignee.avatarUrl}
+                    />
                     <Text className="max-w-48 truncate">
                       Maya{" "}
                       <Text as="span" color="muted">
