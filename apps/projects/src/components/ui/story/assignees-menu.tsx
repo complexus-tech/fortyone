@@ -1,5 +1,5 @@
 "use client";
-import { CheckIcon, RobotIcon } from "icons";
+import { AiIcon, CheckIcon } from "icons";
 import {
   createContext,
   use,
@@ -196,10 +196,10 @@ const Items = ({
                   <Flex align="center" gap={2}>
                     <Flex
                       align="center"
-                      className="size-6 rounded-full bg-surface text-text-muted"
+                      className="size-6 rounded-full bg-black text-white dark:bg-white dark:text-black"
                       justify="center"
                     >
-                      <RobotIcon className="size-4" strokeWidth={2} />
+                      <AiIcon className="size-3.5 text-current" />
                     </Flex>
                     <Text className="max-w-48 truncate">
                       Maya{" "}
