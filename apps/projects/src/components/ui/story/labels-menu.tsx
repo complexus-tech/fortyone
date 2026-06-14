@@ -3,6 +3,7 @@ import {
   createContext,
   use,
   useDeferredValue,
+  useRef,
   useState,
   type ReactNode,
   type UIEvent,
@@ -58,33 +59,68 @@ const Items = ({
 }: {
   labelIds: string[];
   teamId: string;
-  setLabelIds: (labelIds: string[]) => void;
+  setLabelIds: (labelIds: string[]) => Promise<void> | void;
   align?: "center" | "start" | "end" | undefined;
 }) => {
   const { mutateAsync: createLabel } = useCreateLabelMutation();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
+  const [pendingLabelIds, setPendingLabelIds] = useState<string[] | null>(null);
+  const selectionRequestId = useRef(0);
   const [isLoading, setIsLoading] = useState(false);
   const { open } = useLabelsMenu();
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useLabelsInfinite(
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isPending,
+  } = useLabelsInfinite(
       { search: deferredQuery, teamId },
       LABEL_MENU_PAGE_SIZE,
       open,
     );
   const labels = data?.pages.flatMap((page) => page.labels) ?? [];
-  const isLoadingLabels = isFetching && !isFetchingNextPage;
+  const selectedLabelIds = pendingLabelIds ?? labelIds;
+  const isLoadingLabels =
+    (isPending || isFetching || query !== deferredQuery) &&
+    !isFetchingNextPage;
+
+  const updateSelectedLabels = (nextLabelIds: string[]) => {
+    const requestId = selectionRequestId.current + 1;
+    selectionRequestId.current = requestId;
+    setPendingLabelIds(nextLabelIds);
+
+    void Promise.resolve(setLabelIds(nextLabelIds)).then(
+      () => {
+        if (selectionRequestId.current === requestId) {
+          setPendingLabelIds(null);
+        }
+      },
+      () => {
+        if (selectionRequestId.current === requestId) {
+          setPendingLabelIds(null);
+        }
+      },
+    );
+  };
 
   const handleCreateLabel = async () => {
+    const name = query.trim();
+    if (!name) {
+      return;
+    }
+
     const usedColors = labels.map((label) => label.color);
     const color = generateRandomColor({ exclude: usedColors });
     setIsLoading(true);
     await createLabel(
-      { name: query, color, teamId },
+      { name, color, teamId },
       {
         onSuccess(res) {
           if (res.data) {
-            setLabelIds([...labelIds, res.data.id]);
+            updateSelectedLabels([...selectedLabelIds, res.data.id]);
           }
         },
       },
@@ -109,7 +145,7 @@ const Items = ({
 
   return (
     <Popover.Content align={align}>
-      <Command>
+      <Command shouldFilter={false}>
         <Command.Input
           autoFocus
           onValueChange={(value) => {
@@ -124,6 +160,7 @@ const Items = ({
             <Button
               className="mx-0 border-0 text-base font-medium"
               color="tertiary"
+              disabled={query.trim().length === 0}
               fullWidth
               loading={isLoading}
               loadingText="Creating label..."
@@ -131,7 +168,7 @@ const Items = ({
             >
               <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
               <span className="text-text-muted font-medium">
-                &ldquo;{query}&rdquo;
+                &ldquo;{query.trim()}&rdquo;
               </span>
             </Button>
           </Command.Empty>
@@ -150,10 +187,12 @@ const Items = ({
               className="justify-between gap-4"
               key={id}
               onSelect={() => {
-                if (!labelIds.includes(id)) {
-                  setLabelIds([...labelIds, id]);
+                if (!selectedLabelIds.includes(id)) {
+                  updateSelectedLabels([...selectedLabelIds, id]);
                 } else {
-                  setLabelIds(labelIds.filter((labelId) => labelId !== id));
+                  updateSelectedLabels(
+                    selectedLabelIds.filter((labelId) => labelId !== id),
+                  );
                 }
               }}
               value={name}
@@ -163,7 +202,7 @@ const Items = ({
                 <Text className="mr-4 flex items-center gap-3">{name}</Text>
               </Flex>
               <Flex align="center" gap={1}>
-                {labelIds.includes(id) ? (
+                {selectedLabelIds.includes(id) ? (
                   <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                 ) : null}
               </Flex>

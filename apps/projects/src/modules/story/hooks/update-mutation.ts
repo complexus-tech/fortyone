@@ -48,13 +48,14 @@ export const useUpdateStoryMutation = () => {
         storyKeys.detail(workspaceSlug, storyId),
       );
 
-      const activeQueries = queryClient.getQueryCache().getAll();
+      const activeQueries = queryClient.getQueryCache().findAll({
+        queryKey: storyKeys.all(workspaceSlug),
+      });
 
       activeQueries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
+        if (query.isActive()) {
           queryClient.cancelQueries({ queryKey: query.queryKey });
-          if (queryKey.toLowerCase().includes("detail")) {
+          if (query.queryKey.includes("detail")) {
             updateDetailQuery(
               queryClient,
               query.queryKey,
@@ -116,7 +117,10 @@ export const useUpdateStoryMutation = () => {
         ...payload,
       });
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+        refetchType: "inactive",
+      });
       queryClient.invalidateQueries({
         queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
         refetchType: "all",
