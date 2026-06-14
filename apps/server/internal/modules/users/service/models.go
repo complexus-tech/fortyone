@@ -21,22 +21,29 @@ type CoreVerificationToken struct {
 
 // CoreUser represents a user in the application layer.
 type CoreUser struct {
-	ID                  uuid.UUID
-	Username            string
-	Email               string
-	FullName            string
-	AvatarURL           string
-	IsActive            bool
-	IsSystem            bool
-	HasSeenWalkthrough  bool
-	Timezone            string
-	LastLoginAt         time.Time
-	LastUsedWorkspaceID *uuid.UUID
-	GitHubUsername      *string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
-	Token               *string
-	Role                *string
+	ID                            uuid.UUID
+	Username                      string
+	Email                         string
+	FullName                      string
+	AvatarURL                     string
+	IsActive                      bool
+	IsSystem                      bool
+	HasSeenWalkthrough            bool
+	Timezone                      string
+	LastLoginAt                   time.Time
+	LastUsedWorkspaceID           *uuid.UUID
+	GitHubUsername                *string
+	CreatedAt                     time.Time
+	UpdatedAt                     time.Time
+	Token                         *string
+	Role                          *string
+	TeamAIRoleTitle               string
+	TeamAIRoleDescription         string
+	InferredTeamAIRoleTitle       string
+	InferredTeamAIRoleDescription string
+	InferredTeamAIRoleStoryCount  int
+	InferredTeamAIRoleConfidence  float32
+	InferredTeamAIRoleGeneratedAt *time.Time
 }
 
 type CoreListUsersFilter struct {
@@ -68,6 +75,7 @@ type CoreAutomationPreferences struct {
 	UserID                     uuid.UUID
 	WorkspaceID                uuid.UUID
 	AutoAssignSelf             bool
+	AutoAssignMaya             bool
 	AssignSelfOnBranchCopy     bool
 	MoveStoryToStartedOnBranch bool
 	OpenStoryInDialog          bool
@@ -78,6 +86,7 @@ type CoreAutomationPreferences struct {
 // CoreUpdateAutomationPreferences represents the fields that can be updated for automation preferences
 type CoreUpdateAutomationPreferences struct {
 	AutoAssignSelf             *bool
+	AutoAssignMaya             *bool
 	AssignSelfOnBranchCopy     *bool
 	MoveStoryToStartedOnBranch *bool
 	OpenStoryInDialog          *bool

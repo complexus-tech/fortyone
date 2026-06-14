@@ -6,7 +6,7 @@ import { cn } from "lib";
 import { CalendarIcon, EstimateIcon, SprintsIcon } from "icons";
 import { formatEstimate } from "@/lib/estimate";
 import { useWorkspacePath } from "@/hooks";
-import { useMembers } from "@/lib/hooks/members";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
@@ -106,9 +106,15 @@ export const Activity = ({
   newValue,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
+  const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
   const { withWorkspace } = useWorkspacePath();
   const member = user;
+  const activityAssignees = mayaAssignee
+    ? [...members.filter(({ id }) => id !== mayaAssignee.id), mayaAssignee]
+    : members;
+  const findActivityAssignee = (value: string) =>
+    activityAssignees.find(({ id }) => id === value);
   const activityVerb = getActivityVerb(type);
   const isLinkedUrl =
     type === "link" &&
@@ -183,28 +189,44 @@ export const Activity = ({
     },
     assignee_id: {
       label: "Assignee",
-      render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>Unassigned</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1.5 pb-0.5"
-              href={withWorkspace(
-                `/profile/${members.find((m) => m.id === value)?.id}`,
-              )}
-            >
-              <Avatar
-                className="relative top-px"
-                name={members.find((m) => m.id === value)?.fullName}
-                size="xs"
-                src={members.find((m) => m.id === value)?.avatarUrl}
-              />
-              {members.find((m) => m.id === value)?.username}
-            </Link>
-          )}
-        </>
-      ),
+      render: (value: string) => {
+        const assignee = findActivityAssignee(value);
+        const assigneeLabel =
+          assignee?.username || assignee?.fullName || "Unknown user";
+
+        if (!value || value.includes("nil")) {
+          return <span>Unassigned</span>;
+        }
+
+        const content = (
+          <>
+            <Avatar
+              className="relative top-px"
+              name={assignee?.fullName || assigneeLabel}
+              size="xs"
+              src={assignee?.avatarUrl}
+            />
+            {assigneeLabel}
+          </>
+        );
+
+        if (!assignee || assignee.isSystem) {
+          return (
+            <span className="flex items-center gap-1.5 pb-0.5">
+              {content}
+            </span>
+          );
+        }
+
+        return (
+          <Link
+            className="flex items-center gap-1.5 pb-0.5"
+            href={withWorkspace(`/profile/${assignee.id}`)}
+          >
+            {content}
+          </Link>
+        );
+      },
     },
     start_date: {
       label: "Start date",

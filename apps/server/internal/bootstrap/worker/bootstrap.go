@@ -120,7 +120,8 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, err
 	}
 
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, systemUserID)
+	mayaService := buildMayaService(log, db, cfg, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, systemUserID)
 
 	return App{
 		log:       log,

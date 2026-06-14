@@ -8,22 +8,29 @@ import (
 )
 
 type AppUser struct {
-	ID                  uuid.UUID  `json:"id"`
-	Username            string     `json:"username"`
-	Email               string     `json:"email"`
-	FullName            string     `json:"fullName"`
-	AvatarURL           string     `json:"avatarUrl"`
-	IsActive            bool       `json:"isActive"`
-	IsSystem            bool       `json:"isSystem"`
-	HasSeenWalkthrough  bool       `json:"hasSeenWalkthrough"`
-	Timezone            string     `json:"timezone"`
-	LastLoginAt         time.Time  `json:"-"`
-	LastUsedWorkspaceID *uuid.UUID `json:"lastUsedWorkspaceId"`
-	GitHubUsername      *string    `json:"githubUsername"`
-	CreatedAt           time.Time  `json:"createdAt"`
-	UpdatedAt           time.Time  `json:"updatedAt"`
-	Token               *string    `json:"token,omitempty"`
-	Role                *string    `json:"role,omitempty"`
+	ID                            uuid.UUID  `json:"id"`
+	Username                      string     `json:"username"`
+	Email                         string     `json:"email"`
+	FullName                      string     `json:"fullName"`
+	AvatarURL                     string     `json:"avatarUrl"`
+	IsActive                      bool       `json:"isActive"`
+	IsSystem                      bool       `json:"isSystem"`
+	HasSeenWalkthrough            bool       `json:"hasSeenWalkthrough"`
+	Timezone                      string     `json:"timezone"`
+	LastLoginAt                   time.Time  `json:"-"`
+	LastUsedWorkspaceID           *uuid.UUID `json:"lastUsedWorkspaceId"`
+	GitHubUsername                *string    `json:"githubUsername"`
+	CreatedAt                     time.Time  `json:"createdAt"`
+	UpdatedAt                     time.Time  `json:"updatedAt"`
+	Token                         *string    `json:"token,omitempty"`
+	Role                          *string    `json:"role,omitempty"`
+	TeamAIRoleTitle               string     `json:"teamAiRoleTitle,omitempty"`
+	TeamAIRoleDescription         string     `json:"teamAiRoleDescription,omitempty"`
+	InferredTeamAIRoleTitle       string     `json:"inferredTeamAiRoleTitle,omitempty"`
+	InferredTeamAIRoleDescription string     `json:"inferredTeamAiRoleDescription,omitempty"`
+	InferredTeamAIRoleStoryCount  int        `json:"inferredTeamAiRoleStoryCount,omitempty"`
+	InferredTeamAIRoleConfidence  float32    `json:"inferredTeamAiRoleConfidence,omitempty"`
+	InferredTeamAIRoleGeneratedAt *time.Time `json:"inferredTeamAiRoleGeneratedAt,omitempty"`
 }
 
 type AppFilter struct {
@@ -91,6 +98,7 @@ type AppAutomationPreferences struct {
 	UserID                     uuid.UUID `json:"userId"`
 	WorkspaceID                uuid.UUID `json:"workspaceId"`
 	AutoAssignSelf             bool      `json:"autoAssignSelf"`
+	AutoAssignMaya             bool      `json:"autoAssignMaya"`
 	AssignSelfOnBranchCopy     bool      `json:"assignSelfOnBranchCopy"`
 	MoveStoryToStartedOnBranch bool      `json:"moveStoryToStartedOnBranch"`
 	OpenStoryInDialog          bool      `json:"openStoryInDialog"`
@@ -101,6 +109,7 @@ type AppAutomationPreferences struct {
 // UpdateAutomationPreferencesRequest represents a request to update automation preferences
 type UpdateAutomationPreferencesRequest struct {
 	AutoAssignSelf             *bool `json:"autoAssignSelf,omitempty"`
+	AutoAssignMaya             *bool `json:"autoAssignMaya,omitempty"`
 	AssignSelfOnBranchCopy     *bool `json:"assignSelfOnBranchCopy,omitempty"`
 	MoveStoryToStartedOnBranch *bool `json:"moveStoryToStartedOnBranch,omitempty"`
 	OpenStoryInDialog          *bool `json:"openStoryInDialog,omitempty"`
@@ -108,22 +117,29 @@ type UpdateAutomationPreferencesRequest struct {
 
 func toAppUser(user users.CoreUser) AppUser {
 	return AppUser{
-		ID:                  user.ID,
-		Username:            user.Username,
-		Email:               user.Email,
-		FullName:            user.FullName,
-		AvatarURL:           user.AvatarURL,
-		IsActive:            user.IsActive,
-		IsSystem:            user.IsSystem,
-		HasSeenWalkthrough:  user.HasSeenWalkthrough,
-		Timezone:            user.Timezone,
-		LastLoginAt:         user.LastLoginAt,
-		LastUsedWorkspaceID: user.LastUsedWorkspaceID,
-		GitHubUsername:      user.GitHubUsername,
-		CreatedAt:           user.CreatedAt,
-		UpdatedAt:           user.UpdatedAt,
-		Token:               user.Token,
-		Role:                user.Role,
+		ID:                            user.ID,
+		Username:                      user.Username,
+		Email:                         user.Email,
+		FullName:                      user.FullName,
+		AvatarURL:                     user.AvatarURL,
+		IsActive:                      user.IsActive,
+		IsSystem:                      user.IsSystem,
+		HasSeenWalkthrough:            user.HasSeenWalkthrough,
+		Timezone:                      user.Timezone,
+		LastLoginAt:                   user.LastLoginAt,
+		LastUsedWorkspaceID:           user.LastUsedWorkspaceID,
+		GitHubUsername:                user.GitHubUsername,
+		CreatedAt:                     user.CreatedAt,
+		UpdatedAt:                     user.UpdatedAt,
+		Token:                         user.Token,
+		Role:                          user.Role,
+		TeamAIRoleTitle:               user.TeamAIRoleTitle,
+		TeamAIRoleDescription:         user.TeamAIRoleDescription,
+		InferredTeamAIRoleTitle:       user.InferredTeamAIRoleTitle,
+		InferredTeamAIRoleDescription: user.InferredTeamAIRoleDescription,
+		InferredTeamAIRoleStoryCount:  user.InferredTeamAIRoleStoryCount,
+		InferredTeamAIRoleConfidence:  user.InferredTeamAIRoleConfidence,
+		InferredTeamAIRoleGeneratedAt: user.InferredTeamAIRoleGeneratedAt,
 	}
 }
 
@@ -158,6 +174,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 		UserID:                     prefs.UserID,
 		WorkspaceID:                prefs.WorkspaceID,
 		AutoAssignSelf:             prefs.AutoAssignSelf,
+		AutoAssignMaya:             prefs.AutoAssignMaya,
 		AssignSelfOnBranchCopy:     prefs.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: prefs.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          prefs.OpenStoryInDialog,
@@ -170,6 +187,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) users.CoreUpdateAutomationPreferences {
 	return users.CoreUpdateAutomationPreferences{
 		AutoAssignSelf:             req.AutoAssignSelf,
+		AutoAssignMaya:             req.AutoAssignMaya,
 		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          req.OpenStoryInDialog,

@@ -415,6 +415,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SlackClientSecret:  cfg.Slack.ClientSecret,
 		SlackRedirectURL:   cfg.Slack.RedirectURL,
 		BotToken:           cfg.Bot.Token,
+		AIAPIKey:           strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
 		SSEHub:             sseHub,
 		CorsOrigin:         "*",
 	}

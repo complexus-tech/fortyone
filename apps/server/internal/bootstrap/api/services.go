@@ -2,8 +2,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
+	"strings"
 
 	activitiesrepository "github.com/complexus-tech/projects-api/internal/modules/activities/repository"
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
@@ -66,6 +67,7 @@ import (
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
+	"github.com/google/uuid"
 )
 
 type services struct {
@@ -201,27 +203,27 @@ func buildServices(cfg mux.Config) services {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
 	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB))
+	mayaPlanner := maya.NewPlanner()
+	if strings.TrimSpace(cfg.AIAPIKey) != "" {
+		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
+			APIKey: strings.TrimSpace(cfg.AIAPIKey),
+		})
+		mayaPlanner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
+	}
 	mayaService := maya.New(maya.Dependencies{
 		Repository:  mayarepository.New(cfg.Log, cfg.DB),
 		Stories:     storiesService,
 		Reports:     reportsService,
 		Calendar:    calendarService,
 		Users:       usersService,
-		Planner:     maya.NewPlanner(),
+		Planner:     mayaPlanner,
 		MayaActorID: mayaActorID,
 	})
 	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
-		windowStart := time.Now().UTC()
-		_, err := mayaService.CreateWorkPlan(ctx, maya.CreateWorkPlanInput{
-			WorkspaceID: input.Story.Workspace,
-			StoryID:     input.Story.ID,
-			TriggeredBy: input.TriggeredBy,
-			Trigger:     maya.RunTriggerEvent,
-			WindowStart: windowStart,
-			WindowEnd:   windowStart.Add(14 * 24 * time.Hour),
-			AutoApply:   true,
-		})
-		return err
+		if err := ensureBackgroundMayaEnabled(ctx, subscriptionsService, input.Story.Workspace); err != nil {
+			return err
+		}
+		return nil
 	})
 	integrationRequestsService := integrationrequests.New(
 		cfg.Log,
@@ -263,6 +265,28 @@ func buildServices(cfg mux.Config) services {
 		teamSettings:        teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService),
 		users:               usersService,
 		workspaces:          workspacesService,
+	}
+}
+
+func ensureBackgroundMayaEnabled(ctx context.Context, subscriptionsService *subscriptions.Service, workspaceID uuid.UUID) error {
+	subscription, err := subscriptionsService.GetSubscription(ctx, workspaceID)
+	if err != nil {
+		if errors.Is(err, subscriptions.ErrSubscriptionNotFound) {
+			return errors.New("background Maya assignment requires a paid plan")
+		}
+		return fmt.Errorf("check background Maya subscription: %w", err)
+	}
+	if subscription.SubscriptionTier == subscriptions.TierFree {
+		return errors.New("background Maya assignment requires a paid plan")
+	}
+	if subscription.SubscriptionStatus == nil {
+		return errors.New("background Maya assignment requires an active paid plan")
+	}
+	switch *subscription.SubscriptionStatus {
+	case subscriptions.StatusActive, subscriptions.StatusTrialing, subscriptions.StatusPastDue:
+		return nil
+	default:
+		return errors.New("background Maya assignment requires an active paid plan")
 	}
 }
 

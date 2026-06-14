@@ -22,6 +22,7 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 
 	h := New(teamsService, cfg.Cache)
 
@@ -32,6 +33,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceSlug}/teams/{id}", h.Update, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/teams/{id}", h.Delete, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/teams/{id}/members", h.AddMember, auth, workspace, gzip)
+	app.Put("/workspaces/{workspaceSlug}/teams/{id}/members/{userId}/ai-context", h.UpdateMemberAIContext, auth, workspace, adminOnly)
 	app.Delete("/workspaces/{workspaceSlug}/teams/{id}/members/{userId}", h.RemoveMember, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/teams/order", h.UpdateTeamOrdering, auth, workspace)
 }

@@ -88,6 +88,11 @@ type AppNewTeamMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
 }
 
+type AppUpdateTeamMemberAIContext struct {
+	RoleTitle       string `json:"roleTitle"`
+	RoleDescription string `json:"roleDescription"`
+}
+
 type AppUpdateTeamOrdering struct {
 	TeamIDs []uuid.UUID `json:"teamIds" validate:"required,min=1"`
 }

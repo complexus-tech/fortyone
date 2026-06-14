@@ -1,6 +1,7 @@
 package maya
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	"github.com/google/uuid"
 )
 
@@ -20,10 +22,16 @@ const (
 	workdayEndHour         = 17
 )
 
-type Planner struct{}
+type Planner struct {
+	advisor CandidateAdvisor
+}
 
 func NewPlanner() Planner {
 	return Planner{}
+}
+
+func NewPlannerWithAdvisor(advisor CandidateAdvisor) Planner {
+	return Planner{advisor: advisor}
 }
 
 func (p Planner) Plan(input PlanInput) (PlanResult, error) {
@@ -48,6 +56,7 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 	}
 
 	if len(candidates) == 0 {
+		selected, advisorReason, ok := p.selectAssignmentCandidate(normalized, normalized.Candidates)
 		action := CoreAction{
 			WorkspaceID: normalized.WorkspaceID,
 			StoryID:     normalized.Story.ID,
@@ -58,6 +67,32 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 				Code:    "no_available_slot",
 				Message: "No candidate has enough free time in the selected planning window.",
 			}},
+		}
+		if ok {
+			selectedUserID := selected.Member.UserID
+			actions := make([]CoreAction, 0, 2)
+			if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
+				reason := assignmentReasonForMember(selected.Member)
+				if strings.TrimSpace(advisorReason) != "" {
+					reason = advisorReason
+				}
+				actions = append(actions, CoreAction{
+					WorkspaceID: normalized.WorkspaceID,
+					StoryID:     normalized.Story.ID,
+					Type:        ActionTypeAssignStory,
+					Status:      ActionStatusProposed,
+					Reason:      reason,
+					Payload: ActionPayload{AssignStory: &AssignStoryPayload{
+						AssigneeID: selectedUserID,
+					}},
+				})
+			}
+			actions = append(actions, action)
+			return PlanResult{
+				Summary:        "Maya selected an owner, but no safe schedule slot was found for this work.",
+				SelectedUserID: &selectedUserID,
+				Actions:        actions,
+			}, nil
 		}
 		return PlanResult{
 			Summary: "No safe schedule slot was found for this work.",
@@ -80,16 +115,20 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		return left.candidate.Member.FullName < right.candidate.Member.FullName
 	})
 
-	selected := candidates[0]
+	selected, advisorReason := p.selectCandidate(normalized, candidates)
 	selectedUserID := selected.candidate.Member.UserID
 	actions := make([]CoreAction, 0, 2)
 	if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
+		reason := assignmentReason(selected)
+		if strings.TrimSpace(advisorReason) != "" {
+			reason = advisorReason
+		}
 		actions = append(actions, CoreAction{
 			WorkspaceID: normalized.WorkspaceID,
 			StoryID:     normalized.Story.ID,
 			Type:        ActionTypeAssignStory,
 			Status:      ActionStatusProposed,
-			Reason:      assignmentReason(selected),
+			Reason:      reason,
 			Payload: ActionPayload{AssignStory: &AssignStoryPayload{
 				AssigneeID: selectedUserID,
 			}},
@@ -117,6 +156,169 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		SelectedUserID: &selectedUserID,
 		Actions:        actions,
 	}, nil
+}
+
+func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) (candidateChoice, string) {
+	selected := candidates[0]
+	if p.advisor == nil || len(candidates) == 1 {
+		return selected, ""
+	}
+
+	ctx := input.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	recommendations := make([]CandidateRecommendation, 0, len(candidates))
+	for _, candidate := range candidates {
+		recommendations = append(recommendations, CandidateRecommendation{
+			UserID:                candidate.candidate.Member.UserID,
+			FullName:              candidate.candidate.Member.FullName,
+			Username:              candidate.candidate.Member.Username,
+			TeamAIRoleTitle:       candidate.candidate.Member.TeamAIRoleTitle,
+			TeamAIRoleDescription: candidate.candidate.Member.TeamAIRoleDescription,
+			OpenStories:           candidate.candidate.Member.OpenStories,
+			EstimateTotal:         candidate.candidate.Member.EstimateTotal,
+			HasAvailableSlot:      true,
+			SlotStart:             candidate.slot.start,
+			SlotEnd:               candidate.slot.end,
+		})
+	}
+	result, err := p.advisor.RecommendCandidate(ctx, CandidateRecommendationInput{
+		WorkspaceID:     input.WorkspaceID,
+		Story:           input.Story,
+		DurationMinutes: input.DurationMinutes,
+		WindowStart:     input.WindowStart,
+		WindowEnd:       input.WindowEnd,
+		Candidates:      recommendations,
+	})
+	if err != nil || result.UserID == uuid.Nil {
+		return selected, ""
+	}
+	for _, candidate := range candidates {
+		if candidate.candidate.Member.UserID == result.UserID {
+			return candidate, result.Reason
+		}
+	}
+	return selected, ""
+}
+
+func (p Planner) selectAssignmentCandidate(input PlanInput, candidates []CandidateSchedule) (CandidateSchedule, string, bool) {
+	assignable := make([]CandidateSchedule, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.Member.UserID != uuid.Nil {
+			assignable = append(assignable, candidate)
+		}
+	}
+	if len(assignable) == 0 {
+		return CandidateSchedule{}, "", false
+	}
+	sort.SliceStable(assignable, func(i, j int) bool {
+		left := assignable[i].Member
+		right := assignable[j].Member
+		if left.EstimateTotal != right.EstimateTotal {
+			return left.EstimateTotal < right.EstimateTotal
+		}
+		if left.OpenStories != right.OpenStories {
+			return left.OpenStories < right.OpenStories
+		}
+		return left.FullName < right.FullName
+	})
+	selected := assignable[0]
+	if p.advisor == nil || len(assignable) == 1 {
+		return selected, "", true
+	}
+
+	ctx := input.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	recommendations := make([]CandidateRecommendation, 0, len(assignable))
+	for _, candidate := range assignable {
+		recommendations = append(recommendations, CandidateRecommendation{
+			UserID:                candidate.Member.UserID,
+			FullName:              candidate.Member.FullName,
+			Username:              candidate.Member.Username,
+			TeamAIRoleTitle:       candidate.Member.TeamAIRoleTitle,
+			TeamAIRoleDescription: candidate.Member.TeamAIRoleDescription,
+			OpenStories:           candidate.Member.OpenStories,
+			EstimateTotal:         candidate.Member.EstimateTotal,
+			HasAvailableSlot:      false,
+		})
+	}
+	result, err := p.advisor.RecommendCandidate(ctx, CandidateRecommendationInput{
+		WorkspaceID:     input.WorkspaceID,
+		Story:           input.Story,
+		DurationMinutes: input.DurationMinutes,
+		WindowStart:     input.WindowStart,
+		WindowEnd:       input.WindowEnd,
+		Candidates:      recommendations,
+	})
+	if err != nil || result.UserID == uuid.Nil {
+		return selected, "", true
+	}
+	for _, candidate := range assignable {
+		if candidate.Member.UserID == result.UserID {
+			return candidate, result.Reason, true
+		}
+	}
+	return selected, "", true
+}
+
+func (p Planner) RecommendAssignments(ctx context.Context, input BatchAssignmentRecommendationInput) (BatchAssignmentRecommendationResult, error) {
+	if p.advisor != nil {
+		if batchAdvisor, ok := p.advisor.(BatchAssignmentAdvisor); ok {
+			result, err := batchAdvisor.RecommendAssignments(ctx, input)
+			if err == nil && len(result.Assignments) > 0 {
+				return result, nil
+			}
+		}
+	}
+	return deterministicBatchAssignments(input), nil
+}
+
+func deterministicBatchAssignments(input BatchAssignmentRecommendationInput) BatchAssignmentRecommendationResult {
+	if len(input.Candidates) == 0 || len(input.Stories) == 0 {
+		return BatchAssignmentRecommendationResult{}
+	}
+	candidates := append([]CandidateRecommendation(nil), input.Candidates...)
+	sort.SliceStable(candidates, func(i, j int) bool {
+		left := candidates[i]
+		right := candidates[j]
+		if left.EstimateTotal != right.EstimateTotal {
+			return left.EstimateTotal < right.EstimateTotal
+		}
+		if left.OpenStories != right.OpenStories {
+			return left.OpenStories < right.OpenStories
+		}
+		return left.FullName < right.FullName
+	})
+	assignments := make([]BatchAssignmentRecommendation, 0, len(input.Stories))
+	for index, story := range input.Stories {
+		candidate := candidates[index%len(candidates)]
+		assignments = append(assignments, BatchAssignmentRecommendation{
+			StoryID:    story.ID,
+			AssigneeID: candidate.UserID,
+			Reason:     assignmentReasonForCandidate(candidate),
+		})
+	}
+	return BatchAssignmentRecommendationResult{Assignments: assignments}
+}
+
+func assignmentReasonForCandidate(candidate CandidateRecommendation) string {
+	if strings.TrimSpace(candidate.TeamAIRoleTitle) != "" {
+		return fmt.Sprintf("Maya selected %s because their work focus is %s and their current workload is lighter than the alternatives.", displayCandidateName(candidate), candidate.TeamAIRoleTitle)
+	}
+	return fmt.Sprintf("Maya selected %s based on current workload and availability.", displayCandidateName(candidate))
+}
+
+func displayCandidateName(candidate CandidateRecommendation) string {
+	if strings.TrimSpace(candidate.FullName) != "" {
+		return candidate.FullName
+	}
+	if strings.TrimSpace(candidate.Username) != "" {
+		return candidate.Username
+	}
+	return candidate.UserID.String()
 }
 
 type candidateChoice struct {
@@ -222,14 +424,18 @@ func hasStoryScheduleBlock(blocks []calendar.CoreScheduleBlock, storyID uuid.UUI
 }
 
 func assignmentReason(choice candidateChoice) string {
-	name := strings.TrimSpace(choice.candidate.Member.FullName)
+	return assignmentReasonForMember(choice.candidate.Member)
+}
+
+func assignmentReasonForMember(member reports.CoreMemberWorkload) string {
+	name := strings.TrimSpace(member.FullName)
 	if name == "" {
-		name = strings.TrimSpace(choice.candidate.Member.Username)
+		name = strings.TrimSpace(member.Username)
 	}
 	if name == "" {
 		name = "this teammate"
 	}
-	return fmt.Sprintf("Maya selected %s because they have the earliest available slot and currently have %d open items with %d estimate points.", name, choice.candidate.Member.OpenStories, choice.candidate.Member.EstimateTotal)
+	return fmt.Sprintf("Maya selected %s because they have the strongest available fit and currently have %d open items with %d estimate points.", name, member.OpenStories, member.EstimateTotal)
 }
 
 func scheduleReason(choice candidateChoice) string {

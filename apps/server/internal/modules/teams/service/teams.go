@@ -23,6 +23,7 @@ type Repository interface {
 	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
+	UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error
 	UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error
 }
 
@@ -220,6 +221,24 @@ func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, wo
 	}
 
 	span.AddEvent("team member removed.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return nil
+}
+
+func (s *Service) UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error {
+	s.log.Info(ctx, "business.core.teams.updateMemberAIContext")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.UpdateMemberAIContext")
+	defer span.End()
+
+	if err := s.repo.UpdateMemberAIContext(ctx, teamID, userID, workspaceID, input); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("team member ai context updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
 		attribute.String("workspace_id", workspaceID.String()),

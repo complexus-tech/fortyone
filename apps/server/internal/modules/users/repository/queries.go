@@ -207,7 +207,14 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.Cor
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as role
+			wm.role as role,
+			tm.ai_role_title as team_ai_role_title,
+			tm.ai_role_description as team_ai_role_description,
+			tm.inferred_ai_role_title as inferred_team_ai_role_title,
+			tm.inferred_ai_role_description as inferred_team_ai_role_description,
+			tm.inferred_ai_role_story_count as inferred_team_ai_role_story_count,
+			tm.inferred_ai_role_confidence as inferred_team_ai_role_confidence,
+			tm.inferred_ai_role_generated_at as inferred_team_ai_role_generated_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		INNER JOIN team_members tm ON u.user_id = tm.user_id
@@ -231,7 +238,14 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.Cor
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as role
+			wm.role as role,
+			'' as team_ai_role_title,
+			'' as team_ai_role_description,
+			'' as inferred_team_ai_role_title,
+			'' as inferred_team_ai_role_description,
+			0 as inferred_team_ai_role_story_count,
+			0 as inferred_team_ai_role_confidence,
+			NULL as inferred_team_ai_role_generated_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		WHERE wm.workspace_id = :workspace_id
@@ -400,7 +414,7 @@ func (r *repo) GetAutomationPreferences(ctx context.Context, userID, workspaceID
 	defer span.End()
 
 	query := `
-		SELECT user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
+		SELECT user_id, workspace_id, auto_assign_self, auto_assign_maya, assign_self_on_branch_copy,
 			   move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		FROM user_automation_preferences
 		WHERE user_id = :user_id AND workspace_id = :workspace_id;

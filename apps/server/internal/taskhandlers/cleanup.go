@@ -147,6 +147,19 @@ func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asy
 	return nil
 }
 
+// HandleMayaWorkFocusInference processes the Maya work-focus learning task.
+func (c *CleanupHandlers) HandleMayaWorkFocusInference(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing MayaWorkFocusInference task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessMayaWorkFocusInference(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process Maya work-focus inference", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("maya work-focus inference failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed MayaWorkFocusInference task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleOverdueStoriesEmail processes the overdue stories email task
 func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())

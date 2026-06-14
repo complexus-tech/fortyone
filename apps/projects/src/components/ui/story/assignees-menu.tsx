@@ -188,9 +188,7 @@ const Items = ({
                   active={visibleMayaAssignee.id === assigneeId}
                   className="justify-between"
                   onSelect={() => {
-                    if (visibleMayaAssignee.id !== assigneeId) {
-                      onAssigneeSelected(visibleMayaAssignee.id);
-                    }
+                    onAssigneeSelected(visibleMayaAssignee.id);
                     setOpen(false);
                   }}
                   value="Maya AI assistant"

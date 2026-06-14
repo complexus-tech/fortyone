@@ -142,6 +142,18 @@ func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
 	}
 }
 
+func TestShouldIncludeCandidateExcludesMayaActor(t *testing.T) {
+	mayaActorID := uuid.New()
+	humanUserID := uuid.New()
+
+	if shouldIncludeCandidate(mayaActorID, nil, mayaActorID) {
+		t.Fatal("expected Maya actor to be excluded from assignment candidates")
+	}
+	if !shouldIncludeCandidate(humanUserID, nil, mayaActorID) {
+		t.Fatal("expected human user to be included in assignment candidates")
+	}
+}
+
 type fakeMayaRepository struct {
 	actions          []CoreAction
 	appliedActionIDs []uuid.UUID

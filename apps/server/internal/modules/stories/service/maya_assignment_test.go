@@ -23,11 +23,11 @@ func TestShouldTriggerMayaAssignmentWhenReassignedToMaya(t *testing.T) {
 	}
 }
 
-func TestShouldNotTriggerMayaAssignmentWhenAssigneeDidNotChange(t *testing.T) {
+func TestShouldTriggerMayaAssignmentWhenMayaIsExplicitlySelectedAgain(t *testing.T) {
 	mayaUserID := uuid.New()
 
-	if shouldTriggerMayaAssignment(&mayaUserID, &mayaUserID, mayaUserID) {
-		t.Fatal("expected unchanged Maya assignee to be ignored")
+	if !shouldTriggerMayaAssignment(&mayaUserID, &mayaUserID, mayaUserID) {
+		t.Fatal("expected explicit Maya selection to trigger assignment planning")
 	}
 }
 

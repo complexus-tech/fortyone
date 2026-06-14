@@ -3,14 +3,32 @@ import { SectionHeader } from "@/modules/settings/components";
 import { useTerminology } from "@/hooks";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useUpdateAutomationPreferencesMutation } from "@/lib/hooks/users/update-auto-preferences";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 
 export const Automations = () => {
   const { data: preferences } = useAutomationPreferences();
   const { getTermDisplay } = useTerminology();
+  const { hasFeature } = useSubscriptionFeatures();
   const { mutate: updatePreferences } =
     useUpdateAutomationPreferencesMutation();
+  const canUseBackgroundMaya = hasFeature("backgroundMaya");
 
-  const handleToggle = (field: string, checked: boolean) => {
+  const handleToggle = (
+    field:
+      | "autoAssignSelf"
+      | "autoAssignMaya"
+      | "assignSelfOnBranchCopy"
+      | "moveStoryToStartedOnBranch",
+    checked: boolean,
+  ) => {
+    if (field === "autoAssignSelf" && checked) {
+      updatePreferences({ autoAssignSelf: true, autoAssignMaya: false });
+      return;
+    }
+    if (field === "autoAssignMaya" && checked) {
+      updatePreferences({ autoAssignMaya: true, autoAssignSelf: false });
+      return;
+    }
     updatePreferences({ [field]: checked });
   };
 
@@ -37,6 +55,34 @@ export const Automations = () => {
               name="autoAssignSelf"
               onCheckedChange={(checked) => {
                 handleToggle("autoAssignSelf", checked);
+              }}
+            />
+          </Flex>
+
+          <Flex align="center" gap={2} justify="between">
+            <Box>
+              <Text className="font-medium">Auto-assign to Maya</Text>
+              <Text className="line-clamp-2" color="muted">
+                When creating new{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })}, make Maya
+                the default assignee so she can choose the right owner and
+                schedule the work
+              </Text>
+              {!canUseBackgroundMaya && (
+                <Text className="mt-1" color="muted">
+                  Available on paid plans.
+                </Text>
+              )}
+            </Box>
+            <Switch
+              checked={Boolean(
+                canUseBackgroundMaya && preferences?.autoAssignMaya,
+              )}
+              className="shrink-0"
+              disabled={!canUseBackgroundMaya}
+              name="autoAssignMaya"
+              onCheckedChange={(checked) => {
+                handleToggle("autoAssignMaya", checked);
               }}
             />
           </Flex>

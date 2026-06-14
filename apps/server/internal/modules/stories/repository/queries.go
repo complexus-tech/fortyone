@@ -704,8 +704,8 @@ SELECT
 		sa.created_at,
 		sa.workspace_id,
 		u.username,
-		u.full_name,
-		u.avatar_url,
+		COALESCE(u.full_name, '') AS full_name,
+		COALESCE(u.avatar_url, '') AS avatar_url,
 		u.is_active,
 		u.is_system
 		FROM story_activities sa

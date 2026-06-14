@@ -215,7 +215,10 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 	}
-	s.triggerMayaAssignment(ctx, cs, nil, actorID)
+	if err := s.triggerMayaAssignment(ctx, cs, nil, actorID); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -461,9 +464,12 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		updatedStory, err := storyWithAssignee(story, assigneeID)
 		if err != nil {
 			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
-			return nil
+			return err
 		}
-		s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID)
+		if err := s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+			span.RecordError(err)
+			return err
+		}
 	}
 
 	return nil

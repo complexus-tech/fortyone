@@ -70,7 +70,7 @@ import { useLabels } from "@/lib/hooks/labels";
 import { formatEstimate } from "@/lib/estimate";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { useMembers } from "@/lib/hooks/members";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -172,7 +172,7 @@ export const NewStoryDialog = ({
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
   const { data: teamSettings } = useTeamSettings(currentTeamId);
   const { data: automationPreferences } = useAutomationPreferences();
-  const { tier, getLimit } = useSubscriptionFeatures();
+  const { tier, getLimit, hasFeature } = useSubscriptionFeatures();
   const { data: totalStories = 0 } = useTotalStories();
 
   const teamStatuses = statuses.filter(
@@ -186,6 +186,10 @@ export const NewStoryDialog = ({
       : null);
   const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
   const autoAssignSelf = automationPreferences?.autoAssignSelf ?? false;
+  const autoAssignMaya =
+    hasFeature("backgroundMaya") &&
+    (automationPreferences?.autoAssignMaya ?? false);
+  const { data: mayaAssignee } = useMayaAssignee(autoAssignMaya);
   const currentUserId = session.data?.user.id ?? null;
 
   const initialForm: NewStory = useMemo(
@@ -197,7 +201,9 @@ export const NewStoryDialog = ({
       statusId: defaultStatus?.id,
       endDate: null,
       startDate: null,
-      assigneeId: assigneeId || (autoAssignSelf ? currentUserId : null),
+      assigneeId:
+        assigneeId ||
+        (!autoAssignMaya && autoAssignSelf ? currentUserId : null),
       priority,
       objectiveId: objectiveId || null,
       sprintId: sprintId || null,
@@ -208,6 +214,7 @@ export const NewStoryDialog = ({
       currentTeamId,
       defaultStatus?.id,
       assigneeId,
+      autoAssignMaya,
       autoAssignSelf,
       currentUserId,
       priority,
@@ -222,7 +229,10 @@ export const NewStoryDialog = ({
   const mutation = useCreateStoryMutation();
   const objective = objectives.find((o) => o.id === storyForm.objectiveId);
   const sprint = sprints.find((s) => s.id === storyForm.sprintId);
-  const member = members.find((m) => m.id === storyForm.assigneeId);
+  const member =
+    mayaAssignee?.id === storyForm.assigneeId
+      ? mayaAssignee
+      : members.find((m) => m.id === storyForm.assigneeId);
   const selectedLabelIds = storyForm.labelIds ?? [];
   const selectedLabels = allLabels.filter((label) =>
     selectedLabelIds.includes(label.id),
@@ -346,6 +356,21 @@ export const NewStoryDialog = ({
   useEffect(() => {
     dispatch({ type: "INITIALIZE", payload: initialForm });
   }, [initialForm]);
+
+  useEffect(() => {
+    if (
+      !assigneeId &&
+      autoAssignMaya &&
+      mayaAssignee?.id &&
+      !storyForm.assigneeId
+    ) {
+      dispatch({
+        type: "SET_FIELD",
+        field: "assigneeId",
+        value: mayaAssignee.id,
+      });
+    }
+  }, [assigneeId, autoAssignMaya, mayaAssignee?.id, storyForm.assigneeId]);
 
   return (
     <FeatureGuard

@@ -603,6 +603,7 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 			INSERT INTO user_automation_preferences (
 				user_id, workspace_id, 
 				auto_assign_self, 
+				auto_assign_maya,
 				assign_self_on_branch_copy, 
 				move_story_to_started_on_branch, 
 				open_story_in_dialog,
@@ -610,6 +611,7 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 			) VALUES (
 				:user_id, :workspace_id, 
 				:auto_assign_self, 
+				:auto_assign_maya,
 				:assign_self_on_branch_copy, 
 				:move_story_to_started_on_branch, 
 				:open_story_in_dialog,
@@ -621,6 +623,11 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 		params["auto_assign_self"] = false
 		if updates.AutoAssignSelf != nil {
 			params["auto_assign_self"] = *updates.AutoAssignSelf
+		}
+
+		params["auto_assign_maya"] = false
+		if updates.AutoAssignMaya != nil {
+			params["auto_assign_maya"] = *updates.AutoAssignMaya
 		}
 
 		params["assign_self_on_branch_copy"] = false
@@ -660,6 +667,11 @@ func (r *repo) UpdateAutomationPreferences(ctx context.Context, userID, workspac
 		if updates.AutoAssignSelf != nil {
 			setClauses = append(setClauses, "auto_assign_self = :auto_assign_self")
 			params["auto_assign_self"] = *updates.AutoAssignSelf
+		}
+
+		if updates.AutoAssignMaya != nil {
+			setClauses = append(setClauses, "auto_assign_maya = :auto_assign_maya")
+			params["auto_assign_maya"] = *updates.AutoAssignMaya
 		}
 
 		if updates.AssignSelfOnBranchCopy != nil {
@@ -721,12 +733,12 @@ func (r *repo) createDefaultAutomationPreferences(ctx context.Context, userID, w
 
 	query := `
 		INSERT INTO user_automation_preferences (
-			user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
+			user_id, workspace_id, auto_assign_self, auto_assign_maya, assign_self_on_branch_copy,
 			move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		) VALUES (
-			:user_id, :workspace_id, FALSE, FALSE, FALSE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+			:user_id, :workspace_id, FALSE, FALSE, FALSE, FALSE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 		)
-		RETURNING user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
+		RETURNING user_id, workspace_id, auto_assign_self, auto_assign_maya, assign_self_on_branch_copy,
 				 move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at;
 	`
 

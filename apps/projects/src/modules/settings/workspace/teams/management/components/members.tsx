@@ -73,7 +73,7 @@ export const MembersSettings = ({ team }: { team: Team }) => {
           title="Team Members"
         />
 
-        <Box className="dark:divide-dark-100 divide-y divide-gray-100">
+        <Box>
           {members.map((member) => (
             <TeamMemberRow key={member.id} member={member} teamId={team.id} />
           ))}

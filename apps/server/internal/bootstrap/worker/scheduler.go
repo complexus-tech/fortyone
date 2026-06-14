@@ -81,6 +81,24 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"30 1 * * *", // Daily at 1:30 AM, after sprint migration
+		asynq.NewTask(tasks.TypeMayaWorkFocusInference, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Maya work-focus inference task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 * * * *", // Hourly
+		asynq.NewTask(tasks.TypeMayaBatchAssignment, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Maya batch assignment task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"0 9 * * *", // Daily at 9:00 AM
 		asynq.NewTask("overdue:stories:email", nil),
 		asynq.Queue("automation"),

@@ -97,6 +97,7 @@ type RiskPayload struct {
 }
 
 type PlanInput struct {
+	Context         context.Context
 	WorkspaceID     uuid.UUID
 	Story           stories.CoreSingleStory
 	DurationMinutes int
@@ -115,6 +116,67 @@ type PlanResult struct {
 	Summary        string
 	SelectedUserID *uuid.UUID
 	Actions        []CoreAction
+}
+
+type CandidateRecommendationInput struct {
+	WorkspaceID     uuid.UUID
+	Story           stories.CoreSingleStory
+	DurationMinutes int
+	WindowStart     time.Time
+	WindowEnd       time.Time
+	Candidates      []CandidateRecommendation
+}
+
+type CandidateRecommendation struct {
+	UserID                uuid.UUID
+	FullName              string
+	Username              string
+	TeamAIRoleTitle       string
+	TeamAIRoleDescription string
+	OpenStories           int
+	EstimateTotal         int
+	HasAvailableSlot      bool
+	SlotStart             time.Time
+	SlotEnd               time.Time
+}
+
+type CandidateRecommendationResult struct {
+	UserID uuid.UUID
+	Reason string
+}
+
+type CandidateAdvisor interface {
+	RecommendCandidate(ctx context.Context, input CandidateRecommendationInput) (CandidateRecommendationResult, error)
+}
+
+type BatchAssignmentStory struct {
+	ID              uuid.UUID
+	Title           string
+	Description     string
+	Priority        string
+	EstimateValue   *int16
+	EstimateLabel   *string
+	DurationMinutes int
+}
+
+type BatchAssignmentRecommendationInput struct {
+	WorkspaceID uuid.UUID
+	Stories     []BatchAssignmentStory
+	Candidates  []CandidateRecommendation
+}
+
+type BatchAssignmentRecommendation struct {
+	StoryID    uuid.UUID
+	AssigneeID uuid.UUID
+	Reason     string
+}
+
+type BatchAssignmentRecommendationResult struct {
+	Assignments []BatchAssignmentRecommendation
+}
+
+type BatchAssignmentAdvisor interface {
+	RecommendAssignments(ctx context.Context, input BatchAssignmentRecommendationInput) (BatchAssignmentRecommendationResult, error)
 }
 
 type Repository interface {

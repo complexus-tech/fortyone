@@ -41,6 +41,13 @@ export type Member = {
   avatarUrl: string | null;
   isActive: boolean;
   isSystem: boolean;
+  teamAiRoleTitle?: string;
+  teamAiRoleDescription?: string;
+  inferredTeamAiRoleTitle?: string;
+  inferredTeamAiRoleDescription?: string;
+  inferredTeamAiRoleStoryCount?: number;
+  inferredTeamAiRoleConfidence?: number;
+  inferredTeamAiRoleGeneratedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -145,6 +152,7 @@ export type WorkspaceSettings = {
 export type AutomationPreferences = {
   id: string;
   autoAssignSelf: boolean;
+  autoAssignMaya: boolean;
   assignSelfOnBranchCopy: boolean;
   moveStoryToStartedOnBranch: boolean;
   openStoryInDialog: boolean;

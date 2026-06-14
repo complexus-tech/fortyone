@@ -31,19 +31,21 @@ func (s *Service) ConfigureMayaAssignment(assigneeID uuid.UUID, handler MayaAssi
 	}
 }
 
-func (s *Service) triggerMayaAssignment(ctx context.Context, story CoreSingleStory, previousAssignee *uuid.UUID, triggeredBy uuid.UUID) {
+func (s *Service) triggerMayaAssignment(ctx context.Context, story CoreSingleStory, previousAssignee *uuid.UUID, triggeredBy uuid.UUID) error {
 	if s.mayaAssignment == nil {
-		return
+		return nil
 	}
 	if !shouldTriggerMayaAssignment(previousAssignee, story.Assignee, s.mayaAssignment.assigneeID) {
-		return
+		return nil
 	}
 	if err := s.mayaAssignment.handler(ctx, MayaAssignmentInput{
 		Story:       story,
 		TriggeredBy: triggeredBy,
 	}); err != nil {
 		s.log.Error(ctx, "failed to run Maya assignment automation", "story_id", story.ID, "workspace_id", story.Workspace, "error", err)
+		return fmt.Errorf("run Maya assignment automation: %w", err)
 	}
+	return nil
 }
 
 func mayaAssignmentUpdateAssignee(updates map[string]any) (*uuid.UUID, bool) {
@@ -75,10 +77,7 @@ func shouldTriggerMayaAssignment(previousAssignee, nextAssignee *uuid.UUID, maya
 	if mayaAssigneeID == uuid.Nil || nextAssignee == nil || *nextAssignee != mayaAssigneeID {
 		return false
 	}
-	if previousAssignee == nil {
-		return true
-	}
-	return *previousAssignee != *nextAssignee
+	return true
 }
 
 func storyWithAssignee(story CoreSingleStory, assigneeID *uuid.UUID) (CoreSingleStory, error) {

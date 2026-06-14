@@ -99,6 +99,10 @@ export const useUpdateStoryMutation = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
+        refetchType: "all",
+      });
     },
   });
 
@@ -255,7 +259,7 @@ const updateInfiniteQuery = (
     }
 
     const firstPage = data.pages[0];
-    const firstPageStories = Array.isArray(firstPage?.stories)
+    const firstPageStories = Array.isArray(firstPage.stories)
       ? firstPage.stories
       : [];
 

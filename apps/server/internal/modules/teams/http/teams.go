@@ -370,6 +370,51 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+func (h *Handlers) UpdateMemberAIContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.UpdateMemberAIContext")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	userIDParam := web.Params(r, "userId")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
+	}
+
+	var input AppUpdateTeamMemberAIContext
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.teams.UpdateMemberAIContext(ctx, teamID, userID, workspace.ID, teams.CoreTeamMemberAIContext{
+		RoleTitle:       input.RoleTitle,
+		RoleDescription: input.RoleDescription,
+	}); err != nil {
+		if err.Error() == "team member not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team member ai context updated.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 // UpdateTeamOrdering updates the user's custom team ordering for a workspace.
 func (h *Handlers) UpdateTeamOrdering(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teams.UpdateTeamOrdering")
