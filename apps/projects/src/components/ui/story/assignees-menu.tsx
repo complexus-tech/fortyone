@@ -95,22 +95,24 @@ const Items = ({
     membersQuery.isFetching && !membersQuery.isFetchingNextPage;
   const mayaAssignee = mayaQuery.data;
   const normalizedQuery = deferredQuery.trim().toLowerCase();
-  const showMayaAssignee =
+  const visibleMayaAssignee =
     mayaAssignee !== undefined &&
     !excludeUsers.includes(mayaAssignee.id) &&
     (normalizedQuery === "" ||
-      "maya ai assistant".includes(normalizedQuery));
+      "maya ai assistant".includes(normalizedQuery))
+      ? mayaAssignee
+      : null;
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
   const visibleMembers = members.filter(
     ({ id }) =>
       !excludeUsers.includes(id) &&
       id !== currentUserId &&
-      id !== mayaAssignee?.id,
+      id !== visibleMayaAssignee?.id,
   );
   const indexOffset =
     (disallowEmptySelection ? 0 : 1) +
-    (showMayaAssignee ? 1 : 0) +
+    (visibleMayaAssignee ? 1 : 0) +
     (self ? 1 : 0);
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -181,13 +183,13 @@ const Items = ({
                   </Flex>
                 </Command.Item>
               ) : null}
-              {showMayaAssignee && mayaAssignee ? (
+              {visibleMayaAssignee ? (
                 <Command.Item
-                  active={mayaAssignee.id === assigneeId}
+                  active={visibleMayaAssignee.id === assigneeId}
                   className="justify-between"
                   onSelect={() => {
-                    if (mayaAssignee.id !== assigneeId) {
-                      onAssigneeSelected(mayaAssignee.id);
+                    if (visibleMayaAssignee.id !== assigneeId) {
+                      onAssigneeSelected(visibleMayaAssignee.id);
                     }
                     setOpen(false);
                   }}
@@ -209,7 +211,7 @@ const Items = ({
                     </Text>
                   </Flex>
                   <Flex align="center" gap={1}>
-                    {mayaAssignee.id === assigneeId && (
+                    {visibleMayaAssignee.id === assigneeId && (
                       <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                     )}
                     <Text color="muted">
