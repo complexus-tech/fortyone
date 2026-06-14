@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { memberKeys } from "@/constants/keys";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -10,6 +11,7 @@ import type {
   Story,
 } from "@/modules/stories/types";
 import type { SearchResponse } from "@/modules/search/types";
+import type { ApiResponse, Member, MembersPage, UserSummary } from "@/types";
 import {
   computeTargetKey,
   moveStoryBetweenGroups,
@@ -33,6 +35,12 @@ export const useUpdateStoryMutation = () => {
     }) => updateStoryAction(storyId, payload, workspaceSlug),
 
     onMutate: ({ storyId, payload }) => {
+      const optimisticPayload = buildOptimisticStoryPayload(
+        queryClient,
+        workspaceSlug,
+        payload,
+      );
+
       queryClient.cancelQueries({
         queryKey: storyKeys.detail(workspaceSlug, storyId),
       });
@@ -47,21 +55,31 @@ export const useUpdateStoryMutation = () => {
         if (query.isActive() && queryKey.toLowerCase().includes("stories")) {
           queryClient.cancelQueries({ queryKey: query.queryKey });
           if (queryKey.toLowerCase().includes("detail")) {
-            updateDetailQuery(queryClient, query.queryKey, storyId, payload);
+            updateDetailQuery(
+              queryClient,
+              query.queryKey,
+              storyId,
+              optimisticPayload,
+            );
           } else {
-            updateListQuery(queryClient, query.queryKey, storyId, payload);
+            updateListQuery(
+              queryClient,
+              query.queryKey,
+              storyId,
+              optimisticPayload,
+            );
           }
         }
       });
 
-      updateSearchResults(queryClient, storyId, payload);
+      updateSearchResults(queryClient, storyId, optimisticPayload);
 
       if (previousStory) {
         queryClient.setQueryData<DetailedStory>(
           storyKeys.detail(workspaceSlug, storyId),
           {
             ...previousStory,
-            ...payload,
+            ...optimisticPayload,
           },
         );
         return { previousStory };
@@ -108,6 +126,91 @@ export const useUpdateStoryMutation = () => {
 
   return mutation;
 };
+
+export const buildOptimisticStoryPayload = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceSlug: string,
+  payload: Partial<DetailedStory>,
+): Partial<DetailedStory> => {
+  if (!("assigneeId" in payload)) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    assignee: payload.assigneeId
+      ? resolveAssigneeSummary(queryClient, workspaceSlug, payload.assigneeId)
+      : null,
+  };
+};
+
+const resolveAssigneeSummary = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceSlug: string,
+  assigneeId: string,
+): UserSummary | null => {
+  const memberQueries = queryClient.getQueriesData<
+    Member | Member[] | MembersPage | InfiniteData<MembersPage> | ApiResponse<Member>
+  >({
+    queryKey: memberKeys.all(workspaceSlug),
+  });
+
+  for (const [, data] of memberQueries) {
+    const member = findMemberInCachedData(data, assigneeId);
+    if (member) {
+      return toUserSummary(member);
+    }
+  }
+
+  return null;
+};
+
+const findMemberInCachedData = (
+  data:
+    | Member
+    | Member[]
+    | MembersPage
+    | InfiniteData<MembersPage>
+    | ApiResponse<Member>
+    | undefined,
+  assigneeId: string,
+): Member | undefined => {
+  if (!data) {
+    return undefined;
+  }
+  if (Array.isArray(data)) {
+    return data.find((member) => member.id === assigneeId);
+  }
+  if (isApiResponse(data)) {
+    return data.data?.id === assigneeId ? data.data : undefined;
+  }
+  if ("pages" in data) {
+    for (const page of data.pages) {
+      const member = page.members.find(({ id }) => id === assigneeId);
+      if (member) {
+        return member;
+      }
+    }
+    return undefined;
+  }
+  if ("members" in data) {
+    return data.members.find((member) => member.id === assigneeId);
+  }
+  return data.id === assigneeId ? data : undefined;
+};
+
+const isApiResponse = (
+  data: Member | MembersPage | InfiniteData<MembersPage> | ApiResponse<Member>,
+): data is ApiResponse<Member> => "data" in data;
+
+const toUserSummary = (member: Member): UserSummary => ({
+  id: member.id,
+  username: member.username,
+  fullName: member.fullName,
+  avatarUrl: member.avatarUrl,
+  isActive: member.isActive,
+  isSystem: member.isSystem,
+});
 
 const updateDetailQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
