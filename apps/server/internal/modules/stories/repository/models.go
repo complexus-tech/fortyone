@@ -143,6 +143,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		DescriptionHTML: i.DescriptionHTML,
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
+		SprintSummary:   toCoreSprintSummary(i),
 		KeyResult:       i.KeyResult,
 		StartDate:       i.StartDate,
 		EndDate:         i.EndDate,

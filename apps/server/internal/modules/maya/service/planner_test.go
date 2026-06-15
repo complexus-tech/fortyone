@@ -117,6 +117,104 @@ func TestPlannerAvoidsInactiveCandidateWhenActiveAlternativeExists(t *testing.T)
 	}
 }
 
+func TestPlannerUsesSprintWindowWhenStoryBelongsToSprint(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	windowStart := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	windowEnd := time.Date(2026, 6, 30, 17, 0, 0, 0, time.UTC)
+	sprintStart := time.Date(2026, 6, 18, 0, 0, 0, 0, time.UTC)
+	sprintEnd := time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC)
+	expectedStart := time.Date(2026, 6, 18, 9, 0, 0, 0, time.UTC)
+
+	planner := NewPlanner()
+	result, err := planner.Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID:        storyID,
+			Workspace: workspaceID,
+			Title:     "Build sprint scoped scheduling",
+			SprintSummary: &stories.CoreSprintSummary{
+				ID:        uuid.New(),
+				Name:      "Sprint 12",
+				StartDate: sprintStart,
+				EndDate:   sprintEnd,
+			},
+		},
+		DurationMinutes: 60,
+		WindowStart:     windowStart,
+		WindowEnd:       windowEnd,
+		Candidates: []CandidateSchedule{
+			{
+				Member: reports.CoreMemberWorkload{
+					UserID:   userID,
+					FullName: "Sprint Person",
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 2 {
+		t.Fatalf("expected assign and schedule actions, got %d", len(result.Actions))
+	}
+	if got := result.Actions[1].Payload.ScheduleBlock.StartAt; !got.Equal(expectedStart) {
+		t.Fatalf("expected sprint-scoped schedule start %s, got %s", expectedStart, got)
+	}
+}
+
+func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 18, 17, 0, 0, 0, time.UTC)
+	expectedPlannedEnd := time.Date(2026, 6, 17, 13, 0, 0, 0, time.UTC)
+
+	planner := NewPlanner()
+	result, err := planner.Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID:            storyID,
+			Workspace:     workspaceID,
+			Title:         "Implement WhatsApp campaigns end-to-end",
+			EstimateValue: int16Ptr(8),
+		},
+		WindowStart: startAt,
+		WindowEnd:   endAt,
+		Candidates: []CandidateSchedule{
+			{
+				Member: reports.CoreMemberWorkload{
+					UserID:   userID,
+					FullName: "Campaign Person",
+				},
+				Blocks: []calendar.CoreScheduleBlock{
+					{StartAt: startAt, EndAt: startAt.Add(4 * time.Hour), Source: calendar.ScheduleBlockSourceUser},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 2 {
+		t.Fatalf("expected assign and schedule actions, got %d", len(result.Actions))
+	}
+	scheduleBlock := result.Actions[1].Payload.ScheduleBlock
+	if scheduleBlock == nil {
+		t.Fatal("expected schedule block payload")
+	}
+	if !scheduleBlock.StartAt.Equal(startAt.Add(4 * time.Hour)) {
+		t.Fatalf("expected first focus block to start after existing work, got %s", scheduleBlock.StartAt)
+	}
+	if !scheduleBlock.PlannedEndAt.Equal(expectedPlannedEnd) {
+		t.Fatalf("expected larger work to plan through %s, got %s", expectedPlannedEnd, scheduleBlock.PlannedEndAt)
+	}
+}
+
 func TestPlannerUsesAdvisorRecommendationWhenCandidateIsValid(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()

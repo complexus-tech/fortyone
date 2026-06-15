@@ -200,10 +200,6 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 	if !input.WindowEnd.After(input.WindowStart) {
 		return ProcessAssignmentBatchResult{}, fmt.Errorf("%w: planning window end must be after start", ErrInvalidPlanInput)
 	}
-	if input.DurationMinutes <= 0 {
-		input.DurationMinutes = defaultDurationMinutes
-	}
-
 	storiesForBatch := make([]stories.CoreSingleStory, 0, len(input.StoryIDs))
 	for _, storyID := range input.StoryIDs {
 		if storyID == uuid.Nil {
@@ -247,12 +243,12 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 			Priority:        story.Priority,
 			EstimateValue:   story.EstimateValue,
 			EstimateLabel:   story.EstimateLabel,
-			DurationMinutes: input.DurationMinutes,
+			DurationMinutes: effectiveWorkDurationMinutes(story, input.DurationMinutes),
 		})
 		storyByID[story.ID] = story
 	}
 
-	candidateRecommendations := candidateRecommendationsFromSchedules(candidates, input.WindowStart, input.WindowEnd, input.DurationMinutes)
+	candidateRecommendations := candidateRecommendationsFromSchedules(candidates, input.WindowStart, input.WindowEnd, batchCandidateDurationMinutes(storiesForBatch, input.DurationMinutes))
 	recommendations, err := s.planner.RecommendAssignments(ctx, BatchAssignmentRecommendationInput{
 		WorkspaceID: input.WorkspaceID,
 		Stories:     batchStories,
@@ -293,7 +289,7 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 			Trigger:          RunTriggerEvent,
 			WindowStart:      input.WindowStart,
 			WindowEnd:        input.WindowEnd,
-			DurationMinutes:  input.DurationMinutes,
+			DurationMinutes:  effectiveWorkDurationMinutes(story, input.DurationMinutes),
 			CandidateUserIDs: []uuid.UUID{recommendation.AssigneeID},
 			AutoApply:        input.AutoApply,
 			AssignmentReason: recommendation.Reason,
@@ -307,6 +303,26 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 	}
 	result.Skipped += len(storiesForBatch) - len(seenStoryIDs)
 	return result, nil
+}
+
+func effectiveWorkDurationMinutes(story stories.CoreSingleStory, requestedDurationMinutes int) int {
+	if requestedDurationMinutes > 0 {
+		return requestedDurationMinutes
+	}
+	return estimatedWorkDurationMinutes(story)
+}
+
+func batchCandidateDurationMinutes(storiesForBatch []stories.CoreSingleStory, requestedDurationMinutes int) int {
+	if requestedDurationMinutes > 0 {
+		return requestedDurationMinutes
+	}
+	duration := defaultDurationMinutes
+	for _, story := range storiesForBatch {
+		if candidate := estimatedWorkDurationMinutes(story); candidate > duration {
+			duration = candidate
+		}
+	}
+	return duration
 }
 
 func (s *Service) validate() error {
@@ -332,7 +348,7 @@ func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windo
 			DaysSinceLastActivity: daysSinceLastActivity(candidate.Member.LastStoryActivityAt),
 			RecentlyActive:        isRecentlyActive(candidate.Member.LastStoryActivityAt),
 		}
-		if slot, ok := earliestSlot(candidate, windowStart, windowEnd, duration); ok {
+		if slot, ok := planWorkWindow(candidate, windowStart, windowEnd, duration); ok {
 			recommendation.HasAvailableSlot = true
 			recommendation.SlotStart = slot.start
 			recommendation.SlotEnd = slot.end
@@ -498,13 +514,31 @@ func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
 		}); err != nil {
 			return err
 		}
-		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
-			"start_date": scheduleBlock.StartAt,
-			"end_date":   scheduleBlock.EndAt,
-		}, action.Reason)
+		updates := storyDateUpdatesFromSchedule(scheduleBlock)
+		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, updates, action.Reason)
 	case ActionTypeFlagScheduleRisk:
 		return nil
 	default:
 		return fmt.Errorf("unsupported maya action type: %s", action.Type)
 	}
+}
+
+func storyDateUpdatesFromSchedule(scheduleBlock *ScheduleBlockPayload) map[string]any {
+	updates := make(map[string]any, 2)
+	if scheduleBlock == nil {
+		return updates
+	}
+
+	startDate := scheduleBlock.PlannedStartAt.UTC()
+	endDate := scheduleBlock.PlannedEndAt.UTC()
+	if startDate.IsZero() {
+		startDate = scheduleBlock.StartAt.UTC()
+	}
+	if endDate.IsZero() {
+		endDate = scheduleBlock.EndAt.UTC()
+	}
+
+	updates["start_date"] = startDate
+	updates["end_date"] = endDate
+	return updates
 }

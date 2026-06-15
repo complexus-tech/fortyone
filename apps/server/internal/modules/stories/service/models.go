@@ -91,6 +91,7 @@ type CoreSingleStory struct {
 	Reporter        *uuid.UUID
 	Priority        string
 	Sprint          *uuid.UUID
+	SprintSummary   *CoreSprintSummary
 	Epic            *uuid.UUID
 	KeyResult       *uuid.UUID
 	Team            uuid.UUID

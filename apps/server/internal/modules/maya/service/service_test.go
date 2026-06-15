@@ -150,6 +150,66 @@ func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
 	}
 }
 
+func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
+	ctx := context.Background()
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	requestedBy := uuid.New()
+	mayaActorID := uuid.New()
+	teamID := uuid.New()
+	userID := uuid.New()
+	existingStartDate := time.Date(2026, 6, 20, 9, 0, 0, 0, time.UTC)
+	existingEndDate := time.Date(2026, 6, 24, 17, 0, 0, 0, time.UTC)
+	windowStart := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
+	windowEnd := time.Date(2026, 6, 30, 17, 0, 0, 0, time.UTC)
+	expectedStartDate := windowStart
+	expectedEndDate := windowStart.Add(60 * time.Minute)
+
+	storiesSvc := &fakeMayaStories{
+		story: stories.CoreSingleStory{
+			ID:        storyID,
+			Workspace: workspaceID,
+			Team:      teamID,
+			Title:     "Keep explicit dates",
+			StartDate: &existingStartDate,
+			EndDate:   &existingEndDate,
+		},
+	}
+	service := New(Dependencies{
+		Repository: &fakeMayaRepository{},
+		Stories:    storiesSvc,
+		Reports: &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{
+			Members: []reports.CoreMemberWorkload{{UserID: userID, FullName: "Ada", OpenStories: 1}},
+		}},
+		Calendar: &fakeMayaCalendar{},
+		Users: &fakeMayaUsers{members: []users.CoreUser{
+			{ID: userID, FullName: "Ada"},
+		}},
+		Planner:     NewPlanner(),
+		MayaActorID: mayaActorID,
+	})
+
+	if _, err := service.CreateWorkPlan(ctx, CreateWorkPlanInput{
+		WorkspaceID:     workspaceID,
+		StoryID:         storyID,
+		TriggeredBy:     requestedBy,
+		Trigger:         RunTriggerManual,
+		WindowStart:     windowStart,
+		WindowEnd:       windowEnd,
+		DurationMinutes: 60,
+		AutoApply:       true,
+	}); err != nil {
+		t.Fatalf("CreateWorkPlan returned error: %v", err)
+	}
+
+	if value, ok := storiesSvc.lastUpdates["start_date"].(time.Time); !ok || !value.Equal(expectedStartDate) {
+		t.Fatalf("expected start date to be overwritten with %s, got %#v", expectedStartDate, storiesSvc.lastUpdates["start_date"])
+	}
+	if value, ok := storiesSvc.lastUpdates["end_date"].(time.Time); !ok || !value.Equal(expectedEndDate) {
+		t.Fatalf("expected end date to be overwritten with %s, got %#v", expectedEndDate, storiesSvc.lastUpdates["end_date"])
+	}
+}
+
 func TestShouldIncludeCandidateExcludesMayaActor(t *testing.T) {
 	mayaActorID := uuid.New()
 	humanUserID := uuid.New()
@@ -214,6 +274,7 @@ type fakeMayaStories struct {
 	updatedAssignee  *uuid.UUID
 	updatedStartDate *time.Time
 	updatedEndDate   *time.Time
+	lastUpdates      map[string]any
 	updateReasons    []string
 }
 
@@ -229,6 +290,7 @@ func (f *fakeMayaStories) UpdateExternal(_ context.Context, actorID, storyID, wo
 
 func (f *fakeMayaStories) UpdateExternalWithReason(_ context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
 	f.actorID = actorID
+	f.lastUpdates = updates
 	f.updateReasons = append(f.updateReasons, reason)
 	if value, ok := updates["assignee_id"].(uuid.UUID); ok {
 		f.updatedAssignee = &value

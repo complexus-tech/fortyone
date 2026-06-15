@@ -10,6 +10,7 @@ import (
 
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
 
@@ -18,6 +19,7 @@ var ErrInvalidPlanInput = errors.New("invalid maya plan input")
 const (
 	defaultDurationMinutes = 60
 	minimumSlotMinutes     = 30
+	maxFocusBlockMinutes   = 120
 	workdayStartHour       = 9
 	workdayEndHour         = 17
 	recentActivityDays     = 30
@@ -46,13 +48,18 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		if candidate.Member.UserID == uuid.Nil {
 			continue
 		}
-		slot, ok := earliestSlot(candidate, normalized.WindowStart, normalized.WindowEnd, time.Duration(normalized.DurationMinutes)*time.Minute)
+		plan, ok := planWorkWindow(candidate, normalized.WindowStart, normalized.WindowEnd, time.Duration(normalized.DurationMinutes)*time.Minute)
 		if !ok {
 			continue
 		}
+		focusBlockEnd := plan.start.Add(firstFocusBlockDuration(time.Duration(normalized.DurationMinutes) * time.Minute))
+		if focusBlockEnd.After(plan.end) {
+			focusBlockEnd = plan.end
+		}
 		candidates = append(candidates, candidateChoice{
 			candidate: candidate,
-			slot:      slot,
+			slot:      timeSlot{start: plan.start, end: focusBlockEnd},
+			plan:      plan,
 		})
 	}
 	candidates = preferRecentlyActiveChoices(candidates)
@@ -151,10 +158,12 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			Status:      ActionStatusProposed,
 			Reason:      scheduleReason(selected),
 			Payload: ActionPayload{ScheduleBlock: &ScheduleBlockPayload{
-				UserID:  selectedUserID,
-				Title:   normalized.Story.Title,
-				StartAt: selected.slot.start,
-				EndAt:   selected.slot.end,
+				UserID:         selectedUserID,
+				Title:          normalized.Story.Title,
+				StartAt:        selected.slot.start,
+				EndAt:          selected.slot.end,
+				PlannedStartAt: selected.plan.start,
+				PlannedEndAt:   selected.plan.end,
 			}},
 		})
 	}
@@ -397,6 +406,7 @@ func displayCandidateName(candidate CandidateRecommendation) string {
 type candidateChoice struct {
 	candidate CandidateSchedule
 	slot      timeSlot
+	plan      timeSlot
 }
 
 type timeSlot struct {
@@ -415,43 +425,142 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 		return PlanInput{}, fmt.Errorf("%w: at least one candidate is required", ErrInvalidPlanInput)
 	}
 	if input.DurationMinutes <= 0 {
-		input.DurationMinutes = defaultDurationMinutes
+		input.DurationMinutes = estimatedWorkDurationMinutes(input.Story)
 	}
 	if input.DurationMinutes < minimumSlotMinutes {
 		input.DurationMinutes = minimumSlotMinutes
 	}
 	input.WindowStart = input.WindowStart.UTC()
 	input.WindowEnd = input.WindowEnd.UTC()
+	input = clampPlanInputToSprintWindow(input)
+	if !input.WindowEnd.After(input.WindowStart) {
+		return PlanInput{}, fmt.Errorf("%w: sprint planning window end must be after start", ErrInvalidPlanInput)
+	}
 	return input, nil
 }
 
-func earliestSlot(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration) (timeSlot, bool) {
+func estimatedWorkDurationMinutes(story stories.CoreSingleStory) int {
+	if story.EstimateValue != nil && *story.EstimateValue > 0 {
+		return int(*story.EstimateValue) * 120
+	}
+
+	text := strings.ToLower(story.Title)
+	if story.Description != nil {
+		text += " " + strings.ToLower(*story.Description)
+	}
+	if strings.Contains(text, "end-to-end") || strings.Contains(text, "campaign") || strings.Contains(text, "integration") || strings.Contains(text, "platform") {
+		return 16 * 60
+	}
+	return defaultDurationMinutes
+}
+
+func firstFocusBlockDuration(duration time.Duration) time.Duration {
+	maxDuration := time.Duration(maxFocusBlockMinutes) * time.Minute
+	if duration > maxDuration {
+		return maxDuration
+	}
+	return duration
+}
+
+func clampPlanInputToSprintWindow(input PlanInput) PlanInput {
+	if input.Story.SprintSummary == nil {
+		return input
+	}
+
+	sprintStart := sprintWorkdayStart(input.Story.SprintSummary.StartDate.UTC())
+	sprintEnd := sprintWorkdayEnd(input.Story.SprintSummary.EndDate.UTC())
+	if input.WindowStart.Before(sprintStart) {
+		input.WindowStart = sprintStart
+	}
+	if input.WindowEnd.After(sprintEnd) {
+		input.WindowEnd = sprintEnd
+	}
+	return input
+}
+
+func sprintWorkdayStart(value time.Time) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), workdayStartHour, 0, 0, 0, time.UTC)
+}
+
+func sprintWorkdayEnd(value time.Time) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), workdayEndHour, 0, 0, 0, time.UTC)
+}
+
+func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration) (timeSlot, bool) {
 	occupied := occupiedSlots(candidate)
 	cursor := alignToNextHalfHour(startAt.UTC())
+	remaining := duration
+	var plannedStart time.Time
 
 	for cursor.Before(endAt) {
+		if cursor.Weekday() == time.Saturday || cursor.Weekday() == time.Sunday {
+			cursor = nextWorkdayStart(cursor)
+			continue
+		}
+
 		dayStart := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayStartHour, 0, 0, 0, time.UTC)
 		dayEnd := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayEndHour, 0, 0, 0, time.UTC)
 		if cursor.Before(dayStart) {
 			cursor = dayStart
 		}
 		if !cursor.Before(dayEnd) {
-			cursor = time.Date(cursor.Year(), cursor.Month(), cursor.Day()+1, workdayStartHour, 0, 0, 0, time.UTC)
+			cursor = nextWorkdayStart(cursor)
 			continue
 		}
 
-		slotEnd := cursor.Add(duration)
-		if slotEnd.After(dayEnd) || slotEnd.After(endAt) {
-			cursor = time.Date(cursor.Year(), cursor.Month(), cursor.Day()+1, workdayStartHour, 0, 0, 0, time.UTC)
+		if nextCursor, blocked := advancePastOccupiedSlot(cursor, occupied); blocked {
+			cursor = nextCursor
 			continue
 		}
-		if !overlapsAny(cursor, slotEnd, occupied) {
-			return timeSlot{start: cursor, end: slotEnd}, true
+
+		nextBoundary := minTime(dayEnd, endAt)
+		for _, slot := range occupied {
+			if slot.start.After(cursor) && slot.start.Before(nextBoundary) {
+				nextBoundary = slot.start
+				break
+			}
 		}
-		cursor = cursor.Add(minimumSlotMinutes * time.Minute)
+		if !nextBoundary.After(cursor) {
+			cursor = cursor.Add(minimumSlotMinutes * time.Minute)
+			continue
+		}
+
+		if plannedStart.IsZero() {
+			plannedStart = cursor
+		}
+		available := nextBoundary.Sub(cursor)
+		if available >= remaining {
+			return timeSlot{start: plannedStart, end: cursor.Add(remaining)}, true
+		}
+		remaining -= available
+		cursor = nextBoundary
 	}
 
 	return timeSlot{}, false
+}
+
+func advancePastOccupiedSlot(cursor time.Time, occupied []timeSlot) (time.Time, bool) {
+	for _, slot := range occupied {
+		if cursor.Before(slot.end) && !cursor.Before(slot.start) {
+			return alignToNextHalfHour(slot.end), true
+		}
+	}
+	return cursor, false
+}
+
+func nextWorkdayStart(value time.Time) time.Time {
+	next := time.Date(value.Year(), value.Month(), value.Day()+1, workdayStartHour, 0, 0, 0, time.UTC)
+	for next.Weekday() == time.Saturday || next.Weekday() == time.Sunday {
+		next = next.AddDate(0, 0, 1)
+	}
+	return next
+}
+
+func minTime(left, right time.Time) time.Time {
+	if left.Before(right) {
+		return left
+	}
+	return right
 }
 
 func occupiedSlots(candidate CandidateSchedule) []timeSlot {
@@ -476,15 +585,6 @@ func alignToNextHalfHour(value time.Time) time.Time {
 		return value
 	}
 	return value.Add(time.Duration(minimumSlotMinutes-remainder) * time.Minute).Truncate(time.Minute)
-}
-
-func overlapsAny(startAt, endAt time.Time, slots []timeSlot) bool {
-	for _, slot := range slots {
-		if startAt.Before(slot.end) && endAt.After(slot.start) {
-			return true
-		}
-	}
-	return false
 }
 
 func hasStoryScheduleBlock(blocks []calendar.CoreScheduleBlock, storyID uuid.UUID) bool {

@@ -254,6 +254,10 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.team_id,
 					s.objective_id,
 					s.sprint_id,
+					sp.name AS sprint_name,
+					sp.goal AS sprint_goal,
+					sp.start_date AS sprint_start_date,
+					sp.end_date AS sprint_end_date,
 					s.key_result_id,
 					s.workspace_id,
 					s.assignee_id,
@@ -335,6 +339,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 				FROM
 					stories s
 					INNER JOIN teams t ON s.team_id = t.team_id
+					LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 				WHERE
 					s.id =:id
 					AND s.workspace_id =:workspace_id;

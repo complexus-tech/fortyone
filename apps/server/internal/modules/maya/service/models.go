@@ -85,10 +85,12 @@ type AssignStoryPayload struct {
 }
 
 type ScheduleBlockPayload struct {
-	UserID  uuid.UUID `json:"userId"`
-	Title   string    `json:"title"`
-	StartAt time.Time `json:"startAt"`
-	EndAt   time.Time `json:"endAt"`
+	UserID         uuid.UUID `json:"userId"`
+	Title          string    `json:"title"`
+	StartAt        time.Time `json:"startAt"`
+	EndAt          time.Time `json:"endAt"`
+	PlannedStartAt time.Time `json:"plannedStartAt"`
+	PlannedEndAt   time.Time `json:"plannedEndAt"`
 }
 
 type RiskPayload struct {
