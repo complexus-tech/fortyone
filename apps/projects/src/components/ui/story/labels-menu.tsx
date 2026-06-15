@@ -8,13 +8,14 @@ import {
   type ReactNode,
   type UIEvent,
 } from "react";
-import { Button, Command, Divider, Flex, Popover, Text } from "ui";
+import { Command, Divider, Flex, Popover, Text } from "ui";
 import { CheckIcon, PlusIcon } from "icons";
 import { generateRandomColor } from "lib";
 import { LABEL_MENU_PAGE_SIZE, useLabelsInfinite } from "@/lib/hooks/labels";
 import { useCreateLabelMutation } from "@/lib/hooks/create-label-mutation";
 import { Dot } from "../dot";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
+import { canCreateLabelFromQuery } from "./labels-menu-utils";
 
 const LabelsContext = createContext<{
   open: boolean;
@@ -77,15 +78,16 @@ const Items = ({
     isFetchingNextPage,
     isPending,
   } = useLabelsInfinite(
-      { search: deferredQuery, teamId },
-      LABEL_MENU_PAGE_SIZE,
-      open,
-    );
+    { search: deferredQuery, teamId },
+    LABEL_MENU_PAGE_SIZE,
+    open,
+  );
   const labels = data?.pages.flatMap((page) => page.labels) ?? [];
   const selectedLabelIds = pendingLabelIds ?? labelIds;
   const isLoadingLabels =
-    (isPending || isFetching || query !== deferredQuery) &&
-    !isFetchingNextPage;
+    (isPending || isFetching || query !== deferredQuery) && !isFetchingNextPage;
+  const canCreateLabel =
+    !isLoadingLabels && !isLoading && canCreateLabelFromQuery(query, labels);
 
   const updateSelectedLabels = (nextLabelIds: string[]) => {
     const requestId = selectionRequestId.current + 1;
@@ -108,7 +110,7 @@ const Items = ({
 
   const handleCreateLabel = async () => {
     const name = query.trim();
-    if (!name) {
+    if (!name || isLoading) {
       return;
     }
 
@@ -148,6 +150,12 @@ const Items = ({
       <Command shouldFilter={false}>
         <Command.Input
           autoFocus
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && canCreateLabel) {
+              event.preventDefault();
+              void handleCreateLabel();
+            }
+          }}
           onValueChange={(value) => {
             setQuery(value);
           }}
@@ -155,28 +163,48 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        {!isLoadingLabels ? (
-          <Command.Empty className="justify-center px-1 py-0">
-            <Button
-              className="mx-0 border-0 text-base font-medium"
-              color="tertiary"
-              disabled={query.trim().length === 0}
-              fullWidth
-              loading={isLoading}
-              loadingText="Creating label..."
-              onClick={handleCreateLabel}
-            >
-              <PlusIcon className="h-4" strokeWidth={2.7} /> Create new label:{" "}
-              <span className="text-text-muted font-medium">
-                &ldquo;{query.trim()}&rdquo;
-              </span>
-            </Button>
+        {!isLoadingLabels && labels.length === 0 && !canCreateLabel ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">No labels found.</Text>
           </Command.Empty>
         ) : null}
         <Command.Group
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
+          {canCreateLabel ? (
+            <Command.Item
+              className="justify-between gap-4"
+              onSelect={() => {
+                void handleCreateLabel();
+              }}
+              value={`create-label-${query.trim()}`}
+            >
+              <Flex align="center" gap={2}>
+                <PlusIcon className="h-4" strokeWidth={2.7} />
+                <Text className="mr-4 flex items-center gap-2 font-medium">
+                  Create label
+                  <span className="text-text-muted font-medium">
+                    &ldquo;{query.trim()}&rdquo;
+                  </span>
+                </Text>
+              </Flex>
+            </Command.Item>
+          ) : null}
+          {isLoading ? (
+            <Command.Item
+              className="justify-between gap-4 opacity-70"
+              disabled
+              value="creating-label"
+            >
+              <Flex align="center" gap={2}>
+                <PlusIcon className="h-4" strokeWidth={2.7} />
+                <Text className="mr-4 flex items-center gap-2 font-medium">
+                  Creating label...
+                </Text>
+              </Flex>
+            </Command.Item>
+          ) : null}
           {isLoadingLabels ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={5} />
