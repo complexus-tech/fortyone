@@ -27,7 +27,7 @@ export const Tooltip = ({
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             className={cn(
-              "z-50 mr-2 max-w-80 whitespace-normal wrap-break-word rounded-2xl border border-border bg-surface-elevated/90 px-3 py-[0.35rem] text-left text-[0.95rem] font-medium leading-snug text-foreground backdrop-blur",
+              "z-50 mr-2 max-w-80 whitespace-normal wrap-break-word rounded-2xl border border-border bg-surface-elevated/90 px-3 py-2 text-left text-[0.95rem] font-medium leading-snug text-foreground backdrop-blur",
               className,
             )}
             collisionPadding={collisionPadding}
