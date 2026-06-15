@@ -102,7 +102,6 @@ const Items = ({
   const visibleMayaAssignee =
     mayaAssignee !== undefined &&
     !excludeUsers.includes(mayaAssignee.id) &&
-    (canUseBackgroundMaya || mayaAssignee.id === assigneeId) &&
     (normalizedQuery === "" ||
       "maya ai assistant".includes(normalizedQuery))
       ? mayaAssignee
@@ -192,7 +191,11 @@ const Items = ({
                 <Command.Item
                   active={visibleMayaAssignee.id === assigneeId}
                   className="justify-between"
+                  disabled={!canUseBackgroundMaya}
                   onSelect={() => {
+                    if (!canUseBackgroundMaya) {
+                      return;
+                    }
                     if (visibleMayaAssignee.id !== assigneeId) {
                       onAssigneeSelected(visibleMayaAssignee.id);
                     }
@@ -209,7 +212,7 @@ const Items = ({
                     <Text className="max-w-48 truncate">
                       Maya{" "}
                       <Text as="span" color="muted">
-                        (AI)
+                        {canUseBackgroundMaya ? "(AI)" : "(Paid plan)"}
                       </Text>
                     </Text>
                   </Flex>

@@ -20,19 +20,33 @@ import {
 import type { DetailedStory } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
+type UpdateStoryVariables = {
+  storyId: string;
+  payload: Partial<DetailedStory>;
+};
+
+type UpdateStoryContext = {
+  previousStory?: DetailedStory;
+};
+
 export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
 
-  const mutation = useMutation({
-    mutationFn: ({
-      storyId,
-      payload,
-    }: {
-      storyId: string;
-      payload: Partial<DetailedStory>;
-    }) => updateStoryAction(storyId, payload, workspaceSlug),
+  const mutation = useMutation<
+    ApiResponse<null>,
+    Error,
+    UpdateStoryVariables,
+    UpdateStoryContext
+  >({
+    mutationFn: async ({ storyId, payload }) => {
+      const response = await updateStoryAction(storyId, payload, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      return response;
+    },
 
     onMutate: ({ storyId, payload }) => {
       const optimisticPayload = buildOptimisticStoryPayload(
@@ -107,11 +121,7 @@ export const useUpdateStoryMutation = () => {
       });
     },
 
-    onSuccess: (res, { storyId, payload }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_res, { storyId, payload }) => {
       analytics.track("story_updated", {
         storyId,
         ...payload,

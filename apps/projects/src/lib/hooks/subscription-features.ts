@@ -118,6 +118,7 @@ export const useSubscriptionFeatures = () => {
 
   if (
     subscription &&
+    subscription.tier !== "free" &&
     ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)
   ) {
     effectiveTier = subscription.tier;

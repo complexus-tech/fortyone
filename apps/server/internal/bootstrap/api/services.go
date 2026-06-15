@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -66,8 +65,10 @@ import (
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type services struct {
@@ -220,7 +221,7 @@ func buildServices(cfg mux.Config) services {
 		MayaActorID: mayaActorID,
 	})
 	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
-		if err := ensureBackgroundMayaEnabled(ctx, subscriptionsService, input.Story.Workspace); err != nil {
+		if err := ensureBackgroundMayaEnabled(ctx, cfg.DB, input.Story.Workspace); err != nil {
 			return err
 		}
 		return nil
@@ -268,26 +269,15 @@ func buildServices(cfg mux.Config) services {
 	}
 }
 
-func ensureBackgroundMayaEnabled(ctx context.Context, subscriptionsService *subscriptions.Service, workspaceID uuid.UUID) error {
-	subscription, err := subscriptionsService.GetSubscription(ctx, workspaceID)
+func ensureBackgroundMayaEnabled(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
+	hasAccess, err := billing.WorkspaceCanUseMaya(ctx, db, workspaceID)
 	if err != nil {
-		if errors.Is(err, subscriptions.ErrSubscriptionNotFound) {
-			return errors.New("background Maya assignment requires a paid plan")
-		}
-		return fmt.Errorf("check background Maya subscription: %w", err)
+		return fmt.Errorf("check background Maya access: %w", err)
 	}
-	if subscription.SubscriptionTier == subscriptions.TierFree {
-		return errors.New("background Maya assignment requires a paid plan")
+	if !hasAccess {
+		return fmt.Errorf("background Maya assignment requires a paid plan")
 	}
-	if subscription.SubscriptionStatus == nil {
-		return errors.New("background Maya assignment requires an active paid plan")
-	}
-	switch *subscription.SubscriptionStatus {
-	case subscriptions.StatusActive, subscriptions.StatusTrialing, subscriptions.StatusPastDue:
-		return nil
-	default:
-		return errors.New("background Maya assignment requires an active paid plan")
-	}
+	return nil
 }
 
 func (s services) validate() error {
