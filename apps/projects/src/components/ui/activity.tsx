@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, EstimateIcon, SprintsIcon } from "icons";
+import { CalendarIcon, EstimateIcon, InfoIcon, SprintsIcon } from "icons";
 import { formatEstimate } from "@/lib/estimate";
 import { useWorkspacePath } from "@/hooks";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
@@ -105,6 +105,7 @@ export const Activity = ({
   createdAt,
   user,
   newValue,
+  reason,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: mayaAssignee } = useMayaAssignee();
@@ -117,6 +118,7 @@ export const Activity = ({
   const findActivityAssignee = (value: string) =>
     activityAssignees.find(({ id }) => id === value);
   const activityVerb = getActivityVerb(type);
+  const activityReason = reason?.trim() ?? "";
   const isLinkedUrl =
     type === "link" &&
     currentValue &&
@@ -418,6 +420,13 @@ export const Activity = ({
             </>
           )}
           {linkedValue}
+          {activityReason ? (
+            <Tooltip title={activityReason}>
+              <span className="inline-flex shrink-0 cursor-help items-center">
+                <InfoIcon className="text-icon-muted h-4" />
+              </span>
+            </Tooltip>
+          ) : null}
           <Text
             as="span"
             className="mx-0.5 text-sm md:text-[0.95rem]"

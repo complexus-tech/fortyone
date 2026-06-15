@@ -72,6 +72,7 @@ export type StoryActivity = {
   currentValue: string;
   oldValue?: unknown;
   newValue?: unknown;
+  reason?: string | null;
   createdAt: string;
 };
 

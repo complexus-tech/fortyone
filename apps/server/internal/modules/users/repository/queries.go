@@ -214,10 +214,21 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.Cor
 			tm.inferred_ai_role_description as inferred_team_ai_role_description,
 			tm.inferred_ai_role_story_count as inferred_team_ai_role_story_count,
 			tm.inferred_ai_role_confidence as inferred_team_ai_role_confidence,
-			tm.inferred_ai_role_generated_at as inferred_team_ai_role_generated_at
+			tm.inferred_ai_role_generated_at as inferred_team_ai_role_generated_at,
+			last_activity.last_story_activity_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		INNER JOIN team_members tm ON u.user_id = tm.user_id
+		LEFT JOIN LATERAL (
+			SELECT MAX(sa.created_at) AS last_story_activity_at
+			FROM story_activities sa
+			INNER JOIN stories s ON s.id = sa.story_id
+			WHERE sa.user_id = u.user_id
+				AND sa.workspace_id = :workspace_id
+				AND s.team_id = :team_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+		) last_activity ON true
 		WHERE wm.workspace_id = :workspace_id
 			AND tm.team_id = :team_id
 			AND u.is_active = TRUE
@@ -245,9 +256,19 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.Cor
 			'' as inferred_team_ai_role_description,
 			0 as inferred_team_ai_role_story_count,
 			0 as inferred_team_ai_role_confidence,
-			NULL as inferred_team_ai_role_generated_at
+			NULL as inferred_team_ai_role_generated_at,
+			last_activity.last_story_activity_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
+		LEFT JOIN LATERAL (
+			SELECT MAX(sa.created_at) AS last_story_activity_at
+			FROM story_activities sa
+			INNER JOIN stories s ON s.id = sa.story_id
+			WHERE sa.user_id = u.user_id
+				AND sa.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+		) last_activity ON true
 		WHERE wm.workspace_id = :workspace_id
 			AND u.is_active = TRUE
 			AND u.is_system = FALSE

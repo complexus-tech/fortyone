@@ -91,6 +91,14 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 	if len(repo.appliedActionIDs) != 2 {
 		t.Fatalf("expected two applied action marks, got %d", len(repo.appliedActionIDs))
 	}
+	if len(storiesSvc.updateReasons) != 2 {
+		t.Fatalf("expected two reason-aware story updates, got %d", len(storiesSvc.updateReasons))
+	}
+	for _, reason := range storiesSvc.updateReasons {
+		if reason == "" {
+			t.Fatal("expected Maya story update reason to be recorded")
+		}
+	}
 }
 
 func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
@@ -206,6 +214,7 @@ type fakeMayaStories struct {
 	updatedAssignee  *uuid.UUID
 	updatedStartDate *time.Time
 	updatedEndDate   *time.Time
+	updateReasons    []string
 }
 
 func (f *fakeMayaStories) Get(_ context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
@@ -215,7 +224,12 @@ func (f *fakeMayaStories) Get(_ context.Context, storyID, workspaceID uuid.UUID)
 }
 
 func (f *fakeMayaStories) UpdateExternal(_ context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
+	return f.UpdateExternalWithReason(context.Background(), actorID, storyID, workspaceID, updates, "")
+}
+
+func (f *fakeMayaStories) UpdateExternalWithReason(_ context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
 	f.actorID = actorID
+	f.updateReasons = append(f.updateReasons, reason)
 	if value, ok := updates["assignee_id"].(uuid.UUID); ok {
 		f.updatedAssignee = &value
 	}

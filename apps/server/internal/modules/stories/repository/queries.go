@@ -701,6 +701,7 @@ SELECT
 		sa.current_value,
 		sa.old_value,
 		sa.new_value,
+		sa.reason,
 		sa.created_at,
 		sa.workspace_id,
 		u.username,

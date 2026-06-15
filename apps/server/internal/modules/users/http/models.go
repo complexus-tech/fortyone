@@ -31,6 +31,7 @@ type AppUser struct {
 	InferredTeamAIRoleStoryCount  int        `json:"inferredTeamAiRoleStoryCount,omitempty"`
 	InferredTeamAIRoleConfidence  float32    `json:"inferredTeamAiRoleConfidence,omitempty"`
 	InferredTeamAIRoleGeneratedAt *time.Time `json:"inferredTeamAiRoleGeneratedAt,omitempty"`
+	LastStoryActivityAt           *time.Time `json:"lastStoryActivityAt,omitempty"`
 }
 
 type AppFilter struct {
@@ -140,6 +141,7 @@ func toAppUser(user users.CoreUser) AppUser {
 		InferredTeamAIRoleStoryCount:  user.InferredTeamAIRoleStoryCount,
 		InferredTeamAIRoleConfidence:  user.InferredTeamAIRoleConfidence,
 		InferredTeamAIRoleGeneratedAt: user.InferredTeamAIRoleGeneratedAt,
+		LastStoryActivityAt:           user.LastStoryActivityAt,
 	}
 }
 

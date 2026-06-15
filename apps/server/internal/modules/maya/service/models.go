@@ -97,13 +97,14 @@ type RiskPayload struct {
 }
 
 type PlanInput struct {
-	Context         context.Context
-	WorkspaceID     uuid.UUID
-	Story           stories.CoreSingleStory
-	DurationMinutes int
-	WindowStart     time.Time
-	WindowEnd       time.Time
-	Candidates      []CandidateSchedule
+	Context          context.Context
+	WorkspaceID      uuid.UUID
+	Story            stories.CoreSingleStory
+	DurationMinutes  int
+	WindowStart      time.Time
+	WindowEnd        time.Time
+	Candidates       []CandidateSchedule
+	AssignmentReason string
 }
 
 type CandidateSchedule struct {
@@ -138,6 +139,9 @@ type CandidateRecommendation struct {
 	HasAvailableSlot      bool
 	SlotStart             time.Time
 	SlotEnd               time.Time
+	LastStoryActivityAt   *time.Time
+	DaysSinceLastActivity *int
+	RecentlyActive        bool
 }
 
 type CandidateRecommendationResult struct {

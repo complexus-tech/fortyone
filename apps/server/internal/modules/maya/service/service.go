@@ -26,6 +26,7 @@ const defaultCandidateLimit = 15
 type StoriesService interface {
 	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
+	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
 }
 
 type ReportsService interface {
@@ -71,6 +72,7 @@ type CreateWorkPlanInput struct {
 	DurationMinutes  int         `json:"durationMinutes"`
 	CandidateUserIDs []uuid.UUID `json:"candidateUserIds"`
 	AutoApply        bool        `json:"autoApply"`
+	AssignmentReason string      `json:"-"`
 }
 
 type WorkPlan struct {
@@ -144,13 +146,14 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 	}
 
 	result, err := s.planner.Plan(PlanInput{
-		Context:         ctx,
-		WorkspaceID:     input.WorkspaceID,
-		Story:           story,
-		DurationMinutes: input.DurationMinutes,
-		WindowStart:     input.WindowStart,
-		WindowEnd:       input.WindowEnd,
-		Candidates:      candidates,
+		Context:          ctx,
+		WorkspaceID:      input.WorkspaceID,
+		Story:            story,
+		DurationMinutes:  input.DurationMinutes,
+		WindowStart:      input.WindowStart,
+		WindowEnd:        input.WindowEnd,
+		Candidates:       candidates,
+		AssignmentReason: input.AssignmentReason,
 	})
 	if err != nil {
 		message := err.Error()
@@ -293,6 +296,7 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 			DurationMinutes:  input.DurationMinutes,
 			CandidateUserIDs: []uuid.UUID{recommendation.AssigneeID},
 			AutoApply:        input.AutoApply,
+			AssignmentReason: recommendation.Reason,
 		})
 		if err != nil {
 			result.Skipped++
@@ -324,6 +328,9 @@ func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windo
 			TeamAIRoleDescription: candidate.Member.TeamAIRoleDescription,
 			OpenStories:           candidate.Member.OpenStories,
 			EstimateTotal:         candidate.Member.EstimateTotal,
+			LastStoryActivityAt:   candidate.Member.LastStoryActivityAt,
+			DaysSinceLastActivity: daysSinceLastActivity(candidate.Member.LastStoryActivityAt),
+			RecentlyActive:        isRecentlyActive(candidate.Member.LastStoryActivityAt),
 		}
 		if slot, ok := earliestSlot(candidate, windowStart, windowEnd, duration); ok {
 			recommendation.HasAvailableSlot = true
@@ -399,6 +406,7 @@ func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput
 			if member.AvatarURL == "" {
 				member.AvatarURL = user.AvatarURL
 			}
+			member.LastStoryActivityAt = user.LastStoryActivityAt
 			member.TeamAIRoleTitle = user.TeamAIRoleTitle
 			member.TeamAIRoleDescription = user.TeamAIRoleDescription
 			if member.TeamAIRoleTitle == "" {
@@ -469,9 +477,9 @@ func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
 		if action.Payload.AssignStory == nil {
 			return fmt.Errorf("missing assign story payload")
 		}
-		return s.stories.UpdateExternal(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
+		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
 			"assignee_id": action.Payload.AssignStory.AssigneeID,
-		})
+		}, action.Reason)
 	case ActionTypeScheduleWorkBlock:
 		if action.Payload.ScheduleBlock == nil {
 			return fmt.Errorf("missing schedule block payload")
@@ -490,10 +498,10 @@ func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
 		}); err != nil {
 			return err
 		}
-		return s.stories.UpdateExternal(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
+		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
 			"start_date": scheduleBlock.StartAt,
 			"end_date":   scheduleBlock.EndAt,
-		})
+		}, action.Reason)
 	case ActionTypeFlagScheduleRisk:
 		return nil
 	default:

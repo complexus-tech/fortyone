@@ -48,6 +48,7 @@ export type Member = {
   inferredTeamAiRoleStoryCount?: number;
   inferredTeamAiRoleConfidence?: number;
   inferredTeamAiRoleGeneratedAt?: string | null;
+  lastStoryActivityAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };

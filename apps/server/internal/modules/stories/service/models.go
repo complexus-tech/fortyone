@@ -196,6 +196,7 @@ type CoreActivity struct {
 	CurrentValue string    `json:"currentValue"`
 	OldValue     any       `json:"oldValue"`
 	NewValue     any       `json:"newValue"`
+	Reason       *string   `json:"reason,omitempty"`
 	CreatedAt    time.Time `json:"createdAt"`
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
@@ -210,6 +211,7 @@ type CoreActivityWithUser struct {
 	CurrentValue string      `json:"currentValue"`
 	OldValue     any         `json:"oldValue"`
 	NewValue     any         `json:"newValue"`
+	Reason       *string     `json:"reason,omitempty"`
 	CreatedAt    time.Time   `json:"createdAt"`
 	WorkspaceID  uuid.UUID   `json:"workspaceId"`
 	User         UserDetails `json:"user"`

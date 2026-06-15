@@ -219,6 +219,7 @@ func mayaAssignmentSystemPrompt() string {
 		"Choose the best assignee from the provided candidates only.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from the story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
+		"Avoid candidates who are not recently active when recently active alternatives exist.",
 		"Never invent users, dates, or ids.",
 		"Return only valid JSON matching the provided schema.",
 	}, " ")
@@ -230,6 +231,7 @@ func mayaBatchAssignmentSystemPrompt() string {
 		"Assign each provided story to exactly one provided candidate.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from each story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
+		"Avoid candidates who are not recently active when recently active alternatives exist.",
 		"Never invent users, stories, dates, or ids.",
 		"Return only valid JSON matching the provided schema.",
 	}, " ")
@@ -327,15 +329,21 @@ func toOpenAIBatchAssignmentPrompt(input BatchAssignmentRecommendationInput) map
 	candidates := make([]map[string]any, 0, len(input.Candidates))
 	for _, candidate := range input.Candidates {
 		candidatePayload := map[string]any{
-			"userId":           candidate.UserID,
-			"fullName":         candidate.FullName,
-			"username":         candidate.Username,
-			"roleTitle":        candidate.TeamAIRoleTitle,
-			"roleDescription":  candidate.TeamAIRoleDescription,
-			"openItems":        candidate.OpenStories,
-			"estimateTotal":    candidate.EstimateTotal,
-			"hasAvailableSlot": candidate.HasAvailableSlot,
-			"availableSlot":    nil,
+			"userId":            candidate.UserID,
+			"fullName":          candidate.FullName,
+			"username":          candidate.Username,
+			"roleTitle":         candidate.TeamAIRoleTitle,
+			"roleDescription":   candidate.TeamAIRoleDescription,
+			"openItems":         candidate.OpenStories,
+			"estimateTotal":     candidate.EstimateTotal,
+			"hasAvailableSlot":  candidate.HasAvailableSlot,
+			"recentlyActive":    candidate.RecentlyActive,
+			"daysSinceActivity": candidate.DaysSinceLastActivity,
+			"lastActivityAt":    nil,
+			"availableSlot":     nil,
+		}
+		if candidate.LastStoryActivityAt != nil {
+			candidatePayload["lastActivityAt"] = candidate.LastStoryActivityAt.Format(time.RFC3339)
 		}
 		if candidate.HasAvailableSlot {
 			candidatePayload["availableSlot"] = map[string]any{
@@ -361,15 +369,21 @@ func toOpenAIAdvisorPrompt(input CandidateRecommendationInput) map[string]any {
 	candidates := make([]map[string]any, 0, len(input.Candidates))
 	for _, candidate := range input.Candidates {
 		candidatePayload := map[string]any{
-			"userId":           candidate.UserID,
-			"fullName":         candidate.FullName,
-			"username":         candidate.Username,
-			"roleTitle":        candidate.TeamAIRoleTitle,
-			"roleDescription":  candidate.TeamAIRoleDescription,
-			"openItems":        candidate.OpenStories,
-			"estimateTotal":    candidate.EstimateTotal,
-			"hasAvailableSlot": candidate.HasAvailableSlot,
-			"availableSlot":    nil,
+			"userId":            candidate.UserID,
+			"fullName":          candidate.FullName,
+			"username":          candidate.Username,
+			"roleTitle":         candidate.TeamAIRoleTitle,
+			"roleDescription":   candidate.TeamAIRoleDescription,
+			"openItems":         candidate.OpenStories,
+			"estimateTotal":     candidate.EstimateTotal,
+			"hasAvailableSlot":  candidate.HasAvailableSlot,
+			"recentlyActive":    candidate.RecentlyActive,
+			"daysSinceActivity": candidate.DaysSinceLastActivity,
+			"lastActivityAt":    nil,
+			"availableSlot":     nil,
+		}
+		if candidate.LastStoryActivityAt != nil {
+			candidatePayload["lastActivityAt"] = candidate.LastStoryActivityAt.Format(time.RFC3339)
 		}
 		if candidate.HasAvailableSlot {
 			candidatePayload["availableSlot"] = map[string]any{

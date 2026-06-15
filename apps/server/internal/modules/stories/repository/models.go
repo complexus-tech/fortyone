@@ -255,6 +255,7 @@ type dbActivity struct {
 	CurrentValue string           `db:"current_value"`
 	OldValue     *json.RawMessage `db:"old_value"`
 	NewValue     *json.RawMessage `db:"new_value"`
+	Reason       *string          `db:"reason"`
 	CreatedAt    time.Time        `db:"created_at"`
 	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 }
@@ -269,6 +270,7 @@ type dbActivityWithUser struct {
 	CurrentValue string           `db:"current_value"`
 	OldValue     *json.RawMessage `db:"old_value"`
 	NewValue     *json.RawMessage `db:"new_value"`
+	Reason       *string          `db:"reason"`
 	CreatedAt    time.Time        `db:"created_at"`
 	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 	// User details
@@ -290,6 +292,7 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 		CurrentValue: i.CurrentValue,
 		OldValue:     i.OldValue,
 		NewValue:     i.NewValue,
+		Reason:       i.Reason,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 	}
@@ -305,6 +308,7 @@ func toDBActivity(i stories.CoreActivity) dbActivity {
 		CurrentValue: i.CurrentValue,
 		OldValue:     toJSONRawMessage(i.OldValue),
 		NewValue:     toJSONRawMessage(i.NewValue),
+		Reason:       i.Reason,
 		WorkspaceID:  i.WorkspaceID,
 	}
 }
@@ -329,6 +333,7 @@ func toCoreActivityWithUser(i dbActivityWithUser) stories.CoreActivityWithUser {
 		CurrentValue: i.CurrentValue,
 		OldValue:     i.OldValue,
 		NewValue:     i.NewValue,
+		Reason:       i.Reason,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 		User: stories.UserDetails{

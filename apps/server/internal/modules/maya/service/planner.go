@@ -20,6 +20,7 @@ const (
 	minimumSlotMinutes     = 30
 	workdayStartHour       = 9
 	workdayEndHour         = 17
+	recentActivityDays     = 30
 )
 
 type Planner struct {
@@ -54,6 +55,7 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			slot:      slot,
 		})
 	}
+	candidates = preferRecentlyActiveChoices(candidates)
 
 	if len(candidates) == 0 {
 		selected, advisorReason, ok := p.selectAssignmentCandidate(normalized, normalized.Candidates)
@@ -73,6 +75,9 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			actions := make([]CoreAction, 0, 2)
 			if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
 				reason := assignmentReasonForMember(selected.Member)
+				if strings.TrimSpace(normalized.AssignmentReason) != "" {
+					reason = normalized.AssignmentReason
+				}
 				if strings.TrimSpace(advisorReason) != "" {
 					reason = advisorReason
 				}
@@ -120,6 +125,9 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 	actions := make([]CoreAction, 0, 2)
 	if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
 		reason := assignmentReason(selected)
+		if strings.TrimSpace(normalized.AssignmentReason) != "" {
+			reason = normalized.AssignmentReason
+		}
 		if strings.TrimSpace(advisorReason) != "" {
 			reason = advisorReason
 		}
@@ -181,6 +189,9 @@ func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) 
 			HasAvailableSlot:      true,
 			SlotStart:             candidate.slot.start,
 			SlotEnd:               candidate.slot.end,
+			LastStoryActivityAt:   candidate.candidate.Member.LastStoryActivityAt,
+			DaysSinceLastActivity: daysSinceLastActivity(candidate.candidate.Member.LastStoryActivityAt),
+			RecentlyActive:        isRecentlyActive(candidate.candidate.Member.LastStoryActivityAt),
 		})
 	}
 	result, err := p.advisor.RecommendCandidate(ctx, CandidateRecommendationInput{
@@ -212,6 +223,7 @@ func (p Planner) selectAssignmentCandidate(input PlanInput, candidates []Candida
 	if len(assignable) == 0 {
 		return CandidateSchedule{}, "", false
 	}
+	assignable = preferRecentlyActiveSchedules(assignable)
 	sort.SliceStable(assignable, func(i, j int) bool {
 		left := assignable[i].Member
 		right := assignable[j].Member
@@ -243,6 +255,9 @@ func (p Planner) selectAssignmentCandidate(input PlanInput, candidates []Candida
 			OpenStories:           candidate.Member.OpenStories,
 			EstimateTotal:         candidate.Member.EstimateTotal,
 			HasAvailableSlot:      false,
+			LastStoryActivityAt:   candidate.Member.LastStoryActivityAt,
+			DaysSinceLastActivity: daysSinceLastActivity(candidate.Member.LastStoryActivityAt),
+			RecentlyActive:        isRecentlyActive(candidate.Member.LastStoryActivityAt),
 		})
 	}
 	result, err := p.advisor.RecommendCandidate(ctx, CandidateRecommendationInput{
@@ -265,6 +280,7 @@ func (p Planner) selectAssignmentCandidate(input PlanInput, candidates []Candida
 }
 
 func (p Planner) RecommendAssignments(ctx context.Context, input BatchAssignmentRecommendationInput) (BatchAssignmentRecommendationResult, error) {
+	input.Candidates = preferRecentlyActiveRecommendations(input.Candidates)
 	if p.advisor != nil {
 		if batchAdvisor, ok := p.advisor.(BatchAssignmentAdvisor); ok {
 			result, err := batchAdvisor.RecommendAssignments(ctx, input)
@@ -309,6 +325,63 @@ func assignmentReasonForCandidate(candidate CandidateRecommendation) string {
 		return fmt.Sprintf("Maya selected %s because their work focus is %s and their current workload is lighter than the alternatives.", displayCandidateName(candidate), candidate.TeamAIRoleTitle)
 	}
 	return fmt.Sprintf("Maya selected %s based on current workload and availability.", displayCandidateName(candidate))
+}
+
+func preferRecentlyActiveChoices(candidates []candidateChoice) []candidateChoice {
+	active := make([]candidateChoice, 0, len(candidates))
+	for _, candidate := range candidates {
+		if isRecentlyActive(candidate.candidate.Member.LastStoryActivityAt) {
+			active = append(active, candidate)
+		}
+	}
+	if len(active) == 0 {
+		return candidates
+	}
+	return active
+}
+
+func preferRecentlyActiveSchedules(candidates []CandidateSchedule) []CandidateSchedule {
+	active := make([]CandidateSchedule, 0, len(candidates))
+	for _, candidate := range candidates {
+		if isRecentlyActive(candidate.Member.LastStoryActivityAt) {
+			active = append(active, candidate)
+		}
+	}
+	if len(active) == 0 {
+		return candidates
+	}
+	return active
+}
+
+func preferRecentlyActiveRecommendations(candidates []CandidateRecommendation) []CandidateRecommendation {
+	active := make([]CandidateRecommendation, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.RecentlyActive {
+			active = append(active, candidate)
+		}
+	}
+	if len(active) == 0 {
+		return candidates
+	}
+	return active
+}
+
+func isRecentlyActive(lastActivityAt *time.Time) bool {
+	if lastActivityAt == nil {
+		return false
+	}
+	return time.Since(lastActivityAt.UTC()) <= recentActivityDays*24*time.Hour
+}
+
+func daysSinceLastActivity(lastActivityAt *time.Time) *int {
+	if lastActivityAt == nil {
+		return nil
+	}
+	days := int(time.Since(lastActivityAt.UTC()).Hours() / 24)
+	if days < 0 {
+		days = 0
+	}
+	return &days
 }
 
 func displayCandidateName(candidate CandidateRecommendation) string {
@@ -434,6 +507,9 @@ func assignmentReasonForMember(member reports.CoreMemberWorkload) string {
 	}
 	if name == "" {
 		name = "this teammate"
+	}
+	if !isRecentlyActive(member.LastStoryActivityAt) {
+		return fmt.Sprintf("Maya selected %s because no recently active alternative was available and they have %d open items with %d estimate points.", name, member.OpenStories, member.EstimateTotal)
 	}
 	return fmt.Sprintf("Maya selected %s because they have the strongest available fit and currently have %d open items with %d estimate points.", name, member.OpenStories, member.EstimateTotal)
 }

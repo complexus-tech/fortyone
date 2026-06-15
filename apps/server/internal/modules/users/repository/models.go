@@ -30,6 +30,7 @@ type dbUser struct {
 	InferredTeamAIRoleStoryCount  int        `db:"inferred_team_ai_role_story_count"`
 	InferredTeamAIRoleConfidence  float32    `db:"inferred_team_ai_role_confidence"`
 	InferredTeamAIRoleGeneratedAt *time.Time `db:"inferred_team_ai_role_generated_at"`
+	LastStoryActivityAt           *time.Time `db:"last_story_activity_at"`
 }
 
 // dbVerificationToken represents a verification token in the database
@@ -82,6 +83,7 @@ func toCoreUser(p dbUser) users.CoreUser {
 		InferredTeamAIRoleStoryCount:  p.InferredTeamAIRoleStoryCount,
 		InferredTeamAIRoleConfidence:  p.InferredTeamAIRoleConfidence,
 		InferredTeamAIRoleGeneratedAt: p.InferredTeamAIRoleGeneratedAt,
+		LastStoryActivityAt:           p.LastStoryActivityAt,
 	}
 }
 

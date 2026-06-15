@@ -92,6 +92,7 @@ type updateOptions struct {
 	publishEvents            bool
 	enqueueGitHubSync        bool
 	recordDescriptionUpdates bool
+	activityReason           string
 }
 
 type commentOptions struct {
@@ -345,8 +346,13 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 }
 
 func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
+	return s.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, "")
+}
+
+func (s *Service) UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
+		activityReason:           reason,
 	})
 }
 
@@ -416,6 +422,7 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 	ca := []CoreActivity{}
+	activityReason := normalizeActivityReason(options.activityReason)
 
 	for field, value := range updates {
 		if strings.Contains(field, "description") && !options.recordDescriptionUpdates {
@@ -430,6 +437,7 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			CurrentValue: currentValue,
 			OldValue:     s.getOldValue(story, field),
 			NewValue:     value,
+			Reason:       activityReason,
 			UserID:       actorID,
 			WorkspaceID:  workspaceID,
 		}
@@ -470,6 +478,21 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	}
 
 	return nil
+}
+
+func normalizeActivityReason(reason string) *string {
+	const maxActivityReasonRunes = 180
+
+	normalized := strings.Join(strings.Fields(reason), " ")
+	if normalized == "" {
+		return nil
+	}
+
+	runes := []rune(normalized)
+	if len(runes) > maxActivityReasonRunes {
+		normalized = strings.TrimSpace(string(runes[:maxActivityReasonRunes-3])) + "..."
+	}
+	return &normalized
 }
 
 func (s *Service) enqueueGitHubStorySync(ctx context.Context, storyID, workspaceID uuid.UUID) {

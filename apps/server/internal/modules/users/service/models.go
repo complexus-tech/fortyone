@@ -44,6 +44,7 @@ type CoreUser struct {
 	InferredTeamAIRoleStoryCount  int
 	InferredTeamAIRoleConfidence  float32
 	InferredTeamAIRoleGeneratedAt *time.Time
+	LastStoryActivityAt           *time.Time
 }
 
 type CoreListUsersFilter struct {

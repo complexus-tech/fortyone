@@ -82,21 +82,22 @@ type CoreWorkloadSummary struct {
 }
 
 type CoreMemberWorkload struct {
-	UserID                uuid.UUID `json:"userId" db:"user_id"`
-	FullName              string    `json:"fullName" db:"full_name"`
-	Username              string    `json:"username" db:"username"`
-	AvatarURL             string    `json:"avatarUrl" db:"avatar_url"`
-	TeamAIRoleTitle       string    `json:"teamAiRoleTitle" db:"team_ai_role_title"`
-	TeamAIRoleDescription string    `json:"teamAiRoleDescription" db:"team_ai_role_description"`
-	OpenStories           int       `json:"openStories" db:"open_stories"`
-	StartedStories        int       `json:"startedStories" db:"started_stories"`
-	PausedStories         int       `json:"pausedStories" db:"paused_stories"`
-	CompletedStories      int       `json:"completedStories" db:"completed_stories"`
-	OverdueStories        int       `json:"overdueStories" db:"overdue_stories"`
-	UrgentStories         int       `json:"urgentStories" db:"urgent_stories"`
-	HighPriorityStories   int       `json:"highPriorityStories" db:"high_priority_stories"`
-	UnestimatedStories    int       `json:"unestimatedStories" db:"unestimated_stories"`
-	EstimateTotal         int       `json:"estimateTotal" db:"estimate_total"`
+	UserID                uuid.UUID  `json:"userId" db:"user_id"`
+	FullName              string     `json:"fullName" db:"full_name"`
+	Username              string     `json:"username" db:"username"`
+	AvatarURL             string     `json:"avatarUrl" db:"avatar_url"`
+	TeamAIRoleTitle       string     `json:"teamAiRoleTitle" db:"team_ai_role_title"`
+	TeamAIRoleDescription string     `json:"teamAiRoleDescription" db:"team_ai_role_description"`
+	OpenStories           int        `json:"openStories" db:"open_stories"`
+	StartedStories        int        `json:"startedStories" db:"started_stories"`
+	PausedStories         int        `json:"pausedStories" db:"paused_stories"`
+	CompletedStories      int        `json:"completedStories" db:"completed_stories"`
+	OverdueStories        int        `json:"overdueStories" db:"overdue_stories"`
+	UrgentStories         int        `json:"urgentStories" db:"urgent_stories"`
+	HighPriorityStories   int        `json:"highPriorityStories" db:"high_priority_stories"`
+	UnestimatedStories    int        `json:"unestimatedStories" db:"unestimated_stories"`
+	EstimateTotal         int        `json:"estimateTotal" db:"estimate_total"`
+	LastStoryActivityAt   *time.Time `json:"lastStoryActivityAt,omitempty" db:"last_story_activity_at"`
 }
 
 type CoreTeamWorkloadSummary struct {

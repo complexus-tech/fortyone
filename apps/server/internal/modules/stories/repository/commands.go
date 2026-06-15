@@ -666,6 +666,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			current_value,
 			old_value,
 			new_value,
+			reason,
 			user_id,
 			workspace_id
 		)
@@ -676,6 +677,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			:current_value,
 			:old_value,
 			:new_value,
+			:reason,
 			:user_id,
 			:workspace_id
 		)

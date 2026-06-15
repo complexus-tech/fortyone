@@ -53,6 +53,7 @@ type AppActivityWithUser struct {
 	CurrentValue string    `json:"currentValue"`
 	OldValue     any       `json:"oldValue"`
 	NewValue     any       `json:"newValue"`
+	Reason       *string   `json:"reason,omitempty"`
 	CreatedAt    time.Time `json:"createdAt"`
 	WorkspaceID  uuid.UUID `json:"workspaceId"`
 
@@ -85,6 +86,7 @@ func toAppActivityWithUser(i stories.CoreActivityWithUser) AppActivityWithUser {
 		CurrentValue: i.CurrentValue,
 		OldValue:     i.OldValue,
 		NewValue:     i.NewValue,
+		Reason:       i.Reason,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 		User: AppUserDetails{

@@ -70,6 +70,53 @@ func TestPlannerChoosesEarliestAvailableLowLoadCandidate(t *testing.T) {
 	}
 }
 
+func TestPlannerAvoidsInactiveCandidateWhenActiveAlternativeExists(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	inactiveUserID := uuid.New()
+	activeUserID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	recentActivityAt := time.Now().UTC().Add(-24 * time.Hour)
+	staleActivityAt := time.Now().UTC().Add(-60 * 24 * time.Hour)
+
+	planner := NewPlanner()
+	result, err := planner.Plan(PlanInput{
+		WorkspaceID:     workspaceID,
+		Story:           stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Title: "Route ownership"},
+		DurationMinutes: 60,
+		WindowStart:     startAt,
+		WindowEnd:       endAt,
+		Candidates: []CandidateSchedule{
+			{
+				Member: reports.CoreMemberWorkload{
+					UserID:              inactiveUserID,
+					FullName:            "Dormant Person",
+					OpenStories:         0,
+					EstimateTotal:       0,
+					LastStoryActivityAt: &staleActivityAt,
+				},
+			},
+			{
+				Member: reports.CoreMemberWorkload{
+					UserID:              activeUserID,
+					FullName:            "Active Person",
+					OpenStories:         8,
+					EstimateTotal:       16,
+					LastStoryActivityAt: &recentActivityAt,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if result.SelectedUserID == nil || *result.SelectedUserID != activeUserID {
+		t.Fatalf("expected active user %s, got %v", activeUserID, result.SelectedUserID)
+	}
+}
+
 func TestPlannerUsesAdvisorRecommendationWhenCandidateIsValid(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()
