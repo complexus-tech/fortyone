@@ -9,6 +9,7 @@ import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useUpdateSprintSettingsMutation } from "@/modules/teams/hooks/update-sprint-settings-mutation";
 import { useUpdateStoryAutomationSettingsMutation } from "@/modules/teams/hooks/update-story-automation-settings-mutation";
 import { useUpdateEstimationSettingsMutation } from "@/modules/teams/hooks/update-estimation-settings-mutation";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { GitHubAutomations } from "./github-automations";
 
 export const Automations = () => {
@@ -471,7 +472,7 @@ export const Automations = () => {
                   scheme: value as "points" | "hours" | "tshirt" | "ideal_days",
                 });
               }}
-              value={estimationSettings?.scheme ?? "points"}
+              value={estimationSettings?.scheme ?? DEFAULT_ESTIMATE_SCHEME}
             >
               <Select.Trigger className="w-max text-[0.9rem] md:text-base">
                 <Select.Input />

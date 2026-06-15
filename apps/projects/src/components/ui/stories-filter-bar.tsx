@@ -70,6 +70,7 @@ import {
   useLabelsInfinite,
 } from "@/lib/hooks/labels";
 import {
+  DEFAULT_ESTIMATE_SCHEME,
   formatEstimate,
   getEstimateOptions,
   type EstimateScheme,
@@ -1317,7 +1318,8 @@ export const StoriesFilterBar = ({
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
   const { data: allLabels = [] } = useLabels();
   const { data: teamSettings } = useTeamSettings(scopedTeamId);
-  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
   const hiddenFieldSet = useMemo(() => new Set(hiddenFields), [hiddenFields]);
 
   const users = scopedTeamId ? teamMembers : allUsers;

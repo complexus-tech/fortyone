@@ -1,4 +1,5 @@
 import {
+  DEFAULT_ESTIMATE_SCHEME,
   ESTIMATE_VALUES,
   formatEstimate,
   getEstimateOptions,
@@ -24,6 +25,11 @@ describe("estimate formatting", () => {
   it("returns no-estimate labels for nullish values", () => {
     expect(formatEstimate("points", null, "compact")).toBe("Estimate");
     expect(formatEstimate("points", null, "full")).toBe("No estimate");
+  });
+
+  it("defaults unknown schemes to hours", () => {
+    expect(DEFAULT_ESTIMATE_SCHEME).toBe("hours");
+    expect(formatEstimate(undefined, 2, "full")).toBe("1 hour");
   });
 
   it("returns scheme-specific selectable options", () => {

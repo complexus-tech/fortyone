@@ -171,7 +171,7 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	userID := uuid.New()
 	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
 	endAt := time.Date(2026, 6, 18, 17, 0, 0, 0, time.UTC)
-	expectedPlannedEnd := time.Date(2026, 6, 17, 13, 0, 0, 0, time.UTC)
+	expectedPlannedEnd := time.Date(2026, 6, 16, 13, 0, 0, 0, time.UTC)
 
 	planner := NewPlanner()
 	result, err := planner.Plan(PlanInput{

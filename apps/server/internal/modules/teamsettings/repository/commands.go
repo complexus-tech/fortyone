@@ -176,7 +176,7 @@ func (r *repo) UpdateEstimationSettings(ctx context.Context, teamID, workspaceID
 	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.UpdateEstimationSettings")
 	defer span.End()
 
-	scheme := "points"
+	scheme := "hours"
 	if updates.Scheme != nil {
 		scheme = *updates.Scheme
 	}
@@ -387,7 +387,7 @@ func (r *repo) createDefaultEstimationSettings(ctx context.Context, teamID, work
 		) VALUES (
 			:team_id,
 			:workspace_id,
-			'points'
+			'hours'
 		)
 		ON CONFLICT (team_id) DO UPDATE SET
 			workspace_id = EXCLUDED.workspace_id,

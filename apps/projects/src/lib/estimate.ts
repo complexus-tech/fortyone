@@ -6,6 +6,8 @@ export const ESTIMATE_VALUES = [1, 2, 3, 5, 8] as const;
 
 export type EstimateValue = (typeof ESTIMATE_VALUES)[number];
 
+export const DEFAULT_ESTIMATE_SCHEME = "hours" satisfies EstimateScheme;
+
 const compactEstimateLabels: Record<EstimateScheme, Record<number, string>> = {
   points: {
     1: "1",
@@ -53,11 +55,11 @@ const normalizeScheme = (scheme?: string | null): EstimateScheme => {
     return scheme;
   }
 
-  return "points";
+  return DEFAULT_ESTIMATE_SCHEME;
 };
 
 export const formatEstimate = (
-  scheme: EstimateScheme | string | null | undefined,
+  scheme: string | null | undefined,
   value: number | null | undefined,
   mode: EstimateDisplayMode = "compact",
 ) => {
@@ -78,7 +80,7 @@ export const formatEstimate = (
   return `${compactLabel} ${unit}${isSingular ? "" : "s"}`;
 };
 
-export const getEstimateOptions = (scheme: EstimateScheme | string) => {
+export const getEstimateOptions = (scheme: string) => {
   const normalizedScheme = normalizeScheme(scheme);
 
   return ESTIMATE_VALUES.map((value) => ({

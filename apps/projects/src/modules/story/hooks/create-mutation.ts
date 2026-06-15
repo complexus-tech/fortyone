@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -61,7 +62,7 @@ const updateInfiniteQuery = (
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue ?? null,
-        estimateScheme: story.estimateScheme ?? "points",
+        estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -127,7 +128,7 @@ const updateGroupedQuery = (
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue ?? null,
-        estimateScheme: story.estimateScheme ?? "points",
+        estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,

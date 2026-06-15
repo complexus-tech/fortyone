@@ -3,7 +3,7 @@
 CREATE TABLE "public"."team_estimation_settings" (
     "team_id" uuid NOT NULL,
     "workspace_id" uuid NOT NULL,
-    "scheme" varchar(32) NOT NULL DEFAULT 'points',
+    "scheme" varchar(32) NOT NULL DEFAULT 'hours',
     "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "team_estimation_settings_team_id_fkey"

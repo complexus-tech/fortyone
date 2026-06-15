@@ -440,8 +440,8 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 }
 
 func estimatedWorkDurationMinutes(story stories.CoreSingleStory) int {
-	if story.EstimateValue != nil && *story.EstimateValue > 0 {
-		return int(*story.EstimateValue) * 120
+	if duration := stories.EstimateDurationMinutes(story.EstimateScheme, story.EstimateValue); duration > 0 {
+		return duration
 	}
 
 	text := strings.ToLower(story.Title)

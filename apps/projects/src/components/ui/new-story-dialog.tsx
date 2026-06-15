@@ -67,7 +67,7 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
-import { formatEstimate } from "@/lib/estimate";
+import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
@@ -184,7 +184,8 @@ export const NewStoryDialog = ({
     (teamStatuses.length > 0
       ? teamStatuses.find((status) => status.isDefault) || teamStatuses[0]
       : null);
-  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
   const autoAssignSelf = automationPreferences?.autoAssignSelf ?? false;
   const autoAssignMaya =
     hasFeature("backgroundMaya") &&

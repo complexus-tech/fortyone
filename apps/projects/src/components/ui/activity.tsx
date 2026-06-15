@@ -4,7 +4,8 @@ import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
 import { CalendarIcon, EstimateIcon, InfoIcon, SprintsIcon } from "icons";
-import { formatEstimate } from "@/lib/estimate";
+import { formatActivityReasonDates } from "@/lib/activity-format";
+import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
 import { useWorkspacePath } from "@/hooks";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -25,7 +26,8 @@ const DisplayEstimate = ({
 }) => {
   const { data: teamSettings } = useTeamSettings(teamId);
   const estimateValue = Number.parseInt(value, 10);
-  const estimateScheme = teamSettings?.estimationSettings.scheme ?? "points";
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
 
   return (
     <span className="flex items-center gap-1">
@@ -118,7 +120,7 @@ export const Activity = ({
   const findActivityAssignee = (value: string) =>
     activityAssignees.find(({ id }) => id === value);
   const activityVerb = getActivityVerb(type);
-  const activityReason = reason?.trim() ?? "";
+  const activityReason = formatActivityReasonDates(reason?.trim() ?? "");
   const isLinkedUrl =
     type === "link" &&
     currentValue &&
@@ -224,9 +226,7 @@ export const Activity = ({
 
         if (!assignee || assignee.isSystem) {
           return (
-            <span className="flex items-center gap-1.5 pb-0.5">
-              {content}
-            </span>
+            <span className="flex items-center gap-1.5 pb-0.5">{content}</span>
           );
         }
 
