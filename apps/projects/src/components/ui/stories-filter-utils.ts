@@ -32,7 +32,10 @@ export const getActiveStoriesFilterCount = (filters: StoriesFilter) => {
     return typeof value === "string" && value.trim() ? count + 1 : count;
   }, 0);
 
-  const booleanFilterCount = [filters.hasNoAssignee].filter(Boolean).length;
+  const booleanFilterCount = [
+    filters.hasNoAssignee,
+    filters.hasBlockedBy,
+  ].filter(Boolean).length;
 
   return arrayFilterCount + stringFilterCount + booleanFilterCount;
 };

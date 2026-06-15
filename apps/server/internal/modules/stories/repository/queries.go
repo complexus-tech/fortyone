@@ -383,7 +383,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			key == "updated_before" || key == "start_date_after" || key == "start_date_before" ||
 			key == "deadline_after" || key == "deadline_before" ||
 			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
-			key == "current_user_id" || key == "show_sub_stories" {
+			key == "has_blocked_by" || key == "current_user_id" || key == "show_sub_stories" {
 			hasComplexFilters = true
 			break
 		}
@@ -563,6 +563,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if hasNoAssignee, ok := filters["has_no_assignee"].(bool); ok {
 		coreFilters.HasNoAssignee = &hasNoAssignee
+	}
+	if hasBlockedBy, ok := filters["has_blocked_by"].(bool); ok {
+		coreFilters.HasBlockedBy = &hasBlockedBy
 	}
 	if assignedToMe, ok := filters["assigned_to_me"].(bool); ok {
 		coreFilters.AssignedToMe = &assignedToMe
@@ -1314,6 +1317,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
+	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true
 	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
@@ -2046,6 +2052,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
 	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
+	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true
 	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
@@ -2567,6 +2576,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true

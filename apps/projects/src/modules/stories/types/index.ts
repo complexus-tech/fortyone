@@ -100,6 +100,7 @@ export type StoryFilters = {
   objectiveId?: string | null;
   epicId?: string | null;
   hasNoAssignee?: boolean | null;
+  hasBlockedBy?: boolean | null;
   assignedToMe?: boolean;
   createdByMe?: boolean;
   createdAfter?: string;
@@ -163,6 +164,7 @@ export type GroupedStoryParams = {
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
   updatedAfter?: string;
@@ -201,6 +203,7 @@ export type GroupStoryParams = {
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
   updatedAfter?: string;

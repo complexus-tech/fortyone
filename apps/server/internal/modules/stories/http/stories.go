@@ -1387,6 +1387,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.Epic = parseUUIDParam(r, "epicId")
 
 	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
+	query.Filters.HasBlockedBy = parseBoolParam(r, "hasBlockedBy")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 	query.Filters.ShowSubStories = parseBoolParam(r, "showSubStories")
@@ -1573,6 +1574,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			Objective:       query.Filters.Objective,
 			Epic:            query.Filters.Epic,
 			HasNoAssignee:   query.Filters.HasNoAssignee,
+			HasBlockedBy:    query.Filters.HasBlockedBy,
 			AssignedToMe:    query.Filters.AssignedToMe,
 			CreatedByMe:     query.Filters.CreatedByMe,
 			ShowSubStories:  query.Filters.ShowSubStories,
@@ -1645,6 +1647,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.HasNoAssignee != nil {
 		result["has_no_assignee"] = *filters.HasNoAssignee
+	}
+	if filters.HasBlockedBy != nil {
+		result["has_blocked_by"] = *filters.HasBlockedBy
 	}
 	if filters.AssignedToMe != nil {
 		result["assigned_to_me"] = *filters.AssignedToMe

@@ -24,17 +24,22 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
     useMyWork();
-  const tabs = ["all", "assigned", "created"] as const;
+  const tabs = [
+    "all",
+    "today",
+    "upcoming",
+    "blocked",
+    "assigned",
+    "created",
+  ] as const;
   const [tab] = useQueryState(
     "tab",
     parseAsStringLiteral(tabs).withDefault("all"),
   );
-  const tabLabel = (() => {
-    if (tab === "all") {
-      return `All ${getTermDisplay("storyTerm", { variant: "plural" })}`;
-    }
-    return tab;
-  })();
+  const tabLabel =
+    tab === "all"
+      ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
+      : tab;
 
   useHotkeys("v+l", () => {
     setLayout("list");

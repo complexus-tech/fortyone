@@ -19,6 +19,7 @@ export const getGroupedStoryFilterParams = (
   labelIds: filters.labelIds ?? undefined,
   estimateValues: filters.estimateValues ?? undefined,
   hasNoAssignee: filters.hasNoAssignee ? true : undefined,
+  hasBlockedBy: filters.hasBlockedBy ? true : undefined,
 });
 
 export const getScopedStoriesFilterTeamId = (

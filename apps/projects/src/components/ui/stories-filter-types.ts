@@ -15,6 +15,7 @@ export type StoriesFilter = {
   startDate?: string | null;
   endDate?: string | null;
   hasNoAssignee: boolean | null;
+  hasBlockedBy: boolean | null;
   assignedToMe: boolean;
   createdByMe: boolean;
   completedAfter?: string | null;
@@ -40,6 +41,7 @@ export const DEFAULT_STORIES_FILTER: StoriesFilter = {
   startDate: null,
   endDate: null,
   hasNoAssignee: null,
+  hasBlockedBy: null,
   assignedToMe: false,
   createdByMe: false,
 };

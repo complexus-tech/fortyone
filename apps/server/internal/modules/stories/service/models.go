@@ -252,6 +252,7 @@ type CoreStoryFilters struct {
 	Epic           *uuid.UUID  `json:"epicId"`
 	KeyResult      *uuid.UUID  `json:"keyResultId"`
 	HasNoAssignee  *bool       `json:"hasNoAssignee"`
+	HasBlockedBy   *bool       `json:"hasBlockedBy"`
 	AssignedToMe   *bool       `json:"assignedToMe"`
 	CreatedByMe    *bool       `json:"createdByMe"`
 	ShowSubStories *bool       `json:"showSubStories"`
