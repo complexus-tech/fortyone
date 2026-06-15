@@ -387,6 +387,22 @@ func (r *Repo) ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([
 	return rows, nil
 }
 
+func (r *Repo) ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]TeamRecord, error) {
+	rows := make([]TeamRecord, 0)
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT t.team_id, t.code, t.name, t.color
+		FROM teams t
+		JOIN team_members tm ON tm.team_id = t.team_id
+		WHERE t.workspace_id = $1
+		  AND tm.user_id = $2
+		ORDER BY t.name ASC
+	`, workspaceID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
 func (r *Repo) ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]StatusRecord, error) {
 	rows := make([]StatusRecord, 0)
 	err := r.db.SelectContext(ctx, &rows, `

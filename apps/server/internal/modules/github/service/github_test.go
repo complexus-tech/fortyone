@@ -67,6 +67,19 @@ func TestPullRequestWorkflowEventOnlyMatchesWorkflowActions(t *testing.T) {
 	}
 }
 
+func TestGitHubActivityReasonsExplainAutomationSource(t *testing.T) {
+	require.Equal(
+		t,
+		"GitHub issue details changed, so FortyOne synced the linked story.",
+		githubIssueSyncReason(),
+	)
+	require.Equal(
+		t,
+		"A GitHub workflow automation matched a repository event and moved this story to the configured status.",
+		githubWorkflowAutomationReason(),
+	)
+}
+
 func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
 	commentID := uuid.New()
 	body := buildFortyOneUserCommentBody("Ship it", commentID)

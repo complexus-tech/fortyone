@@ -20,6 +20,7 @@ type Repository interface {
 	FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code string) (slackrepository.TeamRecord, error)
 	FindTeamByID(ctx context.Context, workspaceID, teamID uuid.UUID) (slackrepository.TeamRecord, error)
 	ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.TeamRecord, error)
+	ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackrepository.TeamRecord, error)
 	ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackrepository.StatusRecord, error)
 	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackrepository.TeamMemberRecord, error)
 	ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]slackrepository.LabelRecord, error)
@@ -189,6 +190,7 @@ type CoreRuntimeCreateStoryInput struct {
 	Priority    string
 	AssigneeID  string
 	ObjectiveID string
+	LabelIDs    []string
 	Source      struct {
 		SlackTeamID    string `json:"teamId"`
 		SlackUserID    string `json:"userId"`
@@ -206,6 +208,28 @@ type CoreRuntimeCreatedStory struct {
 	Ref   string `json:"ref"`
 	Title string `json:"title"`
 	URL   string `json:"url"`
+}
+
+type CoreRuntimeSlackInstallation struct {
+	BotToken  string
+	BotUserID string
+	TeamName  string
+}
+
+type CoreRuntimeIdentity struct {
+	WorkspaceID   uuid.UUID
+	WorkspaceSlug string
+	UserID        *uuid.UUID
+	ConnectURL    string
+}
+
+type CoreRuntimeLogInput struct {
+	Actor        CoreRuntimeActor
+	Endpoint     string
+	ErrorMessage string
+	Outcome      string
+	RequestType  string
+	ResponseCode int
 }
 
 type ProviderAccepter interface {

@@ -354,7 +354,7 @@ export const Activity = ({
                     </Button>
                   ) : (
                     <Text color="muted" fontSize="md">
-                      (System Account)
+                      ({member.username === "maya" ? "AI Assistant" : "Bot"})
                     </Text>
                   )}
                 </Box>

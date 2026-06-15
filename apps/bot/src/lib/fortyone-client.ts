@@ -1,11 +1,11 @@
 import type { BotConfig } from "@/lib/config";
 
-export type RuntimeOption = {
+export interface RuntimeOption {
   label: string;
   value: string;
-};
+}
 
-export type SlackActor = {
+export interface SlackActor {
   channelId?: string;
   channelName?: string;
   messageTs?: string;
@@ -13,11 +13,12 @@ export type SlackActor = {
   threadTs?: string;
   userId: string;
   userName?: string;
-};
+}
 
-export type CreateStoryFromSlackInput = {
+export interface CreateStoryFromSlackInput {
   assigneeId?: string;
   description?: string;
+  labelIds?: string[];
   objectiveId?: string;
   priority: string;
   source: SlackActor & {
@@ -26,34 +27,66 @@ export type CreateStoryFromSlackInput = {
   statusId?: string;
   teamId: string;
   title: string;
-};
+}
 
-export type CreatedStory = {
+export interface CreatedStory {
   id: string;
   ref: string;
   title: string;
   url: string;
-};
+}
 
-export type StoryUnfurl = {
+export interface StoryUnfurl {
   assignee?: string;
   priority?: string;
   status?: string;
   title: string;
   url: string;
-};
+}
 
-export type NotificationDelivery = {
+export interface NotificationDelivery {
   channelId: string;
   text: string;
   threadTs?: string;
-};
+}
 
-type RequestOptions = {
+export interface SlackInstallation {
+  botToken: string;
+  botUserId?: string;
+  teamName?: string;
+}
+
+export interface SlackIdentity {
+  connectUrl?: string;
+  userId?: string;
+  workspaceId: string;
+  workspaceSlug: string;
+}
+
+export interface RuntimeLogInput {
+  action: string;
+  actor?: SlackActor;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface RequestOptions {
   body?: unknown;
   method?: "GET" | "POST";
   query?: Record<string, string | undefined>;
-};
+}
+
+interface ApiEnvelope<T> {
+  data: T;
+  error?: {
+    message?: string;
+  } | null;
+}
+
+const isApiEnvelope = <T>(value: unknown): value is ApiEnvelope<T> =>
+  value !== null &&
+  typeof value === "object" &&
+  ("data" in value || "error" in value);
 
 export class FortyOneClient {
   private readonly apiUrl: string;
@@ -64,7 +97,10 @@ export class FortyOneClient {
     this.serviceToken = config.fortyOneServiceToken;
   }
 
-  async searchTeams(actor: SlackActor, query: string): Promise<RuntimeOption[]> {
+  async searchTeams(
+    actor: SlackActor,
+    query: string,
+  ): Promise<RuntimeOption[]> {
     return this.request("/internal/bot/slack/options/teams", {
       method: "POST",
       body: { actor, query },
@@ -104,10 +140,53 @@ export class FortyOneClient {
     });
   }
 
+  async searchLabels(
+    actor: SlackActor,
+    teamId: string,
+    query: string,
+  ): Promise<RuntimeOption[]> {
+    return this.request("/internal/bot/slack/options/labels", {
+      method: "POST",
+      body: { actor, query, teamId },
+    });
+  }
+
   async createStoryFromSlackForm(
     input: CreateStoryFromSlackInput,
   ): Promise<CreatedStory> {
     return this.request("/internal/bot/slack/stories", {
+      method: "POST",
+      body: input,
+    });
+  }
+
+  async getSlackInstallation(
+    teamId: string,
+  ): Promise<SlackInstallation | null> {
+    try {
+      return await this.request(
+        `/internal/bot/slack/installations/${encodeURIComponent(teamId)}`,
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("FortyOne bot API request failed: 404")
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async resolveSlackIdentity(actor: SlackActor): Promise<SlackIdentity> {
+    return this.request("/internal/bot/slack/identity/resolve", {
+      method: "POST",
+      body: { actor },
+    });
+  }
+
+  async recordSlackRuntimeLog(input: RuntimeLogInput): Promise<void> {
+    await this.request("/internal/bot/slack/logs", {
       method: "POST",
       body: input,
     });
@@ -124,23 +203,33 @@ export class FortyOneClient {
     });
   }
 
-  async getStoryUnfurl(url: string, actor: SlackActor): Promise<StoryUnfurl | null> {
+  async getStoryUnfurl(
+    url: string,
+    actor: SlackActor,
+  ): Promise<StoryUnfurl | null> {
     return this.request("/internal/bot/slack/unfurls/story", {
       method: "POST",
       body: { actor, url },
     });
   }
 
-  async listMentionNotifications(actor: SlackActor): Promise<NotificationDelivery[]> {
+  async listMentionNotifications(
+    actor: SlackActor,
+  ): Promise<NotificationDelivery[]> {
     return this.request("/internal/bot/slack/notifications/mentions", {
       method: "POST",
       body: { actor },
     });
   }
 
-  private async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  private async request<T>(
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<T> {
     if (!this.serviceToken) {
-      throw new Error("FORTYONE_BOT_TOKEN is required for FortyOne bot API calls.");
+      throw new Error(
+        "FORTYONE_BOT_TOKEN is required for FortyOne bot API calls.",
+      );
     }
 
     const url = new URL(`${this.apiUrl}${path}`);
@@ -170,6 +259,13 @@ export class FortyOneClient {
       return undefined as T;
     }
 
-    return response.json() as Promise<T>;
+    const json = (await response.json()) as unknown;
+    if (!isApiEnvelope<T>(json)) {
+      return json as T;
+    }
+    if (json.error) {
+      throw new Error(json.error.message || "FortyOne bot API request failed.");
+    }
+    return json.data;
   }
 }

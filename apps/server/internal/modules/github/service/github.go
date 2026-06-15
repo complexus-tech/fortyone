@@ -923,7 +923,7 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 			"description": issueDescription,
 			"priority":    priority,
 		}
-		if updateErr := s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates); updateErr != nil {
+		if updateErr := s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates, githubIssueSyncReason()); updateErr != nil {
 			return updateErr
 		}
 	case errors.Is(err, sql.ErrNoRows):
@@ -1548,9 +1548,9 @@ func (s *Service) syncAssigneeFromGitHub(ctx context.Context, repository githubr
 	if err != nil || (fullStory.Assignee != nil && *fullStory.Assignee == userID) {
 		return
 	}
-	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+	_ = s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
 		"assignee_id": userID,
-	})
+	}, githubAssigneeSyncReason())
 }
 
 // ==================== label sync ====================
@@ -1571,9 +1571,9 @@ func (s *Service) syncLabelsFromGitHub(ctx context.Context, repository githubrep
 	if err != nil || len(resolvedIDs) == 0 {
 		return
 	}
-	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+	_ = s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
 		"labels": resolvedIDs,
-	})
+	}, githubLabelSyncReason())
 }
 
 // ==================== user resolution ====================
@@ -1678,9 +1678,25 @@ func (s *Service) moveStoryByRule(ctx context.Context, workspaceID, teamID, stor
 	if story.Status != nil && *story.Status == *statusID {
 		return nil
 	}
-	return s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, storyID, workspaceID, map[string]any{
+	return s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, storyID, workspaceID, map[string]any{
 		"status_id": *statusID,
-	})
+	}, githubWorkflowAutomationReason())
+}
+
+func githubIssueSyncReason() string {
+	return "GitHub issue details changed, so FortyOne synced the linked story."
+}
+
+func githubAssigneeSyncReason() string {
+	return "GitHub assignee changed, so FortyOne synced the linked story assignment."
+}
+
+func githubLabelSyncReason() string {
+	return "GitHub labels changed, so FortyOne synced the linked story labels."
+}
+
+func githubWorkflowAutomationReason() string {
+	return "A GitHub workflow automation matched a repository event and moved this story to the configured status."
 }
 
 func (s *Service) seedDefaultWorkflowRules(ctx context.Context, workspaceID, teamID uuid.UUID) (CoreTeamGitHubSettings, error) {
