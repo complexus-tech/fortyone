@@ -295,7 +295,6 @@ export const NewStoryDialog = ({
       currentTeamId,
       description: editor.getText(),
       descriptionHTML: editor.getHTML(),
-      estimateScheme,
       storyForm,
       title: titleEditor.getText(),
     });

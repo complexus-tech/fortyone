@@ -46,6 +46,9 @@ func GetFilters(queryMap url.Values, data any) (map[string]any, error) {
 		field := v.Field(i)
 		jsonTag := t.Field(i).Tag.Get("json")
 		dbTag := t.Field(i).Tag.Get("db")
+		if dbTag == "" {
+			dbTag = jsonTag
+		}
 
 		if rawValue, ok := requestData[jsonTag]; ok {
 			// Handle string-to-int conversion for numeric fields
