@@ -20,6 +20,7 @@ import { useUserRole } from "@/hooks/role";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { useUpdateTeamMemberAIContextMutation } from "@/modules/teams/hooks/update-team-member-ai-context-mutation";
+import { openDialogAfterMenuClose } from "./menu-dialog-state";
 
 type TeamMemberRowProps = {
   member: Member;
@@ -83,7 +84,7 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
                   {isAdmin ? (
                     <Menu.Item
                       onSelect={() => {
-                        setIsRoleDialogOpen(true);
+                        openDialogAfterMenuClose(setIsRoleDialogOpen);
                       }}
                     >
                       <EditIcon className="h-[1.15rem]" />
@@ -92,7 +93,7 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
                   ) : null}
                   <Menu.Item
                     onSelect={() => {
-                      setIsRemoveOpen(true);
+                      openDialogAfterMenuClose(setIsRemoveOpen);
                     }}
                   >
                     <DeleteIcon className="h-[1.15rem]" />
@@ -107,9 +108,11 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
 
       <Dialog onOpenChange={setIsRoleDialogOpen} open={isRoleDialogOpen}>
         <Dialog.Content size="md">
-          <Dialog.Header className="px-6 pt-6">
-            <Dialog.Title>Work focus</Dialog.Title>
-            <Dialog.Description className="mt-2 px-0">
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Work focus
+            </Dialog.Title>
+            <Dialog.Description className="mt-2">
               Describe what {member.fullName} usually works on so Maya can
               choose the right owner when assigning work.
             </Dialog.Description>
