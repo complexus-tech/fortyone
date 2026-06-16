@@ -1,13 +1,15 @@
 import { tool } from "ai";
 import { z } from "zod";
+import type { SlackActor, StoryRuntime } from "@/lib/runtime";
 
-import type { FortyOneClient, SlackActor } from "@/lib/fortyone-client";
-
-export const createTools = (client: FortyOneClient, actor: SlackActor) => ({
-  getMentionNotifications: tool({
+export const createTools = (runtime: StoryRuntime, actor: SlackActor) => ({
+  listStoryFormOptions: tool({
     description:
-      "Get the current user's recent FortyOne @-mention notifications for Slack.",
+      "List the teams, statuses, members, objectives, and labels currently available in the Slack create-story form.",
     inputSchema: z.object({}),
-    execute: async () => client.listMentionNotifications(actor),
+    execute: async () => ({
+      actor,
+      options: await runtime.listStoryOptions(actor),
+    }),
   }),
 });

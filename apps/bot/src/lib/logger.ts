@@ -1,5 +1,3 @@
-import type { SlackActor } from "@/lib/fortyone-client";
-
 type LogFields = Record<string, unknown>;
 
 const SENSITIVE_KEYS = new Set([
@@ -11,7 +9,6 @@ const SENSITIVE_KEYS = new Set([
   "OPENAI_API_KEY",
   "SLACK_BOT_TOKEN",
   "SLACK_CLIENT_SECRET",
-  "SLACK_INSTALLATION_ENCRYPTION_KEY",
   "SLACK_SIGNING_SECRET",
   "token",
 ]);
@@ -33,13 +30,6 @@ const redact = (value: unknown): unknown => {
 
 export const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
-
-export const actorLogFields = (actor: SlackActor): LogFields => ({
-  channelId: actor.channelId,
-  teamId: actor.teamId,
-  threadTs: actor.threadTs,
-  userId: actor.userId,
-});
 
 export const logBotError = (message: string, fields: LogFields = {}) => {
   const safeFields = redact(fields) as LogFields;

@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, streamText } from "ai";
 import type { BotConfig } from "@/lib/config";
-import type { FortyOneClient, SlackActor } from "@/lib/fortyone-client";
+import type { SlackActor, StoryRuntime } from "@/lib/runtime";
 import { createTools } from "@/lib/tools";
 
 const createMissingKeyStream = () =>
@@ -19,14 +19,14 @@ const getOpenAIClient = (config: BotConfig) =>
 const createAgentRequest = (
   prompt: string,
   config: BotConfig,
-  client: FortyOneClient,
+  runtime: StoryRuntime,
   actor: SlackActor,
 ) => {
   return {
     system:
-      "You are Maya, the FortyOne Slack assistant. Keep answers concise and useful for Slack. Use tools when relevant. Do not create or update stories unless a tool explicitly does it.",
+      "You are Maya, the FortyOne Slack assistant. Keep answers concise and useful for Slack. Use tools when relevant. Story creation happens through the Slack create-story form, not free-form chat.",
     prompt: prompt.trim() || "Help me with my workspace.",
-    tools: createTools(client, actor),
+    tools: createTools(runtime, actor),
     maxOutputTokens: 600,
   };
 };
@@ -34,7 +34,7 @@ const createAgentRequest = (
 export const createAgentStream = (
   prompt: string,
   config: BotConfig,
-  client: FortyOneClient,
+  runtime: StoryRuntime,
   actor: SlackActor,
 ) => {
   const openai = getOpenAIClient(config);
@@ -44,7 +44,7 @@ export const createAgentStream = (
   }
 
   const result = streamText({
-    ...createAgentRequest(prompt, config, client, actor),
+    ...createAgentRequest(prompt, config, runtime, actor),
     model: openai(config.openAIModel),
   });
 
@@ -54,7 +54,7 @@ export const createAgentStream = (
 export const generateAgentReply = async (
   prompt: string,
   config: BotConfig,
-  client: FortyOneClient,
+  runtime: StoryRuntime,
   actor: SlackActor,
 ) => {
   const openai = getOpenAIClient(config);
@@ -64,7 +64,7 @@ export const generateAgentReply = async (
   }
 
   const result = await generateText({
-    ...createAgentRequest(prompt, config, client, actor),
+    ...createAgentRequest(prompt, config, runtime, actor),
     model: openai(config.openAIModel),
   });
 
