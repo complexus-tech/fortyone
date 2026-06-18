@@ -92,7 +92,7 @@ export const MayaChat = () => {
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         ) : null}
         {needsUpgrade ? <LimitReached isOnPage /> : null}
-        <RealtimeVoiceControl disabled={needsUpgrade} />
+        <RealtimeVoiceControl disabled={needsUpgrade} isOnPage />
         <ChatInput
           attachments={attachments}
           isOnPage

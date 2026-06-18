@@ -129,6 +129,7 @@ export * from "./ai";
 export * from "./reload";
 export * from "./history";
 export * from "./microphone";
+export * from "./voice";
 export * from "./volume";
 export * from "./pause";
 export * from "./stop";

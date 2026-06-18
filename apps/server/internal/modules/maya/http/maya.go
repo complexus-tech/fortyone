@@ -11,6 +11,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -152,7 +153,7 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 	if h.aiAPIKey == "" {
 		return web.RespondError(ctx, w, ErrMayaRealtimeNotConfigured, http.StatusServiceUnavailable)
 	}
-	if h.workspaces == nil || h.teams == nil {
+	if h.workspaces == nil || h.teams == nil || h.users == nil {
 		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
 	}
 
@@ -323,11 +324,16 @@ func (h *Handlers) executeGetContext(ctx context.Context, workspaceID, userID uu
 	if err != nil {
 		return AppRealtimeToolResponse{}, fmt.Errorf("list teams: %w", err)
 	}
+	currentUser, err := h.currentRealtimeUser(ctx, userID)
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
 	terminology := h.realtimeTerminology(ctx, workspaceID)
 
 	return AppRealtimeToolResponse{
 		Success:     true,
 		Teams:       toRealtimeVoiceTeams(workspaceTeams),
+		User:        &currentUser,
 		Count:       len(workspaceTeams),
 		Message:     teamContextMessage(workspaceTeams),
 		Terminology: &terminology,
@@ -600,6 +606,12 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 	args.Title = strings.TrimSpace(args.Title)
 	args.Description = strings.TrimSpace(args.Description)
 	args.TeamName = strings.TrimSpace(args.TeamName)
+	args.AssigneeName = strings.TrimSpace(args.AssigneeName)
+	args.StartDate = strings.TrimSpace(args.StartDate)
+	args.EndDate = strings.TrimSpace(args.EndDate)
+	args.BlockedByRef = strings.TrimSpace(args.BlockedByRef)
+	args.BlockingRef = strings.TrimSpace(args.BlockingRef)
+	args.RelatedRef = strings.TrimSpace(args.RelatedRef)
 	args.Priority = normalizePriority(args.Priority)
 	terminology := h.realtimeTerminology(ctx, workspaceID)
 	if args.Title == "" {
@@ -616,10 +628,17 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 			Message:              fmt.Sprintf("Ask the user to confirm before creating the %s %q.", terminology.Story, args.Title),
 			Terminology:          &terminology,
 			Confirmation: &AppRealtimeConfirmation{
-				Title:       args.Title,
-				Description: args.Description,
-				TeamName:    args.TeamName,
-				Priority:    args.Priority,
+				Title:         args.Title,
+				Description:   args.Description,
+				TeamName:      args.TeamName,
+				AssigneeName:  confirmationAssigneeName(args),
+				Priority:      args.Priority,
+				EstimateValue: args.EstimateValue,
+				StartDate:     args.StartDate,
+				EndDate:       args.EndDate,
+				BlockedByRef:  args.BlockedByRef,
+				BlockingRef:   args.BlockingRef,
+				RelatedRef:    args.RelatedRef,
 			},
 		}, nil
 	}
@@ -652,6 +671,62 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 		}, nil
 	}
 
+	currentUser, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return AppRealtimeToolResponse{}, fmt.Errorf("get current user: %w", err)
+	}
+	loc := userLocation(currentUser)
+	now := h.now().In(loc)
+	assigneeID, assigneeName, assigneeResponse, err := h.resolveRealtimeAssignee(ctx, workspaceID, userID, team, args)
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if assigneeResponse != nil {
+		assigneeResponse.Terminology = &terminology
+		return *assigneeResponse, nil
+	}
+	startDate, err := parseRealtimeDate(args.StartDate, loc, now)
+	if err != nil {
+		return AppRealtimeToolResponse{
+			Success:     false,
+			Message:     fmt.Sprintf("Ask the user to clarify the start date. %s", err.Error()),
+			Terminology: &terminology,
+		}, nil
+	}
+	endDate, err := parseRealtimeDate(args.EndDate, loc, now)
+	if err != nil {
+		return AppRealtimeToolResponse{
+			Success:     false,
+			Message:     fmt.Sprintf("Ask the user to clarify the due date. %s", err.Error()),
+			Terminology: &terminology,
+		}, nil
+	}
+
+	blockedByID, blockedByRef, linkResponse, err := h.resolveRealtimeStoryLink(ctx, workspaceID, userID, workspaceTeams, team, args.BlockedByRef, "blocker")
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if linkResponse != nil {
+		linkResponse.Terminology = &terminology
+		return *linkResponse, nil
+	}
+	blockingID, blockingRef, linkResponse, err := h.resolveRealtimeStoryLink(ctx, workspaceID, userID, workspaceTeams, team, args.BlockingRef, "blocked work item")
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if linkResponse != nil {
+		linkResponse.Terminology = &terminology
+		return *linkResponse, nil
+	}
+	relatedID, relatedRef, linkResponse, err := h.resolveRealtimeStoryLink(ctx, workspaceID, userID, workspaceTeams, team, args.RelatedRef, "related work item")
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if linkResponse != nil {
+		linkResponse.Terminology = &terminology
+		return *linkResponse, nil
+	}
+
 	description := args.Description
 	descriptionHTML := ""
 	if description != "" {
@@ -663,8 +738,15 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 		Description:     optionalString(description),
 		DescriptionHTML: optionalString(descriptionHTML),
 		Status:          &status.ID,
+		Assignee:        assigneeID,
+		BlockedBy:       blockedByID,
+		Blocking:        blockingID,
+		Related:         relatedID,
 		Reporter:        &userID,
 		Priority:        args.Priority,
+		EstimateValue:   args.EstimateValue,
+		StartDate:       startDate,
+		EndDate:         endDate,
 		Team:            team.ID,
 	}, workspaceID)
 	if err != nil {
@@ -673,7 +755,10 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 
 	h.invalidateStoryListCaches(ctx, workspaceID)
 
-	voiceStory := toRealtimeVoiceCreatedStory(story, *team, *status)
+	voiceStory := toRealtimeVoiceCreatedStory(story, *team, *status, assigneeName)
+	voiceStory.BlockedBy = blockedByRef
+	voiceStory.Blocking = blockingRef
+	voiceStory.Related = relatedRef
 	return AppRealtimeToolResponse{
 		Success:     true,
 		Story:       &voiceStory,
@@ -688,12 +773,16 @@ func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, 
 	if err != nil {
 		return AppRealtimeSession{}, fmt.Errorf("list teams for realtime context: %w", err)
 	}
+	currentUser, err := h.currentRealtimeUser(ctx, userID)
+	if err != nil {
+		return AppRealtimeSession{}, err
+	}
 
 	payload := openAIRealtimeClientSecretRequest{
 		Session: openAIRealtimeSessionConfig{
 			Type:         "realtime",
 			Model:        defaultRealtimeModel,
-			Instructions: realtimeInstructions(terminology, workspaceTeams),
+			Instructions: realtimeInstructions(terminology, workspaceTeams, currentUser),
 			Tools:        realtimeTools(),
 			ToolChoice:   "auto",
 			Audio: openAIRealtimeAudioConfig{
@@ -759,13 +848,15 @@ func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, 
 	}, nil
 }
 
-func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam) string {
+func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam, currentUser AppRealtimeVoiceUser) string {
 	return strings.Join([]string{
 		"You are Maya, the project management assistant inside FortyOne.",
 		"Your job is to help users manage work in FortyOne: work items, teams, priorities, assignments, workload, objectives, key results, activity, and workspace insights.",
 		"In voice mode, be concise, natural, and direct. Prefer one to three spoken sentences unless the user asks for detail.",
 		"Stay focused on project management inside FortyOne. Briefly redirect off-topic requests back to project-management help.",
 		"Use available tools whenever facts, permissions, current state, IDs, or state changes are involved.",
+		fmt.Sprintf("The current authenticated user is %s (@%s). When the user says me, my, or assign to me, resolve that to this user.", currentUser.Name, currentUser.Username),
+		fmt.Sprintf("The user's timezone is %s. Today is %s and the current local time is %s. Interpret relative dates like today, tomorrow, this Friday, and next week in this timezone.", currentUser.Timezone, currentUser.Today, currentUser.Now),
 		fmt.Sprintf("Use this workspace's preferred terminology when speaking: stories are called %q/%q, sprints are called %q/%q, objectives are called %q/%q, and key results are called %q/%q.", terminology.Story, terminology.Stories, terminology.Sprint, terminology.Sprints, terminology.Objective, terminology.Objectives, terminology.KeyResult, terminology.KeyResults),
 		"Understand all common aliases even when you do not speak them back: story, task, issue, work item, objective, goal, project, key result, milestone, focus area, KPI, sprint, cycle, and iteration.",
 		"Use get_context when you need current terminology or team context.",
@@ -779,8 +870,13 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"Never expose raw UUIDs. Use human-readable names and story references.",
 		"Keep tool usage internal. Do not mention tool names, parameters, or implementation details to the user.",
 		"Never claim an action succeeded unless the tool result clearly shows success.",
-		fmt.Sprintf("For %s creation: gather the title and target team if needed, draft a concise title and useful description, ask for explicit confirmation, then call create_task with confirmed=true only after the user confirms the exact %s.", terminology.Story, terminology.Story),
+		fmt.Sprintf("For %s creation: gather the title and target team if needed, resolve assignees from team members, convert natural dates to startDate/endDate, draft a concise title and useful description, ask for explicit confirmation, then call create_task with confirmed=true only after the user confirms the exact %s.", terminology.Story, terminology.Story),
+		"For assignment during creation: set assignToMe=true when the user says me, myself, or assign to me. Set assigneeName when the user names another person; the backend resolves that name against team members.",
+		"For estimates during creation: set estimateValue only when the user gives a numeric estimate such as 1, 2, 3, 5, or 8. If the estimate is non-numeric or unclear, ask a short clarifying question.",
+		"For blockers and related work during creation: set blockedByRef when the new item is blocked by existing work, blockingRef when the new item blocks existing work, and relatedRef for related existing work. Use a human-readable story reference or title; the backend resolves it.",
 		"If a tool returns requiresConfirmation or needsTeam, ask the requested clarification in plain language.",
+		"If a tool returns needsAssignee, ask which team member should be assigned.",
+		"If a tool returns needsStoryReference, ask which existing work item the user meant, using the returned references and titles.",
 		"If a tool fails, repeat the useful error briefly. Do not invent a fallback workflow.",
 	}, " ")
 }
@@ -955,10 +1051,42 @@ func realtimeTools() []openAIRealtimeTool {
 						"type":        "string",
 						"description": "The target team name when the workspace has more than one team or the user mentioned a team.",
 					},
+					"assigneeName": map[string]any{
+						"type":        "string",
+						"description": "Optional assignee name, username, or 'me'. The backend resolves this against the selected team's members.",
+					},
+					"assignToMe": map[string]any{
+						"type":        "boolean",
+						"description": "Set true when the user asks to assign the item to themselves.",
+					},
 					"priority": map[string]any{
 						"type":        "string",
 						"enum":        []string{"No Priority", "Low", "Medium", "High", "Urgent"},
 						"description": "Optional story priority. Defaults to No Priority.",
+					},
+					"estimateValue": map[string]any{
+						"type":        "integer",
+						"description": "Optional numeric estimate value. Use only when the user gives a numeric estimate.",
+					},
+					"startDate": map[string]any{
+						"type":        "string",
+						"description": "Optional start date. Prefer YYYY-MM-DD, but natural phrases like today, tomorrow, this Friday, or next Friday are accepted.",
+					},
+					"endDate": map[string]any{
+						"type":        "string",
+						"description": "Optional due/deadline date. Prefer YYYY-MM-DD, but natural phrases like today, tomorrow, this Friday, or next Friday are accepted.",
+					},
+					"blockedByRef": map[string]any{
+						"type":        "string",
+						"description": "Optional existing story reference or title that blocks this new story.",
+					},
+					"blockingRef": map[string]any{
+						"type":        "string",
+						"description": "Optional existing story reference or title that this new story blocks.",
+					},
+					"relatedRef": map[string]any{
+						"type":        "string",
+						"description": "Optional existing story reference or title related to this new story.",
 					},
 					"confirmed": map[string]any{
 						"type":        "boolean",
@@ -1200,28 +1328,362 @@ func toRealtimeVoiceStory(story stories.CoreStoryList, statusesByID map[uuid.UUI
 	}
 
 	return AppRealtimeVoiceStory{
-		Reference:   storyReference(teamCode, story.SequenceID),
-		Title:       story.Title,
-		Priority:    story.Priority,
-		Team:        teamName,
-		Status:      status,
-		StartDate:   story.StartDate,
-		EndDate:     story.EndDate,
-		CompletedAt: story.CompletedAt,
+		Reference:     storyReference(teamCode, story.SequenceID),
+		Title:         story.Title,
+		Priority:      story.Priority,
+		EstimateLabel: story.EstimateLabel,
+		EstimateValue: story.EstimateValue,
+		Team:          teamName,
+		Status:        status,
+		StartDate:     story.StartDate,
+		EndDate:       story.EndDate,
+		CompletedAt:   story.CompletedAt,
 	}
 }
 
-func toRealtimeVoiceCreatedStory(story stories.CoreSingleStory, team teams.CoreTeam, status states.CoreState) AppRealtimeVoiceStory {
+func toRealtimeVoiceCreatedStory(story stories.CoreSingleStory, team teams.CoreTeam, status states.CoreState, assigneeName string) AppRealtimeVoiceStory {
 	return AppRealtimeVoiceStory{
-		Reference:   storyReference(team.Code, story.SequenceID),
-		Title:       story.Title,
-		Priority:    story.Priority,
-		Team:        team.Name,
-		Status:      toRealtimeVoiceStatus(status),
-		StartDate:   story.StartDate,
-		EndDate:     story.EndDate,
-		CompletedAt: story.CompletedAt,
+		Reference:     storyReference(team.Code, story.SequenceID),
+		Title:         story.Title,
+		Priority:      story.Priority,
+		EstimateLabel: story.EstimateLabel,
+		EstimateValue: story.EstimateValue,
+		Team:          team.Name,
+		Assignee:      assigneeName,
+		Status:        toRealtimeVoiceStatus(status),
+		StartDate:     story.StartDate,
+		EndDate:       story.EndDate,
+		CompletedAt:   story.CompletedAt,
 	}
+}
+
+func (h *Handlers) currentRealtimeUser(ctx context.Context, userID uuid.UUID) (AppRealtimeVoiceUser, error) {
+	user, err := h.users.GetUser(ctx, userID)
+	if err != nil {
+		return AppRealtimeVoiceUser{}, fmt.Errorf("get current user: %w", err)
+	}
+	loc := userLocation(user)
+	now := h.now().In(loc)
+	name := strings.TrimSpace(user.FullName)
+	if name == "" {
+		name = user.Username
+	}
+	return AppRealtimeVoiceUser{
+		Name:     name,
+		Username: user.Username,
+		Timezone: loc.String(),
+		Today:    now.Format("2006-01-02"),
+		Now:      now.Format("15:04"),
+	}, nil
+}
+
+func userLocation(user users.CoreUser) *time.Location {
+	timezone := strings.TrimSpace(user.Timezone)
+	if timezone == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+func confirmationAssigneeName(args AppRealtimeCreateTaskArguments) string {
+	if args.AssignToMe {
+		return "me"
+	}
+	return args.AssigneeName
+}
+
+func (h *Handlers) resolveRealtimeAssignee(ctx context.Context, workspaceID, userID uuid.UUID, team *teams.CoreTeam, args AppRealtimeCreateTaskArguments) (*uuid.UUID, string, *AppRealtimeToolResponse, error) {
+	assigneeName := strings.TrimSpace(args.AssigneeName)
+	if args.AssignToMe || isSelfReference(assigneeName) {
+		currentUser, err := h.users.GetUser(ctx, userID)
+		if err != nil {
+			return nil, "", nil, fmt.Errorf("get current user: %w", err)
+		}
+		return &userID, displayUserName(currentUser), nil, nil
+	}
+	if assigneeName == "" {
+		return nil, "", nil, nil
+	}
+
+	members, err := h.users.List(ctx, workspaceID, users.CoreListUsersFilter{
+		TeamID: &team.ID,
+		Search: assigneeName,
+		Limit:  25,
+	})
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("list team members: %w", err)
+	}
+	matches := resolveRealtimeMemberMatches(members, assigneeName)
+	if len(matches) == 1 {
+		member := matches[0]
+		memberID := member.ID
+		return &memberID, displayUserName(member), nil, nil
+	}
+
+	message := fmt.Sprintf("Ask which %s member should be assigned.", team.Name)
+	if len(matches) == 0 {
+		message = fmt.Sprintf("I could not find %q in %s. Ask for the assignee's name again.", assigneeName, team.Name)
+	}
+	return nil, "", &AppRealtimeToolResponse{
+		Success:       false,
+		NeedsAssignee: true,
+		Members:       toRealtimeVoiceMembers(members),
+		Message:       message,
+	}, nil
+}
+
+func resolveRealtimeMemberMatches(memberList []users.CoreUser, assigneeName string) []users.CoreUser {
+	normalized := normalizeName(assigneeName)
+	var exact []users.CoreUser
+	for _, member := range memberList {
+		if normalizeName(member.FullName) == normalized || normalizeName(member.Username) == normalized || normalizeName(member.Email) == normalized {
+			exact = append(exact, member)
+		}
+	}
+	if len(exact) > 0 {
+		return exact
+	}
+
+	var partial []users.CoreUser
+	for _, member := range memberList {
+		if strings.Contains(normalizeName(member.FullName), normalized) ||
+			strings.Contains(normalizeName(member.Username), normalized) ||
+			strings.Contains(normalizeName(member.Email), normalized) {
+			partial = append(partial, member)
+		}
+	}
+	return partial
+}
+
+func (h *Handlers) resolveRealtimeStoryLink(ctx context.Context, workspaceID, userID uuid.UUID, teamList []teams.CoreTeam, team *teams.CoreTeam, value, label string) (*uuid.UUID, string, *AppRealtimeToolResponse, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, "", nil, nil
+	}
+
+	teamsByID := indexTeamsByID(teamList)
+	if storyRef, ok := normalizeRealtimeStoryReference(value, team); ok {
+		story, err := h.stories.QueryByRef(ctx, workspaceID, storyRef)
+		if err == nil {
+			storyID := story.ID
+			return &storyID, storyReference(story.TeamCode, story.SequenceID), nil, nil
+		}
+	}
+
+	teamID := (*uuid.UUID)(nil)
+	if team != nil {
+		teamID = &team.ID
+	}
+	searchResult, err := h.search.Search(ctx, workspaceID, userID, search.SearchParams{
+		Type:     search.SearchTypeStories,
+		Query:    value,
+		TeamID:   teamID,
+		SortBy:   search.SortByRelevance,
+		Page:     1,
+		PageSize: 5,
+	})
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("search %s story reference: %w", label, err)
+	}
+
+	matches := resolveRealtimeStoryMatches(searchResult.Stories, value, teamsByID)
+	if len(matches) == 1 {
+		story := matches[0]
+		storyID := story.ID
+		return &storyID, realtimeSearchStoryReference(story, teamsByID), nil, nil
+	}
+
+	statusesByID, err := h.statusesByID(ctx, workspaceID, userID)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	voiceStories := make([]AppRealtimeVoiceStory, 0, len(searchResult.Stories))
+	for _, story := range searchResult.Stories {
+		voiceStories = append(voiceStories, toRealtimeVoiceSearchStory(story, teamsByID, statusesByID))
+	}
+
+	message := fmt.Sprintf("I could not find %q. Ask for the existing %s reference or title.", value, label)
+	if len(voiceStories) > 1 {
+		message = fmt.Sprintf("Ask which existing %s the user meant.", label)
+	}
+	return nil, "", &AppRealtimeToolResponse{
+		Success:             false,
+		NeedsStoryReference: true,
+		Stories:             voiceStories,
+		Count:               len(voiceStories),
+		Message:             message,
+	}, nil
+}
+
+func resolveRealtimeStoryMatches(storyList []search.CoreSearchStory, value string, teamsByID map[uuid.UUID]teams.CoreTeam) []search.CoreSearchStory {
+	if len(storyList) == 0 {
+		return nil
+	}
+
+	normalizedValue := normalizeName(value)
+	var exact []search.CoreSearchStory
+	for _, story := range storyList {
+		if normalizeName(story.Title) == normalizedValue || normalizeName(realtimeSearchStoryReference(story, teamsByID)) == normalizedValue {
+			exact = append(exact, story)
+		}
+	}
+	if len(exact) > 0 {
+		return exact
+	}
+	if len(storyList) == 1 {
+		return storyList
+	}
+	return storyList
+}
+
+func normalizeRealtimeStoryReference(value string, team *teams.CoreTeam) (string, bool) {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value == "" {
+		return "", false
+	}
+
+	var letters strings.Builder
+	var digits strings.Builder
+	seenDigit := false
+	for _, r := range value {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			if seenDigit {
+				return "", false
+			}
+			letters.WriteRune(r)
+		case r >= '0' && r <= '9':
+			seenDigit = true
+			digits.WriteRune(r)
+		case r == '-' || unicode.IsSpace(r):
+			continue
+		default:
+			return "", false
+		}
+	}
+
+	if digits.Len() == 0 {
+		return "", false
+	}
+	sequenceID, err := strconv.Atoi(digits.String())
+	if err != nil || sequenceID <= 0 {
+		return "", false
+	}
+
+	teamCode := letters.String()
+	if teamCode == "" {
+		if team == nil || strings.TrimSpace(team.Code) == "" {
+			return "", false
+		}
+		teamCode = strings.ToUpper(strings.TrimSpace(team.Code))
+	}
+	return storyReference(teamCode, sequenceID), true
+}
+
+func realtimeSearchStoryReference(story search.CoreSearchStory, teamsByID map[uuid.UUID]teams.CoreTeam) string {
+	team, ok := teamsByID[story.Team]
+	if !ok {
+		return ""
+	}
+	return storyReference(team.Code, story.SequenceID)
+}
+
+func isSelfReference(value string) bool {
+	switch normalizeName(value) {
+	case "me", "myself", "self", "i":
+		return true
+	default:
+		return false
+	}
+}
+
+func displayUserName(user users.CoreUser) string {
+	name := strings.TrimSpace(user.FullName)
+	if name != "" {
+		return name
+	}
+	return user.Username
+}
+
+func parseRealtimeDate(value string, loc *time.Location, now time.Time) (*time.Time, error) {
+	raw := strings.TrimSpace(value)
+	if raw == "" {
+		return nil, nil
+	}
+	if parsed, err := time.ParseInLocation("2006-01-02", raw, loc); err == nil {
+		return &parsed, nil
+	}
+	if parsed, err := time.Parse(time.RFC3339, raw); err == nil {
+		local := parsed.In(loc)
+		date := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+		return &date, nil
+	}
+
+	normalized := normalizeDatePhrase(raw)
+	switch normalized {
+	case "today":
+		date := dateOnly(now, loc)
+		return &date, nil
+	case "tomorrow":
+		date := dateOnly(now.AddDate(0, 0, 1), loc)
+		return &date, nil
+	case "next week":
+		date := dateOnly(now.AddDate(0, 0, 7), loc)
+		return &date, nil
+	}
+
+	if weekday, ok := weekdayFromPhrase(normalized); ok {
+		date := dateOnly(nextWeekday(now, loc, weekday, strings.HasPrefix(normalized, "next ")), loc)
+		return &date, nil
+	}
+
+	return nil, fmt.Errorf("use YYYY-MM-DD or a relative date like today, tomorrow, this Friday, or next Friday")
+}
+
+func normalizeDatePhrase(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	for _, prefix := range []string{"due ", "on ", "by ", "deadline ", "start ", "starting "} {
+		value = strings.TrimPrefix(value, prefix)
+	}
+	return strings.Join(strings.Fields(value), " ")
+}
+
+func weekdayFromPhrase(value string) (time.Weekday, bool) {
+	value = strings.TrimPrefix(value, "this ")
+	value = strings.TrimPrefix(value, "next ")
+	weekdays := map[string]time.Weekday{
+		"sunday":    time.Sunday,
+		"monday":    time.Monday,
+		"tuesday":   time.Tuesday,
+		"wednesday": time.Wednesday,
+		"thursday":  time.Thursday,
+		"friday":    time.Friday,
+		"saturday":  time.Saturday,
+	}
+	weekday, ok := weekdays[value]
+	return weekday, ok
+}
+
+func nextWeekday(now time.Time, loc *time.Location, weekday time.Weekday, forceNext bool) time.Time {
+	local := now.In(loc)
+	days := (int(weekday) - int(local.Weekday()) + 7) % 7
+	if forceNext {
+		if days == 0 {
+			days = 7
+		} else {
+			days += 7
+		}
+	}
+	return local.AddDate(0, 0, days)
+}
+
+func dateOnly(value time.Time, loc *time.Location) time.Time {
+	local := value.In(loc)
+	return time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
 }
 
 func toRealtimeVoiceMembers(memberList []users.CoreUser) []AppRealtimeVoiceMember {

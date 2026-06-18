@@ -69,17 +69,27 @@ type AppRealtimeListKeyResultsArguments struct {
 }
 
 type AppRealtimeCreateTaskArguments struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	TeamName    string `json:"teamName"`
-	Priority    string `json:"priority"`
-	Confirmed   bool   `json:"confirmed"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	TeamName      string `json:"teamName"`
+	AssigneeName  string `json:"assigneeName"`
+	AssignToMe    bool   `json:"assignToMe"`
+	Priority      string `json:"priority"`
+	EstimateValue *int16 `json:"estimateValue"`
+	StartDate     string `json:"startDate"`
+	EndDate       string `json:"endDate"`
+	BlockedByRef  string `json:"blockedByRef"`
+	BlockingRef   string `json:"blockingRef"`
+	RelatedRef    string `json:"relatedRef"`
+	Confirmed     bool   `json:"confirmed"`
 }
 
 type AppRealtimeToolResponse struct {
 	Success              bool                        `json:"success"`
 	RequiresConfirmation bool                        `json:"requiresConfirmation,omitempty"`
 	NeedsTeam            bool                        `json:"needsTeam,omitempty"`
+	NeedsAssignee        bool                        `json:"needsAssignee,omitempty"`
+	NeedsStoryReference  bool                        `json:"needsStoryReference,omitempty"`
 	Count                int                         `json:"count,omitempty"`
 	Message              string                      `json:"message,omitempty"`
 	Error                string                      `json:"error,omitempty"`
@@ -89,6 +99,7 @@ type AppRealtimeToolResponse struct {
 	Objectives           []AppRealtimeVoiceObjective `json:"objectives,omitempty"`
 	KeyResults           []AppRealtimeVoiceKeyResult `json:"keyResults,omitempty"`
 	Members              []AppRealtimeVoiceMember    `json:"members,omitempty"`
+	User                 *AppRealtimeVoiceUser       `json:"user,omitempty"`
 	Terminology          *AppRealtimeTerminology     `json:"terminology,omitempty"`
 	Confirmation         *AppRealtimeConfirmation    `json:"confirmation,omitempty"`
 }
@@ -117,14 +128,20 @@ type AppRealtimeVoiceStatus struct {
 }
 
 type AppRealtimeVoiceStory struct {
-	Reference   string                  `json:"reference,omitempty"`
-	Title       string                  `json:"title"`
-	Priority    string                  `json:"priority"`
-	Team        string                  `json:"team,omitempty"`
-	Status      *AppRealtimeVoiceStatus `json:"status,omitempty"`
-	StartDate   *time.Time              `json:"startDate,omitempty"`
-	EndDate     *time.Time              `json:"endDate,omitempty"`
-	CompletedAt *time.Time              `json:"completedAt,omitempty"`
+	Reference     string                  `json:"reference,omitempty"`
+	Title         string                  `json:"title"`
+	Priority      string                  `json:"priority"`
+	EstimateLabel *string                 `json:"estimateLabel,omitempty"`
+	EstimateValue *int16                  `json:"estimateValue,omitempty"`
+	Team          string                  `json:"team,omitempty"`
+	Assignee      string                  `json:"assignee,omitempty"`
+	Status        *AppRealtimeVoiceStatus `json:"status,omitempty"`
+	BlockedBy     string                  `json:"blockedBy,omitempty"`
+	Blocking      string                  `json:"blocking,omitempty"`
+	Related       string                  `json:"related,omitempty"`
+	StartDate     *time.Time              `json:"startDate,omitempty"`
+	EndDate       *time.Time              `json:"endDate,omitempty"`
+	CompletedAt   *time.Time              `json:"completedAt,omitempty"`
 }
 
 type AppRealtimeVoiceObjective struct {
@@ -159,11 +176,26 @@ type AppRealtimeVoiceMember struct {
 	LastActiveAt *time.Time `json:"lastActiveAt,omitempty"`
 }
 
+type AppRealtimeVoiceUser struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Timezone string `json:"timezone"`
+	Today    string `json:"today"`
+	Now      string `json:"now"`
+}
+
 type AppRealtimeConfirmation struct {
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
-	TeamName    string `json:"teamName,omitempty"`
-	Priority    string `json:"priority,omitempty"`
+	Title         string `json:"title"`
+	Description   string `json:"description,omitempty"`
+	TeamName      string `json:"teamName,omitempty"`
+	AssigneeName  string `json:"assigneeName,omitempty"`
+	Priority      string `json:"priority,omitempty"`
+	EstimateValue *int16 `json:"estimateValue,omitempty"`
+	StartDate     string `json:"startDate,omitempty"`
+	EndDate       string `json:"endDate,omitempty"`
+	BlockedByRef  string `json:"blockedByRef,omitempty"`
+	BlockingRef   string `json:"blockingRef,omitempty"`
+	RelatedRef    string `json:"relatedRef,omitempty"`
 }
 
 type openAIRealtimeClientSecretRequest struct {

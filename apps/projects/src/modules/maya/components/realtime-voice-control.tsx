@@ -1,12 +1,13 @@
 "use client";
 
-import { Box, Button, Flex, Text, Tooltip } from "ui";
-import { LoadingIcon, MicrophoneIcon, StopIcon, VolumeIcon } from "icons";
+import { Box, Button, Flex, Text, Tooltip, Wrapper } from "ui";
+import { LoadingIcon, StopIcon, VoiceIcon, VolumeIcon } from "icons";
 import { cn } from "lib";
 import { useMayaRealtimeVoice } from "../hooks/use-maya-realtime-voice";
 
 type RealtimeVoiceControlProps = {
   disabled?: boolean;
+  isOnPage?: boolean;
 };
 
 const getButtonLabel = (
@@ -33,6 +34,7 @@ const getStatusLabel = ({
 
 export const RealtimeVoiceControl = ({
   disabled = false,
+  isOnPage = false,
 }: RealtimeVoiceControlProps) => {
   const { connect, disconnect, error, isListening, isSpeaking, status } =
     useMayaRealtimeVoice();
@@ -48,51 +50,68 @@ export const RealtimeVoiceControl = ({
     if (isSpeaking) {
       return <VolumeIcon className="h-4 w-auto text-current" />;
     }
-    return <MicrophoneIcon className="h-4 w-auto text-current" />;
+    return <VoiceIcon className="h-6 w-auto text-current" />;
   })();
 
   const buttonIcon = (() => {
     if (isConnecting) {
-      return <LoadingIcon className="h-4 w-auto animate-spin" />;
+      return <LoadingIcon className="h-5 w-auto animate-spin text-current" />;
     }
     if (isConnected) {
-      return <StopIcon className="h-4 w-auto text-current dark:text-current" />;
+      return <StopIcon className="h-5 w-auto text-current dark:text-current" />;
     }
-    return <MicrophoneIcon className="h-4 w-auto" />;
+    return <VoiceIcon className="h-5 w-auto text-current" />;
   })();
 
   return (
     <Box className="px-6 pb-2">
-      <Flex
-        align="center"
-        className="border-border bg-surface/80 rounded-xl border px-3 py-2 shadow-xs backdrop-blur"
-        gap={3}
-        justify="between"
+      <Wrapper
+        className={cn(
+          "dark:bg-surface/60 flex items-center justify-between gap-3 shadow-xs",
+          {
+            "md:px-4 md:py-3": isOnPage,
+          },
+        )}
       >
         <Flex align="center" className="min-w-0" gap={2}>
           <Box
             aria-hidden="true"
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+              "flex size-11 shrink-0 items-center justify-center rounded-lg",
               {
                 "bg-success/12 text-success": isConnected,
                 "bg-primary/12 text-primary": isConnecting,
-                "bg-muted text-text-muted": !isConnected && !isConnecting,
+                "bg-muted text-foreground": !isConnected && !isConnecting,
               },
             )}
           >
             {statusIcon}
           </Box>
           <Box className="min-w-0">
-            <Text className="text-sm leading-tight font-medium">
+            <Text
+              className={cn("leading-tight font-semibold", {
+                "md:text-lg": isOnPage,
+              })}
+            >
               {statusLabel}
             </Text>
             {error ? (
-              <Text className="text-danger dark:text-danger truncate text-xs">
+              <Text
+                className={cn(
+                  "text-danger dark:text-danger truncate text-[0.95rem]",
+                  {
+                    "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
+                  },
+                )}
+              >
                 {error}
               </Text>
             ) : (
-              <Text className="text-text-muted truncate text-xs">
+              <Text
+                className={cn("text-text-muted truncate text-[0.95rem]", {
+                  "md:mt-0.5 md:text-base md:leading-[1.3rem]": isOnPage,
+                })}
+              >
                 {isConnected ? "Realtime session active" : "Realtime voice"}
               </Text>
             )}
@@ -110,7 +129,7 @@ export const RealtimeVoiceControl = ({
           <Button
             aria-label={label}
             className="shrink-0 gap-1.5"
-            color={isConnected ? "danger" : "tertiary"}
+            color="invert"
             disabled={disabled || isConnecting}
             leftIcon={buttonIcon}
             onClick={() => {
@@ -120,14 +139,11 @@ export const RealtimeVoiceControl = ({
                 void connect();
               }
             }}
-            rounded="full"
-            size="sm"
-            variant={isConnected ? "solid" : "outline"}
           >
             {label}
           </Button>
         </Tooltip>
-      </Flex>
+      </Wrapper>
     </Box>
   );
 };

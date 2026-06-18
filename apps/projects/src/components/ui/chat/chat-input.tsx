@@ -5,11 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
-  MicrophoneIcon,
   CloseIcon,
   LoadingIcon,
   CheckIcon,
   StopIcon,
+  MicrophoneIcon,
 } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
@@ -64,7 +64,9 @@ const AttachmentPreviewItem = ({
   const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
 
   useEffect(() => {
-    return () => URL.revokeObjectURL(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
   }, [objectUrl]);
 
   return (
@@ -299,9 +301,9 @@ export const ChatInput = ({
               <AttachmentPreviewItem
                 file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() =>
-                  handleRemoveAttachment(attachments.indexOf(attachment))
-                }
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
               />
             ))}
           </Box>
@@ -312,9 +314,9 @@ export const ChatInput = ({
               <AttachmentPreviewItem
                 file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() =>
-                  handleRemoveAttachment(attachments.indexOf(attachment))
-                }
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
               />
             ))}
           </Box>
@@ -397,7 +399,6 @@ export const ChatInput = ({
                   : "Talk"}
             </Button>
             <Button
-              asIcon
               aria-label={
                 isRecording
                   ? "Send recording"
@@ -405,15 +406,12 @@ export const ChatInput = ({
                     ? "Stop response"
                     : "Send message"
               }
-              className=""
+              asIcon
               color="invert"
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
-                } else if (
-                  status === "submitted" ||
-                  status === "streaming"
-                ) {
+                } else if (status === "submitted" || status === "streaming") {
                   onStop();
                 } else {
                   onSend();
