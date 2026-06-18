@@ -44,9 +44,6 @@ export const RealtimeVoiceControl = ({
   const statusLabel = getStatusLabel({ isListening, isSpeaking, status });
 
   const statusIcon = (() => {
-    if (isConnecting) {
-      return <LoadingIcon className="h-4 w-auto animate-spin text-current" />;
-    }
     if (isSpeaking) {
       return <VolumeIcon className="h-4 w-auto text-current" />;
     }
@@ -67,9 +64,13 @@ export const RealtimeVoiceControl = ({
     <Box className="px-6 pb-2">
       <Wrapper
         className={cn(
-          "dark:bg-surface/60 flex items-center justify-between gap-3 shadow-xs",
+          "flex items-center justify-between gap-3 shadow-none ring-1 transition-colors",
           {
             "md:px-4 md:py-3": isOnPage,
+            "bg-success/[0.06] ring-success/20 dark:bg-success/[0.08]":
+              isConnected,
+            "bg-primary/[0.025] ring-primary/15 dark:bg-primary/[0.05]":
+              !isConnected,
           },
         )}
       >
@@ -77,11 +78,12 @@ export const RealtimeVoiceControl = ({
           <Box
             aria-hidden="true"
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-lg",
+              "flex size-11 shrink-0 items-center justify-center rounded-lg ring-1",
               {
-                "bg-success/12 text-success": isConnected,
-                "bg-primary/12 text-primary": isConnecting,
-                "bg-muted text-foreground": !isConnected && !isConnecting,
+                "bg-success/12 text-success ring-success/12": isConnected,
+                "bg-primary/12 text-primary ring-primary/12": isConnecting,
+                "bg-primary/10 text-foreground ring-primary/10":
+                  !isConnected && !isConnecting,
               },
             )}
           >
