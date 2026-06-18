@@ -220,7 +220,21 @@ type openAIRealtimeSessionConfig struct {
 }
 
 type openAIRealtimeAudioConfig struct {
+	Input  openAIRealtimeAudioInputConfig  `json:"input"`
 	Output openAIRealtimeAudioOutputConfig `json:"output"`
+}
+
+type openAIRealtimeAudioInputConfig struct {
+	TurnDetection openAIRealtimeTurnDetectionConfig `json:"turn_detection"`
+}
+
+type openAIRealtimeTurnDetectionConfig struct {
+	Type              string  `json:"type"`
+	Threshold         float64 `json:"threshold"`
+	PrefixPaddingMs   int     `json:"prefix_padding_ms"`
+	SilenceDurationMs int     `json:"silence_duration_ms"`
+	CreateResponse    bool    `json:"create_response"`
+	InterruptResponse bool    `json:"interrupt_response"`
 }
 
 type openAIRealtimeAudioOutputConfig struct {

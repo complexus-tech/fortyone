@@ -919,6 +919,16 @@ func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, 
 			Tools:        realtimeTools(),
 			ToolChoice:   "auto",
 			Audio: openAIRealtimeAudioConfig{
+				Input: openAIRealtimeAudioInputConfig{
+					TurnDetection: openAIRealtimeTurnDetectionConfig{
+						Type:              "server_vad",
+						Threshold:         0.75,
+						PrefixPaddingMs:   300,
+						SilenceDurationMs: 700,
+						CreateResponse:    true,
+						InterruptResponse: true,
+					},
+				},
 				Output: openAIRealtimeAudioOutputConfig{
 					Voice: defaultRealtimeVoice,
 				},
