@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -38,10 +39,13 @@ const defaultPlanningWindow = 14 * 24 * time.Hour
 const defaultRealtimeBaseURL = "https://api.openai.com/v1"
 const defaultRealtimeModel = "gpt-realtime-2"
 const defaultRealtimeVoice = "marin"
+const realtimeMonthlyVoiceLimit = 5 * time.Minute
+const realtimeMaxSessionDuration = 5 * time.Minute
 
 var ErrMayaAccessRequired = errors.New("maya agent is available on paid plans and active trials")
 var ErrMayaRealtimeNotConfigured = errors.New("maya realtime voice is not configured")
 var ErrMayaRealtimeToolNotConfigured = errors.New("maya realtime tools are not configured")
+var ErrMayaRealtimeMonthlyLimitExceeded = errors.New("monthly realtime voice limit reached")
 
 var realtimeStoryPriorities = map[string]struct{}{
 	"No Priority": {},
@@ -157,13 +161,51 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
 	}
 
+	sessionID, maxSessionDuration, remainingDuration, err := h.startRealtimeVoiceSession(ctx, workspace.ID, userID)
+	if err != nil {
+		if errors.Is(err, ErrMayaRealtimeMonthlyLimitExceeded) {
+			return web.RespondError(ctx, w, err, http.StatusTooManyRequests)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
 	session, err := h.createRealtimeClientSecret(ctx, workspace.ID, userID)
 	if err != nil {
+		h.endRealtimeVoiceSession(ctx, workspace.ID, userID, sessionID)
 		h.log.Error(ctx, "failed to create realtime maya session", "error", err, "workspace_id", workspace.ID, "user_id", userID)
 		return web.RespondError(ctx, w, err, http.StatusBadGateway)
 	}
+	session.SessionID = sessionID
+	session.MaxSessionSeconds = durationSeconds(maxSessionDuration)
+	session.RemainingSeconds = durationSeconds(remainingDuration)
+	session.MonthlyLimitSeconds = durationSeconds(realtimeMonthlyVoiceLimit)
 
 	return web.Respond(ctx, w, session, http.StatusCreated)
+}
+
+func (h *Handlers) EndRealtimeSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req AppRealtimeEndSessionRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if req.SessionID == uuid.Nil {
+		return web.RespondError(ctx, w, errors.New("sessionId is required"), http.StatusBadRequest)
+	}
+
+	if err := h.endRealtimeVoiceSession(ctx, workspace.ID, userID, req.SessionID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, map[string]bool{"success": true}, http.StatusOK)
 }
 
 func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -207,6 +249,11 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 		result, err = h.executeListKeyResults(ctx, workspace.ID, userID, req.Arguments)
 	case "create_task":
 		result, err = h.executeCreateTask(ctx, workspace.ID, userID, req.Arguments)
+	case "end_conversation":
+		result = AppRealtimeToolResponse{
+			Success: true,
+			Message: "End the realtime voice conversation now.",
+		}
 	default:
 		result = AppRealtimeToolResponse{
 			Success: false,
@@ -258,6 +305,92 @@ func (h *Handlers) workspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUI
 		return false, fmt.Errorf("check maya access: %w", err)
 	}
 	return allowed, nil
+}
+
+func (h *Handlers) startRealtimeVoiceSession(ctx context.Context, workspaceID, userID uuid.UUID) (uuid.UUID, time.Duration, time.Duration, error) {
+	tx, err := h.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, 0, 0, fmt.Errorf("begin realtime voice session transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	var lockedWorkspaceID uuid.UUID
+	if err := tx.GetContext(ctx, &lockedWorkspaceID, `
+		SELECT workspace_id
+		FROM workspaces
+		WHERE workspace_id = $1
+			AND deleted_at IS NULL
+		FOR UPDATE
+	`, workspaceID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return uuid.Nil, 0, 0, ErrMayaRealtimeMonthlyLimitExceeded
+		}
+		return uuid.Nil, 0, 0, fmt.Errorf("lock workspace for realtime voice session: %w", err)
+	}
+
+	var usedSeconds float64
+	if err := tx.GetContext(ctx, &usedSeconds, `
+		SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (
+			CASE
+				WHEN ended_at IS NULL THEN started_at + ($2 * INTERVAL '1 second')
+				ELSE LEAST(ended_at, started_at + ($2 * INTERVAL '1 second'))
+			END - started_at
+		))), 0)
+		FROM maya_realtime_voice_sessions
+		WHERE workspace_id = $1
+			AND started_at >= date_trunc('month', NOW())
+			AND started_at < date_trunc('month', NOW()) + INTERVAL '1 month'
+	`, workspaceID, durationSeconds(realtimeMaxSessionDuration)); err != nil {
+		return uuid.Nil, 0, 0, fmt.Errorf("read realtime voice monthly usage: %w", err)
+	}
+
+	usedDuration := time.Duration(usedSeconds * float64(time.Second))
+	remainingDuration := realtimeMonthlyVoiceLimit - usedDuration
+	if remainingDuration < time.Second {
+		return uuid.Nil, 0, 0, ErrMayaRealtimeMonthlyLimitExceeded
+	}
+
+	maxSessionDuration := remainingDuration
+	if maxSessionDuration > realtimeMaxSessionDuration {
+		maxSessionDuration = realtimeMaxSessionDuration
+	}
+
+	var sessionID uuid.UUID
+	if err := tx.GetContext(ctx, &sessionID, `
+		INSERT INTO maya_realtime_voice_sessions (workspace_id, user_id)
+		VALUES ($1, $2)
+		RETURNING session_id
+	`, workspaceID, userID); err != nil {
+		return uuid.Nil, 0, 0, fmt.Errorf("create realtime voice session record: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, 0, 0, fmt.Errorf("commit realtime voice session transaction: %w", err)
+	}
+
+	return sessionID, maxSessionDuration, remainingDuration, nil
+}
+
+func (h *Handlers) endRealtimeVoiceSession(ctx context.Context, workspaceID, userID, sessionID uuid.UUID) error {
+	_, err := h.db.ExecContext(ctx, `
+		UPDATE maya_realtime_voice_sessions
+		SET ended_at = COALESCE(ended_at, LEAST(NOW(), started_at + ($4 * INTERVAL '1 second'))),
+			updated_at = NOW()
+		WHERE workspace_id = $1
+			AND user_id = $2
+			AND session_id = $3
+	`, workspaceID, userID, sessionID, durationSeconds(realtimeMaxSessionDuration))
+	if err != nil {
+		return fmt.Errorf("end realtime voice session: %w", err)
+	}
+	return nil
+}
+
+func durationSeconds(duration time.Duration) int {
+	if duration <= 0 {
+		return 0
+	}
+	return int((duration + time.Second - 1) / time.Second)
 }
 
 func (h *Handlers) executeListMyTasks(ctx context.Context, workspaceID, userID uuid.UUID, rawArgs json.RawMessage) (AppRealtimeToolResponse, error) {
@@ -865,6 +998,7 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"Use search_work when the user asks to find or look up work by name, description, topic, or keyword.",
 		fmt.Sprintf("Use list_objectives for %s/%s questions and list_key_results for %s/%s questions.", terminology.Objective, terminology.Objectives, terminology.KeyResult, terminology.KeyResults),
 		fmt.Sprintf("Use create_task when the user asks you to create a %s, task, story, issue, or work item.", terminology.Story),
+		"When the user clearly ends the conversation with phrases like bye, goodbye, that's all, thanks that's all, or talk later, say a brief goodbye and call end_conversation.",
 		"Do not guess teams, statuses, permissions, or results. Ask a short clarifying question when the target is ambiguous.",
 		teamSelectionInstruction(workspaceTeams),
 		"Never expose raw UUIDs. Use human-readable names and story references.",
@@ -883,6 +1017,17 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 
 func realtimeTools() []openAIRealtimeTool {
 	return []openAIRealtimeTool{
+		{
+			Type:        "function",
+			Name:        "end_conversation",
+			Description: "End the realtime voice conversation when the user says goodbye or clearly indicates they are done.",
+			Parameters: map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties":           map[string]any{},
+				"required":             []string{},
+			},
+		},
 		{
 			Type:        "function",
 			Name:        "get_context",

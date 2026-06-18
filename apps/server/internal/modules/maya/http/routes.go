@@ -42,5 +42,6 @@ func Routes(cfg Config, app *web.App) {
 
 	app.Post("/workspaces/{workspaceSlug}/maya/work-plans", h.CreateWorkPlan, auth, workspace, admin)
 	app.Post("/workspaces/{workspaceSlug}/maya/realtime-session", h.CreateRealtimeSession, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/maya/realtime-session/end", h.EndRealtimeSession, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/maya/realtime-tool", h.ExecuteRealtimeTool, auth, workspace)
 }

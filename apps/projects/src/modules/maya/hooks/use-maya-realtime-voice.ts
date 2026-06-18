@@ -22,7 +22,9 @@ type ApiResponse<T> = {
 type RealtimeSessionResponse = {
   clientSecret: string;
   expiresAt?: number;
+  maxSessionSeconds: number;
   model: string;
+  sessionId: string;
   voice: string;
 };
 
@@ -46,6 +48,19 @@ type RealtimeToolOutput = {
 };
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
+const FALLBACK_REALTIME_MAX_SESSION_SECONDS = 5 * 60;
+const REALTIME_IDLE_TIMEOUT_MS = 60_000;
+const REALTIME_ACTIVITY_EVENTS = new Set([
+  "conversation.item.created",
+  "input_audio_buffer.speech_started",
+  "input_audio_buffer.speech_stopped",
+  "response.audio.delta",
+  "response.audio.done",
+  "response.audio_transcript.delta",
+  "response.created",
+  "response.done",
+  "response.output_item.added",
+]);
 
 const isBrowserRealtimeSupported = () => {
   if (
@@ -95,6 +110,9 @@ export const useMayaRealtimeVoice = () => {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const handledFunctionCallsRef = useRef<Set<string>>(new Set());
   const speakingTimeoutRef = useRef<number | null>(null);
+  const idleTimeoutRef = useRef<number | null>(null);
+  const sessionTimeoutRef = useRef<number | null>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
   const [status, setStatus] = useState<RealtimeVoiceStatus>("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,9 +124,51 @@ export const useMayaRealtimeVoice = () => {
     }
   }, []);
 
+  const clearIdleTimer = useCallback(() => {
+    if (idleTimeoutRef.current) {
+      window.clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearSessionTimer = useCallback(() => {
+    if (sessionTimeoutRef.current) {
+      window.clearTimeout(sessionTimeoutRef.current);
+      sessionTimeoutRef.current = null;
+    }
+  }, []);
+
+  const endRealtimeSession = useCallback(
+    (sessionId: string) => {
+      void fetch(
+        `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-session/end`,
+        {
+          body: JSON.stringify({ sessionId }),
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          keepalive: true,
+          method: "POST",
+        },
+      ).catch(() => {
+        // Session end reporting is best-effort; the backend caps open sessions.
+      });
+    },
+    [workspaceSlug],
+  );
+
   const closeConnection = useCallback(() => {
     clearSpeakingTimer();
+    clearIdleTimer();
+    clearSessionTimer();
     setIsSpeaking(false);
+
+    const activeSessionId = activeSessionIdRef.current;
+    activeSessionIdRef.current = null;
+    if (activeSessionId) {
+      endRealtimeSession(activeSessionId);
+    }
 
     dataChannelRef.current?.close();
     dataChannelRef.current = null;
@@ -127,7 +187,35 @@ export const useMayaRealtimeVoice = () => {
       remoteAudioRef.current.remove();
       remoteAudioRef.current = null;
     }
-  }, [clearSpeakingTimer]);
+  }, [
+    clearIdleTimer,
+    clearSessionTimer,
+    clearSpeakingTimer,
+    endRealtimeSession,
+  ]);
+
+  const resetIdleTimer = useCallback(() => {
+    clearIdleTimer();
+    idleTimeoutRef.current = window.setTimeout(() => {
+      closeConnection();
+      setStatus("idle");
+    }, REALTIME_IDLE_TIMEOUT_MS);
+  }, [clearIdleTimer, closeConnection]);
+
+  const startSessionTimer = useCallback(
+    (maxSessionSeconds: number) => {
+      clearSessionTimer();
+      const seconds =
+        maxSessionSeconds > 0
+          ? maxSessionSeconds
+          : FALLBACK_REALTIME_MAX_SESSION_SECONDS;
+      sessionTimeoutRef.current = window.setTimeout(() => {
+        closeConnection();
+        setStatus("idle");
+      }, seconds * 1000);
+    },
+    [clearSessionTimer, closeConnection],
+  );
 
   const markSpeaking = useCallback(() => {
     setIsSpeaking(true);
@@ -140,6 +228,8 @@ export const useMayaRealtimeVoice = () => {
 
   const runRealtimeTool = useCallback(
     async (functionCall: RealtimeFunctionCall) => {
+      resetIdleTimer();
+
       const callId = functionCall.call_id;
       const name = functionCall.name;
       if (!callId || !name || handledFunctionCallsRef.current.has(callId)) {
@@ -180,6 +270,7 @@ export const useMayaRealtimeVoice = () => {
           queryKey: storyKeys.all(workspaceSlug),
         });
       }
+      resetIdleTimer();
 
       const dataChannel = dataChannelRef.current;
       if (!dataChannel || dataChannel.readyState !== "open") {
@@ -196,9 +287,14 @@ export const useMayaRealtimeVoice = () => {
           },
         }),
       );
+      if (name === "end_conversation") {
+        closeConnection();
+        setStatus("idle");
+        return;
+      }
       dataChannel.send(JSON.stringify({ type: "response.create" }));
     },
-    [queryClient, workspaceSlug],
+    [closeConnection, queryClient, resetIdleTimer, workspaceSlug],
   );
 
   const handleFunctionCalls = useCallback(
@@ -219,6 +315,9 @@ export const useMayaRealtimeVoice = () => {
     (data: string) => {
       try {
         const event = JSON.parse(data) as RealtimeServerEvent;
+        if (event.type && REALTIME_ACTIVITY_EVENTS.has(event.type)) {
+          resetIdleTimer();
+        }
         switch (event.type) {
           case "response.audio.delta":
           case "response.audio_transcript.delta":
@@ -240,7 +339,7 @@ export const useMayaRealtimeVoice = () => {
         // Realtime data channel messages are best-effort UI signals here.
       }
     },
-    [clearSpeakingTimer, handleFunctionCalls, markSpeaking],
+    [clearSpeakingTimer, handleFunctionCalls, markSpeaking, resetIdleTimer],
   );
 
   const createRealtimeSession = useCallback(async () => {
@@ -263,7 +362,7 @@ export const useMayaRealtimeVoice = () => {
         payload?.error?.message ?? "Failed to create voice session.",
       );
     }
-    if (!payload?.data?.clientSecret) {
+    if (!payload?.data?.clientSecret || !payload.data.sessionId) {
       throw new Error("Voice session did not include a client secret.");
     }
     return payload.data;
@@ -288,7 +387,19 @@ export const useMayaRealtimeVoice = () => {
     setStatus("connecting");
 
     try {
+      const localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          autoGainControl: true,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      localStreamRef.current = localStream;
+
       const session = await createRealtimeSession();
+      activeSessionIdRef.current = session.sessionId;
+      startSessionTimer(session.maxSessionSeconds);
+
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
 
@@ -310,14 +421,6 @@ export const useMayaRealtimeVoice = () => {
         }
       };
 
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          autoGainControl: true,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-      localStreamRef.current = localStream;
       localStream.getAudioTracks().forEach((track) => {
         peerConnection.addTrack(track, localStream);
       });
@@ -351,12 +454,20 @@ export const useMayaRealtimeVoice = () => {
       });
 
       setStatus("connected");
+      resetIdleTimer();
     } catch (connectError) {
       closeConnection();
       setStatus("idle");
       setError(errorMessage(connectError, "Failed to start voice session."));
     }
-  }, [closeConnection, createRealtimeSession, handleRealtimeEvent, status]);
+  }, [
+    closeConnection,
+    createRealtimeSession,
+    handleRealtimeEvent,
+    resetIdleTimer,
+    startSessionTimer,
+    status,
+  ]);
 
   useEffect(() => {
     return () => {

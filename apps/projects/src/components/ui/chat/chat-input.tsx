@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import ky from "ky";
 import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
+import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
+import { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
 type ChatInputProps = {
@@ -29,6 +31,7 @@ type ChatInputProps = {
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
   messagesCount: number;
+  liveVoiceDisabled?: boolean;
 };
 
 const SendIcon = () => {
@@ -96,11 +99,14 @@ export const ChatInput = ({
   onAttachmentsChange,
   isOnPage,
   messagesCount,
+  liveVoiceDisabled = false,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
+  const realtimeVoice = useMayaRealtimeVoice();
+  const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts =
     messagesCount > 2
       ? [
@@ -200,6 +206,9 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (isLiveVoiceActive) {
+        return;
+      }
       onSend();
     }
   };
@@ -331,6 +340,7 @@ export const ChatInput = ({
                 "md:min-h-[3.7rem]": isOnPage,
               },
             )}
+            disabled={isLiveVoiceActive}
             name="message"
             onChange={onChange}
             onKeyDown={handleKeyDown}
@@ -359,6 +369,7 @@ export const ChatInput = ({
               <Button
                 className="gap-1"
                 color="tertiary"
+                disabled={isLiveVoiceActive}
                 onClick={open}
                 rounded="full"
                 variant="naked"
@@ -372,6 +383,7 @@ export const ChatInput = ({
             <Button
               className="gap-1"
               color="tertiary"
+              disabled={isLiveVoiceActive}
               leftIcon={
                 isTranscribing ? (
                   <LoadingIcon className="animate-spin" />
@@ -398,6 +410,10 @@ export const ChatInput = ({
                   ? "Cancel"
                   : "Talk"}
             </Button>
+            <RealtimeVoiceControl
+              disabled={liveVoiceDisabled}
+              voice={realtimeVoice}
+            />
             <Button
               aria-label={
                 isRecording
@@ -408,6 +424,7 @@ export const ChatInput = ({
               }
               asIcon
               color="invert"
+              disabled={isLiveVoiceActive}
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();

@@ -23,10 +23,18 @@ type AppWorkPlan struct {
 }
 
 type AppRealtimeSession struct {
-	ClientSecret string `json:"clientSecret"`
-	ExpiresAt    int64  `json:"expiresAt,omitempty"`
-	Model        string `json:"model"`
-	Voice        string `json:"voice"`
+	ClientSecret        string    `json:"clientSecret"`
+	SessionID           uuid.UUID `json:"sessionId"`
+	ExpiresAt           int64     `json:"expiresAt,omitempty"`
+	Model               string    `json:"model"`
+	Voice               string    `json:"voice"`
+	MaxSessionSeconds   int       `json:"maxSessionSeconds"`
+	RemainingSeconds    int       `json:"remainingSeconds"`
+	MonthlyLimitSeconds int       `json:"monthlyLimitSeconds"`
+}
+
+type AppRealtimeEndSessionRequest struct {
+	SessionID uuid.UUID `json:"sessionId"`
 }
 
 type AppRealtimeToolRequest struct {

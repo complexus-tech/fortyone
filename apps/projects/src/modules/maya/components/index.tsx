@@ -14,7 +14,6 @@ import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
-import { RealtimeVoiceControl } from "./realtime-voice-control";
 
 export const MayaChat = () => {
   const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
@@ -92,10 +91,10 @@ export const MayaChat = () => {
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         ) : null}
         {needsUpgrade ? <LimitReached isOnPage /> : null}
-        <RealtimeVoiceControl disabled={needsUpgrade} isOnPage />
         <ChatInput
           attachments={attachments}
           isOnPage
+          liveVoiceDisabled={needsUpgrade}
           messagesCount={messages.length}
           onAttachmentsChange={setAttachments}
           onChange={(e) => {
