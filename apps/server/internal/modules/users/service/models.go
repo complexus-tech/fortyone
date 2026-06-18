@@ -28,6 +28,7 @@ type CoreUser struct {
 	AvatarURL                     string
 	IsActive                      bool
 	IsSystem                      bool
+	IsInternal                    bool
 	HasSeenWalkthrough            bool
 	Timezone                      string
 	LastLoginAt                   time.Time

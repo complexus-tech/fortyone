@@ -8,6 +8,7 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
 import { LimitReached } from "@/components/ui/chat/limit-reached";
 import { BodyContainer } from "@/components/shared";
+import { useSession } from "@/lib/auth/client";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMayaChat } from "../hooks/use-maya-chat";
@@ -54,8 +55,10 @@ export const MayaChat = () => {
   } = useMayaChat(config);
 
   const { data: totalMessages = 0 } = useTotalMessages();
+  const { data: session } = useSession();
   const { withinLimit } = useSubscriptionFeatures();
   const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
+  const isInternalUser = session?.user.isInternal === true;
 
   return (
     <>
@@ -93,6 +96,7 @@ export const MayaChat = () => {
         {needsUpgrade ? <LimitReached isOnPage /> : null}
         <ChatInput
           attachments={attachments}
+          isLiveVoiceVisible={isInternalUser}
           isOnPage
           liveVoiceDisabled={needsUpgrade}
           messagesCount={messages.length}

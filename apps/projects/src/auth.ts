@@ -7,6 +7,7 @@ export type SessionUser = {
   image: string | null;
   username: string;
   fullName: string;
+  isInternal: boolean;
   lastUsedWorkspaceId: string;
 };
 
@@ -30,6 +31,7 @@ const toSession = async (): Promise<Session | null> => {
       image: user.avatarUrl,
       username: user.username,
       fullName: user.fullName,
+      isInternal: user.isInternal,
       lastUsedWorkspaceId: user.lastUsedWorkspaceId,
     },
   };

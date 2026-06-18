@@ -14,6 +14,7 @@ export type User = {
   fullName: string;
   avatarUrl: string | null;
   isActive: boolean;
+  isInternal: boolean;
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
   timezone: string;
@@ -29,6 +30,7 @@ export type Member = {
   fullName: string;
   avatarUrl: string;
   isActive: boolean;
+  isInternal: boolean;
   createdAt: string;
   updatedAt: string;
 };

@@ -31,6 +31,7 @@ type ChatInputProps = {
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
   messagesCount: number;
+  isLiveVoiceVisible?: boolean;
   liveVoiceDisabled?: boolean;
 };
 
@@ -99,6 +100,7 @@ export const ChatInput = ({
   onAttachmentsChange,
   isOnPage,
   messagesCount,
+  isLiveVoiceVisible = false,
   liveVoiceDisabled = false,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -410,10 +412,12 @@ export const ChatInput = ({
                   ? "Cancel"
                   : "Talk"}
             </Button>
-            <RealtimeVoiceControl
-              disabled={liveVoiceDisabled}
-              voice={realtimeVoice}
-            />
+            {isLiveVoiceVisible ? (
+              <RealtimeVoiceControl
+                disabled={liveVoiceDisabled}
+                voice={realtimeVoice}
+              />
+            ) : null}
             <Button
               aria-label={
                 isRecording

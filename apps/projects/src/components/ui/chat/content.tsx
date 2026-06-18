@@ -5,6 +5,7 @@ import { Box, Button, Flex, Text } from "ui";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useChatContext } from "@/context/chat-context";
+import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { ChatHeader } from "./chat-header";
@@ -16,8 +17,10 @@ import { SuggestedPrompts } from "./suggested-prompts";
 export const ChatContent = () => {
   const { chat, setIsOpen } = useChatContext();
   const { data: totalMessages = 0 } = useTotalMessages();
+  const { data: session } = useSession();
   const { withinLimit } = useSubscriptionFeatures();
   const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
+  const isInternalUser = session?.user.isInternal === true;
 
   return (
     <>
@@ -75,6 +78,7 @@ export const ChatContent = () => {
           {needsUpgrade ? <LimitReached isOnPage /> : null}
           <ChatInput
             attachments={chat.attachments}
+            isLiveVoiceVisible={isInternalUser}
             isOnPage
             liveVoiceDisabled={needsUpgrade}
             messagesCount={chat.messages.length}

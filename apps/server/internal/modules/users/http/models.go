@@ -15,6 +15,7 @@ type AppUser struct {
 	AvatarURL                     string     `json:"avatarUrl"`
 	IsActive                      bool       `json:"isActive"`
 	IsSystem                      bool       `json:"isSystem"`
+	IsInternal                    bool       `json:"isInternal"`
 	HasSeenWalkthrough            bool       `json:"hasSeenWalkthrough"`
 	Timezone                      string     `json:"timezone"`
 	LastLoginAt                   time.Time  `json:"-"`
@@ -125,6 +126,7 @@ func toAppUser(user users.CoreUser) AppUser {
 		AvatarURL:                     user.AvatarURL,
 		IsActive:                      user.IsActive,
 		IsSystem:                      user.IsSystem,
+		IsInternal:                    user.IsInternal,
 		HasSeenWalkthrough:            user.HasSeenWalkthrough,
 		Timezone:                      user.Timezone,
 		LastLoginAt:                   user.LastLoginAt,
