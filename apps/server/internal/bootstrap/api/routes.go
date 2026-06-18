@@ -104,15 +104,20 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Service:   svcs.calendar,
 	}, app)
 	mayahttp.Routes(mayahttp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
-		Service:   svcs.maya,
-		Stories:   svcs.stories,
-		States:    svcs.states,
-		Teams:     svcs.teams,
-		AIAPIKey:  cfg.AIAPIKey,
+		DB:         cfg.DB,
+		Log:        cfg.Log,
+		SecretKey:  cfg.SecretKey,
+		Cache:      cfg.Cache,
+		Service:    svcs.maya,
+		Workspaces: svcs.workspaces,
+		Stories:    svcs.stories,
+		States:     svcs.states,
+		Teams:      svcs.teams,
+		Users:      svcs.users,
+		Objectives: svcs.objectives,
+		KeyResults: svcs.keyResults,
+		Search:     svcs.search,
+		AIAPIKey:   cfg.AIAPIKey,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{
