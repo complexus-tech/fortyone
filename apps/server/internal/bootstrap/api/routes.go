@@ -109,6 +109,10 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.maya,
+		Stories:   svcs.stories,
+		States:    svcs.states,
+		Teams:     svcs.teams,
+		AIAPIKey:  cfg.AIAPIKey,
 	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{

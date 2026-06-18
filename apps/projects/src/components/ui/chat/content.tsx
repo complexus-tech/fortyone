@@ -7,6 +7,7 @@ import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { useChatContext } from "@/context/chat-context";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
 import { ChatHeader } from "./chat-header";
 import { ChatInput } from "./chat-input";
 import { ChatMessages } from "./chat-messages";
@@ -73,6 +74,7 @@ export const ChatContent = () => {
             />
           ) : null}
           {needsUpgrade ? <LimitReached isOnPage /> : null}
+          <RealtimeVoiceControl disabled={needsUpgrade} />
           <ChatInput
             attachments={chat.attachments}
             isOnPage
