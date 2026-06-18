@@ -1,9 +1,12 @@
 import React from "react";
+import type { ComponentProps } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors } from "@/constants";
 import { Pressable, View, Text as RNText } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks";
+
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 const ThemeItem = ({
   isActive,
@@ -14,7 +17,7 @@ const ThemeItem = ({
   theme: {
     label: string;
     value: string;
-    icon: string;
+    icon: IoniconName;
   };
   onPress: () => void;
 }) => {
@@ -77,7 +80,7 @@ export const ThemeSwitcher = ({
   const themes: {
     label: string;
     value: "light" | "dark" | "system";
-    icon: string;
+    icon: IoniconName;
   }[] = [
     {
       label: "Light",

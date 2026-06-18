@@ -6,14 +6,14 @@ import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { ChatMessages } from "@/components/ui/chat/chat-messages";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
+import { LimitReached } from "@/components/ui/chat/limit-reached";
 import { BodyContainer } from "@/components/shared";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
 import { Header } from "./header";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
-import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { LimitReached } from "@/components/ui/chat/limit-reached";
 
 export const MayaChat = () => {
   const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
@@ -87,13 +87,14 @@ export const MayaChat = () => {
           </Box>
         ) : null}
 
-        {messages.length === 0 && (
+        {messages.length === 0 ? (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
-        )}
-        {needsUpgrade && <LimitReached isOnPage />}
+        ) : null}
+        {needsUpgrade ? <LimitReached isOnPage /> : null}
         <ChatInput
           attachments={attachments}
           isOnPage
+          liveVoiceDisabled={needsUpgrade}
           messagesCount={messages.length}
           onAttachmentsChange={setAttachments}
           onChange={(e) => {

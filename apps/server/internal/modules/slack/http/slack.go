@@ -120,6 +120,50 @@ func (h *Handlers) RuntimeSearchObjectives(ctx context.Context, w http.ResponseW
 	return web.Respond(ctx, w, options, http.StatusOK)
 }
 
+func (h *Handlers) RuntimeSearchLabels(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeOptionsRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	options, err := h.service.RuntimeSearchLabels(ctx, toCoreRuntimeActor(input.Actor), input.TeamID, input.Query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, options, http.StatusOK)
+}
+
+func (h *Handlers) RuntimeGetInstallation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	teamID := strings.TrimSpace(web.Params(r, "teamId"))
+	installation, err := h.service.RuntimeGetInstallation(ctx, teamID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusNotFound)
+	}
+	return web.Respond(ctx, w, toAppRuntimeSlackInstallation(installation), http.StatusOK)
+}
+
+func (h *Handlers) RuntimeResolveIdentity(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeIdentityRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	identity, err := h.service.RuntimeResolveIdentity(ctx, toCoreRuntimeActor(input.Actor))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, toAppRuntimeIdentity(identity), http.StatusOK)
+}
+
+func (h *Handlers) RuntimeRecordLog(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var input AppRuntimeLogRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.service.RuntimeRecordLog(ctx, toCoreRuntimeLogInput(input)); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) RuntimeCreateStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var input AppRuntimeCreateStoryRequest
 	if err := web.Decode(r, &input); err != nil {

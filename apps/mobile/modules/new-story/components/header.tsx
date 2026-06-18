@@ -1,19 +1,27 @@
 import { Back, Badge, Row, Text } from "@/components/ui";
 import React from "react";
 import { colors } from "@/constants";
-import { Pressable } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export const Header = () => {
+type HeaderProps = {
+  disabled?: boolean;
+  loading?: boolean;
+  onSubmit: () => void;
+};
+
+export const Header = ({ disabled, loading, onSubmit }: HeaderProps) => {
   return (
     <Row justify="between" align="center" className="mb-6">
       <Back />
 
       <Badge color="tertiary" className="px-3">
-        <Text>Mobile</Text>
+        <Text>Create task</Text>
       </Badge>
 
       <Pressable
+        disabled={disabled || loading}
+        onPress={onSubmit}
         style={{
           width: 40,
           height: 40,
@@ -29,9 +37,14 @@ export const Header = () => {
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 3,
+          opacity: disabled ? 0.45 : 1,
         }}
       >
-        <Ionicons name="checkmark" size={18} color={colors.primary} />
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Ionicons name="checkmark" size={18} color={colors.primary} />
+        )}
       </Pressable>
     </Row>
   );

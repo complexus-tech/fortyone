@@ -105,6 +105,30 @@ func (m *mockRepo) ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID
 	return []slackrepository.TeamRecord{}, nil
 }
 
+func (m *mockRepo) ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackrepository.TeamRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	teams, err := m.ListWorkspaceTeams(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]slackrepository.TeamRecord, 0)
+	for _, team := range teams {
+		members, memberErr := m.ListTeamMembers(ctx, team.ID)
+		if memberErr != nil {
+			return nil, memberErr
+		}
+		for _, member := range members {
+			if member.UserID == userID {
+				filtered = append(filtered, team)
+				break
+			}
+		}
+	}
+	return filtered, nil
+}
+
 func (m *mockRepo) ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackrepository.StatusRecord, error) {
 	if m.err != nil {
 		return nil, m.err
@@ -432,6 +456,235 @@ func TestDisconnectWorkspaceDeletesSlackWorkspace(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, repo.disconnected)
 	require.Equal(t, slackrepository.SlackWorkspaceRecord{}, repo.slackWorkspace)
+}
+
+func TestRuntimeGetInstallationReturnsSlackTokenForChatSDK(t *testing.T) {
+	workspaceID := uuid.New()
+	botUserID := "UBOT123"
+	repo := &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:     workspaceID,
+			SlackTeamID:     "T123",
+			SlackTeamName:   "Acme",
+			BotUserID:       &botUserID,
+			BotAccessToken:  "xoxb-token",
+			SlackTeamDomain: "acme",
+			IsActive:        true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	installation, err := service.RuntimeGetInstallation(context.Background(), "T123")
+
+	require.NoError(t, err)
+	require.Equal(t, "xoxb-token", installation.BotToken)
+	require.Equal(t, botUserID, installation.BotUserID)
+	require.Equal(t, "Acme", installation.TeamName)
+}
+
+func TestRuntimeResolveIdentityReturnsLinkedUser(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          uuid.New(),
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T123",
+			IsActive:    true,
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": userID,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com", SecretKey: "secret"})
+
+	identity, err := service.RuntimeResolveIdentity(context.Background(), CoreRuntimeActor{
+		SlackTeamID: "T123",
+		SlackUserID: "U123",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, workspaceID, identity.WorkspaceID)
+	require.Equal(t, "acme", identity.WorkspaceSlug)
+	require.NotNil(t, identity.UserID)
+	require.Equal(t, userID, *identity.UserID)
+	require.Empty(t, identity.ConnectURL)
+}
+
+func TestRuntimeResolveIdentityReturnsConnectURLWhenUnlinked(t *testing.T) {
+	workspaceID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          uuid.New(),
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T123",
+			IsActive:    true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com", SecretKey: "secret"})
+
+	identity, err := service.RuntimeResolveIdentity(context.Background(), CoreRuntimeActor{
+		SlackTeamID: "T123",
+		SlackUserID: "U999",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, workspaceID, identity.WorkspaceID)
+	require.Equal(t, "acme", identity.WorkspaceSlug)
+	require.Nil(t, identity.UserID)
+	require.Contains(t, identity.ConnectURL, "https://acme.app.example.com/settings/workspace/integrations/slack")
+	require.Contains(t, identity.ConnectURL, "slack_link_token=")
+}
+
+func TestRuntimeSearchTeamsReturnsOnlyLinkedUsersTeams(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	engineeringID := uuid.New()
+	marketingID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams: []slackrepository.TeamRecord{
+			{ID: engineeringID, Code: "ENG", Name: "Engineering"},
+			{ID: marketingID, Code: "MKT", Name: "Marketing"},
+		},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			engineeringID: {{UserID: userID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+			marketingID:   {{UserID: uuid.New(), Username: "other", FullName: "Other User", Email: "other@example.com"}},
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": userID,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	options, err := service.RuntimeSearchTeams(context.Background(), CoreRuntimeActor{
+		SlackTeamID: "T123",
+		SlackUserID: "U123",
+	}, "")
+
+	require.NoError(t, err)
+	require.Equal(t, []CoreRuntimeOption{{Label: "Engineering (ENG)", Value: engineeringID.String()}}, options)
+}
+
+func TestRuntimeSearchLabelsScopesToSelectedTeam(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	labelID := uuid.New()
+	userID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			teamID: {{UserID: userID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+		},
+		labelsByTeam: map[uuid.UUID][]slackrepository.LabelRecord{
+			teamID: {{ID: labelID, Name: "Bug"}},
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": userID,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	options, err := service.RuntimeSearchLabels(context.Background(), CoreRuntimeActor{
+		SlackTeamID: "T123",
+		SlackUserID: "U123",
+	}, teamID.String(), "bug")
+
+	require.NoError(t, err)
+	require.Equal(t, []CoreRuntimeOption{{Label: "Bug", Value: labelID.String()}}, options)
+}
+
+func TestRuntimeCreateStoryAppliesValidLabels(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	labelID := uuid.New()
+	actorID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams:     []slackrepository.TeamRecord{{ID: teamID, Code: "ENG", Name: "Engineering"}},
+		team:      slackrepository.TeamRecord{ID: teamID, Code: "ENG", Name: "Engineering"},
+		labels:    []slackrepository.LabelRecord{{ID: labelID, Name: "Bug"}},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			teamID: {{UserID: actorID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": actorID,
+		},
+	}
+	storyService := &mockStoryService{}
+	service := newTestService(repo, &mockRequestStore{}, storyService, Config{WebsiteURL: "https://app.example.com"})
+
+	story, err := service.RuntimeCreateStory(context.Background(), CoreRuntimeCreateStoryInput{
+		Title:    "Fix Slack labels",
+		TeamID:   teamID.String(),
+		Priority: "High",
+		LabelIDs: []string{labelID.String()},
+		Source: struct {
+			SlackTeamID    string `json:"teamId"`
+			SlackUserID    string `json:"userId"`
+			SlackUserName  string `json:"userName"`
+			SlackChannelID string `json:"channelId"`
+			SlackChannel   string `json:"channelName"`
+			SlackMessageTS string `json:"messageTs"`
+			SlackThreadTS  string `json:"threadTs"`
+			SlackText      string `json:"messageText"`
+		}{
+			SlackTeamID: "T123",
+			SlackUserID: "U123",
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotEmpty(t, story.ID)
+	require.Equal(t, []uuid.UUID{labelID}, storyService.lastStory.LabelIDs)
+}
+
+func TestRuntimeCreateStoryRejectsTeamsOutsideLinkedUsersMembership(t *testing.T) {
+	workspaceID := uuid.New()
+	allowedTeamID := uuid.New()
+	blockedTeamID := uuid.New()
+	actorID := uuid.New()
+	repo := &mockRepo{
+		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
+		teams: []slackrepository.TeamRecord{
+			{ID: allowedTeamID, Code: "ENG", Name: "Engineering"},
+			{ID: blockedTeamID, Code: "OPS", Name: "Operations"},
+		},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			allowedTeamID: {{UserID: actorID, Username: "joseph", FullName: "Joseph Mukorivo", Email: "joseph@example.com"}},
+			blockedTeamID: {{UserID: uuid.New(), Username: "other", FullName: "Other User", Email: "other@example.com"}},
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": actorID,
+		},
+	}
+	storyService := &mockStoryService{}
+	service := newTestService(repo, &mockRequestStore{}, storyService, Config{WebsiteURL: "https://app.example.com"})
+
+	_, err := service.RuntimeCreateStory(context.Background(), CoreRuntimeCreateStoryInput{
+		Title:    "Should not create",
+		TeamID:   blockedTeamID.String(),
+		Priority: "High",
+		Source: struct {
+			SlackTeamID    string `json:"teamId"`
+			SlackUserID    string `json:"userId"`
+			SlackUserName  string `json:"userName"`
+			SlackChannelID string `json:"channelId"`
+			SlackChannel   string `json:"channelName"`
+			SlackMessageTS string `json:"messageTs"`
+			SlackThreadTS  string `json:"threadTs"`
+			SlackText      string `json:"messageText"`
+		}{
+			SlackTeamID: "T123",
+			SlackUserID: "U123",
+		},
+	})
+
+	require.ErrorContains(t, err, "selected team is not available")
+	require.Equal(t, uuid.Nil, storyService.lastActorID)
 }
 
 func TestHandleViewSubmissionCreatesSlackRequestWhenRequestStatusSelected(t *testing.T) {

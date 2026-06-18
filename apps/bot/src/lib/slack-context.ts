@@ -1,6 +1,5 @@
 import type { Author } from "chat";
-
-import type { SlackActor } from "@/lib/fortyone-client";
+import type { SlackActor } from "@/lib/runtime";
 
 type SlackRawObject = Record<string, unknown>;
 

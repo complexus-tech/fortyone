@@ -113,7 +113,7 @@ export const StoriesOptionsSheet = ({
                     : "Assignee"}
               </RNText>
               <Ionicons
-                name="chevron-up-down"
+                name="chevron-expand"
                 size={11}
                 color={
                   resolvedTheme === "light"
@@ -155,7 +155,7 @@ export const StoriesOptionsSheet = ({
                       : "Priority"}
               </RNText>
               <Ionicons
-                name="chevron-up-down"
+                name="chevron-expand"
                 size={11}
                 color={
                   resolvedTheme === "light"
@@ -195,7 +195,7 @@ export const StoriesOptionsSheet = ({
                   : "Ascending"}
               </RNText>
               <Ionicons
-                name="chevron-up-down"
+                name="chevron-expand"
                 size={11}
                 color={
                   resolvedTheme === "light"

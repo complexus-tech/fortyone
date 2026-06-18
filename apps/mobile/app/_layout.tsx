@@ -11,7 +11,7 @@ import { createMMKV } from "react-native-mmkv";
 import "../styles/global.css";
 import "react-native-svg";
 import { useAuthStore } from "@/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
@@ -58,7 +58,17 @@ function useReactQueryAppLifecycle() {
 const RenderApp = () => {
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  fetchGlobalQueries(queryClient);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchGlobalQueries(queryClient);
+    }
+  }, [isAuthenticated, queryClient]);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -80,7 +90,7 @@ const RenderApp = () => {
             sheetAllowedDetents: [1],
           }}
         />
-        {/* <Stack.Screen
+        <Stack.Screen
           name="new"
           options={{
             presentation: "formSheet",
@@ -93,7 +103,7 @@ const RenderApp = () => {
             sheetInitialDetentIndex: 0,
             sheetAllowedDetents: [0.95],
           }}
-        /> */}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>
@@ -108,7 +118,7 @@ export default function RootLayout() {
   const iconColor =
     resolvedTheme === "light" ? colors.gray.DEFAULT : colors.gray[300];
 
-  const queryClient = new QueryClient({
+  const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
         retry: 1,
@@ -117,11 +127,13 @@ export default function RootLayout() {
         refetchOnWindowFocus: true,
       },
     },
-  });
+  }));
 
-  const persister = createAsyncStoragePersister({
-    storage: clientStorage,
-  });
+  const [persister] = useState(() =>
+    createAsyncStoragePersister({
+      storage: clientStorage,
+    })
+  );
   const loadAuthData = useAuthStore((state) => state.loadAuthData);
   useReactQueryAppLifecycle();
 

@@ -61,7 +61,7 @@ export const Activities = ({
           >
             Updates
           </Tabs.Tab>
-          {hasGitHubLinks && (
+          {hasGitHubLinks ? (
             <Tabs.Tab
               className="gap-1 px-2"
               leftIcon={<GitHubIcon className="h-[1.05rem]" />}
@@ -69,7 +69,7 @@ export const Activities = ({
             >
               GitHub
             </Tabs.Tab>
-          )}
+          ) : null}
         </Tabs.List>
 
         <Tabs.Panel value="updates">
@@ -116,20 +116,20 @@ export const Activities = ({
           <Flex align="start" className="mb-3">
             <Box className="bg-surface z-1 flex aspect-square items-center rounded-full p-[0.3rem]">
               <Avatar
-                name={session?.user?.name ?? undefined}
+                name={session?.user.name ?? undefined}
                 size="xs"
-                src={session?.user?.image ?? undefined}
+                src={session?.user.image ?? undefined}
               />
             </Box>
             <CommentInput storyId={storyId} teamId={teamId} />
           </Flex>
           <Comments storyId={storyId} teamId={teamId} />
         </Tabs.Panel>
-        {hasGitHubLinks && (
+        {hasGitHubLinks ? (
           <Tabs.Panel value="github">
             <GitHubCommentsPanel hasLinks={hasGitHubLinks} storyId={storyId} />
           </Tabs.Panel>
-        )}
+        ) : null}
       </Tabs>
     </Box>
   );

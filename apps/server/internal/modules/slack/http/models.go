@@ -77,14 +77,41 @@ type AppRuntimeOptionsRequest struct {
 	TeamID string          `json:"teamId"`
 }
 
+type AppRuntimeSlackInstallation struct {
+	BotToken  string `json:"botToken"`
+	BotUserID string `json:"botUserId,omitempty"`
+	TeamName  string `json:"teamName,omitempty"`
+}
+
+type AppRuntimeIdentityRequest struct {
+	Actor AppRuntimeActor `json:"actor"`
+}
+
+type AppRuntimeIdentityResponse struct {
+	WorkspaceID   string  `json:"workspaceId"`
+	WorkspaceSlug string  `json:"workspaceSlug"`
+	UserID        *string `json:"userId,omitempty"`
+	ConnectURL    string  `json:"connectUrl,omitempty"`
+}
+
+type AppRuntimeLogRequest struct {
+	Actor        AppRuntimeActor `json:"actor"`
+	Endpoint     string          `json:"endpoint"`
+	ErrorMessage string          `json:"errorMessage"`
+	Outcome      string          `json:"outcome"`
+	RequestType  string          `json:"requestType"`
+	ResponseCode int             `json:"responseCode"`
+}
+
 type AppRuntimeCreateStoryRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	TeamID      string `json:"teamId"`
-	StatusID    string `json:"statusId"`
-	Priority    string `json:"priority"`
-	AssigneeID  string `json:"assigneeId"`
-	ObjectiveID string `json:"objectiveId"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	TeamID      string   `json:"teamId"`
+	StatusID    string   `json:"statusId"`
+	Priority    string   `json:"priority"`
+	AssigneeID  string   `json:"assigneeId"`
+	ObjectiveID string   `json:"objectiveId"`
+	LabelIDs    []string `json:"labelIds"`
 	Source      struct {
 		SlackTeamID    string `json:"teamId"`
 		SlackUserID    string `json:"userId"`
@@ -120,6 +147,17 @@ func toCoreRuntimeActor(input AppRuntimeActor) slack.CoreRuntimeActor {
 	}
 }
 
+func toCoreRuntimeLogInput(input AppRuntimeLogRequest) slack.CoreRuntimeLogInput {
+	return slack.CoreRuntimeLogInput{
+		Actor:        toCoreRuntimeActor(input.Actor),
+		Endpoint:     input.Endpoint,
+		ErrorMessage: input.ErrorMessage,
+		Outcome:      input.Outcome,
+		RequestType:  input.RequestType,
+		ResponseCode: input.ResponseCode,
+	}
+}
+
 func toCoreRuntimeCreateStoryInput(input AppRuntimeCreateStoryRequest) slack.CoreRuntimeCreateStoryInput {
 	return slack.CoreRuntimeCreateStoryInput{
 		Title:       input.Title,
@@ -129,7 +167,30 @@ func toCoreRuntimeCreateStoryInput(input AppRuntimeCreateStoryRequest) slack.Cor
 		Priority:    input.Priority,
 		AssigneeID:  input.AssigneeID,
 		ObjectiveID: input.ObjectiveID,
+		LabelIDs:    input.LabelIDs,
 		Source:      input.Source,
+	}
+}
+
+func toAppRuntimeSlackInstallation(input slack.CoreRuntimeSlackInstallation) AppRuntimeSlackInstallation {
+	return AppRuntimeSlackInstallation{
+		BotToken:  input.BotToken,
+		BotUserID: input.BotUserID,
+		TeamName:  input.TeamName,
+	}
+}
+
+func toAppRuntimeIdentity(input slack.CoreRuntimeIdentity) AppRuntimeIdentityResponse {
+	var userID *string
+	if input.UserID != nil {
+		value := input.UserID.String()
+		userID = &value
+	}
+	return AppRuntimeIdentityResponse{
+		WorkspaceID:   input.WorkspaceID.String(),
+		WorkspaceSlug: input.WorkspaceSlug,
+		UserID:        userID,
+		ConnectURL:    input.ConnectURL,
 	}
 }
 

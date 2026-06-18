@@ -5,15 +5,6 @@ import ky from "ky";
 
 const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
-export interface LoginResponse {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  avatarUrl: string;
-  lastUsedWorkspaceId: string;
-  token: string;
-}
 type Params = {
   email: string;
   token: string;
@@ -29,31 +20,35 @@ const getActiveWorkspace = (
   );
 };
 
-const getWorkspaces = async (token: string) => {
+const getWorkspaces = async () => {
   const response = await ky
     .get(`${apiURL}/workspaces`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     })
     .json<ApiResponse<Workspace[]>>();
   return response.data ?? [];
 };
 
-export const authenticateWithToken = async (email: string, token: string) => {
+export const authenticateWithCode = async (email: string, token: string) => {
   const params = { email, token };
-  const response = await post<Params, ApiResponse<LoginResponse>>(
+  const response = await post<Params, ApiResponse<User>>(
     "users/verify/email/confirm",
     params,
     {
       useWorkspace: false,
     }
   );
-  const workspaces = await getWorkspaces(response.data?.token ?? "");
+  const workspaces = await getWorkspaces();
   const activeWorkspace = getActiveWorkspace(
     workspaces,
     response.data?.lastUsedWorkspaceId ?? ""
   );
+
+  if (!activeWorkspace) {
+    throw new Error("No workspace is available for this account");
+  }
+
   return {
-    token: response.data?.token ?? "",
     workspace: activeWorkspace.slug,
   };
 };

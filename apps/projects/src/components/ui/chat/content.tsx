@@ -76,6 +76,7 @@ export const ChatContent = () => {
           <ChatInput
             attachments={chat.attachments}
             isOnPage
+            liveVoiceDisabled={needsUpgrade}
             messagesCount={chat.messages.length}
             onAttachmentsChange={chat.setAttachments}
             onChange={(event) => {
