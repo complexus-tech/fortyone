@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Modal, Pressable } from "react-native";
-import { BottomSheetModal as GorhomBottomSheetModal } from "@gorhom/bottom-sheet";
 
 type BottomSheetModalProps = {
   isOpen: boolean;

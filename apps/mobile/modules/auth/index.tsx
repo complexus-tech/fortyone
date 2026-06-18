@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store";
 import { Logo } from "@/components/icons";
 import { colors } from "@/constants";
 import * as WebBrowser from "expo-web-browser";
-import { authenticateWithToken } from "@/lib/actions/auth";
+import { authenticateWithCode } from "@/lib/actions/auth";
 import { useState } from "react";
 import { useTheme } from "@/hooks";
 const lightMesh = require("@/assets/images/mesh.webp");
@@ -18,8 +18,9 @@ export const Auth = () => {
 
   const handleGetStarted = async () => {
     try {
+      setLoading(true);
       const result = await WebBrowser.openAuthSessionAsync(
-        "https://www.fortyone.app/login?mobile=true",
+        "https://www.fortyone.app/?mobileApp=true",
         "fortyone://login"
       );
 
@@ -27,14 +28,20 @@ export const Auth = () => {
         const url = new URL(result.url);
         const code = url.searchParams.get("code") ?? "";
         const email = url.searchParams.get("email") ?? "";
-        setLoading(true);
-        const res = await authenticateWithToken(email, code);
-        setLoading(false);
-        setAuthData(res.token, res.workspace);
+
+        if (!code || !email) {
+          console.error("Authentication callback is missing required values");
+          setLoading(false);
+          return;
+        }
+
+        const res = await authenticateWithCode(email, code);
+        setAuthData(res.workspace);
       }
     } catch (error) {
       console.error("Authentication error:", error);
     }
+    setLoading(false);
   };
 
   return (

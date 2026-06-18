@@ -6,7 +6,7 @@ const apiURL = process.env.EXPO_PUBLIC_API_URL;
 
 // Create HTTP client with workspace context
 const createClient = (useWorkspace = true) => {
-  const { token, workspace } = useAuthStore.getState();
+  const { workspace } = useAuthStore.getState();
   const prefixUrl =
     useWorkspace && workspace
       ? `${apiURL}/workspaces/${workspace}/`
@@ -14,13 +14,13 @@ const createClient = (useWorkspace = true) => {
 
   return ky.create({
     prefixUrl,
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
     retry: 0,
     hooks: {
       beforeError: [
         async (error) => {
           const { response } = error;
-          const data = await response.json<ApiResponse<null>>();
+          const data = await response.json<ApiResponse<null>>().catch(() => null);
           const errorMessage = data?.error?.message || "An error occurred";
           throw new Error(errorMessage);
         },

@@ -1,82 +1,91 @@
 import { create } from "zustand";
 import {
-  getAccessToken,
-  saveAccessToken,
-  clearAccessToken,
   saveWorkspace,
   getWorkspace,
   clearWorkspace,
+  saveSessionFlag,
+  getSessionFlag,
+  clearSessionFlag,
 } from "@/lib/auth";
+import { getCurrentUser, clearSession } from "@/lib/actions/session";
 
 interface AuthState {
   // State
-  token: string | null;
   workspace: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
 
   // Actions
-  setToken: (token: string) => void;
   setWorkspace: (workspace: string) => void;
-  setAuthData: (token: string, workspace: string) => void;
-  clearAuth: () => void;
+  setAuthData: (workspace: string) => void;
+  clearAuth: () => Promise<void>;
   loadAuthData: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   // Initial state
-  token: null,
   workspace: null,
   isAuthenticated: false,
-
-  // Actions
-  setToken: (token: string) => {
-    set({ token, isAuthenticated: true });
-    saveAccessToken(token);
-  },
+  isLoading: true,
 
   setWorkspace: (workspace: string) => {
     set({ workspace });
     saveWorkspace(workspace);
   },
 
-  setAuthData: (token: string, workspace: string) => {
+  setAuthData: (workspace: string) => {
     set({
-      token,
       workspace,
       isAuthenticated: true,
+      isLoading: false,
     });
-    saveAccessToken(token);
+    saveSessionFlag();
     saveWorkspace(workspace);
   },
 
-  clearAuth: () => {
+  clearAuth: async () => {
     set({
-      token: null,
       workspace: null,
       isAuthenticated: false,
+      isLoading: false,
     });
-    clearAccessToken();
-    clearWorkspace();
+    await Promise.all([clearSessionFlag(), clearWorkspace()]);
+
+    try {
+      await clearSession();
+    } catch {
+      // Local auth state should stay cleared if the remote session is already gone.
+    }
   },
 
   loadAuthData: async () => {
     try {
-      const [token, workspace] = await Promise.all([
-        getAccessToken(),
+      const [hasSession, workspace] = await Promise.all([
+        getSessionFlag(),
         getWorkspace(),
       ]);
-      if (token) {
+
+      if (!hasSession) {
         set({
-          token,
-          workspace,
-          isAuthenticated: true,
+          workspace: null,
+          isAuthenticated: false,
+          isLoading: false,
         });
+        return;
       }
-    } catch {
+
+      await getCurrentUser();
       set({
-        token: null,
+        workspace,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch {
+      await Promise.all([clearSessionFlag(), clearWorkspace()]);
+      set({
         workspace: null,
         isAuthenticated: false,
+        isLoading: false,
       });
     }
   },
