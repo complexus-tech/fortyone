@@ -127,7 +127,6 @@ export const createStory = tool({
         teamId,
         statusId,
         assigneeId,
-        reporterId: session.user.id,
         priority,
         estimateValue,
         labelIds,
