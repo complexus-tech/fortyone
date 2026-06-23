@@ -17,9 +17,14 @@ export const createStory = tool({
       .describe(
         "Must be true after the user explicitly confirms creating the story.",
       ),
-    description: z.string().optional().describe("Story description"),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Story description"),
     descriptionHTML: z
       .string()
+      .nullable()
       .optional()
       .describe(
         "Story description HTML (Always provided and properly formatted if description is provided)",
@@ -32,7 +37,11 @@ export const createStory = tool({
       .describe(
         "Initial status ID (required) (UUID) always use statuses tool to get the statuses",
       ),
-    assigneeId: z.string().optional().describe("Assignee user ID (UUID)"),
+    assigneeId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Assignee user ID (UUID)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .default("No Priority")
@@ -40,9 +49,10 @@ export const createStory = tool({
     estimateValue: z
       .number()
       .int()
+      .nullable()
       .optional()
       .describe(
-        "Canonical estimate value for the team's estimation scheme. Use the team's configured estimate scale.",
+        "Canonical estimate value for the team's estimation scheme. Use 1, 2, 3, 5, or 8. Use 0, null, or omit for unestimated work.",
       ),
     labelIds: z
       .array(z.string())
@@ -50,22 +60,27 @@ export const createStory = tool({
       .describe("Label IDs to attach to the story."),
     sprintId: z
       .string()
+      .nullable()
       .optional()
       .describe("Sprint ID to assign story (UUID)"),
     objectiveId: z
       .string()
+      .nullable()
       .optional()
       .describe("Objective ID to assign story (UUID)"),
     parentId: z
       .string()
+      .nullable()
       .optional()
       .describe("Parent story ID for sub-stories (UUID)"),
     startDate: z
       .string()
+      .nullable()
       .optional()
       .describe("Story start date (ISO date string e.g 2005-06-13)"),
     endDate: z
       .string()
+      .nullable()
       .optional()
       .describe("Story end date (ISO date string e.g 2005-06-13)"),
   }),
