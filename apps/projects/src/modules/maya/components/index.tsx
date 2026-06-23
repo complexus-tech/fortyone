@@ -14,6 +14,7 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
+import { shouldShowMayaMessageLimit } from "../utils/message-limit";
 import { Header } from "./header";
 
 export const MayaChat = () => {
@@ -56,9 +57,13 @@ export const MayaChat = () => {
 
   const { data: totalMessages = 0 } = useTotalMessages();
   const { data: session } = useSession();
-  const { withinLimit } = useSubscriptionFeatures();
-  const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
+  const { getLimit } = useSubscriptionFeatures();
   const isInternalUser = session?.user.isInternal === true;
+  const needsUpgrade = shouldShowMayaMessageLimit({
+    isInternalUser,
+    limit: getLimit("maxAiMessages"),
+    totalMessages,
+  });
 
   return (
     <>

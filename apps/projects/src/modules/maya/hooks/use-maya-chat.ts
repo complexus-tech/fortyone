@@ -31,6 +31,7 @@ import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
+import { canSendMayaMessage } from "../utils/message-limit";
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -43,6 +44,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: memories = [] } = useMemories();
   const { data: totalMessages = 0 } = useTotalMessages();
   const { getLimit, displayTier } = useSubscriptionFeatures();
+  const isInternalUser = session?.user.isInternal === true;
   const { workspace } = useCurrentWorkspace();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { resolvedTheme, theme, setTheme } = useTheme();
@@ -250,7 +252,13 @@ export const useMayaChat = (config: MayaChatConfig) => {
     if (!content.trim() && attachments.length === 0) return;
 
     const limit = getLimit("maxAiMessages");
-    if (totalMessages >= limit) {
+    if (
+      !canSendMayaMessage({
+        isInternalUser,
+        limit,
+        totalMessages,
+      })
+    ) {
       toast.error("Message limit reached", {
         description: `You have reached your monthly limit of ${limit} messages for the ${displayTier} plan. Please upgrade to continue chatting.`,
         action: {

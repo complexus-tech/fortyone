@@ -4,9 +4,10 @@ import { Flex, Button, Text, Tooltip, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { HistoryDialog } from "@/components/ui/chat/history-dialog";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 
 type MayaHeaderProps = {
   currentChatId: string;
@@ -21,8 +22,10 @@ export const Header = ({
 }: MayaHeaderProps) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: totalMessages = 0 } = useTotalMessages();
+  const { data: session } = useSession();
   const { remaining, getLimit, tier } = useSubscriptionFeatures();
   const { withWorkspace } = useWorkspacePath();
+  const isInternalUser = session?.user.isInternal === true;
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -43,7 +46,7 @@ export const Header = ({
           </Button>
         </Flex>
         <Flex align="center" className="gap-2 md:gap-4">
-          {tier !== "enterprise" && (
+          {tier !== "enterprise" && !isInternalUser && (
             <Tooltip
               title={
                 <Box className="max-w-xs py-1.5">
@@ -53,10 +56,10 @@ export const Header = ({
                     more messages!
                   </Text>
                   <Button
-                    color="invert"
-                    href={withWorkspace("/settings/workspace/billing")}
-                    fullWidth
                     align="center"
+                    color="invert"
+                    fullWidth
+                    href={withWorkspace("/settings/workspace/billing")}
                   >
                     Upgrade plan
                   </Button>
@@ -65,10 +68,10 @@ export const Header = ({
             >
               <span className="flex cursor-default items-center gap-2">
                 <CircleProgressBar
+                  invertColors
                   progress={Math.min(usageProgress, 100)}
                   size={24}
                   strokeWidth={3}
-                  invertColors={true}
                 />
                 <Text>
                   {Math.min(totalMessages, getLimit("maxAiMessages"))}/

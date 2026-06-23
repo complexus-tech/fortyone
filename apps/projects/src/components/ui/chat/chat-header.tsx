@@ -7,11 +7,12 @@ import {
 import { Flex, Button, Text, Tooltip, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
-import { HistoryDialog } from "./history-dialog";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSession } from "@/lib/auth/client";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
+import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { HistoryDialog } from "./history-dialog";
 
 export const ChatHeader = ({
   currentChatId,
@@ -28,8 +29,10 @@ export const ChatHeader = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
+  const { data: session } = useSession();
   const { remaining, getLimit, tier } = useSubscriptionFeatures();
   const { withWorkspace } = useWorkspacePath();
+  const isInternalUser = session?.user.isInternal === true;
   const remainingQueries = remaining("maxAiMessages", totalMessages);
   const maxMessages = getLimit("maxAiMessages");
   const usageProgress =
@@ -82,7 +85,7 @@ export const ChatHeader = ({
           className="min-w-0 flex-1 justify-end"
           gap={2}
         >
-          {tier !== "enterprise" && (
+          {tier !== "enterprise" && !isInternalUser && (
             <Tooltip
               title={
                 <Box className="max-w-xs py-1.5">
@@ -92,10 +95,10 @@ export const ChatHeader = ({
                     more messages!
                   </Text>
                   <Button
-                    color="invert"
-                    href={withWorkspace("/settings/workspace/billing")}
-                    fullWidth
                     align="center"
+                    color="invert"
+                    fullWidth
+                    href={withWorkspace("/settings/workspace/billing")}
                   >
                     Upgrade plan
                   </Button>
@@ -104,10 +107,10 @@ export const ChatHeader = ({
             >
               <span className="flex cursor-default">
                 <CircleProgressBar
+                  invertColors
                   progress={usageProgress}
                   size={remainingQueries >= 100 ? 18 : 22}
                   strokeWidth={3}
-                  invertColors={true}
                 >
                   {remainingQueries < 100 ? (
                     <Text className="max-w-[2ch] truncate text-xs font-semibold">
