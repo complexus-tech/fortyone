@@ -9,9 +9,9 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne | Open Source AI Project Management Platform",
+  title: "FortyOne | AI Project Management Platform for Teams",
   description:
-    "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne | Open Source AI Project Management Platform",
+    title: "FortyOne | AI Project Management Platform for Teams",
     description:
-      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne | Open Source AI Project Management Platform",
+    title: "FortyOne | AI Project Management Platform for Teams",
     description:
-      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
   },
   alternates: {
     canonical: "https://www.fortyone.app",

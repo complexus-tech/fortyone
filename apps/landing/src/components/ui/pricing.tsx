@@ -13,7 +13,7 @@ type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
-    cta: "Start for free - no card needed",
+    cta: "Start free - no card needed",
     href: SIGNUP_URL,
     overview: "For individuals and small teams getting started.",
     price: 0,
@@ -198,14 +198,14 @@ export const Pricing = ({
                 "md:text-6xl": pathname === "/pricing",
               })}
             >
-              Start free. Scale when your team outgrows it.
+              Start free. Add room when the team grows.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="w-full max-w-xl opacity-70 md:mt-4">
-              No card required, no feature walls, no gotchas. The free plan
-              handles a real team doing real work. Paid plans add more room and
-              more Maya — upgrade, downgrade, or cancel any time.
+              No card required and no trial clock. Run a real sprint on the
+              free plan, then add more teams, objectives, and Maya capacity
+              when the work gets bigger.
             </Text>
           ) : null}
         </Box>

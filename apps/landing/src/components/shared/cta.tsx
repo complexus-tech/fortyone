@@ -29,14 +29,15 @@ export const CallToAction = () => {
           <Image
             alt=""
             className="object-cover"
-            src={meshImage}
             fill
             quality={100}
+            sizes="100vw"
+            src={meshImage}
           />
           <Box className="absolute inset-0 z-1 dark:bg-black/30" />
           <Box className="relative z-2 flex flex-col items-center px-6 py-24 md:py-36">
             <h2 className="text-foreground text-center text-4xl font-medium tracking-tight md:text-6xl">
-              Try FortyOne today.
+              Start with one real sprint.
             </h2>
             <Button
               className="mt-8 border-0"
@@ -45,7 +46,7 @@ export const CallToAction = () => {
               rounded="lg"
               size="lg"
             >
-              Get started
+              Start free
             </Button>
           </Box>
         </Box>

@@ -385,28 +385,28 @@ export const HowItWorks = () => {
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
         >
-          The system that keeps planning, execution, and goals in sync.
+          From goal to sprint to shipped work, in one system.
         </Text>
       </motion.div>
 
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          title="Goals aren't separate from the work."
-          description="Tasks, objectives, and delivery live in one system, so progress isn't something you have to reconstruct later."
+          title="Tasks inherit the goal."
+          description="Link work directly to objectives so every task carries the reason it exists and progress is easy to trust."
         >
           <TaskGoalCard />
         </FeatureCard>
         <FeatureCard
-          title="Context from every tool."
-          description="Gmail, GitHub, Linear, Slack. Maya pulls context so drafts are accurate and follow-ups land at the right time."
+          title="Maya brings context into the plan."
+          description="GitHub, Drive, Slack, and the backlog become usable context, so drafted work starts with the right details."
           delay={0.1}
         >
           <IntegrationCard />
         </FeatureCard>
         <FeatureCard
-          title="Progress stays visible by default."
-          description="As work ships, the roadmap reflects it. Teams, managers, and leadership stay aligned on what's done, next, and slipping."
+          title="Progress updates itself."
+          description="As work ships, FortyOne reflects what is done, what is next, and what is slipping without another status meeting."
           delay={0.2}
         >
           <ProgressCard />

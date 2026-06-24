@@ -64,7 +64,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
-              Sync up your whole stack.
+              Turn scattered tools into project context.
             </Text>
           </motion.div>
           <motion.div
@@ -77,10 +77,9 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
-              GitHub merges, Slack threads, Figma handoffs, GitLab pipelines —
-              they all happen in isolation, then get lost. FortyOne pulls them
-              into a single, coherent view so your team stops chasing context
-              across five tabs.
+              GitHub merges, Slack threads, Figma handoffs, and GitLab
+              pipelines all say something about the work. FortyOne brings that
+              context back to the plan so Maya and your team can act on it.
             </Text>
           </motion.div>
           <motion.div
@@ -93,7 +92,7 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
-              Get started
+              Start free
             </Button>
           </motion.div>
         </Flex>

@@ -7,7 +7,6 @@ import {
   HeroCards,
   SampleClients,
   Integrations,
-  Maya,
   CoreValues,
   HowItWorks,
 } from "@/modules/home";
@@ -15,7 +14,7 @@ import {
 export const metadata: Metadata = {
   title: "FortyOne | AI Project Management Platform for Teams",
   description:
-    "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
   keywords: [
     "AI project management",
     "AI project manager",
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FortyOne | AI Project Management Platform for Teams",
     description:
-      "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
     url: "/",
     siteName: "FortyOne",
     type: "website",
@@ -39,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     title: "FortyOne | AI Project Management Platform for Teams",
     description:
-      "Keep your team's work, plans, and goals in one place with Maya — your AI project manager. Plan faster, stay aligned, and track progress clearly.",
+      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
     card: "summary_large_image",
   },
 };
