@@ -117,7 +117,7 @@ const Package = ({
       <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
-          <Badge color="invert" className="font-semibold">
+          <Badge className="font-semibold" color="invert">
             Most Popular
           </Badge>
         ) : null}
@@ -132,7 +132,11 @@ const Package = ({
           </Text>
         </Text>
       ) : (
-        <Text className="mt-4 tracking-tight" fontSize="4xl" fontWeight="semibold">
+        <Text
+          className="mt-4 tracking-tight"
+          fontSize="4xl"
+          fontWeight="semibold"
+        >
           Custom
         </Text>
       )}
@@ -195,7 +199,8 @@ export const Pricing = ({
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
               className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl", {
-                "md:text-6xl": pathname === "/pricing",
+                "text-5xl font-medium md:text-[3.5rem]":
+                  pathname === "/pricing",
               })}
             >
               Start free. Scale AI project management as your team grows.

@@ -627,6 +627,7 @@ function FeatureCard({
 }) {
   return (
     <motion.div
+      className="h-full"
       initial="hidden"
       transition={{ delay }}
       variants={fadeUp}
@@ -634,7 +635,7 @@ function FeatureCard({
       whileInView="show"
     >
       <Box className="flex h-full flex-col">
-        <Box className="relative flex items-end overflow-hidden rounded-2xl">
+        <Box className="relative flex min-h-[280px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[330px]">
           <Image
             alt=""
             className="object-cover dark:opacity-40"

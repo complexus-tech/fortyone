@@ -5,7 +5,6 @@ import { Box, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
 import {
   FacebookIcon,
-  GitIcon,
   InstagramIcon,
   LinkedinIcon,
   MoonIcon,

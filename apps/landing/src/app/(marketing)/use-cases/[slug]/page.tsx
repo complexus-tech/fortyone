@@ -170,7 +170,7 @@ function DataTable({
   rows,
   tableHead = ["Input", "What FortyOne prepares"],
 }: {
-  rows: Array<[string, string]>;
+  rows: [string, string][];
   tableHead?: [string, string];
 }) {
   return (

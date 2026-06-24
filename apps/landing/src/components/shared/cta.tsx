@@ -35,7 +35,7 @@ export const CallToAction = () => {
             src={meshImage}
           />
           <Box className="absolute inset-0 z-1 dark:bg-black/30" />
-          <Box className="relative z-2 flex flex-col items-center px-6 py-24 md:py-36">
+          <Box className="relative z-2 flex max-w-[760px] flex-col items-center px-6 py-24 md:py-36">
             <h2 className="text-foreground text-center text-4xl font-medium tracking-tight md:text-6xl">
               Make your next project easier to run.
             </h2>

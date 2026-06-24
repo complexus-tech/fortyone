@@ -18,20 +18,20 @@ export type UseCaseSection = {
   paragraphs: string[];
   prompt?: string;
   promptTitle?: string;
-  rows?: Array<[string, string]>;
+  rows?: [string, string][];
   tableHead?: [string, string];
   title: string;
 };
 
 export type UseCase = {
-  benefits: Array<[string, string]>;
+  benefits: [string, string][];
   heroTitle: string;
   intro: string[];
   label: string;
   metaDescription: string;
   metaTitle: string;
   previewCards: UseCaseVisual[];
-  questions: Array<[string, string]>;
+  questions: [string, string][];
   sections: UseCaseSection[];
   slug: string;
 };
