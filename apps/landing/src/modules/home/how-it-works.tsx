@@ -626,34 +626,36 @@ function FeatureCard({
   delay?: number;
 }) {
   return (
-    <motion.div
-      className="h-full"
-      initial="hidden"
-      transition={{ delay }}
-      variants={fadeUp}
-      viewport={viewport}
-      whileInView="show"
-    >
-      <Box className="flex h-full flex-col">
-        <Box className="relative flex min-h-[280px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[330px]">
-          <Image
-            alt=""
-            className="object-cover dark:opacity-40"
-            src={meshImage}
-            fill
-            quality={100}
-            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
-          />
-          <Box className="relative z-10 w-full p-5">{children}</Box>
+    <Box className="h-full">
+      <motion.div
+        initial="hidden"
+        style={{ height: "100%" }}
+        transition={{ delay }}
+        variants={fadeUp}
+        viewport={viewport}
+        whileInView="show"
+      >
+        <Box className="flex h-full flex-col">
+          <Box className="relative flex min-h-[280px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[330px]">
+            <Image
+              alt=""
+              className="object-cover dark:opacity-40"
+              src={meshImage}
+              fill
+              quality={100}
+              sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
+            />
+            <Box className="relative z-10 w-full p-5">{children}</Box>
+          </Box>
+          <Box className="mt-5 flex flex-col">
+            <Text className="text-foreground mb-2 text-lg font-semibold">
+              {title}
+            </Text>
+            <Text className="text-text-muted">{description}</Text>
+          </Box>
         </Box>
-        <Box className="mt-5 flex flex-col">
-          <Text className="text-foreground mb-2 text-lg font-semibold">
-            {title}
-          </Text>
-          <Text className="text-text-muted">{description}</Text>
-        </Box>
-      </Box>
-    </motion.div>
+      </motion.div>
+    </Box>
   );
 }
 
