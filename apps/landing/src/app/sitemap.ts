@@ -1,4 +1,12 @@
 import type { MetadataRoute } from "next";
+import { useCases } from "@/lib/use-cases";
+
+const useCaseRoutes: MetadataRoute.Sitemap = useCases.map(({ slug }) => ({
+  url: `https://www.fortyone.app/use-cases/${slug}`,
+  lastModified: new Date(),
+  changeFrequency: "monthly",
+  priority: 0.8,
+}));
 
 // List all static routes with their priorities and change frequencies
 const routes: MetadataRoute.Sitemap = [
@@ -39,12 +47,6 @@ const routes: MetadataRoute.Sitemap = [
     priority: 0.8,
   },
   {
-    url: "https://www.fortyone.app/use-cases/operations",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  },
-  {
     url: "https://www.fortyone.app/blog",
     lastModified: new Date(),
     changeFrequency: "weekly",
@@ -72,5 +74,5 @@ const routes: MetadataRoute.Sitemap = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Combine static and dynamic routes
-  return [...routes];
+  return [...routes, ...useCaseRoutes];
 }

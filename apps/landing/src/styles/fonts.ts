@@ -22,4 +22,5 @@ export const heading = Playfair({
   display: "swap",
   subsets: ["latin"],
   weight: "variable",
+  style: ["normal", "italic"],
 });

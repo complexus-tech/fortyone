@@ -14,17 +14,16 @@ import {
   TwitterIcon,
 } from "icons";
 import { useTheme } from "next-themes";
+import { useCases } from "@/lib/use-cases";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui/container";
 
 const COPYRIGHT_YEAR = 2026;
 
-const caseLinks = [
-  {
-    href: "/use-cases/operations",
-    title: "Operations",
-  },
-];
+const caseLinks = useCases.map(({ label, slug }) => ({
+  href: `/use-cases/${slug}`,
+  title: label,
+}));
 
 const company = [
   {
@@ -78,7 +77,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "hover:text-primary mb-3 block max-w-max text-base opacity-80 transition-opacity duration-200 ease-in-out hover:opacity-80 dark:opacity-60",
+      "hover:text-primary mb-3 block max-w-max text-[0.9375rem] transition-colors duration-200 ease-in-out",
       className,
     )}
     href={href}
@@ -143,24 +142,20 @@ export const Footer = () => {
   return (
     <Box as="footer" className="relative">
       <Container>
-        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
-          <Box className="col-span-2">
+        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-[1.8fr_1.7fr_1fr_1fr_1fr] md:pt-20">
+          <Box>
             <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Use Cases
-            </Text>
+            <Text className="text-text-muted mb-4">Use cases</Text>
             {caseLinks.map(({ href, title }) => (
-              <FooterLink href={href} key={href}>
+              <FooterLink className="whitespace-nowrap" href={href} key={href}>
                 {title}
               </FooterLink>
             ))}
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Company
-            </Text>
+            <Text className="text-text-muted mb-4">Company</Text>
             {company.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
@@ -168,20 +163,16 @@ export const Footer = () => {
             ))}
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Legal
-            </Text>
-            {legal.map(({ href, title }) => (
+            <Text className="text-text-muted mb-4">Resources</Text>
+            {resources.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>
             ))}
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Resources
-            </Text>
-            {resources.map(({ href, title }) => (
+            <Text className="text-text-muted mb-4">Legal</Text>
+            {legal.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>
