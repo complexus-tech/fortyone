@@ -337,7 +337,7 @@ export const ChatInput = ({
           <textarea
             aria-label="Chat message"
             className={cn(
-              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none dark:text-white",
+              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
               {
                 "md:min-h-[3.7rem]": isOnPage,
               },

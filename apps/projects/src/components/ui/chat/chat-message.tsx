@@ -246,9 +246,7 @@ const RenderMessage = ({
     <>
       {textParts.map((part, index) => (
         <Streamdown
-          className={cn("chat-tables", {
-            "text-foreground-inverse": message.role === "user",
-          })}
+          className="chat-tables"
           controls={{
             table: true,
             code: true,
@@ -259,7 +257,7 @@ const RenderMessage = ({
               panZoom: true,
             },
           }}
-          isAnimating={isStreaming && isAssistant}
+          isAnimating={Boolean(isStreaming && isAssistant)}
           key={`${message.id}-text-${index}`}
         >
           {part.text}
@@ -296,10 +294,12 @@ const RenderMessage = ({
         >
           {getSuggestions(part.output).map((suggestion, i) => (
             <Button
-              color="tertiary"
               className="truncate"
+              color="tertiary"
               key={i}
-              onClick={() => onPromptSelect(suggestion)}
+              onClick={() => {
+                onPromptSelect(suggestion);
+              }}
               size="sm"
             >
               {suggestion}
@@ -350,7 +350,8 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "bg-background-inverse rounded-tr-md": message.role === "user",
+              "bg-state-hover dark:bg-surface-muted/95 rounded-tr-md":
+                message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}
           >
