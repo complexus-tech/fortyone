@@ -349,9 +349,7 @@ function ProgressCard() {
           >
             Sprint 14 Progress
           </Text>
-          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
-            65%
-          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>65%</Text>
         </Flex>
         <Box className="bg-surface-muted mb-4 h-2.5 w-full overflow-hidden rounded-full">
           <Box className="bg-foreground h-full w-[65%] rounded-full" />
@@ -580,7 +578,10 @@ function ControlCard() {
               {label}
             </Text>
             <Text
-              className={cn(CARD_META_TEXT_CLASS, "text-foreground font-medium")}
+              className={cn(
+                CARD_META_TEXT_CLASS,
+                "text-foreground font-medium",
+              )}
             >
               {value}
             </Text>
@@ -633,8 +634,7 @@ function FeatureCard({
       whileInView="show"
     >
       <Box className="flex h-full flex-col">
-        {/* Mesh gradient area — flex-1 + min-h for tall cards */}
-        <Box className="relative flex min-h-[300px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[350px]">
+        <Box className="relative flex items-end overflow-hidden rounded-2xl">
           <Image
             alt=""
             className="object-cover dark:opacity-40"
@@ -645,8 +645,7 @@ function FeatureCard({
           />
           <Box className="relative z-10 w-full p-5">{children}</Box>
         </Box>
-        {/* Text below */}
-        <Box className="mt-5 flex min-h-[116px] flex-col">
+        <Box className="mt-5 flex flex-col">
           <Text className="text-foreground mb-2 text-lg font-semibold">
             {title}
           </Text>
