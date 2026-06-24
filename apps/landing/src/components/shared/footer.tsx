@@ -15,7 +15,57 @@ import {
 } from "icons";
 import { useTheme } from "next-themes";
 import { Logo } from "../ui/logo";
-import { Container } from "../ui";
+import { Container } from "../ui/container";
+
+const COPYRIGHT_YEAR = 2026;
+
+const caseLinks = [
+  {
+    href: "/use-cases/operations",
+    title: "Operations",
+  },
+];
+
+const company = [
+  {
+    title: "Pricing",
+    href: "/pricing",
+  },
+  {
+    title: "Contact",
+    href: "/contact",
+  },
+];
+
+const legal = [
+  {
+    title: "Privacy Policy",
+    href: "/privacy",
+  },
+  {
+    title: "Terms of Service",
+    href: "/terms",
+  },
+];
+
+const resources = [
+  {
+    title: "Help Center",
+    href: "https://docs.fortyone.app",
+  },
+  {
+    title: "Blog",
+    href: "/blog",
+  },
+  {
+    title: "GitHub",
+    href: "https://github.com/complexus-tech/fortyone",
+  },
+  {
+    title: "Pitch",
+    href: "https://pitch.fortyone.app",
+  },
+];
 
 const FooterLink = ({
   href,
@@ -81,8 +131,7 @@ const Copyright = () => {
         </Link>
         |
         <Text fontSize="sm">
-          © {new Date().getFullYear()} Complexus LLC &bull; All rights
-          reserved.
+          © {COPYRIGHT_YEAR} Complexus LLC &bull; All rights reserved.
         </Text>
       </Box>
     </Box>
@@ -91,64 +140,6 @@ const Copyright = () => {
 
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
-  const product = [
-    {
-      href: "/features/tasks",
-      title: "Tasks",
-    },
-    {
-      title: "Objectives",
-      href: "/features/objectives",
-    },
-    {
-      href: "/features/okrs",
-      title: "OKRs",
-    },
-
-    {
-      href: "/features/sprints",
-      title: "Sprints",
-    },
-  ];
-  const company = [
-    {
-      title: "Pricing",
-      href: "/pricing",
-    },
-    {
-      title: "Contact",
-      href: "/contact",
-    },
-  ];
-  const legal = [
-    {
-      title: "Privacy Policy",
-      href: "/privacy",
-    },
-    {
-      title: "Terms of Service",
-      href: "/terms",
-    },
-  ];
-
-  const resources = [
-    {
-      title: "Help Center",
-      href: "https://docs.fortyone.app",
-    },
-    {
-      title: "Blog",
-      href: "/blog",
-    },
-    {
-      title: "GitHub",
-      href: "https://github.com/complexus-tech/fortyone",
-    },
-    {
-      title: "Pitch",
-      href: "https://pitch.fortyone.app",
-    },
-  ];
   return (
     <Box as="footer" className="relative">
       <Container>
@@ -158,9 +149,9 @@ export const Footer = () => {
           </Box>
           <Box>
             <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Product
+              Use Cases
             </Text>
-            {product.map(({ href, title }) => (
+            {caseLinks.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>

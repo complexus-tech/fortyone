@@ -139,7 +139,7 @@
   --color-accent: oklch(0.942 0 0);
   --color-accent-foreground: oklch(0.145 0 0);
 
-  --color-border: oklch(0.93 0 0);
+  --color-border: oklch(0.92 0 0);
   --color-border-strong: oklch(0.89 0 0);
   --color-input: oklch(0.922 0 0);
   --color-ring: oklch(0.628 0.258 12.25);
@@ -208,7 +208,7 @@
   --color-accent: oklch(0.24 0 0);
   --color-accent-foreground: oklch(0.922 0 0);
 
-  --color-border: oklch(0.26 0 0);
+  --color-border: oklch(0.27 0 0);
   --color-border-strong: oklch(0.36 0 0/ 0.7);
   --color-input: oklch(0.23 0 0);
 

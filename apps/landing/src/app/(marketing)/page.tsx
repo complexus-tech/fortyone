@@ -9,12 +9,13 @@ import {
   Integrations,
   CoreValues,
   HowItWorks,
+  PlatformWorkflow,
 } from "@/modules/home";
 
 export const metadata: Metadata = {
-  title: "FortyOne | AI Project Management Platform for Teams",
+  title: "FortyOne | AI Project Manager for Modern Teams",
   description:
-    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   keywords: [
     "AI project management",
     "AI project manager",
@@ -28,17 +29,17 @@ export const metadata: Metadata = {
     "project planning software",
   ],
   openGraph: {
-    title: "FortyOne | AI Project Management Platform for Teams",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
     url: "/",
     siteName: "FortyOne",
     type: "website",
   },
   twitter: {
-    title: "FortyOne | AI Project Management Platform for Teams",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
     card: "summary_large_image",
   },
 };
@@ -50,10 +51,9 @@ export default function Page() {
       <Hero />
       <HeroCards />
       <SampleClients />
-      {/* <Features /> */}
       <HowItWorks />
       <CoreValues />
-      {/* <Maya /> */}
+      <PlatformWorkflow />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />

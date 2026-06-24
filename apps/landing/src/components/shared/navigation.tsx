@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 import { Logo, Container } from "@/components/ui";
 import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
 import { MobileNavigation } from "./mobile-navigation";
-import { RequestDemo } from "./request-demo";
+// import { RequestDemo } from "./request-demo";
 
 const MenuItem = ({
   name,
@@ -86,7 +86,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
 
   const pathname = usePathname();
   return (
-    <Box className="border-border/80 fixed left-0 z-15 w-screen border-b bg-white/60 backdrop-blur-xl dark:bg-black/50">
+    <Box className="border-border/40 fixed left-0 z-15 w-screen border-b bg-white/60 backdrop-blur-xl dark:bg-black/50">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <Flex align="center" className="hidden md:flex" gap={1}>

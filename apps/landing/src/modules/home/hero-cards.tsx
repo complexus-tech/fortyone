@@ -24,7 +24,7 @@ export const HeroCards = () => {
       id: 1,
       title: "Risks surface before the retro.",
       description:
-        "Maya watches ownership, priority, and activity so stalled work shows up while there is still time to fix it.",
+        "AI watches ownership, priority, and activity so stalled work shows up while there is still time to fix it.",
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,

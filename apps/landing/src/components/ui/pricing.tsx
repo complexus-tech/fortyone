@@ -124,7 +124,7 @@ const Package = ({
       </Text>
 
       {name !== "Enterprise" ? (
-        <Text className="mt-4 text-4xl font-bold">
+        <Text className="mt-4 text-4xl font-semibold tracking-tight">
           ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
           <Text as="span" className="text-base font-medium opacity-60">
             {" "}
@@ -132,7 +132,7 @@ const Package = ({
           </Text>
         </Text>
       ) : (
-        <Text className="mt-4" fontSize="4xl" fontWeight="bold">
+        <Text className="mt-4 tracking-tight" fontSize="4xl" fontWeight="semibold">
           Custom
         </Text>
       )}
@@ -198,14 +198,14 @@ export const Pricing = ({
                 "md:text-6xl": pathname === "/pricing",
               })}
             >
-              Start free. Add room when the team grows.
+              Start free. Scale AI project management as your team grows.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="w-full max-w-xl opacity-70 md:mt-4">
-              No card required and no trial clock. Run a real sprint on the
-              free plan, then add more teams, objectives, and Maya capacity
-              when the work gets bigger.
+              No card required and no trial clock. Plan real projects on the
+              free plan, then add more teams, goals, integrations, and AI
+              capacity as work gets bigger.
             </Text>
           ) : null}
         </Box>

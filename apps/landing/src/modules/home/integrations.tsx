@@ -64,7 +64,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
-              Turn scattered tools into project context.
+              Your tools become AI context.
             </Text>
           </motion.div>
           <motion.div
@@ -77,9 +77,10 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
-              GitHub merges, Slack threads, Figma handoffs, and GitLab
-              pipelines all say something about the work. FortyOne brings that
-              context back to the plan so Maya and your team can act on it.
+              Google Calendar helps AI understand real availability. Slack lets
+              teams create tasks and ask the assistant where work is already
+              happening. GitHub, Figma, and GitLab bring delivery context back
+              into the project plan.
             </Text>
           </motion.div>
           <motion.div
@@ -92,7 +93,7 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
-              Start free
+              Get started free
             </Button>
           </motion.div>
         </Flex>

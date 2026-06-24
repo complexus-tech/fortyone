@@ -54,7 +54,7 @@ const softwareApplication: WithContext<WebApplication> = {
     "Tasks",
   ],
   description:
-    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
 };
 
 const organization: WithContext<Organization> = {
@@ -81,7 +81,7 @@ const product: WithContext<Product> = {
   "@type": "Product",
   name: "FortyOne - AI project management platform for teams",
   description:
-    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   category: "Software",
   brand: {
     "@type": "Brand",
@@ -123,18 +123,18 @@ const faq: WithContext<FAQPage> = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What does Maya actually do?",
+      name: "What makes FortyOne an AI project manager?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Maya is the AI project manager inside FortyOne. She turns rough outcomes into tasks, proposes sprint scope from your backlog and capacity, connects work to goals, and flags blockers before they become end-of-sprint surprises.",
+        text: "FortyOne combines project management software with an AI assistant that can turn project context into tasks, suggest owners, add estimates, plan timing, and surface delivery risks before work slips.",
       },
     },
     {
       "@type": "Question",
-      name: "How does FortyOne connect goals to daily work?",
+      name: "What happens when I assign work to AI?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Goals are not a reporting layer pasted on top of tasks. Work can be linked directly to objectives and key results, so progress updates as tasks move and leaders can see what changed without asking for another status report.",
+        text: "The AI reviews the task, team context, workload, estimates, and availability, then helps find the right owner, schedule, and next action. Admins can review important AI actions before they are applied.",
       },
     },
     {
@@ -147,18 +147,18 @@ const faq: WithContext<FAQPage> = {
     },
     {
       "@type": "Question",
-      name: "How does FortyOne handle security?",
+      name: "Can FortyOne plan around my team's calendar?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FortyOne supports encryption in transit and at rest, Google SSO, role-based permissions, and private teams. Enterprise teams can work with us on stricter requirements such as dedicated onboarding, private cloud, and deployment preferences.",
+        text: "Yes. Google Calendar integration lets FortyOne sync availability so AI can recommend better schedules and work windows without storing private event details unnecessarily.",
       },
     },
     {
       "@type": "Question",
-      name: "Can we make it fit the way our team works?",
+      name: "Can we create tasks from Slack?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Customize statuses, workflows, terminology, permissions, teams, and planning rules around how you already ship. The structure can evolve as the team grows without throwing away the history behind prior work.",
+        text: "Yes. Slack support lets teams create tasks from Slack and ask the AI assistant for help where conversations already happen, while keeping the project plan in FortyOne.",
       },
     },
   ],

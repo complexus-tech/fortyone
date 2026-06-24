@@ -9,9 +9,9 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne | AI Project Management Platform for Teams",
+  title: "FortyOne | AI Project Manager for Modern Teams",
   description:
-    "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne | AI Project Management Platform for Teams",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne | AI Project Management Platform for Teams",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne connects goals, sprint plans, tasks, and Maya in one AI project management workspace, so teams can plan faster and spot delivery risks early.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   },
   alternates: {
     canonical: "https://www.fortyone.app",

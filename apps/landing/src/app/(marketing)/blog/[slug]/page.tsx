@@ -2,8 +2,8 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlurImage, Box, Flex, Text } from "ui";
-import { ArrowLeft2Icon } from "icons";
-import Link from "next/link";
+// import { ArrowLeft2Icon } from "icons";
+// import Link from "next/link";
 import { getPostBySlug, getAllPosts } from "@/lib/posts";
 import { mdxComponents } from "@/mdx-components";
 import { CallToAction } from "@/components/shared";
@@ -94,11 +94,12 @@ export default async function BlogPost({
         as="article"
         className="grid grid-cols-[1fr_4fr_1fr] items-start gap-10 py-32"
       >
-        <Link className="flex items-center gap-1 pt-4" href="/blog">
+        <span />
+        {/* <Link className="flex items-center gap-1 pt-4" href="/blog">
           <ArrowLeft2Icon className="dark:text-foreground" />
           <span className="opacity-80">All blogs</span>
-        </Link>
-        <Box className="mx-auto max-w-3xl">
+        </Link> */}
+        <Box className="mx-auto max-w-2xl">
           <Flex gap={2}>
             <Text className="opacity-80">
               {new Date(post.metadata.date as string).toLocaleDateString(
@@ -115,18 +116,18 @@ export default async function BlogPost({
           </Flex>
           <Text
             as="h1"
-            className="mb-8 mt-4 text-5xl font-semibold leading-tight"
+            className="mt-4 mb-8 text-4xl leading-tight font-semibold"
           >
             {post.metadata.title}
           </Text>
-          <Box className="mb-6 rounded-xl border border-border p-1.5 d">
+          <Box className="border-border d mb-6 rounded-xl border p-1.5">
             <BlurImage
               alt={post.metadata.title}
               className="aspect-16/8 rounded-lg"
               src={post.metadata.featuredImage}
             />
           </Box>
-          <Box className="prose prose-lg prose-stone max-w-full dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:text-[1.1rem] prose-pre:bg-surface-muted prose-pre:text-foreground">
+          <Box className="prose prose-base prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground max-w-full">
             <MDXRemote components={mdxComponents} source={post.content} />
           </Box>
         </Box>

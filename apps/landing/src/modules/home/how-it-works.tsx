@@ -254,29 +254,139 @@ function IntegrationCard() {
   );
 }
 
-/* ─── Card 03: Progress actions ───────────────────────────── */
+/* ─── Card 03: AI assignment plan ─────────────────────────── */
+function AIAssignmentCard() {
+  return (
+    <Box className="flex h-full flex-col gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")}>
+        <Flex align="center" className="gap-2.5">
+          <Box className="bg-background-inverse text-foreground-inverse flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <AiIcon className="size-4 !text-white dark:!text-black" />
+          </Box>
+          <Box className="min-w-0">
+            <Text
+              className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+            >
+              AI assignment plan
+            </Text>
+            <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+              Story: launch customer portal
+            </Text>
+          </Box>
+        </Flex>
+      </Box>
+
+      <Box className={cn(CARD_SURFACE_CLASS, "grid gap-2.5 p-4")}>
+        <Flex align="center" justify="between" className="gap-3">
+          <Box>
+            <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+              Best owner
+            </Text>
+            <Text
+              className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+            >
+              Priya N.
+            </Text>
+          </Box>
+          <Text
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-success/10 text-success rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
+            92% fit
+          </Text>
+        </Flex>
+        <Box className="bg-surface-muted h-2 overflow-hidden rounded-full">
+          <Box className="bg-success h-full w-[82%] rounded-full" />
+        </Box>
+      </Box>
+
+      <Box className="grid grid-cols-2 gap-2">
+        <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-3")}>
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Estimate
+          </Text>
+          <Text
+            className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+          >
+            4 hours
+          </Text>
+        </Box>
+        <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-3")}>
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Work window
+          </Text>
+          <Text
+            className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+          >
+            Tue 10:30
+          </Text>
+        </Box>
+      </Box>
+
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "mt-auto gap-2 px-4 py-2.5")}
+      >
+        <Box className="bg-warning size-2 rounded-full" />
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          Calendar and workload checked
+        </Text>
+      </Flex>
+    </Box>
+  );
+}
+
+/* ─── Card 04: Progress actions ───────────────────────────── */
 function ProgressCard() {
   return (
-    <Box className="flex h-full flex-col items-end gap-3">
+    <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "w-full p-4")}>
-        <Text
-          className={cn(CARD_TEXT_CLASS, "text-foreground mb-3 font-medium")}
-        >
-          Sprint 14 Progress
-        </Text>
-        <Box className="bg-surface-muted mb-2.5 h-2.5 w-full overflow-hidden rounded-full">
-          <Box className="bg-foreground h-full w-[65%] rounded-full" />
-        </Box>
-        <Flex justify="between">
-          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
-            7 of 11 tasks
+        <Flex align="center" justify="between" className="mb-3 gap-3">
+          <Text
+            className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+          >
+            Sprint 14 Progress
           </Text>
-          <Text className={cn(CARD_TEXT_CLASS, "text-foreground font-medium")}>
+          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
             65%
           </Text>
         </Flex>
+        <Box className="bg-surface-muted mb-4 h-2.5 w-full overflow-hidden rounded-full">
+          <Box className="bg-foreground h-full w-[65%] rounded-full" />
+        </Box>
+        <Box className="grid gap-2">
+          {[
+            ["API handoff", "Done"],
+            ["Billing QA", "In review"],
+          ].map(([task, status]) => (
+            <Flex
+              align="center"
+              justify="between"
+              className="border-border bg-surface-muted/30 rounded-lg border px-3 py-2"
+              key={task}
+            >
+              <Flex align="center" className="min-w-0 gap-2">
+                <Box className="border-success/60 bg-success/15 size-4 shrink-0 rounded-full border" />
+                <Text
+                  className={cn(
+                    CARD_META_TEXT_CLASS,
+                    "text-foreground truncate font-medium",
+                  )}
+                >
+                  {task}
+                </Text>
+              </Flex>
+              <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+                {status}
+              </Text>
+            </Flex>
+          ))}
+        </Box>
       </Box>
-      <Flex className="gap-2">
+
+      <Flex className="ml-auto gap-2">
         <Button
           className={cn(CARD_TEXT_CLASS, "shadow-lg")}
           color="invert"
@@ -307,7 +417,7 @@ function ProgressCard() {
           <MoreHorizontalIcon className="h-4 w-auto text-current" />
         </Button>
       </Flex>
-      {/* Shared to integrations */}
+
       <Flex
         align="center"
         className={cn(CARD_SURFACE_CLASS, "mt-auto w-full gap-2.5 px-4 py-2.5")}
@@ -319,6 +429,184 @@ function ProgressCard() {
           <SlackIcon className="size-4" />
           <DriveIcon className="size-4" />
         </Flex>
+      </Flex>
+    </Box>
+  );
+}
+
+/* ─── Card 05: Capacity planning ──────────────────────────── */
+function CapacityCard() {
+  const teams = [
+    {
+      name: "Product",
+      value: "72%",
+      width: "w-[72%]",
+      load: "2 open slots",
+    },
+    {
+      name: "Engineering",
+      value: "84%",
+      width: "w-[84%]",
+      load: "Near limit",
+    },
+  ];
+
+  return (
+    <Box className="flex h-full flex-col gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")}>
+        <Flex align="center" justify="between" className="gap-3">
+          <Box>
+            <Text
+              className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+            >
+              Team capacity
+            </Text>
+            <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+              This week
+            </Text>
+          </Box>
+          <Flex className="-space-x-2">
+            {[
+              {
+                alt: "Product lead avatar",
+                src: "/images/avatars/product-lead.png",
+              },
+              {
+                alt: "Engineering lead avatar",
+                src: "/images/avatars/engineering-lead.png",
+              },
+              {
+                alt: "Operations lead avatar",
+                src: "/images/avatars/operations-lead.png",
+              },
+            ].map((avatar) => (
+              <Image
+                alt={avatar.alt}
+                className="border-background bg-surface-muted size-7 rounded-full border object-cover"
+                height={28}
+                key={avatar.src}
+                src={avatar.src}
+                width={28}
+              />
+            ))}
+          </Flex>
+        </Flex>
+      </Box>
+
+      <Box className="grid gap-2">
+        {teams.map((team) => (
+          <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")} key={team.name}>
+            <Flex align="center" justify="between" className="mb-2 gap-3">
+              <Box className="min-w-0">
+                <Text
+                  className={cn(
+                    CARD_TEXT_CLASS,
+                    "text-foreground truncate font-semibold",
+                  )}
+                >
+                  {team.name}
+                </Text>
+                <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+                  {team.load}
+                </Text>
+              </Box>
+              <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+                {team.value}
+              </Text>
+            </Flex>
+            <Box className="bg-surface-muted h-2 overflow-hidden rounded-full">
+              <Box
+                className={cn("bg-foreground h-full rounded-full", team.width)}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "mt-auto gap-2.5 px-4 py-2.5")}
+      >
+        <Box className="bg-success size-2 rounded-full" />
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          AI recommends Product for the next task.
+        </Text>
+      </Flex>
+    </Box>
+  );
+}
+
+/* ─── Card 06: Review controls ────────────────────────────── */
+function ControlCard() {
+  return (
+    <Box className="flex h-full flex-col gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "p-4")}>
+        <Flex align="start" className="gap-3">
+          <Box className="bg-warning/15 flex size-8 shrink-0 items-center justify-center rounded-lg">
+            <Box className="bg-warning size-2 rounded-full" />
+          </Box>
+          <Box>
+            <Flex align="center" className="flex-wrap gap-2">
+              <Text
+                className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
+              >
+                Review before apply
+              </Text>
+              <Text
+                className={cn(
+                  CARD_META_TEXT_CLASS,
+                  "bg-warning/10 text-warning rounded-lg px-2 py-0.5 font-semibold",
+                )}
+              >
+                4 changes
+              </Text>
+            </Flex>
+            <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted mt-1")}>
+              AI suggested an estimate, owner, and safer start time.
+            </Text>
+          </Box>
+        </Flex>
+      </Box>
+
+      <Box className={cn(CARD_SURFACE_CLASS, "grid gap-2.5 p-4")}>
+        {[
+          ["Estimate", "6 hours"],
+          ["Owner", "Priya N."],
+          ["Start", "Wed 10:00"],
+          ["Task", "Move API handoff"],
+        ].map(([label, value]) => (
+          <Flex align="center" justify="between" className="gap-3" key={label}>
+            <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+              {label}
+            </Text>
+            <Text
+              className={cn(CARD_META_TEXT_CLASS, "text-foreground font-medium")}
+            >
+              {value}
+            </Text>
+          </Flex>
+        ))}
+      </Box>
+
+      <Flex className="mt-auto gap-2">
+        <Button
+          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
+          color="invert"
+          rounded="lg"
+          size="sm"
+          type="button"
+        >
+          Approve
+        </Button>
+        <Button
+          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
+          color="tertiary"
+          rounded="lg"
+          size="sm"
+          type="button"
+        >
+          Edit
+        </Button>
       </Flex>
     </Box>
   );
@@ -353,7 +641,7 @@ function FeatureCard({
             src={meshImage}
             fill
             quality={100}
-            sizes="(max-width: 767px) 100vw, 33vw"
+            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
           />
           <Box className="relative z-10 w-full p-5">{children}</Box>
         </Box>
@@ -385,31 +673,76 @@ export const HowItWorks = () => {
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
         >
-          From goal to sprint to shipped work, in one system.
+          <span className="block">Turn plans into real work.</span>
+          <span className="block">Keep every team aligned.</span>
         </Text>
       </motion.div>
 
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          title="Tasks inherit the goal."
-          description="Link work directly to objectives so every task carries the reason it exists and progress is easy to trust."
+          title="Plan the work."
+          description="Turn goals, ideas, and requests into clear tasks that already carry the context behind them."
         >
           <TaskGoalCard />
         </FeatureCard>
         <FeatureCard
-          title="Maya brings context into the plan."
-          description="GitHub, Drive, Slack, and the backlog become usable context, so drafted work starts with the right details."
+          title="Assign with AI."
+          description="Use team context, workload, estimates, and availability to help pick the right owner and timing."
           delay={0.1}
+        >
+          <AIAssignmentCard />
+        </FeatureCard>
+        <FeatureCard
+          title="Turn tools into context."
+          description="Bring conversations, files, commits, and backlog details into the plan before work starts."
+          delay={0.2}
         >
           <IntegrationCard />
         </FeatureCard>
+      </Box>
+    </Container>
+  );
+};
+
+export const PlatformWorkflow = () => {
+  return (
+    <Container className="py-16 md:pt-24 md:pb-28">
+      <motion.div
+        initial="hidden"
+        variants={fadeUp}
+        viewport={viewport}
+        whileInView="show"
+      >
+        <Text
+          color="gradientDark"
+          as="h2"
+          className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
+        >
+          Keep every team, task, and decision moving together.
+        </Text>
+      </motion.div>
+
+      <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          title="Progress updates itself."
-          description="As work ships, FortyOne reflects what is done, what is next, and what is slipping without another status meeting."
-          delay={0.2}
+          title="Track every moving part."
+          description="Goals, tasks, and delivery progress stay connected so everyone can see what is done, next, and at risk."
         >
           <ProgressCard />
+        </FeatureCard>
+        <FeatureCard
+          title="Balance team capacity."
+          description="Plan work around real team load before assignments create bottlenecks or missed handoffs."
+          delay={0.1}
+        >
+          <CapacityCard />
+        </FeatureCard>
+        <FeatureCard
+          title="Control AI actions."
+          description="Review important suggestions, adjust the plan, and keep managers in control of how work changes."
+          delay={0.2}
+        >
+          <ControlCard />
         </FeatureCard>
       </Box>
     </Container>
