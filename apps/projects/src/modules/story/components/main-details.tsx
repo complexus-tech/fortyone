@@ -172,10 +172,10 @@ export const MainDetails = ({
         <GitHubSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
-          className="text-foreground mb-8 text-3xl md:text-4xl"
+          className="text-foreground relative -left-px text-3xl font-semibold md:text-4xl"
           editor={titleEditor}
         />
-        <TextEditor editor={descriptionEditor} className="text-lg" />
+        <TextEditor className="text-lg" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}

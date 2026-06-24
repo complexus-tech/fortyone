@@ -2,19 +2,19 @@ import "ui/styles.css";
 import "../styles/global.css";
 import type { Metadata, Viewport } from "next";
 import {
-  Instrument_Sans as InstrumentSans,
   Bricolage_Grotesque as BricolageGrotesque,
+  Geist,
 } from "next/font/google";
 import { type ReactNode } from "react";
-import { PublicEnv } from "@/public-env";
 import { cn } from "lib";
+import { PublicEnv } from "@/public-env";
 import { auth } from "@/auth";
 import { SessionProvider } from "@/lib/auth/client";
 import { Providers } from "./providers";
 import { Toaster } from "./toaster";
 import { OnlineStatusMonitor } from "./online-monitor";
 
-const font = InstrumentSans({
+const font = Geist({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
