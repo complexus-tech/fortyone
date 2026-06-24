@@ -19,6 +19,8 @@ import {
 import { useWorkspacePath } from "@/hooks";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 
+const INITIAL_TEAM_MENU_SKELETON_ROWS = 2;
+
 type TeamContextType = {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -83,10 +85,6 @@ const Items = ({
   const isInitialLoading =
     (joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage) ||
     (publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage);
-  const isLoadingJoinedTeams =
-    joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage;
-  const isLoadingPublicTeams =
-    publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -123,9 +121,9 @@ const Items = ({
           className="max-h-80 overflow-y-auto"
           onScroll={handleScroll}
         >
-          {isLoadingJoinedTeams ? (
+          {isInitialLoading ? (
             <Command.Loading className="p-2">
-              <MenuLoadingSkeleton rows={4} />
+              <MenuLoadingSkeleton rows={INITIAL_TEAM_MENU_SKELETON_ROWS} />
             </Command.Loading>
           ) : null}
           {teams.map((team) => (
@@ -165,12 +163,6 @@ const Items = ({
           {publicTeams.length > 0 && teams.length > 0 && (
             <Divider className="my-1.5" />
           )}
-
-          {isLoadingPublicTeams ? (
-            <Command.Loading className="p-2">
-              <MenuLoadingSkeleton rows={4} />
-            </Command.Loading>
-          ) : null}
 
           {publicTeams.map((team) => (
             <Command.Item
