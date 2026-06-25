@@ -18,7 +18,7 @@
 
 body,
 html {
-  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[14px] font-medium antialiased 2xl:text-[14.5px];
+  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
 }
 
 @media (prefers-reduced-motion: reduce) {
