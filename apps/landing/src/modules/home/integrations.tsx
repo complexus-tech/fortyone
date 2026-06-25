@@ -7,7 +7,7 @@ import { SIGNUP_URL } from "@/lib/app-url";
 
 export const Integrations = () => {
   return (
-    <Box className="from-surface-muted to-surface dark:from-background dark:via-background relative mt-20 bg-linear-to-b py-16 md:mb-28 md:py-40 dark:to-black">
+    <Box className="from-surface via-surface-muted to-surface dark:from-background dark:via-background relative mt-20 bg-linear-to-b py-16 md:mb-28 md:py-40 dark:to-black">
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute top-24 left-16 hidden rotate-6 md:block"
