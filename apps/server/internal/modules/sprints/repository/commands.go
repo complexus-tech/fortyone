@@ -230,7 +230,7 @@ func (r *repo) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		DELETE FROM sprints
 		WHERE sprint_id = :sprint_id
 		AND workspace_id = :workspace_id
-		RETURNING team_id, name, start_date::text, end_date::text
+		RETURNING team_id, name, CAST(start_date AS text), CAST(end_date AS text)
 	`
 
 	params := map[string]any{

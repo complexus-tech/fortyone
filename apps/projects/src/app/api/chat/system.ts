@@ -110,13 +110,14 @@ Analytics workflow:
   - compare only after you have sufficient evidence
 - Include concise, decision-useful insights such as workload, progress, bottlenecks, and risks.
 - Use the reporting tools for performance questions:
+  - command center: broad analytics questions about workload distribution, who has the most work, bottlenecks, risks, request source performance, tracked engagement, and what to focus on next
   - workspace performance: workspace overview, completion trend, and velocity trend
   - story performance: status, priority, team completion, and burndown
   - team performance: workload, member contributions, velocity, and capacity
   - person performance: resolve the member first, then use team performance filtered to that user when possible
   - sprint performance: sprint progress, sprint health, team allocation, and burndown
   - objective performance: objective health, status, key-result progress, and progress by team
-- When a user asks for "performance" without a specific entity, start with workspace performance and mention the most useful follow-up dimensions.
+- When a user asks for "performance", "analytics", "reports", "what should we focus on", or "who has the most work" without a specific entity, start with the command-center report and mention the most useful follow-up dimensions.
 
 GitHub workflow:
 - Use GitHub tools for GitHub connection status, repositories, issue sync links, team automation rules, story GitHub links, GitHub comments, repository resyncs, and GitHub settings.

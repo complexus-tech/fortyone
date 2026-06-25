@@ -10,12 +10,7 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
-import {
-  useWorkspacePath,
-  useFeatures,
-  useFeatureFlag,
-  useUserRole,
-} from "@/hooks";
+import { useWorkspacePath, useFeatures, useUserRole } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
@@ -30,7 +25,6 @@ export const Navigation = () => {
   const { withWorkspace } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
   const { userRole } = useUserRole();
-  const isAnalyticsEnabled = useFeatureFlag("analytics_page");
 
   const features = useFeatures();
 
@@ -79,7 +73,6 @@ export const Navigation = () => {
       name: "Analytics",
       icon: <AnalyticsIcon />,
       href: withWorkspace("/analytics"),
-      disabled: !isAnalyticsEnabled,
     },
   ];
 

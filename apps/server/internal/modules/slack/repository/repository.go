@@ -694,7 +694,7 @@ func (r *Repo) InsertRequestLog(ctx context.Context, entry SlackRequestLogInsert
 			outcome,
 			error_message
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CAST($10 AS jsonb), $11, $12, $13)
 	`,
 		entry.RequestType,
 		entry.Endpoint,

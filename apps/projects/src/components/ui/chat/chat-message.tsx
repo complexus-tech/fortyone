@@ -78,6 +78,7 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-comments": "Loading comments",
   "tool-notifications": "Checking notifications",
   "tool-workspacePerformanceReportTool": "Building workspace report",
+  "tool-workspaceCommandCenterReportTool": "Building command center",
   "tool-storyPerformanceReportTool": "Building story report",
   "tool-objectiveProgressReportTool": "Building objective report",
   "tool-teamPerformanceReportTool": "Building team report",
@@ -350,7 +351,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "bg-state-hover dark:bg-surface-muted rounded-tr-md":
+              "bg-state-hover/80 dark:bg-surface-muted/95 rounded-tr-md":
                 message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}

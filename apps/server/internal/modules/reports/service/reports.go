@@ -32,6 +32,9 @@ type Repository interface {
 	GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseRequestHealth, error)
 	GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error)
 	GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error)
+	GetRequestSourceAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreRequestSourceAnalytics, error)
+	GetWorkspaceEngagementAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceEngagementAnalytics, error)
+	CreateWorkspaceAnalyticsEvent(ctx context.Context, input CoreWorkspaceAnalyticsEventInput) error
 }
 
 // Service manages the reports operations.

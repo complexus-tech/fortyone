@@ -45,4 +45,6 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/analytics/pulse", h.GetPulseReport, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/analytics/sprint-analytics", h.GetSprintAnalytics, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/analytics/timeline-trends", h.GetTimelineTrends, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/analytics/command-center", h.GetWorkspaceCommandCenterReport, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/analytics/events", h.TrackWorkspaceAnalyticsEvent, auth, workspace)
 }

@@ -1,11 +1,11 @@
 import { stringify } from "qs";
 import { get, type WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
-import type { AnalyticsFilters, PulseReport } from "../types";
+import type { AnalyticsFilters, WorkspaceCommandCenterReport } from "../types";
 
-const PULSE_REPORT_TIMEOUT_MS = 45_000;
+const COMMAND_CENTER_TIMEOUT_MS = 60_000;
 
-export const getPulseReport = async (
+export const getCommandCenterReport = async (
   ctx: WorkspaceCtx,
   filters?: AnalyticsFilters,
 ) => {
@@ -18,10 +18,11 @@ export const getPulseReport = async (
       })
     : "";
 
-  const report = await get<ApiResponse<PulseReport>>(
-    `analytics/pulse${query}`,
+  const report = await get<ApiResponse<WorkspaceCommandCenterReport>>(
+    `analytics/command-center${query}`,
     ctx,
-    { timeout: PULSE_REPORT_TIMEOUT_MS },
+    { timeout: COMMAND_CENTER_TIMEOUT_MS },
   );
+
   return report.data!;
 };

@@ -92,7 +92,7 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 			workspace_id, team_id, provider, source_type, source_external_id, source_number,
 			source_url, title, description, status_id, priority, assignee_id, estimate_unit,
 			objective_id, key_result_id, sprint_id, start_date, end_date, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, CAST($19 AS jsonb), $20)
 		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
 			team_id = EXCLUDED.team_id,
 			source_number = EXCLUDED.source_number,

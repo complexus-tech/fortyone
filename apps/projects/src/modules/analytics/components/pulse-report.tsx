@@ -13,9 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { WarningIcon } from "icons";
-import { cn } from "lib";
-import { Avatar, Badge, Box, Button, Flex, Skeleton, Text, Wrapper } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Skeleton, Text } from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { usePulseReport } from "@/modules/analytics/hooks/pulse-report";
 import type {
@@ -29,12 +27,6 @@ const severityClasses: Record<PulseRiskSeverity, string> = {
   high: "text-danger dark:text-danger",
   medium: "text-warning dark:text-warning",
   low: "text-info dark:text-info",
-};
-
-const severityIconClasses: Record<PulseRiskSeverity, string> = {
-  high: "bg-danger/5 text-danger dark:text-danger",
-  medium: "bg-warning/5 text-warning dark:text-warning",
-  low: "bg-info/5 text-info dark:text-info",
 };
 
 const formatNumber = (value?: number) =>
@@ -58,23 +50,24 @@ const applyTerminology = (
 const titleCase = (value: string) =>
   value.charAt(0).toUpperCase() + value.slice(1);
 
-const LinkArrow = () => {
+const ReportCard = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => {
   return (
-    <svg
-      className="h-5 w-auto"
-      fill="none"
-      height="24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
+    <Box
+      className={[
+        "border-border/70 dark:bg-surface h-full rounded-lg border bg-white px-5 py-5",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      <path d="M7 7h10v10" />
-      <path d="M7 17 17 7" />
-    </svg>
+      {children}
+    </Box>
   );
 };
 
@@ -124,26 +117,19 @@ const MetricCard = ({
   title,
   count,
   href,
-  icon,
 }: {
   title: string;
   count: number;
   href: string;
-  icon: ReactNode;
 }) => {
   return (
     <Link href={href}>
-      <Wrapper className="px-3 py-3 md:px-5 md:py-4">
-        <Flex justify="between">
-          <Text className="mb-2 text-2xl antialiased" fontWeight="semibold">
-            {formatNumber(count)}
-          </Text>
-          {icon}
-        </Flex>
-        <Text className="opacity-80" color="muted">
-          {title}
+      <ReportCard className="hover:bg-surface-muted/60 px-5 py-4 transition">
+        <Text className="text-foreground/80 text-[0.95rem]">{title}</Text>
+        <Text className="mt-2 text-[2rem] leading-none font-semibold">
+          {formatNumber(count)}
         </Text>
-      </Wrapper>
+      </ReportCard>
     </Link>
   );
 };
@@ -165,27 +151,17 @@ const RiskCard = ({
     <Link href={href}>
       <Flex
         align="center"
-        className="border-border hover:bg-surface-muted/60 h-full gap-3 rounded-2xl border-[0.5px] px-3 py-3.5 transition"
+        className="border-border/70 hover:bg-surface-muted/60 dark:bg-surface h-full gap-3 rounded-lg border bg-white px-4 py-4 transition"
       >
-        <Flex
-          align="center"
-          className={cn(
-            "size-10 shrink-0 rounded-lg",
-            severityIconClasses[risk.severity],
-          )}
-          justify="center"
-        >
-          <WarningIcon
-            className={cn(
-              "size-[1.1rem] shrink-0",
-              severityClasses[risk.severity],
-            )}
-          />
-        </Flex>
         <Box className="min-w-0 flex-1">
           <Flex align="center" className="gap-2" justify="between">
             <Flex align="center" className="min-w-0 gap-2">
-              <Text className="line-clamp-1" fontWeight="medium">
+              <Text
+                className={["line-clamp-1", severityClasses[risk.severity]]
+                  .filter(Boolean)
+                  .join(" ")}
+                fontWeight="medium"
+              >
                 {applyTerminology(
                   risk.title,
                   storyTermPlural,
@@ -202,7 +178,6 @@ const RiskCard = ({
                 {formatNumber(risk.count)}
               </Badge>
             </Flex>
-            <LinkArrow />
           </Flex>
           <Text className="mt-1 leading-5" color="muted">
             {applyTerminology(
@@ -253,7 +228,6 @@ const WorkloadRow = ({
           >
             {formatNumber(member.overdueStories)} overdue
           </Badge>
-          <LinkArrow />
         </Flex>
       </Flex>
     </Link>
@@ -296,7 +270,7 @@ export const PulseReportPanel = () => {
 
   if (isError) {
     return (
-      <Wrapper className="mt-3">
+      <ReportCard className="mt-3">
         <Text className="mb-1" fontSize="lg" fontWeight="medium">
           Workspace pulse is unavailable
         </Text>
@@ -306,7 +280,7 @@ export const PulseReportPanel = () => {
         <Button className="mt-4" onClick={() => void refetch()}>
           Try again
         </Button>
-      </Wrapper>
+      </ReportCard>
     );
   }
 
@@ -373,37 +347,32 @@ export const PulseReportPanel = () => {
         <MetricCard
           count={report.summary.openStories}
           href={withWorkspace("/my-work?tab=all")}
-          icon={<LinkArrow />}
           title={`Open ${storyTermPlural}`}
         />
         <MetricCard
           count={report.summary.overdueStories}
           href={withWorkspace("/my-work?tab=all&overdue=true")}
-          icon={<LinkArrow />}
           title={`Overdue ${storyTermPlural}`}
         />
         <MetricCard
           count={report.summary.blockedStories}
           href={withWorkspace("/my-work?tab=all&category=paused")}
-          icon={<LinkArrow />}
           title={`Blocked ${storyTermPlural}`}
         />
         <MetricCard
           count={report.summary.atRiskSprints}
           href={withWorkspace("/sprints")}
-          icon={<LinkArrow />}
           title={`At-risk ${sprintTermPlural}`}
         />
         <MetricCard
           count={report.summary.atRiskObjectives}
           href={withWorkspace("/roadmaps")}
-          icon={<LinkArrow />}
           title={`At-risk ${objectiveTermPlural}`}
         />
       </Box>
 
       <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-5">
-        <Wrapper className="@5xl:col-span-3">
+        <ReportCard className="@5xl:col-span-3">
           <Box className="mb-6">
             <Flex align="center" className="mb-1 gap-2">
               <Text fontSize="lg">Needs attention</Text>
@@ -433,7 +402,7 @@ export const PulseReportPanel = () => {
                 />
               ))
             ) : (
-              <Box className="border-border bg-surface-muted rounded-2xl border-[0.5px] px-4 py-6 text-center @3xl:col-span-2">
+              <Box className="border-border bg-surface-muted rounded-lg border-[0.5px] px-4 py-6 text-center @3xl:col-span-2">
                 <Text fontWeight="medium">No active risks</Text>
                 <Text className="mt-1" color="muted">
                   Nothing needs immediate attention right now.
@@ -441,9 +410,9 @@ export const PulseReportPanel = () => {
               </Box>
             )}
           </Box>
-        </Wrapper>
+        </ReportCard>
 
-        <Wrapper className="@5xl:col-span-2">
+        <ReportCard className="@5xl:col-span-2">
           <Box className="mb-6">
             <Text className="mb-1" fontSize="lg">
               Workload pressure
@@ -461,11 +430,11 @@ export const PulseReportPanel = () => {
           ) : (
             <Text color="muted">No overloaded members right now.</Text>
           )}
-        </Wrapper>
+        </ReportCard>
       </Box>
 
       <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
-        <Wrapper>
+        <ReportCard>
           <Box className="mb-6">
             <Text className="mb-1" fontSize="lg">
               {titleCase(storyTerm)} health
@@ -503,9 +472,9 @@ export const PulseReportPanel = () => {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </Wrapper>
+        </ReportCard>
 
-        <Wrapper>
+        <ReportCard>
           <Box className="mb-6">
             <Text className="mb-1" fontSize="lg">
               Team load
@@ -550,7 +519,7 @@ export const PulseReportPanel = () => {
               />
             </BarChart>
           </ResponsiveContainer>
-        </Wrapper>
+        </ReportCard>
       </Box>
     </Box>
   );

@@ -23,6 +23,8 @@ export type MemberWorkload = {
   fullName: string;
   username: string;
   avatarUrl: string;
+  teamAiRoleTitle?: string;
+  teamAiRoleDescription?: string;
   openStories: number;
   startedStories: number;
   pausedStories: number;
@@ -32,6 +34,7 @@ export type MemberWorkload = {
   highPriorityStories: number;
   unestimatedStories: number;
   estimateTotal: number;
+  lastStoryActivityAt?: string | null;
 };
 
 export type TeamWorkloadSummary = {
@@ -186,7 +189,7 @@ export type WorkspaceOverview = {
 export type StatusBreakdownItem = {
   statusName: string;
   count: number;
-  teamId: string;
+  teamId: string | null;
 };
 
 export type PriorityDistributionItem = {
@@ -353,4 +356,83 @@ export type TimelineTrends = {
   objectiveProgress: ObjectiveProgressPoint[];
   teamVelocity: TeamVelocityPoint[];
   keyMetricsTrend: KeyMetricsTrendPoint[];
+};
+
+export type RequestProviderPerformance = {
+  provider: string;
+  totalRequests: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  declinedRequests: number;
+  urgentRequests: number;
+  highRequests: number;
+  staleRequests: number;
+  acceptanceRate: number;
+};
+
+export type RequestSourceAnalytics = {
+  providers: RequestProviderPerformance[];
+  totalRequests: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  declinedRequests: number;
+};
+
+export type WorkspaceEngagementCount = {
+  name: string;
+  count: number;
+};
+
+export type WorkspaceEngagementUser = {
+  userId: string;
+  fullName: string;
+  username: string;
+  avatarUrl: string;
+  events: number;
+};
+
+export type WorkspaceEngagementAnalytics = {
+  totalEvents: number;
+  uniqueUsers: number;
+  eventsByName: WorkspaceEngagementCount[];
+  eventsBySurface: WorkspaceEngagementCount[];
+  topUsers: WorkspaceEngagementUser[];
+};
+
+export type WorkspaceCommandCenterReport = {
+  workspaceId: string;
+  reportDate: string;
+  filters: AnalyticsFilters;
+  sectionErrors: {
+    section: string;
+    message: string;
+  }[];
+  overview: WorkspaceOverview;
+  pulse: PulseReport;
+  stories: StoryAnalytics;
+  objectives: ObjectiveProgress;
+  teams: TeamPerformance;
+  workload: WorkloadAnalysis;
+  sprints: SprintAnalytics;
+  trends: TimelineTrends;
+  requests: RequestSourceAnalytics;
+  engagement: WorkspaceEngagementAnalytics;
+};
+
+export type WorkspaceAnalyticsEventPayload = {
+  eventName: string;
+  surface: string;
+  teamId?: string;
+  storyId?: string;
+  objectiveId?: string;
+  sprintId?: string;
+  keyResultId?: string;
+  properties?: Record<string, unknown>;
+  occurredAt?: string;
+};
+
+export type WorkspaceAnalyticsEventResponse = {
+  eventName: string;
+  surface: string;
+  occurredAt: string;
 };

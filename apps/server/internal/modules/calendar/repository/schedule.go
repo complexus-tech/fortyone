@@ -19,7 +19,7 @@ const scheduleBlockSelect = `
 		csb.story_id,
 		s.title AS story_title,
 		CASE
-			WHEN s.id IS NOT NULL AND t.code IS NOT NULL THEN CONCAT(t.code, '-', s.sequence_id::text)
+			WHEN s.id IS NOT NULL AND t.code IS NOT NULL THEN CONCAT(t.code, '-', CAST(s.sequence_id AS text))
 			ELSE NULL
 		END AS story_code,
 		t.team_id,

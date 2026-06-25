@@ -216,46 +216,17 @@ func (h *Handlers) GetPriorityStats(ctx context.Context, w http.ResponseWriter, 
 func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, error) {
 	filters := reports.ReportFilters{}
 
-	if teamIds, ok := query["teamIds"]; ok {
-		if teamIdsStr, ok := teamIds.(string); ok && teamIdsStr != "" {
-			teamIDStrings := strings.Split(teamIdsStr, ",")
-			for _, idStr := range teamIDStrings {
-				idStr = strings.TrimSpace(idStr)
-				if idStr != "" {
-					if id, err := uuid.Parse(idStr); err == nil {
-						filters.TeamIDs = append(filters.TeamIDs, id)
-					}
-				}
-			}
-		}
+	if teamIds, ok := query["teamIds"].(string); ok {
+		filters.TeamIDs = parseCommaSeparatedUUIDs(teamIds)
 	}
-
-	if sprintIds, ok := query["sprintIds"]; ok {
-		if sprintIdsStr, ok := sprintIds.(string); ok && sprintIdsStr != "" {
-			sprintIDStrings := strings.Split(sprintIdsStr, ",")
-			for _, idStr := range sprintIDStrings {
-				idStr = strings.TrimSpace(idStr)
-				if idStr != "" {
-					if id, err := uuid.Parse(idStr); err == nil {
-						filters.SprintIDs = append(filters.SprintIDs, id)
-					}
-				}
-			}
-		}
+	if assigneeIds, ok := query["assigneeIds"].(string); ok {
+		filters.AssigneeIDs = parseCommaSeparatedUUIDs(assigneeIds)
 	}
-
-	if objectiveIds, ok := query["objectiveIds"]; ok {
-		if objectiveIdsStr, ok := objectiveIds.(string); ok && objectiveIdsStr != "" {
-			objectiveIDStrings := strings.Split(objectiveIdsStr, ",")
-			for _, idStr := range objectiveIDStrings {
-				idStr = strings.TrimSpace(idStr)
-				if idStr != "" {
-					if id, err := uuid.Parse(idStr); err == nil {
-						filters.ObjectiveIDs = append(filters.ObjectiveIDs, id)
-					}
-				}
-			}
-		}
+	if sprintIds, ok := query["sprintIds"].(string); ok {
+		filters.SprintIDs = parseCommaSeparatedUUIDs(sprintIds)
+	}
+	if objectiveIds, ok := query["objectiveIds"].(string); ok {
+		filters.ObjectiveIDs = parseCommaSeparatedUUIDs(objectiveIds)
 	}
 
 	now := time.Now()
@@ -264,11 +235,11 @@ func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, er
 
 	if startDate, ok := query["startDate"]; ok {
 		if startDateStr, ok := startDate.(string); ok {
-			if parsedDate, err := time.Parse(time.RFC3339, startDateStr); err == nil {
-				filters.StartDate = &parsedDate
-			} else {
-				filters.StartDate = &defaultStartDate
+			parsedDate, err := parseReportDate(startDateStr)
+			if err != nil {
+				return reports.ReportFilters{}, ErrInvalidDate
 			}
+			filters.StartDate = &parsedDate
 		}
 	} else {
 		filters.StartDate = &defaultStartDate
@@ -276,11 +247,11 @@ func parseReportFilters(query map[string]interface{}) (reports.ReportFilters, er
 
 	if endDate, ok := query["endDate"]; ok {
 		if endDateStr, ok := endDate.(string); ok {
-			if parsedDate, err := time.Parse(time.RFC3339, endDateStr); err == nil {
-				filters.EndDate = &parsedDate
-			} else {
-				filters.EndDate = &defaultEndDate
+			parsedDate, err := parseReportDate(endDateStr)
+			if err != nil {
+				return reports.ReportFilters{}, ErrInvalidDate
 			}
+			filters.EndDate = &parsedDate
 		}
 	} else {
 		filters.EndDate = &defaultEndDate
@@ -596,4 +567,106 @@ func (h *Handlers) GetTimelineTrends(ctx context.Context, w http.ResponseWriter,
 	}
 
 	return web.Respond(ctx, w, toAppTimelineTrends(trends), http.StatusOK)
+}
+
+func (h *Handlers) GetWorkspaceCommandCenterReport(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.GetWorkspaceCommandCenterReport")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var af AppReportFilters
+	query, err := web.GetFilters(r.URL.Query(), &af)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	filters, err := parseReportFilters(query)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	report, err := h.reports.GetWorkspaceCommandCenterReport(ctx, workspace.ID, filters)
+	if err != nil {
+		return fmt.Errorf("getting workspace command center report: %w", err)
+	}
+	h.resolveCommandCenterAvatarURLs(ctx, &report)
+
+	return web.Respond(ctx, w, report, http.StatusOK)
+}
+
+func (h *Handlers) resolveCommandCenterAvatarURLs(ctx context.Context, report *reports.CoreWorkspaceCommandCenterReport) {
+	for i := range report.Teams.MemberContributions {
+		report.Teams.MemberContributions[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Teams.MemberContributions[i].AvatarURL)
+	}
+	for i := range report.Workload.Members {
+		report.Workload.Members[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Members[i].AvatarURL)
+	}
+	for i := range report.Workload.Risks.OverloadedMembers {
+		report.Workload.Risks.OverloadedMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Risks.OverloadedMembers[i].AvatarURL)
+	}
+	for i := range report.Workload.Risks.OverdueMembers {
+		report.Workload.Risks.OverdueMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Workload.Risks.OverdueMembers[i].AvatarURL)
+	}
+	for i := range report.Pulse.Workload.Members {
+		report.Pulse.Workload.Members[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Pulse.Workload.Members[i].AvatarURL)
+	}
+	for i := range report.Pulse.Workload.Risks.OverloadedMembers {
+		report.Pulse.Workload.Risks.OverloadedMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Pulse.Workload.Risks.OverloadedMembers[i].AvatarURL)
+	}
+	for i := range report.Pulse.Workload.Risks.OverdueMembers {
+		report.Pulse.Workload.Risks.OverdueMembers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Pulse.Workload.Risks.OverdueMembers[i].AvatarURL)
+	}
+	for i := range report.Engagement.TopUsers {
+		report.Engagement.TopUsers[i].AvatarURL = h.resolveUserAvatarURL(ctx, report.Engagement.TopUsers[i].AvatarURL)
+	}
+}
+
+func (h *Handlers) TrackWorkspaceAnalyticsEvent(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.reports.TrackWorkspaceAnalyticsEvent")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	var req AppTrackWorkspaceAnalyticsEventRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	input := reports.CoreWorkspaceAnalyticsEventInput{
+		WorkspaceID: workspace.ID,
+		UserID:      userID,
+		EventName:   req.EventName,
+		Surface:     req.Surface,
+		TeamID:      req.TeamID,
+		StoryID:     req.StoryID,
+		ObjectiveID: req.ObjectiveID,
+		SprintID:    req.SprintID,
+		KeyResultID: req.KeyResultID,
+		Properties:  req.Properties,
+	}
+	if req.OccurredAt != nil {
+		input.OccurredAt = *req.OccurredAt
+	}
+
+	event, err := h.reports.TrackWorkspaceAnalyticsEvent(ctx, input)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	return web.Respond(ctx, w, AppTrackWorkspaceAnalyticsEventResponse{
+		EventName:  event.EventName,
+		Surface:    event.Surface,
+		OccurredAt: event.OccurredAt,
+	}, http.StatusCreated)
 }

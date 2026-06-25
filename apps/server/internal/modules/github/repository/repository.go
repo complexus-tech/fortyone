@@ -876,7 +876,7 @@ func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, 
 func (r *Repo) RecordWebhookEvent(ctx context.Context, deliveryID, eventName, action string, installationExternalID, repositoryExternalID, senderExternalID *int64, payload []byte) (bool, error) {
 	query := `
 		INSERT INTO github_webhook_events (delivery_id, event_name, action, installation_external_id, repository_external_id, sender_external_id, payload)
-		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+		VALUES ($1, $2, $3, $4, $5, $6, CAST($7 AS jsonb))
 		ON CONFLICT (delivery_id) DO UPDATE SET
 			event_name = EXCLUDED.event_name,
 			action = EXCLUDED.action,

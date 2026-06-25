@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import type { WorkspaceCtx } from "@/lib/http";
 import { getWorkspaceOverview } from "@/modules/analytics/queries/get-workspace-overview";
+import { getCommandCenterReport } from "@/modules/analytics/queries/get-command-center-report";
 import { getStoryAnalytics } from "@/modules/analytics/queries/get-story-analytics";
 import { getObjectiveProgress } from "@/modules/analytics/queries/get-objective-progress";
 import { getTeamPerformance } from "@/modules/analytics/queries/get-team-performance";
@@ -75,9 +76,12 @@ export const workspacePerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const overview = await getWorkspaceOverview(ctx, compactFilters(filters));
@@ -101,15 +105,54 @@ export const workspacePerformanceReportTool = tool({
   },
 });
 
+export const workspaceCommandCenterReportTool = tool({
+  description:
+    "Build the most detailed workspace analytics command-center report. Use this for broad business questions about workload distribution, who has the most work, risks, bottlenecks, delivery flow, request source performance, engagement events, objective health, sprint health, and what the team should focus on next.",
+  inputSchema: z.object({
+    filters: analyticsFiltersSchema.optional(),
+  }),
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
+    try {
+      const ctx = await getAuthenticatedContext(experimentalContext);
+      if ("error" in ctx) return { success: false, error: ctx.error };
+
+      const report = await getCommandCenterReport(ctx, compactFilters(filters));
+
+      return {
+        success: true,
+        kind: "workspace-command-center-report",
+        title: "Workspace analytics command center",
+        filters: compactFilters(filters),
+        report,
+        message: `Built the command-center report across ${report.workload.summary.totalOpenStories} open stories, ${report.workload.members.length} people with assigned work, ${report.requests.totalRequests} requests, and ${report.engagement.totalEvents} tracked events.`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build workspace command-center report",
+      };
+    }
+  },
+});
+
 export const pulseReportTool = tool({
   description:
     "Build the deterministic workspace Pulse report for current health, risks, workload, sprint health, objective health, pending integration requests, blocked work, overdue work, and what needs attention next. Use this for workspace, team, person, or group-of-teams pulse questions.",
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const report = await getPulseReport(ctx, compactFilters(filters));
@@ -140,9 +183,12 @@ export const storyPerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const analytics = await getStoryAnalytics(ctx, compactFilters(filters));
@@ -172,9 +218,12 @@ export const objectiveProgressReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const progress = await getObjectiveProgress(ctx, compactFilters(filters));
@@ -210,9 +259,12 @@ export const teamPerformanceReportTool = tool({
         "Specific user ID for person performance. Use members first when needed.",
       ),
   }),
-  execute: async ({ filters, userId }, { experimental_context }) => {
+  execute: async (
+    { filters, userId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const performance = await getTeamPerformance(
@@ -254,9 +306,12 @@ export const sprintPerformanceReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const analytics = await getSprintAnalytics(ctx, compactFilters(filters));
@@ -286,9 +341,12 @@ export const timelineTrendsReportTool = tool({
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const ctx = await getAuthenticatedContext(experimental_context);
+      const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
       const trends = await getTimelineTrends(ctx, compactFilters(filters));

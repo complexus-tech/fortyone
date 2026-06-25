@@ -24,6 +24,7 @@ type pulseRepoStub struct {
 	sprintCalls    int
 	objectiveCalls int
 	requestCalls   int
+	eventInputs    []CoreWorkspaceAnalyticsEventInput
 }
 
 func (s *pulseRepoStub) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error) {
@@ -49,6 +50,11 @@ func (s *pulseRepoStub) GetPulseObjectiveHealth(ctx context.Context, workspaceID
 func (s *pulseRepoStub) GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseRequestHealth, error) {
 	s.requestCalls++
 	return s.requestResult, nil
+}
+
+func (s *pulseRepoStub) CreateWorkspaceAnalyticsEvent(ctx context.Context, input CoreWorkspaceAnalyticsEventInput) error {
+	s.eventInputs = append(s.eventInputs, input)
+	return nil
 }
 
 func TestGetPulseReportComposesDeterministicSections(t *testing.T) {
@@ -143,5 +149,61 @@ func TestGetPulseReportBuildsOrderedRiskCards(t *testing.T) {
 	first := got.Risks[0]
 	if first.Kind != PulseRiskKindOverdueStories || first.Severity != PulseRiskSeverityHigh || first.Count != 3 {
 		t.Fatalf("expected overdue stories to be the first high risk, got %#v", first)
+	}
+}
+
+func TestTrackWorkspaceAnalyticsEventNormalizesSafeInput(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	repo := &pulseRepoStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
+
+	got, err := service.TrackWorkspaceAnalyticsEvent(context.Background(), CoreWorkspaceAnalyticsEventInput{
+		WorkspaceID: workspaceID,
+		UserID:      userID,
+		EventName:   " analytics_report_viewed ",
+		Surface:     " analytics ",
+		Properties: map[string]any{
+			"tab":        "pulse",
+			"emptyValue": "",
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got.EventName != "analytics_report_viewed" {
+		t.Fatalf("expected normalized event name, got %q", got.EventName)
+	}
+	if got.Surface != "analytics" {
+		t.Fatalf("expected normalized surface, got %q", got.Surface)
+	}
+	if len(repo.eventInputs) != 1 {
+		t.Fatalf("expected one repository call, got %d", len(repo.eventInputs))
+	}
+	if repo.eventInputs[0].WorkspaceID != workspaceID || repo.eventInputs[0].UserID != userID {
+		t.Fatalf("expected workspace/user ids to be preserved, got %#v", repo.eventInputs[0])
+	}
+}
+
+func TestTrackWorkspaceAnalyticsEventRejectsBlankEventName(t *testing.T) {
+	t.Parallel()
+
+	repo := &pulseRepoStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
+
+	_, err := service.TrackWorkspaceAnalyticsEvent(context.Background(), CoreWorkspaceAnalyticsEventInput{
+		WorkspaceID: uuid.New(),
+		UserID:      uuid.New(),
+		EventName:   " ",
+	})
+
+	if err == nil {
+		t.Fatal("expected blank event name to fail")
+	}
+	if len(repo.eventInputs) != 0 {
+		t.Fatalf("expected no repository calls, got %d", len(repo.eventInputs))
 	}
 }

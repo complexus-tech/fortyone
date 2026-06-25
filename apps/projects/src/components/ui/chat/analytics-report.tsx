@@ -80,7 +80,7 @@ const ChartSection = ({
 const KeyValueList = ({
   rows,
 }: {
-  rows: Array<{ label: string; value: string | number | null | undefined }>;
+  rows: { label: string; value: string | number | null | undefined }[];
 }) => (
   <Box className="border-border/70 divide-border/70 divide-y overflow-hidden rounded-lg border dark:divide-white/10 dark:border-white/12">
     {rows.map((row) => (
@@ -139,7 +139,7 @@ const CompactBarChart = ({
 }: {
   data: ChartRow[];
   xKey: string;
-  bars: Array<{ key: string; color: string; name?: string }>;
+  bars: { key: string; color: string; name?: string }[];
 }) => {
   if (!data.length) return <EmptyChart />;
 
@@ -175,7 +175,7 @@ const CompactLineChart = ({
 }: {
   data: ChartRow[];
   xKey: string;
-  lines: Array<{ key: string; color: string; name?: string }>;
+  lines: { key: string; color: string; name?: string }[];
 }) => {
   if (!data.length) return <EmptyChart />;
 
@@ -215,6 +215,9 @@ const completionRate = (completed: unknown, total: unknown) => {
   if (!totalNumber) return "0%";
   return `${Math.round((completedNumber / totalNumber) * 100)}%`;
 };
+
+const ratioPercent = (value: unknown) =>
+  `${Math.round(Number(value ?? 0) * 100)}%`;
 
 export const AnalyticsReport = ({
   output,
@@ -465,6 +468,93 @@ export const AnalyticsReport = ({
               { key: "total", color: COLORS.primary, name: "Total" },
             ]}
             xKey="date"
+          />
+        </ChartSection>
+      </Box>
+    );
+  }
+
+  if (kind === "workspace-command-center-report") {
+    const report = asRecord(output.report);
+    const overview = asRecord(report.overview);
+    const metrics = asRecord(overview.metrics);
+    const pulse = asRecord(report.pulse);
+    const pulseSummary = asRecord(pulse.summary);
+    const workload = asRecord(report.workload);
+    const workloadSummary = asRecord(workload.summary);
+    const requests = asRecord(report.requests);
+    const engagement = asRecord(report.engagement);
+    const members = asRows(workload.members);
+    const providers = asRows(requests.providers);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Text className="text-xl font-semibold">{title}</Text>
+        <MetricGrid
+          metrics={[
+            {
+              label: "Open work",
+              value: Number(workloadSummary.totalOpenStories ?? 0),
+            },
+            {
+              label: "Completion",
+              value: completionRate(
+                metrics.completedStories,
+                metrics.totalStories,
+              ),
+            },
+            {
+              label: "Risks",
+              value:
+                Number(pulseSummary.overdueStories ?? 0) +
+                Number(pulseSummary.blockedStories ?? 0) +
+                Number(pulseSummary.pendingRequests ?? 0),
+            },
+            {
+              label: "Overloaded",
+              value: Number(pulseSummary.overloadedMembers ?? 0),
+            },
+            {
+              label: "Requests",
+              value: Number(requests.totalRequests ?? 0),
+            },
+            {
+              label: "Tracked events",
+              value: Number(engagement.totalEvents ?? 0),
+            },
+          ]}
+        />
+
+        <ChartSection title="Highest workload">
+          <CompactBarChart
+            bars={[
+              { key: "openStories", color: COLORS.primary, name: "Open" },
+              { key: "overdueStories", color: "#EF4444", name: "Overdue" },
+            ]}
+            data={members.slice(0, 8)}
+            xKey="username"
+          />
+        </ChartSection>
+
+        <ChartSection title="Request sources">
+          <KeyValueList
+            rows={providers.slice(0, 6).map((provider) => ({
+              label: String(provider.provider ?? "Source"),
+              value: `${Number(provider.totalRequests ?? 0)} requests / ${ratioPercent(
+                provider.acceptanceRate,
+              )} accepted`,
+            }))}
+          />
+        </ChartSection>
+
+        <ChartSection title="Engagement">
+          <KeyValueList
+            rows={asRows(engagement.eventsByName)
+              .slice(0, 6)
+              .map((event) => ({
+                label: String(event.name ?? "Event"),
+                value: Number(event.count ?? 0),
+              }))}
           />
         </ChartSection>
       </Box>

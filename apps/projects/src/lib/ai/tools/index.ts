@@ -72,6 +72,7 @@ import {
 } from "./memory";
 import {
   workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
   pulseReportTool,
   storyPerformanceReportTool,
   objectiveProgressReportTool,
@@ -128,6 +129,7 @@ export {
 } from "./memory";
 export {
   workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
   pulseReportTool,
   storyPerformanceReportTool,
   objectiveProgressReportTool,
@@ -173,6 +175,7 @@ export const tools = {
   notifications: notificationsTool,
   comments: commentsTool,
   workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
   pulseReportTool,
   storyPerformanceReportTool,
   objectiveProgressReportTool,

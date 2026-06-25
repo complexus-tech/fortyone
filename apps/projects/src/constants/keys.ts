@@ -112,6 +112,8 @@ export const subscriptionKeys = {
 
 export const analyticsKeys = {
   all: (workspaceSlug: string) => ["analytics", workspaceSlug] as const,
+  commandCenter: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "command-center", filters] as const,
   overview: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "overview", filters] as const,
   storyAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>

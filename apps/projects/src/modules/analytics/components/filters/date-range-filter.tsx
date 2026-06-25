@@ -66,7 +66,7 @@ const DateRangeSelector = () => {
       <Text className="mb-1" color="muted" fontWeight="medium">
         Custom Range
       </Text>
-      <Flex gap={2} wrap align="center">
+      <Flex align="center" gap={2} wrap>
         <DatePicker>
           <DatePicker.Trigger>
             <Button
@@ -112,7 +112,11 @@ const DateRangeSelector = () => {
   );
 };
 
-export const DateRangeFilter = () => {
+export const DateRangeFilter = ({
+  showLabel = true,
+}: {
+  showLabel?: boolean;
+}) => {
   const defaultDates = getDefaultDateRange();
   const [filters] = useQueryStates({
     startDate: parseAsIsoDateTime.withDefault(defaultDates.startDate),
@@ -125,6 +129,7 @@ export const DateRangeFilter = () => {
       isActive
       label="Date Range"
       popover={<DateRangeSelector />}
+      showLabel={showLabel}
       text={`${format(filters.startDate, "MMM d")} - ${format(filters.endDate, "MMM d")}`}
     />
   );

@@ -282,7 +282,7 @@ func (r *repo) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, 
 	}
 
 	// Build filter conditions
-	teamFilter, _, _ := buildFilters(filters, namedParams)
+	teamFilter, _, _ := buildFiltersForColumns(filters, namedParams, "st.team_id", "", "")
 
 	// Get workspace metrics
 	metricsQuery := fmt.Sprintf(`
@@ -446,13 +446,11 @@ func (r *repo) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, fil
 	var sprintFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND st.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("st.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.SprintIDs) > 0 {
-		sprintFilter.WriteString("AND st.sprint_id = ANY(:sprint_ids)")
-		namedParams["sprint_ids"] = filters.SprintIDs
+		sprintFilter.WriteString(buildUUIDArrayFilter("st.sprint_id", "sprint_ids", filters.SprintIDs, namedParams))
 	}
 
 	// Get status breakdown
@@ -686,13 +684,11 @@ func (r *repo) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, 
 	var objectiveFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND o.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("o.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.ObjectiveIDs) > 0 {
-		objectiveFilter.WriteString("AND o.objective_id = ANY(:objective_ids)")
-		namedParams["objective_ids"] = filters.ObjectiveIDs
+		objectiveFilter.WriteString(buildUUIDArrayFilter("o.objective_id", "objective_ids", filters.ObjectiveIDs, namedParams))
 	}
 
 	// Get health distribution
@@ -946,7 +942,7 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	}
 
 	// Build filter conditions
-	teamFilter, _, _ := buildFilters(filters, namedParams)
+	teamFilter, _, _ := buildFiltersForColumns(filters, namedParams, "t.team_id", "", "")
 
 	// Get team workload
 	workloadQuery := fmt.Sprintf(`
@@ -1553,13 +1549,11 @@ func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, fi
 	var sprintFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND s.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("s.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.SprintIDs) > 0 {
-		sprintFilter.WriteString("AND s.sprint_id = ANY(:sprint_ids)")
-		namedParams["sprint_ids"] = filters.SprintIDs
+		sprintFilter.WriteString(buildUUIDArrayFilter("s.sprint_id", "sprint_ids", filters.SprintIDs, namedParams))
 	}
 
 	// Get sprint progress
@@ -1819,7 +1813,8 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 	}
 
 	// Build filter conditions
-	teamFilter, sprintFilter, objectiveFilter := buildFilters(filters, namedParams)
+	storyTeamFilter, storySprintFilter, storyObjectiveFilter := buildFiltersForColumns(filters, namedParams, "st.team_id", "st.sprint_id", "st.objective_id")
+	objectiveTeamFilter, _, objectiveObjectiveFilter := buildFiltersForColumns(filters, namedParams, "o.team_id", "", "o.objective_id")
 
 	// Get story completion timeline
 	storyCompletionQuery := fmt.Sprintf(`
@@ -1846,7 +1841,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 		SELECT date, created, COALESCE(completed, 0) as completed
 		FROM daily_stats
 		ORDER BY date
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbStoryCompletion struct {
 		Date      time.Time `db:"date"`
@@ -1893,7 +1888,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(o.created_at)
 		ORDER BY date
-	`, teamFilter, objectiveFilter)
+	`, objectiveTeamFilter, objectiveObjectiveFilter)
 
 	type dbObjectiveProgress struct {
 		Date                time.Time `db:"date"`
@@ -1944,7 +1939,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(st.updated_at), st.team_id
 		ORDER BY date, team_id
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbTeamVelocityPoint struct {
 		Date     time.Time `db:"date"`
@@ -1994,7 +1989,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(st.created_at)
 		ORDER BY date
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbKeyMetricsTrend struct {
 		Date          time.Time `db:"date"`
