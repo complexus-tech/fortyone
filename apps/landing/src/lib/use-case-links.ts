@@ -21,7 +21,11 @@ export const useCaseLabels = Object.fromEntries(
 ) as Record<(typeof useCaseLinks)[number]["slug"], string>;
 
 export const primaryUseCaseLinks = useCaseLinks.filter(({ slug }) =>
-  ["operations", "product", "customer-support", "developers", "marketing"].includes(
-    slug,
-  ),
+  [
+    "operations",
+    "product",
+    "customer-support",
+    "developers",
+    "marketing",
+  ].includes(slug),
 );

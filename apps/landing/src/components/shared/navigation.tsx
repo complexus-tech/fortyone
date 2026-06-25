@@ -6,7 +6,7 @@ import { cn } from "lib";
 import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
 import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
-import { useCaseLinks } from "@/lib/use-case-links";
+import { primaryUseCaseLinks } from "@/lib/use-case-links";
 import { MobileNavigation } from "./mobile-navigation";
 // import { RequestDemo } from "./request-demo";
 
@@ -34,7 +34,7 @@ const resourceLinks: NavigationMenuItem[] = [
   },
 ];
 
-const useCaseMenuLinks: NavigationMenuItem[] = useCaseLinks.map(
+const useCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
   ({ href, label }) => ({
     href,
     title: label,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Box, Dialog, Flex } from "ui";
 import { cn } from "lib";
-import { useCaseLinks } from "@/lib/use-case-links";
+import { primaryUseCaseLinks } from "@/lib/use-case-links";
 
 const resourceLinks = [
   { label: "Docs", href: "https://docs.fortyone.app" },
@@ -56,7 +56,7 @@ export const MobileNavigation = () => {
   const navItems = [
     {
       label: "Use Cases",
-      items: useCaseLinks,
+      items: primaryUseCaseLinks,
     },
     {
       label: "Resources",
