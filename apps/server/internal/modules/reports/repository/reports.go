@@ -1,6 +1,7 @@
 package reportsrepository
 
 import (
+	"strconv"
 	"strings"
 
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
@@ -26,14 +27,23 @@ func buildUUIDArrayFilter(column string, paramName string, values []uuid.UUID, n
 		return ""
 	}
 
-	namedParams[paramName] = values
-
 	var filter strings.Builder
 	filter.WriteString(" AND ")
 	filter.WriteString(column)
-	filter.WriteString(" = ANY(CAST(:")
-	filter.WriteString(paramName)
-	filter.WriteString(" AS uuid[]))")
+	filter.WriteString(" IN (")
+
+	for i, value := range values {
+		if i > 0 {
+			filter.WriteString(", ")
+		}
+
+		key := paramName + "_" + strconv.Itoa(i)
+		namedParams[key] = value
+		filter.WriteString(":")
+		filter.WriteString(key)
+	}
+
+	filter.WriteString(")")
 
 	return filter.String()
 }

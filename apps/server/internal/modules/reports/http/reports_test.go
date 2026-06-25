@@ -11,12 +11,13 @@ func TestParseReportFiltersAcceptsDateOnlyValuesAndAssignees(t *testing.T) {
 	t.Parallel()
 
 	teamID := uuid.New()
+	secondTeamID := uuid.New()
 	assigneeID := uuid.New()
 	sprintID := uuid.New()
 	objectiveID := uuid.New()
 
 	got, err := parseReportFilters(map[string]interface{}{
-		"teamIds":      teamID.String(),
+		"teamIds":      teamID.String() + "," + secondTeamID.String(),
 		"assigneeIds":  assigneeID.String(),
 		"sprintIds":    sprintID.String(),
 		"objectiveIds": objectiveID.String(),
@@ -33,8 +34,8 @@ func TestParseReportFiltersAcceptsDateOnlyValuesAndAssignees(t *testing.T) {
 	if got.EndDate == nil || got.EndDate.Format(time.DateOnly) != "2026-06-24" {
 		t.Fatalf("expected end date 2026-06-24, got %#v", got.EndDate)
 	}
-	if len(got.TeamIDs) != 1 || got.TeamIDs[0] != teamID {
-		t.Fatalf("expected team id %s, got %#v", teamID, got.TeamIDs)
+	if len(got.TeamIDs) != 2 || got.TeamIDs[0] != teamID || got.TeamIDs[1] != secondTeamID {
+		t.Fatalf("expected team ids %s and %s, got %#v", teamID, secondTeamID, got.TeamIDs)
 	}
 	if len(got.AssigneeIDs) != 1 || got.AssigneeIDs[0] != assigneeID {
 		t.Fatalf("expected assignee id %s, got %#v", assigneeID, got.AssigneeIDs)
