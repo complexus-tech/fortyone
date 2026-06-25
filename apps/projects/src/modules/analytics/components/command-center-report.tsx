@@ -688,11 +688,7 @@ const getPriorityColor = (priority: string) => {
   return priorityColors[priority.toLowerCase()] ?? chartPalette.primary;
 };
 
-const FlowBreakdownSection = ({
-  report,
-}: {
-  report: WorkspaceCommandCenterReport;
-}) => {
+const useFlowBreakdownData = (report: WorkspaceCommandCenterReport) => {
   const { data: statuses = [] } = useStatuses();
   const statusData = report.stories.statusBreakdown.slice(0, 8).map((item) => {
     const status =
@@ -720,37 +716,66 @@ const FlowBreakdownSection = ({
     value: item.count,
   }));
 
+  return { priorityData, statusData };
+};
+
+const StatusBreakdownCard = ({
+  statusData,
+}: {
+  statusData: { label: string; value: number; color?: string }[];
+}) => {
+  return (
+    <ReportCard>
+      <SectionTitle description="Current work state across the selected filters.">
+        Flow breakdown
+      </SectionTitle>
+      <Box className="mt-5">
+        <HorizontalBreakdownChart
+          color={chartPalette.primary}
+          data={statusData}
+          emptyText="No status breakdown is available."
+          height={330}
+          labelWidth={122}
+        />
+      </Box>
+    </ReportCard>
+  );
+};
+
+const PriorityDistributionCard = ({
+  priorityData,
+}: {
+  priorityData: { label: string; value: number; color?: string }[];
+}) => {
+  return (
+    <ReportCard>
+      <SectionTitle description="Priority concentration across open and recently completed work.">
+        Priority distribution
+      </SectionTitle>
+      <Box className="mt-5">
+        <HorizontalBreakdownChart
+          color={chartPalette.warning}
+          data={priorityData}
+          emptyText="No priority distribution is available."
+          height={330}
+          labelWidth={106}
+        />
+      </Box>
+    </ReportCard>
+  );
+};
+
+const FlowBreakdownSection = ({
+  report,
+}: {
+  report: WorkspaceCommandCenterReport;
+}) => {
+  const { priorityData, statusData } = useFlowBreakdownData(report);
+
   return (
     <Box className="grid gap-5 @6xl:grid-cols-2">
-      <ReportCard>
-        <SectionTitle description="Current work state across the selected filters.">
-          Flow breakdown
-        </SectionTitle>
-        <Box className="mt-5">
-          <HorizontalBreakdownChart
-            color={chartPalette.primary}
-            data={statusData}
-            emptyText="No status breakdown is available."
-            height={330}
-            labelWidth={122}
-          />
-        </Box>
-      </ReportCard>
-
-      <ReportCard>
-        <SectionTitle description="Priority concentration across open and recently completed work.">
-          Priority distribution
-        </SectionTitle>
-        <Box className="mt-5">
-          <HorizontalBreakdownChart
-            color={chartPalette.warning}
-            data={priorityData}
-            emptyText="No priority distribution is available."
-            height={330}
-            labelWidth={106}
-          />
-        </Box>
-      </ReportCard>
+      <StatusBreakdownCard statusData={statusData} />
+      <PriorityDistributionCard priorityData={priorityData} />
     </Box>
   );
 };
@@ -1187,6 +1212,8 @@ const OverviewTab = ({
   sprintTermPlural: string;
   objectiveTermPlural: string;
 }) => {
+  const { priorityData } = useFlowBreakdownData(report);
+
   return (
     <Box className="space-y-5">
       <OverviewReadout
@@ -1196,7 +1223,7 @@ const OverviewTab = ({
         storyTermPlural={storyTermPlural}
       />
       <Box className="grid gap-5 @6xl:grid-cols-2">
-        <RiskSummary report={report} storyTermPlural={storyTermPlural} />
+        <PriorityDistributionCard priorityData={priorityData} />
         <ReportCard>
           <SectionTitle description="Whether open work is spread across the team or concentrated with a few people.">
             Workload concentration
@@ -1207,6 +1234,7 @@ const OverviewTab = ({
         </ReportCard>
       </Box>
       <Box className="grid gap-5 @6xl:grid-cols-2">
+        <RiskSummary report={report} storyTermPlural={storyTermPlural} />
         <ReportCard>
           <SectionTitle description="How creation and completion are moving across the selected time window.">
             Delivery trend
@@ -1215,6 +1243,8 @@ const OverviewTab = ({
             <DeliveryChart report={report} />
           </Box>
         </ReportCard>
+      </Box>
+      <Box className="grid gap-5 @6xl:grid-cols-2">
         <ReportCard>
           <SectionTitle description="Which connected sources create work and how much is still waiting.">
             Request source performance
@@ -1225,7 +1255,6 @@ const OverviewTab = ({
           <ProviderLegend />
         </ReportCard>
       </Box>
-      <FlowBreakdownSection report={report} />
     </Box>
   );
 };
