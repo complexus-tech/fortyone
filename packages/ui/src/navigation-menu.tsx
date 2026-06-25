@@ -13,7 +13,7 @@ const NavigationMenuViewport = forwardRef<
     <NavigationMenuPrimitive.Viewport
       className={cn(
         "relative mt-3.5 h-(--radix-navigation-menu-viewport-height) rounded-2xl w-full backdrop-blur shadow-lg md:w-(--radix-navigation-menu-viewport-width)",
-        className
+        className,
       )}
       ref={ref}
       {...props}
@@ -27,32 +27,36 @@ type NavigationMenu = ComponentPropsWithoutRef<
   typeof NavigationMenuPrimitive.Root
 > & {
   align?: "start" | "end";
+  showViewport?: boolean;
   viewPortClassName?: string;
 };
 export const NavigationMenu = ({
   className,
   children,
   align = "start",
+  showViewport = true,
   viewPortClassName,
   ...props
 }: NavigationMenu) => (
   <NavigationMenuPrimitive.Root
     className={cn(
       "relative z-10 flex max-w-max flex-1 items-center justify-center",
-      className
+      className,
     )}
     {...props}
   >
     {children}
-    <NavigationMenuViewport
-      className={cn(
-        {
-          "left-0": align === "start",
-          "right-0": align === "end",
-        },
-        viewPortClassName
-      )}
-    />
+    {showViewport ? (
+      <NavigationMenuViewport
+        className={cn(
+          {
+            "left-0": align === "start",
+            "right-0": align === "end",
+          },
+          viewPortClassName,
+        )}
+      />
+    ) : null}
   </NavigationMenuPrimitive.Root>
 );
 
@@ -64,7 +68,7 @@ const NavigationMenuList = forwardRef<
     ref={ref}
     className={cn(
       "group flex flex-1 list-none items-center justify-center space-x-1",
-      className
+      className,
     )}
     {...props}
   />
@@ -74,7 +78,7 @@ NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName;
 const NavigationMenuItem = NavigationMenuPrimitive.Item;
 
 const navigationMenuTriggerStyle = cva(
-  "group inline-flex gap-1 w-max items-center justify-center text-[0.95rem]"
+  "group inline-flex gap-1 w-max items-center justify-center text-[0.95rem]",
 );
 
 const NavigationMenuTrigger = forwardRef<
@@ -122,7 +126,7 @@ const NavigationMenuIndicator = forwardRef<
     ref={ref}
     className={cn(
       "top-full z-1 flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in",
-      className
+      className,
     )}
     {...props}
   >

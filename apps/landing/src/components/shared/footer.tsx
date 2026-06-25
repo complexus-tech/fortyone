@@ -13,14 +13,14 @@ import {
   TwitterIcon,
 } from "icons";
 import { useTheme } from "next-themes";
-import { useCases } from "@/lib/use-cases";
+import { useCaseLinks } from "@/lib/use-case-links";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui/container";
 
 const COPYRIGHT_YEAR = 2026;
 
-const caseLinks = useCases.map(({ label, slug }) => ({
-  href: `/use-cases/${slug}`,
+const caseLinks = useCaseLinks.map(({ href, label }) => ({
+  href,
   title: label,
 }));
 
@@ -48,7 +48,7 @@ const legal = [
 
 const resources = [
   {
-    title: "Help Center",
+    title: "Docs",
     href: "https://docs.fortyone.app",
   },
   {

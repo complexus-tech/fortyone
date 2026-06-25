@@ -1,3 +1,5 @@
+import { useCaseLabels } from "./use-case-links";
+
 export type UseCaseVisualRow = {
   label: string;
   value: string;
@@ -39,10 +41,9 @@ export type UseCase = {
 export const useCases: UseCase[] = [
   {
     slug: "operations",
-    label: "Business Operations",
-    heroTitle: "FortyOne for Business Operations",
-    metaTitle:
-      "FortyOne for Business Operations | AI Project Management Use Case",
+    label: useCaseLabels.operations,
+    heroTitle: "FortyOne for Operations",
+    metaTitle: "FortyOne for Operations | AI Project Management Use Case",
     metaDescription:
       "See how operations teams use FortyOne to turn requests, capacity, assignments, and project reviews into one AI-assisted project management workflow.",
     intro: [
@@ -187,7 +188,7 @@ export const useCases: UseCase[] = [
   },
   {
     slug: "product",
-    label: "Product Management",
+    label: useCaseLabels.product,
     heroTitle: "FortyOne for Product Management",
     metaTitle:
       "FortyOne for Product Management | AI Project Management Use Case",
@@ -328,13 +329,12 @@ export const useCases: UseCase[] = [
     ],
   },
   {
-    slug: "engineering",
-    label: "Engineering Teams",
-    heroTitle: "FortyOne for Engineering Teams",
-    metaTitle:
-      "FortyOne for Engineering Teams | AI Project Management Use Case",
+    slug: "developers",
+    label: useCaseLabels.developers,
+    heroTitle: "FortyOne for Developers",
+    metaTitle: "FortyOne for Developers | AI Project Management Use Case",
     metaDescription:
-      "See how engineering teams use FortyOne to turn technical requests, estimates, assignments, and delivery tracking into an AI-assisted workflow.",
+      "See how developers use FortyOne to turn technical requests, estimates, assignments, and delivery tracking into an AI-assisted workflow.",
     intro: [
       "Engineering teams do not just need a list of tasks. They need context, priorities, estimates, ownership, dependencies, and a realistic plan for when work should start.",
       "FortyOne helps turn technical requests, Slack conversations, GitHub context, and product goals into work that is ready to assign and track.",
@@ -460,8 +460,8 @@ export const useCases: UseCase[] = [
     ],
   },
   {
-    slug: "customer-success",
-    label: "Customer Support",
+    slug: "customer-support",
+    label: useCaseLabels["customer-support"],
     heroTitle: "FortyOne for Customer Support",
     metaTitle: "FortyOne for Customer Support | AI Project Management Use Case",
     metaDescription:
@@ -590,12 +590,12 @@ export const useCases: UseCase[] = [
     ],
   },
   {
-    slug: "construction",
-    label: "Field Teams",
-    heroTitle: "FortyOne for Field Teams",
-    metaTitle: "FortyOne for Field Teams | AI Project Management Use Case",
+    slug: "field-crews",
+    label: useCaseLabels["field-crews"],
+    heroTitle: "FortyOne for Field Crews",
+    metaTitle: "FortyOne for Field Crews | AI Project Management Use Case",
     metaDescription:
-      "See how construction and field teams use FortyOne to coordinate site work, subcontractor handoffs, approvals, schedules, and AI-assisted project tracking.",
+      "See how construction and field crews use FortyOne to coordinate site work, subcontractor handoffs, approvals, schedules, and AI-assisted project tracking.",
     intro: [
       "Construction and field work depends on coordination between site managers, subcontractors, suppliers, inspectors, office teams, and clients. A single missed handoff can delay the whole schedule.",
       "FortyOne helps teams turn site notes, Slack messages, inspection findings, and meeting decisions into assigned work with owners, estimates, due windows, and review controls.",
@@ -726,7 +726,7 @@ export const useCases: UseCase[] = [
   },
   {
     slug: "marketing",
-    label: "Marketing Campaigns",
+    label: useCaseLabels.marketing,
     heroTitle: "FortyOne for Marketing Campaigns",
     metaTitle:
       "FortyOne for Marketing Campaigns | AI Project Management Use Case",
@@ -858,7 +858,7 @@ export const useCases: UseCase[] = [
   },
   {
     slug: "leadership",
-    label: "Executive Leadership",
+    label: useCaseLabels.leadership,
     heroTitle: "FortyOne for Executive Leadership",
     metaTitle:
       "FortyOne for Executive Leadership | AI Project Management Use Case",

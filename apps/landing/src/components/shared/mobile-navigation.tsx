@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { Box, Dialog, Flex } from "ui";
 import { cn } from "lib";
+import { useCaseLinks } from "@/lib/use-case-links";
+
+const resourceLinks = [
+  { label: "Docs", href: "https://docs.fortyone.app" },
+  { label: "Blog", href: "/blog" },
+  { label: "GitHub", href: "https://github.com/complexus-tech/fortyone" },
+  { label: "Pitch", href: "https://pitch.fortyone.app" },
+];
 
 const NavMenuButton = ({
   open,
@@ -47,19 +55,14 @@ export const MobileNavigation = () => {
 
   const navItems = [
     {
-      label: "Product",
-      items: [
-        { label: "Tasks", href: "/features/tasks" },
-        { label: "Objectives", href: "/features/objectives" },
-        { label: "OKRs", href: "/features/okrs" },
-        { label: "Sprints", href: "/features/sprints" },
-      ],
+      label: "Use Cases",
+      items: useCaseLinks,
+    },
+    {
+      label: "Resources",
+      items: resourceLinks,
     },
     { label: "Pricing", href: "/pricing" },
-    { label: "Contact", href: "/contact" },
-    { label: "Blog", href: "/blog" },
-    { label: "Help Center", href: "https://docs.fortyone.app" },
-    { label: "Pitch", href: "https://pitch.fortyone.app" },
   ];
 
   return (

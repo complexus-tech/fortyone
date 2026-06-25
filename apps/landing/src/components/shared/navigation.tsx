@@ -1,112 +1,131 @@
 "use client";
 
-import { Box, Button, Flex, NavLink, Text } from "ui";
-import { SprintsIcon, ObjectiveIcon, StoryIcon, OKRIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
-import type { ReactNode } from "react";
+import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
 import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
+import { useCaseLinks } from "@/lib/use-case-links";
 import { MobileNavigation } from "./mobile-navigation";
 // import { RequestDemo } from "./request-demo";
 
-const MenuItem = ({
-  name,
-  description,
-  icon,
-  href,
-}: {
-  name: string;
-  description: string;
-  icon: ReactNode;
+type NavigationMenuItem = {
   href: string;
-}) => (
-  <Link
-    className="hover:bg-state-hover flex w-68 gap-2 rounded-xl p-2"
-    href={href}
-    prefetch
-  >
-    {icon}
-    <Box>
-      <Text className="dark:text-white">{name}</Text>
-      <Text className="text-[0.85rem] opacity-70">{description}</Text>
-    </Box>
-  </Link>
+  title: string;
+};
+
+const resourceLinks: NavigationMenuItem[] = [
+  {
+    title: "Docs",
+    href: "https://docs.fortyone.app",
+  },
+  {
+    title: "Blog",
+    href: "/blog",
+  },
+  {
+    title: "GitHub",
+    href: "https://github.com/complexus-tech/fortyone",
+  },
+  {
+    title: "Pitch",
+    href: "https://pitch.fortyone.app",
+  },
+];
+
+const useCaseMenuLinks: NavigationMenuItem[] = useCaseLinks.map(
+  ({ href, label }) => ({
+    href,
+    title: label,
+  }),
 );
 
-export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
-  const navLinks = [
-    { title: "Pricing", href: "/pricing" },
-    { title: "Contact", href: "/contact" },
-    { title: "Blog", href: "/blog" },
-    { title: "Help Center", href: "https://docs.fortyone.app" },
-    { title: "Pitch", href: "https://pitch.fortyone.app" },
-  ];
+const isExternalLink = (href: string) => href.startsWith("http");
 
-  const features = [
-    {
-      id: 1,
-      name: "Tasks",
-      href: "/features/tasks",
-      description: "Turn ideas into clear, actionable work.",
-      icon: (
-        <StoryIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
-      ),
-    },
-    {
-      id: 2,
-      name: "Objectives",
-      href: "/features/objectives",
-      description: "Focus teams on the outcomes that matter most.",
-      icon: (
-        <ObjectiveIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
-      ),
-    },
-    {
-      id: 3,
-      name: "OKRs",
-      href: "/features/okrs",
-      description: "Align everyone on shared goals and see progress.",
-      icon: (
-        <OKRIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
-      ),
-    },
-    {
-      id: 4,
-      name: "Sprints",
-      href: "/features/sprints",
-      description:
-        "Build momentum with short cycles that turn plans into progress.",
-      icon: (
-        <SprintsIcon className="text-foreground relative h-6 shrink-0 md:top-1 md:h-4" />
-      ),
-    },
-  ];
+const NavigationMenuLink = ({ href, title }: NavigationMenuItem) => (
+  <NavigationMenu.Link asChild>
+    <Link
+      className="hover:bg-accent focus:bg-accent focus-visible:bg-accent flex w-full items-center rounded-lg px-2 py-1.5 text-[0.95rem] leading-6 whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-none"
+      href={href}
+      prefetch={!isExternalLink(href)}
+      rel={isExternalLink(href) ? "noreferrer" : undefined}
+      target={isExternalLink(href) ? "_blank" : undefined}
+    >
+      {title}
+    </Link>
+  </NavigationMenu.Link>
+);
 
+const NavigationDropdown = ({
+  contentClassName,
+  items,
+  label,
+}: {
+  contentClassName: string;
+  items: NavigationMenuItem[];
+  label: string;
+}) => (
+  <NavigationMenu.Item className="relative">
+    <NavigationMenu.Trigger
+      className="rounded-full px-3 opacity-90 transition outline-none hover:opacity-100 focus:outline-none focus-visible:outline-none data-[state=open]:opacity-100"
+      hideArrow
+    >
+      {label}
+    </NavigationMenu.Trigger>
+    <NavigationMenu.Content
+      className={cn("top-full z-50 mt-1.5", contentClassName)}
+    >
+      <Box className="border-border shadow-shadow dark:bg-surface-elevated rounded-xl border bg-white px-1.5 py-1.5 shadow-xl">
+        {items.map((item) => (
+          <NavigationMenuLink key={item.href} {...item} />
+        ))}
+      </Box>
+    </NavigationMenu.Content>
+  </NavigationMenu.Item>
+);
+
+const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
   const pathname = usePathname();
+
+  return (
+    <NavLink
+      className={cn(
+        "flex items-center rounded-full px-3 opacity-90 transition hover:opacity-100",
+        {
+          "opacity-100 dark:text-white dark:opacity-100": pathname === href,
+        },
+      )}
+      href={href}
+      prefetch
+    >
+      {title}
+    </NavLink>
+  );
+};
+
+export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   return (
     <Box className="border-border/40 fixed left-0 z-15 w-screen border-b bg-white/60 backdrop-blur-xl dark:bg-black/50">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
-        <Flex align="center" className="hidden md:flex" gap={1}>
-          {navLinks.map(({ title, href }) => (
-            <NavLink
-              className={cn(
-                "flex items-center rounded-full px-3 opacity-90 transition hover:opacity-100",
-                {
-                  "opacity-100 dark:text-white dark:opacity-100":
-                    pathname === href,
-                },
-              )}
-              href={href}
-              key={title}
-              prefetch
-            >
-              {title}
-            </NavLink>
-          ))}
-        </Flex>
+        <NavigationMenu className="hidden md:flex" showViewport={false}>
+          <NavigationMenu.List className="gap-7 space-x-0 lg:gap-10">
+            <NavigationDropdown
+              contentClassName="min-w-44"
+              items={useCaseMenuLinks}
+              label="Use Cases"
+            />
+            <NavigationDropdown
+              contentClassName="min-w-40"
+              items={resourceLinks}
+              label="Resources"
+            />
+            <NavigationMenu.Item>
+              <DesktopNavItem href="/pricing" title="Pricing" />
+            </NavigationMenu.Item>
+          </NavigationMenu.List>
+        </NavigationMenu>
         <Flex align="center" className="ml-4 gap-2">
           {/* <RequestDemo /> */}
           {hasSession ? (
