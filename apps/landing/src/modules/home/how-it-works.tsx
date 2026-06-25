@@ -662,7 +662,7 @@ function FeatureCard({
 /* ─── Main Section ─────────────────────────────────────────── */
 export const HowItWorks = () => {
   return (
-    <Container className="py-16 md:pt-36">
+    <Container className="scroll-mt-24 py-16 md:pt-36" id="ai-planning">
       {/* Headline */}
       <motion.div
         initial="hidden"
@@ -709,7 +709,7 @@ export const HowItWorks = () => {
 
 export const PlatformWorkflow = () => {
   return (
-    <Container className="py-16 md:pt-24 md:pb-28">
+    <Container className="scroll-mt-24 py-16 md:pt-24 md:pb-28" id="roadmaps">
       <motion.div
         initial="hidden"
         variants={fadeUp}

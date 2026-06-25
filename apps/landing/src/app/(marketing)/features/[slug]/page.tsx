@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MarketingDetailPage } from "@/components/shared/marketing-detail-page";
-import { getUseCaseBySlug, useCases } from "@/lib/use-cases";
+import { features, getFeatureBySlug } from "@/lib/features";
 
 export function generateStaticParams() {
-  return useCases.map((useCase) => ({ slug: useCase.slug }));
+  return features.map((feature) => ({ slug: feature.slug }));
 }
 
 export async function generateMetadata({
@@ -13,53 +13,53 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const useCase = getUseCaseBySlug(slug);
+  const feature = getFeatureBySlug(slug);
 
-  if (!useCase) {
+  if (!feature) {
     return {};
   }
 
-  const canonicalUrl = `https://www.fortyone.app/use-cases/${useCase.slug}`;
+  const canonicalUrl = `https://www.fortyone.app/features/${feature.slug}`;
 
   return {
-    title: useCase.metaTitle,
-    description: useCase.metaDescription,
+    title: feature.metaTitle,
+    description: feature.metaDescription,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
       type: "website",
       url: canonicalUrl,
-      title: useCase.metaTitle,
-      description: useCase.metaDescription,
+      title: feature.metaTitle,
+      description: feature.metaDescription,
       siteName: "FortyOne",
     },
     twitter: {
       card: "summary_large_image",
-      title: useCase.metaTitle,
-      description: useCase.metaDescription,
+      title: feature.metaTitle,
+      description: feature.metaDescription,
     },
   };
 }
 
-export default async function UseCasePage({
+export default async function FeaturePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const useCase = getUseCaseBySlug(slug);
+  const feature = getFeatureBySlug(slug);
 
-  if (!useCase) {
+  if (!feature) {
     return notFound();
   }
 
   return (
     <MarketingDetailPage
-      basePath="use-cases"
-      breadcrumbLabel="Use cases"
-      detail={useCase}
-      questionHeading={`Questions from ${useCase.label.toLowerCase()}`}
+      basePath="features"
+      breadcrumbLabel="Features"
+      detail={feature}
+      questionHeading={`Questions about ${feature.label.toLowerCase()}`}
     />
   );
 }

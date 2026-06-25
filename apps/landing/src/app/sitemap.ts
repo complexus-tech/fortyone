@@ -1,8 +1,16 @@
 import type { MetadataRoute } from "next";
+import { features } from "@/lib/features";
 import { useCases } from "@/lib/use-cases";
 
 const useCaseRoutes: MetadataRoute.Sitemap = useCases.map(({ slug }) => ({
   url: `https://www.fortyone.app/use-cases/${slug}`,
+  lastModified: new Date(),
+  changeFrequency: "monthly",
+  priority: 0.8,
+}));
+
+const featureRoutes: MetadataRoute.Sitemap = features.map(({ slug }) => ({
+  url: `https://www.fortyone.app/features/${slug}`,
   lastModified: new Date(),
   changeFrequency: "monthly",
   priority: 0.8,
@@ -15,30 +23,6 @@ const routes: MetadataRoute.Sitemap = [
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 1,
-  },
-  {
-    url: "https://www.fortyone.app/features/tasks",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  },
-  {
-    url: "https://www.fortyone.app/features/objectives",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  },
-  {
-    url: "https://www.fortyone.app/features/okrs",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  },
-  {
-    url: "https://www.fortyone.app/features/sprints",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
   },
   {
     url: "https://www.fortyone.app/pricing",
@@ -74,5 +58,5 @@ const routes: MetadataRoute.Sitemap = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Combine static and dynamic routes
-  return [...routes, ...useCaseRoutes];
+  return [...routes, ...featureRoutes, ...useCaseRoutes];
 }

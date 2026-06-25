@@ -13,6 +13,7 @@ import {
   TwitterIcon,
 } from "icons";
 import { useTheme } from "next-themes";
+import { featureLinks } from "@/lib/feature-links";
 import { useCaseLinks } from "@/lib/use-case-links";
 import { Logo } from "../ui/logo";
 import { Container } from "../ui/container";
@@ -20,6 +21,11 @@ import { Container } from "../ui/container";
 const COPYRIGHT_YEAR = 2026;
 
 const caseLinks = useCaseLinks.map(({ href, label }) => ({
+  href,
+  title: label,
+}));
+
+const footerFeatureLinks = featureLinks.map(({ href, label }) => ({
   href,
   title: label,
 }));
@@ -141,9 +147,17 @@ export const Footer = () => {
   return (
     <Box as="footer" className="relative">
       <Container>
-        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-[1.8fr_1.7fr_1fr_1fr_1fr] md:pt-20">
+        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
           <Box>
             <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
+          </Box>
+          <Box>
+            <Text className="text-text-muted mb-4">Features</Text>
+            {footerFeatureLinks.map(({ href, title }) => (
+              <FooterLink className="whitespace-nowrap" href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
           </Box>
           <Box>
             <Text className="text-text-muted mb-4">Use cases</Text>

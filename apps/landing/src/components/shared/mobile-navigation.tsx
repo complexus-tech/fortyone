@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Box, Dialog, Flex } from "ui";
 import { cn } from "lib";
+import { featureLinks } from "@/lib/feature-links";
 import { primaryUseCaseLinks } from "@/lib/use-case-links";
 
 const resourceLinks = [
@@ -54,6 +55,10 @@ export const MobileNavigation = () => {
   const [open, setOpen] = useState(false);
 
   const navItems = [
+    {
+      label: "Features",
+      items: featureLinks,
+    },
     {
       label: "Use Cases",
       items: primaryUseCaseLinks,

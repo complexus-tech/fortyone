@@ -6,6 +6,7 @@ import { cn } from "lib";
 import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
 import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
+import { featureLinks } from "@/lib/feature-links";
 import { primaryUseCaseLinks } from "@/lib/use-case-links";
 import { MobileNavigation } from "./mobile-navigation";
 // import { RequestDemo } from "./request-demo";
@@ -33,6 +34,13 @@ const resourceLinks: NavigationMenuItem[] = [
     href: "https://pitch.fortyone.app",
   },
 ];
+
+const featureMenuLinks: NavigationMenuItem[] = featureLinks.map(
+  ({ href, label }) => ({
+    href,
+    title: label,
+  }),
+);
 
 const useCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
   ({ href, label }) => ({
@@ -111,6 +119,11 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
           <NavigationMenu.List className="gap-7 space-x-0 lg:gap-10">
+            <NavigationDropdown
+              contentClassName="min-w-44"
+              items={featureMenuLinks}
+              label="Features"
+            />
             <NavigationDropdown
               contentClassName="min-w-44"
               items={useCaseMenuLinks}
