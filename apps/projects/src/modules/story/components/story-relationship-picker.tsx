@@ -317,7 +317,9 @@ export const StoryRelationshipPicker = ({
               onChange={(event) => {
                 setQuery(event.target.value);
               }}
-              placeholder="Search Story Title or ID"
+              placeholder={`Search ${getTermDisplay("storyTerm", {
+                capitalize: true,
+              })} Title or ID`}
               rightIcon={<SearchIcon className="text-icon h-5" />}
               value={query}
             />

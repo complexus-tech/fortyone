@@ -31,6 +31,7 @@ type ActivityCopyInput = {
   fieldLabel: string;
   oldValue?: unknown;
   reason?: StoryActivity["reason"];
+  storyTerm?: string;
   type: StoryActivity["type"];
 };
 
@@ -45,10 +46,11 @@ export const getActivityCopy = ({
   fieldLabel,
   oldValue,
   reason,
+  storyTerm = "story",
   type,
 }: ActivityCopyInput): ActivityCopy => {
   if (type === "create") {
-    return buildCopy([{ text: "created the story", type: "text" }], {
+    return buildCopy([{ text: `created the ${storyTerm}`, type: "text" }], {
       currentValue,
       fieldLabel,
     });
@@ -73,7 +75,12 @@ export const getActivityCopy = ({
   }
 
   const oldValueText = stringifyActivityValue(oldValue);
-  const segments = getFieldUpdateSegments(field, currentValue, oldValueText);
+  const segments = getFieldUpdateSegments(
+    field,
+    currentValue,
+    oldValueText,
+    storyTerm,
+  );
   return buildCopy(segments, { currentValue, fieldLabel });
 };
 
@@ -132,36 +139,37 @@ const getFieldUpdateSegments = (
   field: string,
   currentValue: string,
   oldValueText: string,
+  storyTerm: string,
 ): ActivityCopySegment[] => {
   switch (field) {
     case "title":
       return [
-        { text: "renamed the story to", type: "text" },
+        { text: `renamed the ${storyTerm} to`, type: "text" },
         { type: "currentValue" },
       ];
     case "description":
     case "description_html":
       return [{ text: "updated the description", type: "text" }];
     case "status_id":
-      return withOptionalOldValue(oldValueText, "moved the story");
+      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
     case "assignee_id":
       return oldValueText
-        ? withOptionalOldValue(oldValueText, "reassigned the story")
+        ? withOptionalOldValue(oldValueText, `reassigned the ${storyTerm}`)
         : [
-            { text: "assigned the story to", type: "text" },
+            { text: `assigned the ${storyTerm} to`, type: "text" },
             { type: "currentValue" },
           ];
     case "priority":
       return withOptionalOldValue(oldValueText, "changed priority");
     case "estimate_unit":
       return [
-        { text: "estimated the story at", type: "text" },
+        { text: `estimated the ${storyTerm} at`, type: "text" },
         { type: "currentValue" },
       ];
     case "sprint_id":
-      return withOptionalOldValue(oldValueText, "moved the story");
+      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
     case "objective_id":
-      return withOptionalOldValue(oldValueText, "moved the story");
+      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
     case "start_date":
       return [
         { text: "set the start date to", type: "text" },

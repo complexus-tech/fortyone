@@ -211,7 +211,7 @@ describe("StoryRelationshipPicker", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
     fireEvent.click(screen.getByRole("button", { name: /blocked by/i }));
-    fireEvent.change(screen.getByPlaceholderText(/search story title or id/i), {
+    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
       target: { value: "rr" },
     });
 
@@ -255,7 +255,7 @@ describe("StoryRelationshipPicker", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
-    fireEvent.change(screen.getByPlaceholderText(/search story title or id/i), {
+    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
       target: { value: "rr" },
     });
 
@@ -302,7 +302,7 @@ describe("StoryRelationshipPicker", () => {
       type: "related",
     });
 
-    fireEvent.change(screen.getByPlaceholderText(/search story title or id/i), {
+    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
       target: { value: "rr" },
     });
 

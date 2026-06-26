@@ -24,6 +24,29 @@ describe("activity copy", () => {
     ).toBe("renamed the story to Launch notes");
   });
 
+  it("uses configured terminology in entity copy", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "Done",
+        field: "status_id",
+        fieldLabel: "Status",
+        oldValue: "To Do",
+        storyTerm: "issue",
+        type: "update",
+      }).text,
+    ).toBe("moved the issue from To Do to Done");
+
+    expect(
+      getActivityCopy({
+        currentValue: "Launch notes",
+        field: "title",
+        fieldLabel: "Title",
+        storyTerm: "issue",
+        type: "update",
+      }).text,
+    ).toBe("renamed the issue to Launch notes");
+  });
+
   it("uses action-oriented copy for association changes", () => {
     expect(
       getActivityCopy({

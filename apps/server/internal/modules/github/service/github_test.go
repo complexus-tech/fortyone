@@ -109,3 +109,36 @@ func TestGitHubPriorityFromLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestGitHubPriorityUpdateFromLabelsOnlyUpdatesWhenPriorityLabelExists(t *testing.T) {
+	priority, ok := githubPriorityUpdateFromLabelNames([]string{"bug", "backend"})
+	require.False(t, ok)
+	require.Equal(t, "No Priority", priority)
+
+	priority, ok = githubPriorityUpdateFromLabelNames([]string{"bug", "P2"})
+	require.True(t, ok)
+	require.Equal(t, "Medium", priority)
+}
+
+func TestIssueActionMatchesStoryStatusCategory(t *testing.T) {
+	tests := []struct {
+		name     string
+		action   string
+		category string
+		expected bool
+	}{
+		{name: "closed issue already completed locally", action: "closed", category: "completed", expected: true},
+		{name: "closed issue still unstarted locally", action: "closed", category: "unstarted", expected: false},
+		{name: "reopened issue already active locally", action: "reopened", category: "started", expected: true},
+		{name: "reopened issue already unstarted locally", action: "reopened", category: "unstarted", expected: true},
+		{name: "reopened issue still completed locally", action: "reopened", category: "completed", expected: false},
+		{name: "reopened issue still cancelled locally", action: "reopened", category: "cancelled", expected: false},
+		{name: "edited issue never matches workflow state", action: "edited", category: "completed", expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, issueActionMatchesStoryStatusCategory(tt.action, tt.category))
+		})
+	}
+}

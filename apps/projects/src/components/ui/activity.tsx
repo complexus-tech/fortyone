@@ -12,7 +12,7 @@ import {
 } from "icons";
 import { formatActivityReasonDates } from "@/lib/activity-format";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useLabels } from "@/lib/hooks/labels";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -180,8 +180,8 @@ const ActivityLabelValue = ({ labels }: { labels: Label[] }) => {
   );
 };
 
-const getActivityVerb = (type: StoryActivity["type"]) => {
-  if (type === "create") return "created the story";
+const getActivityVerb = (type: StoryActivity["type"], storyTerm: string) => {
+  if (type === "create") return `created the ${storyTerm}`;
   if (type === "link") return "linked";
   return "changed";
 };
@@ -202,13 +202,15 @@ export const Activity = ({
   const { data: statuses = [] } = useStatuses();
   const { data: allLabels = [] } = useLabels();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
   const member = user;
   const activityAssignees = mayaAssignee
     ? [...members.filter(({ id }) => id !== mayaAssignee.id), mayaAssignee]
     : members;
   const findActivityAssignee = (value: string) =>
     activityAssignees.find(({ id }) => id === value);
-  const activityVerb = getActivityVerb(type);
+  const activityVerb = getActivityVerb(type, storyTerm);
   const activityReason = formatActivityReasonDates(
     getDisplayActivityReason(reason),
   );
@@ -420,6 +422,7 @@ export const Activity = ({
     fieldLabel: fieldMeta.label,
     oldValue,
     reason,
+    storyTerm,
     type,
   });
   const renderUpdateSegment = (

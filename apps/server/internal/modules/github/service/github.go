@@ -108,7 +108,16 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 }
 
 func githubPriorityFromLabelNames(labels []string) string {
+	priority, ok := githubPriorityUpdateFromLabelNames(labels)
+	if !ok {
+		return "No Priority"
+	}
+	return priority
+}
+
+func githubPriorityUpdateFromLabelNames(labels []string) (string, bool) {
 	priority := "No Priority"
+	found := false
 	priorityRank := map[string]int{
 		"No Priority": 0,
 		"Low":         1,
@@ -122,12 +131,13 @@ func githubPriorityFromLabelNames(labels []string) string {
 		if !ok {
 			continue
 		}
+		found = true
 		if priorityRank[candidate] > priorityRank[priority] {
 			priority = candidate
 		}
 	}
 
-	return priority
+	return priority, found
 }
 
 func normalizeGitHubPriorityLabel(label string) string {
@@ -908,7 +918,6 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	for _, label := range payload.Issue.Labels {
 		labelNames = append(labelNames, label.Name)
 	}
-	priority := githubPriorityFromLabelNames(labelNames)
 	var story stories.CoreSingleStory
 	var getErr error
 	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
@@ -921,7 +930,9 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 		updates := map[string]any{
 			"title":       payload.Issue.Title,
 			"description": issueDescription,
-			"priority":    priority,
+		}
+		if priority, hasPriorityLabel := githubPriorityUpdateFromLabelNames(labelNames); hasPriorityLabel {
+			updates["priority"] = priority
 		}
 		if updateErr := s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates, githubIssueSyncReason()); updateErr != nil {
 			return updateErr
@@ -953,13 +964,41 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	case "opened":
 		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueOpen, nil)
 	case "reopened":
+		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
+			return nil
+		}
 		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueReopen, nil)
 	case "closed":
+		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
+			return nil
+		}
 		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueClose, nil)
 	case "edited":
 		return nil
 	default:
 		return nil
+	}
+}
+
+func (s *Service) issueStateAlreadyReflectedByStory(ctx context.Context, action string, story stories.CoreSingleStory) bool {
+	if story.Status == nil {
+		return false
+	}
+	category, err := s.repo.GetStatusCategory(ctx, *story.Status)
+	if err != nil {
+		return false
+	}
+	return issueActionMatchesStoryStatusCategory(action, category)
+}
+
+func issueActionMatchesStoryStatusCategory(action, category string) bool {
+	switch action {
+	case "closed":
+		return category == "completed"
+	case "reopened":
+		return category != "" && category != "completed" && category != "cancelled"
+	default:
+		return false
 	}
 }
 
