@@ -72,6 +72,10 @@ export const MainDetails = ({
   } = data!;
   const isDeleted = Boolean(deletedAt);
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
+  const hasOpenSectionBeforeAttachments =
+    (isSubStoriesOpen && subStories.length > 0) ||
+    (isAssociationsOpen && associations.length > 0) ||
+    (isLinksOpen && links.length > 0);
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
     updateStory({ storyId, payload: data });
@@ -212,10 +216,9 @@ export const MainDetails = ({
 
         <Attachments
           className={cn("border-border mt-2.5 border-t-[0.5px] pt-2.5", {
-            "mt-2 border-0":
-              (isSubStoriesOpen || isLinksOpen) &&
-              (subStories.length > 0 || links.length > 0),
+            "mt-0 border-0 pt-0": hasOpenSectionBeforeAttachments,
           })}
+          compactHeader={hasOpenSectionBeforeAttachments}
           storyId={storyId}
         />
         <Divider className="my-6" />

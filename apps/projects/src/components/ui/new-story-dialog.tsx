@@ -62,7 +62,7 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
-import type { NewStory } from "@/modules/story/types";
+import type { DetailedStory, NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -133,6 +133,7 @@ export const NewStoryDialog = ({
   objectiveId,
   sprintId,
   description,
+  onCreated,
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -143,6 +144,7 @@ export const NewStoryDialog = ({
   priority?: StoryPriority;
   assigneeId?: string | null;
   description?: string;
+  onCreated?: (story: DetailedStory) => Promise<void> | void;
 }) => {
   const session = useSession();
   const { userRole } = useUserRole();
@@ -302,7 +304,8 @@ export const NewStoryDialog = ({
 
     let createError: Error | null = null;
     try {
-      await mutation.mutateAsync(newStory);
+      const createdStory = await mutation.mutateAsync(newStory);
+      await onCreated?.(createdStory);
       if (!createMore) {
         setIsOpen(false);
         setIsExpanded(false);
