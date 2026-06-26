@@ -31,6 +31,7 @@ export * from "./user";
 export * from "./link";
 export * from "./unlink";
 export * from "./github";
+export * from "./slack";
 export * from "./delete";
 export * from "./more-horizontal";
 export * from "./more-vertical";

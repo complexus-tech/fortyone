@@ -38,6 +38,10 @@ import (
 var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
 
 const githubIssueLinkPrefix = "GitHub issue: "
+const (
+	githubSyncSourceFortyOne = "fortyone"
+	githubSyncSourceGitHub   = "github"
+)
 
 var githubPriorityLabels = map[string]string{
 	"blocker":         "Urgent",
@@ -814,6 +818,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	}
 
 	issueBody := issueBodyFromStoryDescription(input.Description)
+	syncHash := githubIssueSyncHash(input.Title, issueBody, desiredState)
 	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
 	switch {
 	case err == nil:
@@ -823,6 +828,9 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 			return err
 		}
 		if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+			return err
+		}
+		if err := s.repo.UpdateStoryLinkSyncState(ctx, existingLink.ID, githubSyncSourceFortyOne, syncHash); err != nil {
 			return err
 		}
 		return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
@@ -842,6 +850,13 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 		}
 	}
 	if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+		return err
+	}
+	createdLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.UpdateStoryLinkSyncState(ctx, createdLink.ID, githubSyncSourceFortyOne, syncHash); err != nil {
 		return err
 	}
 	return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
@@ -918,12 +933,20 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	for _, label := range payload.Issue.Labels {
 		labelNames = append(labelNames, label.Name)
 	}
+	incomingSyncHash := githubIssueSyncHash(payload.Issue.Title, payload.Issue.Body, payload.Issue.State)
 	var story stories.CoreSingleStory
 	var getErr error
-	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
+	storyLink, err := s.repo.FindIssueStoryLinkByExternalID(ctx, repository.ID, payload.Issue.ID)
 	switch {
 	case err == nil:
-		story, getErr = s.stories.Get(ctx, storyID, repository.WorkspaceID)
+		if shouldIgnoreFortyOneIssueEcho(payload.Action, stringValue(storyLink.LastSyncedFrom), stringValue(storyLink.LastSyncHash), incomingSyncHash) {
+			if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, storyLink.StoryID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue); err != nil {
+				return err
+			}
+			return s.repo.EnsureStoryLink(ctx, storyLink.StoryID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL)
+		}
+
+		story, getErr = s.stories.Get(ctx, storyLink.StoryID, repository.WorkspaceID)
 		if getErr != nil {
 			return getErr
 		}
@@ -943,15 +966,15 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 		return err
 	}
 
-	linkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, storyID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue)
+	linkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, storyLink.StoryID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue)
 	if err != nil {
 		return err
 	}
-	if err := s.repo.EnsureStoryLink(ctx, storyID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+	if err := s.repo.EnsureStoryLink(ctx, storyLink.StoryID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
 		return err
 	}
 	if linkCreated {
-		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyLink.StoryID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
 			return err
 		}
 	}
@@ -962,22 +985,58 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 	switch payload.Action {
 	case "opened":
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueOpen, nil)
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueOpen, nil)
 	case "reopened":
 		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
-			return nil
+			err = nil
+			break
 		}
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueReopen, nil)
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueReopen, nil)
 	case "closed":
 		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
-			return nil
+			err = nil
+			break
 		}
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueClose, nil)
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueClose, nil)
 	case "edited":
-		return nil
+		err = nil
 	default:
-		return nil
+		err = nil
 	}
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateStoryLinkSyncState(ctx, storyLink.ID, githubSyncSourceGitHub, incomingSyncHash)
+}
+
+func githubIssueSyncHash(title, body, state string) string {
+	normalizedBody := strings.ReplaceAll(body, "\r\n", "\n")
+	normalizedBody = strings.ReplaceAll(normalizedBody, "\r", "\n")
+	sum := sha256.Sum256([]byte(strings.Join([]string{title, normalizedBody, state}, "\x00")))
+	return hex.EncodeToString(sum[:])
+}
+
+func shouldIgnoreFortyOneIssueEcho(action, lastSyncedFrom, lastSyncHash, incomingSyncHash string) bool {
+	if !isFortyOneIssueEchoAction(action) {
+		return false
+	}
+	return lastSyncedFrom == githubSyncSourceFortyOne && lastSyncHash != "" && lastSyncHash == incomingSyncHash
+}
+
+func isFortyOneIssueEchoAction(action string) bool {
+	switch action {
+	case "opened", "edited", "closed", "reopened":
+		return true
+	default:
+		return false
+	}
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func (s *Service) issueStateAlreadyReflectedByStory(ctx context.Context, action string, story stories.CoreSingleStory) bool {

@@ -142,3 +142,20 @@ func TestIssueActionMatchesStoryStatusCategory(t *testing.T) {
 		})
 	}
 }
+
+func TestGitHubIssueSyncHashMatchesEquivalentIssuePayload(t *testing.T) {
+	outboundHash := githubIssueSyncHash("Ship account settings", "Line one\r\nLine two", "closed")
+	inboundHash := githubIssueSyncHash("Ship account settings", "Line one\nLine two", "closed")
+
+	require.Equal(t, outboundHash, inboundHash)
+}
+
+func TestShouldIgnoreFortyOneIssueEcho(t *testing.T) {
+	syncHash := githubIssueSyncHash("Fix webhook loop", "Body", "closed")
+
+	require.True(t, shouldIgnoreFortyOneIssueEcho("closed", "fortyone", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "github", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "fortyone", syncHash, githubIssueSyncHash("Fix webhook loop", "Changed", "closed")))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("labeled", "fortyone", syncHash, syncHash))
+}

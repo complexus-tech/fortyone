@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
@@ -25,6 +26,7 @@ import {
   LinkIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
+  SlackIcon,
   SprintsIcon,
 } from "icons";
 import {
@@ -90,6 +92,13 @@ const DEBOUNCE_DELAY = 1000;
 
 const metadataText = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
+
+type RequestSourceBannerDetails = {
+  icon: ReactNode;
+  openLabel: string;
+  primaryText: string;
+  secondaryText: string | null;
+};
 
 const CommentRow = ({ comment }: { comment: GitHubComment }) => (
   <Box className="relative pb-4">
@@ -158,9 +167,9 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
     <Flex align="start" className="mb-3">
       <Box className="bg-surface z-1 flex aspect-square items-center rounded-full p-[0.3rem]">
         <Avatar
-          name={session?.user?.name ?? undefined}
+          name={session?.user.name ?? undefined}
           size="xs"
-          src={session?.user?.image ?? undefined}
+          src={session?.user.image ?? undefined}
         />
       </Box>
       <Flex
@@ -190,19 +199,23 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
   );
 };
 
-const RequestGitHubBanner = ({
+const RequestIntegrationBanner = ({
   canEditRequest,
-  issueNumber,
+  icon,
   onAccept,
   onDecline,
-  repositoryName,
+  openLabel,
+  primaryText,
+  secondaryText,
   sourceUrl,
 }: {
   canEditRequest: boolean;
-  issueNumber: string;
+  icon: ReactNode;
   onAccept: () => void;
   onDecline: () => void;
-  repositoryName: string | null;
+  openLabel: string;
+  primaryText: string;
+  secondaryText: string | null;
   sourceUrl?: string;
 }) => (
   <Box className="mb-3 space-y-2">
@@ -212,13 +225,13 @@ const RequestGitHubBanner = ({
       justify="between"
     >
       <Flex align="center" className="min-w-0" gap={2}>
-        <GitHubIcon className="text-primary h-5 shrink-0" />
+        {icon}
         <Text className="line-clamp-1" color="primary" fontWeight="medium">
-          Issue synced with GitHub {issueNumber}
+          {primaryText}
         </Text>
-        {repositoryName ? (
+        {secondaryText ? (
           <Text className="line-clamp-1" color="muted">
-            {repositoryName}
+            {secondaryText}
           </Text>
         ) : null}
       </Flex>
@@ -229,7 +242,7 @@ const RequestGitHubBanner = ({
             href={sourceUrl}
             rel="noopener noreferrer"
             target="_blank"
-            title="Open on GitHub"
+            title={openLabel}
           >
             <LinkIcon className="text-current" />
           </a>
@@ -249,99 +262,8 @@ const RequestGitHubBanner = ({
                     window.open(sourceUrl, "_blank", "noopener,noreferrer");
                   }}
                 >
-                  <GitHubIcon className="text-icon h-5 w-auto" />
-                  Open on GitHub
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    navigator.clipboard.writeText(sourceUrl);
-                  }}
-                >
-                  <CopyIcon className="text-icon h-5 w-auto" />
-                  Copy link
-                </Menu.Item>
-                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon className="text-icon h-5 w-auto" />
-                  Accept request
-                </Menu.Item>
-                <Menu.Item
-                  className="text-danger"
-                  disabled={!canEditRequest}
-                  onSelect={onDecline}
-                >
-                  <CloseIcon className="text-danger" />
-                  Decline request...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
-      ) : null}
-    </Flex>
-  </Box>
-);
-
-const RequestSourceBanner = ({
-  canEditRequest,
-  channel,
-  onAccept,
-  onDecline,
-  provider,
-  sourceUrl,
-}: {
-  canEditRequest: boolean;
-  sourceUrl?: string;
-  channel: string | null;
-  onAccept: () => void;
-  onDecline: () => void;
-  provider: "slack" | "intercom";
-}) => (
-  <Box className="mb-3 space-y-2">
-    <Flex
-      align="center"
-      className="border-border bg-surface-muted/40 rounded-xl border px-4 py-3"
-      justify="between"
-    >
-      <Flex align="center" className="min-w-0" gap={2}>
-        <ChatIcon className="h-5 shrink-0" />
-        <Text className="line-clamp-1 font-medium">
-          Story from {provider === "slack" ? "Slack" : "Intercom"}
-        </Text>
-        {channel ? (
-          <Text className="line-clamp-1" color="muted">
-            #{channel}
-          </Text>
-        ) : null}
-      </Flex>
-      {sourceUrl ? (
-        <Flex align="center" gap={1}>
-          <a
-            className="text-muted hover:text-foreground rounded-md p-1 transition"
-            href={sourceUrl}
-            rel="noopener noreferrer"
-            target="_blank"
-            title="Open source"
-          >
-            <LinkIcon className="h-5 text-current" />
-          </a>
-          <Menu>
-            <Menu.Button>
-              <button
-                className="text-muted hover:text-foreground rounded-md p-1 transition"
-                type="button"
-              >
-                <MoreHorizontalIcon className="h-5 text-current" />
-              </button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
-                <Menu.Item
-                  onSelect={() => {
-                    window.open(sourceUrl, "_blank", "noopener,noreferrer");
-                  }}
-                >
                   <LinkIcon className="text-icon h-5 w-auto" />
-                  Open source
+                  {openLabel}
                 </Menu.Item>
                 <Menu.Item
                   onSelect={() => {
@@ -376,10 +298,10 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
   const { data: comments = [], isLoading } =
     useRequestGitHubComments(requestId);
 
-  return (
-    <Box>
-      <GitHubCommentInput requestId={requestId} />
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <Box>
+        <GitHubCommentInput requestId={requestId} />
         <Box className="space-y-4">
           {Array.from({ length: 2 }).map((_, index) => (
             <Box className="flex gap-3" key={index}>
@@ -391,15 +313,64 @@ const GitHubComments = ({ requestId }: { requestId: string }) => {
             </Box>
           ))}
         </Box>
-      ) : comments.length > 0 ? (
+      </Box>
+    );
+  }
+
+  if (comments.length > 0) {
+    return (
+      <Box>
+        <GitHubCommentInput requestId={requestId} />
         <Box>
           {comments.map((comment) => (
             <CommentRow comment={comment} key={comment.id} />
           ))}
         </Box>
-      ) : null}
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <GitHubCommentInput requestId={requestId} />
     </Box>
   );
+};
+
+const getRequestSourceBanner = ({
+  issueNumber,
+  provider,
+  repositoryName,
+  slackChannel,
+}: {
+  issueNumber: string;
+  provider: IntegrationRequest["provider"];
+  repositoryName: string | null;
+  slackChannel: string | null;
+}): RequestSourceBannerDetails => {
+  switch (provider) {
+    case "github":
+      return {
+        icon: <GitHubIcon className="text-primary h-5 shrink-0" />,
+        openLabel: "Open on GitHub",
+        primaryText: `Issue synced with GitHub ${issueNumber}`.trim(),
+        secondaryText: repositoryName,
+      };
+    case "slack":
+      return {
+        icon: <SlackIcon className="h-5 shrink-0" />,
+        openLabel: "Open on Slack",
+        primaryText: "Message synced with Slack",
+        secondaryText: slackChannel ? `#${slackChannel}` : null,
+      };
+    case "intercom":
+      return {
+        icon: <ChatIcon className="text-primary h-5 shrink-0" />,
+        openLabel: "Open source",
+        primaryText: "Story from Intercom",
+        secondaryText: null,
+      };
+  }
 };
 
 type RequestPropertiesProps = {
@@ -964,6 +935,12 @@ export const IntegrationRequestDetails = ({
   const repositoryName = metadataText(request.metadata.repository_full_name);
   const slackChannel = metadataText(request.metadata.slack_channel);
   const issueNumber = request.sourceNumber ? `#${request.sourceNumber}` : "";
+  const sourceBanner = getRequestSourceBanner({
+    issueNumber,
+    provider: request.provider,
+    repositoryName,
+    slackChannel,
+  });
   const selectedStatus = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === request.assigneeId);
   const canEditRequest = request.status === "pending";
@@ -988,27 +965,16 @@ export const IntegrationRequestDetails = ({
         <Box className="min-w-0 flex-1">
           <BodyContainer className="h-dvh overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
-              {request.provider === "github" ? (
-                <RequestGitHubBanner
-                  canEditRequest={canEditRequest}
-                  issueNumber={issueNumber}
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
-                  repositoryName={repositoryName}
-                  sourceUrl={request.sourceUrl}
-                />
-              ) : null}
-              {request.provider === "slack" ||
-              request.provider === "intercom" ? (
-                <RequestSourceBanner
-                  canEditRequest={canEditRequest}
-                  channel={slackChannel}
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
-                  provider={request.provider}
-                  sourceUrl={request.sourceUrl}
-                />
-              ) : null}
+              <RequestIntegrationBanner
+                canEditRequest={canEditRequest}
+                icon={sourceBanner.icon}
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+                openLabel={sourceBanner.openLabel}
+                primaryText={sourceBanner.primaryText}
+                secondaryText={sourceBanner.secondaryText}
+                sourceUrl={request.sourceUrl}
+              />
               <TextEditor
                 asTitle
                 className="text-foreground mb-8 text-3xl md:text-4xl"

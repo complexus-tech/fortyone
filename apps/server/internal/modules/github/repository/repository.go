@@ -133,14 +133,16 @@ type RepoByExternalRow struct {
 }
 
 type issueStoryLinkRow struct {
-	ID           uuid.UUID `db:"id"`
-	StoryID      uuid.UUID `db:"story_id"`
-	RepositoryID uuid.UUID `db:"repository_id"`
-	GitHubID     int64     `db:"github_id"`
-	GitHubNumber int       `db:"github_number"`
-	URL          string    `db:"url"`
-	Title        *string   `db:"title"`
-	State        *string   `db:"state"`
+	ID             uuid.UUID `db:"id"`
+	StoryID        uuid.UUID `db:"story_id"`
+	RepositoryID   uuid.UUID `db:"repository_id"`
+	GitHubID       int64     `db:"github_id"`
+	GitHubNumber   int       `db:"github_number"`
+	URL            string    `db:"url"`
+	Title          *string   `db:"title"`
+	State          *string   `db:"state"`
+	LastSyncedFrom *string   `db:"last_synced_from"`
+	LastSyncHash   *string   `db:"last_sync_hash"`
 }
 
 func (r *Repo) EnsureStoryLink(ctx context.Context, storyID uuid.UUID, title *string, url string) error {
@@ -722,7 +724,7 @@ func (r *Repo) FindStoryLink(ctx context.Context, repositoryID uuid.UUID, extern
 func (r *Repo) FindIssueStoryLinkByStoryID(ctx context.Context, workspaceID, storyID, repositoryID uuid.UUID) (issueStoryLinkRow, error) {
 	var row issueStoryLinkRow
 	query := `
-		SELECT id, story_id, repository_id, github_id, github_number, url, title, state
+		SELECT id, story_id, repository_id, github_id, github_number, url, title, state, last_synced_from, last_sync_hash
 		FROM github_story_links
 		WHERE workspace_id = $1
 		  AND story_id = $2
@@ -733,6 +735,31 @@ func (r *Repo) FindIssueStoryLinkByStoryID(ctx context.Context, workspaceID, sto
 	`
 	err := r.db.GetContext(ctx, &row, query, workspaceID, storyID, repositoryID)
 	return row, err
+}
+
+func (r *Repo) FindIssueStoryLinkByExternalID(ctx context.Context, repositoryID uuid.UUID, githubID int64) (issueStoryLinkRow, error) {
+	var row issueStoryLinkRow
+	query := `
+		SELECT id, story_id, repository_id, github_id, github_number, url, title, state, last_synced_from, last_sync_hash
+		FROM github_story_links
+		WHERE repository_id = $1
+		  AND external_type = 'issue'
+		  AND github_id = $2
+		LIMIT 1
+	`
+	err := r.db.GetContext(ctx, &row, query, repositoryID, githubID)
+	return row, err
+}
+
+func (r *Repo) UpdateStoryLinkSyncState(ctx context.Context, linkID uuid.UUID, source, syncHash string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE github_story_links
+		SET last_synced_from = $2,
+		    last_sync_hash = $3,
+		    updated_at = NOW()
+		WHERE id = $1
+	`, linkID, source, syncHash)
+	return err
 }
 
 func (r *Repo) CreateOrUpdateExternalStory(ctx context.Context, workspaceID, teamID, reporterID, repositoryID uuid.UUID, title, description string, externalType string, githubID int64, githubNumber int, url string) (uuid.UUID, error) {

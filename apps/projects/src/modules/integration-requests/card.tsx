@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "lib";
-import { ChatIcon, CheckIcon, CloseIcon, GitHubIcon } from "icons";
+import { ChatIcon, CheckIcon, CloseIcon, GitHubIcon, SlackIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +22,19 @@ const providerLabel = (provider: IntegrationRequest["provider"]) => {
       return "Intercom";
     default:
       return "Integration";
+  }
+};
+
+const providerIcon = (provider: IntegrationRequest["provider"]) => {
+  switch (provider) {
+    case "github":
+      return <GitHubIcon className="h-4 shrink-0" />;
+    case "slack":
+      return <SlackIcon className="h-4 shrink-0" />;
+    case "intercom":
+      return <ChatIcon className="h-4 shrink-0" />;
+    default:
+      return null;
   }
 };
 
@@ -68,11 +81,7 @@ export const IntegrationRequestCard = ({
             </Flex>
             <Flex align="center" gap={3} justify="between">
               <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                {request.provider === "github" ? (
-                  <GitHubIcon className="h-4 shrink-0" />
-                ) : request.provider === "slack" ? (
-                  <ChatIcon className="h-4 shrink-0" />
-                ) : null}
+                {providerIcon(request.provider)}
                 <Text className="line-clamp-1" color="muted">
                   {providerLabel(request.provider)} {request.sourceType}{" "}
                   {sourceNumber}
@@ -87,7 +96,9 @@ export const IntegrationRequestCard = ({
         <ContextMenu.Group>
           <ContextMenu.Item
             disabled={request.status !== "pending"}
-            onSelect={() => acceptRequest.mutate(request.id)}
+            onSelect={() => {
+              acceptRequest.mutate(request.id);
+            }}
           >
             <CheckIcon />
             Accept
