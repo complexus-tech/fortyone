@@ -126,7 +126,7 @@ const AssociationActivityBadge = ({
   label: string;
 }) => (
   <Badge
-    className="shrink-0 px-2 text-[0.75rem] uppercase"
+    className="shrink-0 px-2 text-[0.75rem] font-semibold uppercase"
     color={getAssociationBadgeColor(field)}
     rounded="sm"
   >
@@ -136,7 +136,9 @@ const AssociationActivityBadge = ({
 
 const getActivityLabelIds = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
-  return value.filter((labelId): labelId is string => typeof labelId === "string");
+  return value.filter(
+    (labelId): labelId is string => typeof labelId === "string",
+  );
 };
 
 const getLabelActivityDisplayValue = (labels: Label[]) => {
@@ -169,11 +171,9 @@ const ActivityLabelValue = ({ labels }: { labels: Label[] }) => {
         rounded="xl"
         variant="outline"
       >
-        <TagsIcon className="h-4" style={{ color: firstLabel?.color }} />
+        <TagsIcon className="h-4" style={{ color: firstLabel.color }} />
         <span className="inline-block max-w-[12ch] truncate">
-          {labels.length === 1
-            ? firstLabel.name
-            : `${labels.length} labels`}
+          {labels.length === 1 ? firstLabel.name : `${labels.length} labels`}
         </span>
       </Badge>
     </Tooltip>
@@ -463,7 +463,9 @@ export const Activity = ({
             segment.type === "oldValue" &&
             ASSOCIATION_ACTIVITY_FIELDS.has(field)
           ) {
-            return <AssociationActivityBadge field={field} label={segment.value} />;
+            return (
+              <AssociationActivityBadge field={field} label={segment.value} />
+            );
           }
 
           if (segment.type === "fieldLabel") {
