@@ -12,14 +12,13 @@ import {
   WarningIcon,
 } from "icons";
 import { cn } from "lib";
-import { toast } from "sonner";
-import { RowWrapper } from "@/components/ui";
-import { useRemoveAssociationMutation } from "@/modules/story/hooks/remove-association-mutation";
-import type { StoryAssociation } from "../types";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import Link from "next/link";
-import { slugify } from "@/utils";
+import { RowWrapper } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
+import { useRemoveAssociationMutation } from "@/modules/story/hooks/remove-association-mutation";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import { slugify } from "@/utils";
+import type { StoryAssociation } from "../types";
 
 const AssociationBadge = ({
   association,
@@ -57,7 +56,7 @@ const AssociationBadge = ({
 
   return (
     <Badge
-      className="d dark:text-opacity-70 shrink-0 px-1 text-sm font-bold uppercase"
+      className="d dark:text-opacity-70 shrink-0 px-2 text-[0.8125rem] font-bold uppercase"
       color={color}
       rounded="sm"
     >

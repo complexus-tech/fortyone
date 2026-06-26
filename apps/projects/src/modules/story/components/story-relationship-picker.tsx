@@ -290,7 +290,7 @@ export const StoryRelationshipPicker = ({
               <Button
                 align="left"
                 className={cn(
-                  "dark:bg-surface-elevated/60 dark:hover:bg-surface-elevated/80 h-auto min-h-[4.75rem] min-w-24 shrink-0 flex-col items-start justify-center gap-1.5 px-3 py-2 text-left text-base leading-snug",
+                  "dark:bg-surface-elevated/60 dark:hover:bg-surface-elevated/80 h-auto min-h-[4.75rem] min-w-24 shrink-0 flex-col items-start justify-center gap-1.5 px-3 py-2 text-left text-[0.95rem] leading-snug",
                   {
                     "bg-transparent hover:bg-transparent dark:bg-surface-elevated/80 ring-ring ring-2":
                       selectedOption.label === option.label,
