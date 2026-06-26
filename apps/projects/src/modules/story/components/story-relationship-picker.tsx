@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
-import { Box, Button, Flex, Input, Skeleton, Text } from "ui";
+import { useState } from "react";
+import { Box, Button, Flex, Input, Popover, Skeleton, Text } from "ui";
 import {
   CloseIcon,
   CopyIcon,
@@ -13,6 +13,7 @@ import {
   WarningIcon,
 } from "icons";
 import { cn } from "lib";
+import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import type { Story } from "@/modules/stories/types";
 import { useAddAssociationMutation } from "../hooks/add-association-mutation";
@@ -31,36 +32,37 @@ const RELATIONSHIP_OPTIONS: RelationshipOption[] = [
   {
     direction: "outgoing",
     icon: <LinkIcon className="h-5" />,
-    label: "relates to",
+    label: "Relates to",
     type: "related",
   },
   {
     direction: "outgoing",
     icon: <WarningIcon className="text-warning h-5" />,
-    label: "blocks",
+    label: "Blocks",
     type: "blocking",
   },
   {
     direction: "incoming",
     icon: <ErrorIcon className="text-danger h-5" />,
-    label: "is blocked by",
+    label: "Blocked by",
     type: "blocking",
   },
   {
     direction: "outgoing",
     icon: <DuplicateIcon className="text-warning h-5" />,
-    label: "duplicates",
+    label: "Duplicates",
     type: "duplicate",
   },
   {
     direction: "incoming",
     icon: <CopyIcon className="text-warning h-5" />,
-    label: "is duplicated by",
+    label: "Duplicated by",
     type: "duplicate",
   },
 ];
 
 const SEARCH_PAGE_SIZE = 8;
+const EMPTY_ASSOCIATION_STORY_IDS: string[] = [];
 
 const StorySearchSkeleton = () => (
   <Flex
@@ -78,10 +80,81 @@ const StorySearchSkeleton = () => (
 const getStoryKey = (story: Story, teamCode: string) =>
   `${story.team?.code ?? teamCode}-${story.sequenceId}`;
 
+const StorySearchResults = ({
+  isFetching,
+  isPending,
+  onSelectStory,
+  query,
+  statusColorById,
+  stories,
+  teamCode,
+}: {
+  isFetching: boolean;
+  isPending: boolean;
+  onSelectStory: (story: Story) => void;
+  query: string;
+  statusColorById: Map<string, string>;
+  stories: Story[];
+  teamCode: string;
+}) => {
+  if (!query) {
+    return null;
+  }
+
+  if (isFetching) {
+    return (
+      <Box className="mt-3">
+        <StorySearchSkeleton />
+        <StorySearchSkeleton />
+      </Box>
+    );
+  }
+
+  if (stories.length === 0) {
+    return (
+      <Box className="mt-3">
+        <Text className="px-1 py-2" color="muted" fontSize="sm">
+          No matching stories in {teamCode}.
+        </Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box className="mt-3">
+      {stories.map((story) => (
+        <button
+          className="hover:bg-state-hover focus-visible:bg-state-active flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left focus-visible:outline-0"
+          disabled={isPending}
+          key={story.id}
+          onClick={() => {
+            onSelectStory(story);
+          }}
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+            className="bg-warning size-3.5 shrink-0 rounded-full"
+            style={{
+              backgroundColor: statusColorById.get(story.statusId),
+            }}
+          />
+          <Text className="line-clamp-1">
+            <span className="text-text-muted mr-2">
+              {getStoryKey(story, teamCode)}
+            </span>
+            {story.title}
+          </Text>
+        </button>
+      ))}
+    </Box>
+  );
+};
+
 export const StoryRelationshipPicker = ({
   currentStoryId,
   currentStoryTitle,
-  existingAssociationStoryIds = [],
+  existingAssociationStoryIds = EMPTY_ASSOCIATION_STORY_IDS,
   teamCode,
   teamId,
 }: {
@@ -98,6 +171,7 @@ export const StoryRelationshipPicker = ({
   );
   const addAssociation = useAddAssociationMutation();
   const trimmedQuery = query.trim();
+  const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data, isFetching } = useSearch({
     pageSize: SEARCH_PAGE_SIZE,
     query: trimmedQuery,
@@ -105,16 +179,12 @@ export const StoryRelationshipPicker = ({
     type: "stories",
   });
 
-  const existingIds = useMemo(
-    () => new Set(existingAssociationStoryIds),
-    [existingAssociationStoryIds],
+  const existingIds = new Set(existingAssociationStoryIds);
+  const stories = (data?.stories ?? []).filter(
+    (story) => story.id !== currentStoryId && !existingIds.has(story.id),
   );
-  const stories = useMemo(
-    () =>
-      (data?.stories ?? []).filter(
-        (story) => story.id !== currentStoryId && !existingIds.has(story.id),
-      ),
-    [currentStoryId, data?.stories, existingIds],
+  const statusColorById = new Map(
+    statuses.map((status) => [status.id, status.color]),
   );
 
   const handleSelectStory = (story: Story) => {
@@ -140,86 +210,34 @@ export const StoryRelationshipPicker = ({
     });
   };
 
-  const renderSearchResults = () => {
-    if (!trimmedQuery) {
-      return null;
-    }
-
-    if (isFetching) {
-      return (
-        <Box className="mt-3">
-          <StorySearchSkeleton />
-          <StorySearchSkeleton />
-        </Box>
-      );
-    }
-
-    if (stories.length === 0) {
-      return (
-        <Box className="mt-3">
-          <Text className="px-1 py-2" color="muted" fontSize="sm">
-            No matching stories in {teamCode}.
-          </Text>
-        </Box>
-      );
-    }
-
-    return (
-      <Box className="mt-3">
-        {stories.map((story) => (
-          <button
-            className="hover:bg-state-hover focus-visible:bg-state-active flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left focus-visible:outline-0"
-            disabled={addAssociation.isPending}
-            key={story.id}
-            onClick={() => {
-              handleSelectStory(story);
-            }}
-            type="button"
-          >
-            <span
-              aria-hidden="true"
-              className="bg-warning size-4 shrink-0 rounded-full"
-            />
-            <Text className="line-clamp-1" fontSize="lg">
-              <span className="mr-2 font-semibold">
-                {getStoryKey(story, teamCode)}
-              </span>
-              {story.title}
-            </Text>
-          </button>
-        ))}
-      </Box>
-    );
-  };
-
   return (
-    <Box className="relative">
-      <Button
-        active={isOpen}
-        color="tertiary"
-        leftIcon={<LinkIcon className="h-4" />}
-        onClick={() => {
-          setIsOpen((value) => !value);
-        }}
-        size="sm"
-        variant="naked"
-      >
-        Associate
-      </Button>
+    <Popover onOpenChange={setIsOpen} open={isOpen}>
+      <Popover.Trigger asChild>
+        <Button
+          active={isOpen}
+          color="tertiary"
+          leftIcon={<LinkIcon className="h-4" />}
+          size="sm"
+          variant="naked"
+        >
+          Associate
+        </Button>
+      </Popover.Trigger>
 
-      {isOpen ? (
-        <Box className="border-border bg-surface shadow-shadow absolute right-0 z-20 mt-2 w-[min(42rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border-[0.5px] shadow-sm">
-          <Flex
-            align="center"
-            className="border-border border-b-[0.5px] px-4 py-3"
-            justify="between"
-          >
+      <Popover.Content
+        align="end"
+        className="z-[100] w-[min(31rem,calc(100vw-2rem))] overflow-hidden p-0"
+        sideOffset={8}
+      >
+        <Box className="p-4">
+          <Flex align="start" className="mb-5" justify="between">
             <Text
               className="line-clamp-1 pr-4"
-              fontSize="sm"
+              color="muted"
               fontWeight="semibold"
+              title={currentStoryTitle}
             >
-              This story...
+              {currentStoryTitle}
             </Text>
             <Button
               aria-label="Close relationship picker"
@@ -236,51 +254,50 @@ export const StoryRelationshipPicker = ({
             </Button>
           </Flex>
 
-          <Box className="p-4">
-            <Text
-              className="mb-3 line-clamp-1"
-              color="muted"
-              title={currentStoryTitle}
-            >
-              {currentStoryTitle}
-            </Text>
-            <Flex className="mb-4" gap={2} wrap>
-              {RELATIONSHIP_OPTIONS.map((option) => (
-                <Button
-                  active={selectedOption.label === option.label}
-                  className={cn(
-                    "h-auto min-h-16 flex-col items-start justify-center gap-1 px-3 py-2 text-left",
-                    {
-                      "ring-ring ring-2": selectedOption.label === option.label,
-                    },
-                  )}
-                  color="tertiary"
-                  key={option.label}
-                  onClick={() => {
-                    setSelectedOption(option);
-                  }}
-                  type="button"
-                  variant="outline"
-                >
-                  {option.icon}
-                  <span>{option.label}</span>
-                </Button>
-              ))}
-            </Flex>
-            <Input
-              autoFocus
-              onChange={(event) => {
-                setQuery(event.target.value);
-              }}
-              placeholder="Search Story Title or ID"
-              rightIcon={<SearchIcon className="text-icon h-5" />}
-              value={query}
-            />
+          <Flex className="mb-4" gap={2} wrap>
+            {RELATIONSHIP_OPTIONS.map((option) => (
+              <Button
+                active={selectedOption.label === option.label}
+                className={cn(
+                  "h-auto min-h-20 min-w-[7.25rem] flex-col items-start justify-center gap-1 px-3 py-2 text-left text-sm leading-tight",
+                  {
+                    "ring-ring ring-2": selectedOption.label === option.label,
+                  },
+                )}
+                color="tertiary"
+                key={option.label}
+                onClick={() => {
+                  setSelectedOption(option);
+                }}
+                type="button"
+                variant="outline"
+              >
+                {option.icon}
+                <span>{option.label}</span>
+              </Button>
+            ))}
+          </Flex>
+          <Input
+            autoFocus
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
+            placeholder="Search Story Title or ID"
+            rightIcon={<SearchIcon className="text-icon h-5" />}
+            value={query}
+          />
 
-            {renderSearchResults()}
-          </Box>
+          <StorySearchResults
+            isFetching={isFetching}
+            isPending={addAssociation.isPending}
+            onSelectStory={handleSelectStory}
+            query={trimmedQuery}
+            statusColorById={statusColorById}
+            stories={stories}
+            teamCode={teamCode}
+          />
         </Box>
-      ) : null}
-    </Box>
+      </Popover.Content>
+    </Popover>
   );
 };
