@@ -29,7 +29,7 @@ export const TeamOptionsProvider = ({
     groupBy: "priority",
     orderBy: "priority",
     showEmptyGroups: true,
-    showSubStories: false,
+    showSubStories: true,
     displayColumns: [
       "ID",
       "Status",
@@ -44,7 +44,7 @@ export const TeamOptionsProvider = ({
     ],
   };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
-    `teams:backlog:view-options:${layout}`,
+    `teams:backlog:view-options:v2:${layout}`,
     initialOptions,
   );
   const { filters, resetFilters, setFilters } = useStoriesFilters();

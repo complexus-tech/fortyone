@@ -155,7 +155,6 @@ const StorySearchResults = ({
 
 export const StoryRelationshipPicker = ({
   currentStoryId,
-  currentStoryTitle,
   existingAssociationStoryIds = EMPTY_ASSOCIATION_STORY_IDS,
   teamCode,
   teamId,
@@ -266,12 +265,11 @@ export const StoryRelationshipPicker = ({
           <Box className="p-4">
             <Flex align="center" className="mb-4 min-w-0" justify="between">
               <Text
-                className="line-clamp-1 min-w-0 flex-1 pr-3"
+                className="min-w-0 flex-1 pr-3"
                 color="muted"
                 fontWeight="semibold"
-                title={currentStoryTitle}
               >
-                {currentStoryTitle}
+                Add association
               </Text>
               <Button
                 aria-label="Close relationship picker"

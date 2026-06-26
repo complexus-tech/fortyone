@@ -171,6 +171,35 @@ describe("StoryRelationshipPicker", () => {
     } as unknown as ReturnType<typeof useTeamStatuses>);
   });
 
+  it("uses a fixed add association heading instead of the current story title", () => {
+    mockedUseAddAssociationMutation.mockReturnValue({
+      isPending: false,
+      mutate: jest.fn(),
+      mutateAsync: jest.fn(),
+    } as unknown as ReturnType<typeof useAddAssociationMutation>);
+    mockedUseSearch.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSearch>);
+
+    const longTitle =
+      "A very long story title that would otherwise run into the close button and leave awkward space";
+
+    render(
+      <StoryRelationshipPicker
+        currentStoryId="story-1"
+        currentStoryTitle={longTitle}
+        teamCode="QIT"
+        teamId="team-1"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /association/i }));
+
+    expect(screen.getByText("Add association")).toBeVisible();
+    expect(screen.queryByText(longTitle)).not.toBeInTheDocument();
+  });
+
   it("searches stories in the same team and creates a reversed blocking association for blocked-by", () => {
     const mutate = jest.fn();
 
