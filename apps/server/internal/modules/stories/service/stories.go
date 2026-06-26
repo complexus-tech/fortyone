@@ -57,6 +57,7 @@ type Repository interface {
 	GetStatusCategory(ctx context.Context, statusID string) (string, error)
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
+	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
 }
@@ -1188,6 +1189,24 @@ func (s *Service) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, as
 	assoc, err := s.repo.AddAssociation(ctx, fromID, toID, associationType, workspaceID)
 	if err != nil {
 		span.RecordError(err)
+		return CoreStoryAssociation{}, err
+	}
+
+	return assoc, nil
+}
+
+// UpdateAssociation updates an association between two stories.
+func (s *Service) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
+	s.log.Info(ctx, "business.core.stories.UpdateAssociation")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.UpdateAssociation")
+	defer span.End()
+
+	if fromID == toID {
+		return CoreStoryAssociation{}, fmt.Errorf("cannot associate story with itself")
+	}
+
+	assoc, err := s.repo.UpdateAssociation(ctx, associationID, fromID, toID, associationType, workspaceID)
+	if err != nil {
 		return CoreStoryAssociation{}, err
 	}
 

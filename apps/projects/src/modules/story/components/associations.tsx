@@ -13,12 +13,54 @@ import {
 } from "icons";
 import { cn } from "lib";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { RowWrapper } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import { useRemoveAssociationMutation } from "@/modules/story/hooks/remove-association-mutation";
+import { useUpdateAssociationMutation } from "@/modules/story/hooks/update-association-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { slugify } from "@/utils";
-import type { StoryAssociation } from "../types";
+import type { StoryAssociation, StoryAssociationType } from "../types";
+
+type AssociationOption = {
+  direction: "incoming" | "outgoing";
+  icon: ReactNode;
+  label: string;
+  type: StoryAssociationType;
+};
+
+const ASSOCIATION_OPTIONS: AssociationOption[] = [
+  {
+    direction: "outgoing",
+    icon: <LinkIcon />,
+    label: "Related...",
+    type: "related",
+  },
+  {
+    direction: "outgoing",
+    icon: <WarningIcon />,
+    label: "Blocks...",
+    type: "blocking",
+  },
+  {
+    direction: "incoming",
+    icon: <ErrorIcon />,
+    label: "Blocked by...",
+    type: "blocking",
+  },
+  {
+    direction: "outgoing",
+    icon: <DuplicateIcon />,
+    label: "Duplicate of...",
+    type: "duplicate",
+  },
+  {
+    direction: "incoming",
+    icon: <CopyIcon />,
+    label: "Duplicated by...",
+    type: "duplicate",
+  },
+];
 
 const AssociationBadge = ({
   association,
@@ -78,6 +120,7 @@ export const Associations = ({
 }) => {
   const { data: teams = [] } = useTeams();
   const { mutateAsync: removeAssociation } = useRemoveAssociationMutation();
+  const { mutate: updateAssociation } = useUpdateAssociationMutation();
   const { withWorkspace } = useWorkspacePath();
 
   return (
@@ -118,6 +161,32 @@ export const Associations = ({
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,
             )?.code;
+            const associatedStoryId =
+              assoc.fromStoryId === storyId
+                ? assoc.toStoryId
+                : assoc.fromStoryId;
+            const getAssociationPayload = (option: AssociationOption) =>
+              option.direction === "incoming"
+                ? {
+                    associationId: assoc.id,
+                    fromStoryId: associatedStoryId,
+                    storyId,
+                    toStoryId: storyId,
+                    type: option.type,
+                  }
+                : {
+                    associationId: assoc.id,
+                    fromStoryId: storyId,
+                    storyId,
+                    toStoryId: associatedStoryId,
+                    type: option.type,
+                  };
+            const isOptionActive = (option: AssociationOption) =>
+              assoc.type === option.type &&
+              (option.type === "related" ||
+                (option.direction === "outgoing"
+                  ? assoc.fromStoryId === storyId
+                  : assoc.toStoryId === storyId));
 
             return (
               <RowWrapper className="gap-8 px-1 py-2 md:px-1" key={assoc.id}>
@@ -165,23 +234,18 @@ export const Associations = ({
                       </Menu.Group>
                       <Menu.Separator />
                       <Menu.Group>
-                        <Menu.Item active onSelect={() => {}}>
-                          <LinkIcon /> Related...
-                        </Menu.Item>
-                        <Menu.Item onSelect={() => {}}>
-                          <WarningIcon />
-                          Blocks...
-                        </Menu.Item>
-                        <Menu.Item onSelect={() => {}}>
-                          <ErrorIcon />
-                          Blocked by...
-                        </Menu.Item>
-                        <Menu.Item onSelect={() => {}}>
-                          <DuplicateIcon /> Duplicate of...
-                        </Menu.Item>
-                        <Menu.Item onSelect={() => {}}>
-                          <CopyIcon /> Duplicated by...
-                        </Menu.Item>
+                        {ASSOCIATION_OPTIONS.map((option) => (
+                          <Menu.Item
+                            active={isOptionActive(option)}
+                            key={`${option.direction}-${option.type}`}
+                            onSelect={() => {
+                              updateAssociation(getAssociationPayload(option));
+                            }}
+                          >
+                            {option.icon}
+                            {option.label}
+                          </Menu.Item>
+                        ))}
                       </Menu.Group>
                       <Menu.Separator />
                       <Menu.Group>

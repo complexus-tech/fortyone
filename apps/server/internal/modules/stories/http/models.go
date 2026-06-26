@@ -473,6 +473,12 @@ type AppNewAssociation struct {
 	AssociationType string    `json:"type" validate:"required"`
 }
 
+type AppUpdateAssociation struct {
+	FromStoryID     uuid.UUID `json:"fromStoryId" validate:"required"`
+	ToStoryID       uuid.UUID `json:"toStoryId" validate:"required"`
+	AssociationType string    `json:"type" validate:"required"`
+}
+
 // StoryFilters represents filtering options for stories at the handler level
 type StoryFilters struct {
 	StatusIDs      []uuid.UUID `json:"statusIds"`

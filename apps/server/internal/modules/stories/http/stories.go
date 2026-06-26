@@ -1783,6 +1783,50 @@ func (h *Handlers) AddAssociation(ctx context.Context, w http.ResponseWriter, r 
 	return nil
 }
 
+func (h *Handlers) UpdateAssociation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storieshttp.handlers.UpdateAssociation")
+	defer span.End()
+
+	associationIdParam := web.Params(r, "associationId")
+	associationId, err := uuid.Parse(associationIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, errors.New("invalid association id"), http.StatusBadRequest)
+		return nil
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	var req AppUpdateAssociation
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	assoc, err := h.stories.UpdateAssociation(ctx, associationId, req.FromStoryID, req.ToStoryID, req.AssociationType, workspace.ID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	h.invalidateCacheForStory(ctx, workspace.ID, req.FromStoryID)
+	h.invalidateCacheForStory(ctx, workspace.ID, req.ToStoryID)
+
+	appAssoc := AppStoryAssociation{
+		ID:          assoc.ID,
+		FromStoryID: assoc.FromStoryID,
+		ToStoryID:   assoc.ToStoryID,
+		Type:        assoc.Type,
+		Story:       toAppStoryListItem(assoc.Story, nil),
+	}
+
+	web.Respond(ctx, w, appAssoc, http.StatusOK)
+	return nil
+}
+
 func (h *Handlers) RemoveAssociation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storieshttp.handlers.RemoveAssociation")
 	defer span.End()

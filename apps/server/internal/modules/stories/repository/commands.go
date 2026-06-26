@@ -1056,6 +1056,69 @@ func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, assoc
 	}, nil
 }
 
+// UpdateAssociation updates an association between two stories.
+func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
+	query := `
+		UPDATE story_associations
+		SET from_story_id = :from_story_id,
+			to_story_id = :to_story_id,
+			association_type = :association_type
+		WHERE id = :id AND workspace_id = :workspace_id
+		RETURNING id
+	`
+
+	params := map[string]any{
+		"id":               associationID,
+		"from_story_id":    fromID,
+		"to_story_id":      toID,
+		"association_type": associationType,
+		"workspace_id":     workspaceID,
+	}
+
+	var id uuid.UUID
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to prepare update association: %w", err)
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &id, params); err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to update association: %w", err)
+	}
+
+	toStory, err := r.getStoryById(ctx, toID, workspaceID)
+	if err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to fetch target story details: %w", err)
+	}
+
+	coreToStory := toCoreStory(toStory)
+
+	return stories.CoreStoryAssociation{
+		ID:          id,
+		FromStoryID: fromID,
+		ToStoryID:   toID,
+		Type:        associationType,
+		Story: stories.CoreStoryList{
+			ID:          coreToStory.ID,
+			SequenceID:  coreToStory.SequenceID,
+			Title:       coreToStory.Title,
+			Status:      coreToStory.Status,
+			Priority:    coreToStory.Priority,
+			Assignee:    coreToStory.Assignee,
+			Reporter:    coreToStory.Reporter,
+			Workspace:   coreToStory.Workspace,
+			Team:        coreToStory.Team,
+			CreatedAt:   coreToStory.CreatedAt,
+			UpdatedAt:   coreToStory.UpdatedAt,
+			CompletedAt: coreToStory.CompletedAt,
+			DeletedAt:   coreToStory.DeletedAt,
+			ArchivedAt:  coreToStory.ArchivedAt,
+			Labels:      coreToStory.Labels,
+			SubStories:  toCoreStoryList(coreToStory.SubStories),
+		},
+	}, nil
+}
+
 // RemoveAssociation removes an association between two stories.
 func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error {
 	query := `
