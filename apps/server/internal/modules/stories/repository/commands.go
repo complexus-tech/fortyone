@@ -2,6 +2,7 @@ package storiesrepository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
+
+const activityCompactionWindowSQL = "30 seconds"
 
 func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error) {
 	// Start a transaction
@@ -657,8 +660,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.recordActivity")
 	defer span.End()
 
-	// Prepare the base query for bulk insert
-	q := `
+	insertQuery := `
 		INSERT INTO story_activities (
 			story_id, 
 			activity_type, 
@@ -683,6 +685,27 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 		)
 		RETURNING story_activities.*;
 	`
+	updateQuery := `
+		UPDATE story_activities
+		SET
+			current_value = :current_value,
+			new_value = :new_value,
+			reason = COALESCE(:reason, reason),
+			created_at = NOW()
+		WHERE activity_id = (
+			SELECT activity_id
+			FROM story_activities
+			WHERE story_id = :story_id
+				AND user_id = :user_id
+				AND workspace_id IS NOT DISTINCT FROM :workspace_id
+				AND activity_type = :activity_type
+				AND field_changed = :field_changed
+				AND created_at >= NOW() - INTERVAL '` + activityCompactionWindowSQL + `'
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		RETURNING story_activities.*;
+	`
 
 	// Start a transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
@@ -695,21 +718,44 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 		}
 	}()
 
-	// Prepare the statement
-	stmt, err := tx.PrepareNamedContext(ctx, q)
+	insertStmt, err := tx.PrepareNamedContext(ctx, insertQuery)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
-	defer stmt.Close()
+	defer insertStmt.Close()
+
+	updateStmt, err := tx.PrepareNamedContext(ctx, updateQuery)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to prepare activity compaction statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare activity compaction statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return nil, err
+	}
+	defer updateStmt.Close()
 
 	// Insert each activity and collect results
 	var result []dbActivity
 	for _, activity := range activities {
 		var da dbActivity
-		if err := stmt.GetContext(ctx, &da, toDBActivity(activity)); err != nil {
+		dbActivity := toDBActivity(activity)
+		if shouldCompactActivity(activity) {
+			err := updateStmt.GetContext(ctx, &da, dbActivity)
+			if err == nil {
+				result = append(result, da)
+				continue
+			}
+			if !errors.Is(err, sql.ErrNoRows) {
+				errMsg := fmt.Sprintf("Failed to compact activity: %s", err)
+				r.log.Error(ctx, errMsg)
+				span.RecordError(errors.New("failed to compact activity"), trace.WithAttributes(attribute.String("error", errMsg)))
+				return nil, err
+			}
+		}
+
+		if err := insertStmt.GetContext(ctx, &da, dbActivity); err != nil {
 			errMsg := fmt.Sprintf("Failed to insert activity: %s", err)
 			r.log.Error(ctx, errMsg)
 			span.RecordError(errors.New("failed to insert activity"), trace.WithAttributes(attribute.String("error", errMsg)))
@@ -729,6 +775,10 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 	))
 
 	return result, nil
+}
+
+func shouldCompactActivity(activity stories.CoreActivity) bool {
+	return activity.Type == "update" && activity.Field != ""
 }
 
 // GetActivitiesWithUser returns activities for a given story ID with user details and pagination.
@@ -1120,10 +1170,11 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 }
 
 // RemoveAssociation removes an association between two stories.
-func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error {
+func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
 	query := `
 		DELETE FROM story_associations
 		WHERE id = :id AND workspace_id = :workspace_id
+		RETURNING id, from_story_id, to_story_id, association_type
 	`
 
 	params := map[string]any{
@@ -1133,15 +1184,26 @@ func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("failed to prepare delete association: %w", err)
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to prepare delete association: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
-		return fmt.Errorf("failed to delete association: %w", err)
+	var association struct {
+		ID          uuid.UUID `db:"id"`
+		FromStoryID uuid.UUID `db:"from_story_id"`
+		ToStoryID   uuid.UUID `db:"to_story_id"`
+		Type        string    `db:"association_type"`
+	}
+	if err := stmt.GetContext(ctx, &association, params); err != nil {
+		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to delete association: %w", err)
 	}
 
-	return nil
+	return stories.CoreStoryAssociation{
+		ID:          association.ID,
+		FromStoryID: association.FromStoryID,
+		ToStoryID:   association.ToStoryID,
+		Type:        association.Type,
+	}, nil
 }
 
 // Helper to convert []CoreStoryList (from CoreSingleStory.SubStories) back to []CoreStoryList

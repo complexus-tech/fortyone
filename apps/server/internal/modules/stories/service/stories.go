@@ -58,7 +58,7 @@ type Repository interface {
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
-	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error
+	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
 }
 
@@ -236,6 +236,18 @@ func (s *Service) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uu
 	if err := s.repo.UpdateLabels(ctx, id, workspaceId, labels); err != nil {
 		span.RecordError(err)
 		return err
+	}
+	actorID, _ := auth.GetUserID(ctx)
+	if err := s.RecordActivity(ctx, CoreActivity{
+		StoryID:      id,
+		Type:         "update",
+		Field:        "labels",
+		CurrentValue: s.formatLabelActivityValue(labels),
+		NewValue:     labels,
+		UserID:       actorID,
+		WorkspaceID:  workspaceId,
+	}); err != nil {
+		span.RecordError(err)
 	}
 	return nil
 }
@@ -1191,6 +1203,9 @@ func (s *Service) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, as
 		span.RecordError(err)
 		return CoreStoryAssociation{}, err
 	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+		span.RecordError(err)
+	}
 
 	return assoc, nil
 }
@@ -1209,6 +1224,9 @@ func (s *Service) UpdateAssociation(ctx context.Context, associationID, fromID, 
 	if err != nil {
 		return CoreStoryAssociation{}, err
 	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+		span.RecordError(err)
+	}
 
 	return assoc, nil
 }
@@ -1219,13 +1237,78 @@ func (s *Service) RemoveAssociation(ctx context.Context, associationID, workspac
 	ctx, span := web.AddSpan(ctx, "business.core.stories.RemoveAssociation")
 	defer span.End()
 
-	err := s.repo.RemoveAssociation(ctx, associationID, workspaceID)
+	assoc, err := s.repo.RemoveAssociation(ctx, associationID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+		span.RecordError(err)
+	}
 
 	return nil
+}
+
+func (s *Service) formatLabelActivityValue(labels []uuid.UUID) string {
+	if len(labels) == 1 {
+		return "1 label"
+	}
+	return fmt.Sprintf("%d labels", len(labels))
+}
+
+func (s *Service) recordAssociationActivities(ctx context.Context, assoc CoreStoryAssociation, workspaceID uuid.UUID) error {
+	actorID, _ := auth.GetUserID(ctx)
+	activities := []CoreActivity{
+		{
+			StoryID:      assoc.FromStoryID,
+			Type:         "update",
+			Field:        outgoingAssociationActivityField(assoc.Type),
+			CurrentValue: s.associationActivityValue(assoc.ToStoryID, assoc),
+			NewValue:     assoc.ToStoryID,
+			UserID:       actorID,
+			WorkspaceID:  workspaceID,
+		},
+		{
+			StoryID:      assoc.ToStoryID,
+			Type:         "update",
+			Field:        incomingAssociationActivityField(assoc.Type),
+			CurrentValue: s.associationActivityValue(assoc.FromStoryID, assoc),
+			NewValue:     assoc.FromStoryID,
+			UserID:       actorID,
+			WorkspaceID:  workspaceID,
+		},
+	}
+	_, err := s.repo.RecordActivities(ctx, activities)
+	return err
+}
+
+func (s *Service) associationActivityValue(storyID uuid.UUID, assoc CoreStoryAssociation) string {
+	if assoc.Story.ID == storyID && assoc.Story.Title != "" {
+		return assoc.Story.Title
+	}
+	return storyID.String()
+}
+
+func outgoingAssociationActivityField(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "blocking_id"
+	case "duplicate":
+		return "duplicate_id"
+	default:
+		return "related_id"
+	}
+}
+
+func incomingAssociationActivityField(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "blocked_by_id"
+	case "duplicate":
+		return "duplicated_by_id"
+	default:
+		return "related_id"
+	}
 }
 
 func (s *Service) getOldValue(story CoreSingleStory, field string) any {

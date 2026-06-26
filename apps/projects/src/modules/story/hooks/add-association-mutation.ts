@@ -30,6 +30,14 @@ export const useAddAssociationMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.detail(workspaceSlug, toStoryId),
       });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, fromStoryId),
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, toStoryId),
+        refetchType: "all",
+      });
       toast.success("Association added");
     },
 

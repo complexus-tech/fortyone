@@ -179,13 +179,17 @@ export const useUpdateLabelsMutation = () => {
       });
     },
 
-    onSuccess: (res) => {
+    onSuccess: (res, { storyId }) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
         refetchType: "inactive",
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
+        refetchType: "all",
       });
     },
   });

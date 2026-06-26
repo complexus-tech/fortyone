@@ -288,6 +288,18 @@ export const Activity = ({
       label: "Related to",
       render: (value: string) => <span>{value}</span>,
     },
+    duplicate_id: {
+      label: "Duplicate of",
+      render: (value: string) => <span>{value}</span>,
+    },
+    duplicated_by_id: {
+      label: "Duplicated by",
+      render: (value: string) => <span>{value}</span>,
+    },
+    labels: {
+      label: "Labels",
+      render: (value: string) => <span>{value}</span>,
+    },
   } as Record<
     string,
     {
