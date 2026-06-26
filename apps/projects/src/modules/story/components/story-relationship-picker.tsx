@@ -13,10 +13,12 @@ import {
   WarningIcon,
 } from "icons";
 import { cn } from "lib";
+import { useTerminology } from "@/hooks";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import type { Story } from "@/modules/stories/types";
 import { useAddAssociationMutation } from "../hooks/add-association-mutation";
+import { useCreateStoryMutation } from "../hooks/create-mutation";
 import type { StoryAssociationType } from "../types";
 
 type RelationshipDirection = "outgoing" | "incoming";
@@ -169,7 +171,9 @@ export const StoryRelationshipPicker = ({
   const [selectedOption, setSelectedOption] = useState<RelationshipOption>(
     RELATIONSHIP_OPTIONS[0],
   );
+  const { getTermDisplay } = useTerminology();
   const addAssociation = useAddAssociationMutation();
+  const createStory = useCreateStoryMutation();
   const trimmedQuery = query.trim();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data, isFetching } = useSearch({
@@ -186,28 +190,55 @@ export const StoryRelationshipPicker = ({
   const statusColorById = new Map(
     statuses.map((status) => [status.id, status.color]),
   );
+  const defaultStatusId =
+    statuses.find((status) => status.isDefault)?.id ?? statuses.at(0)?.id;
+  const storyTerm = getTermDisplay("storyTerm");
 
-  const handleSelectStory = (story: Story) => {
-    const payload =
+  const getAssociationPayload = (storyId: string) =>
       selectedOption.direction === "incoming"
         ? {
-            fromStoryId: story.id,
+            fromStoryId: storyId,
             toStoryId: currentStoryId,
             type: selectedOption.type,
           }
         : {
             fromStoryId: currentStoryId,
-            toStoryId: story.id,
+            toStoryId: storyId,
             type: selectedOption.type,
           };
 
-    addAssociation.mutate(payload, {
+  const resetPicker = () => {
+    setIsOpen(false);
+    setQuery("");
+    setSelectedOption(RELATIONSHIP_OPTIONS[0]);
+  };
+
+  const handleSelectStory = (story: Story) => {
+    addAssociation.mutate(getAssociationPayload(story.id), {
       onSuccess: () => {
-        setIsOpen(false);
-        setQuery("");
-        setSelectedOption(RELATIONSHIP_OPTIONS[0]);
+        resetPicker();
       },
     });
+  };
+
+  const handleCreateRelatedStory = () => {
+    createStory.mutate(
+      {
+        priority: "No Priority",
+        statusId: defaultStatusId,
+        teamId,
+        title: `Related ${storyTerm}`,
+      },
+      {
+        onSuccess: (createdStory) => {
+          addAssociation.mutate(getAssociationPayload(createdStory.id), {
+            onSuccess: () => {
+              resetPicker();
+            },
+          });
+        },
+      },
+    );
   };
 
   return (
@@ -220,7 +251,7 @@ export const StoryRelationshipPicker = ({
           size="sm"
           variant="naked"
         >
-          Associate
+          Association
         </Button>
       </Popover.Trigger>
 
@@ -257,12 +288,12 @@ export const StoryRelationshipPicker = ({
           <Flex className="mb-4 flex-nowrap" gap={2}>
             {RELATIONSHIP_OPTIONS.map((option) => (
               <Button
-                active={selectedOption.label === option.label}
                 align="left"
                 className={cn(
-                  "h-auto min-h-[5.25rem] min-w-24 shrink-0 flex-col items-start justify-center gap-1.5 px-2.5 py-2 text-left text-xs leading-tight",
+                  "dark:bg-surface-elevated/60 dark:hover:bg-surface-elevated/80 h-auto min-h-[4.75rem] min-w-24 shrink-0 flex-col items-start justify-center gap-1.5 px-3 py-2 text-left text-base leading-snug",
                   {
-                    "ring-ring ring-2": selectedOption.label === option.label,
+                    "bg-transparent hover:bg-transparent dark:bg-surface-elevated/80 ring-ring ring-2":
+                      selectedOption.label === option.label,
                   },
                 )}
                 color="tertiary"
@@ -287,6 +318,23 @@ export const StoryRelationshipPicker = ({
             rightIcon={<SearchIcon className="text-icon h-5" />}
             value={query}
           />
+          {!trimmedQuery ? (
+            <Flex align="center" className="mt-4" gap={2}>
+              <Text color="muted">
+                Search for an existing {storyTerm} or
+              </Text>
+              <Button
+                color="tertiary"
+                disabled={createStory.isPending || addAssociation.isPending}
+                onClick={handleCreateRelatedStory}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Create related {storyTerm}
+              </Button>
+            </Flex>
+          ) : null}
 
           <StorySearchResults
             isFetching={isFetching}
