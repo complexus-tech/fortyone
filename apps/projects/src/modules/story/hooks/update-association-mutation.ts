@@ -27,8 +27,15 @@ export const useUpdateAssociationMutation = () => {
     UpdateAssociationVariables,
     UpdateAssociationContext
   >({
-    mutationFn: async ({ associationId, fromStoryId, toStoryId, type }) => {
+    mutationFn: async ({
+      associationId,
+      fromStoryId,
+      storyId,
+      toStoryId,
+      type,
+    }) => {
       const response = await updateAssociationAction(
+        storyId,
         associationId,
         {
           fromStoryId,

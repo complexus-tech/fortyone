@@ -11,6 +11,7 @@ export type UpdateAssociationPayload = {
 };
 
 export const updateAssociationAction = async (
+  storyId: string,
   associationId: string,
   payload: UpdateAssociationPayload,
   workspaceSlug: string,
@@ -21,7 +22,7 @@ export const updateAssociationAction = async (
     const res = await put<
       UpdateAssociationPayload,
       ApiResponse<StoryAssociation>
-    >(`stories/associations/${associationId}`, payload, ctx);
+    >(`stories/${storyId}/associations/${associationId}`, payload, ctx);
     return res;
   } catch (error) {
     return getApiError(error);
