@@ -226,13 +226,13 @@ export const StoryRelationshipPicker = ({
 
       <Popover.Content
         align="end"
-        className="z-[100] w-[min(31rem,calc(100vw-2rem))] overflow-hidden p-0"
+        className="z-[100] w-max max-w-[calc(100vw-2rem)] overflow-hidden p-0"
         sideOffset={8}
       >
         <Box className="p-4">
-          <Flex align="start" className="mb-5" justify="between">
+          <Flex align="center" className="mb-4 min-w-0" justify="between">
             <Text
-              className="line-clamp-1 pr-4"
+              className="line-clamp-1 min-w-0 flex-1 pr-3"
               color="muted"
               fontWeight="semibold"
               title={currentStoryTitle}
@@ -254,12 +254,13 @@ export const StoryRelationshipPicker = ({
             </Button>
           </Flex>
 
-          <Flex className="mb-4" gap={2} wrap>
+          <Flex className="mb-4 flex-nowrap" gap={2}>
             {RELATIONSHIP_OPTIONS.map((option) => (
               <Button
                 active={selectedOption.label === option.label}
+                align="left"
                 className={cn(
-                  "h-auto min-h-20 min-w-[7.25rem] flex-col items-start justify-center gap-1 px-3 py-2 text-left text-sm leading-tight",
+                  "h-auto min-h-[5.25rem] min-w-24 shrink-0 flex-col items-start justify-center gap-1.5 px-2.5 py-2 text-left text-xs leading-tight",
                   {
                     "ring-ring ring-2": selectedOption.label === option.label,
                   },
@@ -273,7 +274,7 @@ export const StoryRelationshipPicker = ({
                 variant="outline"
               >
                 {option.icon}
-                <span>{option.label}</span>
+                <span className="whitespace-nowrap">{option.label}</span>
               </Button>
             ))}
           </Flex>

@@ -23,16 +23,16 @@ export type Comparison = {
 
 export const comparisons: Comparison[] = [
   {
-    slug: "linear",
-    competitor: "Linear",
-    title: "FortyOne vs Linear",
+    slug: "trello",
+    competitor: "Trello",
+    title: "FortyOne vs Trello",
     summary:
-      "Linear is excellent for fast issue tracking. FortyOne is built for teams that want tasks, goals, AI planning, workload, and review controls in one execution system.",
+      "Trello is simple and visual for lightweight boards. FortyOne is built for teams that want tasks, goals, AI planning, workload, and review controls in one execution system.",
     description:
-      "Compare FortyOne and Linear for teams deciding between focused issue tracking and AI-assisted project management.",
-    metaTitle: "FortyOne vs Linear | AI Project Management Comparison",
+      "Compare FortyOne and Trello for teams deciding between lightweight boards and AI-assisted project management.",
+    metaTitle: "FortyOne vs Trello | AI Project Management Comparison",
     metaDescription:
-      "Compare FortyOne and Linear for goals, task planning, AI owner suggestions, estimates, roadmaps, and delivery visibility.",
+      "Compare FortyOne and Trello for goals, task planning, AI owner suggestions, estimates, roadmaps, and delivery visibility.",
     bestFor: [
       "Goal-connected project planning",
       "AI owner, estimate, and timing suggestions",
@@ -40,12 +40,12 @@ export const comparisons: Comparison[] = [
       "Cross-functional roadmap execution",
     ],
     competitorStrengths: [
-      "Fast engineering issue tracking",
-      "Clean keyboard-first workflows",
-      "Strong product and engineering team adoption",
+      "Simple visual Kanban boards",
+      "Easy personal and small-team task tracking",
+      "Low setup for lightweight workflows",
     ],
     tradeoffs: [
-      "Choose Linear when your core need is a fast engineering issue tracker.",
+      "Choose Trello when your core need is a simple visual board for lightweight task tracking.",
       "Choose FortyOne when planning needs goals, capacity, AI recommendations, and manager review controls.",
     ],
     rows: [
@@ -53,34 +53,35 @@ export const comparisons: Comparison[] = [
         criteria: "Primary workflow",
         fortyOne:
           "Goals, tasks, AI planning, workload, and review in one place",
-        competitor: "Issue tracking and product development workflows",
+        competitor: "Visual Kanban boards and lightweight task tracking",
       },
       {
         criteria: "AI planning",
         fortyOne:
           "Suggests owners, estimates, timing, and risk notes for review",
-        competitor: "AI support exists, but issue tracking remains the center",
+        competitor:
+          "Automation can help boards, but planning remains mostly manual",
       },
       {
         criteria: "Goal connection",
         fortyOne: "Keeps tasks and roadmap work tied to outcomes",
         competitor:
-          "Roadmaps and projects are strong, but goals are less central",
+          "Cards can be organized visually, but goals are not the planning center",
       },
       {
         criteria: "Best fit",
         fortyOne: "Teams that want AI-assisted delivery coordination",
-        competitor: "Engineering teams that want a focused issue system",
+        competitor: "Teams that want a simple board for known work",
       },
     ],
     faqs: [
       [
-        "Is FortyOne a Linear replacement?",
-        "It can replace Linear for teams that want project planning, goals, tasks, AI recommendations, and review controls in one workflow.",
+        "Is FortyOne a Trello replacement?",
+        "It can replace Trello for teams that have outgrown simple boards and need project planning, goals, tasks, AI recommendations, and review controls in one workflow.",
       ],
       [
-        "When should a team keep Linear?",
-        "If the team only needs a fast engineering issue tracker and already handles planning elsewhere, Linear may remain a better fit.",
+        "When should a team keep Trello?",
+        "If the team only needs a simple visual board and already handles planning elsewhere, Trello may remain a better fit.",
       ],
     ],
   },
@@ -264,15 +265,15 @@ export const comparisons: Comparison[] = [
   },
   {
     slug: "monday",
-    competitor: "monday.com",
-    title: "FortyOne vs monday.com",
+    competitor: "Monday.com",
+    title: "FortyOne vs Monday.com",
     summary:
-      "monday.com is flexible work management for many business teams. FortyOne is built around AI project planning, goals, tasks, and controlled execution.",
+      "Monday.com is flexible work management for many business teams. FortyOne is built around AI project planning, goals, tasks, and controlled execution.",
     description:
-      "Compare FortyOne and monday.com for AI project management, task ownership, roadmap planning, and team coordination.",
-    metaTitle: "FortyOne vs monday.com | AI Project Management Comparison",
+      "Compare FortyOne and Monday.com for AI project management, task ownership, roadmap planning, and team coordination.",
+    metaTitle: "FortyOne vs Monday.com | AI Project Management Comparison",
     metaDescription:
-      "Compare FortyOne and monday.com for AI planning, goal-connected task management, roadmaps, workload, and delivery coordination.",
+      "Compare FortyOne and Monday.com for AI planning, goal-connected task management, roadmaps, workload, and delivery coordination.",
     bestFor: [
       "AI project manager workflows",
       "Goal and task alignment",
@@ -285,7 +286,7 @@ export const comparisons: Comparison[] = [
       "Familiar work operating system model",
     ],
     tradeoffs: [
-      "Choose monday.com when customizable boards are the main need.",
+      "Choose Monday.com when customizable boards are the main need.",
       "Choose FortyOne when AI planning and goal-connected execution are more important.",
     ],
     rows: [
@@ -312,7 +313,7 @@ export const comparisons: Comparison[] = [
     ],
     faqs: [
       [
-        "How is FortyOne different from monday.com?",
+        "How is FortyOne different from Monday.com?",
         "FortyOne focuses on AI project planning, goal-connected tasks, owners, estimates, timing, and controlled execution.",
       ],
       [
@@ -362,7 +363,7 @@ const sharedAvailabilityRows = (comparison: Comparison): AvailabilityRow[] => [
   {
     feature: "Roadmap planning with execution context",
     fortyOne: true,
-    competitor: ["linear", "jira", "asana"].includes(comparison.slug),
+    competitor: ["jira", "asana"].includes(comparison.slug),
     note: "FortyOne is designed to connect roadmap movement back to task ownership, estimates, workload, and review.",
   },
 ];

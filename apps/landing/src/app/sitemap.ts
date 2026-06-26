@@ -39,12 +39,6 @@ const routes: MetadataRoute.Sitemap = [
     priority: 0.9,
   },
   {
-    url: "https://www.fortyone.app/compare",
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.8,
-  },
-  {
     url: "https://www.fortyone.app/pricing",
     lastModified: new Date(),
     changeFrequency: "monthly",

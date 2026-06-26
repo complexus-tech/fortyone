@@ -13,6 +13,7 @@ import {
   TwitterIcon,
 } from "icons";
 import { useTheme } from "next-themes";
+import { comparisons } from "@/lib/comparisons";
 import { featureLinks } from "@/lib/feature-links";
 import { useCaseLinks } from "@/lib/use-case-links";
 import { Logo } from "../ui/logo";
@@ -41,6 +42,16 @@ const company = [
   },
 ];
 
+const comparisonFooterOrder = ["asana", "jira", "clickup", "trello", "monday"];
+
+const comparisonLinks = comparisonFooterOrder
+  .map((slug) => comparisons.find((comparison) => comparison.slug === slug))
+  .filter((comparison) => comparison !== undefined)
+  .map(({ competitor, slug }) => ({
+    href: `/compare/${slug}`,
+    title: competitor,
+  }));
+
 const legal = [
   {
     title: "Privacy Policy",
@@ -56,10 +67,6 @@ const resources = [
   {
     title: "AI Project Manager",
     href: "/ai-project-manager",
-  },
-  {
-    title: "Compare",
-    href: "/compare",
   },
   {
     title: "Docs",
@@ -156,7 +163,7 @@ export const Footer = () => {
     <Box as="footer" className="relative">
       <Container>
         <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
-          <Box>
+          <Box className="hidden md:block">
             <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
           </Box>
           <Box>
@@ -182,6 +189,14 @@ export const Footer = () => {
                 {title}
               </FooterLink>
             ))}
+            <Box className="mt-8">
+              <Text className="text-text-muted mb-4">Compare</Text>
+              {comparisonLinks.map(({ href, title }) => (
+                <FooterLink href={href} key={href}>
+                  {title}
+                </FooterLink>
+              ))}
+            </Box>
           </Box>
           <Box>
             <Text className="text-text-muted mb-4">Resources</Text>

@@ -32,7 +32,7 @@ const NavMenuButton = ({
       <span>
         <span
           className={cn(
-            "bg-dark mb-[0.4rem] block h-px w-5 transition duration-300 ease-in-out dark:bg-white",
+            "mb-[0.4rem] block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
             {
               "mb-0 rotate-45": open,
             },
@@ -40,7 +40,7 @@ const NavMenuButton = ({
         />
         <span
           className={cn(
-            "bg-dark block h-px w-5 transition duration-300 ease-in-out dark:bg-white",
+            "block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
             {
               "-translate-y-[0.05rem] -rotate-45": open,
             },
@@ -89,18 +89,18 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 py-10">
+          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 pt-5 pb-8">
             <Box>
-              <Flex className="pl-2" direction="column" gap={7}>
+              <Flex className="pl-2" direction="column" gap={6}>
                 {navItems.map(({ label, href, items }) => {
                   if (items) {
                     return (
                       <div key={label}>
-                        <div className="mb-4 text-3xl">{label}</div>
-                        <Flex className="pl-5" direction="column" gap={5}>
+                        <div className="mb-3 text-lg font-medium">{label}</div>
+                        <Flex className="pl-4" direction="column" gap={3}>
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="text-2xl opacity-80"
+                              className="text-base opacity-80"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -117,7 +117,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="text-3xl"
+                      className="text-lg font-medium"
                       href={href}
                       key={label}
                       onClick={() => {
