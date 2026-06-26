@@ -54,6 +54,14 @@ const legal = [
 
 const resources = [
   {
+    title: "AI Project Manager",
+    href: "/ai-project-manager",
+  },
+  {
+    title: "Compare",
+    href: "/compare",
+  },
+  {
     title: "Docs",
     href: "https://docs.fortyone.app",
   },

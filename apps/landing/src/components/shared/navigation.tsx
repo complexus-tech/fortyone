@@ -118,7 +118,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
-          <NavigationMenu.List className="gap-7 space-x-0 lg:gap-10">
+          <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">
             <NavigationDropdown
               contentClassName="min-w-44"
               items={featureMenuLinks}
@@ -129,6 +129,12 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
               items={useCaseMenuLinks}
               label="Use Cases"
             />
+            <NavigationMenu.Item>
+              <DesktopNavItem
+                href="/ai-project-manager"
+                title="AI Project Manager"
+              />
+            </NavigationMenu.Item>
             <NavigationDropdown
               contentClassName="min-w-40"
               items={resourceLinks}

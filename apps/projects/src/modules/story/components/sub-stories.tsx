@@ -18,9 +18,10 @@ import { useTerminology, useUserRole } from "@/hooks";
 import { substoryGenerationSchema } from "@/modules/stories/schemas";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { Thinking } from "@/components/ui/chat/thinking";
-import type { DetailedStory } from "../types";
 import { useChatContext } from "@/context/chat-context";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import type { DetailedStory } from "../types";
+import { StoryRelationshipPicker } from "./story-relationship-picker";
 
 export const SubStories = ({
   parent,
@@ -132,6 +133,7 @@ export const SubStories = ({
         {parent.subStories.length > 0 && (
           <Flex align="center" gap={2}>
             <Button
+              className="font-semibold"
               color="tertiary"
               leftIcon={<SubStoryIcon />}
               onClick={() => {
@@ -146,7 +148,6 @@ export const SubStories = ({
               }
               size="sm"
               variant="naked"
-              className="font-semibold"
             >
               Sub {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
               {parent.subStories.length > 0
@@ -202,6 +203,15 @@ export const SubStories = ({
                 </>
               )}
             </Button>
+            <StoryRelationshipPicker
+              currentStoryId={parent.id}
+              currentStoryTitle={parent.title}
+              existingAssociationStoryIds={parent.associations.map(
+                (association) => association.story.id,
+              )}
+              teamCode={parent.teamCode}
+              teamId={parent.teamId}
+            />
             <Tooltip
               title={parent.subStories.length > 0 ? "Add Sub Story" : null}
             >

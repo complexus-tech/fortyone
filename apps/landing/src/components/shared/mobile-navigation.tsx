@@ -63,6 +63,7 @@ export const MobileNavigation = () => {
       label: "Use Cases",
       items: primaryUseCaseLinks,
     },
+    { label: "AI Project Manager", href: "/ai-project-manager" },
     {
       label: "Resources",
       items: resourceLinks,

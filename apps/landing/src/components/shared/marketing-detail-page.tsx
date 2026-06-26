@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CheckIcon, CloseIcon } from "icons";
 import meshImage from "../../../public/images/meshing.webp";
 import { CallToAction } from "./cta";
 
@@ -26,6 +27,15 @@ export type MarketingVisual = {
 
 export type MarketingSection = {
   cards?: MarketingVisual[];
+  comparisonTable?: {
+    competitor: string;
+    rows: {
+      competitor: boolean;
+      feature: string;
+      fortyOne: boolean;
+      note: string;
+    }[];
+  };
   id: string;
   paragraphs: string[];
   prompt?: string;
@@ -69,7 +79,7 @@ function PromptCard({
 
 function FeatureCardFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex aspect-[4/3] items-end overflow-hidden rounded-2xl">
+    <div className="relative flex min-h-[320px] items-end overflow-hidden rounded-2xl">
       <Image
         alt=""
         className="object-cover dark:opacity-40"
@@ -189,14 +199,83 @@ function DataTable({
   );
 }
 
+function AvailabilityMark({ available }: { available: boolean }) {
+  return (
+    <span
+      aria-label={available ? "Available" : "Not available"}
+      className={
+        available
+          ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black"
+          : "bg-danger inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
+      }
+    >
+      {available ? (
+        <CheckIcon className="h-3 w-auto" strokeWidth={2.4} />
+      ) : (
+        <CloseIcon className="h-3 w-auto text-white" strokeWidth={2.4} />
+      )}
+    </span>
+  );
+}
+
+function ComparisonTable({
+  competitor,
+  rows,
+}: NonNullable<MarketingSection["comparisonTable"]>) {
+  return (
+    <div className="border-border my-10 overflow-x-auto border-y">
+      <table className="w-full min-w-[620px] text-left text-[0.95rem]">
+        <thead>
+          <tr className="border-border text-foreground border-b">
+            <th className="w-[36%] py-4 pr-6 font-semibold">Capability</th>
+            <th className="w-[18%] py-4 pr-6 text-center font-semibold">
+              FortyOne
+            </th>
+            <th className="w-[18%] py-4 pr-6 text-center font-semibold">
+              {competitor}
+            </th>
+            <th className="py-4 font-semibold">Planning impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              className="border-border border-b last:border-b-0"
+              key={row.feature}
+            >
+              <td className="text-foreground py-4 pr-6 align-top font-medium">
+                {row.feature}
+              </td>
+              <td className="py-4 pr-6 align-top">
+                <div className="flex justify-center">
+                  <AvailabilityMark available={row.fortyOne} />
+                </div>
+              </td>
+              <td className="py-4 pr-6 align-top">
+                <div className="flex justify-center">
+                  <AvailabilityMark available={row.competitor} />
+                </div>
+              </td>
+              <td className="text-text-muted py-4 leading-7">{row.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function JsonLd({
   basePath,
+  canonicalPath,
   detail,
 }: {
   basePath: string;
+  canonicalPath?: string;
   detail: MarketingDetail;
 }) {
-  const url = `https://www.fortyone.app/${basePath}/${detail.slug}`;
+  const path = canonicalPath ?? `${basePath}/${detail.slug}`;
+  const url = `https://www.fortyone.app/${path}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -220,17 +299,23 @@ function JsonLd({
 export function MarketingDetailPage({
   basePath,
   breadcrumbLabel,
+  canonicalPath,
   detail,
   questionHeading,
 }: {
   basePath: string;
   breadcrumbLabel: string;
+  canonicalPath?: string;
   detail: MarketingDetail;
   questionHeading?: string;
 }) {
   return (
     <>
-      <JsonLd basePath={basePath} detail={detail} />
+      <JsonLd
+        basePath={basePath}
+        canonicalPath={canonicalPath}
+        detail={detail}
+      />
       <main className="bg-background text-foreground">
         <div className="mx-auto max-w-[760px] px-5 pt-20 pb-16 md:px-8 md:pt-28">
           <article>
@@ -319,6 +404,9 @@ export function MarketingDetailPage({
                       rows={section.rows}
                       tableHead={section.tableHead}
                     />
+                  ) : null}
+                  {section.comparisonTable ? (
+                    <ComparisonTable {...section.comparisonTable} />
                   ) : null}
                   {section.prompt && section.promptTitle ? (
                     <PromptCard title={section.promptTitle}>

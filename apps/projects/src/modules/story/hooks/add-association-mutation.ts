@@ -33,7 +33,7 @@ export const useAddAssociationMutation = () => {
       toast.success("Association added");
     },
 
-    onError: (error) => {
+    onError: () => {
       toast.error("Failed to add association");
     },
   });
