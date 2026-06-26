@@ -14,8 +14,9 @@ import (
 type activityRecordingRepo struct {
 	Repository
 
-	activities []CoreActivity
-	removed    CoreStoryAssociation
+	activities              []CoreActivity
+	previousAssociationType string
+	removed                 CoreStoryAssociation
 }
 
 func (r *activityRecordingRepo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, labels []uuid.UUID) error {
@@ -38,10 +39,11 @@ func (r *activityRecordingRepo) AddAssociation(ctx context.Context, fromID, toID
 
 func (r *activityRecordingRepo) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
 	return CoreStoryAssociation{
-		ID:          associationID,
-		FromStoryID: fromID,
-		ToStoryID:   toID,
-		Type:        associationType,
+		ID:           associationID,
+		FromStoryID:  fromID,
+		ToStoryID:    toID,
+		Type:         associationType,
+		PreviousType: previousAssociationTypePtr(r.previousAssociationType),
 		Story: CoreStoryList{
 			ID:         toID,
 			SequenceID: 63,
@@ -65,6 +67,13 @@ func (r *activityRecordingRepo) RemoveAssociation(ctx context.Context, associati
 func (r *activityRecordingRepo) RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error) {
 	r.activities = append(r.activities, activities...)
 	return activities, nil
+}
+
+func previousAssociationTypePtr(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func newActivityRecordingService(repo *activityRecordingRepo) *Service {
@@ -137,6 +146,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Field != "blocking_id" {
 		t.Fatalf("expected blocking_id field, got %q", fromActivity.Field)
 	}
+	if fromActivity.Reason == nil || *fromActivity.Reason != "association_added" {
+		t.Fatalf("expected association_added reason, got %v", fromActivity.Reason)
+	}
 
 	toActivity, ok := activityByStoryID[toStoryID]
 	if !ok {
@@ -144,6 +156,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	}
 	if toActivity.Field != "blocked_by_id" {
 		t.Fatalf("expected blocked_by_id field, got %q", toActivity.Field)
+	}
+	if toActivity.Reason == nil || *toActivity.Reason != "association_added" {
+		t.Fatalf("expected association_added reason, got %v", toActivity.Reason)
 	}
 }
 
@@ -157,6 +172,7 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	workspaceID := uuid.New()
 
 	ctx := auth.SetUserID(context.Background(), actorID)
+	repo.previousAssociationType = "related"
 	if _, err := service.UpdateAssociation(ctx, associationID, fromStoryID, toStoryID, "duplicate", workspaceID); err != nil {
 		t.Fatalf("expected association to update, got error: %v", err)
 	}
@@ -174,10 +190,22 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Field != "duplicate_id" {
 		t.Fatalf("expected duplicate_id field, got %q", fromActivity.Field)
 	}
+	if fromActivity.OldValue != "Related to" {
+		t.Fatalf("expected old value Related to, got %v", fromActivity.OldValue)
+	}
+	if fromActivity.Reason == nil || *fromActivity.Reason != "association_updated" {
+		t.Fatalf("expected association_updated reason, got %v", fromActivity.Reason)
+	}
 
 	toActivity := activityByStoryID[toStoryID]
 	if toActivity.Field != "duplicated_by_id" {
 		t.Fatalf("expected duplicated_by_id field, got %q", toActivity.Field)
+	}
+	if toActivity.OldValue != "Related to" {
+		t.Fatalf("expected old value Related to, got %v", toActivity.OldValue)
+	}
+	if toActivity.Reason == nil || *toActivity.Reason != "association_updated" {
+		t.Fatalf("expected association_updated reason, got %v", toActivity.Reason)
 	}
 }
 
@@ -214,7 +242,13 @@ func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
 	if _, ok := activityByStoryID[fromStoryID]; !ok {
 		t.Fatalf("expected activity for source story %s", fromStoryID)
 	}
+	if activity := activityByStoryID[fromStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
+		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
+	}
 	if _, ok := activityByStoryID[toStoryID]; !ok {
 		t.Fatalf("expected activity for target story %s", toStoryID)
+	}
+	if activity := activityByStoryID[toStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
+		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
 	}
 }

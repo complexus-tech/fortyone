@@ -1203,7 +1203,7 @@ func (s *Service) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, as
 		span.RecordError(err)
 		return CoreStoryAssociation{}, err
 	}
-	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityAdded); err != nil {
 		span.RecordError(err)
 	}
 
@@ -1224,7 +1224,7 @@ func (s *Service) UpdateAssociation(ctx context.Context, associationID, fromID, 
 	if err != nil {
 		return CoreStoryAssociation{}, err
 	}
-	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityUpdated); err != nil {
 		span.RecordError(err)
 	}
 
@@ -1242,7 +1242,7 @@ func (s *Service) RemoveAssociation(ctx context.Context, associationID, workspac
 		span.RecordError(err)
 		return err
 	}
-	if err := s.recordAssociationActivities(ctx, assoc, workspaceID); err != nil {
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityRemoved); err != nil {
 		span.RecordError(err)
 	}
 
@@ -1256,15 +1256,25 @@ func (s *Service) formatLabelActivityValue(labels []uuid.UUID) string {
 	return fmt.Sprintf("%d labels", len(labels))
 }
 
-func (s *Service) recordAssociationActivities(ctx context.Context, assoc CoreStoryAssociation, workspaceID uuid.UUID) error {
+const (
+	associationActivityAdded   = "association_added"
+	associationActivityUpdated = "association_updated"
+	associationActivityRemoved = "association_removed"
+)
+
+func (s *Service) recordAssociationActivities(ctx context.Context, assoc CoreStoryAssociation, workspaceID uuid.UUID, reason string) error {
 	actorID, _ := auth.GetUserID(ctx)
+	activityReason := reason
+	outgoingOldValue, incomingOldValue := associationOldValues(assoc)
 	activities := []CoreActivity{
 		{
 			StoryID:      assoc.FromStoryID,
 			Type:         "update",
 			Field:        outgoingAssociationActivityField(assoc.Type),
 			CurrentValue: s.associationActivityValue(assoc.ToStoryID, assoc),
+			OldValue:     outgoingOldValue,
 			NewValue:     assoc.ToStoryID,
+			Reason:       &activityReason,
 			UserID:       actorID,
 			WorkspaceID:  workspaceID,
 		},
@@ -1273,13 +1283,22 @@ func (s *Service) recordAssociationActivities(ctx context.Context, assoc CoreSto
 			Type:         "update",
 			Field:        incomingAssociationActivityField(assoc.Type),
 			CurrentValue: s.associationActivityValue(assoc.FromStoryID, assoc),
+			OldValue:     incomingOldValue,
 			NewValue:     assoc.FromStoryID,
+			Reason:       &activityReason,
 			UserID:       actorID,
 			WorkspaceID:  workspaceID,
 		},
 	}
 	_, err := s.repo.RecordActivities(ctx, activities)
 	return err
+}
+
+func associationOldValues(assoc CoreStoryAssociation) (any, any) {
+	if assoc.PreviousType == nil || *assoc.PreviousType == assoc.Type {
+		return nil, nil
+	}
+	return outgoingAssociationActivityLabel(*assoc.PreviousType), incomingAssociationActivityLabel(*assoc.PreviousType)
 }
 
 func (s *Service) associationActivityValue(storyID uuid.UUID, assoc CoreStoryAssociation) string {
@@ -1308,6 +1327,28 @@ func incomingAssociationActivityField(associationType string) string {
 		return "duplicated_by_id"
 	default:
 		return "related_id"
+	}
+}
+
+func outgoingAssociationActivityLabel(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "Blocks"
+	case "duplicate":
+		return "Duplicate of"
+	default:
+		return "Related to"
+	}
+}
+
+func incomingAssociationActivityLabel(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "Blocked by"
+	case "duplicate":
+		return "Duplicated by"
+	default:
+		return "Related to"
 	}
 }
 

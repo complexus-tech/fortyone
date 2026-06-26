@@ -13,6 +13,7 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
 import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -107,6 +108,7 @@ export const Activity = ({
   createdAt,
   user,
   newValue,
+  oldValue,
   reason,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
@@ -120,7 +122,9 @@ export const Activity = ({
   const findActivityAssignee = (value: string) =>
     activityAssignees.find(({ id }) => id === value);
   const activityVerb = getActivityVerb(type);
-  const activityReason = formatActivityReasonDates(reason?.trim() ?? "");
+  const activityReason = formatActivityReasonDates(
+    getDisplayActivityReason(reason),
+  );
   const isLinkedUrl =
     type === "link" &&
     currentValue &&
@@ -313,6 +317,49 @@ export const Activity = ({
     label: field,
     render: (value: string) => <span>{value}</span>,
   };
+  const activityCopy = getActivityCopy({
+    currentValue,
+    field,
+    fieldLabel: fieldMeta.label,
+    oldValue,
+    reason,
+    type,
+  });
+  const renderUpdateSegment = (
+    segment: (typeof activityCopy.segments)[number],
+  ) => {
+    if (segment.type === "text") {
+      return (
+        <Text
+          as="span"
+          className="text-sm md:text-[0.95rem]"
+          color="muted"
+          key={`text-${segment.text}`}
+        >
+          {segment.text}
+        </Text>
+      );
+    }
+
+    return (
+      <Text
+        as="span"
+        className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+        fontWeight="medium"
+        key={
+          segment.type === "oldValue"
+            ? `oldValue-${segment.value}`
+            : segment.type
+        }
+      >
+        {segment.type === "fieldLabel"
+          ? fieldMeta.label
+          : fieldMeta.render(
+              segment.type === "oldValue" ? segment.value : currentValue,
+            )}
+      </Text>
+    );
+  };
 
   return (
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
@@ -399,37 +446,12 @@ export const Activity = ({
           </Flex>
         </Tooltip>
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
-          <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {activityVerb}
-          </Text>
-          {type === "update" && (
-            <>
-              <Text
-                as="span"
-                className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                fontWeight="medium"
-              >
-                {fieldMeta.label}
-              </Text>
-              {currentValue ? (
-                <>
-                  <Text
-                    as="span"
-                    className="text-sm md:text-[0.95rem]"
-                    color="muted"
-                  >
-                    to
-                  </Text>
-                  <Text
-                    as="span"
-                    className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                    fontWeight="medium"
-                  >
-                    {fieldMeta.render(currentValue)}
-                  </Text>
-                </>
-              ) : null}
-            </>
+          {type === "update" ? (
+            activityCopy.segments.map(renderUpdateSegment)
+          ) : (
+            <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
+              {activityVerb}
+            </Text>
           )}
           {linkedValue}
           {activityReason ? (

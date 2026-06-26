@@ -1109,13 +1109,23 @@ func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, assoc
 // UpdateAssociation updates an association between two stories.
 func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
 	query := `
-		UPDATE story_associations
-		SET from_story_id = :from_story_id,
-			to_story_id = :to_story_id,
-			association_type = :association_type
-		WHERE id = :id AND workspace_id = :workspace_id
-		RETURNING id
-	`
+			WITH previous AS (
+				SELECT association_type
+				FROM story_associations
+				WHERE id = :id AND workspace_id = :workspace_id
+			),
+			updated AS (
+				UPDATE story_associations
+				SET from_story_id = :from_story_id,
+					to_story_id = :to_story_id,
+					association_type = :association_type
+				WHERE id = :id AND workspace_id = :workspace_id
+				RETURNING id
+			)
+			SELECT updated.id, previous.association_type AS previous_type
+			FROM updated
+			CROSS JOIN previous
+		`
 
 	params := map[string]any{
 		"id":               associationID,
@@ -1125,14 +1135,17 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 		"workspace_id":     workspaceID,
 	}
 
-	var id uuid.UUID
+	var result struct {
+		ID           uuid.UUID `db:"id"`
+		PreviousType string    `db:"previous_type"`
+	}
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to prepare update association: %w", err)
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &id, params); err != nil {
+	if err := stmt.GetContext(ctx, &result, params); err != nil {
 		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to update association: %w", err)
 	}
 
@@ -1144,10 +1157,11 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 	coreToStory := toCoreStory(toStory)
 
 	return stories.CoreStoryAssociation{
-		ID:          id,
-		FromStoryID: fromID,
-		ToStoryID:   toID,
-		Type:        associationType,
+		ID:           result.ID,
+		FromStoryID:  fromID,
+		ToStoryID:    toID,
+		Type:         associationType,
+		PreviousType: &result.PreviousType,
 		Story: stories.CoreStoryList{
 			ID:          coreToStory.ID,
 			SequenceID:  coreToStory.SequenceID,

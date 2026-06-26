@@ -180,11 +180,12 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 
 // CoreStoryAssociation represents a relationship between two stories.
 type CoreStoryAssociation struct {
-	ID          uuid.UUID     `json:"id"`
-	FromStoryID uuid.UUID     `json:"fromStoryId"`
-	ToStoryID   uuid.UUID     `json:"toStoryId"`
-	Type        string        `json:"type"` // "blocking", "related", "duplicate"
-	Story       CoreStoryList `json:"story"`
+	ID           uuid.UUID     `json:"id"`
+	FromStoryID  uuid.UUID     `json:"fromStoryId"`
+	ToStoryID    uuid.UUID     `json:"toStoryId"`
+	Type         string        `json:"type"` // "blocking", "related", "duplicate"
+	PreviousType *string       `json:"previousType,omitempty"`
+	Story        CoreStoryList `json:"story"`
 }
 
 // CoreActivity represents the core model for an activity.
