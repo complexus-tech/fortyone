@@ -1,18 +1,26 @@
 import type { ReactNode } from "react";
 import { format } from "date-fns";
-import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
+import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Badge } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, EstimateIcon, InfoIcon, SprintsIcon } from "icons";
+import {
+  CalendarIcon,
+  EstimateIcon,
+  InfoIcon,
+  SprintsIcon,
+  TagsIcon,
+} from "icons";
 import { formatActivityReasonDates } from "@/lib/activity-format";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
 import { useWorkspacePath } from "@/hooks";
+import { useLabels } from "@/lib/hooks/labels";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import type { Label } from "@/types";
 import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
 import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
@@ -94,6 +102,84 @@ const DisplayObjective = ({
   );
 };
 
+const ASSOCIATION_ACTIVITY_FIELDS = new Set([
+  "blocked_by_id",
+  "blocking_id",
+  "related_id",
+  "duplicate_id",
+  "duplicated_by_id",
+]);
+
+const getAssociationBadgeColor = (
+  field: string,
+): "danger" | "tertiary" | "warning" => {
+  if (field === "blocking_id") return "warning";
+  if (field === "blocked_by_id") return "danger";
+  return "tertiary";
+};
+
+const AssociationActivityBadge = ({
+  field,
+  label,
+}: {
+  field: string;
+  label: string;
+}) => (
+  <Badge
+    className="shrink-0 px-2 text-[0.75rem] uppercase"
+    color={getAssociationBadgeColor(field)}
+    rounded="sm"
+  >
+    {label}
+  </Badge>
+);
+
+const getActivityLabelIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((labelId): labelId is string => typeof labelId === "string");
+};
+
+const getLabelActivityDisplayValue = (labels: Label[]) => {
+  if (labels.length === 1) return labels[0].name;
+  return `${labels.length} labels`;
+};
+
+const ActivityLabelValue = ({ labels }: { labels: Label[] }) => {
+  if (labels.length === 0) {
+    return <span>No labels</span>;
+  }
+
+  const firstLabel = labels[0];
+  const tooltip = (
+    <Flex className="min-w-28" direction="column" gap={2}>
+      {labels.map((label) => (
+        <Flex align="center" gap={1} key={label.id}>
+          <TagsIcon className="h-4" style={{ color: label.color }} />
+          {label.name}
+        </Flex>
+      ))}
+    </Flex>
+  );
+
+  return (
+    <Tooltip title={labels.length > 1 ? tooltip : null}>
+      <Badge
+        className="h-6 shrink-0 gap-1.5 px-2 text-[0.85rem]"
+        color="tertiary"
+        rounded="xl"
+        variant="outline"
+      >
+        <TagsIcon className="h-4" style={{ color: firstLabel?.color }} />
+        <span className="inline-block max-w-[12ch] truncate">
+          {labels.length === 1
+            ? firstLabel.name
+            : `${labels.length} labels`}
+        </span>
+      </Badge>
+    </Tooltip>
+  );
+};
+
 const getActivityVerb = (type: StoryActivity["type"]) => {
   if (type === "create") return "created the story";
   if (type === "link") return "linked";
@@ -114,6 +200,7 @@ export const Activity = ({
   const { data: members = [] } = useMembers();
   const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
+  const { data: allLabels = [] } = useLabels();
   const { withWorkspace } = useWorkspacePath();
   const member = user;
   const activityAssignees = mayaAssignee
@@ -317,8 +404,18 @@ export const Activity = ({
     label: field,
     render: (value: string) => <span>{value}</span>,
   };
+  const activityLabels =
+    field === "labels"
+      ? getActivityLabelIds(newValue)
+          .map((labelId) => allLabels.find((label) => label.id === labelId))
+          .filter((label): label is Label => Boolean(label))
+      : [];
+  const displayCurrentValue =
+    field === "labels" && activityLabels.length > 0
+      ? getLabelActivityDisplayValue(activityLabels)
+      : currentValue;
   const activityCopy = getActivityCopy({
-    currentValue,
+    currentValue: displayCurrentValue,
     field,
     fieldLabel: fieldMeta.label,
     oldValue,
@@ -352,11 +449,35 @@ export const Activity = ({
             : segment.type
         }
       >
-        {segment.type === "fieldLabel"
-          ? fieldMeta.label
-          : fieldMeta.render(
-              segment.type === "oldValue" ? segment.value : currentValue,
-            )}
+        {(() => {
+          if (
+            segment.type === "fieldLabel" &&
+            ASSOCIATION_ACTIVITY_FIELDS.has(field)
+          ) {
+            return (
+              <AssociationActivityBadge field={field} label={fieldMeta.label} />
+            );
+          }
+
+          if (
+            segment.type === "oldValue" &&
+            ASSOCIATION_ACTIVITY_FIELDS.has(field)
+          ) {
+            return <AssociationActivityBadge field={field} label={segment.value} />;
+          }
+
+          if (segment.type === "fieldLabel") {
+            return fieldMeta.label;
+          }
+
+          if (segment.type === "currentValue" && field === "labels") {
+            return <ActivityLabelValue labels={activityLabels} />;
+          }
+
+          return fieldMeta.render(
+            segment.type === "oldValue" ? segment.value : currentValue,
+          );
+        })()}
       </Text>
     );
   };

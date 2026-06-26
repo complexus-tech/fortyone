@@ -73,7 +73,7 @@ export const getActivityCopy = ({
   }
 
   const oldValueText = stringifyActivityValue(oldValue);
-  const segments = getFieldUpdateSegments(field, oldValueText);
+  const segments = getFieldUpdateSegments(field, currentValue, oldValueText);
   return buildCopy(segments, { currentValue, fieldLabel });
 };
 
@@ -130,6 +130,7 @@ const getAssociationActivityCopy = ({
 
 const getFieldUpdateSegments = (
   field: string,
+  currentValue: string,
   oldValueText: string,
 ): ActivityCopySegment[] => {
   switch (field) {
@@ -172,7 +173,16 @@ const getFieldUpdateSegments = (
         { type: "currentValue" },
       ];
     case "labels":
-      return [{ text: "updated labels", type: "text" }];
+      return !/^\d+ labels?$/.test(currentValue)
+        ? [
+            { text: "added", type: "text" },
+            { type: "currentValue" },
+            { text: "label", type: "text" },
+          ]
+        : [
+            { text: "updated labels", type: "text" },
+            { type: "currentValue" },
+          ];
     default:
       return [
         { text: "changed", type: "text" },

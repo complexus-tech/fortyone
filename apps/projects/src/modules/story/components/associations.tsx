@@ -96,12 +96,12 @@ const AssociationBadge = ({
 
   const { label, color } = getDetails();
 
-  return (
-    <Badge
-      className="d dark:text-opacity-70 shrink-0 px-2 text-[0.8125rem] font-bold uppercase"
-      color={color}
-      rounded="sm"
-    >
+	return (
+		<Badge
+			className="d dark:text-opacity-70 shrink-0 px-2 text-[0.8125rem] uppercase"
+			color={color}
+			rounded="sm"
+		>
       {label}
     </Badge>
   );

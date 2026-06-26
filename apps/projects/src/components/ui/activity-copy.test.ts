@@ -57,6 +57,26 @@ describe("activity copy", () => {
     ).toBe("removed the Duplicate of relationship with Testing");
   });
 
+  it("uses natural copy for label changes", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "Test",
+        field: "labels",
+        fieldLabel: "Labels",
+        type: "update",
+      }).text,
+    ).toBe("added Test label");
+
+    expect(
+      getActivityCopy({
+        currentValue: "3 labels",
+        field: "labels",
+        fieldLabel: "Labels",
+        type: "update",
+      }).text,
+    ).toBe("updated labels 3 labels");
+  });
+
   it("does not expose internal association reasons as activity notes", () => {
     expect(getDisplayActivityReason("association_added")).toBe("");
     expect(getDisplayActivityReason("Moved because of planning")).toBe(
