@@ -11,6 +11,7 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/onboarding",
   "/unauthorized",
 ]);
+const PUBLIC_PREFIXES = new Set(["/portal"]);
 
 const getHostname = (req: NextRequest) => req.nextUrl.hostname;
 
@@ -26,6 +27,9 @@ const isAuthOnlyPath = (pathname: string) =>
   pathname === "/" ||
   Array.from(AUTH_ONLY_PREFIXES).some((prefix) => pathname.startsWith(prefix));
 
+const isPublicPath = (pathname: string) =>
+  Array.from(PUBLIC_PREFIXES).some((prefix) => pathname.startsWith(prefix));
+
 const buildAuthUrl = (pathname: string, searchParams: string) => {
   const url = new URL(pathname, `https://${AUTH_HOST}`);
   url.search = searchParams;
@@ -38,10 +42,7 @@ const buildAuthRedirect = (callbackUrl: string) => {
   return NextResponse.redirect(url);
 };
 
-const buildHostRedirect = (
-  requestUrl: string,
-  callbackUrl: string,
-) => {
+const buildHostRedirect = (requestUrl: string, callbackUrl: string) => {
   const url = new URL("/", requestUrl);
   url.searchParams.set("callbackUrl", callbackUrl);
   return NextResponse.redirect(url);
@@ -52,7 +53,11 @@ export default async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const searchParams = req.nextUrl.search;
   const hostname = getHostname(req);
-  const isAuthenticated = !!user;
+  const isAuthenticated = Boolean(user);
+
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
 
   if (!isFortyOneHost(hostname)) {
     if (!isAuthenticated && !isAuthOnlyPath(pathname)) {
@@ -64,7 +69,7 @@ export default async function proxy(req: NextRequest) {
 
   const subdomain = getSubdomain(hostname);
   const isWorkspaceSubdomain =
-    !!subdomain && !RESERVED_SUBDOMAINS.has(subdomain);
+    typeof subdomain === "string" && !RESERVED_SUBDOMAINS.has(subdomain);
 
   if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
     if (pathname === "/" && isAuthenticated) {

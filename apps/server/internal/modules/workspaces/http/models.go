@@ -22,6 +22,13 @@ type AppWorkspace struct {
 	DeletedBy   *uuid.UUID `json:"deletedBy"`
 }
 
+type AppPortalWorkspace struct {
+	Slug      string  `json:"slug"`
+	Name      string  `json:"name"`
+	AvatarURL *string `json:"avatarUrl"`
+	Color     string  `json:"color"`
+}
+
 func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 	return AppWorkspace{
 		ID:          workspace.ID,
@@ -36,6 +43,15 @@ func toAppWorkspace(workspace workspaces.CoreWorkspace) AppWorkspace {
 		UpdatedAt:   workspace.UpdatedAt,
 		DeletedAt:   workspace.DeletedAt,
 		DeletedBy:   workspace.DeletedBy,
+	}
+}
+
+func toAppPortalWorkspace(workspace workspaces.CoreWorkspace) AppPortalWorkspace {
+	return AppPortalWorkspace{
+		Slug:      workspace.Slug,
+		Name:      workspace.Name,
+		AvatarURL: workspace.AvatarURL,
+		Color:     workspace.Color,
 	}
 }
 

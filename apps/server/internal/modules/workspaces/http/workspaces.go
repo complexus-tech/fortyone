@@ -90,6 +90,31 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "workspaceshttp.handlers.GetPortal")
+	defer span.End()
+
+	workspaceSlug := web.Params(r, "workspaceSlug")
+	if workspaceSlug == "" {
+		workspaceSlug = web.Params(r, "portalSlug")
+	}
+	if workspaceSlug == "" {
+		return web.RespondError(ctx, w, errors.New("workspace slug is required"), http.StatusBadRequest)
+	}
+
+	workspace, err := h.workspaces.GetPublicBySlug(ctx, workspaceSlug)
+	if err != nil {
+		if errors.Is(err, workspaces.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	workspace.AvatarURL = h.resolveWorkspaceLogoURL(ctx, workspace.AvatarURL)
+	web.Respond(ctx, w, toAppPortalWorkspace(workspace), http.StatusOK)
+	return nil
+}
+
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.workspaces.Create")
 	defer span.End()
