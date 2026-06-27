@@ -725,6 +725,164 @@ export const useCases: UseCase[] = [
     ],
   },
   {
+    slug: "government",
+    label: useCaseLabels.government,
+    heroTitle: "FortyOne for Government Teams",
+    metaTitle: "FortyOne for Government Teams | AI Project Management Use Case",
+    metaDescription:
+      "See how government teams use FortyOne to coordinate work across ministries, departments, agencies, programs, approvals, and locally hosted project operations.",
+    intro: [
+      "Government work depends on coordination across ministries, departments, agencies, contractors, field teams, and public-service programs. The risk is not only whether work exists. The risk is losing ownership, status, and decisions as work moves between offices.",
+      "FortyOne helps government teams turn priorities, programs, citizen-service requests, infrastructure work, and meeting decisions into assigned project work with owners, estimates, timelines, blockers, and review controls.",
+      "For public-sector environments that need more control, FortyOne can support customized deployments where the platform runs on the government's infrastructure and project data stays inside the environment they manage.",
+    ],
+    benefits: [
+      [
+        "Cross-department visibility",
+        "Ministries, departments, agencies, and project teams can see ownership, status, blockers, and next actions in one workflow.",
+      ],
+      [
+        "Clearer public-service delivery",
+        "Citizen-facing commitments, internal follow-ups, and program work can become trackable tasks with accountable owners.",
+      ],
+      [
+        "Private deployment options",
+        "Government teams can discuss local or dedicated deployments that fit their infrastructure, data structure, and operating requirements.",
+      ],
+      [
+        "Human-reviewed AI support",
+        "AI can prepare plans, summaries, owners, estimates, and status packets while important changes stay staged for approval.",
+      ],
+    ],
+    previewCards: [
+      {
+        heading: "Ministerial program",
+        subheading: "Priorities connected to delivery work",
+        badge: "Review",
+        rows: [
+          { label: "At risk", value: "3 department handoffs" },
+          { label: "Decision", value: "Procurement approval needed" },
+        ],
+      },
+      {
+        heading: "Local deployment",
+        subheading: "Hosted on controlled infrastructure",
+        badge: "Private",
+        rows: [
+          { label: "Data", value: "Stays in government environment" },
+          { label: "Structure", value: "Configured around ministry workflows" },
+        ],
+      },
+    ],
+    sections: [
+      {
+        id: "ministry-coordination",
+        title: "Track projects across ministries and departments",
+        paragraphs: [
+          "Public-sector programs often cross many offices before delivery is complete. A policy priority may depend on finance, procurement, technology, infrastructure, local authorities, and field teams.",
+          "FortyOne gives government leaders and program managers a clearer way to see which work is moving, which department owns the next step, and which decisions are blocking delivery.",
+        ],
+        rows: [
+          ["Program priority", "Connect the goal to active projects and tasks"],
+          [
+            "Department owner",
+            "Show which ministry, agency, or team owns the next action",
+          ],
+          [
+            "Blocked work",
+            "Surface approvals, handoffs, and missing decisions",
+          ],
+          [
+            "Leadership review",
+            "Prepare status, risks, and actions for review",
+          ],
+        ],
+        promptTitle: "Government program review",
+        prompt:
+          "Prepare a government program review from active projects across ministries and departments. Show owners, blocked work, overdue decisions, delivery risks, and the actions that need approval.",
+      },
+      {
+        id: "local-deployment",
+        title: "Deploy around government infrastructure and data needs",
+        paragraphs: [
+          "Some government teams need more than a standard cloud workspace. They may need the platform deployed in a controlled environment, connected to internal systems, and configured around existing data structures.",
+          "FortyOne can be positioned for customized deployments where project data remains on infrastructure controlled by the government team, with workflows shaped around ministries, departments, programs, approvals, and reporting lines.",
+        ],
+        cards: [
+          {
+            heading: "Controlled environment",
+            subheading: "Deployment shaped around public-sector needs",
+            badge: "Custom",
+            rows: [
+              {
+                label: "Hosting",
+                value: "Government-controlled infrastructure",
+              },
+              {
+                label: "Data",
+                value: "Project data stays inside the environment",
+              },
+            ],
+          },
+          {
+            heading: "Configured workflow",
+            subheading: "Departments, programs, and approvals mapped together",
+            rows: [
+              { label: "Ministries", value: "Custom ownership structure" },
+              {
+                label: "Reports",
+                value: "Status views for leadership reviews",
+              },
+            ],
+          },
+        ],
+        promptTitle: "Deployment planning",
+        prompt:
+          "Map this government's project structure into FortyOne. Show ministries, departments, programs, approval stages, reporting views, and the deployment requirements needed to keep data in the controlled environment.",
+      },
+      {
+        id: "public-service-delivery",
+        title: "Turn public-service commitments into accountable work",
+        paragraphs: [
+          "Government delivery depends on promises becoming action: a road repair, a digital-service update, a permit process, a grant program, a clinic improvement, or a local authority follow-up.",
+          "FortyOne helps teams turn those commitments into assigned work with clear owners, realistic timing, status visibility, and review controls before AI-assisted changes are applied.",
+        ],
+        rows: [
+          ["Citizen request", "Convert follow-up into assigned internal work"],
+          [
+            "Infrastructure item",
+            "Track field work, contractors, and approvals",
+          ],
+          [
+            "Digital service",
+            "Coordinate form, system, website, and support updates",
+          ],
+          [
+            "Meeting decision",
+            "Turn leadership actions into tasks with owners",
+          ],
+        ],
+        promptTitle: "Public-service follow-up",
+        prompt:
+          "Turn these public-service commitments into project work. Create tasks, suggest owners, identify approvals, estimate timing, and prepare the plan for review before anything is assigned.",
+      },
+    ],
+    questions: [
+      [
+        "Can FortyOne be used by government teams?",
+        "Yes. Government teams can use FortyOne to coordinate projects, programs, approvals, owners, blockers, and reporting across departments and agencies.",
+      ],
+      [
+        "Can the platform be deployed on government infrastructure?",
+        "FortyOne can support conversations about customized deployments where the platform is configured around government infrastructure, data structures, and operating requirements.",
+      ],
+      [
+        "Does AI make decisions automatically?",
+        "No. AI can prepare summaries, plans, owners, estimates, and status packets, while important changes can stay staged for human review before they are applied.",
+      ],
+    ],
+  },
+  {
     slug: "marketing",
     label: useCaseLabels.marketing,
     heroTitle: "FortyOne for Marketing Campaigns",

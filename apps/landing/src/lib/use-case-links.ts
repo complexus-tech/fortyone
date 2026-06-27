@@ -8,6 +8,11 @@ export const useCaseLinks = [
   },
   { href: "/use-cases/developers", label: "Developers", slug: "developers" },
   {
+    href: "/use-cases/government",
+    label: "Government Teams",
+    slug: "government",
+  },
+  {
     href: "/use-cases/field-crews",
     label: "Field Crews",
     slug: "field-crews",
@@ -26,6 +31,7 @@ export const primaryUseCaseLinks = useCaseLinks.filter(({ slug }) =>
     "product",
     "customer-support",
     "developers",
+    "government",
     "marketing",
   ].includes(slug),
 );
