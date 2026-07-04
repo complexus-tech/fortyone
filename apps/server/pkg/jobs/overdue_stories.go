@@ -337,71 +337,43 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	if totalItems > 1 {
 		itemText = "tasks"
 	}
-	panelTitleStyle := mailer.EmailStyleString("panelTitle")
-	textStyle := mailer.EmailStyleString("notificationText")
-	listStyle := mailer.EmailStyleString("notificationList")
-	itemStyle := mailer.EmailStyleString("notificationItem")
-	linkStyle := mailer.EmailStyleString("notificationLink")
-	content := fmt.Sprintf(`
-		<div style="%s">
-			<h3 style="%s">What's coming up</h3>
-			<p style="%s">You have %d %s that need attention</p>
-	`, textStyle, panelTitleStyle, textStyle, totalItems, itemText)
+
+	rows := []string{
+		fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText))),
+	}
 
 	if len(dueSoonStories) > 0 {
-		itemText := "task"
-		if len(dueSoonStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">Due soon (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, mailer.EmailStyleString("detailValue"), len(dueSoonStories), itemText, listStyle)
 		for _, story := range dueSoonStories {
-			content += fmt.Sprintf(`
-				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - Due %s</li>
-			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title), story.EndDate.Format("January 2, 2006"))
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is due %s.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				html.EscapeString(story.EndDate.Format("January 2, 2006")),
+			))
 		}
-		content += "</ul>"
 	}
 
 	if len(dueTodayStories) > 0 {
-		itemText := "task"
-		if len(dueTodayStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">Due today (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, mailer.EmailStyleString("detailValue"), len(dueTodayStories), itemText, listStyle)
 		for _, story := range dueTodayStories {
-			content += fmt.Sprintf(`
-				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - Due today</li>
-			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title))
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is due today.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+			))
 		}
-		content += "</ul>"
 	}
 
 	if len(overdueStories) > 0 {
-		itemText := "task"
-		if len(overdueStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">Overdue (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, mailer.EmailStyleString("detailValue"), len(overdueStories), itemText, listStyle)
 		for _, story := range overdueStories {
 			daysText := "day"
 			if story.DaysDifference > 1 {
 				daysText = "days"
 			}
-			content += fmt.Sprintf(`
-				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - %d %s overdue</li>
-			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title), story.DaysDifference, daysText)
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is %s overdue.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				formatEmailStrong(fmt.Sprintf("%d %s", story.DaysDifference, daysText)),
+			))
 		}
-		content += "</ul>"
 	}
 
-	return content + "</div>"
+	return formatCompactNotificationRows("Here's what needs attention.", rows)
 }

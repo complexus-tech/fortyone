@@ -440,113 +440,59 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 	if totalItems > 1 {
 		itemText = "objectives"
 	}
-	panelTitleStyle := mailer.EmailStyleString("panelTitle")
-	textStyle := mailer.EmailStyleString("notificationText")
-	listStyle := mailer.EmailStyleString("notificationList")
-	itemStyle := mailer.EmailStyleString("notificationItem")
-	linkStyle := mailer.EmailStyleString("notificationLink")
-	strongStyle := mailer.EmailStyleString("detailValue")
-	content := fmt.Sprintf(`
-		<div style="%s">
-			<h3 style="%s">What's coming up</h3>
-			<p style="%s">You have %d %s that need attention</p>
-	`, textStyle, panelTitleStyle, textStyle, totalItems, itemText)
+
+	rows := []string{
+		fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText))),
+	}
 
 	if len(dueSoonObjectives) > 0 {
-		itemText := "objective"
-		if len(dueSoonObjectives) > 1 {
-			itemText = "objectives"
-		}
-
-		// Check if we have any objectives that are actually due soon vs just have key results
-		hasActualDueSoon := false
-		for _, obj := range dueSoonObjectives {
-			if obj.DeadlineStatus != "future" {
-				hasActualDueSoon = true
-				break
-			}
-		}
-
-		sectionTitle := "Due soon"
-		if !hasActualDueSoon {
-			sectionTitle = "Need attention"
-		}
-
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">%s (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, strongStyle, sectionTitle, len(dueSoonObjectives), itemText, listStyle)
 		for _, objective := range dueSoonObjectives {
 			// Check if this objective is actually due soon or just has key results
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
 			if objective.DeadlineStatus == "future" {
 				// Objective is on schedule but has key results
-				content += fmt.Sprintf(`
-					<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - On schedule (key results need attention)</li>
-				`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name))
+				rows = append(rows, fmt.Sprintf("Objective %s is on schedule, but key results need attention.", objectiveLink))
 			} else {
 				// Objective is actually due soon
-				content += fmt.Sprintf(`
-					<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - Due %s</li>
-				`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name), objective.EndDate.Format("January 2, 2006"))
+				rows = append(rows, fmt.Sprintf("Objective %s is due %s.", objectiveLink, html.EscapeString(objective.EndDate.Format("January 2, 2006"))))
 			}
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
 	if len(dueTodayObjectives) > 0 {
-		itemText := "objective"
-		if len(dueTodayObjectives) > 1 {
-			itemText = "objectives"
-		}
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">Due today (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, strongStyle, len(dueTodayObjectives), itemText, listStyle)
 		for _, objective := range dueTodayObjectives {
-			content += fmt.Sprintf(`
-				<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - Due today</li>
-			`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name))
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
+			rows = append(rows, fmt.Sprintf("Objective %s is due today.", objectiveLink))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
 	if len(overdueObjectives) > 0 {
-		itemText := "objective"
-		if len(overdueObjectives) > 1 {
-			itemText = "objectives"
-		}
-		content += fmt.Sprintf(`
-			<p style="%s"><strong style="%s">Overdue (%d %s)</strong></p>
-			<ul style="%s">
-		`, textStyle, strongStyle, len(overdueObjectives), itemText, listStyle)
 		for _, objective := range overdueObjectives {
 			daysText := "day"
 			if objective.DaysDifference > 1 {
 				daysText = "days"
 			}
-			content += fmt.Sprintf(`
-				<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - %d %s overdue</li>
-			`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name), objective.DaysDifference, daysText)
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
+			rows = append(rows, fmt.Sprintf("Objective %s is %s overdue.", objectiveLink, formatEmailStrong(fmt.Sprintf("%d %s", objective.DaysDifference, daysText))))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
-	return content + "</div>"
+	return formatCompactNotificationRows("Here's what needs attention.", rows)
 }
 
 // parseKeyResults parses the JSON string of key results
@@ -558,16 +504,13 @@ func parseKeyResults(keyResultsJSON string) []OverdueKeyResult {
 	return keyResults
 }
 
-// formatKeyResultsForEmail formats key results for email display
-func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string, teamID uuid.UUID, objectiveID uuid.UUID) string {
+// formatKeyResultEmailRows formats key results for email display.
+func formatKeyResultEmailRows(keyResults []OverdueKeyResult, workspaceURL string, teamID uuid.UUID, objectiveID uuid.UUID) []string {
 	if len(keyResults) == 0 {
-		return ""
+		return nil
 	}
 
-	sublistStyle := mailer.EmailStyleString("notificationSublist")
-	subitemStyle := mailer.EmailStyleString("notificationSubitem")
-	linkStyle := mailer.EmailStyleString("notificationLink")
-	content := fmt.Sprintf("<ul class=\"notification-sublist\" style=\"%s\">", sublistStyle)
+	rows := make([]string, 0, len(keyResults))
 	for _, kr := range keyResults {
 		// Parse the date string to format it properly
 		endDateStr := kr.EndDate // Default to raw string
@@ -583,27 +526,24 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 			if kr.DaysDifference > 1 {
 				daysText = "days"
 			}
-			statusText = fmt.Sprintf("%d %s overdue (due %s)", kr.DaysDifference, daysText, endDateStr)
+			statusText = fmt.Sprintf("%s overdue (due %s)", formatEmailStrong(fmt.Sprintf("%d %s", kr.DaysDifference, daysText)), html.EscapeString(endDateStr))
 		case "due_today":
-			statusText = fmt.Sprintf("Due today (%s)", endDateStr)
+			statusText = fmt.Sprintf("due today (%s)", html.EscapeString(endDateStr))
 		case "due_tomorrow":
-			statusText = fmt.Sprintf("Due tomorrow (%s)", endDateStr)
+			statusText = fmt.Sprintf("due tomorrow (%s)", html.EscapeString(endDateStr))
 		case "due_in_7_days":
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		case "future":
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		default:
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		}
 
-		content += fmt.Sprintf(`
-			<li class="notification-subitem" style="%s">
-				<span>Key result:</span>
-				<a href="%s/teams/%s/objectives/%s" style="%s">%s</a>
-				<span>- %s</span>
-			</li>
-		`, subitemStyle, workspaceURL, teamID.String(), objectiveID.String(), linkStyle, html.EscapeString(kr.Name), html.EscapeString(statusText))
+		rows = append(rows, fmt.Sprintf(
+			"Key result %s is %s.",
+			formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, teamID.String(), objectiveID.String()), kr.Name),
+			statusText,
+		))
 	}
-	content += "</ul>"
-	return content
+	return rows
 }

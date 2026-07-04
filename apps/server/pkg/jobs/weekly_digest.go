@@ -291,9 +291,6 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 
 func formatWeeklyDigestEmailContent(stats WeeklyDigestStats) string {
 	textStyle := mailer.EmailStyleString("notificationText")
-	listStyle := mailer.EmailStyleString("notificationList")
-	itemStyle := mailer.EmailStyleString("notificationItem")
-	detailStyle := mailer.EmailStyleString("detailValue")
 
 	items := make([]string, 0, 5)
 	if stats.UnreadNotifications > 0 {
@@ -303,31 +300,30 @@ func formatWeeklyDigestEmailContent(stats WeeklyDigestStats) string {
 			priorityLabel := pluralize(stats.UnreadPriorityNotifications, "mention or reply", "mentions or replies")
 			text = fmt.Sprintf("%s, including %d %s", text, stats.UnreadPriorityNotifications, priorityLabel)
 		}
-		items = append(items, fmt.Sprintf(`<li style="%s"><strong style="%s">%s</strong></li>`, itemStyle, detailStyle, text))
+		items = append(items, fmt.Sprintf("You have %s.", formatEmailStrong(text)))
 	}
 	if stats.OverdueStories > 0 {
-		items = append(items, fmt.Sprintf(`<li style="%s"><strong style="%s">%d %s</strong></li>`, itemStyle, detailStyle, stats.OverdueStories, pluralize(stats.OverdueStories, "overdue assigned task", "overdue assigned tasks")))
+		text := fmt.Sprintf("%d %s", stats.OverdueStories, pluralize(stats.OverdueStories, "overdue assigned task", "overdue assigned tasks"))
+		items = append(items, fmt.Sprintf("You have %s.", formatEmailStrong(text)))
 	}
 	if stats.DueThisWeekStories > 0 {
-		items = append(items, fmt.Sprintf(`<li style="%s"><strong style="%s">%d %s</strong></li>`, itemStyle, detailStyle, stats.DueThisWeekStories, pluralize(stats.DueThisWeekStories, "assigned task due this week", "assigned tasks due this week")))
+		text := fmt.Sprintf("%d %s", stats.DueThisWeekStories, pluralize(stats.DueThisWeekStories, "assigned task due this week", "assigned tasks due this week"))
+		items = append(items, fmt.Sprintf("You have %s.", formatEmailStrong(text)))
 	}
 	if stats.ObjectiveRisks > 0 {
-		items = append(items, fmt.Sprintf(`<li style="%s"><strong style="%s">%d %s</strong></li>`, itemStyle, detailStyle, stats.ObjectiveRisks, pluralize(stats.ObjectiveRisks, "objective needs attention", "objectives need attention")))
+		text := fmt.Sprintf("%d %s", stats.ObjectiveRisks, pluralize(stats.ObjectiveRisks, "objective needs attention", "objectives need attention"))
+		items = append(items, fmt.Sprintf("You have %s.", formatEmailStrong(text)))
 	}
 	if stats.TeamComments > 0 {
-		items = append(items, fmt.Sprintf(`<li style="%s"><strong style="%s">%d %s</strong></li>`, itemStyle, detailStyle, stats.TeamComments, pluralize(stats.TeamComments, "new team comment", "new team comments")))
+		text := fmt.Sprintf("%d %s", stats.TeamComments, pluralize(stats.TeamComments, "new team comment", "new team comments"))
+		items = append(items, fmt.Sprintf("You have %s.", formatEmailStrong(text)))
 	}
 
 	if len(items) == 0 {
 		return fmt.Sprintf(`<div style="%s"><p style="%s">No major updates need your attention this week.</p></div>`, textStyle, textStyle)
 	}
 
-	return fmt.Sprintf(`
-		<div style="%s">
-			<p style="%s">Here is what needs attention this week:</p>
-			<ul style="%s">%s</ul>
-		</div>
-	`, textStyle, textStyle, listStyle, strings.Join(items, ""))
+	return formatCompactNotificationRows("Here is what needs attention this week:", items)
 }
 
 func pluralize(count int, singular, plural string) string {
