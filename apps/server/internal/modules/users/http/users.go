@@ -589,13 +589,10 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
 	}
 
-	_, err = h.users.GetUserByEmailAnyStatus(ctx, req.Email)
+	// The confirm endpoint determines whether this email belongs to an existing
+	// user after the token is validated. Avoid blocking link delivery on a
+	// request-time user lookup.
 	tokenType := users.TokenTypeRegistration
-	if err == nil {
-		tokenType = users.TokenTypeLogin
-	} else if !errors.Is(err, users.ErrNotFound) {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
 
 	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType, time.Now().Add(10*time.Minute))
 	if err != nil {

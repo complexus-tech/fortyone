@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -57,11 +58,7 @@ func (emailVerificationRateLimitRepo) GetUserByEmail(ctx context.Context, email 
 }
 
 func (emailVerificationRateLimitRepo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users.CoreUser, error) {
-	return users.CoreUser{
-		ID:       uuid.New(),
-		Email:    email,
-		IsActive: true,
-	}, nil
+	return users.CoreUser{}, errors.New("existing-user lookup should not block token creation")
 }
 
 func (emailVerificationRateLimitRepo) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]users.CoreUser, error) {
