@@ -47,8 +47,8 @@ var emailStyles = map[string]string{
 	"notificationMessage":   `margin: 0; color: #4f4c48; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.55;`,
 	"notificationLink":      `display: inline; color: #111111; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.55; text-decoration: none;`,
 	"footer":                `margin-top: 46px; padding-top: 26px; border-top: 1px solid #e5e5e5; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"footerText":            `margin: 0 0 6px; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
-	"footerTextLast":        `margin: 0; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.5;`,
+	"footerText":            `margin: 0 0 6px; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"footerTextLast":        `margin: 0; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
 }
 
 func emailStyle(name string) template.CSS {

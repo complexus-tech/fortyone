@@ -95,7 +95,7 @@ func TestNotificationEmailRendersInlineMessageStyles(t *testing.T) {
 	assertNotContains(t, rendered, "Workspace</p>")
 	assertNotContains(t, rendered, `style="margin: 28px 0; padding: 22px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background-color: transparent; border-radius: 0;"`)
 	assertContains(t, rendered, `style="color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
-	assertContains(t, rendered, `style="margin: 0 0 6px; color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5;"`)
+	assertContains(t, rendered, `style="margin: 0 0 6px; color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5;"`)
 }
 
 func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
