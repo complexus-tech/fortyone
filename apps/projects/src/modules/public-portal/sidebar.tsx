@@ -1,22 +1,15 @@
-import { CopyIcon, PlusIcon, ShareIcon } from "icons";
-import { Box, Button, Flex, Text } from "ui";
+import { CopyIcon, ShareIcon } from "icons";
+import { Box, Flex, Text } from "ui";
 import type { PublicPortal } from "./types";
+import { NewFeedbackButton } from "./feedback-controls";
 
 export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
   <aside className="space-y-8">
-    <Button
-      className="h-12 w-full justify-center text-[1rem]"
-      color="invert"
-      leftIcon={<PlusIcon className="h-4 text-current" />}
-      rounded="full"
-      size="lg"
-    >
-      New Request
-    </Button>
+    <NewFeedbackButton portal={portal} />
 
     <Box className="border-border bg-surface shadow-shadow/40 rounded-3xl border-[0.5px] p-2 shadow-sm">
       <Text
-        className="px-3 py-2 text-[0.8rem] uppercase tracking-[0.12em]"
+        className="px-3 py-2 text-[0.8rem] tracking-[0.12em] uppercase"
         color="muted"
       >
         Boards
@@ -24,7 +17,7 @@ export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
       <Box className="bg-state-selected/50 dark:bg-state-selected rounded-full px-3 py-2.5">
         <Flex align="center" gap={2}>
           <span className="bg-text-muted size-2 rounded-full" />
-          <Text fontWeight="semibold">All Requests</Text>
+          <Text fontWeight="semibold">All Feedback</Text>
         </Flex>
       </Box>
       {portal.boards.map((board) => (

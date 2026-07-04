@@ -9,6 +9,7 @@ import (
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
+	feedbackhttp "github.com/complexus-tech/projects-api/internal/modules/feedback/http"
 	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	integrationrequestshttp "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/http"
@@ -126,6 +127,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.integrationRequests,
+	}, app)
+
+	feedbackhttp.Routes(feedbackhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.feedback,
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{

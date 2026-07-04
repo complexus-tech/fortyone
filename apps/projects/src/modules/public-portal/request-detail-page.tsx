@@ -1,27 +1,45 @@
-import { ArrowUpIcon, BellIcon, CopyIcon, ShareIcon } from "icons";
-import { Avatar, Box, Button, Flex, Text } from "ui";
+import { BellIcon, CopyIcon, ShareIcon } from "icons";
+import { Avatar, Box, Flex, Text } from "ui";
+import type { Team } from "@/modules/teams/types";
 import { PublicPortalShell } from "./portal-shell";
 import { RequestStatusPill } from "./request-card";
 import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
 import { getBoard } from "./utils";
+import {
+  CreateStoryFromFeedbackButton,
+  FeedbackCommentComposer,
+  FeedbackVoteButton,
+} from "./feedback-controls";
+import { getPublicAvatarColor } from "./avatar-color";
+
+const EMPTY_TEAMS: Team[] = [];
 
 export const PublicPortalRequestDetailPage = ({
   portal,
   request,
   viewer,
+  teams = EMPTY_TEAMS,
 }: {
   portal: PublicPortal;
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
+  teams?: Team[];
 }) => {
   const board = getBoard(portal, request.boardId);
 
   return (
-    <PublicPortalShell activeTab="requests" portal={portal} viewer={viewer}>
+    <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
       <Box className="mx-auto grid w-full max-w-[78rem] gap-7 px-4 py-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6">
         <main>
           <Flex align="start" gap={3}>
-            <Avatar name={request.authorName} size="md" />
+            <Avatar
+              name={request.authorName}
+              size="md"
+              src={request.authorAvatar}
+              style={{
+                backgroundColor: getPublicAvatarColor(request.authorName),
+              }}
+            />
             <Box className="min-w-0 flex-1">
               <Text className="text-[1.05rem]" fontWeight="semibold">
                 {request.authorName}
@@ -45,37 +63,28 @@ export const PublicPortalRequestDetailPage = ({
             <Flex align="center" className="text-text-muted" gap={1}>
               <span>{request.commentCount} comments</span>
             </Flex>
-            <Button
-              className="ml-auto h-8 rounded-xl border-none px-3"
-              color="tertiary"
-              leftIcon={<ArrowUpIcon className="h-3.5" />}
-              size="sm"
-            >
-              {request.voteCount}
-            </Button>
+            <Box className="ml-auto">
+              <FeedbackVoteButton portal={portal} request={request} />
+            </Box>
           </Flex>
 
           <Box className="border-border/70 mt-8 border-t-[0.5px] pt-8">
-            <Box className="border-border bg-surface rounded-3xl border-[0.5px] p-4">
-              <Text className="text-[1rem]" color="muted">
-                Add a comment...
-              </Text>
-              <Flex align="end" className="mt-16" justify="between">
-                <Flex align="center" className="text-text-muted" gap={3}>
-                  <span className="size-4 rounded-full border border-current" />
-                  <span className="size-4 rounded-sm border border-current" />
-                </Flex>
-                <Button color="tertiary" size="sm">
-                  Comment
-                </Button>
-              </Flex>
-            </Box>
+            <FeedbackCommentComposer portal={portal} request={request} />
 
             {request.comments.length > 0 ? (
               <Box className="mt-6 space-y-5">
                 {request.comments.map((comment) => (
                   <Flex align="start" gap={3} key={comment.id}>
-                    <Avatar name={comment.authorName} size="sm" />
+                    <Avatar
+                      name={comment.authorName}
+                      size="sm"
+                      src={comment.authorAvatar}
+                      style={{
+                        backgroundColor: getPublicAvatarColor(
+                          comment.authorName,
+                        ),
+                      }}
+                    />
                     <Box>
                       <Flex align="center" gap={2}>
                         <Text fontWeight="semibold">{comment.authorName}</Text>
@@ -93,14 +102,12 @@ export const PublicPortalRequestDetailPage = ({
         </main>
 
         <aside className="space-y-8">
-          <Button
-            className="h-12 w-full justify-center text-[1rem]"
-            color="primary"
-            leftIcon={<ArrowUpIcon className="h-4" />}
-            rounded="xl"
-          >
-            Vote for this request
-          </Button>
+          <FeedbackVoteButton portal={portal} request={request} />
+          <CreateStoryFromFeedbackButton
+            portal={portal}
+            request={request}
+            teams={teams}
+          />
           <Box className="border-border bg-surface rounded-3xl border-[0.5px] p-5">
             <Flex className="py-2" justify="between">
               <Text color="muted">Status</Text>

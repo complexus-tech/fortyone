@@ -184,3 +184,9 @@ export const integrationRequestKeys = {
   detail: (workspaceSlug: string, requestId: string) =>
     [...integrationRequestKeys.details(workspaceSlug), requestId] as const,
 };
+
+export const feedbackKeys = {
+  all: (workspaceSlug: string) => ["feedback", workspaceSlug] as const,
+  portals: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "portals"] as const,
+};

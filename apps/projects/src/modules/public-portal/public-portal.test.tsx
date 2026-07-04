@@ -1,12 +1,12 @@
-/* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
+/* global beforeAll, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type * as ReactTypes from "react";
 import { render, screen } from "@testing-library/react";
+import { publicPortalFixture } from "./fixtures";
 import {
   PublicPortalRequestDetailPage,
   PublicPortalRequestsPage,
   PublicPortalRoadmapPage,
-  publicPortalFixture,
 } from ".";
 
 const designSystemOnlyProps = new Set([
@@ -42,6 +42,9 @@ jest.mock("icons", () => {
     CommentIcon: Icon,
     CopyIcon: Icon,
     DashboardIcon: Icon,
+    GanttIcon: Icon,
+    KanbanIcon: Icon,
+    ListIcon: Icon,
     LogoutIcon: Icon,
     MoonIcon: Icon,
     PlusIcon: Icon,
@@ -50,6 +53,7 @@ jest.mock("icons", () => {
     SearchIcon: Icon,
     ShareIcon: Icon,
     SettingsIcon: Icon,
+    StoryIcon: Icon,
     SunIcon: Icon,
     SystemIcon: Icon,
     UpdatesIcon: Icon,
@@ -69,6 +73,20 @@ jest.mock("@/components/shared/sidebar/actions", () => ({
 
 jest.mock("@/components/shared/sidebar/utils", () => ({
   clearAllStorage: jest.fn(),
+}));
+
+jest.mock("./actions", () => ({
+  createFeedbackAction: jest.fn(),
+  createFeedbackCommentAction: jest.fn(),
+  createStoryFromFeedbackAction: jest.fn(),
+  toggleFeedbackVoteAction: jest.fn(),
+}));
+
+jest.mock("sonner", () => ({
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
 }));
 
 jest.mock("ui", () => {
@@ -105,7 +123,7 @@ jest.mock("ui", () => {
       href?: string;
       leftIcon?: ReactTypes.ReactNode;
       rightIcon?: ReactTypes.ReactNode;
-    }) => (
+    }) =>
     href ? (
       <a {...getDomProps(props)} href={href}>
         {leftIcon}
@@ -118,11 +136,50 @@ jest.mock("ui", () => {
         {children}
         {rightIcon}
       </button>
-    )
-  );
+    );
   const Avatar = ({ name }: { name?: string }) => (
     <div>{name ? name.slice(0, 2).toUpperCase() : "U"}</div>
   );
+  const Dialog = ({
+    children,
+    open,
+  }: {
+    children: ReactTypes.ReactNode;
+    open?: boolean;
+  }) => <div>{open ? children : children}</div>;
+  function DialogContent({ children }: { children: ReactTypes.ReactNode }) {
+    return <div>{children}</div>;
+  }
+  function DialogHeader({ children }: { children: ReactTypes.ReactNode }) {
+    return <div>{children}</div>;
+  }
+  function DialogTitle({ children }: { children: ReactTypes.ReactNode }) {
+    return <div>{children}</div>;
+  }
+  function DialogBody({ children }: { children: ReactTypes.ReactNode }) {
+    return <div>{children}</div>;
+  }
+  function DialogFooter({ children }: { children: ReactTypes.ReactNode }) {
+    return <div>{children}</div>;
+  }
+  Dialog.Content = DialogContent;
+  Dialog.Header = DialogHeader;
+  Dialog.Title = DialogTitle;
+  Dialog.Body = DialogBody;
+  Dialog.Footer = DialogFooter;
+  const Input = ({
+    leftIcon,
+    ...props
+  }: ReactTypes.InputHTMLAttributes<HTMLInputElement> &
+    Record<string, unknown> & {
+      leftIcon?: ReactTypes.ReactNode;
+    }) => {
+    void leftIcon;
+    return <input {...getDomProps(props)} />;
+  };
+  const TextArea = (
+    props: ReactTypes.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  ) => <textarea {...props} />;
   const Menu = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
   );
@@ -142,11 +199,9 @@ jest.mock("ui", () => {
   const MenuSubMenu = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
   );
-  const MenuSubTrigger = ({
-    children,
-  }: {
-    children: ReactTypes.ReactNode;
-  }) => <div>{children}</div>;
+  const MenuSubTrigger = ({ children }: { children: ReactTypes.ReactNode }) => (
+    <div>{children}</div>
+  );
   const MenuSubItems = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
   );
@@ -163,28 +218,77 @@ jest.mock("ui", () => {
     Avatar,
     Box,
     Button,
+    Dialog,
     Flex,
+    Input,
     Menu,
     Text,
+    TextArea,
   };
 });
 
 describe("Public portal UI", () => {
-  it("renders the public requests page with requests terminology", () => {
+  beforeAll(() => {
+    class IntersectionObserverMock {
+      disconnect = jest.fn();
+      observe = jest.fn();
+      unobserve = jest.fn();
+    }
+
+    Object.defineProperty(global, "IntersectionObserver", {
+      value: IntersectionObserverMock,
+      writable: true,
+    });
+  });
+
+  beforeEach(() => {
+    global.fetch = jest.fn(
+      async (input: Parameters<typeof fetch>[0]): Promise<Response> => {
+        let url: string;
+        if (typeof input === "string") {
+          url = input;
+        } else if (input instanceof URL) {
+          url = input.toString();
+        } else {
+          url = input.url;
+        }
+        const requestUrl = new URL(url, "https://fortyone.test");
+        const status = requestUrl.searchParams.get("status");
+        const requests = status
+          ? publicPortalFixture.requests.filter(
+              (request) => request.status === status,
+            )
+          : publicPortalFixture.requests;
+
+        return {
+          json: async () => ({
+            data: {
+              ...publicPortalFixture,
+              requests,
+              requestsHasMore: false,
+            },
+          }),
+          ok: true,
+        } as Response;
+      },
+    );
+  });
+
+  it("renders the public feedback page with feedback terminology", () => {
     render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
 
     expect(
-      screen.getAllByRole("link", { name: /^Requests$/i }).length,
+      screen.getAllByRole("link", { name: /^Feedback$/i }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /new request/i }),
+      screen.getByRole("button", { name: /new feedback/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText("All Requests")).toBeInTheDocument();
+    expect(screen.getByText("All Feedback")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Login/signup" })).toHaveAttribute(
       "href",
       "/",
     );
-    expect(screen.queryByText("All Feedback")).not.toBeInTheDocument();
+    expect(screen.queryByText("All Requests")).not.toBeInTheDocument();
   });
 
   it("renders signed-in portal navigation controls", () => {
@@ -216,14 +320,14 @@ describe("Public portal UI", () => {
     ).toHaveAttribute("href", "/city-roads/settings/account");
   });
 
-  it("renders roadmap columns from promoted public requests", () => {
+  it("renders roadmap columns from promoted public requests", async () => {
     render(<PublicPortalRoadmapPage portal={publicPortalFixture} />);
 
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
     expect(screen.getByText("Done")).toBeInTheDocument();
     expect(
-      screen.getByText("Resurface Market Road before rainy season"),
+      await screen.findByText("Resurface Market Road before rainy season"),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Add pedestrian crossing near East Avenue school"),
@@ -243,7 +347,7 @@ describe("Public portal UI", () => {
         name: "Add pedestrian crossing near East Avenue school",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Add a comment...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Add a comment...")).toBeInTheDocument();
     expect(screen.getByText("Road repairs")).toBeInTheDocument();
     expect(screen.getByText("Copy link")).toBeInTheDocument();
   });

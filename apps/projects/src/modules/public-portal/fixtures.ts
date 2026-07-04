@@ -1,6 +1,7 @@
 import type { PublicPortal } from "./types";
 
 export const publicPortalFixture: PublicPortal = {
+  id: "city-roads",
   name: "City Roads Program",
   slug: "city-roads",
   workspace: {
@@ -41,6 +42,7 @@ export const publicPortalFixture: PublicPortal = {
       voteCount: 12,
       commentCount: 2,
       createdAtLabel: "Just now",
+      storyLinks: [],
       comments: [
         {
           id: "comment-1",
@@ -62,6 +64,7 @@ export const publicPortalFixture: PublicPortal = {
       voteCount: 9,
       commentCount: 5,
       createdAtLabel: "1 hour ago",
+      storyLinks: [],
       comments: [],
     },
     {
@@ -77,6 +80,7 @@ export const publicPortalFixture: PublicPortal = {
       commentCount: 8,
       createdAtLabel: "Yesterday",
       roadmapSummary: "Committed and queued for the next resurfacing cycle.",
+      storyLinks: [],
       comments: [],
     },
     {
@@ -92,9 +96,11 @@ export const publicPortalFixture: PublicPortal = {
       commentCount: 4,
       createdAtLabel: "Last week",
       roadmapSummary: "Completed after signal controller replacement.",
+      storyLinks: [],
       comments: [],
     },
   ],
+  requestsHasMore: false,
   updates: [
     {
       id: "update-1",

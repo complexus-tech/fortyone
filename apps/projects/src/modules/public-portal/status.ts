@@ -49,8 +49,4 @@ export const requestFilters: PublicRequestStatus[] = [
   "closed",
 ];
 
-export const roadmapStatuses = [
-  "planned",
-  "in_progress",
-  "completed",
-] as const;
+export const roadmapStatuses = ["planned", "in_progress", "completed"] as const;

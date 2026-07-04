@@ -4,9 +4,9 @@ export const getBoard = (portal: PublicPortal, boardId: string) =>
   portal.boards.find((board) => board.id === boardId);
 
 export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
-  `/portal/${portal.slug}/requests/${request.slug}`;
+  `/portal/${portal.slug}/feedback/${request.slug}`;
 
 export const getPortalPath = (
   portal: PublicPortal,
-  path: "" | "requests" | "roadmap" | "updates",
+  path: "" | "feedback" | "roadmap" | "updates",
 ) => `/portal/${portal.slug}${path ? `/${path}` : ""}`;

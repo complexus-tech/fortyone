@@ -19,6 +19,8 @@ import (
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	epicsrepository "github.com/complexus-tech/projects-api/internal/modules/epics/repository"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
+	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
@@ -79,6 +81,7 @@ type services struct {
 	comments            *comments.Service
 	documents           *documents.Service
 	epics               *epics.Service
+	feedback            *feedback.Service
 	github              *github.Service
 	slack               *slack.Service
 	integrationRequests *integrationrequests.Service
@@ -235,6 +238,7 @@ func buildServices(cfg mux.Config) services {
 			integrationrequests.ProviderSlack:  slackService,
 		},
 	)
+	feedbackService := feedback.New(feedbackrepository.New(cfg.Log, cfg.DB), storiesService)
 
 	return services{
 		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
@@ -244,6 +248,7 @@ func buildServices(cfg mux.Config) services {
 		comments:            commentsService,
 		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
 		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
+		feedback:            feedbackService,
 		github:              githubService,
 		slack:               slackService,
 		integrationRequests: integrationRequestsService,
@@ -301,6 +306,9 @@ func (s services) validate() error {
 	}
 	if s.epics == nil {
 		return fmt.Errorf("missing service: epics")
+	}
+	if s.feedback == nil {
+		return fmt.Errorf("missing service: feedback")
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")

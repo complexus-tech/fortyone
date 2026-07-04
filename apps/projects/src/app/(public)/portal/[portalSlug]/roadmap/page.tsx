@@ -1,5 +1,5 @@
 import { PublicPortalRoadmapPage } from "@/modules/public-portal";
-import { getPublicPortal } from "@/modules/public-portal/query";
+import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
 import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
 
 export default async function PortalRoadmapPage({
@@ -9,7 +9,7 @@ export default async function PortalRoadmapPage({
 }) {
   const { portalSlug } = await params;
   const [portal, viewer] = await Promise.all([
-    getPublicPortal(portalSlug),
+    getPublicPortalOrNotFound(portalSlug),
     getPublicPortalViewer(),
   ]);
 

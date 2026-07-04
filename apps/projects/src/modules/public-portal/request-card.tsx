@@ -5,6 +5,7 @@ import { cn } from "lib";
 import { requestStatusMeta } from "./status";
 import type { PublicPortal, PublicRequest } from "./types";
 import { getBoard, getRequestPath } from "./utils";
+import { getPublicAvatarColor } from "./avatar-color";
 
 export const RequestStatusPill = ({
   status,
@@ -36,9 +37,17 @@ export const PublicRequestCard = ({
 
   return (
     <Link className="group block" href={getRequestPath(portal, request)}>
-      <Box className="border-border/70 hover:bg-state-hover border-b-[0.5px] py-5 transition">
+      <Box className="border-border/70 border-b-[0.5px] py-5 transition">
         <Flex align="start" className="gap-4">
-          <Avatar className="mt-0.5" name={request.authorName} size="sm" />
+          <Avatar
+            className="mt-0.5"
+            name={request.authorName}
+            size="sm"
+            src={request.authorAvatar}
+            style={{
+              backgroundColor: getPublicAvatarColor(request.authorName),
+            }}
+          />
           <Box className="min-w-0 flex-1">
             <Flex align="center" className="min-w-0 flex-wrap gap-1.5">
               <Text fontWeight="semibold">{request.authorName}</Text>

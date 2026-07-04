@@ -45,23 +45,23 @@ const ThemeIcon = ({ theme }: { theme?: string }) => {
   return <SystemIcon className="h-[1.15rem]" />;
 };
 
+const handleLogout = async () => {
+  try {
+    await logOut();
+    clearAllStorage();
+    window.location.href = getSignedOutUrl();
+  } catch {
+    clearAllStorage();
+    window.location.href = getSignedOutUrl();
+  }
+};
+
 export const PublicPortalUserMenu = ({
   viewer,
 }: {
   viewer: PublicPortalViewer;
 }) => {
   const { theme, setTheme } = useTheme();
-
-  const handleLogout = async () => {
-    try {
-      await logOut();
-      clearAllStorage();
-      window.location.href = getSignedOutUrl();
-    } catch {
-      clearAllStorage();
-      window.location.href = getSignedOutUrl();
-    }
-  };
 
   return (
     <Menu>
@@ -169,7 +169,7 @@ export const PublicPortalUserMenu = ({
         <Menu.Separator className="my-2" />
         <Menu.Group>
           <Menu.Item
-            className="rounded-2xl text-danger"
+            className="text-danger rounded-2xl"
             onSelect={handleLogout}
           >
             <LogoutIcon className="text-danger h-5 w-auto" />

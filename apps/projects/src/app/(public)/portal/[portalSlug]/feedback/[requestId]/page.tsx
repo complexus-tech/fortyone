@@ -5,6 +5,10 @@ import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
 import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
 import { getTeams } from "@/lib/queries/get-teams";
 
+type PageProps = {
+  params: Promise<{ portalSlug: string; requestId: string }>;
+};
+
 const DOMAIN_SUFFIX = ".fortyone.app";
 
 const getWorkspaceSlug = async (portalSlug: string) => {
@@ -18,11 +22,9 @@ const getWorkspaceSlug = async (portalSlug: string) => {
   return portalSlug;
 };
 
-export default async function PortalRequestDetailPage({
+export default async function PublicPortalFeedbackDetailRoute({
   params,
-}: {
-  params: Promise<{ portalSlug: string; requestId: string }>;
-}) {
+}: PageProps) {
   const { portalSlug, requestId } = await params;
   const workspaceSlug = await getWorkspaceSlug(portalSlug);
   const [portal, viewer, teams] = await Promise.all([
@@ -31,8 +33,7 @@ export default async function PortalRequestDetailPage({
     getTeams(workspaceSlug),
   ]);
   const request = portal.requests.find(
-    (publicRequest) =>
-      publicRequest.slug === requestId || publicRequest.id === requestId,
+    (item) => item.slug === requestId || item.id === requestId,
   );
 
   if (!request) notFound();

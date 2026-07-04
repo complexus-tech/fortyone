@@ -59,6 +59,7 @@ func Routes(cfg Config, app *web.App) {
 		cfg.Cache, cfg.Log, cfg.SecretKey, attachmentsService)
 
 	app.Get("/portals/{portalSlug}", h.GetPortal)
+	app.Get("/workspaces/{workspaceSlug}/portal", h.GetPortal)
 	app.Get("/workspaces/{workspaceSlug}", h.Get, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}", h.Update, auth, workspace, adminOnly)
 	app.Delete("/workspaces/{workspaceSlug}", h.Delete, auth, workspace, adminOnly)

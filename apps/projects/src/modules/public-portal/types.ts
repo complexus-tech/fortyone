@@ -1,4 +1,4 @@
-export type PublicPortalTab = "requests" | "roadmap" | "updates";
+export type PublicPortalTab = "feedback" | "roadmap" | "updates";
 
 export type PublicRequestStatus =
   | "pending"
@@ -10,15 +10,25 @@ export type PublicRequestStatus =
 
 export type PublicRequestBoard = {
   id: string;
+  teamId?: string;
   name: string;
+  slug?: string;
+  color?: string;
   colorClassName: string;
 };
 
 export type PublicRequestComment = {
   id: string;
   authorName: string;
+  authorAvatar?: string | null;
   body: string;
   createdAtLabel: string;
+};
+
+export type PublicFeedbackStoryLink = {
+  id: string;
+  storyId: string;
+  relationship: "created_from" | "linked" | "solves";
 };
 
 export type PublicRequest = {
@@ -27,6 +37,7 @@ export type PublicRequest = {
   title: string;
   description: string;
   authorName: string;
+  authorAvatar?: string | null;
   boardId: string;
   status: PublicRequestStatus;
   voteCount: number;
@@ -34,6 +45,7 @@ export type PublicRequest = {
   createdAtLabel: string;
   roadmapSummary?: string;
   comments: PublicRequestComment[];
+  storyLinks: PublicFeedbackStoryLink[];
 };
 
 export type PublicPortalUpdate = {
@@ -62,11 +74,18 @@ export type PublicPortalViewer = {
 };
 
 export type PublicPortal = {
+  id: string;
   name: string;
   slug: string;
   workspace: PublicPortalWorkspace;
   description: string;
   boards: PublicRequestBoard[];
   requests: PublicRequest[];
+  requestsHasMore: boolean;
   updates: PublicPortalUpdate[];
 };
+
+export type PublicFeedback = PublicRequest;
+export type PublicFeedbackBoard = PublicRequestBoard;
+export type PublicFeedbackComment = PublicRequestComment;
+export type PublicFeedbackStatus = PublicRequestStatus;

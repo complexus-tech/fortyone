@@ -22,11 +22,7 @@ export const getPublicPortalViewer =
       name: session.user.fullName || session.user.username || session.user.name,
       email: session.user.email,
       avatarUrl: session.user.image,
-      appHref: getRedirectUrl(
-        workspaces,
-        [],
-        session.user.lastUsedWorkspaceId,
-      ),
+      appHref: getRedirectUrl(workspaces, [], session.user.lastUsedWorkspaceId),
       accountHref: withWorkspacePath("/settings/account", workspaceSlug),
       notificationsHref: withWorkspacePath("/notifications", workspaceSlug),
     };
