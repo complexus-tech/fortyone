@@ -58,6 +58,11 @@ export function useNotificationConfigs(): NotificationConfig[] {
       description:
         "Get notified about due dates, reminders, and important updates",
     });
+    configs.push({
+      type: "weekly_digest",
+      title: "Weekly digest",
+      description: "Get a weekly summary of unread updates and work that needs attention",
+    });
 
     return configs;
   }, [getTermDisplay, features]);

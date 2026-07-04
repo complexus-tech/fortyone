@@ -117,6 +117,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"0 8 * * 1", // Monday at 8:00 AM
+		asynq.NewTask(tasks.TypeWeeklyDigestEmail, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register weekly digest email task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"0 1 * * 0", // Sunday 01:00 AM
 		asynq.NewTask(tasks.TypeWorkspaceInactivityWarning, nil),
 		asynq.Queue("notifications"),

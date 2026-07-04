@@ -31,7 +31,7 @@ export const InAppNotifications = () => {
         <Flex direction="column" gap={6}>
           {notificationConfigs.map((config) => (
             <Entry
-              checked={data?.preferences[config.type].inApp}
+              checked={data?.preferences[config.type]?.inApp ?? true}
               description={config.description}
               key={config.type}
               onChange={(checked) => {

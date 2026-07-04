@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/lib/pq"
 )
 
 type Variable struct {
@@ -36,6 +38,36 @@ type NotificationEmailData struct {
 	WorkspaceName    string          `db:"workspace_name"`
 	WorkspaceSlug    string          `db:"workspace_slug"`
 	EmailEnabled     bool            `db:"email_enabled"`
+}
+
+type NotificationEmailDigestItem struct {
+	NotificationID   uuid.UUID       `db:"notification_id"`
+	NotificationType string          `db:"type"`
+	Title            string          `db:"title"`
+	Message          json.RawMessage `db:"message"`
+	CreatedAt        time.Time       `db:"created_at"`
+	ActorName        string          `db:"actor_name"`
+}
+
+type NotificationEmailDigestData struct {
+	UserEmail     string
+	UserName      string
+	WorkspaceName string
+	WorkspaceSlug string
+	Items         []NotificationEmailDigestItem
+}
+
+type notificationEmailDigestRow struct {
+	NotificationID   uuid.UUID       `db:"notification_id"`
+	NotificationType string          `db:"type"`
+	Title            string          `db:"title"`
+	Message          json.RawMessage `db:"message"`
+	CreatedAt        time.Time       `db:"created_at"`
+	UserEmail        string          `db:"user_email"`
+	UserName         string          `db:"user_name"`
+	ActorName        string          `db:"actor_name"`
+	WorkspaceName    string          `db:"workspace_name"`
+	WorkspaceSlug    string          `db:"workspace_slug"`
 }
 
 // ParsedMessage represents the final parsed notification message
@@ -101,6 +133,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 		WHERE
 			n.notification_id = :notification_id
 			AND n.read_at IS NULL
+			AND n.email_sent_at IS NULL
 			AND u.is_active = true
 			AND u.is_system = false
 			AND NULLIF(TRIM(u.email), '') IS NOT NULL;
@@ -128,6 +161,152 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 	}
 
 	return &data, nil
+}
+
+func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipientID, workspaceID uuid.UUID) (*NotificationEmailDigestData, error) {
+	query := `
+		SELECT
+			n.notification_id,
+			n.type,
+			n.title,
+			n.message,
+			n.created_at,
+			u.email AS user_email,
+			COALESCE(NULLIF(u.full_name, ''), u.username) AS user_name,
+			COALESCE(NULLIF(actor_u.full_name, ''), actor_u.username) AS actor_name,
+			w.name AS workspace_name,
+			w.slug AS workspace_slug
+		FROM
+			notifications n
+			INNER JOIN users u ON n.recipient_id = u.user_id
+			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
+			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
+			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
+				AND n.workspace_id = np.workspace_id
+		WHERE
+			n.recipient_id = :recipient_id
+			AND n.workspace_id = :workspace_id
+			AND n.read_at IS NULL
+			AND n.email_sent_at IS NULL
+			AND u.is_active = true
+			AND u.is_system = false
+			AND NULLIF(TRIM(u.email), '') IS NOT NULL
+			AND CAST(COALESCE(np.preferences -> CAST(n.type AS TEXT) ->> 'email', 'true') AS BOOLEAN) = true
+		ORDER BY n.created_at ASC;
+	`
+
+	params := map[string]any{
+		"recipient_id": recipientID,
+		"workspace_id": workspaceID,
+	}
+
+	stmt, err := h.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		h.log.Error(ctx, "Failed to prepare notification email digest query", "error", err)
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var rows []notificationEmailDigestRow
+	if err := stmt.SelectContext(ctx, &rows, params); err != nil {
+		h.log.Error(ctx, "Failed to execute notification email digest query", "error", err, "recipient_id", recipientID, "workspace_id", workspaceID)
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	items := make([]NotificationEmailDigestItem, len(rows))
+	for i, row := range rows {
+		items[i] = NotificationEmailDigestItem{
+			NotificationID:   row.NotificationID,
+			NotificationType: row.NotificationType,
+			Title:            row.Title,
+			Message:          row.Message,
+			CreatedAt:        row.CreatedAt,
+			ActorName:        row.ActorName,
+		}
+	}
+
+	return &NotificationEmailDigestData{
+		UserEmail:     rows[0].UserEmail,
+		UserName:      rows[0].UserName,
+		WorkspaceName: rows[0].WorkspaceName,
+		WorkspaceSlug: rows[0].WorkspaceSlug,
+		Items:         items,
+	}, nil
+}
+
+func buildNotificationDigestSubject(workspaceName string, count int) string {
+	itemText := "updates"
+	if count == 1 {
+		itemText = "update"
+	}
+	return fmt.Sprintf("%d %s in %s", count, itemText, workspaceName)
+}
+
+func formatNotificationDigestMessage(items []NotificationEmailDigestItem, workspaceURL string) (string, error) {
+	if len(items) == 0 {
+		return "", nil
+	}
+
+	itemText := "updates"
+	if len(items) == 1 {
+		itemText = "update"
+	}
+
+	textStyle := mailer.EmailStyleString("notificationText")
+	listStyle := mailer.EmailStyleString("notificationList")
+	itemStyle := mailer.EmailStyleString("notificationItem")
+	linkStyle := mailer.EmailStyleString("notificationLink")
+
+	content := fmt.Sprintf(`
+		<div style="%s">
+			<p style="%s">You have %d unread %s.</p>
+			<ul style="%s">
+	`, textStyle, textStyle, len(items), itemText, listStyle)
+
+	for _, item := range items {
+		var notificationMsg NotificationMessage
+		if err := json.Unmarshal(item.Message, &notificationMsg); err != nil {
+			return "", fmt.Errorf("failed to unmarshal notification message %s: %w", item.NotificationID, err)
+		}
+
+		parsedMessage := parseNotificationMessage(notificationMsg)
+		notificationURL := fmt.Sprintf("%s/notifications/%s", workspaceURL, item.NotificationID.String())
+		content += fmt.Sprintf(`
+			<li style="%s">
+				<a href="%s" style="%s">%s</a>
+				<div style="%s">%s</div>
+			</li>
+		`, itemStyle, notificationURL, linkStyle, html.EscapeString(item.Title), textStyle, parsedMessage.HTML)
+	}
+
+	return content + "</ul></div>", nil
+}
+
+func (h *handlers) markNotificationsEmailSent(ctx context.Context, notificationIDs []uuid.UUID) error {
+	if len(notificationIDs) == 0 {
+		return nil
+	}
+
+	query := `
+		UPDATE notifications
+		SET email_sent_at = CURRENT_TIMESTAMP
+		WHERE notification_id = ANY(:notification_ids);
+	`
+
+	params := map[string]any{
+		"notification_ids": pq.Array(notificationIDs),
+	}
+
+	if _, err := h.db.NamedExecContext(ctx, query, params); err != nil {
+		h.log.Error(ctx, "Failed to mark notifications as emailed", "error", err)
+		return fmt.Errorf("failed to mark notifications as emailed: %w", err)
+	}
+
+	return nil
 }
 
 // HandleNotificationEmail processes the notification email task.
@@ -204,10 +383,91 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 		return err
 	}
 
+	if err := h.markNotificationsEmailSent(ctx, []uuid.UUID{data.NotificationID}); err != nil {
+		return err
+	}
+
 	h.log.Info(ctx, "HANDLER: Successfully processed NotificationEmail task",
 		"notification_id", p.NotificationID,
 		"user_email", data.UserEmail,
 		"parsed_message", parsedMessage.Text,
+		"task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
+// HandleNotificationEmailDigest processes a coalesced notification email task.
+func (h *handlers) HandleNotificationEmailDigest(ctx context.Context, t *asynq.Task) error {
+	var p tasks.NotificationEmailDigestPayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		h.log.Error(ctx, "Failed to unmarshal NotificationEmailDigestPayload in Handlers", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("unmarshal payload failed: %w: %w", err, asynq.SkipRetry)
+	}
+
+	h.log.Info(ctx, "HANDLER: Processing NotificationEmailDigest task",
+		"recipient_id", p.RecipientID,
+		"workspace_id", p.WorkspaceID,
+		"task_id", t.ResultWriter().TaskID(),
+	)
+
+	data, err := h.getNotificationEmailDigestData(ctx, p.RecipientID, p.WorkspaceID)
+	if err != nil {
+		h.log.Error(ctx, "Failed to get notification email digest data", "error", err, "task_id", t.ResultWriter().TaskID())
+		return err
+	}
+
+	if data == nil || len(data.Items) == 0 {
+		h.log.Info(ctx, "No unread unsent notifications for digest - skipping email",
+			"recipient_id", p.RecipientID,
+			"workspace_id", p.WorkspaceID,
+			"task_id", t.ResultWriter().TaskID())
+		return nil
+	}
+
+	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
+	notificationMessage, err := formatNotificationDigestMessage(data.Items, workspaceURL)
+	if err != nil {
+		h.log.Error(ctx, "Failed to format notification email digest", "error", err, "task_id", t.ResultWriter().TaskID())
+		return err
+	}
+
+	subject := buildNotificationDigestSubject(data.WorkspaceName, len(data.Items))
+	mailData := map[string]any{
+		"UserName":                 data.UserName,
+		"ActorName":                "",
+		"UserEmail":                data.UserEmail,
+		"WorkspaceName":            data.WorkspaceName,
+		"WorkspaceURL":             workspaceURL,
+		"NotificationTitle":        subject,
+		"NotificationMessage":      notificationMessage,
+		"NotificationType":         "notification_digest",
+		"NotificationCTAURL":       fmt.Sprintf("%s/notifications", workspaceURL),
+		"NotificationCTALabel":     "Open notifications",
+		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
+	}
+
+	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{data.UserEmail},
+		Template: "notifications/notification",
+		Subject:  subject,
+		Data:     mailData,
+	}); err != nil {
+		h.log.Error(ctx, "Failed to send notification email digest", "error", err, "task_id", t.ResultWriter().TaskID())
+		return err
+	}
+
+	notificationIDs := make([]uuid.UUID, len(data.Items))
+	for i, item := range data.Items {
+		notificationIDs[i] = item.NotificationID
+	}
+	if err := h.markNotificationsEmailSent(ctx, notificationIDs); err != nil {
+		return err
+	}
+
+	h.log.Info(ctx, "HANDLER: Successfully processed NotificationEmailDigest task",
+		"recipient_id", p.RecipientID,
+		"workspace_id", p.WorkspaceID,
+		"user_email", data.UserEmail,
+		"notifications_count", len(data.Items),
 		"task_id", t.ResultWriter().TaskID())
 	return nil
 }

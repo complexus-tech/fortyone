@@ -47,9 +47,9 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 		// Process each assignee in this batch
 		for _, assignee := range assignees {
 			// Get stories for this specific assignee
-			stories, err := getOverdueStoriesForAssignee(ctx, db, assignee.AssigneeID)
+			stories, err := getOverdueStoriesForAssignee(ctx, db, assignee.AssigneeID, assignee.WorkspaceID)
 			if err != nil {
-				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "error", err)
+				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "workspace_id", assignee.WorkspaceID, "error", err)
 				continue
 			}
 
@@ -166,12 +166,8 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 	return assignees, nil
 }
 
-// getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee
-func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID uuid.UUID) ([]OverdueStory, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getOverdueStoriesForAssignee")
-	defer span.End()
-
-	query := `
+func overdueStoriesForAssigneeQuery() string {
+	return `
 		WITH story_deadlines AS (
     SELECT 
         s.id, s.title, s.end_date, s.assignee_id, s.workspace_id, s.team_id,
@@ -197,6 +193,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
     JOIN teams t ON s.team_id = t.team_id
     JOIN statuses st ON s.status_id = st.status_id
     WHERE s.assignee_id = :assignee_id
+        AND s.workspace_id = :workspace_id
         AND s.end_date IS NOT NULL
         AND st.category NOT IN ('completed', 'cancelled', 'paused')
         AND s.deleted_at IS NULL
@@ -212,10 +209,22 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 		WHERE deadline_status IN ('due_today', 'due_tomorrow', 'due_in_3_days', 'overdue')
 		ORDER BY deadline_status, end_date;
 `
+}
 
-	params := map[string]any{
-		"assignee_id": assigneeID,
+func overdueStoriesForAssigneeParams(assigneeID, workspaceID uuid.UUID) map[string]any {
+	return map[string]any{
+		"assignee_id":  assigneeID,
+		"workspace_id": workspaceID,
 	}
+}
+
+// getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee in one workspace.
+func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID, workspaceID uuid.UUID) ([]OverdueStory, error) {
+	ctx, span := web.AddSpan(ctx, "jobs.getOverdueStoriesForAssignee")
+	defer span.End()
+
+	query := overdueStoriesForAssigneeQuery()
+	params := overdueStoriesForAssigneeParams(assigneeID, workspaceID)
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -232,6 +241,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 
 	span.AddEvent("stories retrieved", trace.WithAttributes(
 		attribute.String("assignee_id", assigneeID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 		attribute.Int("stories.count", len(stories)),
 	))
 

@@ -32,7 +32,7 @@ export const EmailNotifications = () => {
         <Flex direction="column" gap={6}>
           {notificationConfigs.map((config) => (
             <Entry
-              checked={data?.preferences[config.type].email}
+              checked={data?.preferences[config.type]?.email ?? true}
               description={config.description}
               key={config.type}
               onChange={(checked) => {

@@ -186,6 +186,19 @@ func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *as
 	return nil
 }
 
+// HandleWeeklyDigestEmail processes the weekly digest email task
+func (c *CleanupHandlers) HandleWeeklyDigestEmail(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing WeeklyDigestEmail task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessWeeklyDigestEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+		c.log.Error(ctx, "Failed to process weekly digest email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("weekly digest email failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed WeeklyDigestEmail task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleWorkspaceInactivityWarning processes the workspace inactivity warning task
 func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())

@@ -48,5 +48,9 @@ func getDefaultPreferences() map[string]map[string]bool {
 			"email":  true,
 			"in_app": true,
 		},
+		"weekly_digest": {
+			"email":  true,
+			"in_app": true,
+		},
 	}
 }

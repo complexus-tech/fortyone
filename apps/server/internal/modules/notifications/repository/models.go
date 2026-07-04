@@ -120,6 +120,7 @@ func toCoreNotificationPreferences(db dbNotificationPreferences) (notifications.
 	if err := json.Unmarshal(db.Preferences, &prefs); err != nil {
 		return notifications.CoreNotificationPreferences{}, err
 	}
+	prefs = backfillPreferenceDefaults(prefs)
 
 	return notifications.CoreNotificationPreferences{
 		ID:          db.ID,
@@ -129,4 +130,25 @@ func toCoreNotificationPreferences(db dbNotificationPreferences) (notifications.
 		CreatedAt:   db.CreatedAt,
 		UpdatedAt:   db.UpdatedAt,
 	}, nil
+}
+
+func backfillPreferenceDefaults(prefs map[string]interface{}) map[string]interface{} {
+	if prefs == nil {
+		prefs = make(map[string]interface{})
+	}
+
+	for preferenceType, channels := range getDefaultPreferences() {
+		existingChannels, ok := prefs[preferenceType].(map[string]interface{})
+		if !ok {
+			existingChannels = make(map[string]interface{}, len(channels))
+		}
+		for channel, enabled := range channels {
+			if _, exists := existingChannels[channel]; !exists {
+				existingChannels[channel] = enabled
+			}
+		}
+		prefs[preferenceType] = existingChannels
+	}
+
+	return prefs
 }

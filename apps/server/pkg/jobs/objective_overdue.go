@@ -48,9 +48,9 @@ func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logge
 		// Process each lead in this batch
 		for _, lead := range leads {
 			// Get objectives for this specific lead
-			objectives, err := getOverdueObjectivesForLead(ctx, db, lead.LeadUserID)
+			objectives, err := getOverdueObjectivesForLead(ctx, db, lead.LeadUserID, lead.WorkspaceID)
 			if err != nil {
-				log.Error(ctx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "error", err)
+				log.Error(ctx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "workspace_id", lead.WorkspaceID, "error", err)
 				continue
 			}
 
@@ -202,12 +202,8 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 	return leads, nil
 }
 
-// getOverdueObjectivesForLead gets all objectives needing attention for a specific lead
-func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.UUID) ([]OverdueObjective, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getOverdueObjectivesForLead")
-	defer span.End()
-
-	query := `
+func overdueObjectivesForLeadQuery() string {
+	return `
 		WITH objective_deadlines AS (
 			SELECT 
 				o.objective_id, o.name, o.end_date, o.lead_user_id, o.workspace_id, o.team_id,
@@ -275,6 +271,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			JOIN objective_statuses os ON o.status_id = os.status_id
 			JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 			WHERE o.lead_user_id = :lead_id
+				AND o.workspace_id = :workspace_id
 				AND (
 					-- Objectives that are overdue or due soon
 					o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
@@ -304,10 +301,22 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			OR json_array_length(key_results) > 0
 		ORDER BY deadline_status, end_date;
 `
+}
 
-	params := map[string]any{
-		"lead_id": leadID,
+func overdueObjectivesForLeadParams(leadID, workspaceID uuid.UUID) map[string]any {
+	return map[string]any{
+		"lead_id":      leadID,
+		"workspace_id": workspaceID,
 	}
+}
+
+// getOverdueObjectivesForLead gets all objectives needing attention for a specific lead in one workspace.
+func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID, workspaceID uuid.UUID) ([]OverdueObjective, error) {
+	ctx, span := web.AddSpan(ctx, "jobs.getOverdueObjectivesForLead")
+	defer span.End()
+
+	query := overdueObjectivesForLeadQuery()
+	params := overdueObjectivesForLeadParams(leadID, workspaceID)
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -324,6 +333,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 
 	span.AddEvent("objectives retrieved", trace.WithAttributes(
 		attribute.String("lead_id", leadID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 		attribute.Int("objectives.count", len(objectives)),
 	))
 

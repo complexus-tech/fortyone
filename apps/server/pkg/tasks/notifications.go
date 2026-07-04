@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,12 +11,21 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-const TypeNotificationEmail = "notification:email:send"
+const (
+	TypeNotificationEmail       = "notification:email:send"
+	TypeNotificationEmailDigest = "notification:email:digest"
+	TypeWeeklyDigestEmail       = "email:digest:weekly"
+)
 
 type NotificationEmailPayload struct {
 	NotificationID uuid.UUID `json:"notificationId"`
 	RecipientID    uuid.UUID `json:"recipientId"`
 	WorkspaceID    uuid.UUID `json:"workspaceId"`
+}
+
+type NotificationEmailDigestPayload struct {
+	RecipientID uuid.UUID `json:"recipientId"`
+	WorkspaceID uuid.UUID `json:"workspaceId"`
 }
 
 // EnqueueNotificationEmail enqueues a task to send an email notification after 1 hour delay.
@@ -54,5 +64,53 @@ func (s *Service) EnqueueNotificationEmail(payload NotificationEmailPayload, opt
 		"queue", info.Queue,
 		"notification_id", payload.NotificationID,
 		"process_in", "1 hour")
+	return info, nil
+}
+
+// EnqueueNotificationEmailDigest enqueues one coalesced email task per recipient and workspace.
+func (s *Service) EnqueueNotificationEmailDigest(payload NotificationEmailDigestPayload, opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	ctx := context.Background()
+	s.log.Info(ctx, "Attempting to enqueue NotificationEmailDigest task",
+		"recipient_id", payload.RecipientID,
+		"workspace_id", payload.WorkspaceID)
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		s.log.Error(ctx, "Failed to marshal NotificationEmailDigestPayload", "error", err,
+			"recipient_id", payload.RecipientID,
+			"workspace_id", payload.WorkspaceID)
+		return nil, fmt.Errorf("tasks: failed to marshal %s payload: %w", TypeNotificationEmailDigest, err)
+	}
+
+	defaultOpts := []asynq.Option{
+		asynq.Queue("notifications"),
+		asynq.MaxRetry(2),
+		asynq.ProcessIn(15 * time.Minute),
+		asynq.Unique(30 * time.Minute),
+	}
+
+	finalOpts := append(defaultOpts, opts...)
+	task := asynq.NewTask(TypeNotificationEmailDigest, payloadBytes, finalOpts...)
+
+	info, err := s.asynqClient.Enqueue(task)
+	if errors.Is(err, asynq.ErrDuplicateTask) {
+		s.log.Info(ctx, "NotificationEmailDigest task already queued",
+			"recipient_id", payload.RecipientID,
+			"workspace_id", payload.WorkspaceID)
+		return nil, nil
+	}
+	if err != nil {
+		s.log.Error(ctx, "Failed to enqueue NotificationEmailDigest task", "error", err,
+			"recipient_id", payload.RecipientID,
+			"workspace_id", payload.WorkspaceID)
+		return nil, fmt.Errorf("tasks: failed to enqueue %s task: %w", TypeNotificationEmailDigest, err)
+	}
+
+	s.log.Info(ctx, "Successfully enqueued NotificationEmailDigest task",
+		"task_id", info.ID,
+		"queue", info.Queue,
+		"recipient_id", payload.RecipientID,
+		"workspace_id", payload.WorkspaceID,
+		"process_in", "15 minutes")
 	return info, nil
 }
