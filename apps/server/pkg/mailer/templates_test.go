@@ -88,7 +88,8 @@ func TestNotificationEmailRendersInlineMessageStyles(t *testing.T) {
 		"NotificationsSettingsURL": "https://projects.fortyone.app/settings/notifications",
 	})
 
-	assertContains(t, rendered, `style="margin: 28px 0; padding: 22px 24px; border-radius: 8px; background-color: #f7f7f7; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
+	assertContains(t, rendered, `style="margin: 28px 0; padding: 0; background-color: transparent; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
+	assertNotContains(t, rendered, `padding: 20px 24px; border-radius: 8px; background-color: #f7f7f7;`)
 	assertContains(t, rendered, `style="margin: 0 0 12px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 17px; font-weight: 600; line-height: 1.3;"`)
 	assertContains(t, rendered, `style="margin: 0 0 12px; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
 }
@@ -240,5 +241,13 @@ func assertContains(t *testing.T, value string, expected string) {
 
 	if !strings.Contains(value, expected) {
 		t.Fatalf("expected rendered template to contain %q", expected)
+	}
+}
+
+func assertNotContains(t *testing.T, value string, unexpected string) {
+	t.Helper()
+
+	if strings.Contains(value, unexpected) {
+		t.Fatalf("expected rendered template not to contain %q", unexpected)
 	}
 }

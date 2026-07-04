@@ -168,10 +168,9 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 			priority = "Unknown"
 		}
 		return NotificationMessage{
-			Template: "{actor} set the {field} to {value}",
+			Template: "{actor} changed priority to {value}",
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
-				"field": {Value: "Priority", Type: "field"},
 				"value": {Value: priority, Type: "value"},
 			},
 		}
@@ -181,10 +180,9 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 	if _, exists := updates["status_id"]; exists {
 		if statusName, ok := updates["status_name"].(string); ok && statusName != "" {
 			return NotificationMessage{
-				Template: "{actor} changed the {field} to {value}",
+				Template: "{actor} moved the task to {value}",
 				Variables: map[string]Variable{
 					"actor": {Value: actorName, Type: "actor"},
-					"field": {Value: "Status", Type: "field"},
 					"value": {Value: statusName, Type: "value"},
 				},
 			}

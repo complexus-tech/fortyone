@@ -251,23 +251,20 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 		return "", nil
 	}
 
-	itemText := "updates"
-	if len(items) == 1 {
-		itemText = "update"
-	}
-
 	textStyle := mailer.EmailStyleString("notificationText")
 	listStyle := mailer.EmailStyleString("notificationList")
-	itemStyle := mailer.EmailStyleString("notificationItem")
+	firstItemStyle := mailer.EmailStyleString("notificationItemFirst")
+	defaultItemStyle := mailer.EmailStyleString("notificationItem")
 	linkStyle := mailer.EmailStyleString("notificationLink")
+	messageStyle := mailer.EmailStyleString("notificationMessage")
 
 	content := fmt.Sprintf(`
 		<div style="%s">
-			<p style="%s">You have %d unread %s.</p>
+			<p style="%s">%s</p>
 			<ul style="%s">
-	`, textStyle, textStyle, len(items), itemText, listStyle)
+	`, textStyle, textStyle, html.EscapeString("Here's what changed while you were away."), listStyle)
 
-	for _, item := range items {
+	for index, item := range items {
 		var notificationMsg NotificationMessage
 		if err := json.Unmarshal(item.Message, &notificationMsg); err != nil {
 			return "", fmt.Errorf("failed to unmarshal notification message %s: %w", item.NotificationID, err)
@@ -275,12 +272,16 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 
 		parsedMessage := parseNotificationMessage(notificationMsg)
 		notificationURL := fmt.Sprintf("%s/notifications/%s", workspaceURL, item.NotificationID.String())
+		itemStyle := defaultItemStyle
+		if index == 0 {
+			itemStyle = firstItemStyle
+		}
 		content += fmt.Sprintf(`
 			<li style="%s">
 				<a href="%s" style="%s">%s</a>
-				<div style="%s">%s</div>
+				<p style="%s">%s</p>
 			</li>
-		`, itemStyle, notificationURL, linkStyle, html.EscapeString(item.Title), textStyle, parsedMessage.HTML)
+		`, itemStyle, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title), messageStyle, parsedMessage.HTML)
 	}
 
 	return content + "</ul></div>", nil

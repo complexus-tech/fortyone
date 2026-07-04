@@ -16,10 +16,9 @@ func TestBuildNotificationDigestSubject(t *testing.T) {
 
 func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) {
 	message := NotificationMessage{
-		Template: "{actor} moved {field} to {value}",
+		Template: "{actor} moved the task to {value}",
 		Variables: map[string]Variable{
 			"actor": {Value: "Maya Chen", Type: "actor"},
-			"field": {Value: "status", Type: "field"},
 			"value": {Value: "In review", Type: "value"},
 		},
 	}
@@ -44,9 +43,12 @@ func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) 
 	rendered, err := formatNotificationDigestMessage(items, "https://product.fortyone.app")
 
 	require.NoError(t, err)
-	require.Contains(t, rendered, "You have 2 unread updates")
+	require.Contains(t, rendered, "Here&#39;s what changed while you were away.")
 	require.Contains(t, rendered, "Ship billing states")
 	require.Contains(t, rendered, "Review onboarding copy")
 	require.Contains(t, rendered, "https://product.fortyone.app/notifications/")
 	require.Contains(t, rendered, "<strong")
+	require.Contains(t, rendered, "font-weight: 600")
+	require.Contains(t, rendered, "border-top: 0")
+	require.Contains(t, rendered, "border-top: 1px solid #e5e5e5")
 }

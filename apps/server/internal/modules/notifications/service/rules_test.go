@@ -223,17 +223,28 @@ func TestGenerateUpdateMessage(t *testing.T) {
 			name:    "Priority update",
 			updates: map[string]any{"priority": "High"},
 			expected: NotificationMessage{
-				Template: "{actor} set the {field} to {value}",
+				Template: "{actor} changed priority to {value}",
 				Variables: map[string]Variable{
 					"actor": {Value: "jack", Type: "actor"},
-					"field": {Value: "Priority", Type: "field"},
 					"value": {Value: "High", Type: "value"},
 				},
 			},
 			description: "Should generate structured priority update message",
 		},
 		{
-			name:    "Status update",
+			name:    "Status update with name",
+			updates: map[string]any{"status_id": uuid.New().String(), "status_name": "Closed"},
+			expected: NotificationMessage{
+				Template: "{actor} moved the task to {value}",
+				Variables: map[string]Variable{
+					"actor": {Value: "jack", Type: "actor"},
+					"value": {Value: "Closed", Type: "value"},
+				},
+			},
+			description: "Should generate natural status update message",
+		},
+		{
+			name:    "Status update without name",
 			updates: map[string]any{"status_id": uuid.New().String()},
 			expected: NotificationMessage{
 				Template: "{actor} updated {field}",
