@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
@@ -326,11 +327,16 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	if totalItems > 1 {
 		itemText = "tasks"
 	}
+	panelTitleStyle := mailer.EmailStyleString("panelTitle")
+	textStyle := mailer.EmailStyleString("notificationText")
+	listStyle := mailer.EmailStyleString("notificationList")
+	itemStyle := mailer.EmailStyleString("notificationItem")
+	linkStyle := mailer.EmailStyleString("notificationLink")
 	content := fmt.Sprintf(`
-		<div style="font-size: 15px;">
-			<h3>What's coming up</h3>
-			<p>You have %d %s that need attention</p>
-	`, totalItems, itemText)
+		<div style="%s">
+			<h3 style="%s">What's coming up</h3>
+			<p style="%s">You have %d %s that need attention</p>
+	`, textStyle, panelTitleStyle, textStyle, totalItems, itemText)
 
 	if len(dueSoonStories) > 0 {
 		itemText := "task"
@@ -338,13 +344,13 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
-			<p><strong>Due soon (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueSoonStories), itemText)
+			<p style="%s"><strong style="%s">Due soon (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, mailer.EmailStyleString("detailValue"), len(dueSoonStories), itemText, listStyle)
 		for _, story := range dueSoonStories {
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due %s</li>
-			`, workspaceURL, story.ID.String(), story.Title, story.EndDate.Format("January 2, 2006"))
+				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - Due %s</li>
+			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title), story.EndDate.Format("January 2, 2006"))
 		}
 		content += "</ul>"
 	}
@@ -355,13 +361,13 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
-			<p><strong>Due today (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueTodayStories), itemText)
+			<p style="%s"><strong style="%s">Due today (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, mailer.EmailStyleString("detailValue"), len(dueTodayStories), itemText, listStyle)
 		for _, story := range dueTodayStories {
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due today</li>
-			`, workspaceURL, story.ID.String(), story.Title)
+				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - Due today</li>
+			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title))
 		}
 		content += "</ul>"
 	}
@@ -372,17 +378,17 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 			itemText = "tasks"
 		}
 		content += fmt.Sprintf(`
-			<p><strong>Overdue (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(overdueStories), itemText)
+			<p style="%s"><strong style="%s">Overdue (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, mailer.EmailStyleString("detailValue"), len(overdueStories), itemText, listStyle)
 		for _, story := range overdueStories {
 			daysText := "day"
 			if story.DaysDifference > 1 {
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - %d %s overdue</li>
-			`, workspaceURL, story.ID.String(), story.Title, story.DaysDifference, daysText)
+				<li style="%s"><a href="%s/story/%s" style="%s">%s</a> - %d %s overdue</li>
+			`, itemStyle, workspaceURL, story.ID.String(), linkStyle, html.EscapeString(story.Title), story.DaysDifference, daysText)
 		}
 		content += "</ul>"
 	}

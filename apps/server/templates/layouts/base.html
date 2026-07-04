@@ -349,16 +349,16 @@
       }
     </style>
   </head>
-  <body>
-    <div class="email-shell">
-      <div class="email-inner">
-        <div class="email-brand">
-          <img src="{{ .LogoURL }}" alt="{{ .CompanyName }}" class="logo" />
+  <body style="{{ emailStyle "body" }}">
+    <div class="email-shell" style="{{ emailStyle "shell" }}">
+      <div class="email-inner" style="{{ emailStyle "inner" }}">
+        <div class="email-brand" style="{{ emailStyle "brand" }}">
+          <img src="{{ .LogoURL }}" alt="{{ .CompanyName }}" class="logo" style="{{ emailStyle "logo" }}" />
         </div>
         {{ template "content" . }}
-        <div class="email-footer">
-          <p>{{ .CompanyName }} by Complexus LLC</p>
-          <p>&copy; {{ .Year }} Complexus LLC. All rights reserved.</p>
+        <div class="email-footer" style="{{ emailStyle "footer" }}">
+          <p style="{{ emailStyle "footerText" }}">{{ .CompanyName }} by Complexus LLC</p>
+          <p style="{{ emailStyle "footerTextLast" }}">&copy; {{ .Year }} Complexus LLC. All rights reserved.</p>
         </div>
       </div>
     </div>

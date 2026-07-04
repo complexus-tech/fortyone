@@ -1,18 +1,18 @@
 {{ define "content" }}
-<p class="eyebrow">Workspace status</p>
-<h1 class="heading">You have restored {{ .WorkspaceName }}</h1>
-<div class="email-body">
-  <p class="text">
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Workspace status</p>
+<h1 class="heading" style="{{ emailStyle "heading" }}">You have restored {{ .WorkspaceName }}</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">
     Your workspace has been successfully restored. All workspace data, including
     users, work items, comments, and teams are accessible again.
   </p>
-  <p class="text">You can now continue working with your team as usual.</p>
-  <div class="button-container">
-    <a href="{{ .WorkspaceURL }}" class="button">Open workspace</a>
+  <p class="text" style="{{ emailStyle "text" }}">You can now continue working with your team as usual.</p>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .WorkspaceURL }}" class="button" style="{{ emailStyle "button" }}">Open workspace</a>
   </div>
-  <div class="email-panel is-quiet">
-    <p class="panel-label">Restored by</p>
-    <p class="text" style="margin: 0; color: #111111; font-weight: 500">
+  <div class="email-panel is-quiet" style="{{ emailStyle "quietPanel" }}">
+    <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Restored by</p>
+    <p class="text" style="{{ emailStyle "panelValue" }}">
       {{ .ActorName }} ({{ .ActorEmail }})
     </p>
   </div>

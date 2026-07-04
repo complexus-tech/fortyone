@@ -84,6 +84,7 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 		"safeHTML": func(value string) template.HTML {
 			return template.HTML(value)
 		},
+		"emailStyle": emailStyle,
 	}).ParseFiles(baseTemplatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)

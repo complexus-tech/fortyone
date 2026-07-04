@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
@@ -429,11 +430,17 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 	if totalItems > 1 {
 		itemText = "objectives"
 	}
+	panelTitleStyle := mailer.EmailStyleString("panelTitle")
+	textStyle := mailer.EmailStyleString("notificationText")
+	listStyle := mailer.EmailStyleString("notificationList")
+	itemStyle := mailer.EmailStyleString("notificationItem")
+	linkStyle := mailer.EmailStyleString("notificationLink")
+	strongStyle := mailer.EmailStyleString("detailValue")
 	content := fmt.Sprintf(`
-		<div style="font-size: 15px;">
-			<h3>What's coming up</h3>
-			<p>You have %d %s that need attention</p>
-	`, totalItems, itemText)
+		<div style="%s">
+			<h3 style="%s">What's coming up</h3>
+			<p style="%s">You have %d %s that need attention</p>
+	`, textStyle, panelTitleStyle, textStyle, totalItems, itemText)
 
 	if len(dueSoonObjectives) > 0 {
 		itemText := "objective"
@@ -456,21 +463,21 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		}
 
 		content += fmt.Sprintf(`
-			<p><strong>%s (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, sectionTitle, len(dueSoonObjectives), itemText)
+			<p style="%s"><strong style="%s">%s (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, strongStyle, sectionTitle, len(dueSoonObjectives), itemText, listStyle)
 		for _, objective := range dueSoonObjectives {
 			// Check if this objective is actually due soon or just has key results
 			if objective.DeadlineStatus == "future" {
 				// Objective is on schedule but has key results
 				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - On schedule (key results need attention)</li>
-				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+					<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - On schedule (key results need attention)</li>
+				`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name))
 			} else {
 				// Objective is actually due soon
 				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due %s</li>
-				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+					<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - Due %s</li>
+				`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name), objective.EndDate.Format("January 2, 2006"))
 			}
 
 			// Add key results if any
@@ -487,13 +494,13 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			itemText = "objectives"
 		}
 		content += fmt.Sprintf(`
-			<p><strong>Due today (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueTodayObjectives), itemText)
+			<p style="%s"><strong style="%s">Due today (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, strongStyle, len(dueTodayObjectives), itemText, listStyle)
 		for _, objective := range dueTodayObjectives {
 			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due today</li>
-			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+				<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - Due today</li>
+			`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
@@ -509,17 +516,17 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			itemText = "objectives"
 		}
 		content += fmt.Sprintf(`
-			<p><strong>Overdue (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(overdueObjectives), itemText)
+			<p style="%s"><strong style="%s">Overdue (%d %s)</strong></p>
+			<ul style="%s">
+		`, textStyle, strongStyle, len(overdueObjectives), itemText, listStyle)
 		for _, objective := range overdueObjectives {
 			daysText := "day"
 			if objective.DaysDifference > 1 {
 				daysText = "days"
 			}
 			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - %d %s overdue</li>
-			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
+				<li style="%s"><a href="%s/teams/%s/objectives/%s" style="%s">%s</a> - %d %s overdue</li>
+			`, itemStyle, workspaceURL, objective.TeamID.String(), objective.ID.String(), linkStyle, html.EscapeString(objective.Name), objective.DaysDifference, daysText)
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
@@ -547,7 +554,10 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 		return ""
 	}
 
-	content := "<ul class=\"notification-sublist\">"
+	sublistStyle := mailer.EmailStyleString("notificationSublist")
+	subitemStyle := mailer.EmailStyleString("notificationSubitem")
+	linkStyle := mailer.EmailStyleString("notificationLink")
+	content := fmt.Sprintf("<ul class=\"notification-sublist\" style=\"%s\">", sublistStyle)
 	for _, kr := range keyResults {
 		// Parse the date string to format it properly
 		endDateStr := kr.EndDate // Default to raw string
@@ -577,12 +587,12 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 		}
 
 		content += fmt.Sprintf(`
-			<li class="notification-subitem">
+			<li class="notification-subitem" style="%s">
 				<span>Key result:</span>
-				<a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a>
+				<a href="%s/teams/%s/objectives/%s" style="%s">%s</a>
 				<span>- %s</span>
 			</li>
-		`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
+		`, subitemStyle, workspaceURL, teamID.String(), objectiveID.String(), linkStyle, html.EscapeString(kr.Name), html.EscapeString(statusText))
 	}
 	content += "</ul>"
 	return content

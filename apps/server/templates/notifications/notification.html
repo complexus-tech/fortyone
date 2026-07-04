@@ -1,31 +1,31 @@
 {{ define "content" }}
 {{ if .ActorName }}
-<p class="eyebrow">Notification from {{ .ActorName }}</p>
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Notification from {{ .ActorName }}</p>
 {{ else }}
-<p class="eyebrow">Notification</p>
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Notification</p>
 {{ end }}
-<h1 class="heading">{{ .NotificationTitle }}</h1>
-<div class="email-body">
-  <p class="text">Hi {{ .UserName }},</p>
-  <div class="highlight notification-message">
+<h1 class="heading" style="{{ emailStyle "heading" }}">{{ .NotificationTitle }}</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">Hi {{ .UserName }},</p>
+  <div class="highlight notification-message" style="{{ emailStyle "notificationPanel" }}">
     {{ safeHTML .NotificationMessage }}
   </div>
   {{ if .WorkspaceName }}
-  <div class="email-panel is-quiet">
-    <p class="panel-label">Workspace</p>
-    <p class="text" style="margin: 0; color: #111111; font-weight: 500">
+  <div class="email-panel is-quiet" style="{{ emailStyle "quietPanel" }}">
+    <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Workspace</p>
+    <p class="text" style="{{ emailStyle "panelValue" }}">
       {{ .WorkspaceName }}
     </p>
   </div>
   {{ end }}
   {{ if .NotificationCTAURL }}
-  <div class="button-container">
-    <a href="{{ .NotificationCTAURL }}" class="button">{{ .NotificationCTALabel }}</a>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .NotificationCTAURL }}" class="button" style="{{ emailStyle "button" }}">{{ .NotificationCTALabel }}</a>
   </div>
   {{ end }}
   {{ if .NotificationsSettingsURL }}
-  <div class="secondary-actions">
-    <a href="{{ .NotificationsSettingsURL }}">Manage notifications</a>
+  <div class="secondary-actions" style="{{ emailStyle "secondaryActions" }}">
+    <a href="{{ .NotificationsSettingsURL }}" style="{{ emailStyle "secondaryActionLink" }}">Manage notifications</a>
   </div>
   {{ end }}
 </div>

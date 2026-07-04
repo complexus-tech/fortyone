@@ -1,23 +1,23 @@
 {{ define "content" }}
-<p class="eyebrow">Workspace status</p>
-<h1 class="heading">You have scheduled {{ .WorkspaceName }} for deletion</h1>
-<div class="email-body">
-  <p class="text">
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Workspace status</p>
+<h1 class="heading" style="{{ emailStyle "heading" }}">You have scheduled {{ .WorkspaceName }} for deletion</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">
     Your workspace has been scheduled for deletion. All data will be permanently
     deleted in {{ .DeletionTime }}.
   </p>
-  <p class="text">
+  <p class="text" style="{{ emailStyle "text" }}">
     If you change your mind, log in and cancel the scheduled deletion within
     {{ .DeletionTime }} to prevent permanent data loss.
   </p>
-  <p class="text">FortyOne will not be able to recover your data after deletion.</p>
-  <div class="button-container">
-    <a href="{{ .RestoreURL }}" class="button">Open workspace</a>
+  <p class="text" style="{{ emailStyle "text" }}">FortyOne will not be able to recover your data after deletion.</p>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .RestoreURL }}" class="button" style="{{ emailStyle "button" }}">Open workspace</a>
   </div>
-  <div class="email-panel is-quiet workspace-link-panel">
-    <p class="panel-label">Workspace link</p>
-    <p class="text" style="margin: 0">
-      <a href="{{ .WorkspaceURL }}" class="workspace-link">{{ .WorkspaceURL }}</a>
+  <div class="email-panel is-quiet workspace-link-panel" style="{{ emailStyle "quietPanel" }}">
+    <p class="panel-label" style="{{ emailStyle "panelLabelTight" }}">Workspace link</p>
+    <p class="text" style="{{ emailStyle "textNoMargin" }}">
+      <a href="{{ .WorkspaceURL }}" class="workspace-link" style="{{ emailStyle "workspaceLink" }}">{{ .WorkspaceURL }}</a>
     </p>
   </div>
 </div>

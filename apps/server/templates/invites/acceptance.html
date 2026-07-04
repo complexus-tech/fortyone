@@ -1,13 +1,13 @@
 {{ define "content" }}
-<p class="eyebrow">Invitation accepted</p>
-<h1 class="heading">{{ .InviteeName }} joined {{ .WorkspaceName }}</h1>
-<div class="email-body">
-  <p class="text">
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Invitation accepted</p>
+<h1 class="heading" style="{{ emailStyle "heading" }}">{{ .InviteeName }} joined {{ .WorkspaceName }}</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">
     Great news. {{ .InviteeName }} accepted your invitation to join
     {{ .WorkspaceName }} and has joined as {{ .Role }}.
   </p>
-  <div class="button-container">
-    <a href="{{ .LoginURL }}" class="button">Go to {{ .WorkspaceName }}</a>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .LoginURL }}" class="button" style="{{ emailStyle "button" }}">Go to {{ .WorkspaceName }}</a>
   </div>
 </div>
 {{ end }}

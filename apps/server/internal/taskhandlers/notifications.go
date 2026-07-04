@@ -58,11 +58,11 @@ func parseNotificationMessage(msg NotificationMessage) ParsedMessage {
 		var htmlValue string
 		switch variable.Type {
 		case "actor":
-			htmlValue = fmt.Sprintf("<strong>%s</strong>", html.EscapeString(value))
+			htmlValue = fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), html.EscapeString(value))
 		case "field":
-			htmlValue = fmt.Sprintf("<em>%s</em>", html.EscapeString(value))
+			htmlValue = fmt.Sprintf("<em style=\"%s\">%s</em>", mailer.EmailStyleString("detailValue"), html.EscapeString(value))
 		case "value", "date":
-			htmlValue = fmt.Sprintf("<strong>%s</strong>", html.EscapeString(value))
+			htmlValue = fmt.Sprintf("<strong style=\"%s\">%s</strong>", mailer.EmailStyleString("detailValue"), html.EscapeString(value))
 		default:
 			htmlValue = html.EscapeString(value)
 		}

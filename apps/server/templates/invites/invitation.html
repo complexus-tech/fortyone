@@ -1,32 +1,32 @@
 {{ define "content" }}
-<p class="eyebrow">Workspace invitation</p>
-<h1 class="heading">You're invited to join {{ .WorkspaceName }}</h1>
-<div class="email-body">
-  <p class="text">
+<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Workspace invitation</p>
+<h1 class="heading" style="{{ emailStyle "heading" }}">You're invited to join {{ .WorkspaceName }}</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">
     Join your team to align on goals, track OKRs, and drive measurable outcomes
     together. This invitation expires in {{ .ExpiresIn }}.
   </p>
-  <div class="highlight">
-    <p class="panel-label">Invitation details</p>
-    <ul class="detail-list">
-      <li class="detail-row">
-        <span class="detail-label">Workspace</span>
-        <span class="detail-value">{{ .WorkspaceName }}</span>
+  <div class="highlight" style="{{ emailStyle "panel" }}">
+    <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Invitation details</p>
+    <ul class="detail-list" style="{{ emailStyle "detailList" }}">
+      <li class="detail-row" style="{{ emailStyle "detailRow" }}">
+        <span class="detail-label" style="{{ emailStyle "detailLabel" }}">Workspace</span>
+        <span class="detail-value" style="{{ emailStyle "detailValue" }}">{{ .WorkspaceName }}</span>
       </li>
-      <li class="detail-row">
-        <span class="detail-label">Your role</span>
-        <span class="detail-value">{{ .Role }}</span>
+      <li class="detail-row" style="{{ emailStyle "detailRow" }}">
+        <span class="detail-label" style="{{ emailStyle "detailLabel" }}">Your role</span>
+        <span class="detail-value" style="{{ emailStyle "detailValue" }}">{{ .Role }}</span>
       </li>
-      <li class="detail-row">
-        <span class="detail-label">Invited by</span>
-        <span class="detail-value">{{ .InviterName }}</span>
+      <li class="detail-row" style="{{ emailStyle "detailRow" }}">
+        <span class="detail-label" style="{{ emailStyle "detailLabel" }}">Invited by</span>
+        <span class="detail-value" style="{{ emailStyle "detailValue" }}">{{ .InviterName }}</span>
       </li>
     </ul>
   </div>
-  <div class="button-container">
-    <a href="{{ .VerificationURL }}" class="button">Join {{ .WorkspaceName }}</a>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .VerificationURL }}" class="button" style="{{ emailStyle "button" }}">Join {{ .WorkspaceName }}</a>
   </div>
-  <p class="security-note">
+  <p class="security-note" style="{{ emailStyle "securityNote" }}">
     If you were not expecting this invitation, you can ignore it.
   </p>
 </div>
