@@ -261,7 +261,7 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 	content := fmt.Sprintf(`
 		<div style="%s">
 			<p style="%s">%s</p>
-			<ul style="%s">
+			<div style="%s">
 	`, textStyle, textStyle, html.EscapeString("Here's what changed while you were away."), listStyle)
 
 	for index, item := range items {
@@ -277,14 +277,13 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 			itemStyle = firstItemStyle
 		}
 		content += fmt.Sprintf(`
-			<li style="%s">
-				<a href="%s" style="%s">%s</a>
-				<p style="%s">%s</p>
-			</li>
-		`, itemStyle, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title), messageStyle, parsedMessage.HTML)
+			<div style="%s">
+				<p style="%s">%s for task <a href="%s" style="%s">%s</a></p>
+			</div>
+		`, itemStyle, messageStyle, parsedMessage.HTML, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title))
 	}
 
-	return content + "</ul></div>", nil
+	return content + "</div></div>", nil
 }
 
 func (h *handlers) markNotificationsEmailSent(ctx context.Context, notificationIDs []uuid.UUID) error {

@@ -10,14 +10,6 @@
   <div class="highlight notification-message" style="{{ emailStyle "notificationPanel" }}">
     {{ safeHTML .NotificationMessage }}
   </div>
-  {{ if .WorkspaceName }}
-  <div class="email-panel is-quiet" style="{{ emailStyle "quietPanel" }}">
-    <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Workspace</p>
-    <p class="text" style="{{ emailStyle "panelValue" }}">
-      {{ .WorkspaceName }}
-    </p>
-  </div>
-  {{ end }}
   {{ if .NotificationCTAURL }}
   <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
     <a href="{{ .NotificationCTAURL }}" class="button" style="{{ emailStyle "button" }}">{{ .NotificationCTALabel }}</a>

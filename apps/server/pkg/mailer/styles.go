@@ -39,16 +39,16 @@ var emailStyles = map[string]string{
 	"secondaryActionLink":   `color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
 	"workspaceLink":         `display: inline-block; overflow-wrap: anywhere; color: #111111; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;`,
 	"notificationText":      `margin: 0 0 14px; color: #303030; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
-	"notificationList":      `margin: 0; padding: 0; list-style: none;`,
-	"notificationItemFirst": `padding: 2px 0 16px; border-top: 0; color: #303030; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
-	"notificationItem":      `padding: 16px 0; border-top: 1px solid #e5e5e5; color: #303030; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"notificationList":      `margin: 0; padding: 0;`,
+	"notificationItemFirst": `padding: 0 0 10px; border-top: 0; color: #303030; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"notificationItem":      `padding: 10px 0; border-top: 1px solid #e5e5e5; color: #303030; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
 	"notificationSublist":   `margin: 6px 0 12px; padding: 0; list-style: none;`,
 	"notificationSubitem":   `padding: 8px 0; border-top: 0; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
 	"notificationMessage":   `margin: 0; color: #4f4c48; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.55;`,
-	"notificationLink":      `display: block; margin: 0 0 4px; color: #111111; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 600; line-height: 1.4; text-decoration: none;`,
-	"footer":                `margin-top: 46px; padding-top: 26px; border-top: 1px solid #e5e5e5; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 1.6;`,
-	"footerText":            `margin: 0 0 6px; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 1.6;`,
-	"footerTextLast":        `margin: 0; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 13px; line-height: 1.6;`,
+	"notificationLink":      `display: inline; color: #111111; font-family: ` + emailFontStack + `; font-size: 14px; font-weight: 600; line-height: 1.55; text-decoration: none;`,
+	"footer":                `margin-top: 46px; padding-top: 26px; border-top: 1px solid #e5e5e5; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"footerText":            `margin: 0 0 6px; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
+	"footerTextLast":        `margin: 0; color: #6f6c67; font-family: ` + emailFontStack + `; font-size: 14px; line-height: 1.5;`,
 }
 
 func emailStyle(name string) template.CSS {
