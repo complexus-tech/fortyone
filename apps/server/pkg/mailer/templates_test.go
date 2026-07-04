@@ -18,8 +18,10 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 		"OTP":             "827657",
 	})
 
-	assertContains(t, rendered, "fonts.googleapis.com/css2?family=Inter:wght@400;500;600")
-	assertContains(t, rendered, `font-family: "Inter", -apple-system`)
+	assertContains(t, rendered, "fonts.googleapis.com/css2?family=Geist:wght@400;500;600")
+	assertContains(t, rendered, "@font-face")
+	assertContains(t, rendered, "font-family: 'Geist'")
+	assertContains(t, rendered, `font-family: "Geist", Helvetica, Arial, sans-serif`)
 	assertContains(t, rendered, "background-color: #ffffff")
 	assertContains(t, rendered, ".email-title")
 	assertContains(t, rendered, "font-weight: 600")
@@ -31,8 +33,14 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	assertContains(t, rendered, ".email-body .security-note")
 	assertContains(t, rendered, "FortyOne by Complexus LLC")
 
+	if strings.Contains(rendered, "Inter") {
+		t.Fatalf("email template should not reference Inter")
+	}
+	if strings.Contains(rendered, "Jost") {
+		t.Fatalf("email template should not reference Jost")
+	}
 	if strings.Contains(rendered, "wght@400;500;600;700") {
-		t.Fatalf("email template should not load bold Inter weight")
+		t.Fatalf("email template should not load bold font weight")
 	}
 	if strings.Contains(rendered, "min-height: 48px") {
 		t.Fatalf("email buttons should not use min-height because it adds extra height on top of padding in email clients")
