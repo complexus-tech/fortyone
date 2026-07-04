@@ -1,9 +1,4 @@
 {{ define "content" }}
-{{ if .ActorName }}
-<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Notification from {{ .ActorName }}</p>
-{{ else }}
-<p class="eyebrow" style="{{ emailStyle "eyebrow" }}">Notification</p>
-{{ end }}
 <h1 class="heading" style="{{ emailStyle "heading" }}">{{ .NotificationTitle }}</h1>
 <div class="email-body" style="{{ emailStyle "bodyBlock" }}">
   <p class="text" style="{{ emailStyle "text" }}">Hi {{ .UserName }},</p>

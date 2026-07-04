@@ -24,12 +24,12 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	assertContains(t, rendered, `font-family: "Geist", Helvetica, Arial, sans-serif`)
 	assertContains(t, rendered, "background-color: #ffffff")
 	assertContains(t, rendered, ".email-title")
-	assertContains(t, rendered, `style="margin: 0 0 14px; color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.4; text-transform: uppercase;"`)
-	assertContains(t, rendered, `style="margin: 0; max-width: 520px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 30px; font-weight: 600; line-height: 1.16;"`)
+	assertNotContains(t, rendered, `class="eyebrow"`)
+	assertContains(t, rendered, `style="margin: 0; max-width: 520px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 600; line-height: 1.16;"`)
 	assertContains(t, rendered, `style="margin: 0 0 18px; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
-	assertContains(t, rendered, `style="display: inline-block; padding: 13px 22px; border-radius: 8px; background-color: #111111; color: #ffffff; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.35; text-align: center; text-decoration: none;"`)
+	assertContains(t, rendered, `style="display: inline-block; padding: 13px 22px; border-radius: 8px; background-color: #111111; color: #ffffff; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.35; text-align: center; text-decoration: none;"`)
 	assertContains(t, rendered, "font-weight: 600")
-	assertContains(t, rendered, "font-size: 30px")
+	assertContains(t, rendered, "font-size: 26px")
 	assertContains(t, rendered, "padding: 13px 22px")
 	assertContains(t, rendered, ".verification-code")
 	assertContains(t, rendered, ".email-body .verification-code")
@@ -70,7 +70,7 @@ func TestWorkspaceLinkEmailsRenderUnderlinedLinks(t *testing.T) {
 
 			assertContains(t, rendered, "Workspace link")
 			assertContains(t, rendered, "class=\"workspace-link\"")
-			assertContains(t, rendered, `style="display: inline-block; overflow-wrap: anywhere; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
+			assertContains(t, rendered, `style="display: inline-block; overflow-wrap: anywhere; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
 			assertContains(t, rendered, "margin-bottom: 4px")
 			assertContains(t, rendered, "https://projects.fortyone.app/workspaces/art-circles")
 		})
@@ -81,7 +81,7 @@ func TestNotificationEmailRendersInlineMessageStyles(t *testing.T) {
 	rendered := renderTemplateForTest(t, "notifications/notification", map[string]any{
 		"NotificationTitle":        "3 tasks need attention",
 		"UserName":                 "Joseph Mukorivo",
-		"NotificationMessage":      `<h3 style="margin: 0 0 12px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 17px; font-weight: 600; line-height: 1.3;">What's coming up</h3><p style="margin: 0 0 12px; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;">You have 3 tasks that need attention.</p>`,
+		"NotificationMessage":      `<h3 style="margin: 0 0 12px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3;">What's coming up</h3><p style="margin: 0 0 12px; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;">You have 3 tasks that need attention.</p>`,
 		"WorkspaceName":            "Art Circles",
 		"NotificationCTAURL":       "https://projects.fortyone.app/work",
 		"NotificationCTALabel":     "View my work",
@@ -90,12 +90,12 @@ func TestNotificationEmailRendersInlineMessageStyles(t *testing.T) {
 
 	assertContains(t, rendered, `style="margin: 28px 0; padding: 0; background-color: transparent; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
 	assertNotContains(t, rendered, `padding: 20px 24px; border-radius: 8px; background-color: #f7f7f7;`)
-	assertContains(t, rendered, `style="margin: 0 0 12px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 17px; font-weight: 600; line-height: 1.3;"`)
+	assertContains(t, rendered, `style="margin: 0 0 12px; color: #111111; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3;"`)
 	assertContains(t, rendered, `style="margin: 0 0 12px; color: #303030; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.62;"`)
 	assertNotContains(t, rendered, "Workspace</p>")
 	assertNotContains(t, rendered, `style="margin: 28px 0; padding: 22px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background-color: transparent; border-radius: 0;"`)
-	assertContains(t, rendered, `style="color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
-	assertContains(t, rendered, `style="margin: 0 0 6px; color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5;"`)
+	assertContains(t, rendered, `style="color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;"`)
+	assertContains(t, rendered, `style="margin: 0 0 6px; color: #6f6c67; font-family: Geist, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5;"`)
 }
 
 func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
@@ -176,6 +176,7 @@ func TestAllEmailTemplatesRenderWithApprovedLayout(t *testing.T) {
 			assertContains(t, rendered, "class=\"email-inner\"")
 			assertContains(t, rendered, "class=\"email-footer\"")
 			assertContains(t, rendered, "FortyOne by Complexus LLC")
+			assertNotContains(t, rendered, `class="eyebrow"`)
 		})
 	}
 }
