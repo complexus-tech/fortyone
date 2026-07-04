@@ -24,6 +24,7 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 	assertContains(t, rendered, ".email-title")
 	assertContains(t, rendered, "font-weight: 600")
 	assertContains(t, rendered, "font-size: 30px")
+	assertContains(t, rendered, "padding: 13px 22px")
 	assertContains(t, rendered, ".verification-code")
 	assertContains(t, rendered, ".email-body .verification-code")
 	assertContains(t, rendered, `font-family: "SFMono-Regular", "Roboto Mono"`)
@@ -32,6 +33,9 @@ func TestTemplatesRenderApprovedEmailSystem(t *testing.T) {
 
 	if strings.Contains(rendered, "wght@400;500;600;700") {
 		t.Fatalf("email template should not load bold Inter weight")
+	}
+	if strings.Contains(rendered, "min-height: 48px") {
+		t.Fatalf("email buttons should not use min-height because it adds extra height on top of padding in email clients")
 	}
 }
 
