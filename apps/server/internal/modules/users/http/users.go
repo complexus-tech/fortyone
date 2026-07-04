@@ -599,7 +599,7 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 
 	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType, time.Now().Add(10*time.Minute))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return respondVerificationTokenCreationError(ctx, w, err)
 	}
 
 	event := events.Event{
@@ -828,7 +828,7 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	// Create verification token with 5-minute expiry
 	token, err := h.users.CreateVerificationToken(ctx, user.Email, users.TokenTypeLogin, time.Now().Add(5*time.Minute))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return respondVerificationTokenCreationError(ctx, w, err)
 	}
 
 	response := GenerateSessionCodeResponse{
@@ -837,6 +837,13 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+func respondVerificationTokenCreationError(ctx context.Context, w http.ResponseWriter, err error) error {
+	if errors.Is(err, users.ErrTooManyAttempts) {
+		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
+	}
+	return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 }
 
 // CreateSession exchanges a valid auth token for a secure session cookie.
