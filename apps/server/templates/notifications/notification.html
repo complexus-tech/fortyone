@@ -5,24 +5,28 @@
 <p class="eyebrow">Notification</p>
 {{ end }}
 <h1 class="heading">{{ .NotificationTitle }}</h1>
-<p class="text">Hi {{ .UserName }},</p>
-<div class="highlight notification-message">
-  {{ safeHTML .NotificationMessage }}
+<div class="email-body">
+  <p class="text">Hi {{ .UserName }},</p>
+  <div class="highlight notification-message">
+    {{ safeHTML .NotificationMessage }}
+  </div>
+  {{ if .WorkspaceName }}
+  <div class="email-panel is-quiet">
+    <p class="panel-label">Workspace</p>
+    <p class="text" style="margin: 0; color: #111111; font-weight: 500">
+      {{ .WorkspaceName }}
+    </p>
+  </div>
+  {{ end }}
+  {{ if .NotificationCTAURL }}
+  <div class="button-container">
+    <a href="{{ .NotificationCTAURL }}" class="button">{{ .NotificationCTALabel }}</a>
+  </div>
+  {{ end }}
+  {{ if .NotificationsSettingsURL }}
+  <div class="secondary-actions">
+    <a href="{{ .NotificationsSettingsURL }}">Manage notifications</a>
+  </div>
+  {{ end }}
 </div>
-{{ if .WorkspaceName }}
-<p class="meta">Workspace</p>
-<p class="text">{{ .WorkspaceName }}</p>
-{{ end }}
-{{ if .NotificationCTAURL }}
-<div class="button-container">
-  <a href="{{ .NotificationCTAURL }}" class="button">{{ .NotificationCTALabel }}</a>
-</div>
-{{ end }}
-{{ if .NotificationsSettingsURL }}
-<p class="text" style="margin-top: 0">
-  <a href="{{ .NotificationsSettingsURL }}" style="color: #555555; font-size: 14px">
-    Manage notifications
-  </a>
-</p>
-{{ end }}
 {{ end }}

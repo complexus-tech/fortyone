@@ -1,20 +1,33 @@
 {{ define "content" }}
 <p class="eyebrow">Workspace invitation</p>
 <h1 class="heading">You're invited to join {{ .WorkspaceName }}</h1>
-<p class="text">
-  Join your team to align on goals, track OKRs, and drive measurable outcomes
-  together. This invitation expires in {{ .ExpiresIn }}.
-</p>
-<div class="highlight">
-  <p class="meta">Invitation details</p>
-  <p class="text" style="margin: 6px 0 0">
-    Workspace: {{ .WorkspaceName }}
+<div class="email-body">
+  <p class="text">
+    Join your team to align on goals, track OKRs, and drive measurable outcomes
+    together. This invitation expires in {{ .ExpiresIn }}.
   </p>
-  <p class="text" style="margin: 6px 0 0">Your role: {{ .Role }}</p>
-  <p class="text" style="margin: 6px 0 0">Invited by: {{ .InviterName }}</p>
+  <div class="highlight">
+    <p class="panel-label">Invitation details</p>
+    <ul class="detail-list">
+      <li class="detail-row">
+        <span class="detail-label">Workspace</span>
+        <span class="detail-value">{{ .WorkspaceName }}</span>
+      </li>
+      <li class="detail-row">
+        <span class="detail-label">Your role</span>
+        <span class="detail-value">{{ .Role }}</span>
+      </li>
+      <li class="detail-row">
+        <span class="detail-label">Invited by</span>
+        <span class="detail-value">{{ .InviterName }}</span>
+      </li>
+    </ul>
+  </div>
+  <div class="button-container">
+    <a href="{{ .VerificationURL }}" class="button">Join {{ .WorkspaceName }}</a>
+  </div>
+  <p class="security-note">
+    If you were not expecting this invitation, you can ignore it.
+  </p>
 </div>
-<div class="button-container">
-  <a href="{{ .VerificationURL }}" class="button">Join {{ .WorkspaceName }}</a>
-</div>
-<p class="text">If you were not expecting this invitation, you can ignore it.</p>
 {{ end }}
