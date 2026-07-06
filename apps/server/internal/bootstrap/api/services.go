@@ -7,6 +7,8 @@ import (
 
 	activitiesrepository "github.com/complexus-tech/projects-api/internal/modules/activities/repository"
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
+	adminrepository "github.com/complexus-tech/projects-api/internal/modules/admin/repository"
+	admin "github.com/complexus-tech/projects-api/internal/modules/admin/service"
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
@@ -75,6 +77,7 @@ import (
 
 type services struct {
 	activities          *activities.Service
+	admin               *admin.Service
 	attachments         *attachments.Service
 	calendar            *calendar.Service
 	chatSessions        *chatsessions.Service
@@ -242,6 +245,7 @@ func buildServices(cfg mux.Config) services {
 
 	return services{
 		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
+		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB)),
 		attachments:         attachmentsService,
 		calendar:            calendarService,
 		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
@@ -288,6 +292,9 @@ func ensureBackgroundMayaEnabled(ctx context.Context, db *sqlx.DB, workspaceID u
 func (s services) validate() error {
 	if s.activities == nil {
 		return fmt.Errorf("missing service: activities")
+	}
+	if s.admin == nil {
+		return fmt.Errorf("missing service: admin")
 	}
 	if s.attachments == nil {
 		return fmt.Errorf("missing service: attachments")

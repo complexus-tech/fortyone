@@ -4,6 +4,7 @@ import (
 	"context"
 
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
+	adminhttp "github.com/complexus-tech/projects-api/internal/modules/admin/http"
 	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
@@ -79,6 +80,12 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,
 		Log: cfg.Log,
+	}, app)
+
+	adminhttp.Routes(adminhttp.Config{
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Service:   svcs.admin,
 	}, app)
 
 	githubhttp.Routes(githubhttp.Config{
