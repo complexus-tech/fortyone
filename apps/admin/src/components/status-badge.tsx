@@ -9,7 +9,7 @@ export const WorkspaceStatusBadge = ({
 }) => {
   if (workspace.deletedAt) {
     return (
-      <Badge color="danger" rounded="full" size="sm" variant="outline">
+      <Badge color="danger" size="sm" variant="outline">
         Deleted
       </Badge>
     );
@@ -23,7 +23,7 @@ export const WorkspaceStatusBadge = ({
     ["active", "trialing", "past_due"].includes(subscriptionStatus ?? "")
   ) {
     return (
-      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
+      <Badge color="tertiary" size="sm">
         Paid
       </Badge>
     );
@@ -32,7 +32,7 @@ export const WorkspaceStatusBadge = ({
   const days = daysFromNow(workspace.trialEndsOn);
   if (days !== null && days >= 0) {
     return (
-      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
+      <Badge color="tertiary" size="sm">
         Trial
       </Badge>
     );
@@ -40,14 +40,14 @@ export const WorkspaceStatusBadge = ({
 
   if (days !== null && days < 0) {
     return (
-      <Badge color="warning" rounded="full" size="sm" variant="outline">
+      <Badge color="tertiary" size="sm">
         Expired
       </Badge>
     );
   }
 
   return (
-    <Badge color="tertiary" rounded="md" size="sm" variant="outline">
+    <Badge color="tertiary" size="sm">
       Free
     </Badge>
   );
@@ -62,7 +62,7 @@ export const UserStatusBadge = ({
 }) => {
   if (!isActive) {
     return (
-      <Badge color="danger" rounded="full" size="sm" variant="outline">
+      <Badge color="danger" size="sm" variant="outline">
         Inactive
       </Badge>
     );
@@ -70,14 +70,14 @@ export const UserStatusBadge = ({
 
   if (isInternal) {
     return (
-      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
+      <Badge color="tertiary" size="sm">
         Internal
       </Badge>
     );
   }
 
   return (
-    <Badge color="tertiary" rounded="md" size="sm" variant="outline">
+    <Badge color="tertiary" size="sm">
       Active
     </Badge>
   );

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { UserIcon, WorkspaceIcon } from "icons";
-import { Box, Flex, Table, Text } from "ui";
+import { Avatar, Box, Flex, Table, Text } from "ui";
 import { getUser } from "@/lib/admin-api";
 import { formatCount, formatDate, formatDateTime } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
@@ -22,6 +22,14 @@ export default async function UserDetailPage({
       <PageHeader
         description={`${user.email} · Joined ${formatDate(user.createdAt)}`}
         eyebrow="User"
+        icon={
+          <Avatar
+            className="h-5 text-[0.7rem]"
+            name={user.fullName || user.username}
+            src={user.avatarUrl}
+          />
+        }
+        parentHref="/users"
         title={user.fullName || user.username}
       />
 
@@ -50,8 +58,8 @@ export default async function UserDetailPage({
           />
           <MetricCard
             detail={
-              user.gitHubUsername
-                ? `GitHub: ${user.gitHubUsername}`
+              user.githubUsername
+                ? `GitHub: ${user.githubUsername}`
                 : "No GitHub username"
             }
             label="Identity"
@@ -63,7 +71,7 @@ export default async function UserDetailPage({
           <Box className="border-border bg-surface rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Account details</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Core user metadata and access flags.
               </Text>
             </Box>
@@ -95,12 +103,12 @@ export default async function UserDetailPage({
           <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Workspace memberships</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Workspaces this user can access.
               </Text>
             </Box>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
                     <Table.Th>Workspace</Table.Th>
@@ -112,21 +120,29 @@ export default async function UserDetailPage({
                   {memberships.length > 0 ? (
                     memberships.map((membership) => (
                       <Table.Tr key={membership.workspaceId}>
-                        <Table.Td>
-                          <Link
-                            className="hover:text-primary line-clamp-1"
-                            href={`/workspaces/${membership.workspaceId}`}
-                          >
-                            {membership.workspaceName}
-                          </Link>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {membership.workspaceSlug}
-                          </Text>
+                        <Table.Td className="min-w-72 whitespace-nowrap">
+                          <Flex align="center" className="gap-2">
+                            <Link
+                              className="hover:text-primary line-clamp-1"
+                              href={`/workspaces/${membership.workspaceId}`}
+                            >
+                              {membership.workspaceName}
+                            </Link>
+                            <Text
+                              as="span"
+                              className="line-clamp-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              /{membership.workspaceSlug}
+                            </Text>
+                          </Flex>
                         </Table.Td>
-                        <Table.Td className="capitalize">
+                        <Table.Td className="whitespace-nowrap capitalize">
                           {membership.role}
                         </Table.Td>
-                        <Table.Td>{formatDate(membership.joinedAt)}</Table.Td>
+                        <Table.Td className="whitespace-nowrap">
+                          {formatDate(membership.joinedAt)}
+                        </Table.Td>
                       </Table.Tr>
                     ))
                   ) : (
@@ -157,7 +173,7 @@ const DetailRow = ({
 }) => {
   return (
     <Flex align="start" className="gap-4 px-4 py-3" justify="between">
-      <Text className="text-[0.92rem]" color="muted">
+      <Text className="text-[0.95rem]" color="muted">
         {label}
       </Text>
       <Box className="max-w-[70%] text-right">{children}</Box>

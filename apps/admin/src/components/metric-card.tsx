@@ -16,11 +16,11 @@ export const MetricCard = ({
     <Box className="border-border bg-surface rounded-lg border-[0.5px] p-4">
       <Flex align="start" justify="between">
         <Box>
-          <Text className="text-[0.92rem]" color="muted">
+          <Text className="text-[0.95rem]" color="muted">
             {label}
           </Text>
           <Text
-            className="font-heading mt-2 text-[1.65rem] leading-none"
+            className="mt-2 text-[1.65rem] leading-none"
             fontWeight="semibold"
           >
             {value}
@@ -33,7 +33,7 @@ export const MetricCard = ({
         ) : null}
       </Flex>
       {detail ? (
-        <Text className="mt-3 text-[0.92rem]" color="muted">
+        <Text className="mt-3 text-[0.95rem]" color="muted">
           {detail}
         </Text>
       ) : null}

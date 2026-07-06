@@ -37,6 +37,8 @@ export default async function WorkspaceDetailPage({
         actions={<TrialExtensionDialog workspace={workspace} />}
         description={`${workspace.slug} · Created ${formatDate(workspace.createdAt)}`}
         eyebrow="Workspace"
+        icon={<WorkspaceIcon className="h-[1.1rem]" />}
+        parentHref="/workspaces"
         title={workspace.name}
       />
 
@@ -70,7 +72,7 @@ export default async function WorkspaceDetailPage({
           <Box className="border-border bg-surface rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Workspace details</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Operational state and connected systems.
               </Text>
             </Box>
@@ -85,7 +87,7 @@ export default async function WorkspaceDetailPage({
                     "Unknown"}
                 </Text>
                 {workspace.createdByEmail ? (
-                  <Text className="mt-0.5 text-[0.92rem]" color="muted">
+                  <Text className="mt-0.5 text-[0.95rem]" color="muted">
                     {workspace.createdByEmail}
                   </Text>
                 ) : null}
@@ -98,23 +100,13 @@ export default async function WorkspaceDetailPage({
               </DetailRow>
               <DetailRow label="Integrations">
                 <Flex align="center" className="gap-2">
-                  <Badge
-                    color={workspace.slackInstalled ? "success" : "tertiary"}
-                    rounded="full"
-                    size="sm"
-                    variant={workspace.slackInstalled ? "outline" : "solid"}
-                  >
+                  <Badge color="tertiary" size="sm">
                     <SlackIcon className="h-3.5" />
-                    Slack
+                    {workspace.slackInstalled ? "Slack" : "No Slack"}
                   </Badge>
-                  <Badge
-                    color={workspace.gitHubInstalled ? "success" : "tertiary"}
-                    rounded="full"
-                    size="sm"
-                    variant={workspace.gitHubInstalled ? "outline" : "solid"}
-                  >
+                  <Badge color="tertiary" size="sm">
                     <GitHubIcon className="h-3.5" />
-                    GitHub
+                    {workspace.githubInstalled ? "GitHub" : "No GitHub"}
                   </Badge>
                 </Flex>
               </DetailRow>
@@ -124,12 +116,12 @@ export default async function WorkspaceDetailPage({
           <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Members</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Users with access to this workspace.
               </Text>
             </Box>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
                     <Table.Th>User</Table.Th>
@@ -141,25 +133,35 @@ export default async function WorkspaceDetailPage({
                 <Table.Body>
                   {members.map((member) => (
                     <Table.Tr key={member.userId}>
-                      <Table.Td>
-                        <Link
-                          className="hover:text-primary line-clamp-1"
-                          href={`/users/${member.userId}`}
-                        >
-                          {member.fullName || member.email}
-                        </Link>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {member.email}
-                        </Text>
+                      <Table.Td className="min-w-80 whitespace-nowrap">
+                        <Flex align="center" className="gap-2">
+                          <Link
+                            className="hover:text-primary line-clamp-1"
+                            href={`/users/${member.userId}`}
+                          >
+                            {member.fullName || member.email}
+                          </Link>
+                          <Text
+                            as="span"
+                            className="line-clamp-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            · {member.email}
+                          </Text>
+                        </Flex>
                       </Table.Td>
-                      <Table.Td className="capitalize">{member.role}</Table.Td>
+                      <Table.Td className="whitespace-nowrap capitalize">
+                        {member.role}
+                      </Table.Td>
                       <Table.Td>
                         <UserStatusBadge
                           isActive
                           isInternal={member.isInternal}
                         />
                       </Table.Td>
-                      <Table.Td>{formatDate(member.joinedAt)}</Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDate(member.joinedAt)}
+                      </Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Body>
@@ -171,12 +173,12 @@ export default async function WorkspaceDetailPage({
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="border-border border-b-[0.5px] px-4 py-3">
             <Text fontWeight="semibold">Workspace audit history</Text>
-            <Text className="mt-1 text-[0.92rem]" color="muted">
+            <Text className="mt-1 text-[0.95rem]" color="muted">
               Admin actions related to this workspace.
             </Text>
           </Box>
           <Box className="overflow-x-auto">
-            <Table>
+            <Table color="light" variant="bordered">
               <Table.Head>
                 <Table.Tr>
                   <Table.Th>Action</Table.Th>
@@ -190,25 +192,35 @@ export default async function WorkspaceDetailPage({
                 {auditLogs.items.length > 0 ? (
                   auditLogs.items.map((entry) => (
                     <Table.Tr key={entry.id}>
-                      <Table.Td>{humanizeKey(entry.action)}</Table.Td>
-                      <Table.Td>{entry.actorName || entry.actorEmail}</Table.Td>
-                      <Table.Td className="min-w-52">
+                      <Table.Td className="min-w-48 whitespace-nowrap">
+                        {humanizeKey(entry.action)}
+                      </Table.Td>
+                      <Table.Td className="min-w-64 whitespace-nowrap">
+                        {entry.actorName || entry.actorEmail}
+                      </Table.Td>
+                      <Table.Td className="min-w-72 whitespace-nowrap">
                         <Text>
                           {formatValue(entry.oldValue)} -&gt;{" "}
                           {formatValue(entry.newValue)}
+                          {entry.fieldName ? (
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {entry.fieldName}
+                            </Text>
+                          ) : null}
                         </Text>
-                        {entry.fieldName ? (
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {entry.fieldName}
-                          </Text>
-                        ) : null}
                       </Table.Td>
                       <Table.Td className="max-w-80">
                         <Text className="line-clamp-2">
                           {entry.reason || "No reason provided"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>{formatDateTime(entry.createdAt)}</Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDateTime(entry.createdAt)}
+                      </Table.Td>
                     </Table.Tr>
                   ))
                 ) : (
@@ -238,7 +250,7 @@ const DetailRow = ({
 }) => {
   return (
     <Flex align="start" className="gap-4 px-4 py-3" justify="between">
-      <Text className="text-[0.92rem]" color="muted">
+      <Text className="text-[0.95rem]" color="muted">
         {label}
       </Text>
       <Box className="max-w-[70%] text-right">{children}</Box>

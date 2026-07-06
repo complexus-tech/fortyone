@@ -20,7 +20,7 @@ export type DashboardSummary = {
   internalUsers: number;
   activeSubscriptions: number;
   slackInstallations: number;
-  gitHubInstallations: number;
+  githubInstallations: number;
   recentAdminAuditLogs: number;
 };
 
@@ -36,7 +36,7 @@ export type UserSummary = {
   lastLoginAt: string | null;
   lastUsedWorkspaceId: string | null;
   lastUsedWorkspace: string | null;
-  gitHubUsername: string | null;
+  githubUsername: string | null;
   workspaceCount: number;
   createdAt: string;
   updatedAt: string;
@@ -77,7 +77,7 @@ export type WorkspaceSummary = {
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   slackInstalled: boolean;
-  gitHubInstalled: boolean;
+  githubInstalled: boolean;
   createdAt: string;
   updatedAt: string;
 };

@@ -37,6 +37,7 @@ export default async function AuditPage({
       <PageHeader
         description="Review internal administrative actions and the reason attached to each write."
         eyebrow="Governance"
+        icon={<HistoryIcon className="h-[1.1rem]" />}
         title="Audit log"
       />
 
@@ -73,19 +74,13 @@ export default async function AuditPage({
                   label="Workspace ID"
                   name="workspaceId"
                   placeholder="Optional workspace UUID"
-                  rounded="lg"
                 />
               </Box>
-              <Button color="tertiary" rounded="lg" type="submit">
+              <Button color="tertiary" type="submit">
                 Apply
               </Button>
               {params.targetType || params.workspaceId ? (
-                <Button
-                  color="tertiary"
-                  href="/audit"
-                  rounded="lg"
-                  variant="naked"
-                >
+                <Button color="tertiary" href="/audit" variant="naked">
                   Clear
                 </Button>
               ) : null}
@@ -95,7 +90,7 @@ export default async function AuditPage({
 
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
-            <Table>
+            <Table color="light" variant="bordered">
               <Table.Head>
                 <Table.Tr>
                   <Table.Th>Action</Table.Th>
@@ -110,34 +105,48 @@ export default async function AuditPage({
                 {auditLogs.items.length > 0 ? (
                   auditLogs.items.map((entry) => (
                     <Table.Tr key={entry.id}>
-                      <Table.Td className="min-w-48">
-                        <Text fontWeight="semibold">
-                          {humanizeKey(entry.action)}
-                        </Text>
-                        {entry.fieldName ? (
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {entry.fieldName}
+                      <Table.Td className="min-w-56 whitespace-nowrap">
+                        <Text>
+                          <Text as="span" fontWeight="semibold">
+                            {humanizeKey(entry.action)}
                           </Text>
-                        ) : null}
-                      </Table.Td>
-                      <Table.Td className="min-w-48">
-                        <Text>{entry.actorName || entry.actorEmail}</Text>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {entry.actorEmail}
+                          {entry.fieldName ? (
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {entry.fieldName}
+                            </Text>
+                          ) : null}
                         </Text>
                       </Table.Td>
-                      <Table.Td className="min-w-48">
-                        <Badge color="tertiary" rounded="full" size="sm">
-                          {entry.targetType}
-                        </Badge>
-                        {entry.workspaceId ? (
-                          <Link
-                            className="hover:text-primary mt-1 block"
-                            href={`/workspaces/${entry.workspaceId}`}
+                      <Table.Td className="min-w-72 whitespace-nowrap">
+                        <Text>
+                          {entry.actorName || entry.actorEmail}
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
                           >
-                            {entry.workspaceName || entry.workspaceId}
-                          </Link>
-                        ) : null}
+                            · {entry.actorEmail}
+                          </Text>
+                        </Text>
+                      </Table.Td>
+                      <Table.Td className="min-w-72 whitespace-nowrap">
+                        <Flex align="center" className="gap-2">
+                          <Badge color="tertiary" size="sm">
+                            {entry.targetType}
+                          </Badge>
+                          {entry.workspaceId ? (
+                            <Link
+                              className="hover:text-primary line-clamp-1"
+                              href={`/workspaces/${entry.workspaceId}`}
+                            >
+                              {entry.workspaceName || entry.workspaceId}
+                            </Link>
+                          ) : null}
+                        </Flex>
                       </Table.Td>
                       <Table.Td className="min-w-72">
                         <Text className="line-clamp-2">

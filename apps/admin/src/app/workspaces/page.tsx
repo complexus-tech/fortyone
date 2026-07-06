@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GitHubIcon, SlackIcon } from "icons";
+import { GitHubIcon, SlackIcon, WorkspaceIcon } from "icons";
 import { Badge, Box, Flex, Table, Text } from "ui";
 import { getWorkspaces } from "@/lib/admin-api";
 import { formatDate, formatDateTime, formatTrialState } from "@/lib/format";
@@ -35,6 +35,7 @@ export default async function WorkspacesPage({
       <PageHeader
         description="Inspect workspace health, billing posture, integrations, trial windows, and account ownership."
         eyebrow="Platform"
+        icon={<WorkspaceIcon className="h-[1.1rem]" />}
         title="Workspaces"
       />
 
@@ -48,7 +49,7 @@ export default async function WorkspacesPage({
 
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
-            <Table>
+            <Table color="light" variant="bordered">
               <Table.Head>
                 <Table.Tr>
                   <Table.Th>Workspace</Table.Th>
@@ -63,80 +64,76 @@ export default async function WorkspacesPage({
                 {workspaces.items.length > 0 ? (
                   workspaces.items.map((workspace) => (
                     <Table.Tr key={workspace.id}>
-                      <Table.Td className="min-w-64">
-                        <Link
-                          className="hover:text-primary line-clamp-1"
-                          href={`/workspaces/${workspace.id}`}
-                        >
-                          {workspace.name}
-                        </Link>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {workspace.slug}
-                        </Text>
-                        {workspace.createdByEmail ? (
+                      <Table.Td className="min-w-80 whitespace-nowrap">
+                        <Flex align="center" className="gap-2">
+                          <Link
+                            className="hover:text-primary line-clamp-1"
+                            href={`/workspaces/${workspace.id}`}
+                          >
+                            {workspace.name}
+                          </Link>
                           <Text
-                            className="mt-0.5 line-clamp-1 text-[0.92rem]"
+                            as="span"
+                            className="line-clamp-1 text-[0.95rem]"
                             color="muted"
                           >
-                            Created by{" "}
-                            {workspace.createdByName ||
-                              workspace.createdByEmail}
+                            /{workspace.slug}
                           </Text>
-                        ) : null}
+                        </Flex>
                       </Table.Td>
                       <Table.Td>
                         <WorkspaceStatusBadge workspace={workspace} />
                       </Table.Td>
-                      <Table.Td className="min-w-36">
-                        <Text>{formatDate(workspace.trialEndsOn)}</Text>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {formatTrialState(workspace.trialEndsOn)}
+                      <Table.Td className="min-w-52 whitespace-nowrap">
+                        <Text>
+                          {formatDate(workspace.trialEndsOn)}
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            · {formatTrialState(workspace.trialEndsOn)}
+                          </Text>
                         </Text>
                       </Table.Td>
-                      <Table.Td className="min-w-36">
-                        <Text className="capitalize">
-                          {workspace.subscriptionTier ?? "free"}
-                        </Text>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {workspace.subscriptionStatus ?? "No subscription"}
+                      <Table.Td className="min-w-48 whitespace-nowrap">
+                        <Text>
+                          <Text as="span" className="capitalize">
+                            {workspace.subscriptionTier ?? "free"}
+                          </Text>
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            ·{" "}
+                            {workspace.subscriptionStatus ?? "No subscription"}
+                          </Text>
                         </Text>
                       </Table.Td>
-                      <Table.Td className="min-w-44">
+                      <Table.Td className="min-w-72 whitespace-nowrap">
                         <Text>
                           {workspace.memberCount} members ·{" "}
                           {workspace.teamCount} teams
-                        </Text>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          Last opened {formatDateTime(workspace.lastAccessedAt)}
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            · Last opened{" "}
+                            {formatDateTime(workspace.lastAccessedAt)}
+                          </Text>
                         </Text>
                       </Table.Td>
-                      <Table.Td>
+                      <Table.Td className="whitespace-nowrap">
                         <Flex align="center" className="gap-2">
-                          <Badge
-                            color={
-                              workspace.slackInstalled ? "success" : "tertiary"
-                            }
-                            rounded="full"
-                            size="sm"
-                            variant={
-                              workspace.slackInstalled ? "outline" : "solid"
-                            }
-                          >
+                          <Badge color="tertiary" size="sm">
                             <SlackIcon className="h-3.5" />
-                            Slack
+                            {workspace.slackInstalled ? "Slack" : "No Slack"}
                           </Badge>
-                          <Badge
-                            color={
-                              workspace.gitHubInstalled ? "success" : "tertiary"
-                            }
-                            rounded="full"
-                            size="sm"
-                            variant={
-                              workspace.gitHubInstalled ? "outline" : "solid"
-                            }
-                          >
+                          <Badge color="tertiary" size="sm">
                             <GitHubIcon className="h-3.5" />
-                            GitHub
+                            {workspace.githubInstalled ? "GitHub" : "No GitHub"}
                           </Badge>
                         </Flex>
                       </Table.Td>

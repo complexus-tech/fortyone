@@ -35,13 +35,12 @@ export const AdminErrorState = ({ digest, onRetry }: AdminErrorStateProps) => {
                   color="tertiary"
                   leftIcon={<ReloadIcon className="h-4 w-auto" />}
                   onClick={onRetry}
-                  rounded="lg"
                   type="button"
                 >
                   Reload
                 </Button>
               ) : null}
-              <Button color="tertiary" href="/overview" rounded="lg">
+              <Button color="tertiary" href="/overview">
                 Overview
               </Button>
             </Flex>

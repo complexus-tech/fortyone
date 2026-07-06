@@ -28,12 +28,13 @@ export default async function OverviewPage() {
     <Box>
       <PageHeader
         actions={
-          <Button color="tertiary" href="/workspaces" rounded="lg">
+          <Button color="tertiary" href="/workspaces">
             View workspaces
           </Button>
         }
         description="Monitor platform health, billing posture, access state, and high-risk admin activity."
         eyebrow="Internal operations"
+        icon={<AnalyticsIcon className="h-[1.1rem]" />}
         title="Admin overview"
       />
 
@@ -58,7 +59,7 @@ export default async function OverviewPage() {
             value={formatCount(summary.activeSubscriptions)}
           />
           <MetricCard
-            detail={`${formatCount(summary.slackInstallations)} Slack, ${formatCount(summary.gitHubInstallations)} GitHub`}
+            detail={`${formatCount(summary.slackInstallations)} Slack, ${formatCount(summary.githubInstallations)} GitHub`}
             icon={<HistoryIcon />}
             label="Recent admin logs"
             value={formatCount(summary.recentAdminAuditLogs)}
@@ -74,14 +75,13 @@ export default async function OverviewPage() {
             >
               <Box>
                 <Text fontWeight="semibold">Expired trials</Text>
-                <Text className="mt-1 text-[0.92rem]" color="muted">
+                <Text className="mt-1 text-[0.95rem]" color="muted">
                   Workspaces that may need commercial or support follow-up.
                 </Text>
               </Box>
               <Button
                 color="tertiary"
                 href="/workspaces?status=expired"
-                rounded="lg"
                 size="sm"
                 variant="naked"
               >
@@ -89,7 +89,7 @@ export default async function OverviewPage() {
               </Button>
             </Flex>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
                     <Table.Th>Workspace</Table.Th>
@@ -102,27 +102,41 @@ export default async function OverviewPage() {
                   {expiringWorkspaces.items.length > 0 ? (
                     expiringWorkspaces.items.map((workspace) => (
                       <Table.Tr key={workspace.id}>
-                        <Table.Td>
-                          <Link
-                            className="hover:text-primary line-clamp-1"
-                            href={`/workspaces/${workspace.id}`}
-                          >
-                            {workspace.name}
-                          </Link>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {workspace.slug}
-                          </Text>
+                        <Table.Td className="min-w-72 whitespace-nowrap">
+                          <Flex align="center" className="gap-2">
+                            <Link
+                              className="hover:text-primary line-clamp-1"
+                              href={`/workspaces/${workspace.id}`}
+                            >
+                              {workspace.name}
+                            </Link>
+                            <Text
+                              as="span"
+                              className="line-clamp-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              /{workspace.slug}
+                            </Text>
+                          </Flex>
                         </Table.Td>
                         <Table.Td>
                           <WorkspaceStatusBadge workspace={workspace} />
                         </Table.Td>
-                        <Table.Td>
-                          <Text>{formatDate(workspace.trialEndsOn)}</Text>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {formatTrialState(workspace.trialEndsOn)}
+                        <Table.Td className="min-w-52 whitespace-nowrap">
+                          <Text>
+                            {formatDate(workspace.trialEndsOn)}
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {formatTrialState(workspace.trialEndsOn)}
+                            </Text>
                           </Text>
                         </Table.Td>
-                        <Table.Td>{workspace.memberCount}</Table.Td>
+                        <Table.Td className="whitespace-nowrap">
+                          {workspace.memberCount}
+                        </Table.Td>
                       </Table.Tr>
                     ))
                   ) : (
@@ -145,17 +159,11 @@ export default async function OverviewPage() {
             >
               <Box>
                 <Text fontWeight="semibold">Recent audit activity</Text>
-                <Text className="mt-1 text-[0.92rem]" color="muted">
+                <Text className="mt-1 text-[0.95rem]" color="muted">
                   Administrative changes recorded by the platform.
                 </Text>
               </Box>
-              <Button
-                color="tertiary"
-                href="/audit"
-                rounded="lg"
-                size="sm"
-                variant="naked"
-              >
+              <Button color="tertiary" href="/audit" size="sm" variant="naked">
                 Audit log
               </Button>
             </Flex>
@@ -167,16 +175,16 @@ export default async function OverviewPage() {
                       <Text fontWeight="semibold">
                         {humanizeKey(entry.action)}
                       </Text>
-                      <Badge color="tertiary" rounded="full" size="sm">
+                      <Badge color="tertiary" size="sm">
                         {entry.targetType}
                       </Badge>
                     </Flex>
-                    <Text className="mt-1 text-[0.92rem]" color="muted">
+                    <Text className="mt-1 text-[0.95rem]" color="muted">
                       {entry.actorName || entry.actorEmail} ·{" "}
                       {formatDateTime(entry.createdAt)}
                     </Text>
                     {entry.workspaceName ? (
-                      <Text className="mt-1 text-[0.92rem]" color="muted">
+                      <Text className="mt-1 text-[0.95rem]" color="muted">
                         {entry.workspaceName}
                       </Text>
                     ) : null}

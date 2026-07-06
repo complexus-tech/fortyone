@@ -27,7 +27,6 @@ export const SearchToolbar = ({
               leftIcon={<SearchIcon className="h-4" />}
               name="q"
               placeholder={placeholder}
-              rounded="lg"
             />
           </Box>
           {statusOptions ? (
@@ -46,14 +45,13 @@ export const SearchToolbar = ({
               </select>
             </label>
           ) : null}
-          <Button color="tertiary" rounded="lg" type="submit">
+          <Button color="tertiary" type="submit">
             Search
           </Button>
           {defaultQuery || defaultStatus ? (
             <Button
               color="tertiary"
               href={statusOptions ? "/workspaces" : "/users"}
-              rounded="lg"
               variant="naked"
             >
               Clear

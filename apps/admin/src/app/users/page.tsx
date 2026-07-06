@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Box, Table, Text } from "ui";
+import { UserIcon } from "icons";
+import { Avatar, Box, Flex, Table, Text } from "ui";
 import { getUsers } from "@/lib/admin-api";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -24,6 +25,7 @@ export default async function UsersPage({
       <PageHeader
         description="Search users, inspect account status, and review workspace access."
         eyebrow="Platform"
+        icon={<UserIcon className="h-[1.1rem]" />}
         title="Users"
       />
 
@@ -35,7 +37,7 @@ export default async function UsersPage({
 
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
-            <Table>
+            <Table color="light" variant="bordered">
               <Table.Head>
                 <Table.Tr>
                   <Table.Th>User</Table.Th>
@@ -50,21 +52,36 @@ export default async function UsersPage({
                 {users.items.length > 0 ? (
                   users.items.map((user) => (
                     <Table.Tr key={user.id}>
-                      <Table.Td className="min-w-64">
-                        <Link
-                          className="hover:text-primary line-clamp-1"
-                          href={`/users/${user.id}`}
-                        >
-                          {user.fullName || user.username}
-                        </Link>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {user.email}
-                        </Text>
-                        {user.gitHubUsername ? (
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            GitHub: {user.gitHubUsername}
+                      <Table.Td className="min-w-96 whitespace-nowrap">
+                        <Flex align="center" className="gap-2">
+                          <Avatar
+                            name={user.fullName || user.username}
+                            size="sm"
+                            src={user.avatarUrl}
+                          />
+                          <Link
+                            className="hover:text-primary line-clamp-1"
+                            href={`/users/${user.id}`}
+                          >
+                            {user.fullName || user.username}
+                          </Link>
+                          <Text
+                            as="span"
+                            className="line-clamp-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            · {user.email}
                           </Text>
-                        ) : null}
+                          {user.githubUsername ? (
+                            <Text
+                              as="span"
+                              className="text-[0.95rem]"
+                              color="muted"
+                            >
+                              · @{user.githubUsername}
+                            </Text>
+                          ) : null}
+                        </Flex>
                       </Table.Td>
                       <Table.Td>
                         <UserStatusBadge
@@ -73,11 +90,15 @@ export default async function UsersPage({
                         />
                       </Table.Td>
                       <Table.Td>{user.workspaceCount}</Table.Td>
-                      <Table.Td className="min-w-48">
+                      <Table.Td className="min-w-52 whitespace-nowrap">
                         {user.lastUsedWorkspace ?? "Not available"}
                       </Table.Td>
-                      <Table.Td>{formatDateTime(user.lastLoginAt)}</Table.Td>
-                      <Table.Td>{formatDate(user.createdAt)}</Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDateTime(user.lastLoginAt)}
+                      </Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDate(user.createdAt)}
+                      </Table.Td>
                     </Table.Tr>
                   ))
                 ) : (

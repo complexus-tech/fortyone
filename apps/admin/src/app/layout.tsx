@@ -1,10 +1,7 @@
 import "ui/styles.css";
 import "../styles/global.css";
 import type { Metadata, Viewport } from "next";
-import {
-  Bricolage_Grotesque as BricolageGrotesque,
-  Geist,
-} from "next/font/google";
+import { Geist } from "next/font/google";
 import { type ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cn } from "lib";
@@ -19,13 +16,6 @@ const font = Geist({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
-  weight: "variable",
-});
-
-const heading = BricolageGrotesque({
-  variable: "--font-heading",
-  display: "swap",
-  subsets: ["latin"],
   weight: "variable",
 });
 
@@ -59,11 +49,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html
-      className={cn(font.variable, heading.variable)}
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html className={cn(font.variable)} lang="en" suppressHydrationWarning>
       <body>
         <PublicEnv />
         <Providers>

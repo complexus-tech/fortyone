@@ -71,7 +71,7 @@ export const TrialExtensionDialog = ({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <Dialog.Trigger asChild>
-        <Button color="tertiary" rounded="lg">
+        <Button color="tertiary">
           <CalendarPlusIcon className="h-5" />
           Extend trial
         </Button>
@@ -80,11 +80,7 @@ export const TrialExtensionDialog = ({
         <form action={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title>
-              <Text
-                as="span"
-                className="font-heading text-[1.35rem]"
-                fontWeight="semibold"
-              >
+              <Text as="span" className="text-[1.35rem]" fontWeight="semibold">
                 Extend workspace trial
               </Text>
             </Dialog.Title>
@@ -92,7 +88,7 @@ export const TrialExtensionDialog = ({
           <Dialog.Body>
             <Box className="border-border bg-surface-muted/70 rounded-lg border-[0.5px] p-3">
               <Text fontWeight="semibold">{workspace.name}</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Current trial: {formatDateTime(workspace.trialEndsOn)} ·{" "}
                 {formatTrialState(workspace.trialEndsOn)}
               </Text>
@@ -104,7 +100,6 @@ export const TrialExtensionDialog = ({
                 min={minTrialEnd}
                 name="trialEndsOn"
                 required
-                rounded="lg"
                 type="datetime-local"
               />
               <TextArea
@@ -123,7 +118,6 @@ export const TrialExtensionDialog = ({
               onClick={() => {
                 setOpen(false);
               }}
-              rounded="lg"
               type="button"
               variant="naked"
             >
@@ -134,7 +128,6 @@ export const TrialExtensionDialog = ({
                 color="primary"
                 loading={isPending}
                 loadingText="Updating..."
-                rounded="lg"
                 type="submit"
               >
                 Update trial

@@ -43,7 +43,7 @@ export const PaginationControls = ({
       className="border-border border-t-[0.5px] px-4 py-3"
       justify="between"
     >
-      <Text className="text-[0.92rem]" color="muted">
+      <Text className="text-[0.95rem]" color="muted">
         Showing {pagination.total === 0 ? 0 : pagination.offset + 1}-
         {Math.min(pagination.offset + pagination.limit, pagination.total)} of{" "}
         {pagination.total}
@@ -57,13 +57,12 @@ export const PaginationControls = ({
               ? undefined
               : buildHref(pathname, params, previousPage)
           }
-          rounded="lg"
           size="sm"
           variant="naked"
         >
           Previous
         </Button>
-        <Text className="text-[0.92rem]" color="muted">
+        <Text className="text-[0.95rem]" color="muted">
           Page {pagination.page} of {totalPages}
         </Text>
         <Button
@@ -74,7 +73,6 @@ export const PaginationControls = ({
               ? undefined
               : buildHref(pathname, params, nextPage)
           }
-          rounded="lg"
           size="sm"
           variant="naked"
         >
