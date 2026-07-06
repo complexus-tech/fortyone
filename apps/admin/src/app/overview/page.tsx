@@ -66,7 +66,7 @@ export default async function OverviewPage() {
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
+          <Box className="border-border bg-surface rounded-lg border-[0.5px]">
             <Flex
               align="center"
               className="border-border border-b-[0.5px] px-4 py-3"
@@ -137,7 +137,7 @@ export default async function OverviewPage() {
             </Box>
           </Box>
 
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
+          <Box className="border-border bg-surface rounded-lg border-[0.5px]">
             <Flex
               align="center"
               className="border-border border-b-[0.5px] px-4 py-3"

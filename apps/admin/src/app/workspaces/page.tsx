@@ -46,7 +46,7 @@ export default async function WorkspacesPage({
           statusOptions={statusOptions}
         />
 
-        <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+        <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
             <Table>
               <Table.Head>

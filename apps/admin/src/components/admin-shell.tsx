@@ -14,6 +14,7 @@ import {
 import { Avatar, Badge, Box, Button, Flex, Text } from "ui";
 import { cn } from "lib";
 import type { Session } from "@/auth";
+import { FortyOneLogo } from "@/components/fortyone-logo";
 import { getProjectsUrl } from "@/lib/env";
 
 type NavItem = {
@@ -60,18 +61,11 @@ export const AdminShell = ({
       <Box className="from-sidebar to-sidebar/50 border-border/80 relative hidden h-dvh w-(--sidebar-width) shrink-0 flex-col justify-between border-r-[0.5px] bg-linear-to-br pb-6 md:flex">
         <Box className="relative z-1 px-4">
           <Box className="border-border/70 flex h-16 items-center border-b-[0.5px]">
-            <Link className="flex items-center gap-2.5" href="/overview">
-              <span className="bg-primary text-primary-foreground font-heading flex size-8 items-center justify-center rounded-xl text-[1.05rem] font-semibold">
-                41
-              </span>
-              <span>
-                <Text className="leading-none" fontWeight="semibold">
-                  FortyOne
-                </Text>
-                <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                  Admin
-                </Text>
-              </span>
+            <Link className="flex items-center gap-3" href="/overview">
+              <FortyOneLogo className="h-6" />
+              <Text className="text-[0.92rem]" color="muted">
+                Admin
+              </Text>
             </Link>
           </Box>
 
@@ -92,16 +86,16 @@ export const AdminShell = ({
                 return (
                   <Link
                     className={cn(
-                      "flex h-9 items-center gap-2 rounded-xl px-2.5 transition duration-200 ease-linear",
+                      "group text-foreground/60 hover:bg-accent flex items-center gap-2 rounded-lg px-2 py-[0.4rem] transition-colors duration-200 outline-none",
                       active
-                        ? "bg-state-selected text-foreground"
-                        : "text-text-muted hover:bg-state-hover hover:text-foreground",
+                        ? "bg-accent text-foreground"
+                        : "text-text-muted",
                     )}
                     href={item.href}
                     key={item.href}
                   >
-                    {item.icon}
-                    <span>{item.label}</span>
+                    <span className="shrink-0">{item.icon}</span>
+                    <span className="line-clamp-1">{item.label}</span>
                   </Link>
                 );
               })}
@@ -110,10 +104,10 @@ export const AdminShell = ({
         </Box>
 
         <Box className="relative z-1 px-3">
-          <Box className="border-border bg-surface/80 shadow-shadow mb-3 rounded-xl border-[0.5px] p-3 shadow-lg">
-            <Flex align="center" className="gap-2">
+          <Box className="border-border border-t-[0.5px] px-0 pt-4">
+            <Flex align="center" className="gap-2 px-2">
               <Avatar
-                className="h-8"
+                className="h-7 text-sm"
                 name={session.user.fullName || session.user.username}
                 src={session.user.image}
               />
@@ -126,8 +120,8 @@ export const AdminShell = ({
                 </Text>
               </Box>
             </Flex>
-            <Flex align="center" className="mt-3" justify="between">
-              <Badge rounded="full" size="sm">
+            <Flex align="center" className="mt-3 px-2" justify="between">
+              <Badge color="tertiary" rounded="md" size="sm" variant="outline">
                 Internal
               </Badge>
               <Button
@@ -150,9 +144,7 @@ export const AdminShell = ({
       <Box className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Box className="border-border/80 flex h-14 shrink-0 items-center justify-between border-b-[0.5px] px-4 md:hidden">
           <Link className="flex items-center gap-2" href="/overview">
-            <span className="bg-primary text-primary-foreground font-heading flex size-8 items-center justify-center rounded-xl font-semibold">
-              41
-            </span>
+            <FortyOneLogo asIcon className="h-8" />
             <Text fontWeight="semibold">Admin</Text>
           </Link>
           <Button

@@ -18,7 +18,7 @@ export const SearchToolbar = ({
   statusOptions?: StatusOption[];
 }) => {
   return (
-    <Box className="border-border bg-surface/70 rounded-xl border-[0.5px] p-3">
+    <Box className="border-border bg-surface rounded-lg border-[0.5px] p-3">
       <form>
         <Flex align="end" className="gap-2">
           <Box className="min-w-0 flex-1">
@@ -34,7 +34,7 @@ export const SearchToolbar = ({
             <label className="block w-42 shrink-0">
               <Text className="sr-only">Status</Text>
               <select
-                className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-xl border px-3 outline-none focus-visible:ring-2"
+                className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-lg border px-3 outline-none focus-visible:ring-2"
                 defaultValue={defaultStatus ?? ""}
                 name="status"
               >

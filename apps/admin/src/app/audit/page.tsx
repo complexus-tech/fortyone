@@ -50,13 +50,13 @@ export default async function AuditPage({
           />
         </Box>
 
-        <Box className="border-border bg-surface/70 rounded-xl border-[0.5px] p-3">
+        <Box className="border-border bg-surface/70 rounded-lg border-[0.5px] p-3">
           <form>
             <Flex align="end" className="gap-2">
               <label className="block w-52 shrink-0">
                 <Text className="mb-[0.35rem] block">Target type</Text>
                 <select
-                  className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-xl border px-3 outline-none focus-visible:ring-2"
+                  className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-lg border px-3 outline-none focus-visible:ring-2"
                   defaultValue={params.targetType ?? ""}
                   name="targetType"
                 >
@@ -93,7 +93,7 @@ export default async function AuditPage({
           </form>
         </Box>
 
-        <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+        <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
             <Table>
               <Table.Head>

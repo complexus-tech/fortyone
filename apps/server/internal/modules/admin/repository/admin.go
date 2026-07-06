@@ -13,6 +13,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type repo struct {
@@ -125,6 +126,11 @@ type dbDashboardSummary struct {
 	RecentAdminAuditLogs int `db:"recent_admin_audit_logs"`
 }
 
+type dbIntegrationAvailability struct {
+	Slack  bool `db:"slack_available"`
+	GitHub bool `db:"github_available"`
+}
+
 func (r *repo) GetAdminUser(ctx context.Context, userID uuid.UUID) (admin.UserSummary, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.admin.GetAdminUser")
 	defer span.End()
@@ -190,8 +196,8 @@ func (r *repo) GetDashboardSummary(ctx context.Context) (admin.DashboardSummary,
 				FROM public.workspace_subscriptions
 				WHERE subscription_status IN ('active', 'trialing', 'past_due')
 			) AS active_subscriptions,
-			(SELECT COUNT(*) FROM public.slack_workspaces WHERE is_active = true) AS slack_installations,
-			(SELECT COUNT(*) FROM public.github_installations WHERE is_active = true) AS github_installations,
+			0 AS slack_installations,
+			0 AS github_installations,
 			(SELECT COUNT(*) FROM public.admin_audit_logs WHERE created_at >= now() - interval '30 days') AS recent_admin_audit_logs
 	`
 
@@ -199,6 +205,7 @@ func (r *repo) GetDashboardSummary(ctx context.Context) (admin.DashboardSummary,
 	if err := r.db.GetContext(ctx, &row, query); err != nil {
 		return admin.DashboardSummary{}, fmt.Errorf("get admin dashboard summary: %w", err)
 	}
+	row.SlackInstallations, row.GitHubInstallations = r.integrationCounts(ctx)
 	return admin.DashboardSummary{
 		TotalWorkspaces:      row.TotalWorkspaces,
 		ActiveTrials:         row.ActiveTrials,
@@ -244,14 +251,8 @@ func (r *repo) ListWorkspaces(ctx context.Context, input admin.ListWorkspacesInp
 			ws.seat_count AS subscription_seats,
 			ws.stripe_customer_id,
 			ws.stripe_subscription_id,
-			EXISTS (
-				SELECT 1 FROM public.slack_workspaces sw
-				WHERE sw.workspace_id = w.workspace_id AND sw.is_active = true
-			) AS slack_installed,
-			EXISTS (
-				SELECT 1 FROM public.github_installations gi
-				WHERE gi.workspace_id = w.workspace_id AND gi.is_active = true
-			) AS github_installed,
+			false AS slack_installed,
+			false AS github_installed,
 			w.created_at,
 			w.updated_at,
 			COUNT(*) OVER() AS total_count
@@ -278,6 +279,7 @@ func (r *repo) ListWorkspaces(ctx context.Context, input admin.ListWorkspacesInp
 	if err != nil {
 		return admin.ListResult[admin.WorkspaceSummary]{}, fmt.Errorf("list admin workspaces: %w", err)
 	}
+	r.annotateWorkspaceIntegrations(ctx, rows)
 
 	items := make([]admin.WorkspaceSummary, len(rows))
 	for i, row := range rows {
@@ -603,14 +605,8 @@ func (r *repo) getWorkspaceSummary(ctx context.Context, workspaceID uuid.UUID) (
 			ws.seat_count AS subscription_seats,
 			ws.stripe_customer_id,
 			ws.stripe_subscription_id,
-			EXISTS (
-				SELECT 1 FROM public.slack_workspaces sw
-				WHERE sw.workspace_id = w.workspace_id AND sw.is_active = true
-			) AS slack_installed,
-			EXISTS (
-				SELECT 1 FROM public.github_installations gi
-				WHERE gi.workspace_id = w.workspace_id AND gi.is_active = true
-			) AS github_installed,
+			false AS slack_installed,
+			false AS github_installed,
 			w.created_at,
 			w.updated_at,
 			1 AS total_count
@@ -639,7 +635,104 @@ func (r *repo) getWorkspaceSummary(ctx context.Context, workspaceID uuid.UUID) (
 	if len(rows) == 0 {
 		return admin.WorkspaceSummary{}, admin.ErrNotFound
 	}
+	r.annotateWorkspaceIntegrations(ctx, rows)
 	return toWorkspaceSummary(rows[0]), nil
+}
+
+func (r *repo) integrationAvailability(ctx context.Context) dbIntegrationAvailability {
+	const query = `
+		SELECT
+			to_regclass('public.slack_workspaces') IS NOT NULL AS slack_available,
+			to_regclass('public.github_installations') IS NOT NULL AS github_available
+	`
+	var availability dbIntegrationAvailability
+	if err := r.db.GetContext(ctx, &availability, query); err != nil {
+		if r.log != nil {
+			r.log.Warn(ctx, "failed to check admin integration tables", "error", err)
+		}
+	}
+	return availability
+}
+
+func (r *repo) integrationCounts(ctx context.Context) (int, int) {
+	availability := r.integrationAvailability(ctx)
+	slackCount := 0
+	githubCount := 0
+
+	if availability.Slack {
+		const query = `SELECT COUNT(*) FROM public.slack_workspaces WHERE is_active = true`
+		if err := r.db.GetContext(ctx, &slackCount, query); err != nil && r.log != nil {
+			r.log.Warn(ctx, "failed to count Slack installations for admin summary", "error", err)
+		}
+	}
+	if availability.GitHub {
+		const query = `SELECT COUNT(*) FROM public.github_installations WHERE is_active = true`
+		if err := r.db.GetContext(ctx, &githubCount, query); err != nil && r.log != nil {
+			r.log.Warn(ctx, "failed to count GitHub installations for admin summary", "error", err)
+		}
+	}
+	return slackCount, githubCount
+}
+
+func (r *repo) annotateWorkspaceIntegrations(ctx context.Context, rows []dbWorkspaceSummary) {
+	if len(rows) == 0 {
+		return
+	}
+
+	workspaceIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		workspaceIDs = append(workspaceIDs, row.ID.String())
+	}
+
+	availability := r.integrationAvailability(ctx)
+	if availability.Slack {
+		active, err := r.activeIntegrationWorkspaceIDs(ctx, `
+			SELECT DISTINCT workspace_id
+			FROM public.slack_workspaces
+			WHERE is_active = true
+				AND workspace_id = ANY($1::uuid[])
+		`, workspaceIDs)
+		if err != nil {
+			if r.log != nil {
+				r.log.Warn(ctx, "failed to load Slack workspace flags for admin", "error", err)
+			}
+		} else {
+			for i := range rows {
+				rows[i].SlackInstalled = active[rows[i].ID]
+			}
+		}
+	}
+
+	if availability.GitHub {
+		active, err := r.activeIntegrationWorkspaceIDs(ctx, `
+			SELECT DISTINCT workspace_id
+			FROM public.github_installations
+			WHERE is_active = true
+				AND workspace_id = ANY($1::uuid[])
+		`, workspaceIDs)
+		if err != nil {
+			if r.log != nil {
+				r.log.Warn(ctx, "failed to load GitHub workspace flags for admin", "error", err)
+			}
+		} else {
+			for i := range rows {
+				rows[i].GitHubInstalled = active[rows[i].ID]
+			}
+		}
+	}
+}
+
+func (r *repo) activeIntegrationWorkspaceIDs(ctx context.Context, query string, workspaceIDs []string) (map[uuid.UUID]bool, error) {
+	var activeIDs []uuid.UUID
+	if err := r.db.SelectContext(ctx, &activeIDs, query, pq.Array(workspaceIDs)); err != nil {
+		return nil, err
+	}
+
+	active := make(map[uuid.UUID]bool, len(activeIDs))
+	for _, workspaceID := range activeIDs {
+		active[workspaceID] = true
+	}
+	return active, nil
 }
 
 func (r *repo) getUserSummary(ctx context.Context, userID uuid.UUID) (admin.UserSummary, error) {

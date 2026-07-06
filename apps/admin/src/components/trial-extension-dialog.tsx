@@ -90,7 +90,7 @@ export const TrialExtensionDialog = ({
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
-            <Box className="border-border bg-surface-muted/70 rounded-xl border-[0.5px] p-3">
+            <Box className="border-border bg-surface-muted/70 rounded-lg border-[0.5px] p-3">
               <Text fontWeight="semibold">{workspace.name}</Text>
               <Text className="mt-1 text-[0.92rem]" color="muted">
                 Current trial: {formatDateTime(workspace.trialEndsOn)} ·{" "}

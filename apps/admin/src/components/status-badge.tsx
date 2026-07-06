@@ -23,7 +23,7 @@ export const WorkspaceStatusBadge = ({
     ["active", "trialing", "past_due"].includes(subscriptionStatus ?? "")
   ) {
     return (
-      <Badge color="success" rounded="full" size="sm" variant="outline">
+      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
         Paid
       </Badge>
     );
@@ -32,7 +32,7 @@ export const WorkspaceStatusBadge = ({
   const days = daysFromNow(workspace.trialEndsOn);
   if (days !== null && days >= 0) {
     return (
-      <Badge color="info" rounded="full" size="sm" variant="outline">
+      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
         Trial
       </Badge>
     );
@@ -47,7 +47,7 @@ export const WorkspaceStatusBadge = ({
   }
 
   return (
-    <Badge color="tertiary" rounded="full" size="sm">
+    <Badge color="tertiary" rounded="md" size="sm" variant="outline">
       Free
     </Badge>
   );
@@ -70,14 +70,14 @@ export const UserStatusBadge = ({
 
   if (isInternal) {
     return (
-      <Badge color="info" rounded="full" size="sm" variant="outline">
+      <Badge color="tertiary" rounded="md" size="sm" variant="outline">
         Internal
       </Badge>
     );
   }
 
   return (
-    <Badge color="success" rounded="full" size="sm" variant="outline">
+    <Badge color="tertiary" rounded="md" size="sm" variant="outline">
       Active
     </Badge>
   );

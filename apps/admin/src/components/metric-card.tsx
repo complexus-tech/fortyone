@@ -13,7 +13,7 @@ export const MetricCard = ({
   value: string;
 }) => {
   return (
-    <Box className="border-border bg-surface shadow-shadow rounded-xl border-[0.5px] p-4 shadow-sm">
+    <Box className="border-border bg-surface rounded-lg border-[0.5px] p-4">
       <Flex align="start" justify="between">
         <Box>
           <Text className="text-[0.92rem]" color="muted">
@@ -27,7 +27,7 @@ export const MetricCard = ({
           </Text>
         </Box>
         {icon ? (
-          <Box className="bg-surface-elevated border-border flex size-9 items-center justify-center rounded-xl border-[0.5px]">
+          <Box className="bg-surface-elevated border-border text-text-muted flex size-9 items-center justify-center rounded-lg border-[0.5px]">
             {icon}
           </Box>
         ) : null}

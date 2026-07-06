@@ -33,7 +33,7 @@ export default async function UsersPage({
           placeholder="Search by name, username, or email"
         />
 
-        <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+        <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
             <Table>
               <Table.Head>

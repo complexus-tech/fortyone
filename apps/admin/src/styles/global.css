@@ -100,3 +100,19 @@ svg {
 [data-close-button] {
   @apply hover:border-border hover:bg-state-hover!;
 }
+
+main table tbody tr {
+  @apply bg-transparent!;
+}
+
+main table tbody tr:not(:last-child) {
+  @apply border-border border-b;
+}
+
+main table tbody tr:hover {
+  @apply bg-state-hover!;
+}
+
+main table th {
+  @apply bg-surface text-text-muted;
+}

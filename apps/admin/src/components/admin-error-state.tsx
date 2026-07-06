@@ -11,9 +11,9 @@ type AdminErrorStateProps = {
 export const AdminErrorState = ({ digest, onRetry }: AdminErrorStateProps) => {
   return (
     <Box className="flex min-h-full items-center justify-center p-6">
-      <Box className="border-border bg-surface shadow-shadow w-full max-w-xl rounded-xl border-[0.5px] p-6 shadow-lg">
+      <Box className="border-border bg-surface shadow-shadow w-full max-w-xl rounded-lg border-[0.5px] p-6 shadow-lg">
         <Flex align="start" className="gap-4">
-          <Box className="bg-warning/15 text-warning flex size-11 shrink-0 items-center justify-center rounded-xl">
+          <Box className="bg-warning/15 text-warning flex size-11 shrink-0 items-center justify-center rounded-lg">
             <WarningIcon className="h-5 w-auto" />
           </Box>
           <Box className="min-w-0 flex-1">
