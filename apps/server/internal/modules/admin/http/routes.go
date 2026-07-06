@@ -14,7 +14,7 @@ type Config struct {
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Service)
+	h := New(cfg.Log, cfg.Service)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 
 	app.Get("/admin/me", h.GetCurrentAdmin, auth)

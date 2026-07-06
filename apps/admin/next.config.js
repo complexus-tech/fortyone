@@ -1,3 +1,5 @@
+const path = require("node:path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -14,6 +16,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "5mb",
     },
+  },
+  turbopack: {
+    root: path.join(__dirname, "../.."),
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

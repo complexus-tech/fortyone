@@ -9,6 +9,7 @@ import (
 
 	admin "github.com/complexus-tech/projects-api/internal/modules/admin/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
@@ -20,6 +21,7 @@ const (
 
 type Handlers struct {
 	admin *admin.Service
+	log   *logger.Logger
 }
 
 type updateWorkspaceTrialRequest struct {
@@ -27,8 +29,8 @@ type updateWorkspaceTrialRequest struct {
 	Reason      string    `json:"reason"`
 }
 
-func New(adminService *admin.Service) *Handlers {
-	return &Handlers{admin: adminService}
+func New(log *logger.Logger, adminService *admin.Service) *Handlers {
+	return &Handlers{admin: adminService, log: log}
 }
 
 func (h *Handlers) GetCurrentAdmin(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -39,7 +41,7 @@ func (h *Handlers) GetCurrentAdmin(ctx context.Context, w http.ResponseWriter, r
 
 	user, err := h.admin.GetCurrentAdmin(ctx, userID)
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "get_current_admin", err)
 	}
 	return web.Respond(ctx, w, user, http.StatusOK)
 }
@@ -52,7 +54,7 @@ func (h *Handlers) GetDashboardSummary(ctx context.Context, w http.ResponseWrite
 
 	summary, err := h.admin.GetDashboardSummary(ctx, userID)
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "get_dashboard_summary", err)
 	}
 	return web.Respond(ctx, w, summary, http.StatusOK)
 }
@@ -70,7 +72,7 @@ func (h *Handlers) ListWorkspaces(ctx context.Context, w http.ResponseWriter, r 
 		Status:     r.URL.Query().Get("status"),
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "list_workspaces", err)
 	}
 	return web.Respond(ctx, w, result, http.StatusOK)
 }
@@ -88,7 +90,7 @@ func (h *Handlers) GetWorkspace(ctx context.Context, w http.ResponseWriter, r *h
 
 	workspace, err := h.admin.GetWorkspaceOverview(ctx, userID, workspaceID)
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "get_workspace", err)
 	}
 	return web.Respond(ctx, w, workspace, http.StatusOK)
 }
@@ -114,7 +116,7 @@ func (h *Handlers) UpdateWorkspaceTrial(ctx context.Context, w http.ResponseWrit
 		Reason:      req.Reason,
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "update_workspace_trial", err)
 	}
 	return web.Respond(ctx, w, workspace, http.StatusOK)
 }
@@ -131,7 +133,7 @@ func (h *Handlers) ListUsers(ctx context.Context, w http.ResponseWriter, r *http
 		Query:      r.URL.Query().Get("q"),
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "list_users", err)
 	}
 	return web.Respond(ctx, w, result, http.StatusOK)
 }
@@ -149,7 +151,7 @@ func (h *Handlers) GetUser(ctx context.Context, w http.ResponseWriter, r *http.R
 
 	user, err := h.admin.GetUserOverview(ctx, actorID, userID)
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "get_user", err)
 	}
 	return web.Respond(ctx, w, user, http.StatusOK)
 }
@@ -172,9 +174,17 @@ func (h *Handlers) ListAuditLogs(ctx context.Context, w http.ResponseWriter, r *
 		TargetType:  r.URL.Query().Get("targetType"),
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, adminErrorStatus(err))
+		return h.respondAdminError(ctx, w, "list_audit_logs", err)
 	}
 	return web.Respond(ctx, w, result, http.StatusOK)
+}
+
+func (h *Handlers) respondAdminError(ctx context.Context, w http.ResponseWriter, operation string, err error) error {
+	status := adminErrorStatus(err)
+	if status >= http.StatusInternalServerError && h.log != nil {
+		h.log.Error(ctx, "admin request failed", "operation", operation, "error", err)
+	}
+	return web.RespondError(ctx, w, err, status)
 }
 
 func adminErrorStatus(err error) int {
