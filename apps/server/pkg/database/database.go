@@ -14,6 +14,10 @@ var (
 	ErrDuplicateEntry = errors.New("duplicate entry")
 )
 
+func init() {
+	sqlx.BindDriver("pgx", sqlx.DOLLAR)
+}
+
 // Config represents a database configuration. It is used to open a database
 // connection.
 type Config struct {

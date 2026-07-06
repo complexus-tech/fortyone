@@ -186,7 +186,7 @@ func (r *repo) GetDashboardSummary(ctx context.Context) (admin.DashboardSummary,
 				SELECT COUNT(DISTINCT workspace_id)
 				FROM public.workspace_subscriptions
 				WHERE subscription_status IN ('active', 'trialing', 'past_due')
-					AND COALESCE(subscription_tier::text, 'free') <> 'free'
+					AND COALESCE(CAST(subscription_tier AS text), 'free') <> 'free'
 			) AS paid_workspaces,
 			(SELECT COUNT(*) FROM public.workspaces WHERE deleted_at IS NOT NULL) AS deleted_workspaces,
 			(SELECT COUNT(*) FROM public.users) AS total_users,
@@ -246,7 +246,7 @@ func (r *repo) ListWorkspaces(ctx context.Context, input admin.ListWorkspacesInp
 			(SELECT COUNT(*) FROM public.workspace_members wm WHERE wm.workspace_id = w.workspace_id) AS member_count,
 			(SELECT COUNT(*) FROM public.teams t WHERE t.workspace_id = w.workspace_id) AS team_count,
 			(SELECT COUNT(*) FROM public.stories s WHERE s.workspace_id = w.workspace_id AND s.deleted_at IS NULL) AS story_count,
-			ws.subscription_tier::text AS subscription_tier,
+			CAST(ws.subscription_tier AS text) AS subscription_tier,
 			ws.subscription_status,
 			ws.seat_count AS subscription_seats,
 			ws.stripe_customer_id,
@@ -305,14 +305,14 @@ func (r *repo) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID) 
 			u.user_id,
 			u.email,
 			u.full_name,
-			wm.role::text AS role,
+			CAST(wm.role AS text) AS role,
 			u.is_internal,
 			wm.created_at AS joined_at
 		FROM public.workspace_members wm
 		INNER JOIN public.users u ON u.user_id = wm.user_id
 		WHERE wm.workspace_id = $1
 		ORDER BY
-			CASE wm.role::text WHEN 'admin' THEN 0 ELSE 1 END,
+			CASE CAST(wm.role AS text) WHEN 'admin' THEN 0 ELSE 1 END,
 			u.full_name NULLS LAST,
 			u.email
 	`
@@ -426,7 +426,7 @@ func (r *repo) GetUserOverview(ctx context.Context, userID uuid.UUID) (admin.Use
 			w.workspace_id,
 			w.name AS workspace_name,
 			w.slug AS workspace_slug,
-			wm.role::text AS role,
+			CAST(wm.role AS text) AS role,
 			wm.created_at AS joined_at
 		FROM public.workspace_members wm
 		INNER JOIN public.workspaces w ON w.workspace_id = wm.workspace_id
@@ -600,7 +600,7 @@ func (r *repo) getWorkspaceSummary(ctx context.Context, workspaceID uuid.UUID) (
 			(SELECT COUNT(*) FROM public.workspace_members wm WHERE wm.workspace_id = w.workspace_id) AS member_count,
 			(SELECT COUNT(*) FROM public.teams t WHERE t.workspace_id = w.workspace_id) AS team_count,
 			(SELECT COUNT(*) FROM public.stories s WHERE s.workspace_id = w.workspace_id AND s.deleted_at IS NULL) AS story_count,
-			ws.subscription_tier::text AS subscription_tier,
+			CAST(ws.subscription_tier AS text) AS subscription_tier,
 			ws.subscription_status,
 			ws.seat_count AS subscription_seats,
 			ws.stripe_customer_id,
@@ -786,7 +786,7 @@ func workspaceFilters(input admin.ListWorkspacesInput) (string, map[string]any) 
 	case "expired":
 		clauses = append(clauses, "w.deleted_at IS NULL AND w.trial_ends_on IS NOT NULL AND w.trial_ends_on <= now()")
 	case "paid":
-		clauses = append(clauses, "w.deleted_at IS NULL AND ws.subscription_status IN ('active', 'trialing', 'past_due') AND COALESCE(ws.subscription_tier::text, 'free') <> 'free'")
+		clauses = append(clauses, "w.deleted_at IS NULL AND ws.subscription_status IN ('active', 'trialing', 'past_due') AND COALESCE(CAST(ws.subscription_tier AS text), 'free') <> 'free'")
 	case "deleted":
 		clauses = append(clauses, "w.deleted_at IS NOT NULL")
 	}
