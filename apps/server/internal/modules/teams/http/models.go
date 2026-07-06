@@ -21,6 +21,18 @@ type AppTeamsList struct {
 	SprintsEnabled bool      `json:"sprintsEnabled"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppTeamsResponse struct {
+	Teams      []AppTeamsList `json:"teams"`
+	Pagination AppPagination  `json:"pagination"`
+}
+
 // toAppTeams converts a list of core teams to a list of application teams.
 func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 	appTeams := make([]AppTeamsList, len(teams))
@@ -41,6 +53,23 @@ func toAppTeams(teams []teams.CoreTeam) []AppTeamsList {
 	return appTeams
 }
 
+func toAppTeamsResponse(teams []teams.CoreTeam, page, pageSize int, hasMore bool) AppTeamsResponse {
+	nextPage := 0
+	if hasMore {
+		nextPage = page + 1
+	}
+
+	return AppTeamsResponse{
+		Teams: toAppTeams(teams),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: nextPage,
+		},
+	}
+}
+
 type AppNewTeam struct {
 	Name      string `json:"name" validate:"required"`
 	Code      string `json:"code" validate:"required"`
@@ -57,6 +86,11 @@ type AppUpdateTeam struct {
 
 type AppNewTeamMember struct {
 	UserID uuid.UUID `json:"userId" validate:"required"`
+}
+
+type AppUpdateTeamMemberAIContext struct {
+	RoleTitle       string `json:"roleTitle"`
+	RoleDescription string `json:"roleDescription"`
 }
 
 type AppUpdateTeamOrdering struct {

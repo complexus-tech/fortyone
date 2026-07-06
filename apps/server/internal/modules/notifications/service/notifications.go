@@ -32,7 +32,7 @@ type Repository interface {
 
 // TasksService provides access to the task queue for background processing.
 type TasksService interface {
-	EnqueueNotificationEmail(payload tasks.NotificationEmailPayload, opts ...asynq.Option) (*asynq.TaskInfo, error)
+	EnqueueNotificationEmailDigest(payload tasks.NotificationEmailDigestPayload, opts ...asynq.Option) (*asynq.TaskInfo, error)
 }
 
 // Service provides notification-related operations.
@@ -107,15 +107,14 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 		return notification, err
 	}
 
-	emailPayload := tasks.NotificationEmailPayload{
-		NotificationID: notification.ID,
-		RecipientID:    notification.RecipientID,
-		WorkspaceID:    notification.WorkspaceID,
+	emailPayload := tasks.NotificationEmailDigestPayload{
+		RecipientID: notification.RecipientID,
+		WorkspaceID: notification.WorkspaceID,
 	}
 
-	if _, err := s.tasksService.EnqueueNotificationEmail(emailPayload); err != nil {
+	if _, err := s.tasksService.EnqueueNotificationEmailDigest(emailPayload); err != nil {
 		// Log error but don't fail notification creation
-		s.log.Error(ctx, "Failed to enqueue email notification task",
+		s.log.Error(ctx, "Failed to enqueue email notification digest task",
 			"error", err,
 			"notification_id", notification.ID,
 			"recipient_id", notification.RecipientID)
@@ -124,7 +123,7 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 			attribute.String("notification.id", notification.ID.String()),
 		))
 	} else {
-		s.log.Info(ctx, "Email notification task enqueued successfully",
+		s.log.Info(ctx, "Email notification digest task enqueued successfully",
 			"notification_id", notification.ID,
 			"recipient_id", notification.RecipientID)
 		span.AddEvent("email task enqueued", trace.WithAttributes(

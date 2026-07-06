@@ -56,18 +56,17 @@ export const Hero = () => {
               <Text
                 as="h1"
                 className={cn(
-                  "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-6xl",
+                  "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-[3.5rem]",
                 )}
               >
-                Keep every task connected to a goal.
+                The smartest AI project manager for modern teams.
               </Text>
             </m.div>
 
             <m.div {...createRevealMotion(0.3, shouldReduceMotion)}>
               <Text className="w-full max-w-xl opacity-80 md:mb-0.5">
-                Most teams do not lose on strategy — they lose it between the
-                plan and the sprint board. FortyOne keeps the goal visible,
-                while Maya drafts tasks, scopes sprints, and flags risks early.
+                Plan work, assign tasks, track progress, and let AI help find
+                the right owner, estimate, schedule, and next step.
               </Text>
             </m.div>
           </Box>
@@ -80,7 +79,7 @@ export const Hero = () => {
               rounded="lg"
               size="lg"
             >
-              Get Started Free
+              Get started free
             </Button>
           </m.div>
         </Container>

@@ -14,8 +14,18 @@ export const useCreateKeyResultMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (newKeyResult: NewObjectiveKeyResult) =>
-      createKeyResult(newKeyResult, workspaceSlug),
+    mutationFn: async (newKeyResult: NewObjectiveKeyResult) => {
+      const response = await createKeyResult(newKeyResult, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data?.id) {
+        throw new Error(
+          "Key result creation did not return a created key result.",
+        );
+      }
+      return response.data;
+    },
 
     onMutate: async (newKeyResult: NewObjectiveKeyResult) => {
       await queryClient.cancelQueries({
@@ -64,13 +74,11 @@ export const useCreateKeyResultMutation = () => {
         },
       });
     },
-    onSuccess: (res, newKeyResult) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (keyResult, newKeyResult) => {
       analytics.track("key_result_created", {
-        ...newKeyResult,
+        keyResultId: keyResult.id,
+        objectiveId: keyResult.objectiveId,
+        measurementType: keyResult.measurementType,
       });
 
       toast.success("Success", {

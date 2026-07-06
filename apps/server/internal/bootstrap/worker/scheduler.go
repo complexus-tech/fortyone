@@ -81,6 +81,24 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"30 1 * * *", // Daily at 1:30 AM, after sprint migration
+		asynq.NewTask(tasks.TypeMayaWorkFocusInference, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Maya work-focus inference task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 * * * *", // Hourly
+		asynq.NewTask(tasks.TypeMayaBatchAssignment, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Maya batch assignment task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"0 9 * * *", // Daily at 9:00 AM
 		asynq.NewTask("overdue:stories:email", nil),
 		asynq.Queue("automation"),
@@ -96,6 +114,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register objective overdue email task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"0 8 * * 1", // Monday at 8:00 AM
+		asynq.NewTask(tasks.TypeWeeklyDigestEmail, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register weekly digest email task: %w", err)
 	}
 
 	_, err = scheduler.Register(

@@ -11,6 +11,9 @@ import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
 import { signInWithGoogle } from "@/lib/actions/sign-in";
 
+const COPYRIGHT_NOTICE =
+  "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
+
 export const AuthLayout = ({
   page,
   errorMessage,
@@ -44,7 +47,7 @@ export const AuthLayout = ({
       return;
     }
 
-    if (result.error?.message) {
+    if (result.error.message) {
       toast.error("Failed to send magic link", {
         description: result.error.message,
       });
@@ -211,8 +214,7 @@ export const AuthLayout = ({
             </Button>
           </form>
           <Text className="mt-3 pl-px text-[90%]" color="muted">
-            &copy; {new Date().getFullYear()} &bull; Product of Complexus LLC
-            &bull; All Rights Reserved.
+            {COPYRIGHT_NOTICE}
           </Text>
         </>
       )}

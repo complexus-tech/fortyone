@@ -1,9 +1,20 @@
 "use client";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useDeferredValue,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, ObjectiveIcon, LoadingIcon } from "icons";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { CheckIcon, ObjectiveIcon } from "icons";
+import {
+  OBJECTIVE_MENU_PAGE_SIZE,
+  useTeamObjectivesInfinite,
+} from "@/modules/objectives/hooks/use-objectives";
 import { useTerminology } from "@/hooks";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const ObjectivesContext = createContext<{
   open: boolean;
@@ -15,7 +26,7 @@ const ObjectivesContext = createContext<{
 });
 
 export const useObjectivesMenu = () => {
-  const { open, setOpen } = useContext(ObjectivesContext);
+  const { open, setOpen } = use(ObjectivesContext);
   return { open, setOpen };
 };
 
@@ -53,9 +64,34 @@ const Items = ({
   teamId?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { data: objectives = [], isPending } = useTeamObjectives(teamId ?? "");
   const [query, setQuery] = useState("");
-  const { setOpen } = useObjectivesMenu();
+  const deferredQuery = useDeferredValue(query);
+  const { open, setOpen } = useObjectivesMenu();
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isPending,
+  } = useTeamObjectivesInfinite(
+    teamId ?? "",
+    deferredQuery,
+    OBJECTIVE_MENU_PAGE_SIZE,
+    open,
+  );
+  const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
+  const isLoadingObjectives = (isPending || isFetching) && !isFetchingNextPage;
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  };
 
   return (
     <Popover.Content align={align}>
@@ -63,8 +99,9 @@ const Items = ({
         <Command.Input
           autoFocus
           onValueChange={(value) => {
-            if (Number.parseInt(value) < objectives.length) {
-              setObjectiveId(objectives[Number.parseInt(value)].id);
+            const itemIndex = Number.parseInt(value, 10);
+            if (/^\d+$/.test(value) && itemIndex < objectives.length) {
+              setObjectiveId(objectives[itemIndex].id);
               setOpen(false);
               setQuery("");
               return;
@@ -75,11 +112,18 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No {getTermDisplay("objectiveTerm")} found.</Text>
-        </Command.Empty>
-        <Command.Group>
-          {!isPending && (
+        {!isLoadingObjectives ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">
+              No {getTermDisplay("objectiveTerm")} found.
+            </Text>
+          </Command.Empty>
+        ) : null}
+        <Command.Group
+          className="max-h-80 overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {!isLoadingObjectives && (
             <Command.Item
               active={!objectiveId}
               className="justify-between gap-4 opacity-70"
@@ -103,12 +147,9 @@ const Items = ({
             </Command.Item>
           )}
           {objectives.length > 0 && <Divider className="my-2" />}
-          {isPending ? (
+          {isLoadingObjectives ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Fetching {getTermDisplay("objectiveTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={5} />
             </Command.Loading>
           ) : null}
           {objectives.map(({ id, name }, idx) => (
@@ -136,6 +177,11 @@ const Items = ({
               </Flex>
             </Command.Item>
           ))}
+          {isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={2} />
+            </Command.Loading>
+          ) : null}
         </Command.Group>
       </Command>
     </Popover.Content>

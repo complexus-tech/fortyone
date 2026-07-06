@@ -36,6 +36,8 @@ export const memberKeys = {
     [...memberKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, id: string) =>
     [...memberKeys.details(workspaceSlug), id] as const,
+  maya: (workspaceSlug: string) =>
+    [...memberKeys.details(workspaceSlug), "maya"] as const,
   team: (workspaceSlug: string, teamId: string) =>
     [...memberKeys.lists(workspaceSlug), teamId] as const,
 };
@@ -110,6 +112,8 @@ export const subscriptionKeys = {
 
 export const analyticsKeys = {
   all: (workspaceSlug: string) => ["analytics", workspaceSlug] as const,
+  commandCenter: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "command-center", filters] as const,
   overview: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "overview", filters] as const,
   storyAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>
@@ -125,6 +129,17 @@ export const analyticsKeys = {
     ] as const,
   teamPerformance: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "team-performance", filters] as const,
+  workloadAnalysis: (
+    workspaceSlug: string,
+    filters?: Record<string, unknown>,
+  ) =>
+    [
+      ...analyticsKeys.all(workspaceSlug),
+      "workload-analysis",
+      filters,
+    ] as const,
+  pulseReport: (workspaceSlug: string, filters?: Record<string, unknown>) =>
+    [...analyticsKeys.all(workspaceSlug), "pulse-report", filters] as const,
   sprintAnalytics: (workspaceSlug: string, filters?: Record<string, unknown>) =>
     [...analyticsKeys.all(workspaceSlug), "sprint-analytics", filters] as const,
   timelineTrends: (workspaceSlug: string, filters?: Record<string, unknown>) =>
@@ -144,6 +159,19 @@ export const githubKeys = {
     ["github", workspaceSlug, "request-comments", requestId] as const,
 };
 
+export const slackKeys = {
+  integration: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "integration"] as const,
+};
+
+export const calendarKeys = {
+  all: (workspaceSlug: string) => ["calendar", workspaceSlug] as const,
+  integration: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "integration"] as const,
+  schedule: (workspaceSlug: string, startAt: string, endAt: string) =>
+    [...calendarKeys.all(workspaceSlug), "schedule", startAt, endAt] as const,
+};
+
 export const integrationRequestKeys = {
   all: (workspaceSlug: string) =>
     ["integration-requests", workspaceSlug] as const,
@@ -155,4 +183,10 @@ export const integrationRequestKeys = {
     [...integrationRequestKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, requestId: string) =>
     [...integrationRequestKeys.details(workspaceSlug), requestId] as const,
+};
+
+export const feedbackKeys = {
+  all: (workspaceSlug: string) => ["feedback", workspaceSlug] as const,
+  portals: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "portals"] as const,
 };

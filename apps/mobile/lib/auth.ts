@@ -1,25 +1,51 @@
 import * as SecureStore from "expo-secure-store";
 
-export async function saveAccessToken(token: string) {
-  await SecureStore.setItemAsync("accessToken", token);
-}
+const storage = {
+  async setItem(key: string, value: string) {
+    if (process.env.EXPO_OS === "web") {
+      window.localStorage.setItem(key, value);
+      return;
+    }
 
-export async function getAccessToken() {
-  return await SecureStore.getItemAsync("accessToken");
-}
+    await SecureStore.setItemAsync(key, value);
+  },
+  async getItem(key: string) {
+    if (process.env.EXPO_OS === "web") {
+      return window.localStorage.getItem(key);
+    }
 
-export async function clearAccessToken() {
-  await SecureStore.deleteItemAsync("accessToken");
-}
+    return SecureStore.getItemAsync(key);
+  },
+  async removeItem(key: string) {
+    if (process.env.EXPO_OS === "web") {
+      window.localStorage.removeItem(key);
+      return;
+    }
+
+    await SecureStore.deleteItemAsync(key);
+  },
+};
 
 export async function saveWorkspace(workspace: string) {
-  await SecureStore.setItemAsync("workspace", workspace);
+  await storage.setItem("workspace", workspace);
 }
 
 export async function getWorkspace() {
-  return await SecureStore.getItemAsync("workspace");
+  return storage.getItem("workspace");
 }
 
 export async function clearWorkspace() {
-  await SecureStore.deleteItemAsync("workspace");
+  await storage.removeItem("workspace");
+}
+
+export async function saveSessionFlag() {
+  await storage.setItem("hasSession", "true");
+}
+
+export async function getSessionFlag() {
+  return storage.getItem("hasSession");
+}
+
+export async function clearSessionFlag() {
+  await storage.removeItem("hasSession");
 }

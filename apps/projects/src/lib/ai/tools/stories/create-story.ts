@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { requireToolConfirmation } from "../tool-helpers";
 import { normalizeStoryInput } from "./normalize-story-input";
 
 export const createStory = tool({
@@ -10,9 +11,20 @@ export const createStory = tool({
     "Create a new story. Guests cannot create stories. Members and admins can create stories for teams they belong to.",
   inputSchema: z.object({
     title: z.string().describe("Story title (required)"),
-    description: z.string().optional().describe("Story description"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms creating the story.",
+      ),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Story description"),
     descriptionHTML: z
       .string()
+      .nullable()
       .optional()
       .describe(
         "Story description HTML (Always provided and properly formatted if description is provided)",
@@ -25,7 +37,11 @@ export const createStory = tool({
       .describe(
         "Initial status ID (required) (UUID) always use statuses tool to get the statuses",
       ),
-    assigneeId: z.string().optional().describe("Assignee user ID (UUID)"),
+    assigneeId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Assignee user ID (UUID)"),
     priority: z
       .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
       .default("No Priority")
@@ -33,28 +49,38 @@ export const createStory = tool({
     estimateValue: z
       .number()
       .int()
+      .nullable()
       .optional()
       .describe(
-        "Canonical estimate value (allowed: 1, 2, 3, 5, 8) for the team's estimation scheme",
+        "Canonical estimate value for the team's estimation scheme. Use 1, 2, 3, 5, or 8. Use 0, null, or omit for unestimated work.",
       ),
+    labelIds: z
+      .array(z.string())
+      .optional()
+      .describe("Label IDs to attach to the story."),
     sprintId: z
       .string()
+      .nullable()
       .optional()
       .describe("Sprint ID to assign story (UUID)"),
     objectiveId: z
       .string()
+      .nullable()
       .optional()
       .describe("Objective ID to assign story (UUID)"),
     parentId: z
       .string()
+      .nullable()
       .optional()
       .describe("Parent story ID for sub-stories (UUID)"),
     startDate: z
       .string()
+      .nullable()
       .optional()
       .describe("Story start date (ISO date string e.g 2005-06-13)"),
     endDate: z
       .string()
+      .nullable()
       .optional()
       .describe("Story end date (ISO date string e.g 2005-06-13)"),
   }),
@@ -62,6 +88,7 @@ export const createStory = tool({
   execute: async (
     {
       title,
+      confirmed,
       description,
       descriptionHTML,
       teamId,
@@ -69,15 +96,20 @@ export const createStory = tool({
       assigneeId,
       priority,
       estimateValue,
+      labelIds,
       sprintId,
       objectiveId,
       parentId,
       startDate,
       endDate,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("create this story");
+      }
+
       const session = await auth();
 
       if (!session) {
@@ -87,7 +119,7 @@ export const createStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -112,6 +144,7 @@ export const createStory = tool({
         assigneeId,
         priority,
         estimateValue,
+        labelIds,
         sprintId,
         objectiveId,
         parentId,
@@ -125,6 +158,13 @@ export const createStory = tool({
         return {
           success: false,
           error: result.error.message || "Failed to create story",
+        };
+      }
+
+      if (!result.data?.id) {
+        return {
+          success: false,
+          error: "Story creation did not return a created story.",
         };
       }
 

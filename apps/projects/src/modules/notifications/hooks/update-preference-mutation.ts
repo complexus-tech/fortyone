@@ -36,6 +36,11 @@ export const useUpdateNotificationPreferenceMutation = () => {
 
       // Optimistically update to the new value
       if (previousPreferences) {
+        const currentPreference = previousPreferences.preferences[type] ?? {
+          email: true,
+          inApp: true,
+        };
+
         queryClient.setQueryData<NotificationPreferences>(
           notificationKeys.preferences(workspaceSlug),
           {
@@ -45,10 +50,10 @@ export const useUpdateNotificationPreferenceMutation = () => {
               [type]: {
                 email:
                   preferences.emailEnabled ??
-                  previousPreferences.preferences[type].email,
+                  currentPreference.email,
                 inApp:
                   preferences.inAppEnabled ??
-                  previousPreferences.preferences[type].inApp,
+                  currentPreference.inApp,
               },
             },
           },

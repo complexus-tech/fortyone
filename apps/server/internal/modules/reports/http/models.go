@@ -45,10 +45,164 @@ type AppStatsFilters struct {
 
 type AppReportFilters struct {
 	TeamIDs      []uuid.UUID `json:"teamIds" query:"teamIds"`
+	AssigneeIDs  []uuid.UUID `json:"assigneeIds" query:"assigneeIds"`
 	StartDate    *time.Time  `json:"startDate" query:"startDate"`
 	EndDate      *time.Time  `json:"endDate" query:"endDate"`
 	SprintIDs    []uuid.UUID `json:"sprintIds" query:"sprintIds"`
 	ObjectiveIDs []uuid.UUID `json:"objectiveIds" query:"objectiveIds"`
+}
+
+type AppTrackWorkspaceAnalyticsEventRequest struct {
+	EventName   string         `json:"eventName"`
+	Surface     string         `json:"surface"`
+	TeamID      *uuid.UUID     `json:"teamId,omitempty"`
+	StoryID     *uuid.UUID     `json:"storyId,omitempty"`
+	ObjectiveID *uuid.UUID     `json:"objectiveId,omitempty"`
+	SprintID    *uuid.UUID     `json:"sprintId,omitempty"`
+	KeyResultID *uuid.UUID     `json:"keyResultId,omitempty"`
+	Properties  map[string]any `json:"properties,omitempty"`
+	OccurredAt  *time.Time     `json:"occurredAt,omitempty"`
+}
+
+type AppTrackWorkspaceAnalyticsEventResponse struct {
+	EventName  string    `json:"eventName"`
+	Surface    string    `json:"surface"`
+	OccurredAt time.Time `json:"occurredAt"`
+}
+
+// Workload Analysis App Models
+type AppWorkloadAnalysis struct {
+	Summary    AppWorkloadSummary       `json:"summary"`
+	Members    []AppMemberWorkload      `json:"members"`
+	Teams      []AppTeamWorkloadSummary `json:"teams"`
+	Unassigned AppUnassignedWorkload    `json:"unassigned"`
+	Risks      AppWorkloadRisks         `json:"risks"`
+}
+
+type AppWorkloadSummary struct {
+	TotalOpenStories    int `json:"totalOpenStories"`
+	TotalEstimate       int `json:"totalEstimate"`
+	OverdueStories      int `json:"overdueStories"`
+	UrgentStories       int `json:"urgentStories"`
+	HighPriorityStories int `json:"highPriorityStories"`
+	UnestimatedStories  int `json:"unestimatedStories"`
+	UnassignedStories   int `json:"unassignedStories"`
+}
+
+type AppMemberWorkload struct {
+	UserID              uuid.UUID `json:"userId"`
+	FullName            string    `json:"fullName"`
+	Username            string    `json:"username"`
+	AvatarURL           string    `json:"avatarUrl"`
+	OpenStories         int       `json:"openStories"`
+	StartedStories      int       `json:"startedStories"`
+	PausedStories       int       `json:"pausedStories"`
+	CompletedStories    int       `json:"completedStories"`
+	OverdueStories      int       `json:"overdueStories"`
+	UrgentStories       int       `json:"urgentStories"`
+	HighPriorityStories int       `json:"highPriorityStories"`
+	UnestimatedStories  int       `json:"unestimatedStories"`
+	EstimateTotal       int       `json:"estimateTotal"`
+}
+
+type AppTeamWorkloadSummary struct {
+	TeamID             uuid.UUID `json:"teamId"`
+	TeamName           string    `json:"teamName"`
+	TeamCode           string    `json:"teamCode"`
+	OpenStories        int       `json:"openStories"`
+	EstimateTotal      int       `json:"estimateTotal"`
+	OverdueStories     int       `json:"overdueStories"`
+	UnassignedStories  int       `json:"unassignedStories"`
+	UnestimatedStories int       `json:"unestimatedStories"`
+}
+
+type AppUnassignedWorkload struct {
+	Stories             int `json:"stories"`
+	EstimateTotal       int `json:"estimateTotal"`
+	OverdueStories      int `json:"overdueStories"`
+	UrgentStories       int `json:"urgentStories"`
+	HighPriorityStories int `json:"highPriorityStories"`
+	UnestimatedStories  int `json:"unestimatedStories"`
+}
+
+type AppWorkloadRisks struct {
+	OverloadedMembers   []AppMemberWorkload `json:"overloadedMembers"`
+	OverdueMembers      []AppMemberWorkload `json:"overdueMembers"`
+	UnassignedStories   int                 `json:"unassignedStories"`
+	UnestimatedStories  int                 `json:"unestimatedStories"`
+	HighPriorityStories int                 `json:"highPriorityStories"`
+}
+
+type AppPulseReport struct {
+	WorkspaceID uuid.UUID               `json:"workspaceId"`
+	ReportDate  time.Time               `json:"reportDate"`
+	Filters     AppReportFilters        `json:"filters"`
+	Summary     AppPulseSummary         `json:"summary"`
+	Stories     AppPulseStoryHealth     `json:"stories"`
+	Sprints     AppPulseSprintHealth    `json:"sprints"`
+	Objectives  AppPulseObjectiveHealth `json:"objectives"`
+	Requests    AppPulseRequestHealth   `json:"requests"`
+	Workload    AppWorkloadAnalysis     `json:"workload"`
+	Risks       []AppPulseRisk          `json:"risks"`
+}
+
+type AppPulseSummary struct {
+	OpenStories       int `json:"openStories"`
+	OverdueStories    int `json:"overdueStories"`
+	BlockedStories    int `json:"blockedStories"`
+	AtRiskSprints     int `json:"atRiskSprints"`
+	AtRiskObjectives  int `json:"atRiskObjectives"`
+	PendingRequests   int `json:"pendingRequests"`
+	OverloadedMembers int `json:"overloadedMembers"`
+}
+
+type AppPulseStoryHealth struct {
+	OpenStories         int `json:"openStories"`
+	StartedStories      int `json:"startedStories"`
+	PausedStories       int `json:"pausedStories"`
+	CompletedStories    int `json:"completedStories"`
+	CancelledStories    int `json:"cancelledStories"`
+	BlockedStories      int `json:"blockedStories"`
+	OverdueStories      int `json:"overdueStories"`
+	UrgentStories       int `json:"urgentStories"`
+	HighPriorityStories int `json:"highPriorityStories"`
+	UnassignedStories   int `json:"unassignedStories"`
+	UnestimatedStories  int `json:"unestimatedStories"`
+}
+
+type AppPulseSprintHealth struct {
+	ActiveSprints      int `json:"activeSprints"`
+	UpcomingSprints    int `json:"upcomingSprints"`
+	CompletedSprints   int `json:"completedSprints"`
+	AtRiskSprints      int `json:"atRiskSprints"`
+	OverdueSprints     int `json:"overdueSprints"`
+	UnestimatedStories int `json:"unestimatedStories"`
+}
+
+type AppPulseObjectiveHealth struct {
+	ActiveObjectives   int `json:"activeObjectives"`
+	AtRiskObjectives   int `json:"atRiskObjectives"`
+	OffTrackObjectives int `json:"offTrackObjectives"`
+	OverdueObjectives  int `json:"overdueObjectives"`
+	ObjectivesDueSoon  int `json:"objectivesDueSoon"`
+}
+
+type AppPulseRequestHealth struct {
+	PendingRequests  int `json:"pendingRequests"`
+	UrgentRequests   int `json:"urgentRequests"`
+	HighRequests     int `json:"highRequests"`
+	GitHubRequests   int `json:"gitHubRequests"`
+	SlackRequests    int `json:"slackRequests"`
+	IntercomRequests int `json:"intercomRequests"`
+	StaleRequests    int `json:"staleRequests"`
+}
+
+type AppPulseRisk struct {
+	Kind        reports.PulseRiskKind     `json:"kind"`
+	Severity    reports.PulseRiskSeverity `json:"severity"`
+	Title       string                    `json:"title"`
+	Description string                    `json:"description"`
+	Count       int                       `json:"count"`
 }
 
 // 1. Workspace Overview App Models
@@ -313,11 +467,188 @@ func toAppPriorityStats(s []reports.CorePriorityStats) []AppPriorityStats {
 func toAppReportFilters(filters reports.ReportFilters) AppReportFilters {
 	return AppReportFilters{
 		TeamIDs:      filters.TeamIDs,
+		AssigneeIDs:  filters.AssigneeIDs,
 		StartDate:    filters.StartDate,
 		EndDate:      filters.EndDate,
 		SprintIDs:    filters.SprintIDs,
 		ObjectiveIDs: filters.ObjectiveIDs,
 	}
+}
+
+func toAppWorkloadAnalysis(analysis reports.CoreWorkloadAnalysis) AppWorkloadAnalysis {
+	return AppWorkloadAnalysis{
+		Summary:    toAppWorkloadSummary(analysis.Summary),
+		Members:    toAppMemberWorkloads(analysis.Members),
+		Teams:      toAppTeamWorkloadSummaries(analysis.Teams),
+		Unassigned: toAppUnassignedWorkload(analysis.Unassigned),
+		Risks:      toAppWorkloadRisks(analysis.Risks),
+	}
+}
+
+func toAppWorkloadSummary(summary reports.CoreWorkloadSummary) AppWorkloadSummary {
+	return AppWorkloadSummary{
+		TotalOpenStories:    summary.TotalOpenStories,
+		TotalEstimate:       summary.TotalEstimate,
+		OverdueStories:      summary.OverdueStories,
+		UrgentStories:       summary.UrgentStories,
+		HighPriorityStories: summary.HighPriorityStories,
+		UnestimatedStories:  summary.UnestimatedStories,
+		UnassignedStories:   summary.UnassignedStories,
+	}
+}
+
+func toAppMemberWorkloads(members []reports.CoreMemberWorkload) []AppMemberWorkload {
+	result := make([]AppMemberWorkload, len(members))
+	for i, member := range members {
+		result[i] = toAppMemberWorkload(member)
+	}
+	return result
+}
+
+func toAppMemberWorkload(member reports.CoreMemberWorkload) AppMemberWorkload {
+	return AppMemberWorkload{
+		UserID:              member.UserID,
+		FullName:            member.FullName,
+		Username:            member.Username,
+		AvatarURL:           member.AvatarURL,
+		OpenStories:         member.OpenStories,
+		StartedStories:      member.StartedStories,
+		PausedStories:       member.PausedStories,
+		CompletedStories:    member.CompletedStories,
+		OverdueStories:      member.OverdueStories,
+		UrgentStories:       member.UrgentStories,
+		HighPriorityStories: member.HighPriorityStories,
+		UnestimatedStories:  member.UnestimatedStories,
+		EstimateTotal:       member.EstimateTotal,
+	}
+}
+
+func toAppTeamWorkloadSummaries(teams []reports.CoreTeamWorkloadSummary) []AppTeamWorkloadSummary {
+	result := make([]AppTeamWorkloadSummary, len(teams))
+	for i, team := range teams {
+		result[i] = AppTeamWorkloadSummary{
+			TeamID:             team.TeamID,
+			TeamName:           team.TeamName,
+			TeamCode:           team.TeamCode,
+			OpenStories:        team.OpenStories,
+			EstimateTotal:      team.EstimateTotal,
+			OverdueStories:     team.OverdueStories,
+			UnassignedStories:  team.UnassignedStories,
+			UnestimatedStories: team.UnestimatedStories,
+		}
+	}
+	return result
+}
+
+func toAppUnassignedWorkload(unassigned reports.CoreUnassignedWorkload) AppUnassignedWorkload {
+	return AppUnassignedWorkload{
+		Stories:             unassigned.Stories,
+		EstimateTotal:       unassigned.EstimateTotal,
+		OverdueStories:      unassigned.OverdueStories,
+		UrgentStories:       unassigned.UrgentStories,
+		HighPriorityStories: unassigned.HighPriorityStories,
+		UnestimatedStories:  unassigned.UnestimatedStories,
+	}
+}
+
+func toAppWorkloadRisks(risks reports.CoreWorkloadRisks) AppWorkloadRisks {
+	return AppWorkloadRisks{
+		OverloadedMembers:   toAppMemberWorkloads(risks.OverloadedMembers),
+		OverdueMembers:      toAppMemberWorkloads(risks.OverdueMembers),
+		UnassignedStories:   risks.UnassignedStories,
+		UnestimatedStories:  risks.UnestimatedStories,
+		HighPriorityStories: risks.HighPriorityStories,
+	}
+}
+
+func toAppPulseReport(report reports.CorePulseReport) AppPulseReport {
+	return AppPulseReport{
+		WorkspaceID: report.WorkspaceID,
+		ReportDate:  report.ReportDate,
+		Filters:     toAppReportFilters(report.Filters),
+		Summary:     toAppPulseSummary(report.Summary),
+		Stories:     toAppPulseStoryHealth(report.Stories),
+		Sprints:     toAppPulseSprintHealth(report.Sprints),
+		Objectives:  toAppPulseObjectiveHealth(report.Objectives),
+		Requests:    toAppPulseRequestHealth(report.Requests),
+		Workload:    toAppWorkloadAnalysis(report.Workload),
+		Risks:       toAppPulseRisks(report.Risks),
+	}
+}
+
+func toAppPulseSummary(summary reports.CorePulseSummary) AppPulseSummary {
+	return AppPulseSummary{
+		OpenStories:       summary.OpenStories,
+		OverdueStories:    summary.OverdueStories,
+		BlockedStories:    summary.BlockedStories,
+		AtRiskSprints:     summary.AtRiskSprints,
+		AtRiskObjectives:  summary.AtRiskObjectives,
+		PendingRequests:   summary.PendingRequests,
+		OverloadedMembers: summary.OverloadedMembers,
+	}
+}
+
+func toAppPulseStoryHealth(health reports.CorePulseStoryHealth) AppPulseStoryHealth {
+	return AppPulseStoryHealth{
+		OpenStories:         health.OpenStories,
+		StartedStories:      health.StartedStories,
+		PausedStories:       health.PausedStories,
+		CompletedStories:    health.CompletedStories,
+		CancelledStories:    health.CancelledStories,
+		BlockedStories:      health.BlockedStories,
+		OverdueStories:      health.OverdueStories,
+		UrgentStories:       health.UrgentStories,
+		HighPriorityStories: health.HighPriorityStories,
+		UnassignedStories:   health.UnassignedStories,
+		UnestimatedStories:  health.UnestimatedStories,
+	}
+}
+
+func toAppPulseSprintHealth(health reports.CorePulseSprintHealth) AppPulseSprintHealth {
+	return AppPulseSprintHealth{
+		ActiveSprints:      health.ActiveSprints,
+		UpcomingSprints:    health.UpcomingSprints,
+		CompletedSprints:   health.CompletedSprints,
+		AtRiskSprints:      health.AtRiskSprints,
+		OverdueSprints:     health.OverdueSprints,
+		UnestimatedStories: health.UnestimatedStories,
+	}
+}
+
+func toAppPulseObjectiveHealth(health reports.CorePulseObjectiveHealth) AppPulseObjectiveHealth {
+	return AppPulseObjectiveHealth{
+		ActiveObjectives:   health.ActiveObjectives,
+		AtRiskObjectives:   health.AtRiskObjectives,
+		OffTrackObjectives: health.OffTrackObjectives,
+		OverdueObjectives:  health.OverdueObjectives,
+		ObjectivesDueSoon:  health.ObjectivesDueSoon,
+	}
+}
+
+func toAppPulseRequestHealth(health reports.CorePulseRequestHealth) AppPulseRequestHealth {
+	return AppPulseRequestHealth{
+		PendingRequests:  health.PendingRequests,
+		UrgentRequests:   health.UrgentRequests,
+		HighRequests:     health.HighRequests,
+		GitHubRequests:   health.GitHubRequests,
+		SlackRequests:    health.SlackRequests,
+		IntercomRequests: health.IntercomRequests,
+		StaleRequests:    health.StaleRequests,
+	}
+}
+
+func toAppPulseRisks(risks []reports.CorePulseRisk) []AppPulseRisk {
+	result := make([]AppPulseRisk, len(risks))
+	for i, risk := range risks {
+		result[i] = AppPulseRisk{
+			Kind:        risk.Kind,
+			Severity:    risk.Severity,
+			Title:       risk.Title,
+			Description: risk.Description,
+			Count:       risk.Count,
+		}
+	}
+	return result
 }
 
 func toAppWorkspaceOverview(overview reports.CoreWorkspaceOverview) AppWorkspaceOverview {

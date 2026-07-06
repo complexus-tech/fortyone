@@ -25,8 +25,16 @@ type Repository interface {
 	GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreStoryAnalytics, error)
 	GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error)
 	GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error)
+	GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error)
+	GetPulseStoryHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseStoryHealth, error)
+	GetPulseSprintHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseSprintHealth, error)
+	GetPulseObjectiveHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseObjectiveHealth, error)
+	GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseRequestHealth, error)
 	GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error)
 	GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error)
+	GetRequestSourceAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreRequestSourceAnalytics, error)
+	GetWorkspaceEngagementAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceEngagementAnalytics, error)
+	CreateWorkspaceAnalyticsEvent(ctx context.Context, input CoreWorkspaceAnalyticsEventInput) error
 }
 
 // Service manages the reports operations.
@@ -188,6 +196,23 @@ func (s *Service) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID,
 
 	span.AddEvent("team performance retrieved.")
 	return performance, nil
+}
+
+// GetWorkloadAnalysis retrieves member and team workload report data.
+func (s *Service) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error) {
+	s.log.Info(ctx, "business.core.reports.GetWorkloadAnalysis")
+	ctx, span := web.AddSpan(ctx, "business.core.reports.GetWorkloadAnalysis")
+	defer span.End()
+
+	analysis, err := s.repo.GetWorkloadAnalysis(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkloadAnalysis{}, fmt.Errorf("getting workload analysis: %w", err)
+	}
+	analysis.Risks = deriveWorkloadRisks(analysis)
+
+	span.AddEvent("workload analysis retrieved.")
+	return analysis, nil
 }
 
 // GetSprintAnalytics retrieves sprint analytics including progress and burndown.

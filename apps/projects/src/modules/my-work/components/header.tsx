@@ -9,6 +9,7 @@ import {
   StoriesViewOptionsButton,
   LayoutSwitcher,
   NewStoryButton,
+  StoriesFilterButton,
 } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { useMyWork } from "./provider";
@@ -21,12 +22,24 @@ export const Header = ({
   setLayout: (value: StoriesLayout) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions, setViewOptions } = useMyWork();
-  const tabs = ["all", "assigned", "created"] as const;
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useMyWork();
+  const tabs = [
+    "all",
+    "today",
+    "upcoming",
+    "blocked",
+    "assigned",
+    "created",
+  ] as const;
   const [tab] = useQueryState(
     "tab",
     parseAsStringLiteral(tabs).withDefault("all"),
   );
+  const tabLabel =
+    tab === "all"
+      ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
+      : tab;
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -58,10 +71,7 @@ export const Header = ({
                 icon: <UserIcon />,
               },
               {
-                name:
-                  tab === "all"
-                    ? `All ${getTermDisplay("storyTerm", { variant: "plural" })}`
-                    : tab,
+                name: tabLabel,
                 icon: <StoryIcon strokeWidth={2} />,
                 className: "capitalize",
               },
@@ -71,6 +81,11 @@ export const Header = ({
       </Flex>
       <Flex align="center" gap={2}>
         <LayoutSwitcher layout={layout} setLayout={setLayout} />
+        <StoriesFilterButton
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <StoriesViewOptionsButton
           groupByOptions={["status", "priority", "assignee"]}
           layout={layout}

@@ -1,14 +1,20 @@
 "use client";
 import { Box, Tabs } from "ui";
-import { parseAsString, useQueryState } from "nuqs";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { cn } from "lib";
 import type { StoriesLayout } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 
+const tabs = ["all", "assigned", "created"] as const;
+
 export const MyWorkSkeleton = ({ layout }: { layout: StoriesLayout }) => {
-  const [tab] = useQueryState("tab", parseAsString.withDefault("all"));
+  const [tab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault("all"),
+  );
   const { getTermDisplay } = useTerminology();
+
   return (
     <Box className="h-[calc(100dvh-4rem)]">
       <Tabs defaultValue={tab}>

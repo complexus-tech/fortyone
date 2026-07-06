@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -30,6 +31,7 @@ func (r *repo) GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, e
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -85,6 +87,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (users.CoreUser
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -140,6 +143,7 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -179,7 +183,7 @@ func (r *repo) GetUserByEmailAnyStatus(ctx context.Context, email string) (users
 	return toCoreUser(user), nil
 }
 
-func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUID) ([]users.CoreUser, error) {
+func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.List")
 	defer span.End()
 
@@ -187,11 +191,12 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 	params := map[string]any{
 		"workspace_id": workspaceId,
 	}
+	trimmedSearch := strings.TrimSpace(filter.Search)
 
 	var q string
-	if teamID != nil {
+	if filter.TeamID != nil {
 		// Query for specific team members
-		params["team_id"] = *teamID
+		params["team_id"] = *filter.TeamID
 		q = `
 		SELECT DISTINCT
 			u.user_id,
@@ -201,19 +206,37 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.timezone,
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as role
+			wm.role as role,
+			tm.ai_role_title as team_ai_role_title,
+			tm.ai_role_description as team_ai_role_description,
+			tm.inferred_ai_role_title as inferred_team_ai_role_title,
+			tm.inferred_ai_role_description as inferred_team_ai_role_description,
+			tm.inferred_ai_role_story_count as inferred_team_ai_role_story_count,
+			tm.inferred_ai_role_confidence as inferred_team_ai_role_confidence,
+			tm.inferred_ai_role_generated_at as inferred_team_ai_role_generated_at,
+			last_activity.last_story_activity_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
 		INNER JOIN team_members tm ON u.user_id = tm.user_id
+		LEFT JOIN LATERAL (
+			SELECT MAX(sa.created_at) AS last_story_activity_at
+			FROM story_activities sa
+			INNER JOIN stories s ON s.id = sa.story_id
+			WHERE sa.user_id = u.user_id
+				AND sa.workspace_id = :workspace_id
+				AND s.team_id = :team_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+		) last_activity ON true
 		WHERE wm.workspace_id = :workspace_id
 			AND tm.team_id = :team_id
 			AND u.is_active = TRUE
 			AND u.is_system = FALSE
-		ORDER BY u.full_name
 		`
 	} else {
 		// Query for all workspace members
@@ -226,18 +249,53 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, teamID *uuid.UUI
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.timezone,
 			u.last_login_at,
 			u.created_at,
 			u.updated_at,
-			wm.role as role
+			wm.role as role,
+			'' as team_ai_role_title,
+			'' as team_ai_role_description,
+			'' as inferred_team_ai_role_title,
+			'' as inferred_team_ai_role_description,
+			0 as inferred_team_ai_role_story_count,
+			0 as inferred_team_ai_role_confidence,
+			NULL as inferred_team_ai_role_generated_at,
+			last_activity.last_story_activity_at
 		FROM users u
 		INNER JOIN workspace_members wm ON u.user_id = wm.user_id
+		LEFT JOIN LATERAL (
+			SELECT MAX(sa.created_at) AS last_story_activity_at
+			FROM story_activities sa
+			INNER JOIN stories s ON s.id = sa.story_id
+			WHERE sa.user_id = u.user_id
+				AND sa.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+		) last_activity ON true
 		WHERE wm.workspace_id = :workspace_id
 			AND u.is_active = TRUE
 			AND u.is_system = FALSE
-		ORDER BY u.full_name
 		`
+	}
+
+	if trimmedSearch != "" {
+		params["search"] = trimmedSearch
+		q += `
+			AND (
+				u.full_name ILIKE '%' || :search || '%'
+				OR u.username ILIKE '%' || :search || '%'
+				OR u.email ILIKE '%' || :search || '%'
+			)
+		`
+	}
+
+	q += " ORDER BY u.full_name"
+	if filter.Limit > 0 {
+		params["limit"] = filter.Limit
+		params["offset"] = filter.Offset
+		q += " LIMIT :limit OFFSET :offset"
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -275,6 +333,7 @@ func (r *repo) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]users.
 			u.avatar_url,
 			u.is_active,
 			u.is_system,
+			u.is_internal,
 			u.has_seen_walkthrough,
 			u.timezone,
 			u.last_login_at,
@@ -382,7 +441,7 @@ func (r *repo) GetAutomationPreferences(ctx context.Context, userID, workspaceID
 	defer span.End()
 
 	query := `
-		SELECT user_id, workspace_id, auto_assign_self, assign_self_on_branch_copy, 
+		SELECT user_id, workspace_id, auto_assign_self, auto_assign_maya, assign_self_on_branch_copy,
 			   move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		FROM user_automation_preferences
 		WHERE user_id = :user_id AND workspace_id = :workspace_id;

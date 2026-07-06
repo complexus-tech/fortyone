@@ -4,10 +4,13 @@ import (
 	"context"
 
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
+	adminhttp "github.com/complexus-tech/projects-api/internal/modules/admin/http"
+	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
 	documentshttp "github.com/complexus-tech/projects-api/internal/modules/documents/http"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
+	feedbackhttp "github.com/complexus-tech/projects-api/internal/modules/feedback/http"
 	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	integrationrequestshttp "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/http"
@@ -15,11 +18,13 @@ import (
 	keyresultshttp "github.com/complexus-tech/projects-api/internal/modules/keyresults/http"
 	labelshttp "github.com/complexus-tech/projects-api/internal/modules/labels/http"
 	linkshttp "github.com/complexus-tech/projects-api/internal/modules/links/http"
+	mayahttp "github.com/complexus-tech/projects-api/internal/modules/maya/http"
 	notificationshttp "github.com/complexus-tech/projects-api/internal/modules/notifications/http"
 	objectiveshttp "github.com/complexus-tech/projects-api/internal/modules/objectives/http"
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
+	slackhttp "github.com/complexus-tech/projects-api/internal/modules/slack/http"
 	sprintshttp "github.com/complexus-tech/projects-api/internal/modules/sprints/http"
 	stateshttp "github.com/complexus-tech/projects-api/internal/modules/states/http"
 	storieshttp "github.com/complexus-tech/projects-api/internal/modules/stories/http"
@@ -77,6 +82,12 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Log: cfg.Log,
 	}, app)
 
+	adminhttp.Routes(adminhttp.Config{
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Service:   svcs.admin,
+	}, app)
+
 	githubhttp.Routes(githubhttp.Config{
 		DB:        cfg.DB,
 		Log:       cfg.Log,
@@ -85,6 +96,37 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Service:   svcs.github,
 		Users:     &userLookupAdapter{svc: svcs.users},
 	}, app)
+	slackhttp.Routes(slackhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.slack,
+		BotToken:  cfg.BotToken,
+	}, app)
+	calendarhttp.Routes(calendarhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.calendar,
+	}, app)
+	mayahttp.Routes(mayahttp.Config{
+		DB:         cfg.DB,
+		Log:        cfg.Log,
+		SecretKey:  cfg.SecretKey,
+		Cache:      cfg.Cache,
+		Service:    svcs.maya,
+		Workspaces: svcs.workspaces,
+		Stories:    svcs.stories,
+		States:     svcs.states,
+		Teams:      svcs.teams,
+		Users:      svcs.users,
+		Objectives: svcs.objectives,
+		KeyResults: svcs.keyResults,
+		Search:     svcs.search,
+		AIAPIKey:   cfg.AIAPIKey,
+	}, app)
 
 	integrationrequestshttp.Routes(integrationrequestshttp.Config{
 		DB:        cfg.DB,
@@ -92,6 +134,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.integrationRequests,
+	}, app)
+
+	feedbackhttp.Routes(feedbackhttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.feedback,
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{

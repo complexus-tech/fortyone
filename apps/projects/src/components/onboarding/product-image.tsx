@@ -15,7 +15,10 @@ export const ProductImage = () => {
       <BlurImage
         alt="Login"
         className="h-full w-full rounded-2xl object-cover"
+        priority
+        sizes="50vw"
         src="/images/mesh.webp"
+        unoptimized
       />
       <Container className="absolute inset-0 z-10 flex flex-col justify-between pt-12 pb-16 md:px-16 dark:text-black">
         <Link href="/">
@@ -71,9 +74,9 @@ export const ProductImage = () => {
           </Box>
           <Text className="mt-10 text-lg dark:text-black">
             By{" "}
-            {pathname?.includes("signup")
+            {pathname.includes("signup")
               ? "signing up"
-              : pathname?.includes("login")
+              : pathname.includes("login")
                 ? "signing in"
                 : "continuing"}
             , you agree to our{" "}

@@ -6,10 +6,11 @@ import { commentStoryAction } from "@/modules/story/actions/comment-story";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { paginateRecords } from "./tool-helpers";
 
 export const commentsTool = tool({
   description:
-    "Manage story comments: read, add, edit, delete comments, and handle threaded replies with user mentions. Supports full comment lifecycle management.",
+    "Manage story comments: read comments, add comments, and add threaded replies with user mentions.",
   inputSchema: z.object({
     action: z
       .enum(["list-comments", "add-comment", "reply-to-comment"])
@@ -42,6 +43,15 @@ export const commentsTool = tool({
       .max(100)
       .optional()
       .describe("Limit number of comments returned (default: 20, max: 100)"),
+
+    page: z.number().min(1).optional().describe("Page number. Default 1."),
+
+    pageSize: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe("Comments per page. Default 20, max 100."),
   }),
 
   execute: async (
@@ -53,8 +63,10 @@ export const commentsTool = tool({
       mentions = [],
       includeReplies = true,
       limit = 20,
+      page,
+      pageSize,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -68,7 +80,7 @@ export const commentsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -93,10 +105,12 @@ export const commentsTool = tool({
           const response = await getStoryComments(storyId, ctx);
           const comments = response.comments;
 
-          // Filter and limit comments
-          const limitedComments = comments.slice(0, limit);
+          const pagedComments = paginateRecords(comments, {
+            page,
+            pageSize: pageSize ?? limit,
+          });
 
-          const formattedComments = limitedComments.map((comment) => {
+          const formattedComments = pagedComments.records.map((comment) => {
             const commenter = memberMap.get(comment.userId);
             const replies = includeReplies
               ? comment.subComments.map((reply) => {
@@ -143,6 +157,7 @@ export const commentsTool = tool({
             comments: formattedComments,
             count: formattedComments.length,
             totalCount: comments.length,
+            pagination: pagedComments.pagination,
             message: `Found ${formattedComments.length} comment${formattedComments.length !== 1 ? "s" : ""} on this story.`,
           };
         }

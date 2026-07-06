@@ -2,7 +2,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Button, Dialog, Flex, Text, TextEditor, Menu, DatePicker } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -23,6 +22,7 @@ import { toast } from "sonner";
 import { cn } from "lib";
 import { format, formatISO } from "date-fns";
 import { useFeatures, useLocalStorage, useTerminology } from "@/hooks";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type { Team } from "@/modules/teams/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -82,7 +82,7 @@ export const NewSprintDialog = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       Link.configure({
         autolink: true,

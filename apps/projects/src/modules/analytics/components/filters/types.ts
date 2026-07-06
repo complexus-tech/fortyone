@@ -58,4 +58,5 @@ export type FilterButtonProps = {
   text: string;
   popover: React.ReactNode;
   isActive?: boolean;
+  showLabel?: boolean;
 };

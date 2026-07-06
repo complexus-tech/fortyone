@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -43,7 +44,30 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	teams, err := h.teams.List(ctx, workspace.ID, userID)
+	filter := teams.CoreListTeamsFilter{
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		teams, err := h.teams.List(ctx, workspace.ID, userID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(teams) > pageSize
+		if hasMore {
+			teams = teams[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppTeamsResponse(teams, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	teams, err := h.teams.List(ctx, workspace.ID, userID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -99,7 +123,30 @@ func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID)
+	filter := teams.CoreListTeamsFilter{
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(teams) > pageSize
+		if hasMore {
+			teams = teams[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppTeamsResponse(teams, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -315,6 +362,51 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	span.AddEvent("team member removed.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("user_id", userID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) UpdateMemberAIContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.UpdateMemberAIContext")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamIDParam := web.Params(r, "id")
+	teamID, err := uuid.Parse(teamIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	userIDParam := web.Params(r, "userId")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid user id"), http.StatusBadRequest)
+	}
+
+	var input AppUpdateTeamMemberAIContext
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	if err := h.teams.UpdateMemberAIContext(ctx, teamID, userID, workspace.ID, teams.CoreTeamMemberAIContext{
+		RoleTitle:       input.RoleTitle,
+		RoleDescription: input.RoleDescription,
+	}); err != nil {
+		if err.Error() == "team member not found" {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	span.AddEvent("team member ai context updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", userID.String()),

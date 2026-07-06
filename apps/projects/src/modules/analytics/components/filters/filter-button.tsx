@@ -8,14 +8,17 @@ export const FilterButton = ({
   icon,
   text,
   popover,
+  showLabel = true,
 }: FilterButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Box>
-      <Text className="mb-1" color="muted">
-        {label}
-      </Text>
+      {showLabel ? (
+        <Text className="mb-1" color="muted">
+          {label}
+        </Text>
+      ) : null}
       <Popover onOpenChange={setIsOpen} open={isOpen}>
         <Popover.Trigger asChild>
           <Button

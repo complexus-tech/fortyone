@@ -4,16 +4,28 @@ import { auth } from "@/auth";
 import { deleteStoryAction } from "@/modules/story/actions/delete-story";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { requireToolConfirmation } from "../tool-helpers";
 
 export const deleteStory = tool({
   description:
     "Delete a story. Only admins or story creators can delete stories.",
   inputSchema: z.object({
     storyId: z.string().describe("Story ID to delete (required)"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe("Must be true after the user explicitly confirms deletion."),
   }),
 
-  execute: async ({ storyId }, { experimental_context }) => {
+  execute: async (
+    { storyId, confirmed },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("delete this story");
+      }
+
       const session = await auth();
 
       if (!session) {
@@ -23,14 +35,14 @@ export const deleteStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
       const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
-      const userId = session.user!.id;
+      const userId = session.user.id;
 
       // Check if user can delete this story
       const story = await getStory(storyId, ctx);

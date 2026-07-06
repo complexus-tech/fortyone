@@ -13,7 +13,6 @@ type dbWorkspace struct {
 	Name        string     `db:"name"`
 	Color       string     `db:"color"`
 	AvatarURL   *string    `db:"avatar_url"`
-	IsActive    bool       `db:"is_active"`
 	CreatedBy   *uuid.UUID `db:"created_by"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
@@ -59,7 +58,6 @@ func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
 		Name:        p.Name,
 		Color:       p.Color,
 		AvatarURL:   p.AvatarURL,
-		IsActive:    p.IsActive,
 		CreatedBy:   p.CreatedBy,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,

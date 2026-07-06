@@ -1,7 +1,6 @@
 "use client";
 import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Link from "@tiptap/extension-link";
@@ -19,6 +18,7 @@ import TableRow from "@tiptap/extension-table-row";
 import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStoryById } from "../hooks/story";
@@ -72,6 +72,10 @@ export const MainDetails = ({
   } = data!;
   const isDeleted = Boolean(deletedAt);
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
+  const hasOpenSectionBeforeAttachments =
+    (isSubStoriesOpen && subStories.length > 0) ||
+    (isAssociationsOpen && associations.length > 0) ||
+    (isLinksOpen && links.length > 0);
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
     updateStory({ storyId, payload: data });
@@ -81,7 +85,7 @@ export const MainDetails = ({
 
   const descriptionEditor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({
@@ -160,13 +164,22 @@ export const MainDetails = ({
           "md:pt-2": isDialog,
         })}
       >
+        {isNotifications ? (
+          <Box className="notification-story-top-options-header relative -top-4.5 -mb-2 hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0">
+            <OptionsHeader
+              isAdminOrOwner={isAdminOrOwner}
+              isNotifications={isNotifications}
+              storyId={storyId}
+            />
+          </Box>
+        ) : null}
         <GitHubSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
-          className="text-foreground mb-8 text-3xl md:text-4xl"
+          className="text-foreground relative -left-px text-3xl font-semibold md:text-4xl"
           editor={titleEditor}
         />
-        <TextEditor editor={descriptionEditor} className="text-lg" />
+        <TextEditor className="text-lg" editor={descriptionEditor} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}
@@ -188,17 +201,24 @@ export const MainDetails = ({
             storyId={storyId}
           />
         )}
-        <Box className="md:hidden">
-          <Divider />
-          <Options isNotifications={isNotifications} storyId={storyId} />
+        <Box
+          className={cn("md:hidden", {
+            "mt-4": isNotifications && isLinksOpen && links.length > 0,
+            "notification-story-inline-options": isNotifications,
+          })}
+        >
+          <Options
+            isNotifications={isNotifications}
+            storyId={storyId}
+            variant={isNotifications ? "inline" : "sidebar"}
+          />
         </Box>
 
         <Attachments
           className={cn("border-border mt-2.5 border-t-[0.5px] pt-2.5", {
-            "mt-2 border-0":
-              (isSubStoriesOpen || isLinksOpen) &&
-              (subStories.length > 0 || links.length > 0),
+            "mt-0 border-0 pt-0": hasOpenSectionBeforeAttachments,
           })}
+          compactHeader={hasOpenSectionBeforeAttachments}
           storyId={storyId}
         />
         <Divider className="my-6" />

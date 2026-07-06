@@ -1,0 +1,122 @@
+import type { PublicPortal } from "./types";
+
+export const publicPortalFixture: PublicPortal = {
+  id: "city-roads",
+  name: "City Roads Program",
+  slug: "city-roads",
+  workspace: {
+    name: "City Roads Program",
+    slug: "city-roads",
+    avatarUrl: "/complexus.png",
+    color: "#FF005C",
+  },
+  description:
+    "A public request board for surfacing, reviewing, and publishing road delivery work.",
+  boards: [
+    {
+      id: "road-repairs",
+      name: "Road repairs",
+      colorClassName: "bg-success",
+    },
+    {
+      id: "drainage",
+      name: "Drainage",
+      colorClassName: "bg-info",
+    },
+    {
+      id: "traffic-lights",
+      name: "Traffic lights",
+      colorClassName: "bg-warning",
+    },
+  ],
+  requests: [
+    {
+      id: "req-1",
+      slug: "add-pedestrian-crossing-near-east-avenue-school",
+      title: "Add pedestrian crossing near East Avenue school",
+      description:
+        "Families are crossing a fast section of East Avenue during school pickup. A marked crossing and speed-calming work would make this safer.",
+      authorName: "A. Ndlovu",
+      boardId: "road-repairs",
+      status: "pending",
+      voteCount: 12,
+      commentCount: 2,
+      createdAtLabel: "Just now",
+      storyLinks: [],
+      comments: [
+        {
+          id: "comment-1",
+          authorName: "T. Moyo",
+          body: "This is especially difficult after 3pm when traffic backs up near the school gate.",
+          createdAtLabel: "8 minutes ago",
+        },
+      ],
+    },
+    {
+      id: "req-2",
+      slug: "blocked-storm-drain-on-4th-street",
+      title: "Blocked storm drain on 4th Street",
+      description:
+        "Water pools across the left lane after heavy rain and forces cars into oncoming traffic.",
+      authorName: "J. Banda",
+      boardId: "drainage",
+      status: "reviewing",
+      voteCount: 9,
+      commentCount: 5,
+      createdAtLabel: "1 hour ago",
+      storyLinks: [],
+      comments: [],
+    },
+    {
+      id: "req-3",
+      slug: "resurface-market-road-before-rainy-season",
+      title: "Resurface Market Road before rainy season",
+      description:
+        "Market Road carries delivery trucks every weekday and the current potholes are slowing access for vendors.",
+      authorName: "Public Works",
+      boardId: "road-repairs",
+      status: "planned",
+      voteCount: 18,
+      commentCount: 8,
+      createdAtLabel: "Yesterday",
+      roadmapSummary: "Committed and queued for the next resurfacing cycle.",
+      storyLinks: [],
+      comments: [],
+    },
+    {
+      id: "req-4",
+      slug: "repair-school-zone-signal-timing",
+      title: "Repair school-zone signal timing",
+      description:
+        "The morning timing window was restored so buses and pedestrians now get the longer crossing phase.",
+      authorName: "Road Safety Team",
+      boardId: "traffic-lights",
+      status: "completed",
+      voteCount: 21,
+      commentCount: 4,
+      createdAtLabel: "Last week",
+      roadmapSummary: "Completed after signal controller replacement.",
+      storyLinks: [],
+      comments: [],
+    },
+  ],
+  requestsHasMore: false,
+  updates: [
+    {
+      id: "update-1",
+      title: "School-zone signal timing completed",
+      body: "The signal timing work near the school zone is now complete and the longer pedestrian phase is active during morning and afternoon periods.",
+      status: "published",
+      publishedAtLabel: "Last week",
+      relatedRequestIds: ["req-4"],
+    },
+    {
+      id: "update-2",
+      title: "Market Road resurfacing moved into planning",
+      body: "The resurfacing request has been accepted into the public roadmap and is being prepared for the next resurfacing cycle.",
+      status: "published",
+      publishedAtLabel: "Yesterday",
+      relatedRequestIds: ["req-3"],
+    },
+  ],
+};

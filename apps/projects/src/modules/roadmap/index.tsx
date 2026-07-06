@@ -13,6 +13,7 @@ import {
   useCopyToClipboard,
 } from "@/hooks";
 import { RoadmapGanttBoard } from "@/components/ui/roadmap-gantt-board";
+import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { ListObjectives } from "@/modules/objectives/components/list-objectives";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
@@ -26,7 +27,7 @@ export const RoadmapPage = () => {
     "roadmapLayout",
     "gantt",
   );
-  const { data: objectives = [] } = useObjectives();
+  const { data: objectives = [], isPending } = useObjectives();
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -105,7 +106,9 @@ export const RoadmapPage = () => {
       </HeaderContainer>
 
       <Box className="h-[calc(100dvh-4rem)]">
-        {objectives.length === 0 ? (
+        {isPending ? (
+          <BoardSkeleton className="h-full" layout={layout} />
+        ) : objectives.length === 0 ? (
           <Box className="flex h-full items-center justify-center">
             <Box className="flex flex-col items-center">
               <RoadmapIcon className="h-12 w-auto" strokeWidth={1.3} />

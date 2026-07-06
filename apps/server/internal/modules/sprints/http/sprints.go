@@ -55,6 +55,25 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	userID, _ := mid.GetUserID(ctx)
 
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filters["limit"] = pageSize + 1
+		filters["offset"] = (page - 1) * pageSize
+
+		sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
+		if err != nil {
+			return err
+		}
+
+		hasMore := len(sprints) > pageSize
+		if hasMore {
+			sprints = sprints[:pageSize]
+		}
+
+		web.Respond(ctx, w, toAppSprintsResponse(sprints, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
 	sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err
@@ -146,7 +165,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		EndDate:   app.EndDate.Time(),
 	}
 
-	result, err := h.sprints.Create(ctx, sprint)
+	userID, _ := mid.GetUserID(ctx)
+
+	result, err := h.sprints.Create(ctx, sprint, &userID)
 	if err != nil {
 		return err
 	}
@@ -190,7 +211,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		EndDate:   app.EndDate.TimePtr(),
 	}
 
-	result, err := h.sprints.Update(ctx, sprintId, workspace.ID, sprint)
+	result, err := h.sprints.Update(ctx, sprintId, workspace.ID, sprint, &userID)
 	if err != nil {
 		return err
 	}
@@ -211,7 +232,9 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return errors.New("sprint id is not in its proper form")
 	}
 
-	if err := h.sprints.Delete(ctx, sprintId, workspace.ID); err != nil {
+	userID, _ := mid.GetUserID(ctx)
+
+	if err := h.sprints.Delete(ctx, sprintId, workspace.ID, &userID); err != nil {
 		return err
 	}
 

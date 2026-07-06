@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Box, Input, Button } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useProfile } from "@/lib/hooks/profile";
@@ -9,11 +9,20 @@ import { ProfilePicture } from "./profile-picture";
 export const Form = () => {
   const { data: profile } = useProfile();
   const { mutate: updateProfile } = useUpdateProfileMutation();
-
-  const [form, setForm] = useState({
+  const profileForm = {
     fullName: profile?.fullName || "",
     username: profile?.username || "",
-  });
+  };
+  const [profileSnapshot, setProfileSnapshot] = useState(profileForm);
+  const [form, setForm] = useState(profileForm);
+
+  if (
+    profileSnapshot.fullName !== profileForm.fullName ||
+    profileSnapshot.username !== profileForm.username
+  ) {
+    setProfileSnapshot(profileForm);
+    setForm(profileForm);
+  }
 
   const hasChanged = () => {
     return (
@@ -28,13 +37,6 @@ export const Form = () => {
       username: form.username.trim(),
     });
   };
-
-  useEffect(() => {
-    setForm({
-      fullName: profile?.fullName || "",
-      username: profile?.username || "",
-    });
-  }, [profile]);
 
   return (
     <Box className="border-border bg-surface rounded-2xl border">

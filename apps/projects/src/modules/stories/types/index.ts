@@ -8,6 +8,26 @@ export type StoryPriority =
   | "Medium"
   | "Low";
 
+export type StoryTeamSummary = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+export type StoryObjectiveSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export type StorySprintSummary = {
+  id: string;
+  name: string;
+  goal: string | null;
+  startDate: string;
+  endDate: string;
+};
+
 export type Story = {
   id: string;
   title: string;
@@ -17,9 +37,12 @@ export type Story = {
   description?: string;
   statusId: string;
   sprintId: string | null;
+  sprint?: StorySprintSummary | null;
   objectiveId: string | null;
+  objective?: StoryObjectiveSummary | null;
   keyResultId: string | null;
   teamId: string;
+  team?: StoryTeamSummary | null;
   workspaceId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
@@ -49,6 +72,7 @@ export type StoryActivity = {
   currentValue: string;
   oldValue?: unknown;
   newValue?: unknown;
+  reason?: string | null;
   createdAt: string;
 };
 
@@ -66,20 +90,25 @@ export type StoryFilters = {
   categories?: StateCategory[];
   assigneeIds?: string[] | null;
   reporterIds?: string[] | null;
+  titleContains?: string | null;
   priorities?: string[] | null;
   teamIds?: string[] | null;
   sprintIds?: string[] | null;
   labelIds?: string[] | null;
+  estimateValues?: number[] | null;
   parentId?: string | null;
   objectiveId?: string | null;
   epicId?: string | null;
   hasNoAssignee?: boolean | null;
+  hasBlockedBy?: boolean | null;
   assignedToMe?: boolean;
   createdByMe?: boolean;
   createdAfter?: string;
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
@@ -126,17 +155,22 @@ export type GroupedStoryParams = {
   statusIds?: string[];
   assigneeIds?: string[];
   reporterIds?: string[];
+  titleContains?: string;
   priorities?: string[];
   sprintIds?: string[];
   labelIds?: string[];
+  estimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;
@@ -159,18 +193,23 @@ export type GroupStoryParams = {
   categories?: StateCategory[];
   assigneeIds?: string[];
   reporterIds?: string[];
+  titleContains?: string;
   priorities?: string[];
   teamIds?: string[];
   sprintIds?: string[];
   labelIds?: string[];
+  estimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
+  startDateAfter?: string;
+  startDateBefore?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
   includeArchived?: boolean;

@@ -22,7 +22,6 @@ import {
   Divider,
 } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Link from "@tiptap/extension-link";
@@ -34,9 +33,9 @@ import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
+import { useQueryClient } from "@tanstack/react-query";
 import { marked } from "marked";
 import {
-  ArrowRightIcon,
   CalendarIcon,
   CheckIcon,
   CloseIcon,
@@ -47,13 +46,13 @@ import {
   SprintsIcon,
   CrownIcon,
   ArrowRight2Icon,
+  EstimateIcon,
+  TagsIcon,
 } from "icons";
 import { toast } from "sonner";
 import { addDays, format, formatISO } from "date-fns";
 import { cn } from "lib";
 import { useSession } from "@/lib/auth/client";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useFeatures,
   useLocalStorage,
@@ -63,13 +62,17 @@ import {
   useWorkspacePath,
 } from "@/hooks";
 import type { Team } from "@/modules/teams/types";
-import type { NewStory } from "@/modules/story/types";
+import type { DetailedStory, NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { useLabels } from "@/lib/hooks/labels";
+import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { useMembers } from "@/lib/hooks/members";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
@@ -83,11 +86,18 @@ import { StatusesMenu } from "./story/statuses-menu";
 import { TeamColor } from "./team-color";
 import { ObjectivesMenu } from "./story/objectives-menu";
 import { SprintsMenu } from "./story/sprints-menu";
+import { EstimateMenu } from "./story/estimate-menu";
+import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
+import { buildNewStoryDialogPayload } from "./new-story-dialog-form";
 
 type StoryFormAction =
   | { type: "INITIALIZE"; payload: NewStory }
-  | { type: "SET_FIELD"; field: keyof NewStory; value: string | null }
+  | {
+      type: "SET_FIELD";
+      field: keyof NewStory;
+      value: NewStory[keyof NewStory];
+    }
   | { type: "RESET_FORM"; payload: NewStory }
   | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
 
@@ -123,6 +133,7 @@ export const NewStoryDialog = ({
   objectiveId,
   sprintId,
   description,
+  onCreated,
 }: {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -133,16 +144,17 @@ export const NewStoryDialog = ({
   priority?: StoryPriority;
   assigneeId?: string | null;
   description?: string;
+  onCreated?: (story: DetailedStory) => Promise<void> | void;
 }) => {
   const session = useSession();
   const { userRole } = useUserRole();
   const queryClient = useQueryClient();
-  const router = useRouter();
   const features = useFeatures();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { data: allLabels = [] } = useLabels();
   const { getTermDisplay } = useTerminology();
   const [isExpanded, setIsExpanded] = useState(false);
   const firstTeam = teams.length > 0 ? teams[0] : null;
@@ -160,8 +172,9 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
+  const { data: teamSettings } = useTeamSettings(currentTeamId);
   const { data: automationPreferences } = useAutomationPreferences();
-  const { tier, getLimit } = useSubscriptionFeatures();
+  const { tier, getLimit, hasFeature } = useSubscriptionFeatures();
   const { data: totalStories = 0 } = useTotalStories();
 
   const teamStatuses = statuses.filter(
@@ -173,6 +186,14 @@ export const NewStoryDialog = ({
     (teamStatuses.length > 0
       ? teamStatuses.find((status) => status.isDefault) || teamStatuses[0]
       : null);
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
+  const autoAssignSelf = automationPreferences?.autoAssignSelf ?? false;
+  const autoAssignMaya =
+    hasFeature("backgroundMaya") &&
+    (automationPreferences?.autoAssignMaya ?? false);
+  const { data: mayaAssignee } = useMayaAssignee(autoAssignMaya);
+  const currentUserId = session.data?.user.id ?? null;
 
   const initialForm: NewStory = useMemo(
     () => ({
@@ -185,17 +206,20 @@ export const NewStoryDialog = ({
       startDate: null,
       assigneeId:
         assigneeId ||
-        (automationPreferences?.autoAssignSelf ? session.data?.user?.id : null),
+        (!autoAssignMaya && autoAssignSelf ? currentUserId : null),
       priority,
       objectiveId: objectiveId || null,
       sprintId: sprintId || null,
+      estimateValue: null,
+      labelIds: [],
     }),
     [
       currentTeamId,
       defaultStatus?.id,
       assigneeId,
-      automationPreferences?.autoAssignSelf,
-      session.data?.user?.id,
+      autoAssignMaya,
+      autoAssignSelf,
+      currentUserId,
       priority,
       objectiveId,
       sprintId,
@@ -208,7 +232,14 @@ export const NewStoryDialog = ({
   const mutation = useCreateStoryMutation();
   const objective = objectives.find((o) => o.id === storyForm.objectiveId);
   const sprint = sprints.find((s) => s.id === storyForm.sprintId);
-  const member = members.find((m) => m.id === storyForm.assigneeId);
+  const member =
+    mayaAssignee?.id === storyForm.assigneeId
+      ? mayaAssignee
+      : members.find((m) => m.id === storyForm.assigneeId);
+  const selectedLabelIds = storyForm.labelIds ?? [];
+  const selectedLabels = allLabels.filter((label) =>
+    selectedLabelIds.includes(label.id),
+  );
 
   const titleEditor = useEditor({
     extensions: [
@@ -225,7 +256,7 @@ export const NewStoryDialog = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({
@@ -263,23 +294,18 @@ export const NewStoryDialog = ({
     }
     setLoading(true);
 
-    const newStory: NewStory = {
-      title: titleEditor.getText(),
+    const newStory = buildNewStoryDialogPayload({
+      currentTeamId,
       description: editor.getText(),
       descriptionHTML: editor.getHTML(),
-      teamId: currentTeamId,
-      priority: storyForm.priority,
-      statusId: storyForm.statusId,
-      endDate: storyForm.endDate,
-      startDate: storyForm.startDate,
-      assigneeId: storyForm.assigneeId,
-      objectiveId: storyForm.objectiveId,
-      sprintId: storyForm.sprintId,
-    };
+      storyForm,
+      title: titleEditor.getText(),
+    });
 
-    let createError: unknown;
+    let createError: Error | null = null;
     try {
-      await mutation.mutateAsync(newStory);
+      const createdStory = await mutation.mutateAsync(newStory);
+      await onCreated?.(createdStory);
       if (!createMore) {
         setIsOpen(false);
         setIsExpanded(false);
@@ -293,7 +319,10 @@ export const NewStoryDialog = ({
         });
       }
     } catch (error) {
-      createError = error;
+      createError =
+        error instanceof Error
+          ? error
+          : new Error(`Failed to create ${getTermDisplay("storyTerm")}`);
     }
     setLoading(false);
     if (createError) {
@@ -330,6 +359,21 @@ export const NewStoryDialog = ({
   useEffect(() => {
     dispatch({ type: "INITIALIZE", payload: initialForm });
   }, [initialForm]);
+
+  useEffect(() => {
+    if (
+      !assigneeId &&
+      autoAssignMaya &&
+      mayaAssignee?.id &&
+      !storyForm.assigneeId
+    ) {
+      dispatch({
+        type: "SET_FIELD",
+        field: "assigneeId",
+        value: mayaAssignee.id,
+      });
+    }
+  }, [assigneeId, autoAssignMaya, mayaAssignee?.id, storyForm.assigneeId]);
 
   return (
     <FeatureGuard
@@ -495,6 +539,7 @@ export const NewStoryDialog = ({
               <StatusesMenu>
                 <StatusesMenu.Trigger>
                   <Button
+                    className="dark:bg-surface-elevated/90"
                     color="tertiary"
                     leftIcon={
                       <StoryStatusIcon
@@ -503,7 +548,6 @@ export const NewStoryDialog = ({
                       />
                     }
                     size="sm"
-                    className="dark:bg-surface-elevated/90"
                     type="button"
                     variant="outline"
                   >
@@ -529,6 +573,7 @@ export const NewStoryDialog = ({
               <PrioritiesMenu>
                 <PrioritiesMenu.Trigger>
                   <Button
+                    className="dark:bg-surface-elevated/90"
                     color="tertiary"
                     leftIcon={
                       <PriorityIcon
@@ -537,7 +582,6 @@ export const NewStoryDialog = ({
                       />
                     }
                     size="sm"
-                    className="dark:bg-surface-elevated/90"
                     type="button"
                     variant="outline"
                   >
@@ -681,6 +725,137 @@ export const NewStoryDialog = ({
                   teamId={currentTeamId}
                 />
               </AssigneesMenu>
+              <EstimateMenu>
+                <EstimateMenu.Trigger>
+                  <Button
+                    className={cn("dark:bg-surface-elevated/90 gap-1.5 px-2", {
+                      "text-text-muted": !storyForm.estimateValue,
+                    })}
+                    color="tertiary"
+                    leftIcon={
+                      <EstimateIcon
+                        className={cn("h-4.5 w-auto", {
+                          "text-text-muted": !storyForm.estimateValue,
+                        })}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {storyForm.estimateValue
+                      ? formatEstimate(
+                          estimateScheme,
+                          storyForm.estimateValue,
+                          "full",
+                        )
+                      : "Estimate"}
+                  </Button>
+                </EstimateMenu.Trigger>
+                <EstimateMenu.Items
+                  estimateScheme={estimateScheme}
+                  estimateValue={storyForm.estimateValue}
+                  setEstimateValue={(estimateValue) => {
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "estimateValue",
+                      value: estimateValue,
+                    });
+                  }}
+                />
+              </EstimateMenu>
+              {selectedLabels.length > 0 ? (
+                <Flex align="center" className="gap-1" wrap>
+                  {selectedLabels.map((label) => (
+                    <LabelsMenu key={label.id}>
+                      <LabelsMenu.Trigger>
+                        <Button
+                          className="dark:bg-surface-elevated/90 gap-1.5 px-2.5"
+                          color="tertiary"
+                          leftIcon={
+                            <TagsIcon
+                              className="h-4.5 w-auto"
+                              style={{ color: label.color }}
+                            />
+                          }
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <span className="inline-block max-w-[12ch] truncate">
+                            {label.name}
+                          </span>
+                        </Button>
+                      </LabelsMenu.Trigger>
+                      <LabelsMenu.Items
+                        labelIds={selectedLabelIds}
+                        setLabelIds={(labelIds) => {
+                          dispatch({
+                            type: "SET_FIELD",
+                            field: "labelIds",
+                            value: labelIds,
+                          });
+                        }}
+                        teamId={currentTeamId ?? ""}
+                      />
+                    </LabelsMenu>
+                  ))}
+                  <LabelsMenu>
+                    <LabelsMenu.Trigger>
+                      <Button
+                        asIcon
+                        className="dark:bg-surface-elevated/90"
+                        color="tertiary"
+                        leftIcon={<PlusIcon />}
+                        rounded="full"
+                        size="sm"
+                        title="Add labels"
+                        type="button"
+                        variant="outline"
+                      >
+                        <span className="sr-only">Add labels</span>
+                      </Button>
+                    </LabelsMenu.Trigger>
+                    <LabelsMenu.Items
+                      labelIds={selectedLabelIds}
+                      setLabelIds={(labelIds) => {
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "labelIds",
+                          value: labelIds,
+                        });
+                      }}
+                      teamId={currentTeamId ?? ""}
+                    />
+                  </LabelsMenu>
+                </Flex>
+              ) : (
+                <LabelsMenu>
+                  <LabelsMenu.Trigger>
+                    <Button
+                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
+                      color="tertiary"
+                      leftIcon={<TagsIcon className="h-4.5 w-auto" />}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Labels
+                    </Button>
+                  </LabelsMenu.Trigger>
+                  <LabelsMenu.Items
+                    labelIds={selectedLabelIds}
+                    setLabelIds={(labelIds) => {
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "labelIds",
+                        value: labelIds,
+                      });
+                    }}
+                    teamId={currentTeamId ?? ""}
+                  />
+                </LabelsMenu>
+              )}
               {features.objectiveEnabled && objectives.length > 0 ? (
                 <ObjectivesMenu>
                   <ObjectivesMenu.Trigger>

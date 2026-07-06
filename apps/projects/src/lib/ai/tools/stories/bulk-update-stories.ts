@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { requireToolConfirmation } from "../tool-helpers";
 
 export const bulkUpdateStories = tool({
   description:
@@ -12,6 +13,12 @@ export const bulkUpdateStories = tool({
     storyIds: z
       .array(z.string())
       .describe("Array of story IDs to update (required)"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms the bulk update.",
+      ),
     updateData: z
       .object({
         statusId: z
@@ -46,12 +53,33 @@ export const bulkUpdateStories = tool({
           .describe(
             "Updated end date for all stories (ISO date string e.g 2005-06-13)",
           ),
+        estimateValue: z
+          .number()
+          .int()
+          .nullable()
+          .optional()
+          .describe(
+            "Updated canonical estimate value for all stories. Set null to clear estimate.",
+          ),
+        labelIds: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Replace labels for all selected stories with these label IDs.",
+          ),
       })
       .describe("Update data to apply to all stories (required)"),
   }),
 
-  execute: async ({ storyIds, updateData }, { experimental_context }) => {
+  execute: async (
+    { storyIds, confirmed, updateData },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("bulk update these stories");
+      }
+
       const session = await auth();
       if (!session) {
         return {
@@ -60,7 +88,7 @@ export const bulkUpdateStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -84,6 +112,8 @@ export const bulkUpdateStories = tool({
         objectiveId: normalizeOptionalString(updateData.objectiveId),
         startDate: normalizeOptionalString(updateData.startDate),
         endDate: normalizeOptionalString(updateData.endDate),
+        estimateValue: updateData.estimateValue,
+        labelIds: updateData.labelIds,
       };
 
       const result = await bulkUpdateAction(

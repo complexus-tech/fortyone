@@ -6,14 +6,13 @@ import { Sidebar } from "../shared/sidebar/sidebar";
 
 export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <>
-      <Box className="md:hidden">{children}</Box>
-      <Box className="hidden md:flex">
+    <Box className="md:flex">
+      <Box className="hidden md:block">
         <Sidebar />
-        <Box className="h-dvh min-w-0 flex-1">
-          <WorkspaceChatLayout>{children}</WorkspaceChatLayout>
-        </Box>
       </Box>
-    </>
+      <Box className="h-dvh min-w-0 flex-1">
+        <WorkspaceChatLayout>{children}</WorkspaceChatLayout>
+      </Box>
+    </Box>
   );
 };

@@ -1,0 +1,23 @@
+module.exports = {
+  extends: ["eslint-config-custom/next.js"],
+  rules: {
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/consistent-type-definitions": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "jsx-a11y/no-autofocus": "off",
+    "react/function-component-definition": "off",
+    "import/no-extraneous-dependencies": "off",
+    "import/no-named-as-default": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-shadow": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "react/no-array-index-key": "off",
+    "import/no-cycle": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/require-await": "off",
+  },
+};

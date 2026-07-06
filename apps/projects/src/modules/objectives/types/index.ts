@@ -29,6 +29,16 @@ export type Objective = {
   };
 };
 
+export type ObjectivesPage = {
+  objectives: Objective[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type MeasureType = "percentage" | "number" | "boolean";
 
 export type KeyResult = {

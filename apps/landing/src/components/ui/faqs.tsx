@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text } from "ui";
-import { ArrowRight2Icon, MinusIcon, PlusIcon } from "icons";
+import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -20,29 +20,29 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "What does Maya actually do?",
+    question: "What makes FortyOne an AI project manager?",
     answer:
-      "Maya is your AI project manager — not a chatbot bolted onto a to-do list. She drafts tasks from plain language, proposes sprint scope from your backlog, writes OKRs tied to your roadmap, and flags blockers before they cost you a sprint. She doesn't replace your team's judgment — she handles the coordination work so your team can apply it to better things. The longer she works with your setup, the more useful she gets.",
+      "FortyOne combines project management software with an AI assistant that can turn project context into tasks, suggest owners, add estimates, plan timing, and surface delivery risks before work slips.",
   },
   {
-    question: "How does FortyOne connect goals to daily work?",
+    question: "What happens when I assign work to AI?",
     answer:
-      "Goals aren't a separate module — they're built into the structure of every sprint and task. Link work directly to key results and watch objective progress update automatically as tasks close. Your team sees exactly how their work moves the quarter. Leadership gets a live, trustworthy view without sending a single \"can you send me an update?\" email.",
+      "The AI reviews the task, team context, workload, estimates, and availability, then helps find the right owner, schedule, and next action. Admins can review important AI actions before they are applied.",
   },
   {
     question: "Is the free plan actually free?",
     answer:
-      "Yes — no credit card, no trial expiry, no watered-down version. The Hobby plan supports one team and up to five members, which is enough to run a real sprint and decide whether FortyOne is worth scaling. When you're ready to grow, paid plans start at $5.60 per user per month, billed annually.",
+      "Yes. There is no credit card and no trial expiry. The Hobby plan supports one team and up to five members, enough to run a real sprint and decide whether FortyOne should scale with you.",
   },
   {
-    question: "How does FortyOne handle security?",
+    question: "Can FortyOne plan around my team's calendar?",
     answer:
-      "Encryption in transit and at rest, SSO with Google, role-based permissions, and private teams. For organizations with stricter requirements — compliance, on-premise, custom data residency — the Enterprise plan covers it with dedicated onboarding and a named account manager.",
+      "Yes. Google Calendar integration lets FortyOne sync availability so AI can recommend better schedules and work windows without storing private event details unnecessarily.",
   },
   {
-    question: "Can we make it fit the way our team works?",
+    question: "Can we create tasks from Slack?",
     answer:
-      "That's the point. Customize statuses, workflows, terminology, and permissions to match your org — not a generic process template someone wrote in 2018. Structure your backlog and boards around how you plan and ship, and adjust as you grow without breaking historical context.",
+      "Yes. Slack support lets teams create tasks from Slack and ask the AI assistant for help where conversations already happen, while keeping the project plan in FortyOne.",
   },
 ];
 

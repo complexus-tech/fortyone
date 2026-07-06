@@ -3,6 +3,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:projects": "pnpm --filter projects dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
@@ -16,8 +17,8 @@
   "name": "fortyone.app",
   "pnpm": {
     "overrides": {
-      "@types/react": "19.1.9",
-      "@types/react-dom": "19.1.7"
+      "@types/react": "19.2.14",
+      "@types/react-dom": "19.2.3"
     }
   }
 }

@@ -248,10 +248,13 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { withWorkspace } = useWorkspacePath();
 
   // Simple function to get team code from teamId
-  const getTeamCode = (teamId: string): string => {
-    const team = teams.find((t) => t.id === teamId);
-    return team?.code || "STORY";
-  };
+  const getTeamCode = useCallback(
+    (teamId: string): string => {
+      const team = teams.find((t) => t.id === teamId);
+      return team?.code || "STORY";
+    },
+    [teams],
+  );
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(

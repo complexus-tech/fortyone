@@ -10,7 +10,6 @@ import {
 } from "ui";
 import { useParams } from "next/navigation";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -20,6 +19,7 @@ import { useState } from "react";
 import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
 import { useDebounce, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
 import {
   useDeleteObjectiveMutation,
@@ -64,7 +64,7 @@ export const Overview = () => {
 
   const nameEditor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({
@@ -89,7 +89,7 @@ export const Overview = () => {
 
   const descriptionEditor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       Link.configure({
         autolink: true,

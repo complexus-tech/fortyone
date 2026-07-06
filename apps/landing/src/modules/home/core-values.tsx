@@ -32,45 +32,45 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Every task traces back to a goal.",
+    title: "Goal-connected tasks.",
     description:
-      "When a task moves, the objective moves with it. Teams stay aligned, and leaders get a live view without chasing updates.",
+      "Connect everyday work to company goals so progress means more than a completed checklist.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Maya scopes your sprint — you approve it.",
+    title: "AI task assignment.",
     description:
-      "Tell Maya the outcome you're aiming for. She reads the backlog, weighs capacity, and proposes a sprint you can actually ship.",
+      "Assign work to AI and let it help choose the right owner from team workload and context.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "Maya does the admin. Your team does the work.",
+    title: "Smart estimates and timing.",
     description:
-      "Maya handles task drafting, blocker flagging, and follow-through. Your team spends more time building and less time coordinating.",
+      "Fill in missing estimates, find schedule windows, and surface risks before work starts slipping.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "One picture. No version conflicts.",
+    title: "One project source of truth.",
     description:
-      "Contributors, managers, and leadership see the same live view of what is done, stuck, and next.",
+      "Plans, assignments, tasks, and progress live together instead of being rebuilt in status meetings.",
   },
   {
     icon: (
       <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Shaped around your team, not ours.",
+    title: "Flexible team workflows.",
     description:
-      "Customize statuses, terminology, permissions, and workflow rules. It fits how your team ships and adapts as you grow.",
+      "Customize statuses, terminology, permissions, and planning rules without losing historical context.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Your tools talk. FortyOne listens.",
+    title: "Integrations that feed AI.",
     description:
-      "GitHub, Slack, Figma, and GitLab feed into FortyOne automatically. Your team sees one coherent picture instead of scattered updates.",
+      "Google Calendar, Slack, GitHub, Figma, and GitLab become context AI can use to plan and act.",
   },
 ];
 
@@ -78,8 +78,8 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      description="Most project tools show you what's happening. FortyOne shows you what it means — and Maya keeps it moving."
-      mainHeading="The missing layer between your roadmap and your team."
+      description="FortyOne combines AI project management, task management, goal tracking, and team planning in one workspace so work can move without constant handoffs."
+      mainHeading="Everything a modern team needs to plan, assign, and track work."
       // smallHeading="What's inside"
     />
   );

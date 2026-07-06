@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
@@ -35,6 +36,12 @@ type requestRow struct {
 	StatusID         *uuid.UUID   `db:"status_id"`
 	Priority         string       `db:"priority"`
 	AssigneeID       *uuid.UUID   `db:"assignee_id"`
+	EstimateValue    *int16       `db:"estimate_unit"`
+	ObjectiveID      *uuid.UUID   `db:"objective_id"`
+	KeyResultID      *uuid.UUID   `db:"key_result_id"`
+	SprintID         *uuid.UUID   `db:"sprint_id"`
+	StartDate        *time.Time   `db:"start_date"`
+	EndDate          *time.Time   `db:"end_date"`
 	Status           string       `db:"status"`
 	Metadata         mapJSON      `db:"metadata"`
 	AcceptedStoryID  *uuid.UUID   `db:"accepted_story_id"`
@@ -83,8 +90,9 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 	query := `
 		INSERT INTO integration_requests (
 			workspace_id, team_id, provider, source_type, source_external_id, source_number,
-			source_url, title, description, status_id, priority, assignee_id, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13::jsonb, $14)
+			source_url, title, description, status_id, priority, assignee_id, estimate_unit,
+			objective_id, key_result_id, sprint_id, start_date, end_date, metadata, created_by_user_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, CAST($19 AS jsonb), $20)
 		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
 			team_id = EXCLUDED.team_id,
 			source_number = EXCLUDED.source_number,
@@ -92,8 +100,14 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
 			status_id = COALESCE(integration_requests.status_id, EXCLUDED.status_id),
-			priority = COALESCE(NULLIF(integration_requests.priority, ''), EXCLUDED.priority),
+			priority = EXCLUDED.priority,
 			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
+			estimate_unit = COALESCE(integration_requests.estimate_unit, EXCLUDED.estimate_unit),
+			objective_id = COALESCE(integration_requests.objective_id, EXCLUDED.objective_id),
+			key_result_id = COALESCE(integration_requests.key_result_id, EXCLUDED.key_result_id),
+			sprint_id = COALESCE(integration_requests.sprint_id, EXCLUDED.sprint_id),
+			start_date = COALESCE(integration_requests.start_date, EXCLUDED.start_date),
+			end_date = COALESCE(integration_requests.end_date, EXCLUDED.end_date),
 			metadata = EXCLUDED.metadata,
 			updated_at = NOW()
 		WHERE integration_requests.status = 'pending'
@@ -115,6 +129,12 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		input.StatusID,
 		input.Priority,
 		input.AssigneeID,
+		input.EstimateValue,
+		input.ObjectiveID,
+		input.KeyResultID,
+		input.SprintID,
+		input.StartDate,
+		input.EndDate,
 		string(metadata),
 		input.CreatedByUserID,
 	)
@@ -136,10 +156,16 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UU
 			status_id = COALESCE($5, status_id),
 			priority = COALESCE(NULLIF($6, ''), priority),
 			assignee_id = COALESCE($7, assignee_id),
+			estimate_unit = COALESCE($8, estimate_unit),
+			objective_id = COALESCE($9, objective_id),
+			key_result_id = COALESCE($10, key_result_id),
+			sprint_id = COALESCE($11, sprint_id),
+			start_date = COALESCE($12, start_date),
+			end_date = COALESCE($13, end_date),
 			updated_at = NOW()
 		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
 		RETURNING *
-	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID)
+	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID, input.EstimateValue, input.ObjectiveID, input.KeyResultID, input.SprintID, input.StartDate, input.EndDate)
 	if err != nil {
 		return integrationrequests.CoreIntegrationRequest{}, err
 	}
@@ -152,12 +178,42 @@ func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, fi
 		status = integrationrequests.StatusPending
 	}
 	var rows []requestRow
-	err := r.db.SelectContext(ctx, &rows, `
+	query := `
 		SELECT *
 		FROM integration_requests
 		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
-		ORDER BY created_at DESC
-	`, workspaceID, teamID, status)
+	`
+	args := []any{workspaceID, teamID, status}
+	if filter.Provider != "" {
+		args = append(args, filter.Provider)
+		query += ` AND provider = $` + strconv.Itoa(len(args))
+	}
+	if filter.Priority != "" {
+		args = append(args, filter.Priority)
+		query += ` AND priority = $` + strconv.Itoa(len(args))
+	}
+	if filter.AssigneeID != nil {
+		args = append(args, *filter.AssigneeID)
+		query += ` AND assignee_id = $` + strconv.Itoa(len(args))
+	}
+	if filter.CreatedAfter != nil {
+		args = append(args, *filter.CreatedAfter)
+		query += ` AND created_at >= $` + strconv.Itoa(len(args))
+	}
+	if filter.CreatedBefore != nil {
+		args = append(args, *filter.CreatedBefore)
+		query += ` AND created_at <= $` + strconv.Itoa(len(args))
+	}
+	query += ` ORDER BY created_at DESC`
+	if filter.PageSize > 0 {
+		page := filter.Page
+		if page <= 0 {
+			page = 1
+		}
+		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
+		query += ` LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
+	}
+	err := r.db.SelectContext(ctx, &rows, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +308,12 @@ func toCore(row requestRow) integrationrequests.CoreIntegrationRequest {
 		StatusID:         row.StatusID,
 		Priority:         row.Priority,
 		AssigneeID:       row.AssigneeID,
+		EstimateValue:    row.EstimateValue,
+		ObjectiveID:      row.ObjectiveID,
+		KeyResultID:      row.KeyResultID,
+		SprintID:         row.SprintID,
+		StartDate:        row.StartDate,
+		EndDate:          row.EndDate,
 		Status:           row.Status,
 		Metadata:         map[string]any(row.Metadata),
 		AcceptedStoryID:  row.AcceptedStoryID,

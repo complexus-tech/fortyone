@@ -6,21 +6,26 @@ import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { ChatMessages } from "@/components/ui/chat/chat-messages";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { SuggestedPrompts } from "@/components/ui/chat/suggested-prompts";
+import { LimitReached } from "@/components/ui/chat/limit-reached";
 import { BodyContainer } from "@/components/shared";
+import { useSession } from "@/lib/auth/client";
+import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useMayaChat } from "../hooks/use-maya-chat";
 import { useMayaNavigation } from "../hooks/use-maya-navigation";
 import type { MayaChatConfig } from "../types";
+import { shouldShowMayaMessageLimit } from "../utils/message-limit";
 import { Header } from "./header";
-import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
-import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { LimitReached } from "@/components/ui/chat/limit-reached";
 
 export const MayaChat = () => {
-  const { chatRef, getInitialChatId, isNewChat } = useMayaNavigation();
+  const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
+    useMayaNavigation();
   const config: MayaChatConfig = {
     currentChatId: getInitialChatId(),
     hasSelectedChat: Boolean(chatRef),
     isNewChat: isNewChat(),
+    updateChatRef,
+    clearChatRef,
   };
   const {
     // Chat state
@@ -51,8 +56,14 @@ export const MayaChat = () => {
   } = useMayaChat(config);
 
   const { data: totalMessages = 0 } = useTotalMessages();
-  const { withinLimit } = useSubscriptionFeatures();
-  const needsUpgrade = !withinLimit("maxAiMessages", totalMessages);
+  const { data: session } = useSession();
+  const { getLimit } = useSubscriptionFeatures();
+  const isInternalUser = session?.user.isInternal === true;
+  const needsUpgrade = shouldShowMayaMessageLimit({
+    isInternalUser,
+    limit: getLimit("maxAiMessages"),
+    totalMessages,
+  });
 
   return (
     <>
@@ -84,13 +95,15 @@ export const MayaChat = () => {
           </Box>
         ) : null}
 
-        {messages.length === 0 && (
+        {messages.length === 0 ? (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
-        )}
-        {needsUpgrade && <LimitReached isOnPage />}
+        ) : null}
+        {needsUpgrade ? <LimitReached isOnPage /> : null}
         <ChatInput
           attachments={attachments}
+          isLiveVoiceVisible={isInternalUser}
           isOnPage
+          liveVoiceDisabled={needsUpgrade}
           messagesCount={messages.length}
           onAttachmentsChange={setAttachments}
           onChange={(e) => {

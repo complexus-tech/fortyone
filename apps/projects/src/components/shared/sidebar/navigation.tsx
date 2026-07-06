@@ -10,12 +10,7 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
-import {
-  useWorkspacePath,
-  useFeatures,
-  useFeatureFlag,
-  useUserRole,
-} from "@/hooks";
+import { useWorkspacePath, useFeatures, useUserRole } from "@/hooks";
 import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
@@ -30,7 +25,6 @@ export const Navigation = () => {
   const { withWorkspace } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
   const { userRole } = useUserRole();
-  const isAnalyticsEnabled = useFeatureFlag("analytics_page");
 
   const features = useFeatures();
 
@@ -49,6 +43,7 @@ export const Navigation = () => {
     };
   };
 
+  const sprintItem = getSprintsItem();
   const links: MenuItem[] = [
     {
       name: "My work",
@@ -72,44 +67,37 @@ export const Navigation = () => {
       icon: <AiIcon />,
       href: withWorkspace("/maya"),
     },
-    ...(getSprintsItem() ? [getSprintsItem()!] : []),
+    ...(sprintItem ? [sprintItem] : []),
 
     {
       name: "Analytics",
       icon: <AnalyticsIcon />,
       href: withWorkspace("/analytics"),
-      disabled: !isAnalyticsEnabled,
     },
   ];
 
+  const visibleLinks: ReactNode[] = [];
+  for (const { name, icon, href, disabled } of links) {
+    if (disabled) continue;
+    const isActive = pathname === href;
+    visibleLinks.push(
+      <NavLink
+        active={isActive}
+        data-nav-ai-assistant={href === withWorkspace("/maya") ? "" : undefined}
+        data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
+        data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
+        href={href}
+        key={name}
+      >
+        <span className="shrink-0">{icon}</span>
+        <span className="line-clamp-1 first-letter:capitalize">{name}</span>
+      </NavLink>,
+    );
+  }
+
   return (
     <Flex className="gap-1.5" direction="column">
-      {links
-        .filter(({ disabled }) => !disabled)
-        .map(({ name, icon, href }) => {
-          const isActive = pathname === href;
-          return (
-            <NavLink
-              active={isActive}
-              data-nav-my-work={
-                href === withWorkspace("/my-work") ? "" : undefined
-              }
-              data-nav-summary={
-                href === withWorkspace("/summary") ? "" : undefined
-              }
-              data-nav-ai-assistant={
-                href === withWorkspace("/maya") ? "" : undefined
-              }
-              href={href}
-              key={name}
-            >
-              <span className="shrink-0">{icon}</span>
-              <span className="line-clamp-1 first-letter:capitalize">
-                {name}
-              </span>
-            </NavLink>
-          );
-        })}
+      {visibleLinks}
     </Flex>
   );
 };

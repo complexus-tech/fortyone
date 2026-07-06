@@ -3,6 +3,8 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"html"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -45,9 +47,9 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 		// Process each assignee in this batch
 		for _, assignee := range assignees {
 			// Get stories for this specific assignee
-			stories, err := getOverdueStoriesForAssignee(ctx, db, assignee.AssigneeID)
+			stories, err := getOverdueStoriesForAssignee(ctx, db, assignee.AssigneeID, assignee.WorkspaceID)
 			if err != nil {
-				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "error", err)
+				log.Error(ctx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "workspace_id", assignee.WorkspaceID, "error", err)
 				continue
 			}
 
@@ -131,6 +133,8 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 			AND s.assignee_id IS NOT NULL
 			AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
 			AND u.is_active = true
+			AND u.is_system = false
+			AND NULLIF(TRIM(u.email), '') IS NOT NULL
 			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY s.assignee_id
 		LIMIT :batch_size OFFSET :offset`
@@ -162,12 +166,8 @@ func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize 
 	return assignees, nil
 }
 
-// getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee
-func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID uuid.UUID) ([]OverdueStory, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getOverdueStoriesForAssignee")
-	defer span.End()
-
-	query := `
+func overdueStoriesForAssigneeQuery() string {
+	return `
 		WITH story_deadlines AS (
     SELECT 
         s.id, s.title, s.end_date, s.assignee_id, s.workspace_id, s.team_id,
@@ -193,6 +193,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
     JOIN teams t ON s.team_id = t.team_id
     JOIN statuses st ON s.status_id = st.status_id
     WHERE s.assignee_id = :assignee_id
+        AND s.workspace_id = :workspace_id
         AND s.end_date IS NOT NULL
         AND st.category NOT IN ('completed', 'cancelled', 'paused')
         AND s.deleted_at IS NULL
@@ -200,16 +201,30 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
         AND s.completed_at IS NULL
         AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
         AND u.is_active = true
+        AND u.is_system = false
+        AND NULLIF(TRIM(u.email), '') IS NOT NULL
 		)
 		SELECT * 
 		FROM story_deadlines 
 		WHERE deadline_status IN ('due_today', 'due_tomorrow', 'due_in_3_days', 'overdue')
 		ORDER BY deadline_status, end_date;
 `
+}
 
-	params := map[string]any{
-		"assignee_id": assigneeID,
+func overdueStoriesForAssigneeParams(assigneeID, workspaceID uuid.UUID) map[string]any {
+	return map[string]any{
+		"assignee_id":  assigneeID,
+		"workspace_id": workspaceID,
 	}
+}
+
+// getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee in one workspace.
+func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID, workspaceID uuid.UUID) ([]OverdueStory, error) {
+	ctx, span := web.AddSpan(ctx, "jobs.getOverdueStoriesForAssignee")
+	defer span.End()
+
+	query := overdueStoriesForAssigneeQuery()
+	params := overdueStoriesForAssigneeParams(assigneeID, workspaceID)
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -226,6 +241,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID u
 
 	span.AddEvent("stories retrieved", trace.WithAttributes(
 		attribute.String("assignee_id", assigneeID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 		attribute.Int("stories.count", len(stories)),
 	))
 
@@ -238,6 +254,11 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	defer span.End()
 
 	if len(stories) == 0 {
+		return nil
+	}
+
+	if strings.TrimSpace(stories[0].AssigneeEmail) == "" {
+		log.Info(ctx, "Skipping overdue stories email because assignee email is empty", "assignee_id", stories[0].AssigneeID)
 		return nil
 	}
 
@@ -316,66 +337,43 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 	if totalItems > 1 {
 		itemText = "tasks"
 	}
-	content := fmt.Sprintf(`
-		<div style="font-size: 15px;">
-			<h3>What's coming up</h3>
-			<p>You have %d %s that need attention</p>
-	`, totalItems, itemText)
+
+	rows := []string{
+		fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText))),
+	}
 
 	if len(dueSoonStories) > 0 {
-		itemText := "task"
-		if len(dueSoonStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p><strong>Due soon (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueSoonStories), itemText)
 		for _, story := range dueSoonStories {
-			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due %s</li>
-			`, workspaceURL, story.ID.String(), story.Title, story.EndDate.Format("January 2, 2006"))
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is due %s.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				html.EscapeString(story.EndDate.Format("January 2, 2006")),
+			))
 		}
-		content += "</ul>"
 	}
 
 	if len(dueTodayStories) > 0 {
-		itemText := "task"
-		if len(dueTodayStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p><strong>Due today (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueTodayStories), itemText)
 		for _, story := range dueTodayStories {
-			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due today</li>
-			`, workspaceURL, story.ID.String(), story.Title)
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is due today.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+			))
 		}
-		content += "</ul>"
 	}
 
 	if len(overdueStories) > 0 {
-		itemText := "task"
-		if len(overdueStories) > 1 {
-			itemText = "tasks"
-		}
-		content += fmt.Sprintf(`
-			<p><strong>Overdue (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(overdueStories), itemText)
 		for _, story := range overdueStories {
 			daysText := "day"
 			if story.DaysDifference > 1 {
 				daysText = "days"
 			}
-			content += fmt.Sprintf(`
-				<li><a href="%s/story/%s" style="text-decoration: none; font-weight: 500;">%s</a> - %d %s overdue</li>
-			`, workspaceURL, story.ID.String(), story.Title, story.DaysDifference, daysText)
+			rows = append(rows, fmt.Sprintf(
+				"Task %s is %s overdue.",
+				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				formatEmailStrong(fmt.Sprintf("%d %s", story.DaysDifference, daysText)),
+			))
 		}
-		content += "</ul>"
 	}
 
-	return content + "</div>"
+	return formatCompactNotificationRows("Here's what needs attention.", rows)
 }

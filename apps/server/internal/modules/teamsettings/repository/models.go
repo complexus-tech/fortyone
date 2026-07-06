@@ -8,16 +8,19 @@ import (
 )
 
 type dbTeamSprintSettings struct {
-	TeamID                       uuid.UUID `db:"team_id"`
-	WorkspaceID                  uuid.UUID `db:"workspace_id"`
-	AutoCreateSprints            bool      `db:"auto_create_sprints"`
-	UpcomingSprintsCount         int       `db:"upcoming_sprints_count"`
-	SprintDurationWeeks          int       `db:"sprint_duration_weeks"`
-	SprintStartDay               string    `db:"sprint_start_day"`
-	MoveIncompleteStoriesEnabled bool      `db:"move_incomplete_stories_enabled"`
-	LastAutoSprintNumber         int       `db:"last_auto_sprint_number"`
-	CreatedAt                    time.Time `db:"created_at"`
-	UpdatedAt                    time.Time `db:"updated_at"`
+	TeamID                       uuid.UUID  `db:"team_id"`
+	WorkspaceID                  uuid.UUID  `db:"workspace_id"`
+	AutoCreateSprints            bool       `db:"auto_create_sprints"`
+	UpcomingSprintsCount         int        `db:"upcoming_sprints_count"`
+	SprintDurationWeeks          int        `db:"sprint_duration_weeks"`
+	SprintStartDay               string     `db:"sprint_start_day"`
+	MoveIncompleteStoriesEnabled bool       `db:"move_incomplete_stories_enabled"`
+	LastAutoSprintNumber         int        `db:"last_auto_sprint_number"`
+	NextAutoSprintNumber         int        `db:"next_auto_sprint_number"`
+	AutoCreateDisabledAt         *time.Time `db:"auto_create_disabled_at"`
+	AutoCreateDisabledReason     *string    `db:"auto_create_disabled_reason"`
+	CreatedAt                    time.Time  `db:"created_at"`
+	UpdatedAt                    time.Time  `db:"updated_at"`
 }
 
 type dbTeamStoryAutomationSettings struct {
@@ -49,6 +52,9 @@ func toCoreTeamSprintSettings(s dbTeamSprintSettings) teamsettings.CoreTeamSprin
 		SprintStartDay:               s.SprintStartDay,
 		MoveIncompleteStoriesEnabled: s.MoveIncompleteStoriesEnabled,
 		LastAutoSprintNumber:         s.LastAutoSprintNumber,
+		NextAutoSprintNumber:         s.NextAutoSprintNumber,
+		AutoCreateDisabledAt:         s.AutoCreateDisabledAt,
+		AutoCreateDisabledReason:     s.AutoCreateDisabledReason,
 		CreatedAt:                    s.CreatedAt,
 		UpdatedAt:                    s.UpdatedAt,
 	}

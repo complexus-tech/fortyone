@@ -78,5 +78,6 @@ func Routes(cfg Config, app *web.App) {
 
 	// Associations
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/associations", h.AddAssociation, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/stories/{id}/associations/{associationId}", h.UpdateAssociation, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/stories/associations/{associationId}", h.RemoveAssociation, auth, workspace)
 }

@@ -1,17 +1,52 @@
 import type { ReactNode } from "react";
 import { format } from "date-fns";
-import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button } from "ui";
+import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Badge } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { CalendarIcon, SprintsIcon } from "icons";
-import { useMembers } from "@/lib/hooks/members";
-import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
+import {
+  CalendarIcon,
+  EstimateIcon,
+  InfoIcon,
+  SprintsIcon,
+  TagsIcon,
+} from "icons";
+import { formatActivityReasonDates } from "@/lib/activity-format";
+import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
+import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useLabels } from "@/lib/hooks/labels";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useSprint } from "@/modules/sprints/hooks/sprint-details";
+import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
+import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import type { Label } from "@/types";
+import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
+import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
-import { useSprint } from "@/modules/sprints/hooks/sprint-details";
-import { useObjective } from "@/modules/objectives/hooks/use-objective";
-import { useWorkspacePath } from "@/hooks";
+
+const DisplayEstimate = ({
+  value,
+  teamId,
+}: {
+  value: string;
+  teamId?: string;
+}) => {
+  const { data: teamSettings } = useTeamSettings(teamId);
+  const estimateValue = Number.parseInt(value, 10);
+  const estimateScheme =
+    teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
+
+  return (
+    <span className="flex items-center gap-1">
+      <EstimateIcon className="h-5" />
+      {Number.isNaN(estimateValue)
+        ? "No estimate"
+        : formatEstimate(estimateScheme, estimateValue, "full")}
+    </span>
+  );
+};
 
 const DisplaySprint = ({
   sprintId,
@@ -67,6 +102,90 @@ const DisplayObjective = ({
   );
 };
 
+const ASSOCIATION_ACTIVITY_FIELDS = new Set([
+  "blocked_by_id",
+  "blocking_id",
+  "related_id",
+  "duplicate_id",
+  "duplicated_by_id",
+]);
+
+const getAssociationBadgeColor = (
+  field: string,
+): "danger" | "tertiary" | "warning" => {
+  if (field === "blocking_id") return "warning";
+  if (field === "blocked_by_id") return "danger";
+  return "tertiary";
+};
+
+const AssociationActivityBadge = ({
+  field,
+  label,
+}: {
+  field: string;
+  label: string;
+}) => (
+  <Badge
+    className="shrink-0 px-2 text-[0.75rem] font-semibold uppercase"
+    color={getAssociationBadgeColor(field)}
+    rounded="sm"
+  >
+    {label}
+  </Badge>
+);
+
+const getActivityLabelIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (labelId): labelId is string => typeof labelId === "string",
+  );
+};
+
+const getLabelActivityDisplayValue = (labels: Label[]) => {
+  if (labels.length === 1) return labels[0].name;
+  return `${labels.length} labels`;
+};
+
+const ActivityLabelValue = ({ labels }: { labels: Label[] }) => {
+  if (labels.length === 0) {
+    return <span>No labels</span>;
+  }
+
+  const firstLabel = labels[0];
+  const tooltip = (
+    <Flex className="min-w-28" direction="column" gap={2}>
+      {labels.map((label) => (
+        <Flex align="center" gap={1} key={label.id}>
+          <TagsIcon className="h-4" style={{ color: label.color }} />
+          {label.name}
+        </Flex>
+      ))}
+    </Flex>
+  );
+
+  return (
+    <Tooltip title={labels.length > 1 ? tooltip : null}>
+      <Badge
+        className="h-6 shrink-0 gap-1.5 px-2 text-[0.85rem]"
+        color="tertiary"
+        rounded="xl"
+        variant="outline"
+      >
+        <TagsIcon className="h-4" style={{ color: firstLabel.color }} />
+        <span className="inline-block max-w-[12ch] truncate">
+          {labels.length === 1 ? firstLabel.name : `${labels.length} labels`}
+        </span>
+      </Badge>
+    </Tooltip>
+  );
+};
+
+const getActivityVerb = (type: StoryActivity["type"], storyTerm: string) => {
+  if (type === "create") return `created the ${storyTerm}`;
+  if (type === "link") return "linked";
+  return "changed";
+};
+
 export const Activity = ({
   teamId,
   field,
@@ -75,11 +194,57 @@ export const Activity = ({
   createdAt,
   user,
   newValue,
+  oldValue,
+  reason,
 }: StoryActivity & { teamId?: string }) => {
   const { data: members = [] } = useMembers();
+  const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
+  const { data: allLabels = [] } = useLabels();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
   const member = user;
+  const activityAssignees = mayaAssignee
+    ? [...members.filter(({ id }) => id !== mayaAssignee.id), mayaAssignee]
+    : members;
+  const findActivityAssignee = (value: string) =>
+    activityAssignees.find(({ id }) => id === value);
+  const activityVerb = getActivityVerb(type, storyTerm);
+  const activityReason = formatActivityReasonDates(
+    getDisplayActivityReason(reason),
+  );
+  const isLinkedUrl =
+    type === "link" &&
+    currentValue &&
+    typeof newValue === "string" &&
+    newValue.startsWith("http");
+  let linkedValue: ReactNode = null;
+
+  if (type === "link" && currentValue) {
+    if (isLinkedUrl && typeof newValue === "string") {
+      linkedValue = (
+        <a
+          className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
+          href={newValue}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {currentValue}
+        </a>
+      );
+    } else {
+      linkedValue = (
+        <Text
+          as="span"
+          className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+          fontWeight="medium"
+        >
+          {currentValue}
+        </Text>
+      );
+    }
+  }
 
   if (field === "completed_at") {
     return null;
@@ -116,32 +281,57 @@ export const Activity = ({
     },
     estimate_unit: {
       label: "Estimate",
-      render: (value: string) => <span>{value || "No estimate"}</span>,
+      render: (value: string) => (
+        <DisplayEstimate teamId={teamId} value={value} />
+      ),
     },
     assignee_id: {
       label: "Assignee",
-      render: (value: string) => (
-        <>
-          {!value || value.includes("nil") ? (
-            <span>Unassigned</span>
-          ) : (
-            <Link
-              className="flex items-center gap-1.5 pb-0.5"
-              href={withWorkspace(
-                `/profile/${members.find((m) => m.id === value)?.id}`,
-              )}
-            >
+      render: (value: string) => {
+        const assignee = findActivityAssignee(value);
+        const assigneeLabel =
+          assignee?.username || assignee?.fullName || "Unknown user";
+
+        if (!value || value.includes("nil")) {
+          return <span>Unassigned</span>;
+        }
+
+        const content = (
+          <>
+            {assignee?.isSystem ? (
+              <MayaAvatar
+                className="relative top-px"
+                name={assignee.fullName || assigneeLabel}
+                size="xs"
+                src={assignee.avatarUrl}
+              />
+            ) : (
               <Avatar
                 className="relative top-px"
-                name={members.find((m) => m.id === value)?.fullName}
+                name={assignee?.fullName || assigneeLabel}
                 size="xs"
-                src={members.find((m) => m.id === value)?.avatarUrl}
+                src={assignee?.avatarUrl}
               />
-              {members.find((m) => m.id === value)?.username}
-            </Link>
-          )}
-        </>
-      ),
+            )}
+            {assigneeLabel}
+          </>
+        );
+
+        if (!assignee || assignee.isSystem) {
+          return (
+            <span className="flex items-center gap-1.5 pb-0.5">{content}</span>
+          );
+        }
+
+        return (
+          <Link
+            className="flex items-center gap-1.5 pb-0.5"
+            href={withWorkspace(`/profile/${assignee.id}`)}
+          >
+            {content}
+          </Link>
+        );
+      },
     },
     start_date: {
       label: "Start date",
@@ -191,6 +381,18 @@ export const Activity = ({
       label: "Related to",
       render: (value: string) => <span>{value}</span>,
     },
+    duplicate_id: {
+      label: "Duplicate of",
+      render: (value: string) => <span>{value}</span>,
+    },
+    duplicated_by_id: {
+      label: "Duplicated by",
+      render: (value: string) => <span>{value}</span>,
+    },
+    labels: {
+      label: "Labels",
+      render: (value: string) => <span>{value}</span>,
+    },
   } as Record<
     string,
     {
@@ -204,6 +406,86 @@ export const Activity = ({
     label: field,
     render: (value: string) => <span>{value}</span>,
   };
+  const activityLabels =
+    field === "labels"
+      ? getActivityLabelIds(newValue)
+          .map((labelId) => allLabels.find((label) => label.id === labelId))
+          .filter((label): label is Label => Boolean(label))
+      : [];
+  const displayCurrentValue =
+    field === "labels" && activityLabels.length > 0
+      ? getLabelActivityDisplayValue(activityLabels)
+      : currentValue;
+  const activityCopy = getActivityCopy({
+    currentValue: displayCurrentValue,
+    field,
+    fieldLabel: fieldMeta.label,
+    oldValue,
+    reason,
+    storyTerm,
+    type,
+  });
+  const renderUpdateSegment = (
+    segment: (typeof activityCopy.segments)[number],
+  ) => {
+    if (segment.type === "text") {
+      return (
+        <Text
+          as="span"
+          className="text-sm md:text-[0.95rem]"
+          color="muted"
+          key={`text-${segment.text}`}
+        >
+          {segment.text}
+        </Text>
+      );
+    }
+
+    return (
+      <Text
+        as="span"
+        className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+        fontWeight="medium"
+        key={
+          segment.type === "oldValue"
+            ? `oldValue-${segment.value}`
+            : segment.type
+        }
+      >
+        {(() => {
+          if (
+            segment.type === "fieldLabel" &&
+            ASSOCIATION_ACTIVITY_FIELDS.has(field)
+          ) {
+            return (
+              <AssociationActivityBadge field={field} label={fieldMeta.label} />
+            );
+          }
+
+          if (
+            segment.type === "oldValue" &&
+            ASSOCIATION_ACTIVITY_FIELDS.has(field)
+          ) {
+            return (
+              <AssociationActivityBadge field={field} label={segment.value} />
+            );
+          }
+
+          if (segment.type === "fieldLabel") {
+            return fieldMeta.label;
+          }
+
+          if (segment.type === "currentValue" && field === "labels") {
+            return <ActivityLabelValue labels={activityLabels} />;
+          }
+
+          return fieldMeta.render(
+            segment.type === "oldValue" ? segment.value : currentValue,
+          );
+        })()}
+      </Text>
+    );
+  };
 
   return (
     <Box className="relative pb-2 last-of-type:pb-0 md:pb-4">
@@ -216,120 +498,94 @@ export const Activity = ({
         <Tooltip
           className="py-2.5"
           title={
-            member ? (
-              <Box>
-                <Flex gap={2}>
+            <Box>
+              <Flex gap={2}>
+                {member.isSystem ? (
+                  <MayaAvatar
+                    className="mt-0.5"
+                    name={member.fullName}
+                    size="md"
+                    src={member.avatarUrl}
+                  />
+                ) : (
                   <Avatar
                     className="mt-0.5"
                     name={member.fullName}
                     src={member.avatarUrl}
                   />
-                  <Box>
-                    <Link
-                      className={cn("mb-2 flex gap-1", {
-                        "mb-0": member.isSystem,
-                      })}
-                      href={member.isSystem ? "" : `/profile/${member.id}`}
+                )}
+                <Box>
+                  <Link
+                    className={cn("mb-2 flex gap-1", {
+                      "mb-0": member.isSystem,
+                    })}
+                    href={member.isSystem ? "" : `/profile/${member.id}`}
+                  >
+                    <Text fontSize="md" fontWeight="medium">
+                      {member.fullName}
+                    </Text>
+                    <Text color="muted" fontSize="md">
+                      ({member.username})
+                    </Text>
+                  </Link>
+                  {!member.isSystem ? (
+                    <Button
+                      className="mb-0.5 ml-px px-2"
+                      color="tertiary"
+                      href={withWorkspace(`/profile/${member.id}`)}
+                      size="xs"
                     >
-                      <Text fontSize="md" fontWeight="medium">
-                        {member.fullName}
-                      </Text>
-                      <Text color="muted" fontSize="md">
-                        ({member.username})
-                      </Text>
-                    </Link>
-                    {!member.isSystem ? (
-                      <Button
-                        className="mb-0.5 ml-px px-2"
-                        color="tertiary"
-                        href={withWorkspace(`/profile/${member.id}`)}
-                        size="xs"
-                      >
-                        Go to profile
-                      </Button>
-                    ) : (
-                      <Text color="muted" fontSize="md">
-                        (System Account)
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
-              </Box>
-            ) : null
+                      Go to profile
+                    </Button>
+                  ) : (
+                    <Text color="muted" fontSize="md">
+                      ({member.username === "maya" ? "AI Assistant" : "Bot"})
+                    </Text>
+                  )}
+                </Box>
+              </Flex>
+            </Box>
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
             <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
-              <Avatar
-                name={member?.fullName}
-                size="xs"
-                src={member?.avatarUrl}
-              />
+              {member.isSystem ? (
+                <MayaAvatar
+                  name={member.fullName}
+                  size="xs"
+                  src={member.avatarUrl}
+                />
+              ) : (
+                <Avatar
+                  name={member.fullName}
+                  size="xs"
+                  src={member.avatarUrl}
+                />
+              )}
             </Box>
             <Text
               className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
               fontWeight="medium"
             >
-              {member?.username}
+              {member.username}
             </Text>
           </Flex>
         </Tooltip>
         <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
-          <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
-            {type === "create"
-              ? "created the story"
-              : type === "link"
-                ? "linked"
-                : "changed"}
-          </Text>
-          {type === "update" && (
-            <>
-              <Text
-                as="span"
-                className="shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                fontWeight="medium"
-              >
-                {fieldMeta.label}
-              </Text>
-              {currentValue ? (
-                <>
-                  <Text
-                    as="span"
-                    className="text-sm md:text-[0.95rem]"
-                    color="muted"
-                  >
-                    to
-                  </Text>
-                  <Text
-                    as="span"
-                    className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                    fontWeight="medium"
-                  >
-                    {fieldMeta.render(currentValue)}
-                  </Text>
-                </>
-              ) : null}
-            </>
+          {type === "update" ? (
+            activityCopy.segments.map(renderUpdateSegment)
+          ) : (
+            <Text as="span" className="text-sm md:text-[0.95rem]" color="muted">
+              {activityVerb}
+            </Text>
           )}
-          {type === "link" && currentValue ? (
-            typeof newValue === "string" && newValue.startsWith("http") ? (
-              <a
-                className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
-                href={newValue}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {currentValue}
-              </a>
-            ) : (
-              <Text
-                as="span"
-                className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
-                fontWeight="medium"
-              >
-                {currentValue}
-              </Text>
-            )
+          {linkedValue}
+          {activityReason ? (
+            <Tooltip title={activityReason}>
+              <span className="inline-flex shrink-0 cursor-help items-center">
+                <InfoIcon className="text-icon-muted h-4" />
+              </span>
+            </Tooltip>
           ) : null}
           <Text
             as="span"

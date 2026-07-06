@@ -15,6 +15,9 @@ type CoreTeamSprintSettings struct {
 	SprintStartDay               string
 	MoveIncompleteStoriesEnabled bool
 	LastAutoSprintNumber         int
+	NextAutoSprintNumber         int
+	AutoCreateDisabledAt         *time.Time
+	AutoCreateDisabledReason     *string
 	CreatedAt                    time.Time
 	UpdatedAt                    time.Time
 }
@@ -50,6 +53,7 @@ type CoreUpdateTeamSprintSettings struct {
 	SprintDurationWeeks          *int
 	SprintStartDay               *string
 	MoveIncompleteStoriesEnabled *bool
+	NextAutoSprintNumber         *int
 }
 
 type CoreUpdateTeamStoryAutomationSettings struct {

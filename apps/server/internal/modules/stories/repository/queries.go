@@ -122,8 +122,16 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -176,11 +184,14 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 						sl.story_id = s.id
 				), '[]'
 			) AS labels
-		FROM
-			stories s
-			INNER JOIN team_members tm ON 
-				tm.team_id = s.team_id 
-				AND tm.user_id = :current_user
+			FROM
+				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
+				INNER JOIN team_members tm ON
+					tm.team_id = s.team_id
+					AND tm.user_id = :current_user
 		WHERE s.workspace_id = :workspace_id 
 		AND s.deleted_at IS NULL
 		AND s.parent_id IS NULL
@@ -243,6 +254,10 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.team_id,
 					s.objective_id,
 					s.sprint_id,
+					sp.name AS sprint_name,
+					sp.goal AS sprint_goal,
+					sp.start_date AS sprint_start_date,
+					sp.end_date AS sprint_end_date,
 					s.key_result_id,
 					s.workspace_id,
 					s.assignee_id,
@@ -324,6 +339,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 				FROM
 					stories s
 					INNER JOIN teams t ON s.team_id = t.team_id
+					LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 				WHERE
 					s.id =:id
 					AND s.workspace_id =:workspace_id;
@@ -369,9 +385,10 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	hasComplexFilters := false
 	for key := range filters {
 		if key == "created_after" || key == "created_before" || key == "updated_after" ||
-			key == "updated_before" || key == "deadline_after" || key == "deadline_before" ||
+			key == "updated_before" || key == "start_date_after" || key == "start_date_before" ||
+			key == "deadline_after" || key == "deadline_before" ||
 			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
-			key == "current_user_id" || key == "show_sub_stories" {
+			key == "has_blocked_by" || key == "current_user_id" || key == "show_sub_stories" {
 			hasComplexFilters = true
 			break
 		}
@@ -422,8 +439,16 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -446,6 +471,9 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 	var setClauses []string
 
@@ -505,6 +533,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if reporterIds, ok := filters["reporter_ids"].([]uuid.UUID); ok {
 		coreFilters.ReporterIDs = reporterIds
 	}
+	if titleContains, ok := filters["title_contains"].(string); ok {
+		coreFilters.TitleContains = &titleContains
+	}
 	if priorities, ok := filters["priorities"].([]string); ok {
 		coreFilters.Priorities = priorities
 	}
@@ -520,6 +551,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if labelIds, ok := filters["label_ids"].([]uuid.UUID); ok {
 		coreFilters.LabelIDs = labelIds
 	}
+	if estimateValues, ok := filters["estimate_values"].([]int16); ok {
+		coreFilters.EstimateValues = estimateValues
+	}
 	if parentId, ok := filters["parent_id"].(uuid.UUID); ok {
 		coreFilters.Parent = &parentId
 	}
@@ -534,6 +568,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if hasNoAssignee, ok := filters["has_no_assignee"].(bool); ok {
 		coreFilters.HasNoAssignee = &hasNoAssignee
+	}
+	if hasBlockedBy, ok := filters["has_blocked_by"].(bool); ok {
+		coreFilters.HasBlockedBy = &hasBlockedBy
 	}
 	if assignedToMe, ok := filters["assigned_to_me"].(bool); ok {
 		coreFilters.AssignedToMe = &assignedToMe
@@ -558,6 +595,12 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if updatedBefore, ok := filters["updated_before"].(time.Time); ok {
 		coreFilters.UpdatedBefore = &updatedBefore
+	}
+	if startDateAfter, ok := filters["start_date_after"].(time.Time); ok {
+		coreFilters.StartDateAfter = &startDateAfter
+	}
+	if startDateBefore, ok := filters["start_date_before"].(time.Time); ok {
+		coreFilters.StartDateBefore = &startDateBefore
 	}
 	if deadlineAfter, ok := filters["deadline_after"].(time.Time); ok {
 		coreFilters.DeadlineAfter = &deadlineAfter
@@ -666,11 +709,12 @@ SELECT
 		sa.current_value,
 		sa.old_value,
 		sa.new_value,
+		sa.reason,
 		sa.created_at,
 		sa.workspace_id,
 		u.username,
-		u.full_name,
-		u.avatar_url,
+		COALESCE(u.full_name, '') AS full_name,
+		COALESCE(u.avatar_url, '') AS avatar_url,
 		u.is_active,
 		u.is_system
 		FROM story_activities sa
@@ -946,8 +990,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.start_date,
 				s.end_date,
 				s.sprint_id,
+				sp.name AS sprint_name,
+				sp.goal AS sprint_goal,
+				sp.start_date AS sprint_start_date,
+				sp.end_date AS sprint_end_date,
 				s.team_id,
+				t.code AS team_code,
+				t.name AS team_name,
 				s.objective_id,
+				o.name AS objective_name,
+				o.description AS objective_description,
 				s.workspace_id,
 				s.assignee_id,
 				s.reporter_id,
@@ -960,6 +1012,9 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				COUNT(*) OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null')) as total_count,
 				ROW_NUMBER() OVER (PARTITION BY COALESCE(CAST(%s AS text), 'null') ORDER BY %s) as row_num
 			FROM stories s
+			INNER JOIN teams t ON s.team_id = t.team_id
+			LEFT JOIN objectives o ON s.objective_id = o.objective_id
+			LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 			%s
 			%s
 		),
@@ -983,8 +1038,16 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'start_date', ls.start_date,
 						'end_date', ls.end_date,
 						'sprint_id', ls.sprint_id,
+						'sprint_name', ls.sprint_name,
+						'sprint_goal', ls.sprint_goal,
+						'sprint_start_date', ls.sprint_start_date,
+						'sprint_end_date', ls.sprint_end_date,
 						'team_id', ls.team_id,
+						'team_code', ls.team_code,
+						'team_name', ls.team_name,
 						'objective_id', ls.objective_id,
+						'objective_name', ls.objective_name,
+						'objective_description', ls.objective_description,
 						'workspace_id', ls.workspace_id,
 						'assignee_id', ls.assignee_id,
 						'reporter_id', ls.reporter_id,
@@ -1229,6 +1292,10 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
 
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
+	}
+
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
 	}
@@ -1254,6 +1321,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true
@@ -1284,6 +1354,14 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if filters.UpdatedBefore != nil {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
 
 	if filters.DeadlineAfter != nil {
@@ -1379,6 +1457,50 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		}
 	}
 
+	if teamCode, ok := storyMap["team_code"].(string); ok && story.Team != uuid.Nil {
+		if teamName, ok := storyMap["team_name"].(string); ok {
+			story.TeamSummary = &stories.CoreTeamSummary{
+				ID:   story.Team,
+				Name: teamName,
+				Code: teamCode,
+			}
+		}
+	}
+
+	if story.Objective != nil {
+		if objectiveName, ok := storyMap["objective_name"].(string); ok {
+			var objectiveDescription *string
+			if value, ok := storyMap["objective_description"].(string); ok {
+				objectiveDescription = &value
+			}
+			story.ObjectiveSummary = &stories.CoreObjectiveSummary{
+				ID:          *story.Objective,
+				Name:        objectiveName,
+				Description: objectiveDescription,
+			}
+		}
+	}
+
+	if story.Sprint != nil {
+		if sprintName, ok := storyMap["sprint_name"].(string); ok {
+			startDate, startOk := parseStoryMapTime(storyMap["sprint_start_date"])
+			endDate, endOk := parseStoryMapTime(storyMap["sprint_end_date"])
+			if startOk && endOk {
+				var sprintGoal *string
+				if value, ok := storyMap["sprint_goal"].(string); ok {
+					sprintGoal = &value
+				}
+				story.SprintSummary = &stories.CoreSprintSummary{
+					ID:        *story.Sprint,
+					Name:      sprintName,
+					Goal:      sprintGoal,
+					StartDate: startDate,
+					EndDate:   endDate,
+				}
+			}
+		}
+	}
+
 	// Handle time fields
 	if createdAt, ok := storyMap["created_at"].(string); ok {
 		if parsed, err := time.Parse(time.RFC3339, createdAt); err == nil {
@@ -1445,6 +1567,22 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	}
 
 	return story
+}
+
+func parseStoryMapTime(value any) (time.Time, bool) {
+	raw, ok := value.(string)
+	if !ok || raw == "" {
+		return time.Time{}, false
+	}
+
+	for _, layout := range []string{time.RFC3339, "2006-01-02"} {
+		parsed, err := time.Parse(layout, raw)
+		if err == nil {
+			return parsed, true
+		}
+	}
+
+	return time.Time{}, false
 }
 
 // buildAllGroupsCTE builds a CTE that returns all possible group values
@@ -1655,6 +1793,12 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.LabelIDs) > 0 {
 		params["label_ids"] = filters.LabelIDs
 	}
+	if len(filters.EstimateValues) > 0 {
+		params["estimate_values"] = filters.EstimateValues
+	}
+	if filters.TitleContains != nil {
+		params["title_contains"] = *filters.TitleContains
+	}
 
 	// Single value parameters
 	if filters.Parent != nil {
@@ -1679,6 +1823,12 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	}
 	if filters.UpdatedBefore != nil {
 		params["updated_before"] = *filters.UpdatedBefore
+	}
+	if filters.StartDateAfter != nil {
+		params["start_date_after"] = *filters.StartDateAfter
+	}
+	if filters.StartDateBefore != nil {
+		params["start_date_before"] = *filters.StartDateBefore
 	}
 	if filters.DeadlineAfter != nil {
 		params["deadline_after"] = *filters.DeadlineAfter
@@ -1716,8 +1866,16 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 							'start_date', sub.start_date,
 							'end_date', sub.end_date,
 							'sprint_id', sub.sprint_id,
+							'sprint_name', sub_sprint.name,
+							'sprint_goal', sub_sprint.goal,
+							'sprint_start_date', sub_sprint.start_date,
+							'sprint_end_date', sub_sprint.end_date,
 							'team_id', sub.team_id,
+							'team_code', sub_team.code,
+							'team_name', sub_team.name,
 							'objective_id', sub.objective_id,
+							'objective_name', sub_objective.name,
+							'objective_description', sub_objective.description,
 							'workspace_id', sub.workspace_id,
 							'assignee_id', sub.assignee_id,
 							'reporter_id', sub.reporter_id,
@@ -1731,6 +1889,9 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 					)
 				FROM
 					stories sub
+					LEFT JOIN teams sub_team ON sub.team_id = sub_team.team_id
+					LEFT JOIN objectives sub_objective ON sub.objective_id = sub_objective.objective_id
+					LEFT JOIN sprints sub_sprint ON sub.sprint_id = sub_sprint.sprint_id
 				WHERE
 					sub.parent_id = %s.id
 					AND sub.deleted_at IS NULL
@@ -1757,8 +1918,16 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -1781,6 +1950,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters
@@ -1840,6 +2012,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
 
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
+	}
+
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
 	}
@@ -1866,6 +2042,10 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
 	}
 
+	if len(filters.EstimateValues) > 0 {
+		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
+	}
+
 	if filters.Objective != nil {
 		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
 	}
@@ -1876,6 +2056,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true
@@ -1906,6 +2089,14 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.UpdatedBefore != nil {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
 
 	if filters.DeadlineAfter != nil {
@@ -2249,8 +2440,16 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.start_date,
 			s.end_date,
 			s.sprint_id,
+			sp.name AS sprint_name,
+			sp.goal AS sprint_goal,
+			sp.start_date AS sprint_start_date,
+			sp.end_date AS sprint_end_date,
 			s.team_id,
+			t.code AS team_code,
+			t.name AS team_name,
 			s.objective_id,
+			o.name AS objective_name,
+			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
 			s.reporter_id,
@@ -2273,6 +2472,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 				) AS labels
 			FROM
 				stories s
+				INNER JOIN teams t ON s.team_id = t.team_id
+				LEFT JOIN objectives o ON s.objective_id = o.objective_id
+				LEFT JOIN sprints sp ON s.sprint_id = sp.sprint_id
 		`, subStoriesSelect)
 
 	// Add team member join if needed for assigned_to_me or created_by_me filters
@@ -2331,6 +2533,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
 
+	if filters.TitleContains != nil {
+		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
+	}
+
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
 	}
@@ -2354,6 +2560,10 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
 	}
 
+	if len(filters.EstimateValues) > 0 {
+		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
+	}
+
 	if filters.Parent != nil {
 		whereClauses = append(whereClauses, "s.parent_id = :parent_id")
 	} else if filters.ShowSubStories == nil || !*filters.ShowSubStories {
@@ -2371,6 +2581,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
+		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
 	// Handle createdByMe and assignedToMe with OR logic when both are true
@@ -2401,6 +2614,14 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.UpdatedBefore != nil {
 		whereClauses = append(whereClauses, "s.updated_at <= :updated_before")
+	}
+
+	if filters.StartDateAfter != nil {
+		whereClauses = append(whereClauses, "(s.start_date >= :start_date_after)")
+	}
+
+	if filters.StartDateBefore != nil {
+		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
 
 	if filters.DeadlineAfter != nil {

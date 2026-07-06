@@ -92,13 +92,19 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	}
 
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
-		Title:       request.Title,
-		Description: request.Description,
-		Status:      statusID,
-		Reporter:    &actorID,
-		Assignee:    request.AssigneeID,
-		Team:        request.TeamID,
-		Priority:    priority,
+		Title:         request.Title,
+		Description:   request.Description,
+		Status:        statusID,
+		Reporter:      &actorID,
+		Assignee:      request.AssigneeID,
+		Team:          request.TeamID,
+		Priority:      priority,
+		EstimateValue: request.EstimateValue,
+		Objective:     request.ObjectiveID,
+		KeyResult:     request.KeyResultID,
+		Sprint:        request.SprintID,
+		StartDate:     request.StartDate,
+		EndDate:       request.EndDate,
 	}, workspaceID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
@@ -111,6 +117,25 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	return s.repo.MarkAccepted(ctx, workspaceID, requestID, story.ID, actorID)
 }
 
+func (s *Service) AcceptAllPendingByTeam(ctx context.Context, workspaceID, teamID, actorID uuid.UUID) (CoreBulkRequestResult, error) {
+	requests, err := s.repo.ListByTeam(ctx, workspaceID, teamID, CoreListRequestsFilter{Status: StatusPending})
+	if err != nil {
+		return CoreBulkRequestResult{}, err
+	}
+
+	result := CoreBulkRequestResult{
+		RequestIDs: make([]uuid.UUID, 0, len(requests)),
+	}
+	for _, request := range requests {
+		if _, err := s.Accept(ctx, workspaceID, request.ID, actorID); err != nil {
+			return CoreBulkRequestResult{}, err
+		}
+		result.RequestIDs = append(result.RequestIDs, request.ID)
+	}
+	result.Count = len(result.RequestIDs)
+	return result, nil
+}
+
 func (s *Service) Decline(ctx context.Context, workspaceID, requestID, actorID uuid.UUID) (CoreIntegrationRequest, error) {
 	request, err := s.repo.Get(ctx, workspaceID, requestID)
 	if err != nil {
@@ -120,6 +145,25 @@ func (s *Service) Decline(ctx context.Context, workspaceID, requestID, actorID u
 		return CoreIntegrationRequest{}, ErrRequestNotPending
 	}
 	return s.repo.MarkDeclined(ctx, workspaceID, requestID, actorID)
+}
+
+func (s *Service) DeclineAllPendingByTeam(ctx context.Context, workspaceID, teamID, actorID uuid.UUID) (CoreBulkRequestResult, error) {
+	requests, err := s.repo.ListByTeam(ctx, workspaceID, teamID, CoreListRequestsFilter{Status: StatusPending})
+	if err != nil {
+		return CoreBulkRequestResult{}, err
+	}
+
+	result := CoreBulkRequestResult{
+		RequestIDs: make([]uuid.UUID, 0, len(requests)),
+	}
+	for _, request := range requests {
+		if _, err := s.Decline(ctx, workspaceID, request.ID, actorID); err != nil {
+			return CoreBulkRequestResult{}, err
+		}
+		result.RequestIDs = append(result.RequestIDs, request.ID)
+	}
+	result.Count = len(result.RequestIDs)
+	return result, nil
 }
 
 func validateUpsertInput(input CoreUpsertRequestInput) error {

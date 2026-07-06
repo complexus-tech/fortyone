@@ -1,10 +1,21 @@
 "use client";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useDeferredValue,
+  useState,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import { Box, Command, Divider, Flex, Popover, Text } from "ui";
-import { CheckIcon, LoadingIcon, SprintsIcon } from "icons";
+import { CheckIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
-import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
+import {
+  SPRINT_MENU_PAGE_SIZE,
+  useTeamSprintsInfinite,
+} from "@/modules/sprints/hooks/team-sprints";
 import { useTerminology } from "@/hooks";
+import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const SprintsContext = createContext<{
   open: boolean;
@@ -15,7 +26,7 @@ const SprintsContext = createContext<{
 });
 
 export const useSprintsMenu = () => {
-  const { open, setOpen } = useContext(SprintsContext);
+  const { open, setOpen } = use(SprintsContext);
   return { open, setOpen };
 };
 
@@ -54,10 +65,35 @@ const Items = ({
   objectiveId?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { data: sprints = [], isPending: isTeamSprintsPending } =
-    useTeamSprints(teamId ?? "");
   const [query, setQuery] = useState("");
-  const { setOpen } = useSprintsMenu();
+  const deferredQuery = useDeferredValue(query);
+  const { open, setOpen } = useSprintsMenu();
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching: isTeamSprintsFetching,
+    isFetchingNextPage,
+    isPending: isTeamSprintsPending,
+  } = useTeamSprintsInfinite(
+    teamId ?? "",
+    deferredQuery,
+    SPRINT_MENU_PAGE_SIZE,
+    open,
+  );
+  const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
+  const isLoadingSprints =
+    (isTeamSprintsPending || isTeamSprintsFetching) && !isFetchingNextPage;
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  };
 
   return (
     <Popover.Content align={align} className="min-w-92">
@@ -65,8 +101,9 @@ const Items = ({
         <Command.Input
           autoFocus
           onValueChange={(value) => {
-            if (Number.parseInt(value) < sprints.length) {
-              setSprintId(sprints[Number.parseInt(value)].id);
+            const itemIndex = Number.parseInt(value, 10);
+            if (/^\d+$/.test(value) && itemIndex < sprints.length) {
+              setSprintId(sprints[itemIndex].id);
               setOpen(false);
               setQuery("");
               return;
@@ -77,11 +114,16 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        <Command.Empty className="py-2">
-          <Text color="muted">No {getTermDisplay("sprintTerm")} found.</Text>
-        </Command.Empty>
-        <Command.Group>
-          {!isTeamSprintsPending ? (
+        {!isLoadingSprints ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">No {getTermDisplay("sprintTerm")} found.</Text>
+          </Command.Empty>
+        ) : null}
+        <Command.Group
+          className="max-h-80 overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {!isLoadingSprints ? (
             <Command.Item
               active={!sprintId}
               className="justify-between gap-4 opacity-70"
@@ -105,12 +147,9 @@ const Items = ({
             </Command.Item>
           ) : null}
           {sprints.length > 0 && <Divider className="my-2" />}
-          {isTeamSprintsPending ? (
+          {isLoadingSprints ? (
             <Command.Loading className="p-2">
-              <Text className="flex items-center gap-2" color="muted">
-                <LoadingIcon className="animate-spin" />
-                Fetching {getTermDisplay("sprintTerm")}…
-              </Text>
+              <MenuLoadingSkeleton rows={5} />
             </Command.Loading>
           ) : null}
           {sprints.map(({ id, name, startDate, endDate }, idx) => (
@@ -144,6 +183,11 @@ const Items = ({
               </Flex>
             </Command.Item>
           ))}
+          {isFetchingNextPage ? (
+            <Command.Loading className="p-2">
+              <MenuLoadingSkeleton rows={2} />
+            </Command.Loading>
+          ) : null}
         </Command.Group>
       </Command>
     </Popover.Content>

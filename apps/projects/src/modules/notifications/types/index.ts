@@ -25,26 +25,19 @@ export type AppNotification = {
   readAt: string | null;
 };
 
+export type NotificationsPage = {
+  notifications: AppNotification[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 type NotificationChannel = {
   email: boolean;
   inApp: boolean;
-};
-
-export type NotificationPreferences = {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  preferences: {
-    comment_reply: NotificationChannel;
-    key_result_update: NotificationChannel;
-    mention: NotificationChannel;
-    objective_update: NotificationChannel;
-    story_comment: NotificationChannel;
-    story_update: NotificationChannel;
-    reminders: NotificationChannel;
-  };
-  createdAt: string;
-  updatedAt: string;
 };
 
 export type NotificationType =
@@ -54,7 +47,17 @@ export type NotificationType =
   | "mention"
   | "key_result_update"
   | "story_comment"
-  | "reminders";
+  | "reminders"
+  | "weekly_digest";
+
+export type NotificationPreferences = {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  preferences: Partial<Record<NotificationType, NotificationChannel>>;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type UpdateNotificationPreferences = {
   emailEnabled?: boolean;

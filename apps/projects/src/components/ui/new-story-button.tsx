@@ -11,7 +11,7 @@ export const NewStoryButton = ({
   size = "sm",
   color = "invert",
   children,
-  leftIcon = <PlusIcon className="text-current dark:text-current" />,
+  leftIcon,
   teamId,
   sprintId,
   objectiveId,
@@ -26,6 +26,9 @@ export const NewStoryButton = ({
   const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
+  const icon = leftIcon ?? (
+    <PlusIcon className="text-current dark:text-current" />
+  );
 
   return (
     <>
@@ -34,7 +37,7 @@ export const NewStoryButton = ({
         color={color}
         data-new-story-button
         disabled={rest.disabled || userRole === "guest"}
-        leftIcon={leftIcon}
+        leftIcon={icon}
         onClick={() => {
           if (userRole !== "guest") {
             setIsOpen(true);

@@ -4,12 +4,19 @@ import { auth } from "@/auth";
 import { updateStoryAction } from "@/modules/story/actions/update-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { requireToolConfirmation } from "../tool-helpers";
 
 export const updateStory = tool({
   description:
     "Update an existing story. Only admins and members can update stories.",
   inputSchema: z.object({
     storyId: z.string().describe("Story ID to update (required)"),
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe(
+        "Must be true after the user explicitly confirms the story update.",
+      ),
     title: z.string().optional().describe("Updated title"),
     description: z.string().optional().describe("Updated description"),
     descriptionHTML: z.string().optional().describe("Updated description HTML"),
@@ -25,8 +32,12 @@ export const updateStory = tool({
       .nullable()
       .optional()
       .describe(
-        "Updated canonical estimate value (allowed: 1, 2, 3, 5, 8). Set null to clear estimate",
+        "Updated canonical estimate value for the team's estimation scheme. Set null to clear estimate",
       ),
+    labelIds: z
+      .array(z.string())
+      .optional()
+      .describe("Replace story labels with these label IDs."),
     sprintId: z.string().optional().describe("Updated sprint ID"),
     objectiveId: z.string().optional().describe("Updated objective ID"),
     startDate: z.string().optional().describe("Updated start date"),
@@ -36,6 +47,7 @@ export const updateStory = tool({
   execute: async (
     {
       storyId,
+      confirmed,
       title,
       description,
       descriptionHTML,
@@ -43,14 +55,19 @@ export const updateStory = tool({
       assigneeId,
       priority,
       estimateValue,
+      labelIds,
       sprintId,
       objectiveId,
       startDate,
       endDate,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
+      if (!confirmed) {
+        return requireToolConfirmation("update this story");
+      }
+
       const session = await auth();
 
       if (!session) {
@@ -60,7 +77,7 @@ export const updateStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -83,6 +100,7 @@ export const updateStory = tool({
         assigneeId: normalizeOptionalString(assigneeId),
         priority,
         estimateValue,
+        labelIds,
         sprintId: normalizeOptionalString(sprintId),
         objectiveId: normalizeOptionalString(objectiveId),
         startDate: normalizeOptionalString(startDate),

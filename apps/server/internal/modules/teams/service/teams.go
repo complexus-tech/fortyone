@@ -13,8 +13,8 @@ import (
 
 // Repository provides access to the teams storage.
 type Repository interface {
-	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
-	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error)
+	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filter CoreListTeamsFilter) ([]CoreTeam, error)
+	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filter CoreListTeamsFilter) ([]CoreTeam, error)
 	GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
 	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
@@ -23,6 +23,7 @@ type Repository interface {
 	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
+	UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error
 	UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error
 }
 
@@ -42,12 +43,12 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
-func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error) {
+func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.list")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.List")
 	defer span.End()
 
-	teams, err := s.repo.List(ctx, workspaceID, userID)
+	teams, err := s.repo.List(ctx, workspaceID, userID, firstListTeamsFilter(filters))
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -60,12 +61,12 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.U
 	return teams, nil
 }
 
-func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]CoreTeam, error) {
+func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.listPublicTeams")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.ListPublicTeams")
 	defer span.End()
 
-	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID)
+	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID, firstListTeamsFilter(filters))
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -76,6 +77,13 @@ func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, us
 		attribute.Int("teams.count", len(teams)),
 	))
 	return teams, nil
+}
+
+func firstListTeamsFilter(filters []CoreListTeamsFilter) CoreListTeamsFilter {
+	if len(filters) == 0 {
+		return CoreListTeamsFilter{}
+	}
+	return filters[0]
 }
 
 func (s *Service) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error) {
@@ -213,6 +221,24 @@ func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, wo
 	}
 
 	span.AddEvent("team member removed.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return nil
+}
+
+func (s *Service) UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error {
+	s.log.Info(ctx, "business.core.teams.updateMemberAIContext")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.UpdateMemberAIContext")
+	defer span.End()
+
+	if err := s.repo.UpdateMemberAIContext(ctx, teamID, userID, workspaceID, input); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("team member ai context updated.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
 		attribute.String("workspace_id", workspaceID.String()),

@@ -27,11 +27,17 @@ export const getSprintDetailsTool = tool({
 
       const ctx = { session, workspaceSlug };
 
-      const sprint = await getSprint(sprintId, ctx);
+      const [sprint, analytics] = await Promise.all([
+        getSprint(sprintId, ctx),
+        getSprintAnalytics(sprintId, ctx),
+      ]);
 
       return {
         success: true,
+        kind: "single-sprint-analytics-report",
+        title: sprint?.name ? `${sprint.name} sprint report` : "Sprint report",
         sprint,
+        analytics,
         message: `Retrieved details for sprint "${sprint?.name}".`,
       };
     } catch (error) {

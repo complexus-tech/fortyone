@@ -13,40 +13,85 @@ import (
 
 // dbStory represents the database model for an dbStory.
 type dbStory struct {
-	ID              uuid.UUID        `db:"id"`
-	SequenceID      int              `db:"sequence_id"`
-	Title           string           `db:"title"`
-	TeamCode        string           `db:"team_code"`
-	Description     *string          `db:"description"`
-	DescriptionHTML *string          `db:"description_html"`
-	Parent          *uuid.UUID       `db:"parent_id"`
-	Objective       *uuid.UUID       `db:"objective_id"`
-	Epic            *uuid.UUID       `db:"epic_id"`
-	Workspace       uuid.UUID        `db:"workspace_id"`
-	Team            uuid.UUID        `db:"team_id"`
-	Status          *uuid.UUID       `db:"status_id"`
-	Assignee        *uuid.UUID       `db:"assignee_id"`
-	Estimate        *float32         `db:"estimate"`
-	EstimateValue   *int16           `db:"estimate_unit"`
-	EstimateScheme  string           `db:"estimate_scheme"`
-	IsDraft         bool             `db:"is_draft"`
-	BlockedBy       *uuid.UUID       `db:"blocked_by_id"`
-	Blocking        *uuid.UUID       `db:"blocking_id"`
-	Related         *uuid.UUID       `db:"related_id"`
-	Reporter        *uuid.UUID       `db:"reporter_id"`
-	Priority        string           `db:"priority"`
-	Sprint          *uuid.UUID       `db:"sprint_id"`
-	KeyResult       *uuid.UUID       `db:"key_result_id"`
-	StartDate       *time.Time       `db:"start_date"`
-	EndDate         *time.Time       `db:"end_date"`
-	CreatedAt       time.Time        `db:"created_at"`
-	UpdatedAt       time.Time        `db:"updated_at"`
-	DeletedAt       *time.Time       `db:"deleted_at"`
-	ArchivedAt      *time.Time       `db:"archived_at"`
-	CompletedAt     *time.Time       `db:"completed_at"`
-	SubStories      *json.RawMessage `db:"sub_stories"`
-	Labels          *json.RawMessage `db:"labels"`
-	Associations    *json.RawMessage `db:"associations"`
+	ID                   uuid.UUID        `db:"id"`
+	SequenceID           int              `db:"sequence_id"`
+	Title                string           `db:"title"`
+	TeamCode             string           `db:"team_code"`
+	TeamName             *string          `db:"team_name"`
+	Description          *string          `db:"description"`
+	DescriptionHTML      *string          `db:"description_html"`
+	Parent               *uuid.UUID       `db:"parent_id"`
+	Objective            *uuid.UUID       `db:"objective_id"`
+	ObjectiveName        *string          `db:"objective_name"`
+	ObjectiveDescription *string          `db:"objective_description"`
+	Epic                 *uuid.UUID       `db:"epic_id"`
+	Workspace            uuid.UUID        `db:"workspace_id"`
+	Team                 uuid.UUID        `db:"team_id"`
+	Status               *uuid.UUID       `db:"status_id"`
+	Assignee             *uuid.UUID       `db:"assignee_id"`
+	Estimate             *float32         `db:"estimate"`
+	EstimateValue        *int16           `db:"estimate_unit"`
+	EstimateScheme       string           `db:"estimate_scheme"`
+	IsDraft              bool             `db:"is_draft"`
+	BlockedBy            *uuid.UUID       `db:"blocked_by_id"`
+	Blocking             *uuid.UUID       `db:"blocking_id"`
+	Related              *uuid.UUID       `db:"related_id"`
+	Reporter             *uuid.UUID       `db:"reporter_id"`
+	Priority             string           `db:"priority"`
+	Sprint               *uuid.UUID       `db:"sprint_id"`
+	SprintName           *string          `db:"sprint_name"`
+	SprintGoal           *string          `db:"sprint_goal"`
+	SprintStartDate      *time.Time       `db:"sprint_start_date"`
+	SprintEndDate        *time.Time       `db:"sprint_end_date"`
+	KeyResult            *uuid.UUID       `db:"key_result_id"`
+	StartDate            *time.Time       `db:"start_date"`
+	EndDate              *time.Time       `db:"end_date"`
+	CreatedAt            time.Time        `db:"created_at"`
+	UpdatedAt            time.Time        `db:"updated_at"`
+	DeletedAt            *time.Time       `db:"deleted_at"`
+	ArchivedAt           *time.Time       `db:"archived_at"`
+	CompletedAt          *time.Time       `db:"completed_at"`
+	SubStories           *json.RawMessage `db:"sub_stories"`
+	Labels               *json.RawMessage `db:"labels"`
+	Associations         *json.RawMessage `db:"associations"`
+}
+
+func toCoreTeamSummary(story dbStory) *stories.CoreTeamSummary {
+	if story.Team == uuid.Nil || story.TeamCode == "" || story.TeamName == nil {
+		return nil
+	}
+
+	return &stories.CoreTeamSummary{
+		ID:   story.Team,
+		Name: *story.TeamName,
+		Code: story.TeamCode,
+	}
+}
+
+func toCoreObjectiveSummary(story dbStory) *stories.CoreObjectiveSummary {
+	if story.Objective == nil || story.ObjectiveName == nil {
+		return nil
+	}
+
+	return &stories.CoreObjectiveSummary{
+		ID:          *story.Objective,
+		Name:        *story.ObjectiveName,
+		Description: story.ObjectiveDescription,
+	}
+}
+
+func toCoreSprintSummary(story dbStory) *stories.CoreSprintSummary {
+	if story.Sprint == nil || story.SprintName == nil || story.SprintStartDate == nil || story.SprintEndDate == nil {
+		return nil
+	}
+
+	return &stories.CoreSprintSummary{
+		ID:        *story.Sprint,
+		Name:      *story.SprintName,
+		Goal:      story.SprintGoal,
+		StartDate: *story.SprintStartDate,
+		EndDate:   *story.SprintEndDate,
+	}
 }
 
 // toCoreStory converts a dbStory to a CoreSingleStory.
@@ -98,6 +143,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		DescriptionHTML: i.DescriptionHTML,
 		Priority:        i.Priority,
 		Sprint:          i.Sprint,
+		SprintSummary:   toCoreSprintSummary(i),
 		KeyResult:       i.KeyResult,
 		StartDate:       i.StartDate,
 		EndDate:         i.EndDate,
@@ -136,32 +182,35 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 		}
 
 		cl[i] = stories.CoreStoryList{
-			ID:             story.ID,
-			SequenceID:     story.SequenceID,
-			Title:          story.Title,
-			EstimateValue:  story.EstimateValue,
-			EstimateScheme: story.EstimateScheme,
-			EstimateLabel:  stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
-			Parent:         story.Parent,
-			Objective:      story.Objective,
-			Sprint:         story.Sprint,
-			Epic:           story.Epic,
-			Team:           story.Team,
-			Workspace:      story.Workspace,
-			Status:         story.Status,
-			Assignee:       story.Assignee,
-			Reporter:       story.Reporter,
-			KeyResult:      story.KeyResult,
-			StartDate:      story.StartDate,
-			EndDate:        story.EndDate,
-			Priority:       story.Priority,
-			CreatedAt:      story.CreatedAt,
-			UpdatedAt:      story.UpdatedAt,
-			CompletedAt:    story.CompletedAt,
-			DeletedAt:      story.DeletedAt,
-			ArchivedAt:     story.ArchivedAt,
-			Labels:         labels,
-			SubStories:     subStories,
+			ID:               story.ID,
+			SequenceID:       story.SequenceID,
+			Title:            story.Title,
+			EstimateValue:    story.EstimateValue,
+			EstimateScheme:   story.EstimateScheme,
+			EstimateLabel:    stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
+			Parent:           story.Parent,
+			Objective:        story.Objective,
+			ObjectiveSummary: toCoreObjectiveSummary(story),
+			Sprint:           story.Sprint,
+			SprintSummary:    toCoreSprintSummary(story),
+			Epic:             story.Epic,
+			Team:             story.Team,
+			TeamSummary:      toCoreTeamSummary(story),
+			Workspace:        story.Workspace,
+			Status:           story.Status,
+			Assignee:         story.Assignee,
+			Reporter:         story.Reporter,
+			KeyResult:        story.KeyResult,
+			StartDate:        story.StartDate,
+			EndDate:          story.EndDate,
+			Priority:         story.Priority,
+			CreatedAt:        story.CreatedAt,
+			UpdatedAt:        story.UpdatedAt,
+			CompletedAt:      story.CompletedAt,
+			DeletedAt:        story.DeletedAt,
+			ArchivedAt:       story.ArchivedAt,
+			Labels:           labels,
+			SubStories:       subStories,
 		}
 	}
 	return cl
@@ -207,6 +256,7 @@ type dbActivity struct {
 	CurrentValue string           `db:"current_value"`
 	OldValue     *json.RawMessage `db:"old_value"`
 	NewValue     *json.RawMessage `db:"new_value"`
+	Reason       *string          `db:"reason"`
 	CreatedAt    time.Time        `db:"created_at"`
 	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 }
@@ -221,6 +271,7 @@ type dbActivityWithUser struct {
 	CurrentValue string           `db:"current_value"`
 	OldValue     *json.RawMessage `db:"old_value"`
 	NewValue     *json.RawMessage `db:"new_value"`
+	Reason       *string          `db:"reason"`
 	CreatedAt    time.Time        `db:"created_at"`
 	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 	// User details
@@ -242,6 +293,7 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 		CurrentValue: i.CurrentValue,
 		OldValue:     i.OldValue,
 		NewValue:     i.NewValue,
+		Reason:       i.Reason,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 	}
@@ -257,6 +309,7 @@ func toDBActivity(i stories.CoreActivity) dbActivity {
 		CurrentValue: i.CurrentValue,
 		OldValue:     toJSONRawMessage(i.OldValue),
 		NewValue:     toJSONRawMessage(i.NewValue),
+		Reason:       i.Reason,
 		WorkspaceID:  i.WorkspaceID,
 	}
 }
@@ -281,6 +334,7 @@ func toCoreActivityWithUser(i dbActivityWithUser) stories.CoreActivityWithUser {
 		CurrentValue: i.CurrentValue,
 		OldValue:     i.OldValue,
 		NewValue:     i.NewValue,
+		Reason:       i.Reason,
 		CreatedAt:    i.CreatedAt,
 		WorkspaceID:  i.WorkspaceID,
 		User: stories.UserDetails{

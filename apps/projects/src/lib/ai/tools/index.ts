@@ -70,6 +70,44 @@ import {
   updateMemory,
   deleteMemory,
 } from "./memory";
+import {
+  workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
+  pulseReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
+} from "./analytics";
+import { workloadPlanningTool } from "./workload";
+import { mayaWorkPlanTool } from "./maya";
+import { activitySummaryTool } from "./activity-summary";
+import {
+  createGitHubInstallSessionTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  deleteStoryGitHubLinkTool,
+  getGitHubIntegrationTool,
+  getGitHubTeamSettingsTool,
+  getStoryGitHubCommentsTool,
+  getStoryGitHubLinksTool,
+  postStoryGitHubCommentTool,
+  resyncGitHubRepositoriesTool,
+  updateGitHubTeamSettingsTool,
+  updateGitHubWorkspaceSettingsTool,
+} from "./github";
+import {
+  acceptAllIntegrationRequestsTool,
+  acceptIntegrationRequestTool,
+  declineAllIntegrationRequestsTool,
+  declineIntegrationRequestTool,
+  getIntegrationRequestTool,
+  getRequestGitHubCommentsTool,
+  listIntegrationRequestsTool,
+  postRequestGitHubCommentTool,
+  updateIntegrationRequestTool,
+} from "./integration-requests";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -89,6 +127,44 @@ export {
   updateMemory,
   deleteMemory,
 } from "./memory";
+export {
+  workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
+  pulseReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
+} from "./analytics";
+export { workloadPlanningTool } from "./workload";
+export { mayaWorkPlanTool } from "./maya";
+export { activitySummaryTool } from "./activity-summary";
+export {
+  createGitHubInstallSessionTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  deleteStoryGitHubLinkTool,
+  getGitHubIntegrationTool,
+  getGitHubTeamSettingsTool,
+  getStoryGitHubCommentsTool,
+  getStoryGitHubLinksTool,
+  postStoryGitHubCommentTool,
+  resyncGitHubRepositoriesTool,
+  updateGitHubTeamSettingsTool,
+  updateGitHubWorkspaceSettingsTool,
+} from "./github";
+export {
+  acceptAllIntegrationRequestsTool,
+  acceptIntegrationRequestTool,
+  declineAllIntegrationRequestsTool,
+  declineIntegrationRequestTool,
+  getIntegrationRequestTool,
+  getRequestGitHubCommentsTool,
+  listIntegrationRequestsTool,
+  postRequestGitHubCommentTool,
+  updateIntegrationRequestTool,
+} from "./integration-requests";
 
 export const tools = {
   navigation,
@@ -98,6 +174,40 @@ export const tools = {
   search: searchTool,
   notifications: notificationsTool,
   comments: commentsTool,
+  workspacePerformanceReportTool,
+  workspaceCommandCenterReportTool,
+  pulseReportTool,
+  storyPerformanceReportTool,
+  objectiveProgressReportTool,
+  teamPerformanceReportTool,
+  sprintPerformanceReportTool,
+  timelineTrendsReportTool,
+  workloadPlanningTool,
+  mayaWorkPlanTool,
+  activitySummaryTool,
+  // GitHub
+  getGitHubIntegrationTool,
+  createGitHubInstallSessionTool,
+  resyncGitHubRepositoriesTool,
+  createGitHubIssueSyncLinkTool,
+  deleteGitHubIssueSyncLinkTool,
+  updateGitHubWorkspaceSettingsTool,
+  getGitHubTeamSettingsTool,
+  updateGitHubTeamSettingsTool,
+  getStoryGitHubLinksTool,
+  getStoryGitHubCommentsTool,
+  postStoryGitHubCommentTool,
+  deleteStoryGitHubLinkTool,
+  // Integration requests
+  listIntegrationRequestsTool,
+  getIntegrationRequestTool,
+  updateIntegrationRequestTool,
+  acceptIntegrationRequestTool,
+  declineIntegrationRequestTool,
+  acceptAllIntegrationRequestsTool,
+  declineAllIntegrationRequestsTool,
+  getRequestGitHubCommentsTool,
+  postRequestGitHubCommentTool,
   // Teams
   listTeams,
   listPublicTeams,

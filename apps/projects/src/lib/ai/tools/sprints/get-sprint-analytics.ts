@@ -29,7 +29,10 @@ export const getSprintAnalyticsTool = tool({
 
       return {
         success: true,
+        kind: "single-sprint-analytics-report",
+        title: "Sprint analytics",
         analyticsReport: analytics,
+        analytics,
         message: "Retrieved sprint analytics successfully.",
       };
     } catch (error) {

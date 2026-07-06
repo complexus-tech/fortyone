@@ -19,6 +19,7 @@ export const TIER_LIMITS = {
     objective: true,
     maxAiMessages: 25,
     maxMemories: 5,
+    backgroundMaya: true,
   },
   free: {
     maxMembers: 5,
@@ -32,6 +33,7 @@ export const TIER_LIMITS = {
     objective: true,
     maxAiMessages: 15,
     maxMemories: 5,
+    backgroundMaya: false,
   },
   pro: {
     maxMembers: 10,
@@ -45,6 +47,7 @@ export const TIER_LIMITS = {
     objective: true,
     maxAiMessages: 100,
     maxMemories: 10,
+    backgroundMaya: true,
   },
   business: {
     maxMembers: Infinity,
@@ -58,6 +61,7 @@ export const TIER_LIMITS = {
     objective: true,
     maxAiMessages: 500,
     maxMemories: 15,
+    backgroundMaya: true,
   },
   enterprise: {
     maxMembers: Infinity,
@@ -71,6 +75,7 @@ export const TIER_LIMITS = {
     objective: true,
     maxAiMessages: Infinity,
     maxMemories: 15,
+    backgroundMaya: true,
   },
 } as const;
 
@@ -113,6 +118,7 @@ export const useSubscriptionFeatures = () => {
 
   if (
     subscription &&
+    subscription.tier !== "free" &&
     ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)
   ) {
     effectiveTier = subscription.tier;

@@ -38,6 +38,31 @@ import (
 var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
 
 const githubIssueLinkPrefix = "GitHub issue: "
+const (
+	githubSyncSourceFortyOne = "fortyone"
+	githubSyncSourceGitHub   = "github"
+)
+
+var githubPriorityLabels = map[string]string{
+	"blocker":         "Urgent",
+	"critical":        "Urgent",
+	"p0":              "Urgent",
+	"priority p0":     "Urgent",
+	"priority urgent": "Urgent",
+	"urgent":          "Urgent",
+	"high":            "High",
+	"p1":              "High",
+	"priority high":   "High",
+	"priority p1":     "High",
+	"medium":          "Medium",
+	"p2":              "Medium",
+	"priority medium": "Medium",
+	"priority p2":     "Medium",
+	"low":             "Low",
+	"p3":              "Low",
+	"priority low":    "Low",
+	"priority p3":     "Low",
+}
 
 type Service struct {
 	log                 *logger.Logger
@@ -84,6 +109,51 @@ func New(log *logger.Logger, repo *githubrepository.Repo, storyService StoryServ
 		privateKey:          privateKey,
 		privateKeyLoadError: errorString(err),
 	}, nil
+}
+
+func githubPriorityFromLabelNames(labels []string) string {
+	priority, ok := githubPriorityUpdateFromLabelNames(labels)
+	if !ok {
+		return "No Priority"
+	}
+	return priority
+}
+
+func githubPriorityUpdateFromLabelNames(labels []string) (string, bool) {
+	priority := "No Priority"
+	found := false
+	priorityRank := map[string]int{
+		"No Priority": 0,
+		"Low":         1,
+		"Medium":      2,
+		"High":        3,
+		"Urgent":      4,
+	}
+
+	for _, label := range labels {
+		candidate, ok := githubPriorityLabels[normalizeGitHubPriorityLabel(label)]
+		if !ok {
+			continue
+		}
+		found = true
+		if priorityRank[candidate] > priorityRank[priority] {
+			priority = candidate
+		}
+	}
+
+	return priority, found
+}
+
+func normalizeGitHubPriorityLabel(label string) string {
+	normalized := strings.ToLower(strings.TrimSpace(label))
+	normalized = strings.TrimPrefix(normalized, "priority:")
+	normalized = strings.TrimPrefix(normalized, "priority/")
+	normalized = strings.TrimPrefix(normalized, "priority-")
+	normalized = strings.TrimPrefix(normalized, "prio:")
+	normalized = strings.TrimPrefix(normalized, "prio/")
+	normalized = strings.TrimPrefix(normalized, "prio-")
+	normalized = strings.NewReplacer("-", " ", "_", " ", "/", " ", ":", " ").Replace(normalized)
+	return strings.Join(strings.Fields(normalized), " ")
 }
 
 func (s *Service) canInstall() bool {
@@ -748,6 +818,7 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 	}
 
 	issueBody := issueBodyFromStoryDescription(input.Description)
+	syncHash := githubIssueSyncHash(input.Title, issueBody, desiredState)
 	existingLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
 	switch {
 	case err == nil:
@@ -757,6 +828,9 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 			return err
 		}
 		if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+			return err
+		}
+		if err := s.repo.UpdateStoryLinkSyncState(ctx, existingLink.ID, githubSyncSourceFortyOne, syncHash); err != nil {
 			return err
 		}
 		return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
@@ -776,6 +850,13 @@ func (s *Service) SyncStoryFromFortyOne(ctx context.Context, input CoreStorySync
 		}
 	}
 	if err := s.repo.UpsertStoryLink(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID, "issue", issue.ID, issue.Number, nil, issue.HTMLURL, issue.Title, issue.State, issue); err != nil {
+		return err
+	}
+	createdLink, err := s.repo.FindIssueStoryLinkByStoryID(ctx, input.WorkspaceID, input.StoryID, link.RepositoryID)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.UpdateStoryLinkSyncState(ctx, createdLink.ID, githubSyncSourceFortyOne, syncHash); err != nil {
 		return err
 	}
 	return s.repo.EnsureStoryLink(ctx, input.StoryID, githubIssueStoryLinkTitle(issue.Number), issue.HTMLURL)
@@ -848,12 +929,24 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 
 	issueDescription := githubString(payload.Issue.Body)
+	labelNames := make([]string, 0, len(payload.Issue.Labels))
+	for _, label := range payload.Issue.Labels {
+		labelNames = append(labelNames, label.Name)
+	}
+	incomingSyncHash := githubIssueSyncHash(payload.Issue.Title, payload.Issue.Body, payload.Issue.State)
 	var story stories.CoreSingleStory
 	var getErr error
-	_, storyID, err := s.repo.FindStoryLink(ctx, repository.ID, "issue", payload.Issue.ID, nil)
+	storyLink, err := s.repo.FindIssueStoryLinkByExternalID(ctx, repository.ID, payload.Issue.ID)
 	switch {
 	case err == nil:
-		story, getErr = s.stories.Get(ctx, storyID, repository.WorkspaceID)
+		if shouldIgnoreFortyOneIssueEcho(payload.Action, stringValue(storyLink.LastSyncedFrom), stringValue(storyLink.LastSyncHash), incomingSyncHash) {
+			if err := s.repo.UpsertStoryLink(ctx, repository.WorkspaceID, storyLink.StoryID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue); err != nil {
+				return err
+			}
+			return s.repo.EnsureStoryLink(ctx, storyLink.StoryID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL)
+		}
+
+		story, getErr = s.stories.Get(ctx, storyLink.StoryID, repository.WorkspaceID)
 		if getErr != nil {
 			return getErr
 		}
@@ -861,7 +954,10 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 			"title":       payload.Issue.Title,
 			"description": issueDescription,
 		}
-		if updateErr := s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates); updateErr != nil {
+		if priority, hasPriorityLabel := githubPriorityUpdateFromLabelNames(labelNames); hasPriorityLabel {
+			updates["priority"] = priority
+		}
+		if updateErr := s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.ID, repository.WorkspaceID, updates, githubIssueSyncReason()); updateErr != nil {
 			return updateErr
 		}
 	case errors.Is(err, sql.ErrNoRows):
@@ -870,15 +966,15 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 		return err
 	}
 
-	linkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, storyID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue)
+	linkCreated, err := s.upsertStoryLink(ctx, repository.WorkspaceID, storyLink.StoryID, repository.ID, "issue", payload.Issue.ID, payload.Issue.Number, nil, payload.Issue.HTMLURL, payload.Issue.Title, payload.Issue.State, payload.Issue)
 	if err != nil {
 		return err
 	}
-	if err := s.repo.EnsureStoryLink(ctx, storyID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+	if err := s.repo.EnsureStoryLink(ctx, storyLink.StoryID, githubIssueStoryLinkTitle(payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
 		return err
 	}
 	if linkCreated {
-		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
+		if err := s.recordLinkActivity(ctx, repository.WorkspaceID, storyLink.StoryID, "github_issue", fmt.Sprintf("issue %d", payload.Issue.Number), payload.Issue.HTMLURL); err != nil {
 			return err
 		}
 	}
@@ -889,15 +985,79 @@ func (s *Service) handleIssueEvent(ctx context.Context, repository githubreposit
 	}
 	switch payload.Action {
 	case "opened":
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueOpen, nil)
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueOpen, nil)
 	case "reopened":
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueReopen, nil)
+		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
+			err = nil
+			break
+		}
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueReopen, nil)
 	case "closed":
-		return s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyID, EventIssueClose, nil)
+		if s.issueStateAlreadyReflectedByStory(ctx, payload.Action, story) {
+			err = nil
+			break
+		}
+		err = s.moveStoryByRule(ctx, repository.WorkspaceID, link.TeamID, storyLink.StoryID, EventIssueClose, nil)
 	case "edited":
-		return nil
+		err = nil
 	default:
-		return nil
+		err = nil
+	}
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateStoryLinkSyncState(ctx, storyLink.ID, githubSyncSourceGitHub, incomingSyncHash)
+}
+
+func githubIssueSyncHash(title, body, state string) string {
+	normalizedBody := strings.ReplaceAll(body, "\r\n", "\n")
+	normalizedBody = strings.ReplaceAll(normalizedBody, "\r", "\n")
+	sum := sha256.Sum256([]byte(strings.Join([]string{title, normalizedBody, state}, "\x00")))
+	return hex.EncodeToString(sum[:])
+}
+
+func shouldIgnoreFortyOneIssueEcho(action, lastSyncedFrom, lastSyncHash, incomingSyncHash string) bool {
+	if !isFortyOneIssueEchoAction(action) {
+		return false
+	}
+	return lastSyncedFrom == githubSyncSourceFortyOne && lastSyncHash != "" && lastSyncHash == incomingSyncHash
+}
+
+func isFortyOneIssueEchoAction(action string) bool {
+	switch action {
+	case "opened", "edited", "closed", "reopened":
+		return true
+	default:
+		return false
+	}
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func (s *Service) issueStateAlreadyReflectedByStory(ctx context.Context, action string, story stories.CoreSingleStory) bool {
+	if story.Status == nil {
+		return false
+	}
+	category, err := s.repo.GetStatusCategory(ctx, *story.Status)
+	if err != nil {
+		return false
+	}
+	return issueActionMatchesStoryStatusCategory(action, category)
+}
+
+func issueActionMatchesStoryStatusCategory(action, category string) bool {
+	switch action {
+	case "closed":
+		return category == "completed"
+	case "reopened":
+		return category != "" && category != "completed" && category != "cancelled"
+	default:
+		return false
 	}
 }
 
@@ -909,6 +1069,11 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 	sourceURL := payload.Issue.HTMLURL
 	sourceNumber := payload.Issue.Number
 	createdBy := s.resolveActorID(ctx, payload.Sender.ID)
+	labelNames := make([]string, 0, len(payload.Issue.Labels))
+	for _, label := range payload.Issue.Labels {
+		labelNames = append(labelNames, label.Name)
+	}
+	priority := githubPriorityFromLabelNames(labelNames)
 	_, err := s.requests.UpsertPending(ctx, integrationrequests.CoreUpsertRequestInput{
 		WorkspaceID:      repository.WorkspaceID,
 		TeamID:           teamID,
@@ -919,6 +1084,7 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 		SourceURL:        &sourceURL,
 		Title:            payload.Issue.Title,
 		Description:      description,
+		Priority:         priority,
 		CreatedByUserID:  &createdBy,
 		Metadata: map[string]any{
 			"repository_id":          repository.ID.String(),
@@ -927,6 +1093,8 @@ func (s *Service) upsertIssueIntegrationRequest(ctx context.Context, repository 
 			"issue_id":               payload.Issue.ID,
 			"issue_number":           payload.Issue.Number,
 			"issue_state":            payload.Issue.State,
+			"priority":               priority,
+			"priority_labels":        labelNames,
 			"sender_id":              payload.Sender.ID,
 			"sender_login":           payload.Sender.Login,
 		},
@@ -1478,9 +1646,9 @@ func (s *Service) syncAssigneeFromGitHub(ctx context.Context, repository githubr
 	if err != nil || (fullStory.Assignee != nil && *fullStory.Assignee == userID) {
 		return
 	}
-	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+	_ = s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
 		"assignee_id": userID,
-	})
+	}, githubAssigneeSyncReason())
 }
 
 // ==================== label sync ====================
@@ -1501,9 +1669,9 @@ func (s *Service) syncLabelsFromGitHub(ctx context.Context, repository githubrep
 	if err != nil || len(resolvedIDs) == 0 {
 		return
 	}
-	_ = s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
+	_ = s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, story.StoryID, repository.WorkspaceID, map[string]any{
 		"labels": resolvedIDs,
-	})
+	}, githubLabelSyncReason())
 }
 
 // ==================== user resolution ====================
@@ -1608,9 +1776,25 @@ func (s *Service) moveStoryByRule(ctx context.Context, workspaceID, teamID, stor
 	if story.Status != nil && *story.Status == *statusID {
 		return nil
 	}
-	return s.stories.UpdateExternal(ctx, s.cfg.GitHubUserID, storyID, workspaceID, map[string]any{
+	return s.stories.UpdateExternalWithReason(ctx, s.cfg.GitHubUserID, storyID, workspaceID, map[string]any{
 		"status_id": *statusID,
-	})
+	}, githubWorkflowAutomationReason())
+}
+
+func githubIssueSyncReason() string {
+	return "GitHub issue details changed, so FortyOne synced the linked story."
+}
+
+func githubAssigneeSyncReason() string {
+	return "GitHub assignee changed, so FortyOne synced the linked story assignment."
+}
+
+func githubLabelSyncReason() string {
+	return "GitHub labels changed, so FortyOne synced the linked story labels."
+}
+
+func githubWorkflowAutomationReason() string {
+	return "A GitHub workflow automation matched a repository event and moved this story to the configured status."
 }
 
 func (s *Service) seedDefaultWorkflowRules(ctx context.Context, workspaceID, teamID uuid.UUID) (CoreTeamGitHubSettings, error) {

@@ -19,6 +19,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     reporterIds: meta.filters.reporterIds ?? undefined,
     priorities: meta.filters.priorities ?? undefined,
     labelIds: meta.filters.labelIds ?? undefined,
+    estimateValues: meta.filters.estimateValues ?? undefined,
     parentId: meta.filters.parentId ?? undefined,
     objectiveId: meta.filters.objectiveId ?? undefined,
     epicId: meta.filters.epicId ?? undefined,

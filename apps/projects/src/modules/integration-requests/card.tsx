@@ -1,12 +1,12 @@
 "use client";
 
 import { cn } from "lib";
-import { CheckIcon, CloseIcon, GitHubIcon } from "icons";
+import { ChatIcon, CheckIcon, CloseIcon, GitHubIcon, SlackIcon } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
-import { ConfirmDialog } from "@/components/ui";
+import { ConfirmDialog, PriorityIcon } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import type { IntegrationRequest } from "./types";
 import { useAcceptIntegrationRequest } from "./hooks/use-accept-request";
@@ -22,6 +22,19 @@ const providerLabel = (provider: IntegrationRequest["provider"]) => {
       return "Intercom";
     default:
       return "Integration";
+  }
+};
+
+const providerIcon = (provider: IntegrationRequest["provider"]) => {
+  switch (provider) {
+    case "github":
+      return <GitHubIcon className="h-4 shrink-0" />;
+    case "slack":
+      return <SlackIcon className="h-4 shrink-0" />;
+    case "intercom":
+      return <ChatIcon className="h-4 shrink-0" />;
+    default:
+      return null;
   }
 };
 
@@ -52,7 +65,7 @@ export const IntegrationRequestCard = ({
         >
           <Box
             className={cn(
-              "border-border hover:bg-surface-muted cursor-pointer border-b-[0.5px] px-5 py-3 transition md:px-4",
+              "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
               {
                 "bg-surface-muted": isActive,
               },
@@ -66,19 +79,15 @@ export const IntegrationRequestCard = ({
                 <TimeAgo timestamp={request.createdAt} />
               </Text>
             </Flex>
-            <Flex align="center" gap={2} justify="between">
-              <Flex align="center" className="min-w-0" gap={2}>
-                {request.provider === "github" ? (
-                  <GitHubIcon className="h-4 shrink-0" />
-                ) : null}
+            <Flex align="center" gap={3} justify="between">
+              <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                {providerIcon(request.provider)}
                 <Text className="line-clamp-1" color="muted">
                   {providerLabel(request.provider)} {request.sourceType}{" "}
                   {sourceNumber}
                 </Text>
               </Flex>
-              <Text className="shrink-0" color="muted">
-                {request.priority}
-              </Text>
+              <PriorityIcon className="shrink-0" priority={request.priority} />
             </Flex>
           </Box>
         </Link>
@@ -87,7 +96,9 @@ export const IntegrationRequestCard = ({
         <ContextMenu.Group>
           <ContextMenu.Item
             disabled={request.status !== "pending"}
-            onSelect={() => acceptRequest.mutate(request.id)}
+            onSelect={() => {
+              acceptRequest.mutate(request.id);
+            }}
           >
             <CheckIcon />
             Accept

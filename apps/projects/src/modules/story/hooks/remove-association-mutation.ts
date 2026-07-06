@@ -57,6 +57,10 @@ export const useRemoveAssociationMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.detail(workspaceSlug, storyId),
       });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
+        refetchType: "all",
+      });
       toast.success("Association removed");
     },
   });

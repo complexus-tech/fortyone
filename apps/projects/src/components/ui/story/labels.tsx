@@ -7,8 +7,10 @@ import { useUserRole } from "@/hooks";
 import { StoryLabel } from "../label";
 import { LabelsMenu } from "./labels-menu";
 
+const EMPTY_STORY_LABELS: string[] = [];
+
 export const Labels = ({
-  storyLabels = [],
+  storyLabels = EMPTY_STORY_LABELS,
   storyId,
   teamId,
   isRectangular,
@@ -61,7 +63,7 @@ export const Labels = ({
           <LabelsMenu.Items
             labelIds={storyLabels}
             setLabelIds={(labelIds) => {
-              handleUpdateLabels(labelIds);
+              return handleUpdateLabels(labelIds);
             }}
             teamId={teamId}
           />
@@ -86,7 +88,7 @@ export const Labels = ({
           <LabelsMenu.Items
             labelIds={storyLabels}
             setLabelIds={(labelIds) => {
-              handleUpdateLabels(labelIds);
+              return handleUpdateLabels(labelIds);
             }}
             teamId={teamId}
           />
@@ -129,7 +131,7 @@ export const Labels = ({
               <LabelsMenu.Items
                 labelIds={storyLabels}
                 setLabelIds={(labelIds) => {
-                  handleUpdateLabels(labelIds);
+                  return handleUpdateLabels(labelIds);
                 }}
                 teamId={teamId}
               />

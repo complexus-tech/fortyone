@@ -7,13 +7,16 @@ import (
 )
 
 type AppTeamSprintSettings struct {
-	AutoCreateSprints            bool      `json:"autoCreateSprints"`
-	UpcomingSprintsCount         int       `json:"upcomingSprintsCount"`
-	SprintDurationWeeks          int       `json:"sprintDurationWeeks"`
-	SprintStartDay               string    `json:"sprintStartDay"`
-	MoveIncompleteStoriesEnabled bool      `json:"moveIncompleteStoriesEnabled"`
-	CreatedAt                    time.Time `json:"createdAt"`
-	UpdatedAt                    time.Time `json:"updatedAt"`
+	AutoCreateSprints            bool       `json:"autoCreateSprints"`
+	UpcomingSprintsCount         int        `json:"upcomingSprintsCount"`
+	SprintDurationWeeks          int        `json:"sprintDurationWeeks"`
+	SprintStartDay               string     `json:"sprintStartDay"`
+	MoveIncompleteStoriesEnabled bool       `json:"moveIncompleteStoriesEnabled"`
+	NextAutoSprintNumber         int        `json:"nextAutoSprintNumber"`
+	AutoCreateDisabledAt         *time.Time `json:"autoCreateDisabledAt"`
+	AutoCreateDisabledReason     *string    `json:"autoCreateDisabledReason"`
+	CreatedAt                    time.Time  `json:"createdAt"`
+	UpdatedAt                    time.Time  `json:"updatedAt"`
 }
 
 type AppTeamStoryAutomationSettings struct {
@@ -43,6 +46,7 @@ type AppUpdateTeamSprintSettings struct {
 	SprintDurationWeeks          *int    `json:"sprintDurationWeeks,omitempty"`
 	SprintStartDay               *string `json:"sprintStartDay,omitempty"`
 	MoveIncompleteStoriesEnabled *bool   `json:"moveIncompleteStoriesEnabled,omitempty"`
+	NextAutoSprintNumber         *int    `json:"nextAutoSprintNumber,omitempty"`
 }
 
 type AppUpdateTeamStoryAutomationSettings struct {
@@ -64,6 +68,9 @@ func toAppTeamSprintSettings(settings teamsettings.CoreTeamSprintSettings) AppTe
 		SprintDurationWeeks:          settings.SprintDurationWeeks,
 		SprintStartDay:               settings.SprintStartDay,
 		MoveIncompleteStoriesEnabled: settings.MoveIncompleteStoriesEnabled,
+		NextAutoSprintNumber:         settings.NextAutoSprintNumber,
+		AutoCreateDisabledAt:         settings.AutoCreateDisabledAt,
+		AutoCreateDisabledReason:     settings.AutoCreateDisabledReason,
 		CreatedAt:                    settings.CreatedAt,
 		UpdatedAt:                    settings.UpdatedAt,
 	}
@@ -95,6 +102,7 @@ func toCoreUpdateTeamSprintSettings(app AppUpdateTeamSprintSettings) teamsetting
 		SprintDurationWeeks:          app.SprintDurationWeeks,
 		SprintStartDay:               app.SprintStartDay,
 		MoveIncompleteStoriesEnabled: app.MoveIncompleteStoriesEnabled,
+		NextAutoSprintNumber:         app.NextAutoSprintNumber,
 	}
 }
 

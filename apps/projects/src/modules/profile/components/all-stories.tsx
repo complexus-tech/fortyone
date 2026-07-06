@@ -4,8 +4,13 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
-import type { Story } from "@/modules/stories/types";
+import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
+import {
+  hasActiveProfileStoriesFilters,
+  PROFILE_HIDDEN_FILTER_FIELDS,
+} from "./filter-fields";
 import { useProfile } from "./provider";
 import { Skeleton } from "./skeleton";
 
@@ -18,10 +23,16 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     "tab",
     parseAsStringLiteral(tabs).withDefault("assigned"),
   );
-  const { viewOptions } = useProfile();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useProfile();
+  const hasAppliedFilters = hasActiveProfileStoriesFilters(filters);
+  const boardHeightClassName = hasAppliedFilters
+    ? "h-[calc(100dvh-11.3rem)]"
+    : "h-[calc(100dvh-7.7rem)]";
 
   const { data: groupedStories, isPending } = useGroupedStories({
     groupBy: viewOptions.groupBy,
+    ...getGroupedStoryFilterParams(filters),
     assigneeIds: tab === "assigned" ? [userId] : undefined,
     reporterIds: tab === "created" ? [userId] : undefined,
     orderBy: viewOptions.orderBy,
@@ -31,27 +42,35 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   if (isPending) return <Skeleton layout={layout} />;
 
   return (
-    <Box className="h-[calc(100vh-4rem)]">
+    <Box className="h-[calc(100dvh-7.6rem)]">
       <Tabs onValueChange={(v) => setTab(v as typeof tab)} value={tab}>
-        <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b backdrop-blur-lg">
+        <Box className="border-border d/40 sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px] backdrop-blur-lg">
           <Tabs.List>
             <Tabs.Tab value="assigned">Assigned</Tabs.Tab>
             <Tabs.Tab value="created">Created</Tabs.Tab>
           </Tabs.List>
         </Box>
+        <StoriesFilterBar
+          filters={filters}
+          hiddenFields={PROFILE_HIDDEN_FILTER_FIELDS}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
+        />
         <Tabs.Panel value="assigned">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
+            setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>
         <Tabs.Panel value="created">
           <StoriesBoard
-            className="h-[calc(100vh-7.7rem)]"
+            className={boardHeightClassName}
             groupedStories={groupedStories}
             layout={layout}
+            setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
         </Tabs.Panel>

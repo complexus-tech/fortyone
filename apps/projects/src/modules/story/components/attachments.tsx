@@ -2,6 +2,7 @@ import { useDropzone } from "react-dropzone";
 import { Box, Button, DropZone, Flex, Text, Tooltip } from "ui";
 import { AttachmentIcon, PlusIcon } from "icons";
 import { toast } from "sonner";
+import { cn } from "lib";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useStoryAttachments } from "../hooks/story-attachments";
 import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
@@ -19,9 +20,11 @@ const formatFileSize = (bytes: number) => {
 
 export const Attachments = ({
   className,
+  compactHeader = false,
   storyId,
 }: {
   className?: string;
+  compactHeader?: boolean;
   storyId: string;
 }) => {
   const { getLimit } = useSubscriptionFeatures();
@@ -91,7 +94,11 @@ export const Attachments = ({
 
   return (
     <Box className={className} suppressHydrationWarning>
-      <Flex align="center" className="mt-4 mb-2" justify="between">
+      <Flex
+        align="center"
+        className={cn("mb-2", compactHeader ? "mt-2" : "mt-4")}
+        justify="between"
+      >
         <Text as="h4" className="flex items-center gap-1" fontWeight="semibold">
           <AttachmentIcon className="h-5 w-auto" />
           Attachments

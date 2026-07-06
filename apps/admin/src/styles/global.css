@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import "tailwind-config";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body), "Segoe UI",
+    sans-serif;
+  --font-heading: var(--font-heading);
+}
+
+:root {
+  --sidebar-width: 17rem;
+}
+
+body,
+html {
+  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    body {
+      @apply border-border border-t-[0.5px];
+    }
+  }
+}
+
+@layer base {
+  input,
+  textarea,
+  select {
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 13px;
+      line-height: 1.2;
+      transform-origin: top left;
+    }
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+svg {
+  shape-rendering: auto;
+  vector-effect: non-scaling-stroke;
+}
+
+*::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+*::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply bg-border-strong rounded-xs;
+}
+
+* {
+  scrollbar-color: #666666b3 transparent;
+  scrollbar-width: thin;
+}
+
+::selection {
+  @apply bg-primary text-primary-foreground;
+}
+
+::-moz-selection {
+  @apply bg-primary text-primary-foreground;
+}
+
+[data-close-button] {
+  @apply hover:border-border hover:bg-state-hover!;
+}

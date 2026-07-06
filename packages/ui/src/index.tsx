@@ -22,6 +22,7 @@ export * from "./drop-zone";
 export * from "./editor";
 export * from "./flex";
 export * from "./image";
+export * from "./image-cropper";
 export * from "./input";
 export * from "./kbd";
 export * from "./menu";

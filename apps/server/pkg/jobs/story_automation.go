@@ -220,7 +220,26 @@ type ActivityRecord struct {
 	ActivityType string    `db:"activity_type"`
 	FieldChanged string    `db:"field_changed"`
 	CurrentValue uuid.UUID `db:"current_value"`
+	Reason       string    `db:"reason"`
 	WorkspaceID  uuid.UUID `db:"workspace_id"`
+}
+
+const storyAutoCloseActivityReason = "Story automation moved this story to a closed state after it was inactive for the configured period."
+
+func buildAutoCloseActivityRecords(stories []ClosedStory, systemUserID uuid.UUID) []ActivityRecord {
+	activities := make([]ActivityRecord, len(stories))
+	for i, story := range stories {
+		activities[i] = ActivityRecord{
+			StoryID:      story.ID,
+			UserID:       systemUserID,
+			ActivityType: "update",
+			FieldChanged: "status_id",
+			CurrentValue: story.StatusID,
+			Reason:       storyAutoCloseActivityReason,
+			WorkspaceID:  story.WorkspaceID,
+		}
+	}
+	return activities
 }
 
 // recordActivitiesBatch bulk inserts activity records for closed stories using VALUES clause
@@ -233,17 +252,7 @@ func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedSto
 	}
 
 	// Build structured activity records (much more efficient than maps)
-	activities := make([]ActivityRecord, len(stories))
-	for i, story := range stories {
-		activities[i] = ActivityRecord{
-			StoryID:      story.ID,
-			UserID:       systemUserID,
-			ActivityType: "update",
-			FieldChanged: "status_id",
-			CurrentValue: story.StatusID,
-			WorkspaceID:  story.WorkspaceID,
-		}
-	}
+	activities := buildAutoCloseActivityRecords(stories, systemUserID)
 
 	// Use VALUES clause for true bulk insert (single database round-trip)
 	activityQuery := `
@@ -253,8 +262,9 @@ func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedSto
 			activity_type, 
 			field_changed, 
 			current_value, 
+			reason,
 			workspace_id
-		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :workspace_id)`
+		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :reason, :workspace_id)`
 
 	// Execute single bulk insert with all records
 	result, err := tx.NamedExecContext(ctx, activityQuery, activities)
@@ -455,6 +465,30 @@ func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.L
 		} else {
 			activitiesRecorded = len(migratedStories)
 		}
+
+		for _, story := range migratedStories {
+			metadata, err := auditMetadata(map[string]any{
+				"previous_sprint_id": story.PreviousSprintID,
+				"new_sprint_id":      story.NewSprintID,
+			})
+			if err != nil {
+				log.Error(ctx, "Failed to marshal sprint migration audit metadata", "error", err, "story_id", story.ID)
+				continue
+			}
+
+			if err := recordAuditEvent(ctx, tx, auditEvent{
+				WorkspaceID: story.WorkspaceID,
+				TeamID:      &story.TeamID,
+				ActorType:   "automation",
+				ActorID:     &systemUserID,
+				EntityType:  "story",
+				EntityID:    &story.ID,
+				EventType:   "story.auto_moved_to_sprint",
+				Metadata:    metadata,
+			}); err != nil {
+				log.Error(ctx, "Failed to record sprint migration audit event", "error", err, "story_id", story.ID)
+			}
+		}
 	}
 
 	// Commit the transaction
@@ -480,19 +514,13 @@ type MigrationActivityRecord struct {
 	CurrentValue string           `db:"current_value"`
 	OldValue     *json.RawMessage `db:"old_value"`
 	NewValue     *json.RawMessage `db:"new_value"`
+	Reason       string           `db:"reason"`
 	WorkspaceID  uuid.UUID        `db:"workspace_id"`
 }
 
-// recordMigrationActivitiesBatch bulk inserts activity records for migrated stories using VALUES clause
-func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []MigratedStory, systemUserID uuid.UUID, log *logger.Logger) error {
-	ctx, span := web.AddSpan(ctx, "jobs.recordMigrationActivitiesBatch")
-	defer span.End()
+const sprintMigrationActivityReason = "Sprint automation moved this story into the next sprint because incomplete work migration is enabled."
 
-	if len(stories) == 0 {
-		return nil
-	}
-
-	// Build structured activity records
+func buildSprintMigrationActivityRecords(stories []MigratedStory, systemUserID uuid.UUID) []MigrationActivityRecord {
 	activities := make([]MigrationActivityRecord, len(stories))
 	for i, story := range stories {
 		oldSprintJSON, _ := json.Marshal(story.PreviousSprintID)
@@ -509,9 +537,24 @@ func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []
 			CurrentValue: story.NewSprintID.String(),
 			OldValue:     &oldRaw,
 			NewValue:     &newRaw,
+			Reason:       sprintMigrationActivityReason,
 			WorkspaceID:  story.WorkspaceID,
 		}
 	}
+	return activities
+}
+
+// recordMigrationActivitiesBatch bulk inserts activity records for migrated stories using VALUES clause
+func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []MigratedStory, systemUserID uuid.UUID, log *logger.Logger) error {
+	ctx, span := web.AddSpan(ctx, "jobs.recordMigrationActivitiesBatch")
+	defer span.End()
+
+	if len(stories) == 0 {
+		return nil
+	}
+
+	// Build structured activity records
+	activities := buildSprintMigrationActivityRecords(stories, systemUserID)
 
 	// Use VALUES clause for true bulk insert (single database round-trip)
 	activityQuery := `
@@ -523,8 +566,9 @@ func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []
 			current_value, 
 			old_value,
 			new_value,
+			reason,
 			workspace_id
-		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :old_value, :new_value, :workspace_id)`
+		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :old_value, :new_value, :reason, :workspace_id)`
 
 	// Execute single bulk insert with all records
 	result, err := tx.NamedExecContext(ctx, activityQuery, activities)

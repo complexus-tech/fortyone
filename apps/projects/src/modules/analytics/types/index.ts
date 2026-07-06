@@ -1,10 +1,159 @@
 // Common filter types
 export type AnalyticsFilters = {
   teamIds?: string[];
+  assigneeIds?: string[];
   startDate?: string;
   endDate?: string;
   sprintIds?: string[];
   objectiveIds?: string[];
+};
+
+export type WorkloadSummary = {
+  totalOpenStories: number;
+  totalEstimate: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+  unassignedStories: number;
+};
+
+export type MemberWorkload = {
+  userId: string;
+  fullName: string;
+  username: string;
+  avatarUrl: string;
+  teamAiRoleTitle?: string;
+  teamAiRoleDescription?: string;
+  openStories: number;
+  startedStories: number;
+  pausedStories: number;
+  completedStories: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+  estimateTotal: number;
+  lastStoryActivityAt?: string | null;
+};
+
+export type TeamWorkloadSummary = {
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  openStories: number;
+  estimateTotal: number;
+  overdueStories: number;
+  unassignedStories: number;
+  unestimatedStories: number;
+};
+
+export type UnassignedWorkload = {
+  stories: number;
+  estimateTotal: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unestimatedStories: number;
+};
+
+export type WorkloadRisks = {
+  overloadedMembers: MemberWorkload[];
+  overdueMembers: MemberWorkload[];
+  unassignedStories: number;
+  unestimatedStories: number;
+  highPriorityStories: number;
+};
+
+export type WorkloadAnalysis = {
+  summary: WorkloadSummary;
+  members: MemberWorkload[];
+  teams: TeamWorkloadSummary[];
+  unassigned: UnassignedWorkload;
+  risks: WorkloadRisks;
+};
+
+export type PulseRiskSeverity = "high" | "medium" | "low";
+
+export type PulseRiskKind =
+  | "overdue_stories"
+  | "blocked_stories"
+  | "overloaded_members"
+  | "at_risk_sprints"
+  | "at_risk_objectives"
+  | "pending_requests"
+  | "unassigned_stories";
+
+export type PulseSummary = {
+  openStories: number;
+  overdueStories: number;
+  blockedStories: number;
+  atRiskSprints: number;
+  atRiskObjectives: number;
+  pendingRequests: number;
+  overloadedMembers: number;
+};
+
+export type PulseStoryHealth = {
+  openStories: number;
+  startedStories: number;
+  pausedStories: number;
+  completedStories: number;
+  cancelledStories: number;
+  blockedStories: number;
+  overdueStories: number;
+  urgentStories: number;
+  highPriorityStories: number;
+  unassignedStories: number;
+  unestimatedStories: number;
+};
+
+export type PulseSprintHealth = {
+  activeSprints: number;
+  upcomingSprints: number;
+  completedSprints: number;
+  atRiskSprints: number;
+  overdueSprints: number;
+  unestimatedStories: number;
+};
+
+export type PulseObjectiveHealth = {
+  activeObjectives: number;
+  atRiskObjectives: number;
+  offTrackObjectives: number;
+  overdueObjectives: number;
+  objectivesDueSoon: number;
+};
+
+export type PulseRequestHealth = {
+  pendingRequests: number;
+  urgentRequests: number;
+  highRequests: number;
+  gitHubRequests: number;
+  slackRequests: number;
+  intercomRequests: number;
+  staleRequests: number;
+};
+
+export type PulseRisk = {
+  kind: PulseRiskKind;
+  severity: PulseRiskSeverity;
+  title: string;
+  description: string;
+  count: number;
+};
+
+export type PulseReport = {
+  workspaceId: string;
+  reportDate: string;
+  filters: AnalyticsFilters;
+  summary: PulseSummary;
+  stories: PulseStoryHealth;
+  sprints: PulseSprintHealth;
+  objectives: PulseObjectiveHealth;
+  requests: PulseRequestHealth;
+  workload: WorkloadAnalysis;
+  risks: PulseRisk[];
 };
 
 // Workspace Overview Types
@@ -40,7 +189,7 @@ export type WorkspaceOverview = {
 export type StatusBreakdownItem = {
   statusName: string;
   count: number;
-  teamId: string;
+  teamId: string | null;
 };
 
 export type PriorityDistributionItem = {
@@ -207,4 +356,83 @@ export type TimelineTrends = {
   objectiveProgress: ObjectiveProgressPoint[];
   teamVelocity: TeamVelocityPoint[];
   keyMetricsTrend: KeyMetricsTrendPoint[];
+};
+
+export type RequestProviderPerformance = {
+  provider: string;
+  totalRequests: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  declinedRequests: number;
+  urgentRequests: number;
+  highRequests: number;
+  staleRequests: number;
+  acceptanceRate: number;
+};
+
+export type RequestSourceAnalytics = {
+  providers: RequestProviderPerformance[];
+  totalRequests: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  declinedRequests: number;
+};
+
+export type WorkspaceEngagementCount = {
+  name: string;
+  count: number;
+};
+
+export type WorkspaceEngagementUser = {
+  userId: string;
+  fullName: string;
+  username: string;
+  avatarUrl: string;
+  events: number;
+};
+
+export type WorkspaceEngagementAnalytics = {
+  totalEvents: number;
+  uniqueUsers: number;
+  eventsByName: WorkspaceEngagementCount[];
+  eventsBySurface: WorkspaceEngagementCount[];
+  topUsers: WorkspaceEngagementUser[];
+};
+
+export type WorkspaceCommandCenterReport = {
+  workspaceId: string;
+  reportDate: string;
+  filters: AnalyticsFilters;
+  sectionErrors: {
+    section: string;
+    message: string;
+  }[];
+  overview: WorkspaceOverview;
+  pulse: PulseReport;
+  stories: StoryAnalytics;
+  objectives: ObjectiveProgress;
+  teams: TeamPerformance;
+  workload: WorkloadAnalysis;
+  sprints: SprintAnalytics;
+  trends: TimelineTrends;
+  requests: RequestSourceAnalytics;
+  engagement: WorkspaceEngagementAnalytics;
+};
+
+export type WorkspaceAnalyticsEventPayload = {
+  eventName: string;
+  surface: string;
+  teamId?: string;
+  storyId?: string;
+  objectiveId?: string;
+  sprintId?: string;
+  keyResultId?: string;
+  properties?: Record<string, unknown>;
+  occurredAt?: string;
+};
+
+export type WorkspaceAnalyticsEventResponse = {
+  eventName: string;
+  surface: string;
+  occurredAt: string;
 };

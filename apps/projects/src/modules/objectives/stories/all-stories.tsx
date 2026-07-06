@@ -7,12 +7,16 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
+import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
 import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objective-stories-grouped";
 import { useObjective } from "@/modules/objectives/hooks";
 import { ObjectivePageSkeleton } from "@/modules/objectives/stories/objective-page-skeleton";
 import { Header } from "@/modules/objectives/stories/header";
+import { StoriesSkeleton } from "@/modules/objectives/stories/stories-skeleton";
 import { Overview } from "./overview";
 
 export const AllStories = ({
@@ -36,24 +40,23 @@ export const AllStories = ({
   );
   type Tab = (typeof tabs)[number];
 
-  const { viewOptions, filters } = useObjectiveOptions();
+  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
+    useObjectiveOptions();
+  const hasAppliedFilters = hasActiveStoriesFilters(filters);
+  const boardHeightClassName = hasAppliedFilters
+    ? "h-[calc(100dvh-11.3rem)]"
+    : "h-[calc(100dvh-7.7rem)]";
   const { isPending: isObjectivePending } = useObjective(objectiveId);
   const { isPending: isStoriesPending, data: groupedStories } =
     useObjectiveStoriesGrouped(objectiveId, viewOptions.groupBy, {
       orderBy: viewOptions.orderBy,
+      ...getGroupedStoryFilterParams(filters),
       teamIds: [teamId],
-      statusIds: filters.statusIds ?? undefined,
-      priorities: filters.priorities ?? undefined,
-      assigneeIds: filters.assigneeIds ?? undefined,
-      reporterIds: filters.reporterIds ?? undefined,
-      assignedToMe: filters.assignedToMe ? true : undefined,
-      hasNoAssignee: filters.hasNoAssignee ? true : undefined,
-      createdByMe: filters.createdByMe ? true : undefined,
+      objectiveId,
       showSubStories: viewOptions.showSubStories ? true : undefined,
-      sprintIds: filters.sprintIds ?? undefined,
     });
 
-  if (isObjectivePending || isStoriesPending) {
+  if (isObjectivePending) {
     return <ObjectivePageSkeleton layout={layout} />;
   }
 
@@ -109,12 +112,23 @@ export const AllStories = ({
           <Overview />
         </Tabs.Panel>
         <Tabs.Panel value="stories">
-          <StoriesBoard
-            className="h-[calc(100dvh-7.7rem)]"
-            groupedStories={groupedStories}
-            layout={layout}
-            viewOptions={viewOptions}
+          <StoriesFilterBar
+            filters={filters}
+            hiddenFields={["teamIds", "objectiveId"]}
+            resetFilters={resetFilters}
+            setFilters={setFilters}
           />
+          {isStoriesPending ? (
+            <StoriesSkeleton className={boardHeightClassName} layout={layout} />
+          ) : (
+            <StoriesBoard
+              className={boardHeightClassName}
+              groupedStories={groupedStories}
+              layout={layout}
+              setViewOptions={setViewOptions}
+              viewOptions={viewOptions}
+            />
+          )}
         </Tabs.Panel>
       </Tabs>
     </Box>

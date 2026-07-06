@@ -1373,9 +1373,11 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.StatusIDs = parseUUIDArray(r, "statusIds")
 	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
 	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
+	query.Filters.TitleContains = parseStringParam(r, "titleContains")
 	query.Filters.TeamIDs = parseUUIDArray(r, "teamIds")
 	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
 	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
+	query.Filters.EstimateValues = parseInt16Array(r, "estimateValues")
 
 	query.Filters.Priorities = parseStringArray(r, "priorities")
 	query.Filters.Categories = parseStringArray(r, "categories")
@@ -1385,6 +1387,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.Epic = parseUUIDParam(r, "epicId")
 
 	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
+	query.Filters.HasBlockedBy = parseBoolParam(r, "hasBlockedBy")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 	query.Filters.ShowSubStories = parseBoolParam(r, "showSubStories")
@@ -1395,6 +1398,8 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.CreatedBefore = parseDateParam(r, "createdBefore")
 	query.Filters.UpdatedAfter = parseDateParam(r, "updatedAfter")
 	query.Filters.UpdatedBefore = parseDateParam(r, "updatedBefore")
+	query.Filters.StartDateAfter = parseDateParam(r, "startDateAfter")
+	query.Filters.StartDateBefore = parseDateParam(r, "startDateBefore")
 	query.Filters.DeadlineAfter = parseDateParam(r, "deadlineAfter")
 	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
 	query.Filters.CompletedAfter = parseDateParam(r, "completedAfter")
@@ -1408,6 +1413,13 @@ func getStringParam(r *http.Request, key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func parseStringParam(r *http.Request, key string) *string {
+	if value := strings.TrimSpace(r.URL.Query().Get(key)); value != "" {
+		return &value
+	}
+	return nil
 }
 
 func getIntParam(r *http.Request, key string, defaultValue int) int {
@@ -1456,6 +1468,32 @@ func parseStringArray(r *http.Request, key string) []string {
 		if trimmed := strings.TrimSpace(part); trimmed != "" {
 			result = append(result, trimmed)
 		}
+	}
+	return result
+}
+
+func parseInt16Array(r *http.Request, key string) []int16 {
+	values := r.URL.Query()[key]
+	if len(values) == 0 {
+		return nil
+	}
+
+	var result []int16
+	for _, raw := range values {
+		for _, part := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			parsed, err := strconv.ParseInt(trimmed, 10, 16)
+			if err == nil {
+				result = append(result, int16(parsed))
+			}
+		}
+	}
+
+	if len(result) == 0 {
+		return nil
 	}
 	return result
 }
@@ -1525,15 +1563,18 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			StatusIDs:       query.Filters.StatusIDs,
 			AssigneeIDs:     query.Filters.AssigneeIDs,
 			ReporterIDs:     query.Filters.ReporterIDs,
+			TitleContains:   query.Filters.TitleContains,
 			Priorities:      query.Filters.Priorities,
 			Categories:      query.Filters.Categories,
 			TeamIDs:         query.Filters.TeamIDs,
 			SprintIDs:       query.Filters.SprintIDs,
 			LabelIDs:        query.Filters.LabelIDs,
+			EstimateValues:  query.Filters.EstimateValues,
 			Parent:          query.Filters.Parent,
 			Objective:       query.Filters.Objective,
 			Epic:            query.Filters.Epic,
 			HasNoAssignee:   query.Filters.HasNoAssignee,
+			HasBlockedBy:    query.Filters.HasBlockedBy,
 			AssignedToMe:    query.Filters.AssignedToMe,
 			CreatedByMe:     query.Filters.CreatedByMe,
 			ShowSubStories:  query.Filters.ShowSubStories,
@@ -1543,6 +1584,8 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			CreatedBefore:   query.Filters.CreatedBefore,
 			UpdatedAfter:    query.Filters.UpdatedAfter,
 			UpdatedBefore:   query.Filters.UpdatedBefore,
+			StartDateAfter:  query.Filters.StartDateAfter,
+			StartDateBefore: query.Filters.StartDateBefore,
 			DeadlineAfter:   query.Filters.DeadlineAfter,
 			DeadlineBefore:  query.Filters.DeadlineBefore,
 			CompletedAfter:  query.Filters.CompletedAfter,
@@ -1575,6 +1618,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	if len(filters.ReporterIDs) > 0 {
 		result["reporter_ids"] = filters.ReporterIDs
 	}
+	if filters.TitleContains != nil {
+		result["title_contains"] = *filters.TitleContains
+	}
 	if len(filters.Priorities) > 0 {
 		result["priorities"] = filters.Priorities
 	}
@@ -1587,6 +1633,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	if len(filters.LabelIDs) > 0 {
 		result["label_ids"] = filters.LabelIDs
 	}
+	if len(filters.EstimateValues) > 0 {
+		result["estimate_values"] = filters.EstimateValues
+	}
 	if filters.Parent != nil {
 		result["parent_id"] = *filters.Parent
 	}
@@ -1598,6 +1647,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.HasNoAssignee != nil {
 		result["has_no_assignee"] = *filters.HasNoAssignee
+	}
+	if filters.HasBlockedBy != nil {
+		result["has_blocked_by"] = *filters.HasBlockedBy
 	}
 	if filters.AssignedToMe != nil {
 		result["assigned_to_me"] = *filters.AssignedToMe
@@ -1625,6 +1677,12 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.UpdatedBefore != nil {
 		result["updated_before"] = *filters.UpdatedBefore
+	}
+	if filters.StartDateAfter != nil {
+		result["start_date_after"] = *filters.StartDateAfter
+	}
+	if filters.StartDateBefore != nil {
+		result["start_date_before"] = *filters.StartDateBefore
 	}
 	if filters.DeadlineAfter != nil {
 		result["deadline_after"] = *filters.DeadlineAfter
@@ -1722,6 +1780,50 @@ func (h *Handlers) AddAssociation(ctx context.Context, w http.ResponseWriter, r 
 	}
 
 	web.Respond(ctx, w, appAssoc, http.StatusCreated)
+	return nil
+}
+
+func (h *Handlers) UpdateAssociation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "storieshttp.handlers.UpdateAssociation")
+	defer span.End()
+
+	associationIdParam := web.Params(r, "associationId")
+	associationId, err := uuid.Parse(associationIdParam)
+	if err != nil {
+		web.RespondError(ctx, w, errors.New("invalid association id"), http.StatusBadRequest)
+		return nil
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	var req AppUpdateAssociation
+	if err := web.Decode(r, &req); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	assoc, err := h.stories.UpdateAssociation(ctx, associationId, req.FromStoryID, req.ToStoryID, req.AssociationType, workspace.ID)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	h.invalidateCacheForStory(ctx, workspace.ID, req.FromStoryID)
+	h.invalidateCacheForStory(ctx, workspace.ID, req.ToStoryID)
+
+	appAssoc := AppStoryAssociation{
+		ID:          assoc.ID,
+		FromStoryID: assoc.FromStoryID,
+		ToStoryID:   assoc.ToStoryID,
+		Type:        assoc.Type,
+		Story:       toAppStoryListItem(assoc.Story, nil),
+	}
+
+	web.Respond(ctx, w, appAssoc, http.StatusOK)
 	return nil
 }
 

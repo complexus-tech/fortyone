@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -9,11 +9,12 @@ export const BoardContext = createContext<{
   selectedStories: string[];
   setSelectedStories: (value: string[]) => void;
   viewOptions: StoriesViewOptions;
+  setViewOptions?: (value: StoriesViewOptions) => void;
   isColumnVisible: (column: DisplayColumn) => boolean;
 } | null>(null);
 
 export const useBoard = () => {
-  const context = useContext(BoardContext);
+  const context = use(BoardContext);
   if (!context) {
     throw new Error("useBoard must be used within a BoardProvider");
   }

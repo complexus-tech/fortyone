@@ -13,9 +13,16 @@ import {
 } from "ui";
 import { type ReactNode, useRef, useState } from "react";
 import { addDays, format, differenceInDays, formatISO } from "date-fns";
-import { CalendarIcon, ObjectiveIcon, PlusIcon, SprintsIcon } from "icons";
+import {
+  CalendarIcon,
+  EstimateIcon,
+  ObjectiveIcon,
+  PlusIcon,
+  SprintsIcon,
+} from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
+import { formatEstimate } from "@/lib/estimate";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -23,6 +30,7 @@ import {
   StatusesMenu,
   AssigneesMenu,
   SprintsMenu,
+  EstimateMenu,
   StoryStatusIcon,
   PriorityIcon,
   LabelsMenu,
@@ -46,21 +54,23 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
-import { AddLinks, OptionsHeader } from ".";
+import { OptionsHeader } from ".";
 
 export const Option = ({
   label,
   value,
   className,
+  isCompact = false,
   isNotifications,
 }: {
   label: string;
   value: ReactNode;
   className?: string;
+  isCompact?: boolean;
   isNotifications: boolean;
 }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
-  if (isMobile) {
+  if (isMobile || isCompact) {
     return value;
   }
   return (
@@ -89,10 +99,12 @@ export const Options = ({
   storyId,
   isNotifications,
   isDialog,
+  variant = "sidebar",
 }: {
   storyId: string;
   isNotifications: boolean;
   isDialog?: boolean;
+  variant?: "sidebar" | "inline";
 }) => {
   const { data } = useStoryById(storyId);
   const {
@@ -104,6 +116,8 @@ export const Options = ({
     assigneeId,
     reporterId,
     teamId,
+    estimateValue,
+    estimateScheme,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -113,6 +127,8 @@ export const Options = ({
   const features = useFeatures();
   const sprintsEnabled = useSprintsEnabled(teamId);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const isCompact = isMobile || variant === "inline";
+  const isInline = variant === "inline";
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: statuses = [] } = useStatuses();
@@ -136,6 +152,7 @@ export const Options = ({
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const priorityButtonRef = useRef<HTMLButtonElement>(null);
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
+  const estimateButtonRef = useRef<HTMLButtonElement>(null);
   const startDateButtonRef = useRef<HTMLButtonElement>(null);
   const dueDateButtonRef = useRef<HTMLButtonElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
@@ -223,6 +240,13 @@ export const Options = ({
     }
   });
 
+  useHotkeys("e", (e) => {
+    e.preventDefault();
+    if (!isDeleted && !isGuest) {
+      estimateButtonRef.current?.click();
+    }
+  });
+
   useHotkeys("d", (e) => {
     e.preventDefault();
     if (!isDeleted && !isGuest) {
@@ -265,22 +289,37 @@ export const Options = ({
   return (
     <Box
       className={cn(
-        "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+        isInline
+          ? "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0"
+          : "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
       )}
     >
-      <Box className="hidden md:block">
-        <OptionsHeader
-          isAdminOrOwner={isAdminOrOwner}
-          isDialog={isDialog}
-          isNotifications={isNotifications}
-          storyId={storyId}
-        />
-      </Box>
-      <Container className="text-text-muted px-0.5 pt-4 md:px-6">
-        <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+      {!isInline ? (
+        <Box className="hidden md:block">
+          <OptionsHeader
+            isAdminOrOwner={isAdminOrOwner}
+            isDialog={isDialog}
+            isNotifications={isNotifications}
+            storyId={storyId}
+          />
+        </Box>
+      ) : null}
+      <Container
+        className={cn("text-text-muted px-0.5 pt-4 md:px-6", {
+          "px-0 pt-0 md:px-0": isInline,
+        })}
+      >
+        <Box
+          className={cn(
+            "mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6",
+            {
+              "hidden md:mb-0": isInline && !isDeleted,
+            },
+          )}
+        >
           {!isNotifications && (
             <Text className="hidden md:block" fontWeight="semibold">
               Properties
@@ -300,8 +339,13 @@ export const Options = ({
             </Badge>
           ) : null}
         </Box>
-        <Box className="flex flex-wrap gap-2 md:block">
+        <Box
+          className={cn("flex flex-wrap gap-2", {
+            "md:block": !isCompact,
+          })}
+        >
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Status"
             value={
@@ -314,7 +358,7 @@ export const Options = ({
                     ref={statusButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {name}
                   </Button>
@@ -330,6 +374,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Priority"
             value={
@@ -342,7 +387,7 @@ export const Options = ({
                     ref={priorityButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {priority}
                   </Button>
@@ -356,6 +401,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Assignee"
             value={
@@ -380,7 +426,7 @@ export const Options = ({
                     ref={assigneeButtonRef}
                     type="button"
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {assignee?.username || (
                       <Text as="span" color="muted">
@@ -400,6 +446,51 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Estimate"
+            value={
+              <EstimateMenu>
+                <EstimateMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-text-muted": !estimateValue,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <EstimateIcon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-text-muted": !estimateValue,
+                        })}
+                      />
+                    }
+                    ref={estimateButtonRef}
+                    type="button"
+                    size="sm"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {estimateValue ? (
+                      formatEstimate(estimateScheme, estimateValue, "full")
+                    ) : (
+                      <Text as="span" color="muted">
+                        Add estimate
+                      </Text>
+                    )}
+                  </Button>
+                </EstimateMenu.Trigger>
+                <EstimateMenu.Items
+                  estimateScheme={estimateScheme}
+                  estimateValue={estimateValue}
+                  setEstimateValue={(estimateValue) => {
+                    handleUpdate({ estimateValue });
+                  }}
+                />
+              </EstimateMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Start date"
             value={
@@ -417,7 +508,7 @@ export const Options = ({
                     }
                     ref={startDateButtonRef}
                     size="sm"
-                    variant={isMobile ? "solid" : "naked"}
+                    variant={isCompact ? "solid" : "naked"}
                   >
                     {startDate ? (
                       format(new Date(startDate), "MMM d, yyyy")
@@ -438,6 +529,7 @@ export const Options = ({
             }
           />
           <Option
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Deadline"
             value={
@@ -479,7 +571,7 @@ export const Options = ({
                         }
                         ref={dueDateButtonRef}
                         size="sm"
-                        variant={isMobile ? "solid" : "naked"}
+                        variant={isCompact ? "solid" : "naked"}
                       >
                         {endDate ? (
                           format(new Date(endDate), "MMM d, yyyy")
@@ -503,6 +595,7 @@ export const Options = ({
           />
           {features.objectiveEnabled ? (
             <Option
+              isCompact={isCompact}
               isNotifications={isNotifications}
               label="Objective"
               value={
@@ -522,7 +615,7 @@ export const Options = ({
                       title={objectiveId ? objective?.name : undefined}
                       type="button"
                       size="sm"
-                      variant={isMobile ? "solid" : "naked"}
+                      variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[12ch] truncate">
                         {objective?.name || "Add objective"}
@@ -543,6 +636,7 @@ export const Options = ({
           ) : null}
           {sprintsEnabled ? (
             <Option
+              isCompact={isCompact}
               isNotifications={isNotifications}
               label="Sprint"
               value={
@@ -561,7 +655,7 @@ export const Options = ({
                       ref={sprintButtonRef}
                       type="button"
                       size="sm"
-                      variant={isMobile ? "solid" : "naked"}
+                      variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">
                         {sprint?.name || "Add sprint"}
@@ -584,11 +678,15 @@ export const Options = ({
             className={cn("items-start pt-1", {
               "items-center pt-0": labels.length === 0,
             })}
+            isCompact={isCompact}
             isNotifications={isNotifications}
             label="Labels"
             value={
               <Box
-                className={cn("md:ml-2.5", { "md:ml-0": labels.length === 0 })}
+                className={cn({
+                  "md:ml-2.5": !isCompact,
+                  "md:ml-0": !isCompact && labels.length === 0,
+                })}
               >
                 {labels.length > 0 ? (
                   <Flex align="center" className="gap-1.5" wrap>
@@ -650,7 +748,7 @@ export const Options = ({
                             size="sm"
                             title="Add labels"
                             type="button"
-                            variant={isMobile ? "solid" : "naked"}
+                            variant={isCompact ? "solid" : "naked"}
                           >
                             <span className="sr-only">Add labels</span>
                           </Button>
@@ -675,7 +773,7 @@ export const Options = ({
                         ref={emptyLabelsButtonRef}
                         size="sm"
                         type="button"
-                        variant={isMobile ? "solid" : "naked"}
+                        variant={isCompact ? "solid" : "naked"}
                       >
                         Add labels
                       </Button>
@@ -729,8 +827,7 @@ export const Options = ({
           }
         /> */}
 
-        <Divider className="my-4" />
-        <AddLinks storyId={storyId} />
+        {!isInline ? <Divider className="my-4" /> : null}
       </Container>
 
       <ConfirmDialog

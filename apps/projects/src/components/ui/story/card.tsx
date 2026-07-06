@@ -8,22 +8,20 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { useMembers } from "@/lib/hooks/members";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useBoard } from "../board-context";
+import { MemberTooltip } from "../member-tooltip";
 import { StoryContextMenu } from "./context-menu";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryProperties } from "./properties";
-import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
-import { MemberTooltip } from "../member-tooltip";
 
 export const StoryCard = ({
   story,
@@ -36,8 +34,6 @@ export const StoryCard = ({
 }) => {
   const router = useRouter();
   const { data: session } = useSession();
-  const { data: teams = [] } = useTeams();
-  const { data: members = [] } = useMembers();
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -45,10 +41,11 @@ export const StoryCard = ({
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = useQueryClient();
 
-  const teamCode = teams.find((team) => team.id === story.teamId)?.code;
-
-  const selectedAssignee =
-    story.assignee ?? members.find((member) => member.id === story.assigneeId);
+  const teamCode = story.team?.code;
+  const storyReference = teamCode
+    ? `${teamCode}-${story.sequenceId}`
+    : String(story.sequenceId);
+  const selectedAssignee = story.assignee;
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -126,7 +123,7 @@ export const StoryCard = ({
                   className="shrink-0 text-[0.95rem] leading-[1.4rem] uppercase"
                   color="muted"
                 >
-                  {teamCode}-{story.sequenceId}
+                  {storyReference}
                 </Text>
               )}
             </Link>
@@ -160,7 +157,7 @@ export const StoryCard = ({
                   </span>
                 </MemberTooltip>
                 <AssigneesMenu.Items
-                  assigneeId={selectedAssignee?.id}
+                  assigneeId={story.assigneeId}
                   onAssigneeSelected={(assigneeId) => {
                     handleUpdate({ assigneeId });
                   }}

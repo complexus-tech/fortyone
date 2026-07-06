@@ -42,6 +42,7 @@ export const SearchPage = () => {
   const displayColumns: DisplayColumn[] = [
     "Status",
     "Assignee",
+    "Estimate",
     "Priority",
     "ID",
     "Deadline",

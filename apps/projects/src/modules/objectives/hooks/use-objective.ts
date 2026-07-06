@@ -25,7 +25,7 @@ export const useObjective = (objectiveId: string | null, teamId?: string) => {
     (objective) => objective.id === objectiveId,
   );
 
-  const query = useQuery({
+  const { data: fetchedObjective, isPending: isObjectivePending } = useQuery({
     queryKey: objectiveKeys.objective(workspaceSlug, objectiveId ?? ""),
     queryFn: () =>
       getObjective(objectiveId ?? "", { session: session!, workspaceSlug }),
@@ -34,8 +34,8 @@ export const useObjective = (objectiveId: string | null, teamId?: string) => {
   });
 
   return {
-    ...query,
-    data: existingObjective || query.data, // Return existing objective if found
-    isPending: isObjectivesPending || (!existingObjective && query.isPending),
+    data: existingObjective || fetchedObjective,
+    isPending:
+      isObjectivesPending || (!existingObjective && isObjectivePending),
   };
 };

@@ -5,11 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
-  MicrophoneIcon,
   CloseIcon,
   LoadingIcon,
   CheckIcon,
   StopIcon,
+  MicrophoneIcon,
 } from "icons";
 import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import ky from "ky";
 import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
+import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
+import { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 
 type ChatInputProps = {
@@ -29,6 +31,8 @@ type ChatInputProps = {
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
   messagesCount: number;
+  isLiveVoiceVisible?: boolean;
+  liveVoiceDisabled?: boolean;
 };
 
 const SendIcon = () => {
@@ -64,7 +68,9 @@ const AttachmentPreviewItem = ({
   const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
 
   useEffect(() => {
-    return () => URL.revokeObjectURL(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
   }, [objectUrl]);
 
   return (
@@ -94,11 +100,15 @@ export const ChatInput = ({
   onAttachmentsChange,
   isOnPage,
   messagesCount,
+  isLiveVoiceVisible = false,
+  liveVoiceDisabled = false,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
+  const realtimeVoice = useMayaRealtimeVoice();
+  const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts =
     messagesCount > 2
       ? [
@@ -198,6 +208,9 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (isLiveVoiceActive) {
+        return;
+      }
       onSend();
     }
   };
@@ -299,9 +312,9 @@ export const ChatInput = ({
               <AttachmentPreviewItem
                 file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() =>
-                  handleRemoveAttachment(attachments.indexOf(attachment))
-                }
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
               />
             ))}
           </Box>
@@ -312,9 +325,9 @@ export const ChatInput = ({
               <AttachmentPreviewItem
                 file={attachment}
                 key={getAttachmentKey(attachment)}
-                onDelete={() =>
-                  handleRemoveAttachment(attachments.indexOf(attachment))
-                }
+                onDelete={() => {
+                  handleRemoveAttachment(attachments.indexOf(attachment));
+                }}
               />
             ))}
           </Box>
@@ -324,11 +337,12 @@ export const ChatInput = ({
           <textarea
             aria-label="Chat message"
             className={cn(
-              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none dark:text-white",
+              "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
               {
                 "md:min-h-[3.7rem]": isOnPage,
               },
             )}
+            disabled={isLiveVoiceActive}
             name="message"
             onChange={onChange}
             onKeyDown={handleKeyDown}
@@ -357,6 +371,7 @@ export const ChatInput = ({
               <Button
                 className="gap-1"
                 color="tertiary"
+                disabled={isLiveVoiceActive}
                 onClick={open}
                 rounded="full"
                 variant="naked"
@@ -370,6 +385,7 @@ export const ChatInput = ({
             <Button
               className="gap-1"
               color="tertiary"
+              disabled={isLiveVoiceActive}
               leftIcon={
                 isTranscribing ? (
                   <LoadingIcon className="animate-spin" />
@@ -396,8 +412,13 @@ export const ChatInput = ({
                   ? "Cancel"
                   : "Talk"}
             </Button>
+            {isLiveVoiceVisible ? (
+              <RealtimeVoiceControl
+                disabled={liveVoiceDisabled}
+                voice={realtimeVoice}
+              />
+            ) : null}
             <Button
-              asIcon
               aria-label={
                 isRecording
                   ? "Send recording"
@@ -405,15 +426,13 @@ export const ChatInput = ({
                     ? "Stop response"
                     : "Send message"
               }
-              className=""
+              asIcon
               color="invert"
+              disabled={isLiveVoiceActive}
               onClick={() => {
                 if (isRecording) {
                   handleVoiceRecording();
-                } else if (
-                  status === "submitted" ||
-                  status === "streaming"
-                ) {
+                } else if (status === "submitted" || status === "streaming") {
                   onStop();
                 } else {
                   onSend();

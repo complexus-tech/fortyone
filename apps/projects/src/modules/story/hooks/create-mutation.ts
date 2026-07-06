@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -35,7 +36,7 @@ const updateDetailQuery = (
               sequenceId: data.subStories.length + 1,
               updatedAt: new Date().toISOString(),
               createdAt: new Date().toISOString(),
-              labels: [],
+              labels: story.labelIds ?? [],
               subStories: [],
             },
           ],
@@ -60,8 +61,8 @@ const updateInfiniteQuery = (
         id: "123",
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
-        estimateValue: story.estimateValue || null,
-        estimateScheme: story.estimateScheme || "points",
+        estimateValue: story.estimateValue ?? null,
+        estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -91,7 +92,7 @@ const updateInfiniteQuery = (
         completedAt: null,
         deletedAt: null,
         archivedAt: null,
-        labels: [],
+        labels: story.labelIds ?? [],
         subStories: [],
       };
 
@@ -126,8 +127,8 @@ const updateGroupedQuery = (
         id: "123",
         title: story.title || "Untitled",
         estimateLabel: story.estimateLabel || null,
-        estimateValue: story.estimateValue || null,
-        estimateScheme: story.estimateScheme || "points",
+        estimateValue: story.estimateValue ?? null,
+        estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -157,7 +158,7 @@ const updateGroupedQuery = (
         completedAt: null,
         deletedAt: null,
         archivedAt: null,
-        labels: [],
+        labels: story.labelIds ?? [],
         subStories: [],
       };
 
@@ -281,7 +282,16 @@ export const useCreateStoryMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: (story: NewStory) => createStoryAction(story, workspaceSlug),
+    mutationFn: async (story: NewStory) => {
+      const response = await createStoryAction(story, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data?.id) {
+        throw new Error("Story creation did not return a created story.");
+      }
+      return response.data;
+    },
 
     onMutate: (story) => {
       const queryCache = queryClient.getQueryCache();
@@ -325,13 +335,7 @@ export const useCreateStoryMutation = () => {
       });
     },
 
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
-      const createdStory = res.data!;
-
+    onSuccess: (createdStory) => {
       analytics.track("story_created", {
         storyId: createdStory.id,
         title: createdStory.title,

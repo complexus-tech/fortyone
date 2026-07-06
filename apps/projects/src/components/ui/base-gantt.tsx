@@ -220,35 +220,38 @@ const Bar = <T extends GanttItem>({
   const columnWidth = getColumnWidth(zoomLevel);
 
   // Helper function to calculate position from dates
-  const getPositionFromDates = (start: Date, end: Date) => {
-    const startDayOffset = differenceInDays(start, dateRange.start);
-    const durationDays = Math.max(1, differenceInDays(end, start));
+  const getPositionFromDates = useCallback(
+    (start: Date, end: Date) => {
+      const startDayOffset = differenceInDays(start, dateRange.start);
+      const durationDays = Math.max(1, differenceInDays(end, start));
 
-    switch (zoomLevel) {
-      case "weeks": {
-        return {
-          leftPosition: startDayOffset * columnWidth,
-          width: durationDays * columnWidth,
-        };
-      }
-      case "months":
-      case "quarters": {
-        const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-        const totalDays = differenceInDays(dateRange.end, dateRange.start);
-        const daysPerPeriod = totalDays / periods.length;
+      switch (zoomLevel) {
+        case "weeks": {
+          return {
+            leftPosition: startDayOffset * columnWidth,
+            width: durationDays * columnWidth,
+          };
+        }
+        case "months":
+        case "quarters": {
+          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+          const totalDays = differenceInDays(dateRange.end, dateRange.start);
+          const daysPerPeriod = totalDays / periods.length;
 
-        return {
-          leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
-          width: (durationDays / daysPerPeriod) * columnWidth,
-        };
+          return {
+            leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
+            width: (durationDays / daysPerPeriod) * columnWidth,
+          };
+        }
+        default:
+          return {
+            leftPosition: 0,
+            width: columnWidth,
+          };
       }
-      default:
-        return {
-          leftPosition: 0,
-          width: columnWidth,
-        };
-    }
-  };
+    },
+    [columnWidth, dateRange, zoomLevel],
+  );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, type: "move" | "resize-start" | "resize-end") => {

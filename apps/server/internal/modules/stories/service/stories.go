@@ -57,7 +57,8 @@ type Repository interface {
 	GetStatusCategory(ctx context.Context, statusID string) (string, error)
 	QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode string, sequenceID int) (CoreSingleStory, error)
 	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
-	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) error
+	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
+	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
 }
 
@@ -75,11 +76,12 @@ type CoreSingleStoryWithSubs struct {
 
 // Service provides story-related operations.
 type Service struct {
-	repo         Repository
-	mentionsRepo MentionsRepository
-	log          *logger.Logger
-	publisher    *publisher.Publisher
-	tasksService *tasks.Service
+	repo           Repository
+	mentionsRepo   MentionsRepository
+	log            *logger.Logger
+	publisher      *publisher.Publisher
+	tasksService   *tasks.Service
+	mayaAssignment *mayaAssignmentAutomation
 }
 
 type createOptions struct {
@@ -91,7 +93,7 @@ type updateOptions struct {
 	publishEvents            bool
 	enqueueGitHubSync        bool
 	recordDescriptionUpdates bool
-	onlyChangedFields        bool
+	activityReason           string
 }
 
 type commentOptions struct {
@@ -166,6 +168,13 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	if len(ns.LabelIDs) > 0 {
+		if err := s.repo.UpdateLabels(ctx, cs.ID, workspaceId, ns.LabelIDs); err != nil {
+			span.RecordError(err)
+			return CoreSingleStory{}, err
+		}
+		cs.Labels = ns.LabelIDs
+	}
 	cs.EstimateScheme = estimateScheme
 	cs.EstimateLabel = EstimateLabelFromValue(estimateScheme, cs.EstimateValue)
 
@@ -207,6 +216,10 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 	}
+	if err := s.triggerMayaAssignment(ctx, cs, nil, actorID); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -223,6 +236,18 @@ func (s *Service) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uu
 	if err := s.repo.UpdateLabels(ctx, id, workspaceId, labels); err != nil {
 		span.RecordError(err)
 		return err
+	}
+	actorID, _ := auth.GetUserID(ctx)
+	if err := s.RecordActivity(ctx, CoreActivity{
+		StoryID:      id,
+		Type:         "update",
+		Field:        "labels",
+		CurrentValue: s.formatLabelActivityValue(labels),
+		NewValue:     labels,
+		UserID:       actorID,
+		WorkspaceID:  workspaceId,
+	}); err != nil {
+		span.RecordError(err)
 	}
 	return nil
 }
@@ -334,9 +359,13 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 }
 
 func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
+	return s.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, "")
+}
+
+func (s *Service) UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
-		onlyChangedFields:        true,
+		activityReason:           reason,
 	})
 }
 
@@ -371,14 +400,24 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 
-	if options.onlyChangedFields {
-		for field, value := range updates {
-			if s.valuesEqual(s.getOldValue(story, field), value) {
-				delete(updates, field)
-			}
+	for field, value := range updates {
+		if s.valuesEqual(s.getOldValue(story, field), value) {
+			delete(updates, field)
 		}
-		if len(updates) == 0 {
-			return nil
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
+		updatedStory, err := storyWithAssignee(story, assigneeID)
+		if err != nil {
+			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			return err
+		}
+		if err := s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+			span.RecordError(err)
+			return err
 		}
 	}
 
@@ -396,6 +435,7 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 	ca := []CoreActivity{}
+	activityReason := normalizeActivityReason(options.activityReason)
 
 	for field, value := range updates {
 		if strings.Contains(field, "description") && !options.recordDescriptionUpdates {
@@ -410,6 +450,7 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			CurrentValue: currentValue,
 			OldValue:     s.getOldValue(story, field),
 			NewValue:     value,
+			Reason:       activityReason,
 			UserID:       actorID,
 			WorkspaceID:  workspaceID,
 		}
@@ -450,6 +491,21 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	}
 
 	return nil
+}
+
+func normalizeActivityReason(reason string) *string {
+	const maxActivityReasonRunes = 180
+
+	normalized := strings.Join(strings.Fields(reason), " ")
+	if normalized == "" {
+		return nil
+	}
+
+	runes := []rune(normalized)
+	if len(runes) > maxActivityReasonRunes {
+		normalized = strings.TrimSpace(string(runes[:maxActivityReasonRunes-3])) + "..."
+	}
+	return &normalized
 }
 
 func (s *Service) enqueueGitHubStorySync(ctx context.Context, storyID, workspaceID uuid.UUID) {
@@ -1147,6 +1203,30 @@ func (s *Service) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, as
 		span.RecordError(err)
 		return CoreStoryAssociation{}, err
 	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityAdded); err != nil {
+		span.RecordError(err)
+	}
+
+	return assoc, nil
+}
+
+// UpdateAssociation updates an association between two stories.
+func (s *Service) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
+	s.log.Info(ctx, "business.core.stories.UpdateAssociation")
+	ctx, span := web.AddSpan(ctx, "business.core.stories.UpdateAssociation")
+	defer span.End()
+
+	if fromID == toID {
+		return CoreStoryAssociation{}, fmt.Errorf("cannot associate story with itself")
+	}
+
+	assoc, err := s.repo.UpdateAssociation(ctx, associationID, fromID, toID, associationType, workspaceID)
+	if err != nil {
+		return CoreStoryAssociation{}, err
+	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityUpdated); err != nil {
+		span.RecordError(err)
+	}
 
 	return assoc, nil
 }
@@ -1157,13 +1237,119 @@ func (s *Service) RemoveAssociation(ctx context.Context, associationID, workspac
 	ctx, span := web.AddSpan(ctx, "business.core.stories.RemoveAssociation")
 	defer span.End()
 
-	err := s.repo.RemoveAssociation(ctx, associationID, workspaceID)
+	assoc, err := s.repo.RemoveAssociation(ctx, associationID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
+	if err := s.recordAssociationActivities(ctx, assoc, workspaceID, associationActivityRemoved); err != nil {
+		span.RecordError(err)
+	}
 
 	return nil
+}
+
+func (s *Service) formatLabelActivityValue(labels []uuid.UUID) string {
+	if len(labels) == 1 {
+		return "1 label"
+	}
+	return fmt.Sprintf("%d labels", len(labels))
+}
+
+const (
+	associationActivityAdded   = "association_added"
+	associationActivityUpdated = "association_updated"
+	associationActivityRemoved = "association_removed"
+)
+
+func (s *Service) recordAssociationActivities(ctx context.Context, assoc CoreStoryAssociation, workspaceID uuid.UUID, reason string) error {
+	actorID, _ := auth.GetUserID(ctx)
+	activityReason := reason
+	outgoingOldValue, incomingOldValue := associationOldValues(assoc)
+	activities := []CoreActivity{
+		{
+			StoryID:      assoc.FromStoryID,
+			Type:         "update",
+			Field:        outgoingAssociationActivityField(assoc.Type),
+			CurrentValue: s.associationActivityValue(assoc.ToStoryID, assoc),
+			OldValue:     outgoingOldValue,
+			NewValue:     assoc.ToStoryID,
+			Reason:       &activityReason,
+			UserID:       actorID,
+			WorkspaceID:  workspaceID,
+		},
+		{
+			StoryID:      assoc.ToStoryID,
+			Type:         "update",
+			Field:        incomingAssociationActivityField(assoc.Type),
+			CurrentValue: s.associationActivityValue(assoc.FromStoryID, assoc),
+			OldValue:     incomingOldValue,
+			NewValue:     assoc.FromStoryID,
+			Reason:       &activityReason,
+			UserID:       actorID,
+			WorkspaceID:  workspaceID,
+		},
+	}
+	_, err := s.repo.RecordActivities(ctx, activities)
+	return err
+}
+
+func associationOldValues(assoc CoreStoryAssociation) (any, any) {
+	if assoc.PreviousType == nil || *assoc.PreviousType == assoc.Type {
+		return nil, nil
+	}
+	return outgoingAssociationActivityLabel(*assoc.PreviousType), incomingAssociationActivityLabel(*assoc.PreviousType)
+}
+
+func (s *Service) associationActivityValue(storyID uuid.UUID, assoc CoreStoryAssociation) string {
+	if assoc.Story.ID == storyID && assoc.Story.Title != "" {
+		return assoc.Story.Title
+	}
+	return storyID.String()
+}
+
+func outgoingAssociationActivityField(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "blocking_id"
+	case "duplicate":
+		return "duplicate_id"
+	default:
+		return "related_id"
+	}
+}
+
+func incomingAssociationActivityField(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "blocked_by_id"
+	case "duplicate":
+		return "duplicated_by_id"
+	default:
+		return "related_id"
+	}
+}
+
+func outgoingAssociationActivityLabel(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "Blocks"
+	case "duplicate":
+		return "Duplicate of"
+	default:
+		return "Related to"
+	}
+}
+
+func incomingAssociationActivityLabel(associationType string) string {
+	switch associationType {
+	case "blocking":
+		return "Blocked by"
+	case "duplicate":
+		return "Duplicated by"
+	default:
+		return "Related to"
+	}
 }
 
 func (s *Service) getOldValue(story CoreSingleStory, field string) any {

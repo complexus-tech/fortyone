@@ -1,12 +1,18 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
 	activitiesrepository "github.com/complexus-tech/projects-api/internal/modules/activities/repository"
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
+	adminrepository "github.com/complexus-tech/projects-api/internal/modules/admin/repository"
+	admin "github.com/complexus-tech/projects-api/internal/modules/admin/service"
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
+	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	chatsessionsrepository "github.com/complexus-tech/projects-api/internal/modules/chatsessions/repository"
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
@@ -15,6 +21,8 @@ import (
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
 	epicsrepository "github.com/complexus-tech/projects-api/internal/modules/epics/repository"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
+	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
@@ -27,6 +35,8 @@ import (
 	labels "github.com/complexus-tech/projects-api/internal/modules/labels/service"
 	linksrepository "github.com/complexus-tech/projects-api/internal/modules/links/repository"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
+	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
+	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
@@ -40,6 +50,8 @@ import (
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
+	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	sprintsrepository "github.com/complexus-tech/projects-api/internal/modules/sprints/repository"
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
@@ -56,22 +68,31 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type services struct {
 	activities          *activities.Service
+	admin               *admin.Service
 	attachments         *attachments.Service
+	calendar            *calendar.Service
 	chatSessions        *chatsessions.Service
 	comments            *comments.Service
 	documents           *documents.Service
 	epics               *epics.Service
+	feedback            *feedback.Service
 	github              *github.Service
+	slack               *slack.Service
 	integrationRequests *integrationrequests.Service
 	invitations         *invitations.Service
 	keyResults          *keyresults.Service
 	labels              *labels.Service
 	links               *links.Service
+	maya                *maya.Service
 	notifications       *notifications.Service
 	objectives          *objectives.Service
 	objectiveStats      *objectivestatus.Service
@@ -158,33 +179,93 @@ func buildServices(cfg mux.Config) services {
 	if err != nil {
 		panic("failed to initialize github service: " + err.Error())
 	}
+	slackService := slack.New(
+		cfg.Log,
+		slackrepository.New(cfg.Log, cfg.DB),
+		integrationRequestsRepo,
+		storiesService,
+		slack.Config{
+			SigningSecret: cfg.SlackSigningSecret,
+			ClientID:      cfg.SlackClientID,
+			ClientSecret:  cfg.SlackClientSecret,
+			RedirectURL:   cfg.SlackRedirectURL,
+			WebsiteURL:    cfg.WebsiteURL,
+			SecretKey:     cfg.SecretKey,
+		},
+	)
+	calendarService := calendar.New(
+		cfg.Log,
+		calendarrepository.New(cfg.Log, cfg.DB),
+		calendar.Config{
+			SecretKey:  cfg.SecretKey,
+			WebsiteURL: cfg.WebsiteURL,
+			Providers: map[calendar.Provider]calendar.CalendarProvider{
+				calendar.ProviderGoogle: calendar.NewGoogleProvider(cfg.GoogleService),
+			},
+		},
+	)
+	actorResolver := actors.NewResolver(cfg.Log, cfg.DB, cfg.Cache)
+	mayaActorID, err := actorResolver.Resolve(context.Background(), actors.KeySystem)
+	if err != nil {
+		panic("failed to resolve maya actor: " + err.Error())
+	}
+	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB))
+	mayaPlanner := maya.NewPlanner()
+	if strings.TrimSpace(cfg.AIAPIKey) != "" {
+		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
+			APIKey: strings.TrimSpace(cfg.AIAPIKey),
+		})
+		mayaPlanner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
+	}
+	mayaService := maya.New(maya.Dependencies{
+		Repository:  mayarepository.New(cfg.Log, cfg.DB),
+		Stories:     storiesService,
+		Reports:     reportsService,
+		Calendar:    calendarService,
+		Users:       usersService,
+		Planner:     mayaPlanner,
+		MayaActorID: mayaActorID,
+	})
+	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
+		if err := ensureBackgroundMayaEnabled(ctx, cfg.DB, input.Story.Workspace); err != nil {
+			return err
+		}
+		return nil
+	})
 	integrationRequestsService := integrationrequests.New(
 		cfg.Log,
 		integrationRequestsRepo,
 		storiesService,
 		map[string]integrationrequests.ProviderAccepter{
 			integrationrequests.ProviderGitHub: githubService,
+			integrationrequests.ProviderSlack:  slackService,
 		},
 	)
+	feedbackService := feedback.New(feedbackrepository.New(cfg.Log, cfg.DB), storiesService)
 
 	return services{
 		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
+		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB)),
 		attachments:         attachmentsService,
+		calendar:            calendarService,
 		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
 		comments:            commentsService,
 		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
 		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
+		feedback:            feedbackService,
 		github:              githubService,
+		slack:               slackService,
 		integrationRequests: integrationRequestsService,
 		invitations:         invitationsService,
 		keyResults:          keyResultsService,
 		labels:              labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB)),
 		links:               linksService,
+		maya:                mayaService,
 		notifications:       notifications.New(cfg.Log, notificationsrepository.New(cfg.Log, cfg.DB), cfg.Redis, cfg.TasksService),
 		objectives:          objectivesService,
 		objectiveStats:      objectiveStatusService,
 		okrActivities:       okrActivitiesService,
-		reports:             reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB)),
+		reports:             reportsService,
 		search:              search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB)),
 		sprints:             sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
 		states:              statesService,
@@ -197,12 +278,29 @@ func buildServices(cfg mux.Config) services {
 	}
 }
 
+func ensureBackgroundMayaEnabled(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
+	hasAccess, err := billing.WorkspaceCanUseMaya(ctx, db, workspaceID)
+	if err != nil {
+		return fmt.Errorf("check background Maya access: %w", err)
+	}
+	if !hasAccess {
+		return fmt.Errorf("background Maya assignment requires a paid plan")
+	}
+	return nil
+}
+
 func (s services) validate() error {
 	if s.activities == nil {
 		return fmt.Errorf("missing service: activities")
 	}
+	if s.admin == nil {
+		return fmt.Errorf("missing service: admin")
+	}
 	if s.attachments == nil {
 		return fmt.Errorf("missing service: attachments")
+	}
+	if s.calendar == nil {
+		return fmt.Errorf("missing service: calendar")
 	}
 	if s.chatSessions == nil {
 		return fmt.Errorf("missing service: chatSessions")
@@ -216,8 +314,14 @@ func (s services) validate() error {
 	if s.epics == nil {
 		return fmt.Errorf("missing service: epics")
 	}
+	if s.feedback == nil {
+		return fmt.Errorf("missing service: feedback")
+	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")
+	}
+	if s.slack == nil {
+		return fmt.Errorf("missing service: slack")
 	}
 	if s.integrationRequests == nil {
 		return fmt.Errorf("missing service: integrationRequests")
@@ -233,6 +337,9 @@ func (s services) validate() error {
 	}
 	if s.links == nil {
 		return fmt.Errorf("missing service: links")
+	}
+	if s.maya == nil {
+		return fmt.Errorf("missing service: maya")
 	}
 	if s.notifications == nil {
 		return fmt.Errorf("missing service: notifications")

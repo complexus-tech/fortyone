@@ -8,7 +8,6 @@ import type {
   GroupStoriesResponse,
   Story,
 } from "@/modules/stories/types";
-import { labelKeys } from "@/constants/keys";
 import type { DetailedStory } from "../types";
 import { updateLabelsAction } from "../actions/update-labels";
 
@@ -140,13 +139,13 @@ export const useUpdateLabelsMutation = () => {
         );
       }
 
-      const queryCache = queryClient.getQueryCache();
-      const queries = queryCache.getAll();
+      const queries = queryClient.getQueryCache().findAll({
+        queryKey: storyKeys.all(workspaceSlug),
+      });
 
       queries.forEach((query) => {
-        const queryKey = JSON.stringify(query.queryKey);
-        if (queryKey.toLowerCase().includes("stories") && query.isActive()) {
-          if (queryKey.toLowerCase().includes("detail")) {
+        if (query.isActive()) {
+          if (query.queryKey.includes("detail")) {
             updateDetailQuery(queryClient, query.queryKey, storyId, labels);
           } else {
             updateListQuery(queryClient, query.queryKey, storyId, labels);
@@ -165,7 +164,9 @@ export const useUpdateLabelsMutation = () => {
         );
       }
 
-      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.all(workspaceSlug),
+      });
 
       toast.error("Failed to update labels", {
         description: error.message || "Your changes were not saved",
@@ -178,13 +179,17 @@ export const useUpdateLabelsMutation = () => {
       });
     },
 
-    onSuccess: (res) => {
+    onSuccess: (res, { storyId }) => {
       if (res.error?.message) {
         throw new Error(res.error.message);
       }
-      queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       queryClient.invalidateQueries({
-        queryKey: labelKeys.lists(workspaceSlug),
+        queryKey: storyKeys.all(workspaceSlug),
+        refetchType: "inactive",
+      });
+      queryClient.invalidateQueries({
+        queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
+        refetchType: "all",
       });
     },
   });

@@ -282,7 +282,7 @@ func (r *repo) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, 
 	}
 
 	// Build filter conditions
-	teamFilter, _, _ := buildFilters(filters, namedParams)
+	teamFilter, _, _ := buildFiltersForColumns(filters, namedParams, "st.team_id", "", "")
 
 	// Get workspace metrics
 	metricsQuery := fmt.Sprintf(`
@@ -446,13 +446,11 @@ func (r *repo) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, fil
 	var sprintFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND st.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("st.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.SprintIDs) > 0 {
-		sprintFilter.WriteString("AND st.sprint_id = ANY(:sprint_ids)")
-		namedParams["sprint_ids"] = filters.SprintIDs
+		sprintFilter.WriteString(buildUUIDArrayFilter("st.sprint_id", "sprint_ids", filters.SprintIDs, namedParams))
 	}
 
 	// Get status breakdown
@@ -686,13 +684,11 @@ func (r *repo) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, 
 	var objectiveFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND o.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("o.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.ObjectiveIDs) > 0 {
-		objectiveFilter.WriteString("AND o.objective_id = ANY(:objective_ids)")
-		namedParams["objective_ids"] = filters.ObjectiveIDs
+		objectiveFilter.WriteString(buildUUIDArrayFilter("o.objective_id", "objective_ids", filters.ObjectiveIDs, namedParams))
 	}
 
 	// Get health distribution
@@ -946,7 +942,7 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	}
 
 	// Build filter conditions
-	teamFilter, _, _ := buildFilters(filters, namedParams)
+	teamFilter, _, _ := buildFiltersForColumns(filters, namedParams, "t.team_id", "", "")
 
 	// Get team workload
 	workloadQuery := fmt.Sprintf(`
@@ -1183,6 +1179,359 @@ func (r *repo) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, fi
 	}, nil
 }
 
+func (r *repo) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreWorkloadAnalysis, error) {
+	r.log.Info(ctx, "reportsrepository.GetWorkloadAnalysis")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetWorkloadAnalysis")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	storyFilter := buildWorkloadStoryFilter(filters, namedParams)
+	openStoryCondition := "category IS NULL OR category NOT IN ('completed', 'cancelled')"
+	workloadStoriesCTE := fmt.Sprintf(`
+		WITH workload_stories AS (
+			SELECT
+				s.id,
+				s.team_id,
+				t.name AS team_name,
+				t.code AS team_code,
+				s.assignee_id,
+				s.priority,
+				s.end_date,
+				s.estimate_unit,
+				stat.category
+			FROM stories s
+			INNER JOIN teams t ON t.team_id = s.team_id
+			LEFT JOIN statuses stat ON stat.status_id = s.status_id
+			WHERE s.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+				AND s.is_draft = false
+				%s
+		)
+	`, storyFilter)
+
+	summaryQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS total_open_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS total_estimate,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL) AS int) AS unassigned_stories
+		FROM workload_stories
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	summaryStmt, err := r.db.PrepareNamedContext(ctx, summaryQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare workload summary query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing workload summary query: %w", err)
+	}
+	defer summaryStmt.Close()
+
+	var summary reports.CoreWorkloadSummary
+	if err := summaryStmt.GetContext(ctx, &summary, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute workload summary query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing workload summary query: %w", err)
+	}
+
+	memberQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			u.user_id,
+			COALESCE(u.full_name, '') AS full_name,
+			u.username,
+			COALESCE(u.avatar_url, '') AS avatar_url,
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS open_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'started') AS int) AS started_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'paused') AS int) AS paused_stories,
+			CAST(COUNT(*) FILTER (WHERE category = 'completed') AS int) AS completed_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total
+		FROM workload_stories ws
+		INNER JOIN users u ON u.user_id = ws.assignee_id
+		WHERE ws.assignee_id IS NOT NULL
+		GROUP BY u.user_id, u.full_name, u.username, u.avatar_url
+		ORDER BY estimate_total DESC, open_stories DESC, u.username
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	memberStmt, err := r.db.PrepareNamedContext(ctx, memberQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare member workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing member workload query: %w", err)
+	}
+	defer memberStmt.Close()
+
+	var members []reports.CoreMemberWorkload
+	if err := memberStmt.SelectContext(ctx, &members, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute member workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing member workload query: %w", err)
+	}
+
+	teamQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			team_id,
+			team_name,
+			team_code,
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS open_stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND assignee_id IS NULL) AS int) AS unassigned_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories
+		FROM workload_stories
+		GROUP BY team_id, team_name, team_code
+		ORDER BY team_name
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	teamStmt, err := r.db.PrepareNamedContext(ctx, teamQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare team workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing team workload query: %w", err)
+	}
+	defer teamStmt.Close()
+
+	var teams []reports.CoreTeamWorkloadSummary
+	if err := teamStmt.SelectContext(ctx, &teams, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute team workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing team workload query: %w", err)
+	}
+
+	unassignedQuery := workloadStoriesCTE + fmt.Sprintf(`
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS stories,
+			CAST(COALESCE(SUM(estimate_unit) FILTER (WHERE %s), 0) AS int) AS estimate_total,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND estimate_unit IS NULL) AS int) AS unestimated_stories
+		FROM workload_stories
+		WHERE assignee_id IS NULL
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition)
+
+	unassignedStmt, err := r.db.PrepareNamedContext(ctx, unassignedQuery)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare unassigned workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("preparing unassigned workload query: %w", err)
+	}
+	defer unassignedStmt.Close()
+
+	var unassigned reports.CoreUnassignedWorkload
+	if err := unassignedStmt.GetContext(ctx, &unassigned, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute unassigned workload query", "error", err)
+		return reports.CoreWorkloadAnalysis{}, fmt.Errorf("executing unassigned workload query: %w", err)
+	}
+
+	return reports.CoreWorkloadAnalysis{
+		Summary:    summary,
+		Members:    members,
+		Teams:      teams,
+		Unassigned: unassigned,
+	}, nil
+}
+
+func (r *repo) GetPulseStoryHealth(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CorePulseStoryHealth, error) {
+	r.log.Info(ctx, "reportsrepository.GetPulseStoryHealth")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetPulseStoryHealth")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	storyFilter := buildWorkloadStoryFilter(filters, namedParams)
+	openStoryCondition := "stat.category IS NULL OR stat.category NOT IN ('completed', 'cancelled')"
+	query := fmt.Sprintf(`
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE %s) AS int) AS open_stories,
+			CAST(COUNT(*) FILTER (WHERE stat.category = 'started') AS int) AS started_stories,
+			CAST(COUNT(*) FILTER (WHERE stat.category = 'paused') AS int) AS paused_stories,
+			CAST(COUNT(*) FILTER (WHERE stat.category = 'completed') AS int) AS completed_stories,
+			CAST(COUNT(*) FILTER (WHERE stat.category = 'cancelled') AS int) AS cancelled_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.blocked_by_id IS NOT NULL) AS int) AS blocked_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.end_date < CURRENT_DATE) AS int) AS overdue_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.priority = 'Urgent') AS int) AS urgent_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.priority = 'High') AS int) AS high_priority_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.assignee_id IS NULL) AS int) AS unassigned_stories,
+			CAST(COUNT(*) FILTER (WHERE (%s) AND s.estimate_unit IS NULL) AS int) AS unestimated_stories
+		FROM stories s
+		LEFT JOIN statuses stat ON stat.status_id = s.status_id
+		WHERE s.workspace_id = :workspace_id
+			AND s.deleted_at IS NULL
+			AND s.archived_at IS NULL
+			AND s.is_draft = false
+			%s
+	`, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, openStoryCondition, storyFilter)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare pulse story health query", "error", err)
+		return reports.CorePulseStoryHealth{}, fmt.Errorf("preparing pulse story health query: %w", err)
+	}
+	defer stmt.Close()
+
+	var health reports.CorePulseStoryHealth
+	if err := stmt.GetContext(ctx, &health, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute pulse story health query", "error", err)
+		return reports.CorePulseStoryHealth{}, fmt.Errorf("executing pulse story health query: %w", err)
+	}
+
+	return health, nil
+}
+
+func (r *repo) GetPulseSprintHealth(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CorePulseSprintHealth, error) {
+	r.log.Info(ctx, "reportsrepository.GetPulseSprintHealth")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetPulseSprintHealth")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	sprintFilter := buildPulseSprintFilter(filters, namedParams)
+	query := fmt.Sprintf(`
+		WITH sprint_scope AS (
+			SELECT
+				sp.sprint_id,
+				sp.start_date,
+				sp.end_date,
+				CAST(COUNT(st.id) FILTER (
+					WHERE story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled')
+				) AS int) AS open_stories,
+				CAST(COUNT(st.id) FILTER (
+					WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
+						AND st.end_date < CURRENT_DATE
+				) AS int) AS overdue_stories,
+				CAST(COUNT(st.id) FILTER (
+					WHERE (story_status.category IS NULL OR story_status.category NOT IN ('completed', 'cancelled'))
+						AND st.estimate_unit IS NULL
+				) AS int) AS unestimated_stories
+			FROM sprints sp
+			LEFT JOIN stories st ON st.sprint_id = sp.sprint_id
+				AND st.deleted_at IS NULL
+				AND st.archived_at IS NULL
+				AND st.is_draft = false
+			LEFT JOIN statuses story_status ON story_status.status_id = st.status_id
+			WHERE sp.workspace_id = :workspace_id
+				%s
+			GROUP BY sp.sprint_id, sp.start_date, sp.end_date
+		)
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE) AS int) AS active_sprints,
+			CAST(COUNT(*) FILTER (WHERE start_date > CURRENT_DATE) AS int) AS upcoming_sprints,
+			CAST(COUNT(*) FILTER (WHERE end_date < CURRENT_DATE AND open_stories = 0) AS int) AS completed_sprints,
+			CAST(COUNT(*) FILTER (
+				WHERE start_date <= CURRENT_DATE
+					AND end_date >= CURRENT_DATE
+					AND open_stories > 0
+					AND (overdue_stories > 0 OR end_date <= CURRENT_DATE + INTERVAL '3 days')
+			) AS int) AS at_risk_sprints,
+			CAST(COUNT(*) FILTER (WHERE end_date < CURRENT_DATE AND open_stories > 0) AS int) AS overdue_sprints,
+			CAST(COALESCE(SUM(unestimated_stories), 0) AS int) AS unestimated_stories
+		FROM sprint_scope
+	`, sprintFilter)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare pulse sprint health query", "error", err)
+		return reports.CorePulseSprintHealth{}, fmt.Errorf("preparing pulse sprint health query: %w", err)
+	}
+	defer stmt.Close()
+
+	var health reports.CorePulseSprintHealth
+	if err := stmt.GetContext(ctx, &health, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute pulse sprint health query", "error", err)
+		return reports.CorePulseSprintHealth{}, fmt.Errorf("executing pulse sprint health query: %w", err)
+	}
+
+	return health, nil
+}
+
+func (r *repo) GetPulseObjectiveHealth(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CorePulseObjectiveHealth, error) {
+	r.log.Info(ctx, "reportsrepository.GetPulseObjectiveHealth")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetPulseObjectiveHealth")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	objectiveFilter := buildPulseObjectiveFilter(filters, namedParams)
+	query := fmt.Sprintf(`
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE os.category IS NULL OR os.category NOT IN ('completed', 'cancelled')) AS int) AS active_objectives,
+			CAST(COUNT(*) FILTER (WHERE o.health = 'At Risk') AS int) AS at_risk_objectives,
+			CAST(COUNT(*) FILTER (WHERE o.health = 'Off Track') AS int) AS off_track_objectives,
+			CAST(COUNT(*) FILTER (
+				WHERE (os.category IS NULL OR os.category NOT IN ('completed', 'cancelled'))
+					AND o.end_date < CURRENT_DATE
+			) AS int) AS overdue_objectives,
+			CAST(COUNT(*) FILTER (
+				WHERE (os.category IS NULL OR os.category NOT IN ('completed', 'cancelled'))
+					AND o.end_date >= CURRENT_DATE
+					AND o.end_date <= CURRENT_DATE + INTERVAL '7 days'
+			) AS int) AS objectives_due_soon
+		FROM objectives o
+		LEFT JOIN objective_statuses os ON os.status_id = o.status_id
+		WHERE o.workspace_id = :workspace_id
+			%s
+	`, objectiveFilter)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare pulse objective health query", "error", err)
+		return reports.CorePulseObjectiveHealth{}, fmt.Errorf("preparing pulse objective health query: %w", err)
+	}
+	defer stmt.Close()
+
+	var health reports.CorePulseObjectiveHealth
+	if err := stmt.GetContext(ctx, &health, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute pulse objective health query", "error", err)
+		return reports.CorePulseObjectiveHealth{}, fmt.Errorf("executing pulse objective health query: %w", err)
+	}
+
+	return health, nil
+}
+
+func (r *repo) GetPulseRequestHealth(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CorePulseRequestHealth, error) {
+	r.log.Info(ctx, "reportsrepository.GetPulseRequestHealth")
+	ctx, span := web.AddSpan(ctx, "reportsrepository.GetPulseRequestHealth")
+	defer span.End()
+
+	namedParams := map[string]any{
+		"workspace_id": workspaceID,
+	}
+	requestFilter := buildPulseRequestFilter(filters, namedParams)
+	query := fmt.Sprintf(`
+		SELECT
+			CAST(COUNT(*) FILTER (WHERE status = 'pending') AS int) AS pending_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND priority = 'Urgent') AS int) AS urgent_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND priority = 'High') AS int) AS high_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND provider = 'github') AS int) AS github_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND provider = 'slack') AS int) AS slack_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND provider = 'intercom') AS int) AS intercom_requests,
+			CAST(COUNT(*) FILTER (WHERE status = 'pending' AND created_at < NOW() - INTERVAL '7 days') AS int) AS stale_requests
+		FROM integration_requests ir
+		WHERE ir.workspace_id = :workspace_id
+			%s
+	`, requestFilter)
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		r.log.Error(ctx, "failed to prepare pulse request health query", "error", err)
+		return reports.CorePulseRequestHealth{}, fmt.Errorf("preparing pulse request health query: %w", err)
+	}
+	defer stmt.Close()
+
+	var health reports.CorePulseRequestHealth
+	if err := stmt.GetContext(ctx, &health, namedParams); err != nil {
+		r.log.Error(ctx, "failed to execute pulse request health query", "error", err)
+		return reports.CorePulseRequestHealth{}, fmt.Errorf("executing pulse request health query: %w", err)
+	}
+
+	return health, nil
+}
+
 func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreSprintAnalyticsWorkspace, error) {
 	r.log.Info(ctx, "reportsrepository.GetSprintAnalytics")
 	ctx, span := web.AddSpan(ctx, "reportsrepository.GetSprintAnalytics")
@@ -1200,13 +1549,11 @@ func (r *repo) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, fi
 	var sprintFilter strings.Builder
 
 	if len(filters.TeamIDs) > 0 {
-		teamFilter.WriteString("AND s.team_id = ANY(:team_ids)")
-		namedParams["team_ids"] = filters.TeamIDs
+		teamFilter.WriteString(buildUUIDArrayFilter("s.team_id", "team_ids", filters.TeamIDs, namedParams))
 	}
 
 	if len(filters.SprintIDs) > 0 {
-		sprintFilter.WriteString("AND s.sprint_id = ANY(:sprint_ids)")
-		namedParams["sprint_ids"] = filters.SprintIDs
+		sprintFilter.WriteString(buildUUIDArrayFilter("s.sprint_id", "sprint_ids", filters.SprintIDs, namedParams))
 	}
 
 	// Get sprint progress
@@ -1466,7 +1813,8 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 	}
 
 	// Build filter conditions
-	teamFilter, sprintFilter, objectiveFilter := buildFilters(filters, namedParams)
+	storyTeamFilter, storySprintFilter, storyObjectiveFilter := buildFiltersForColumns(filters, namedParams, "st.team_id", "st.sprint_id", "st.objective_id")
+	objectiveTeamFilter, _, objectiveObjectiveFilter := buildFiltersForColumns(filters, namedParams, "o.team_id", "", "o.objective_id")
 
 	// Get story completion timeline
 	storyCompletionQuery := fmt.Sprintf(`
@@ -1493,7 +1841,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 		SELECT date, created, COALESCE(completed, 0) as completed
 		FROM daily_stats
 		ORDER BY date
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbStoryCompletion struct {
 		Date      time.Time `db:"date"`
@@ -1540,7 +1888,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(o.created_at)
 		ORDER BY date
-	`, teamFilter, objectiveFilter)
+	`, objectiveTeamFilter, objectiveObjectiveFilter)
 
 	type dbObjectiveProgress struct {
 		Date                time.Time `db:"date"`
@@ -1591,7 +1939,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(st.updated_at), st.team_id
 		ORDER BY date, team_id
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbTeamVelocityPoint struct {
 		Date     time.Time `db:"date"`
@@ -1641,7 +1989,7 @@ func (r *repo) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, fil
 			%s
 		GROUP BY DATE(st.created_at)
 		ORDER BY date
-	`, teamFilter, sprintFilter, objectiveFilter)
+	`, storyTeamFilter, storySprintFilter, storyObjectiveFilter)
 
 	type dbKeyMetricsTrend struct {
 		Date          time.Time `db:"date"`

@@ -8,21 +8,30 @@ import (
 )
 
 type dbUser struct {
-	ID                  uuid.UUID  `db:"user_id"`
-	Username            string     `db:"username"`
-	Email               string     `db:"email"`
-	FullName            *string    `db:"full_name"`
-	AvatarURL           *string    `db:"avatar_url"`
-	IsActive            bool       `db:"is_active"`
-	IsSystem            bool       `db:"is_system"`
-	HasSeenWalkthrough  bool       `db:"has_seen_walkthrough"`
-	Timezone            string     `db:"timezone"`
-	LastLoginAt         *time.Time `db:"last_login_at"`
-	LastUsedWorkspaceID *uuid.UUID `db:"last_used_workspace_id"`
-	GitHubUsername      *string    `db:"github_username"`
-	CreatedAt           time.Time  `db:"created_at"`
-	UpdatedAt           time.Time  `db:"updated_at"`
-	Role                *string    `db:"role"`
+	ID                            uuid.UUID  `db:"user_id"`
+	Username                      string     `db:"username"`
+	Email                         string     `db:"email"`
+	FullName                      *string    `db:"full_name"`
+	AvatarURL                     *string    `db:"avatar_url"`
+	IsActive                      bool       `db:"is_active"`
+	IsSystem                      bool       `db:"is_system"`
+	IsInternal                    bool       `db:"is_internal"`
+	HasSeenWalkthrough            bool       `db:"has_seen_walkthrough"`
+	Timezone                      string     `db:"timezone"`
+	LastLoginAt                   *time.Time `db:"last_login_at"`
+	LastUsedWorkspaceID           *uuid.UUID `db:"last_used_workspace_id"`
+	GitHubUsername                *string    `db:"github_username"`
+	CreatedAt                     time.Time  `db:"created_at"`
+	UpdatedAt                     time.Time  `db:"updated_at"`
+	Role                          *string    `db:"role"`
+	TeamAIRoleTitle               *string    `db:"team_ai_role_title"`
+	TeamAIRoleDescription         *string    `db:"team_ai_role_description"`
+	InferredTeamAIRoleTitle       *string    `db:"inferred_team_ai_role_title"`
+	InferredTeamAIRoleDescription *string    `db:"inferred_team_ai_role_description"`
+	InferredTeamAIRoleStoryCount  int        `db:"inferred_team_ai_role_story_count"`
+	InferredTeamAIRoleConfidence  float32    `db:"inferred_team_ai_role_confidence"`
+	InferredTeamAIRoleGeneratedAt *time.Time `db:"inferred_team_ai_role_generated_at"`
+	LastStoryActivityAt           *time.Time `db:"last_story_activity_at"`
 }
 
 // dbVerificationToken represents a verification token in the database
@@ -43,6 +52,7 @@ type dbAutomationPreferences struct {
 	UserID                     uuid.UUID `db:"user_id"`
 	WorkspaceID                uuid.UUID `db:"workspace_id"`
 	AutoAssignSelf             bool      `db:"auto_assign_self"`
+	AutoAssignMaya             bool      `db:"auto_assign_maya"`
 	AssignSelfOnBranchCopy     bool      `db:"assign_self_on_branch_copy"`
 	MoveStoryToStartedOnBranch bool      `db:"move_story_to_started_on_branch"`
 	OpenStoryInDialog          bool      `db:"open_story_in_dialog"`
@@ -52,21 +62,30 @@ type dbAutomationPreferences struct {
 
 func toCoreUser(p dbUser) users.CoreUser {
 	return users.CoreUser{
-		ID:                  p.ID,
-		Username:            p.Username,
-		Email:               p.Email,
-		FullName:            derefString(p.FullName),
-		AvatarURL:           derefString(p.AvatarURL),
-		IsActive:            p.IsActive,
-		IsSystem:            p.IsSystem,
-		HasSeenWalkthrough:  p.HasSeenWalkthrough,
-		Timezone:            p.Timezone,
-		LastLoginAt:         derefTime(p.LastLoginAt),
-		LastUsedWorkspaceID: p.LastUsedWorkspaceID,
-		GitHubUsername:      p.GitHubUsername,
-		CreatedAt:           p.CreatedAt,
-		UpdatedAt:           p.UpdatedAt,
-		Role:                p.Role,
+		ID:                            p.ID,
+		Username:                      p.Username,
+		Email:                         p.Email,
+		FullName:                      derefString(p.FullName),
+		AvatarURL:                     derefString(p.AvatarURL),
+		IsActive:                      p.IsActive,
+		IsSystem:                      p.IsSystem,
+		IsInternal:                    p.IsInternal,
+		HasSeenWalkthrough:            p.HasSeenWalkthrough,
+		Timezone:                      p.Timezone,
+		LastLoginAt:                   derefTime(p.LastLoginAt),
+		LastUsedWorkspaceID:           p.LastUsedWorkspaceID,
+		GitHubUsername:                p.GitHubUsername,
+		CreatedAt:                     p.CreatedAt,
+		UpdatedAt:                     p.UpdatedAt,
+		Role:                          p.Role,
+		TeamAIRoleTitle:               derefString(p.TeamAIRoleTitle),
+		TeamAIRoleDescription:         derefString(p.TeamAIRoleDescription),
+		InferredTeamAIRoleTitle:       derefString(p.InferredTeamAIRoleTitle),
+		InferredTeamAIRoleDescription: derefString(p.InferredTeamAIRoleDescription),
+		InferredTeamAIRoleStoryCount:  p.InferredTeamAIRoleStoryCount,
+		InferredTeamAIRoleConfidence:  p.InferredTeamAIRoleConfidence,
+		InferredTeamAIRoleGeneratedAt: p.InferredTeamAIRoleGeneratedAt,
+		LastStoryActivityAt:           p.LastStoryActivityAt,
 	}
 }
 
@@ -112,6 +131,7 @@ func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomation
 		UserID:                     p.UserID,
 		WorkspaceID:                p.WorkspaceID,
 		AutoAssignSelf:             p.AutoAssignSelf,
+		AutoAssignMaya:             p.AutoAssignMaya,
 		AssignSelfOnBranchCopy:     p.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: p.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          p.OpenStoryInDialog,

@@ -9,14 +9,15 @@ import {
   ArrowRightIcon,
   InvitesIcon,
   ArrowRight2Icon,
+  NewTabIcon,
 } from "icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useProfile } from "@/lib/hooks/profile";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useLocalStorage, useAnalytics, useWorkspacePath } from "@/hooks";
+import { getPublicEnv } from "@/public-env";
 import { logOut } from "./actions";
 import { clearAllStorage } from "./utils";
 
@@ -26,9 +27,15 @@ export const ProfileMenu = () => {
   const { workspace } = useCurrentWorkspace();
   const { analytics } = useAnalytics();
   const { withWorkspace } = useWorkspacePath();
-  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
+  const adminUrl = getPublicEnv().ADMIN_URL;
+
+  const rememberCurrentPath = () => {
+    setPathBeforeSettings(
+      `${window.location.pathname}${window.location.search}`,
+    );
+  };
 
   const handleLogout = async () => {
     const mainDomain =
@@ -89,9 +96,7 @@ export const ProfileMenu = () => {
               <Link
                 className="flex w-full items-center gap-2"
                 href={withWorkspace("/settings/account")}
-                onClick={() => {
-                  setPathBeforeSettings(pathname);
-                }}
+                onClick={rememberCurrentPath}
                 prefetch
               >
                 <SettingsIcon />
@@ -163,9 +168,7 @@ export const ProfileMenu = () => {
                 <Link
                   className="flex w-full items-center justify-between gap-2"
                   href={withWorkspace("/settings/invitations")}
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
+                  onClick={rememberCurrentPath}
                   prefetch
                 >
                   <Flex gap={2}>
@@ -181,6 +184,19 @@ export const ProfileMenu = () => {
                 </Link>
               </Menu.Item>
             )}
+            {profile?.isInternal && adminUrl ? (
+              <Menu.Item>
+                <a
+                  className="flex w-full items-center gap-2"
+                  href={adminUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <NewTabIcon className="h-[1.15rem]" />
+                  Admin dashboard
+                </a>
+              </Menu.Item>
+            ) : null}
           </Menu.Group>
           <Menu.Separator className="my-2" />
           <Menu.Group>

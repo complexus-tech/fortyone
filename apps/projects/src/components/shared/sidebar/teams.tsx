@@ -104,9 +104,12 @@ export const Teams = () => {
           <Flex direction="column" gap={1}>
             {teams.map((team, idx) => (
               <Team
-                {...team}
+                color={team.color}
+                id={team.id}
                 idx={idx}
+                isPrivate={team.isPrivate}
                 key={team.id}
+                name={team.name}
                 totalTeams={teams.length}
               />
             ))}

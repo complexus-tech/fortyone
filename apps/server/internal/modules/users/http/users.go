@@ -12,6 +12,7 @@ import (
 	"time"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
@@ -346,7 +347,32 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		teamID = &parsedTeamID
 	}
 
-	users, err := h.users.List(ctx, workspace.ID, teamID)
+	filter := users.CoreListUsersFilter{
+		TeamID: teamID,
+		Search: strings.TrimSpace(r.URL.Query().Get("search")),
+	}
+
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filter.Limit = pageSize + 1
+		filter.Offset = (page - 1) * pageSize
+
+		users, err := h.users.List(ctx, workspace.ID, filter)
+		if err != nil {
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+
+		hasMore := len(users) > pageSize
+		if hasMore {
+			users = users[:pageSize]
+		}
+
+		h.resolveUserAvatars(ctx, users)
+		web.Respond(ctx, w, toAppMembersResponse(users, page, pageSize, hasMore), http.StatusOK)
+		return nil
+	}
+
+	users, err := h.users.List(ctx, workspace.ID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -354,6 +380,27 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	h.resolveUserAvatars(ctx, users)
 	web.Respond(ctx, w, toAppUsers(users), http.StatusOK)
 	return nil
+}
+
+func (h *Handlers) GetMayaAssignee(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
+	email, ok := actors.EmailForKey(actors.KeySystem)
+	if !ok {
+		return web.RespondError(ctx, w, errors.New("Maya actor is not configured"), http.StatusInternalServerError)
+	}
+
+	user, err := h.users.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, users.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	if !user.IsSystem {
+		return web.RespondError(ctx, w, errors.New("Maya actor is not a system user"), http.StatusInternalServerError)
+	}
+
+	h.resolveUserAvatar(ctx, &user)
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
 }
 
 func (h *Handlers) GoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -542,17 +589,14 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
 	}
 
-	_, err = h.users.GetUserByEmailAnyStatus(ctx, req.Email)
+	// The confirm endpoint determines whether this email belongs to an existing
+	// user after the token is validated. Avoid blocking link delivery on a
+	// request-time user lookup.
 	tokenType := users.TokenTypeRegistration
-	if err == nil {
-		tokenType = users.TokenTypeLogin
-	} else if !errors.Is(err, users.ErrNotFound) {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
 
 	token, err := h.users.CreateVerificationToken(ctx, req.Email, tokenType, time.Now().Add(10*time.Minute))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return respondVerificationTokenCreationError(ctx, w, err)
 	}
 
 	event := events.Event{
@@ -781,7 +825,7 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	// Create verification token with 5-minute expiry
 	token, err := h.users.CreateVerificationToken(ctx, user.Email, users.TokenTypeLogin, time.Now().Add(5*time.Minute))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return respondVerificationTokenCreationError(ctx, w, err)
 	}
 
 	response := GenerateSessionCodeResponse{
@@ -790,6 +834,13 @@ func (h *Handlers) GenerateSessionCode(ctx context.Context, w http.ResponseWrite
 	}
 
 	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+func respondVerificationTokenCreationError(ctx context.Context, w http.ResponseWriter, err error) error {
+	if errors.Is(err, users.ErrTooManyAttempts) {
+		return web.RespondError(ctx, w, users.ErrTooManyAttempts, http.StatusTooManyRequests)
+	}
+	return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 }
 
 // CreateSession exchanges a valid auth token for a secure session cookie.

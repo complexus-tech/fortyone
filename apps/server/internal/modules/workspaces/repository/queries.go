@@ -160,7 +160,6 @@ func (r *repo) GetByID(ctx context.Context, workspaceID uuid.UUID) (workspaces.C
 			w.slug,
 			w.color,
 			w.avatar_url,
-			w.is_active,
 			w.created_by,
 			w.created_at,
 			w.updated_at,
@@ -272,6 +271,58 @@ func (r *repo) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (wo
 	}
 
 	return toCoreWorkspaceWithRole(workspace), nil
+}
+
+func (r *repo) GetPublicBySlug(ctx context.Context, slug string) (workspaces.CoreWorkspace, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.workspaces.GetPublicBySlug")
+	defer span.End()
+
+	var workspace dbWorkspace
+
+	query := `
+		SELECT
+			w.workspace_id,
+			w.name,
+			w.slug,
+			w.color,
+			w.avatar_url,
+			w.created_by,
+			w.created_at,
+			w.updated_at,
+			w.trial_ends_on,
+			w.deleted_at,
+			w.deleted_by
+		FROM
+			workspaces w
+		WHERE
+			w.slug = :slug
+			AND w.deleted_at IS NULL
+	`
+
+	params := map[string]any{
+		"slug": slug,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+	defer stmt.Close()
+
+	if err := stmt.GetContext(ctx, &workspace, params); err != nil {
+		if err == sql.ErrNoRows {
+			return workspaces.CoreWorkspace{}, workspaces.ErrNotFound
+		}
+		errMsg := fmt.Sprintf("failed to get public workspace by slug: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to get public workspace"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return workspaces.CoreWorkspace{}, err
+	}
+
+	return toCoreWorkspace(workspace), nil
 }
 
 func (r *repo) CheckSlugAvailability(ctx context.Context, slug string) (bool, error) {

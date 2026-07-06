@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
+	"strings"
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -46,9 +48,9 @@ func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logge
 		// Process each lead in this batch
 		for _, lead := range leads {
 			// Get objectives for this specific lead
-			objectives, err := getOverdueObjectivesForLead(ctx, db, lead.LeadUserID)
+			objectives, err := getOverdueObjectivesForLead(ctx, db, lead.LeadUserID, lead.WorkspaceID)
 			if err != nil {
-				log.Error(ctx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "error", err)
+				log.Error(ctx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "workspace_id", lead.WorkspaceID, "error", err)
 				continue
 			}
 
@@ -165,6 +167,8 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 		)
 		AND o.lead_user_id IS NOT NULL
 		AND u.is_active = true
+		AND u.is_system = false
+		AND NULLIF(TRIM(u.email), '') IS NOT NULL
 		AND os.category NOT IN ('completed', 'cancelled', 'paused')
 		AND ws.objective_enabled = true
 		AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
@@ -198,12 +202,8 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 	return leads, nil
 }
 
-// getOverdueObjectivesForLead gets all objectives needing attention for a specific lead
-func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.UUID) ([]OverdueObjective, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getOverdueObjectivesForLead")
-	defer span.End()
-
-	query := `
+func overdueObjectivesForLeadQuery() string {
+	return `
 		WITH objective_deadlines AS (
 			SELECT 
 				o.objective_id, o.name, o.end_date, o.lead_user_id, o.workspace_id, o.team_id,
@@ -271,6 +271,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			JOIN objective_statuses os ON o.status_id = os.status_id
 			JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 			WHERE o.lead_user_id = :lead_id
+				AND o.workspace_id = :workspace_id
 				AND (
 					-- Objectives that are overdue or due soon
 					o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
@@ -289,6 +290,8 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 					))
 				)
 				AND u.is_active = true
+				AND u.is_system = false
+				AND NULLIF(TRIM(u.email), '') IS NOT NULL
 				AND os.category NOT IN ('completed', 'cancelled', 'paused')
 				AND ws.objective_enabled = true
 		)
@@ -298,10 +301,22 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 			OR json_array_length(key_results) > 0
 		ORDER BY deadline_status, end_date;
 `
+}
 
-	params := map[string]any{
-		"lead_id": leadID,
+func overdueObjectivesForLeadParams(leadID, workspaceID uuid.UUID) map[string]any {
+	return map[string]any{
+		"lead_id":      leadID,
+		"workspace_id": workspaceID,
 	}
+}
+
+// getOverdueObjectivesForLead gets all objectives needing attention for a specific lead in one workspace.
+func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID, workspaceID uuid.UUID) ([]OverdueObjective, error) {
+	ctx, span := web.AddSpan(ctx, "jobs.getOverdueObjectivesForLead")
+	defer span.End()
+
+	query := overdueObjectivesForLeadQuery()
+	params := overdueObjectivesForLeadParams(leadID, workspaceID)
 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -318,6 +333,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID uuid.U
 
 	span.AddEvent("objectives retrieved", trace.WithAttributes(
 		attribute.String("lead_id", leadID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 		attribute.Int("objectives.count", len(objectives)),
 	))
 
@@ -330,6 +346,11 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	defer span.End()
 
 	if len(objectives) == 0 {
+		return nil
+	}
+
+	if strings.TrimSpace(objectives[0].LeadEmail) == "" {
+		log.Info(ctx, "Skipping objective overdue email because lead email is empty", "lead_id", objectives[0].LeadUserID)
 		return nil
 	}
 
@@ -419,107 +440,59 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 	if totalItems > 1 {
 		itemText = "objectives"
 	}
-	content := fmt.Sprintf(`
-		<div style="font-size: 15px;">
-			<h3>What's coming up</h3>
-			<p>You have %d %s that need attention</p>
-	`, totalItems, itemText)
+
+	rows := []string{
+		fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText))),
+	}
 
 	if len(dueSoonObjectives) > 0 {
-		itemText := "objective"
-		if len(dueSoonObjectives) > 1 {
-			itemText = "objectives"
-		}
-
-		// Check if we have any objectives that are actually due soon vs just have key results
-		hasActualDueSoon := false
-		for _, obj := range dueSoonObjectives {
-			if obj.DeadlineStatus != "future" {
-				hasActualDueSoon = true
-				break
-			}
-		}
-
-		sectionTitle := "Due soon"
-		if !hasActualDueSoon {
-			sectionTitle = "Need attention"
-		}
-
-		content += fmt.Sprintf(`
-			<p><strong>%s (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, sectionTitle, len(dueSoonObjectives), itemText)
 		for _, objective := range dueSoonObjectives {
 			// Check if this objective is actually due soon or just has key results
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
 			if objective.DeadlineStatus == "future" {
 				// Objective is on schedule but has key results
-				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - On schedule (key results need attention)</li>
-				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+				rows = append(rows, fmt.Sprintf("Objective %s is on schedule, but key results need attention.", objectiveLink))
 			} else {
 				// Objective is actually due soon
-				content += fmt.Sprintf(`
-					<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due %s</li>
-				`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.EndDate.Format("January 2, 2006"))
+				rows = append(rows, fmt.Sprintf("Objective %s is due %s.", objectiveLink, html.EscapeString(objective.EndDate.Format("January 2, 2006"))))
 			}
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
 	if len(dueTodayObjectives) > 0 {
-		itemText := "objective"
-		if len(dueTodayObjectives) > 1 {
-			itemText = "objectives"
-		}
-		content += fmt.Sprintf(`
-			<p><strong>Due today (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(dueTodayObjectives), itemText)
 		for _, objective := range dueTodayObjectives {
-			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - Due today</li>
-			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name)
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
+			rows = append(rows, fmt.Sprintf("Objective %s is due today.", objectiveLink))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
 	if len(overdueObjectives) > 0 {
-		itemText := "objective"
-		if len(overdueObjectives) > 1 {
-			itemText = "objectives"
-		}
-		content += fmt.Sprintf(`
-			<p><strong>Overdue (%d %s)</strong></p>
-			<ul style="margin: 0 0 12px; padding: 0; list-style: none;">
-		`, len(overdueObjectives), itemText)
 		for _, objective := range overdueObjectives {
 			daysText := "day"
 			if objective.DaysDifference > 1 {
 				daysText = "days"
 			}
-			content += fmt.Sprintf(`
-				<li><a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a> - %d %s overdue</li>
-			`, workspaceURL, objective.TeamID.String(), objective.ID.String(), objective.Name, objective.DaysDifference, daysText)
+			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
+			rows = append(rows, fmt.Sprintf("Objective %s is %s overdue.", objectiveLink, formatEmailStrong(fmt.Sprintf("%d %s", objective.DaysDifference, daysText))))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				content += formatKeyResultsForEmail(keyResults, workspaceURL, objective.TeamID, objective.ID)
+				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
-		content += "</ul>"
 	}
 
-	return content + "</div>"
+	return formatCompactNotificationRows("Here's what needs attention.", rows)
 }
 
 // parseKeyResults parses the JSON string of key results
@@ -531,13 +504,13 @@ func parseKeyResults(keyResultsJSON string) []OverdueKeyResult {
 	return keyResults
 }
 
-// formatKeyResultsForEmail formats key results for email display
-func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string, teamID uuid.UUID, objectiveID uuid.UUID) string {
+// formatKeyResultEmailRows formats key results for email display.
+func formatKeyResultEmailRows(keyResults []OverdueKeyResult, workspaceURL string, teamID uuid.UUID, objectiveID uuid.UUID) []string {
 	if len(keyResults) == 0 {
-		return ""
+		return nil
 	}
 
-	content := "<ul class=\"notification-sublist\">"
+	rows := make([]string, 0, len(keyResults))
 	for _, kr := range keyResults {
 		// Parse the date string to format it properly
 		endDateStr := kr.EndDate // Default to raw string
@@ -553,27 +526,24 @@ func formatKeyResultsForEmail(keyResults []OverdueKeyResult, workspaceURL string
 			if kr.DaysDifference > 1 {
 				daysText = "days"
 			}
-			statusText = fmt.Sprintf("%d %s overdue (due %s)", kr.DaysDifference, daysText, endDateStr)
+			statusText = fmt.Sprintf("%s overdue (due %s)", formatEmailStrong(fmt.Sprintf("%d %s", kr.DaysDifference, daysText)), html.EscapeString(endDateStr))
 		case "due_today":
-			statusText = fmt.Sprintf("Due today (%s)", endDateStr)
+			statusText = fmt.Sprintf("due today (%s)", html.EscapeString(endDateStr))
 		case "due_tomorrow":
-			statusText = fmt.Sprintf("Due tomorrow (%s)", endDateStr)
+			statusText = fmt.Sprintf("due tomorrow (%s)", html.EscapeString(endDateStr))
 		case "due_in_7_days":
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		case "future":
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		default:
-			statusText = fmt.Sprintf("Due %s", endDateStr)
+			statusText = fmt.Sprintf("due %s", html.EscapeString(endDateStr))
 		}
 
-		content += fmt.Sprintf(`
-			<li class="notification-subitem">
-				<span>Key result:</span>
-				<a href="%s/teams/%s/objectives/%s" style="text-decoration: none; font-weight: 500;">%s</a>
-				<span>- %s</span>
-			</li>
-		`, workspaceURL, teamID.String(), objectiveID.String(), kr.Name, statusText)
+		rows = append(rows, fmt.Sprintf(
+			"Key result %s is %s.",
+			formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, teamID.String(), objectiveID.String()), kr.Name),
+			statusText,
+		))
 	}
-	content += "</ul>"
-	return content
+	return rows
 }

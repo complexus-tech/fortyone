@@ -3,9 +3,7 @@ package objectiveshttp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -58,6 +56,32 @@ func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) stri
 	return resolved
 }
 
+func (h *Handlers) invalidateObjectiveCache(ctx context.Context, workspaceID, objectiveID uuid.UUID) {
+	cacheKeys := cache.InvalidateObjectiveKeys(workspaceID, objectiveID)
+	for _, key := range cacheKeys {
+		if strings.Contains(key, "*") {
+			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
+				h.log.Error(ctx, "failed to delete objective cache pattern",
+					"key", key,
+					"workspace_id", workspaceID,
+					"objective_id", objectiveID,
+					"error", err,
+				)
+			}
+			continue
+		}
+
+		if err := h.cache.Delete(ctx, key); err != nil {
+			h.log.Error(ctx, "failed to delete objective cache",
+				"key", key,
+				"workspace_id", workspaceID,
+				"objective_id", objectiveID,
+				"error", err,
+			)
+		}
+	}
+}
+
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectiveshttp.handlers.List")
 	defer span.End()
@@ -79,35 +103,28 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	filterKeys := make([]string, 0, len(filters))
-	for key := range filters {
-		filterKeys = append(filterKeys, key)
-	}
-	sort.Strings(filterKeys)
+	if paginationRequested(r) {
+		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+		filters["limit"] = pageSize + 1
+		filters["offset"] = (page - 1) * pageSize
 
-	filtersStr := ""
-	for _, key := range filterKeys {
-		filtersStr += fmt.Sprintf("%s:%v;", key, filters[key])
-	}
+		objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
+		if err != nil {
+			return err
+		}
 
-	cacheKey := cache.ObjectiveListCacheKey(workspace.ID, userID, filtersStr)
-	var cachedObjectives []objectives.CoreObjective
+		hasMore := len(objectivesList) > pageSize
+		if hasMore {
+			objectivesList = objectivesList[:pageSize]
+		}
 
-	if err := h.cache.Get(ctx, cacheKey, &cachedObjectives); err == nil {
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppObjectives(cachedObjectives), http.StatusOK)
+		web.Respond(ctx, w, toAppObjectivesResponse(objectivesList, page, pageSize, hasMore), http.StatusOK)
 		return nil
 	}
 
 	objectivesList, err := h.objectives.List(ctx, workspace.ID, userID, filters)
 	if err != nil {
 		return err
-	}
-
-	if err := h.cache.Set(ctx, cacheKey, objectivesList, cache.ListTTL); err != nil {
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppObjectives(objectivesList), http.StatusOK)
@@ -233,14 +250,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	cacheKeys := cache.InvalidateObjectiveKeys(workspace.ID, objID)
-	for _, key := range cacheKeys {
-		if strings.Contains(key, "*") {
-			h.cache.DeleteByPattern(ctx, key)
-		} else {
-			h.cache.Delete(ctx, key)
-		}
-	}
+	h.invalidateObjectiveCache(ctx, workspace.ID, objID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -262,15 +272,6 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	cacheKeys := cache.InvalidateObjectiveKeys(workspace.ID, objID)
-	for _, key := range cacheKeys {
-		if strings.Contains(key, "*") {
-			h.cache.DeleteByPattern(ctx, key)
-		} else {
-			h.cache.Delete(ctx, key)
-		}
-	}
-
 	if err := h.objectives.Delete(ctx, objID, workspace.ID); err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
 			web.RespondError(ctx, w, err, http.StatusNotFound)
@@ -279,6 +280,8 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
+
+	h.invalidateObjectiveCache(ctx, workspace.ID, objID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -370,8 +373,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	listCachePattern := fmt.Sprintf(cache.ObjectiveListKey+"*", workspace.ID.String())
-	h.cache.DeleteByPattern(ctx, listCachePattern)
+	h.invalidateObjectiveCache(ctx, workspace.ID, objective.ID)
 
 	response := struct {
 		Objective  AppObjectiveList `json:"objective"`

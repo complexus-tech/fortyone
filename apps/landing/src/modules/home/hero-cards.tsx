@@ -22,9 +22,9 @@ export const HeroCards = () => {
   const cards = [
     {
       id: 1,
-      title: "Blockers don't hide in kanban. They surface.",
+      title: "Risks surface before the retro.",
       description:
-        "Maya watches ownership and activity. If something starts to stall, it surfaces early instead of waiting for the end-of-sprint retro.",
+        "AI watches ownership, priority, and activity so stalled work shows up while there is still time to fix it.",
       image: {
         src: kanbanImg,
         srcLight: kanbanImgLight,
@@ -33,9 +33,9 @@ export const HeroCards = () => {
     },
     {
       id: 2,
-      title: "Done tasks move the quarter, not just the board.",
+      title: "Done work updates the goal.",
       description:
-        "As tasks close, objective progress updates in real time. Leaders see the quarter move without asking for updates.",
+        "As tasks close, objective progress updates with them. Leaders can see what shipped without chasing status updates.",
       image: {
         src: objectiveImg,
         srcLight: objectiveImgLight,

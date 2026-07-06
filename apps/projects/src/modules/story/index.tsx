@@ -4,11 +4,12 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
+import { useChatContext } from "@/context/chat-context";
+import { useMediaQuery, useWorkspacePath } from "@/hooks";
 import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
 import { StorySkeleton } from "./components/story-skeleton";
-import { useWorkspacePath } from "@/hooks";
 
 const MainDetails = dynamic(
   () => import("./components/main-details").then((mod) => mod.MainDetails),
@@ -31,9 +32,14 @@ export const StoryPage = ({
 }) => {
   const { isPending, data: story } = useStoryById(storyId);
   const { withWorkspace } = useWorkspacePath();
+  const { isOpen: isChatOpen } = useChatContext();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const shouldUseNotificationBodyOnlySkeleton = Boolean(
+    isNotifications && isChatOpen && isDesktop && !isDialog,
+  );
 
   if (isPending) {
-    return <StorySkeleton isNotifications={isNotifications} />;
+    return <StorySkeleton bodyOnly={shouldUseNotificationBodyOnlySkeleton} />;
   }
 
   return (
@@ -50,21 +56,32 @@ export const StoryPage = ({
               storyId={storyId}
             />
           </Box>
-          <Box className="hidden h-full md:flex">
+          <Box
+            className={cn("hidden h-full md:flex", {
+              "notification-story-container": isNotifications,
+            })}
+          >
             <Box className="min-w-0 flex-1">
-                <MainDetails
-                  isDialog={isDialog}
-                  isNotifications={Boolean(isNotifications)}
-                  mainHeader={mainHeader}
-                  storyId={storyId}
-                />
+              <MainDetails
+                isDialog={isDialog}
+                isNotifications={Boolean(isNotifications)}
+                mainHeader={mainHeader}
+                storyId={storyId}
+              />
             </Box>
-            <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]">
-                <Options
-                  isDialog={isDialog}
-                  isNotifications={Boolean(isNotifications)}
-                  storyId={storyId}
-                />
+            <Box
+              className={cn(
+                "border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]",
+                {
+                  "notification-story-sidebar": isNotifications,
+                },
+              )}
+            >
+              <Options
+                isDialog={isDialog}
+                isNotifications={Boolean(isNotifications)}
+                storyId={storyId}
+              />
             </Box>
           </Box>
         </>

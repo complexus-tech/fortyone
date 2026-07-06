@@ -2,7 +2,7 @@
 import { ArrowLeft2Icon, UserIcon, WorkflowIcon, WorkspaceIcon } from "icons";
 import type { ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Badge, Box, Container, Flex, ResizablePanel, Text, Tooltip } from "ui";
+import { Badge, Box, Container, Flex, Text, Tooltip } from "ui";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "lib";
@@ -14,7 +14,8 @@ import {
 } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { BodyContainer, MobileMenuButton } from "../shared";
+import { BodyContainer } from "../shared/body";
+import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
 import { Commands } from "../shared/commands";
 
@@ -97,6 +98,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             href: withWorkspace("/settings/workspace/objectives"),
           },
           { title: "Teams", href: withWorkspace("/settings/workspace/teams") },
+          {
+            title: "Feedback",
+            href: withWorkspace("/settings/workspace/feedback"),
+          },
         ]
       : []),
   ];
@@ -127,13 +132,9 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       : []),
   ];
 
-  const mobileMenu = navigation
-    .map(({ items }) => {
-      return {
-        items: items.map(({ href, title }) => ({ href, title })),
-      };
-    })
-    .flatMap(({ items }) => items);
+  const mobileMenu = navigation.flatMap(({ items }) =>
+    items.map(({ href, title }) => ({ href, title })),
+  );
 
   return (
     <>

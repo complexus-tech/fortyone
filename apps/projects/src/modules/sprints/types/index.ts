@@ -19,6 +19,16 @@ export type Sprint = {
   };
 };
 
+export type SprintsPage = {
+  sprints: Sprint[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type SprintDetails = Omit<Sprint, "stats">;
 
 export type NewSprint = {

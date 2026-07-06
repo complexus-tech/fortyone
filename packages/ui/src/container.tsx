@@ -26,7 +26,7 @@ export const Container = ({
       {
         "mx-auto px-0": full,
       },
-      className
+      className,
     ),
     id,
     style,

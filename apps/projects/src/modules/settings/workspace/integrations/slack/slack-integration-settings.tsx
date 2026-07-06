@@ -1,0 +1,199 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
+import { MoreHorizontalIcon, ReloadIcon, SlackIcon, UnlinkIcon } from "icons";
+import { useWorkspacePath } from "@/hooks";
+import { SectionHeader } from "@/modules/settings/components";
+import {
+  useCreateSlackInstallSession,
+  useDisconnectSlackWorkspace,
+  useLinkSlackAccount,
+  useResyncSlackChannels,
+  useSlackIntegration,
+} from "@/lib/hooks/slack";
+
+let slackLinkTokenConsumed = false;
+
+export const SlackIntegrationSettings = () => {
+  const searchParams = useSearchParams();
+  const { data: integration } = useSlackIntegration();
+  const { withWorkspace } = useWorkspacePath();
+
+  const createInstallSession = useCreateSlackInstallSession();
+  const disconnectWorkspace = useDisconnectSlackWorkspace();
+  const linkSlackAccount = useLinkSlackAccount();
+  const resyncChannels = useResyncSlackChannels();
+  const [isDisconnectOpen, setIsDisconnectOpen] = useState(false);
+
+  const isConnected = Boolean(integration?.slackWorkspace?.isActive);
+  const slackWorkspace = integration?.slackWorkspace;
+
+  useEffect(() => {
+    const token = searchParams.get("slack_link_token");
+    if (!token || slackLinkTokenConsumed) {
+      return;
+    }
+    slackLinkTokenConsumed = true;
+    linkSlackAccount.mutate(token, {
+      onSettled: () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("slack_link_token");
+        window.history.replaceState({}, "", url.toString());
+      },
+    });
+  }, [linkSlackAccount, searchParams]);
+
+  return (
+    <Box>
+      <Text as="h1" className="mb-6 text-2xl font-medium">
+        Slack
+      </Text>
+
+      <Box className="border-border bg-surface rounded-2xl border">
+        <SectionHeader
+          action={
+            <Flex gap={2}>
+              <Button
+                color="invert"
+                onClick={() => {
+                  createInstallSession.mutate();
+                }}
+              >
+                {isConnected ? "Reconnect Slack" : "Connect Slack"}
+              </Button>
+            </Flex>
+          }
+          description="Connect Slack so people can create FortyOne tasks and requests from Slack."
+          title="Connected workspace"
+        />
+
+        {!slackWorkspace ? (
+          <Box className="px-6 py-8">
+            <Text className="font-medium">No Slack workspace connected</Text>
+            <Text className="mt-1" color="muted">
+              Connect Slack to create tasks from slash commands and message
+              actions.
+            </Text>
+          </Box>
+        ) : (
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Flex align="center" gap={3}>
+              <Flex
+                align="center"
+                className="bg-surface-muted size-9 shrink-0 rounded-lg"
+                justify="center"
+              >
+                <SlackIcon className="h-4.5 w-4.5" />
+              </Flex>
+              <Box>
+                <Text className="font-medium">
+                  {slackWorkspace.slackTeamName}
+                </Text>
+                <Text color="muted">{slackWorkspace.slackTeamDomain}</Text>
+              </Box>
+            </Flex>
+            <Flex align="center" gap={2}>
+              <Badge
+                className="uppercase"
+                color={isConnected ? "success" : "tertiary"}
+              >
+                {isConnected ? "Connected" : "Disconnected"}
+              </Badge>
+              {isConnected ? (
+                <Menu>
+                  <Menu.Button>
+                    <Button
+                      className="px-2"
+                      color="tertiary"
+                      leftIcon={<MoreHorizontalIcon />}
+                    />
+                  </Menu.Button>
+                  <Menu.Items align="end">
+                    <Menu.Group>
+                      <Menu.Item
+                        onSelect={() => {
+                          resyncChannels.mutate();
+                        }}
+                      >
+                        <ReloadIcon />
+                        Resync channels
+                      </Menu.Item>
+                      <Menu.Item
+                        onSelect={() => {
+                          createInstallSession.mutate();
+                        }}
+                      >
+                        <SlackIcon className="h-4 w-4" />
+                        Update connection
+                      </Menu.Item>
+                      <Menu.Item
+                        className="text-danger"
+                        onSelect={() => {
+                          setIsDisconnectOpen(true);
+                        }}
+                      >
+                        <UnlinkIcon className="text-danger" />
+                        Disconnect workspace
+                      </Menu.Item>
+                    </Menu.Group>
+                  </Menu.Items>
+                </Menu>
+              ) : null}
+            </Flex>
+          </Flex>
+        )}
+      </Box>
+
+      <Box className="mt-6">
+        <Link href={withWorkspace("/settings/workspace/integrations")}>
+          <Text color="muted">Back to integrations</Text>
+        </Link>
+      </Box>
+
+      <Dialog onOpenChange={setIsDisconnectOpen} open={isDisconnectOpen}>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title className="px-6 pt-0.5 text-lg">
+              Disconnect Slack workspace
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body>
+            <Text color="muted">
+              Slash commands and message actions from this Slack workspace will
+              stop creating FortyOne tasks and requests.
+            </Text>
+          </Dialog.Body>
+          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+            <Button
+              className="px-4"
+              color="tertiary"
+              onClick={() => {
+                setIsDisconnectOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-4"
+              loading={disconnectWorkspace.isPending}
+              onClick={() => {
+                disconnectWorkspace.mutate(undefined, {
+                  onSuccess: (res) => {
+                    if (!res.error) {
+                      setIsDisconnectOpen(false);
+                    }
+                  },
+                });
+              }}
+            >
+              Disconnect
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+    </Box>
+  );
+};

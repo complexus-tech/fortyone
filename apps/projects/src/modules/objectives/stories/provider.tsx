@@ -3,7 +3,8 @@ import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { StoriesViewOptions } from "@/components/ui/stories-view-options-button";
 import { useLocalStorage } from "@/hooks";
-import type { StoriesFilter } from "@/components/ui/stories-filter-button";
+import { useStoriesFilters } from "@/components/ui/stories-filter-state";
+import type { StoriesFilter } from "@/components/ui/stories-filter-types";
 import type { StoriesLayout } from "@/components/ui";
 
 type ObjectiveOptions = {
@@ -34,6 +35,7 @@ export const ObjectiveOptionsProvider = ({
       "ID",
       "Status",
       "Assignee",
+      "Estimate",
       "Priority",
       "Deadline",
       "Created",
@@ -42,34 +44,12 @@ export const ObjectiveOptionsProvider = ({
       "Labels",
     ],
   };
-  const initialFilters: StoriesFilter = {
-    statusIds: null,
-    assigneeIds: null,
-    reporterIds: null,
-    priorities: null,
-    teamIds: null,
-    sprintIds: null,
-    labelIds: null,
-    parentId: null,
-    objectiveId: null,
-    epicId: null,
-    keyResultId: null,
-    hasNoAssignee: null,
-    assignedToMe: false,
-    createdByMe: false,
-  };
   const [viewOptions, setViewOptions] = useLocalStorage<StoriesViewOptions>(
     `teams:objectives:stories:view-options:${layout}`,
     initialOptions,
   );
-  const [filters, setFilters] = useLocalStorage<StoriesFilter>(
-    "teams:objectives:stories:filters",
-    initialFilters,
-  );
+  const { filters, resetFilters, setFilters } = useStoriesFilters();
 
-  const resetFilters = () => {
-    setFilters(initialFilters);
-  };
   return (
     <ObjectiveOptionsContext.Provider
       value={{

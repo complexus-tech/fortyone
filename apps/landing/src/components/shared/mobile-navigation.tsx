@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { Box, Dialog, Flex } from "ui";
 import { cn } from "lib";
+import { featureLinks } from "@/lib/feature-links";
+import { primaryUseCaseLinks } from "@/lib/use-case-links";
+
+const resourceLinks = [
+  { label: "Docs", href: "https://docs.fortyone.app" },
+  { label: "Blog", href: "/blog" },
+  { label: "GitHub", href: "https://github.com/complexus-tech/fortyone" },
+  { label: "Pitch", href: "https://pitch.fortyone.app" },
+];
 
 const NavMenuButton = ({
   open,
@@ -23,7 +32,7 @@ const NavMenuButton = ({
       <span>
         <span
           className={cn(
-            "bg-dark mb-[0.4rem] block h-px w-5 transition duration-300 ease-in-out dark:bg-white",
+            "mb-[0.4rem] block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
             {
               "mb-0 rotate-45": open,
             },
@@ -31,7 +40,7 @@ const NavMenuButton = ({
         />
         <span
           className={cn(
-            "bg-dark block h-px w-5 transition duration-300 ease-in-out dark:bg-white",
+            "block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
             {
               "-translate-y-[0.05rem] -rotate-45": open,
             },
@@ -47,19 +56,19 @@ export const MobileNavigation = () => {
 
   const navItems = [
     {
-      label: "Product",
-      items: [
-        { label: "Tasks", href: "/features/tasks" },
-        { label: "Objectives", href: "/features/objectives" },
-        { label: "OKRs", href: "/features/okrs" },
-        { label: "Sprints", href: "/features/sprints" },
-      ],
+      label: "Features",
+      items: featureLinks,
+    },
+    {
+      label: "Use Cases",
+      items: primaryUseCaseLinks,
+    },
+    { label: "AI Project Manager", href: "/ai-project-manager" },
+    {
+      label: "Resources",
+      items: resourceLinks,
     },
     { label: "Pricing", href: "/pricing" },
-    { label: "Contact", href: "/contact" },
-    { label: "Blog", href: "/blog" },
-    { label: "Help Center", href: "https://docs.fortyone.app" },
-    { label: "Pitch", href: "https://pitch.fortyone.app" },
   ];
 
   return (
@@ -80,18 +89,18 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 py-10">
+          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 pt-5 pb-8">
             <Box>
-              <Flex className="pl-2" direction="column" gap={7}>
+              <Flex className="pl-2" direction="column" gap={6}>
                 {navItems.map(({ label, href, items }) => {
                   if (items) {
                     return (
                       <div key={label}>
-                        <div className="mb-4 text-3xl">{label}</div>
-                        <Flex className="pl-5" direction="column" gap={5}>
+                        <div className="mb-3 text-lg font-medium">{label}</div>
+                        <Flex className="pl-4" direction="column" gap={3}>
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="text-2xl opacity-80"
+                              className="text-base opacity-80"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -108,7 +117,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="text-3xl"
+                      className="text-lg font-medium"
                       href={href}
                       key={label}
                       onClick={() => {

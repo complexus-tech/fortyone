@@ -26,6 +26,17 @@ type CoreTeam struct {
 	SprintsEnabled bool
 }
 
+type CoreListTeamsFilter struct {
+	Search string
+	Limit  int
+	Offset int
+}
+
+type CoreTeamMemberAIContext struct {
+	RoleTitle       string
+	RoleDescription string
+}
+
 type DefaultStatus struct {
 	Name       string
 	Category   string

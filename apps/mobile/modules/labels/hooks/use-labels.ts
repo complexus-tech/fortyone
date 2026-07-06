@@ -6,7 +6,7 @@ import type { Label } from "@/types";
 export const useLabels = () => {
   return useQuery<Label[]>({
     queryKey: labelKeys.lists(),
-    queryFn: getLabels,
+    queryFn: () => getLabels(),
   });
 };
 

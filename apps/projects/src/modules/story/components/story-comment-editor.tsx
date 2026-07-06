@@ -4,8 +4,8 @@ import Link from "@tiptap/extension-link";
 import Mention from "@tiptap/extension-mention";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Underline from "@tiptap/extension-underline";
-import StarterKit from "@tiptap/starter-kit";
 import tippy from "tippy.js";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type { MentionItem, MentionListRef } from "./mentions/list";
 import { MentionList } from "./mentions/list";
 
@@ -92,7 +92,7 @@ export const getStoryCommentEditorExtensions = ({
   placeholder: string;
 }) => {
   const baseExtensions = [
-    StarterKit,
+    createRichTextStarterKit(),
     Underline,
     TaskList,
     TaskItem.configure({

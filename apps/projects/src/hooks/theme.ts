@@ -1,40 +1,44 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+type Theme = "light" | "dark";
+
+const getTheme = (): Theme => {
+  if (typeof window === "undefined") return "light";
+
+  if (
+    window.localStorage.theme === "dark" ||
+    (!("theme" in window.localStorage) &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
+  ) {
+    return "dark";
+  }
+
+  return "light";
+};
+
+const applyTheme = (theme: Theme) => {
+  if (typeof document === "undefined") return;
+
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+};
 
 export const useTheme = () => {
-  const getTheme = (): "light" | "dark" => {
-    // Check user preference for theme first
-    if (
-      window.localStorage.theme === "dark" ||
-      (!("theme" in window.localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      return "dark";
-    }
-    return "light";
-  };
-
-  const [theme, setTheme] = useState("");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const initialTheme = getTheme();
+    applyTheme(initialTheme);
+    return initialTheme;
+  });
 
   const toggleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark");
-      window.localStorage.setItem("theme", "dark");
-    } else {
-      setTheme("light");
-      window.localStorage.setItem("theme", "light");
-    }
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setThemeState(nextTheme);
+    window.localStorage.setItem("theme", nextTheme);
+    applyTheme(nextTheme);
   };
-
-  useEffect(() => {
-    setTheme(getTheme());
-    if (theme !== "") {
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    }
-  }, [theme]);
 
   return { theme, toggleTheme };
 };

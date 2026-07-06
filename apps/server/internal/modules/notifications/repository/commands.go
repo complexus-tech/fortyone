@@ -35,6 +35,7 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 			message = :message,
 			actor_id = :actor_id,
 			read_at = NULL,
+			email_sent_at = NULL,
 			created_at = CURRENT_TIMESTAMP
 		RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
 			entity_id, actor_id, title, message, created_at, read_at;

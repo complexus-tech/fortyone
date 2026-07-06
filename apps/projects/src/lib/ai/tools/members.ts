@@ -1,8 +1,13 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getMembers, getTeamMembers } from "@/lib/queries/members/get-members";
+import {
+  getMembers,
+  getMembersPage,
+  getTeamMembersPage,
+} from "@/lib/queries/members/get-members";
 import { getTeams } from "@/modules/teams/queries/get-teams";
+import { resolvePaginationInput } from "./tool-helpers";
 
 export const membersTool = tool({
   description:
@@ -31,11 +36,20 @@ export const membersTool = tool({
       .string()
       .optional()
       .describe("Member ID for specific member operations"),
+
+    page: z.number().min(1).optional().describe("Page number. Default 1."),
+
+    pageSize: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe("Number of members per page. Default 20, max 100."),
   }),
 
   execute: async (
-    { action, teamId, searchQuery, memberId },
-    { experimental_context },
+    { action, teamId, searchQuery, memberId, page, pageSize },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -47,26 +61,33 @@ export const membersTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
+      const pagination = resolvePaginationInput({ page, pageSize });
 
       switch (action) {
         case "list-all-members": {
-          const members = await getMembers(ctx);
+          const response = await getMembersPage(
+            ctx,
+            "",
+            pagination.page,
+            pagination.pageSize,
+          );
 
           return {
             success: true,
-            members: members.map((member) => ({
+            members: response.members.map((member) => ({
               id: member.id,
               name: member.fullName,
               username: member.username,
               role: member.role,
               avatarUrl: member.avatarUrl,
             })),
-            count: members.length,
-            message: `Found ${members.length} members in the workspace.`,
+            pagination: response.pagination,
+            count: response.members.length,
+            message: `Found ${response.members.length} members in the workspace.`,
           };
         }
 
@@ -78,8 +99,14 @@ export const membersTool = tool({
             };
           }
 
-          const [members, teams] = await Promise.all([
-            getTeamMembers(teamId, ctx),
+          const [response, teams] = await Promise.all([
+            getTeamMembersPage(
+              teamId,
+              ctx,
+              "",
+              pagination.page,
+              pagination.pageSize,
+            ),
             getTeams(ctx),
           ]);
 
@@ -90,15 +117,16 @@ export const membersTool = tool({
             success: true,
             teamId,
             teamName,
-            members: members.map((member) => ({
+            members: response.members.map((member) => ({
               id: member.id,
               name: member.fullName,
               username: member.username,
               role: member.role,
               avatarUrl: member.avatarUrl,
             })),
-            count: members.length,
-            message: `Found ${members.length} members in ${teamName}.`,
+            pagination: response.pagination,
+            count: response.members.length,
+            message: `Found ${response.members.length} members in ${teamName}.`,
           };
         }
 
@@ -110,27 +138,26 @@ export const membersTool = tool({
             };
           }
 
-          const allMembers = await getMembers(ctx);
-          const query = searchQuery.toLowerCase();
-
-          const matchingMembers = allMembers.filter(
-            (member) =>
-              member.fullName.toLowerCase().includes(query) ||
-              member.username.toLowerCase().includes(query),
+          const response = await getMembersPage(
+            ctx,
+            searchQuery,
+            pagination.page,
+            pagination.pageSize,
           );
 
           return {
             success: true,
-            members: matchingMembers.map((member) => ({
+            members: response.members.map((member) => ({
               id: member.id,
               name: member.fullName,
               username: member.username,
               role: member.role,
               avatarUrl: member.avatarUrl,
             })),
-            count: matchingMembers.length,
+            pagination: response.pagination,
+            count: response.members.length,
             query: searchQuery,
-            message: `Found ${matchingMembers.length} members matching "${searchQuery}".`,
+            message: `Found ${response.members.length} members matching "${searchQuery}".`,
           };
         }
 

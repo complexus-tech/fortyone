@@ -2,9 +2,15 @@ import { Flex, Text, Box, Badge } from "ui";
 import { cn } from "lib";
 import { CalendarIcon, SprintsIcon } from "icons";
 import { format, differenceInDays } from "date-fns";
-import type { Sprint } from "@/modules/sprints/types";
 
-export const sprintTooltip = (selectedSprint: Sprint | undefined) => {
+type SprintTooltipData = {
+  name: string;
+  goal?: string | null;
+  startDate: string;
+  endDate: string;
+};
+
+export const sprintTooltip = (selectedSprint: SprintTooltipData | undefined) => {
   if (!selectedSprint) {
     return null;
   }

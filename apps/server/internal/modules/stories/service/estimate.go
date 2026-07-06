@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultEstimateScheme = "points"
+	DefaultEstimateScheme = "hours"
 )
 
 var allowedEstimateSchemes = map[string]map[string]int16{
@@ -71,6 +71,37 @@ var estimateValueToLabel = map[string]map[int16]string{
 	},
 }
 
+var estimateDurationMinutes = map[string]map[int16]int{
+	"points": {
+		1: 120,
+		2: 240,
+		3: 360,
+		5: 600,
+		8: 960,
+	},
+	"hours": {
+		1: 30,
+		2: 60,
+		3: 120,
+		5: 240,
+		8: 480,
+	},
+	"tshirt": {
+		1: 60,
+		2: 120,
+		3: 240,
+		5: 480,
+		8: 960,
+	},
+	"ideal_days": {
+		1: 240,
+		2: 480,
+		3: 960,
+		5: 1440,
+		8: 2400,
+	},
+}
+
 func normalizeEstimateScheme(scheme string) string {
 	scheme = strings.TrimSpace(strings.ToLower(scheme))
 	if scheme == "" {
@@ -122,4 +153,18 @@ func EstimateLabelFromValue(scheme string, estimateValue *int16) *string {
 		return nil
 	}
 	return &value
+}
+
+func EstimateDurationMinutes(scheme string, estimateValue *int16) int {
+	if estimateValue == nil {
+		return 0
+	}
+
+	normalizedScheme := normalizeEstimateScheme(scheme)
+	durationsByValue, ok := estimateDurationMinutes[normalizedScheme]
+	if !ok {
+		durationsByValue = estimateDurationMinutes[DefaultEstimateScheme]
+	}
+
+	return durationsByValue[*estimateValue]
 }

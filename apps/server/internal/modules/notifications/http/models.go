@@ -21,6 +21,18 @@ type AppNotification struct {
 	ReadAt      *time.Time                        `json:"readAt"`
 }
 
+type AppPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppNotificationsResponse struct {
+	Notifications []AppNotification `json:"notifications"`
+	Pagination    AppPagination     `json:"pagination"`
+}
+
 type NotificationChannel struct {
 	Email bool `json:"email"`
 	InApp bool `json:"inApp"`
@@ -63,6 +75,18 @@ func toAppNotifications(ns []notifications.CoreNotification) []AppNotification {
 		result[i] = toAppNotification(n)
 	}
 	return result
+}
+
+func toAppNotificationsResponse(ns []notifications.CoreNotification, page, pageSize int, hasMore bool) AppNotificationsResponse {
+	return AppNotificationsResponse{
+		Notifications: toAppNotifications(ns),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: page + 1,
+		},
+	}
 }
 
 // Convert core notification preferences to API model

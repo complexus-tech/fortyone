@@ -63,6 +63,7 @@ type Repository interface {
 	Get(ctx context.Context, workspaceID, userID uuid.UUID) (CoreWorkspace, error)
 	GetByID(ctx context.Context, workspaceID uuid.UUID) (CoreWorkspace, error)
 	GetBySlug(ctx context.Context, slug string, userID uuid.UUID) (CoreWorkspace, error)
+	GetPublicBySlug(ctx context.Context, slug string) (CoreWorkspace, error)
 	RemoveMember(ctx context.Context, workspaceID, userID uuid.UUID) error
 	CheckSlugAvailability(ctx context.Context, slug string) (bool, error)
 	UpdateMemberRole(ctx context.Context, workspaceID, userID uuid.UUID, role string) error
@@ -528,6 +529,24 @@ func (s *Service) GetBySlug(ctx context.Context, slug string, userID uuid.UUID) 
 		attribute.String("slug", slug),
 		attribute.String("workspace_id", workspace.ID.String()),
 		attribute.String("user_id", userID.String()),
+	))
+	return workspace, nil
+}
+
+func (s *Service) GetPublicBySlug(ctx context.Context, slug string) (CoreWorkspace, error) {
+	s.log.Info(ctx, "business.core.workspaces.getPublicBySlug")
+	ctx, span := web.AddSpan(ctx, "business.core.workspaces.GetPublicBySlug")
+	defer span.End()
+
+	workspace, err := s.repo.GetPublicBySlug(ctx, slug)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspace{}, err
+	}
+
+	span.AddEvent("public workspace branding retrieved.", trace.WithAttributes(
+		attribute.String("slug", slug),
+		attribute.String("workspace_id", workspace.ID.String()),
 	))
 	return workspace, nil
 }

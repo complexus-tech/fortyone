@@ -4,15 +4,14 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import Script from "next/script";
 import { body, heading, mono } from "@/styles/fonts";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne | Open Source AI Project Management Platform",
+  title: "FortyOne | AI Project Manager for Modern Teams",
   description:
-    "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -40,9 +39,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne | Open Source AI Project Management Platform",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
     siteName: "FortyOne",
     url: "/",
   },
@@ -50,9 +49,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne | Open Source AI Project Management Platform",
+    title: "FortyOne | AI Project Manager for Modern Teams",
     description:
-      "FortyOne is an open source AI project management platform for teams. Plan sprints, track OKRs, manage tasks, and surface delivery risks in one place. Start free.",
+      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
   },
   alternates: {
     canonical: "https://www.fortyone.app",

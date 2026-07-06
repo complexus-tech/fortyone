@@ -350,6 +350,58 @@ func (r *repo) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, works
 	return nil
 }
 
+func (r *repo) UpdateMemberAIContext(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID, input teams.CoreTeamMemberAIContext) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.teams.UpdateMemberAIContext")
+	defer span.End()
+
+	query := `
+		UPDATE team_members tm
+		SET
+			ai_role_title = :ai_role_title,
+			ai_role_description = :ai_role_description,
+			updated_at = NOW()
+		FROM teams t
+		WHERE tm.team_id = t.team_id
+			AND tm.team_id = :team_id
+			AND tm.user_id = :user_id
+			AND t.workspace_id = :workspace_id
+	`
+
+	params := map[string]any{
+		"team_id":             teamID,
+		"user_id":             userID,
+		"workspace_id":        workspaceID,
+		"ai_role_title":       strings.TrimSpace(input.RoleTitle),
+		"ai_role_description": strings.TrimSpace(input.RoleDescription),
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to update team member ai context: %s", err)
+		r.log.Error(ctx, errMsg)
+		span.RecordError(errors.New("failed to update team member ai context"), trace.WithAttributes(attribute.String("error", errMsg)))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("team member not found")
+	}
+	return nil
+}
+
 // CreateTx creates a new team using an existing transaction.
 func (r *repo) CreateTx(ctx context.Context, tx *sqlx.Tx, team teams.CoreTeam) (teams.CoreTeam, error) {
 	ctx, span := web.AddSpan(ctx, "teamsrepository.CreateTx")

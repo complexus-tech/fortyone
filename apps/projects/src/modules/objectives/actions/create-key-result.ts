@@ -2,7 +2,7 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
-import type { NewObjectiveKeyResult } from "../types";
+import type { KeyResult, NewObjectiveKeyResult } from "../types";
 
 export const createKeyResult = async (
   params: NewObjectiveKeyResult,
@@ -11,7 +11,7 @@ export const createKeyResult = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    const res = await post<NewObjectiveKeyResult, ApiResponse<null>>(
+    const res = await post<NewObjectiveKeyResult, ApiResponse<KeyResult>>(
       "key-results",
       params,
       ctx,

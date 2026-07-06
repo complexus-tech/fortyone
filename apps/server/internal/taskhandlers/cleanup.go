@@ -147,6 +147,19 @@ func (c *CleanupHandlers) HandleSprintStoryMigration(ctx context.Context, t *asy
 	return nil
 }
 
+// HandleMayaWorkFocusInference processes the Maya work-focus learning task.
+func (c *CleanupHandlers) HandleMayaWorkFocusInference(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing MayaWorkFocusInference task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessMayaWorkFocusInference(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to process Maya work-focus inference", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("maya work-focus inference failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed MayaWorkFocusInference task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleOverdueStoriesEmail processes the overdue stories email task
 func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
@@ -170,6 +183,19 @@ func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *as
 	}
 
 	c.log.Info(ctx, "HANDLER: Successfully processed ObjectiveOverdueEmail task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
+// HandleWeeklyDigestEmail processes the weekly digest email task
+func (c *CleanupHandlers) HandleWeeklyDigestEmail(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing WeeklyDigestEmail task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessWeeklyDigestEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+		c.log.Error(ctx, "Failed to process weekly digest email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("weekly digest email failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed WeeklyDigestEmail task", "task_id", t.ResultWriter().TaskID())
 	return nil
 }
 

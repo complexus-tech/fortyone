@@ -12,22 +12,20 @@ import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole, useMediaQuery, useWorkspacePath } from "@/hooks";
-import { useTeamMembers } from "@/lib/hooks/team-members";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
+import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
+import { MemberTooltip } from "../member-tooltip";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
-import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
-import { MemberTooltip } from "../member-tooltip";
 
 export const StoryRow = ({
   story,
@@ -46,8 +44,6 @@ export const StoryRow = ({
   const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
-  const { data: teams = [] } = useTeams();
-  const { data: members = [] } = useTeamMembers(story.teamId);
   const { userRole } = useUserRole();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -58,10 +54,11 @@ export const StoryRow = ({
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
 
-  const teamCode = teams.find((team) => team.id === story.teamId)?.code;
-
-  const selectedAssignee =
-    story.assignee ?? members.find((member) => member.id === story.assigneeId);
+  const teamCode = story.team?.code;
+  const storyReference = teamCode
+    ? `${teamCode}-${story.sequenceId}`
+    : String(story.sequenceId);
+  const selectedAssignee = story.assignee;
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -139,7 +136,7 @@ export const StoryRow = ({
                 }}
               />
               {isColumnVisible("ID") && (
-                <Tooltip title={`Story ID: ${teamCode}-${story.sequenceId}`}>
+                <Tooltip title={`Story ID: ${storyReference}`}>
                   <Text
                     className={cn(
                       "flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem] transition-colors",
@@ -155,7 +152,7 @@ export const StoryRow = ({
                     role="button"
                     tabIndex={0}
                   >
-                    {teamCode}-{story.sequenceId}
+                    {storyReference}
                     {story.subStories.length > 0 && (
                       <ArrowRight2Icon
                         className={cn("h-4 shrink-0 transition-transform", {
@@ -220,7 +217,7 @@ export const StoryRow = ({
                     </span>
                   </MemberTooltip>
                   <AssigneesMenu.Items
-                    assigneeId={selectedAssignee?.id}
+                    assigneeId={story.assigneeId}
                     onAssigneeSelected={(assigneeId) => {
                       handleUpdate({ assigneeId });
                     }}

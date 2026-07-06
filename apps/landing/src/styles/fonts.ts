@@ -1,11 +1,10 @@
 import {
-  Inter_Tight as InterTight,
+  Geist,
   Playfair_Display as Playfair,
   Inconsolata,
-  Manrope,
 } from "next/font/google";
 
-export const body = Manrope({
+export const body = Geist({
   variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
@@ -23,4 +22,5 @@ export const heading = Playfair({
   display: "swap",
   subsets: ["latin"],
   weight: "variable",
+  style: ["normal", "italic"],
 });

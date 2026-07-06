@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { Button, Flex, TextEditor, DatePicker, Box, Avatar } from "ui";
 import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Link from "@tiptap/extension-link";
@@ -19,6 +18,7 @@ import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { PriorityIcon } from "./priority-icon";
@@ -77,7 +77,7 @@ export const NewSubStory = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      createRichTextStarterKit(),
       Underline,
       TaskList,
       TaskItem.configure({

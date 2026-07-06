@@ -13,7 +13,7 @@ type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
-    cta: "Start for free - no card needed",
+    cta: "Start free - no card needed",
     href: SIGNUP_URL,
     overview: "For individuals and small teams getting started.",
     price: 0,
@@ -117,14 +117,14 @@ const Package = ({
       <Text className="mb-2 flex items-center gap-1.5 text-xl font-semibold">
         {name}{" "}
         {recommended ? (
-          <Badge color="invert" className="font-semibold">
+          <Badge className="font-semibold" color="invert">
             Most Popular
           </Badge>
         ) : null}
       </Text>
 
       {name !== "Enterprise" ? (
-        <Text className="mt-4 text-4xl font-bold">
+        <Text className="mt-4 text-4xl font-semibold tracking-tight">
           ${finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2)}
           <Text as="span" className="text-base font-medium opacity-60">
             {" "}
@@ -132,7 +132,11 @@ const Package = ({
           </Text>
         </Text>
       ) : (
-        <Text className="mt-4" fontSize="4xl" fontWeight="bold">
+        <Text
+          className="mt-4 tracking-tight"
+          fontSize="4xl"
+          fontWeight="semibold"
+        >
           Custom
         </Text>
       )}
@@ -195,17 +199,18 @@ export const Pricing = ({
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
               className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl", {
-                "md:text-6xl": pathname === "/pricing",
+                "text-5xl font-medium md:text-[3.5rem]":
+                  pathname === "/pricing",
               })}
             >
-              Start free. Scale when your team outgrows it.
+              Start free. Scale AI project management as your team grows.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="w-full max-w-xl opacity-70 md:mt-4">
-              No card required, no feature walls, no gotchas. The free plan
-              handles a real team doing real work. Paid plans add more room and
-              more Maya — upgrade, downgrade, or cancel any time.
+              No card required and no trial clock. Plan real projects on the
+              free plan, then add more teams, goals, integrations, and AI
+              capacity as work gets bigger.
             </Text>
           ) : null}
         </Box>

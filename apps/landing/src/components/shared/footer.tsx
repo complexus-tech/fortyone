@@ -5,7 +5,6 @@ import { Box, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
 import {
   FacebookIcon,
-  GitIcon,
   InstagramIcon,
   LinkedinIcon,
   MoonIcon,
@@ -14,8 +13,78 @@ import {
   TwitterIcon,
 } from "icons";
 import { useTheme } from "next-themes";
+import { comparisons } from "@/lib/comparisons";
+import { featureLinks } from "@/lib/feature-links";
+import { useCaseLinks } from "@/lib/use-case-links";
 import { Logo } from "../ui/logo";
-import { Container } from "../ui";
+import { Container } from "../ui/container";
+
+const COPYRIGHT_YEAR = 2026;
+
+const caseLinks = useCaseLinks.map(({ href, label }) => ({
+  href,
+  title: label,
+}));
+
+const footerFeatureLinks = featureLinks.map(({ href, label }) => ({
+  href,
+  title: label,
+}));
+
+const company = [
+  {
+    title: "Pricing",
+    href: "/pricing",
+  },
+  {
+    title: "Contact",
+    href: "/contact",
+  },
+];
+
+const comparisonFooterOrder = ["asana", "jira", "clickup", "trello", "monday"];
+
+const comparisonLinks = comparisonFooterOrder
+  .map((slug) => comparisons.find((comparison) => comparison.slug === slug))
+  .filter((comparison) => comparison !== undefined)
+  .map(({ competitor, slug }) => ({
+    href: `/compare/${slug}`,
+    title: competitor,
+  }));
+
+const legal = [
+  {
+    title: "Privacy Policy",
+    href: "/privacy",
+  },
+  {
+    title: "Terms of Service",
+    href: "/terms",
+  },
+];
+
+const resources = [
+  {
+    title: "AI Project Manager",
+    href: "/ai-project-manager",
+  },
+  {
+    title: "Docs",
+    href: "https://docs.fortyone.app",
+  },
+  {
+    title: "Blog",
+    href: "/blog",
+  },
+  {
+    title: "GitHub",
+    href: "https://github.com/complexus-tech/fortyone",
+  },
+  {
+    title: "Pitch",
+    href: "https://pitch.fortyone.app",
+  },
+];
 
 const FooterLink = ({
   href,
@@ -28,7 +97,7 @@ const FooterLink = ({
 }) => (
   <Link
     className={cn(
-      "hover:text-primary mb-3 block max-w-max text-base opacity-80 transition-opacity duration-200 ease-in-out hover:opacity-80 dark:opacity-60",
+      "hover:text-primary mb-3 block max-w-max text-[0.9375rem] transition-colors duration-200 ease-in-out",
       className,
     )}
     href={href}
@@ -81,8 +150,7 @@ const Copyright = () => {
         </Link>
         |
         <Text fontSize="sm">
-          © {new Date().getFullYear()} Complexus LLC &bull; All rights
-          reserved.
+          © {COPYRIGHT_YEAR} Complexus LLC &bull; All rights reserved.
         </Text>
       </Box>
     </Box>
@@ -91,106 +159,56 @@ const Copyright = () => {
 
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
-  const product = [
-    {
-      href: "/features/tasks",
-      title: "Tasks",
-    },
-    {
-      title: "Objectives",
-      href: "/features/objectives",
-    },
-    {
-      href: "/features/okrs",
-      title: "OKRs",
-    },
-
-    {
-      href: "/features/sprints",
-      title: "Sprints",
-    },
-  ];
-  const company = [
-    {
-      title: "Pricing",
-      href: "/pricing",
-    },
-    {
-      title: "Contact",
-      href: "/contact",
-    },
-  ];
-  const legal = [
-    {
-      title: "Privacy Policy",
-      href: "/privacy",
-    },
-    {
-      title: "Terms of Service",
-      href: "/terms",
-    },
-  ];
-
-  const resources = [
-    {
-      title: "Help Center",
-      href: "https://docs.fortyone.app",
-    },
-    {
-      title: "Blog",
-      href: "/blog",
-    },
-    {
-      title: "GitHub",
-      href: "https://github.com/complexus-tech/fortyone",
-    },
-    {
-      title: "Pitch",
-      href: "https://pitch.fortyone.app",
-    },
-  ];
   return (
     <Box as="footer" className="relative">
       <Container>
         <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
-          <Box className="col-span-2">
+          <Box className="hidden md:block">
             <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Product
-            </Text>
-            {product.map(({ href, title }) => (
-              <FooterLink href={href} key={href}>
+            <Text className="text-text-muted mb-4">Features</Text>
+            {footerFeatureLinks.map(({ href, title }) => (
+              <FooterLink className="whitespace-nowrap" href={href} key={href}>
                 {title}
               </FooterLink>
             ))}
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Company
-            </Text>
+            <Text className="text-text-muted mb-4">Use cases</Text>
+            {caseLinks.map(({ href, title }) => (
+              <FooterLink className="whitespace-nowrap" href={href} key={href}>
+                {title}
+              </FooterLink>
+            ))}
+          </Box>
+          <Box>
+            <Text className="text-text-muted mb-4">Company</Text>
             {company.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>
             ))}
+            <Box className="mt-8">
+              <Text className="text-text-muted mb-4">Compare</Text>
+              {comparisonLinks.map(({ href, title }) => (
+                <FooterLink href={href} key={href}>
+                  {title}
+                </FooterLink>
+              ))}
+            </Box>
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Legal
-            </Text>
-            {legal.map(({ href, title }) => (
+            <Text className="text-text-muted mb-4">Resources</Text>
+            {resources.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>
             ))}
           </Box>
           <Box>
-            <Text className="mb-4" fontSize="lg" fontWeight="semibold">
-              Resources
-            </Text>
-            {resources.map(({ href, title }) => (
+            <Text className="text-text-muted mb-4">Legal</Text>
+            {legal.map(({ href, title }) => (
               <FooterLink href={href} key={href}>
                 {title}
               </FooterLink>

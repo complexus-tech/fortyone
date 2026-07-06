@@ -67,6 +67,19 @@ func TestPullRequestWorkflowEventOnlyMatchesWorkflowActions(t *testing.T) {
 	}
 }
 
+func TestGitHubActivityReasonsExplainAutomationSource(t *testing.T) {
+	require.Equal(
+		t,
+		"GitHub issue details changed, so FortyOne synced the linked story.",
+		githubIssueSyncReason(),
+	)
+	require.Equal(
+		t,
+		"A GitHub workflow automation matched a repository event and moved this story to the configured status.",
+		githubWorkflowAutomationReason(),
+	)
+}
+
 func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
 	commentID := uuid.New()
 	body := buildFortyOneUserCommentBody("Ship it", commentID)
@@ -75,4 +88,74 @@ func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
 	require.Contains(t, body, "<!-- fortyone:comment:"+commentID.String()+" -->")
 	require.True(t, isFortyOneAuthoredCommentBody(body))
 	require.Equal(t, "Ship it", stripFortyOneCommentMarker(body))
+}
+
+func TestGitHubPriorityFromLabels(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   []string
+		expected string
+	}{
+		{name: "urgent beats lower priority labels", labels: []string{"enhancement", "priority: high", "P0"}, expected: "Urgent"},
+		{name: "high maps common priority labels", labels: []string{"type: bug", "priority/high"}, expected: "High"},
+		{name: "medium maps p2 labels", labels: []string{"P2"}, expected: "Medium"},
+		{name: "low maps low labels", labels: []string{"good first issue", "priority: low"}, expected: "Low"},
+		{name: "unknown labels are not treated as priority", labels: []string{"bug", "backend"}, expected: "No Priority"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, githubPriorityFromLabelNames(tt.labels))
+		})
+	}
+}
+
+func TestGitHubPriorityUpdateFromLabelsOnlyUpdatesWhenPriorityLabelExists(t *testing.T) {
+	priority, ok := githubPriorityUpdateFromLabelNames([]string{"bug", "backend"})
+	require.False(t, ok)
+	require.Equal(t, "No Priority", priority)
+
+	priority, ok = githubPriorityUpdateFromLabelNames([]string{"bug", "P2"})
+	require.True(t, ok)
+	require.Equal(t, "Medium", priority)
+}
+
+func TestIssueActionMatchesStoryStatusCategory(t *testing.T) {
+	tests := []struct {
+		name     string
+		action   string
+		category string
+		expected bool
+	}{
+		{name: "closed issue already completed locally", action: "closed", category: "completed", expected: true},
+		{name: "closed issue still unstarted locally", action: "closed", category: "unstarted", expected: false},
+		{name: "reopened issue already active locally", action: "reopened", category: "started", expected: true},
+		{name: "reopened issue already unstarted locally", action: "reopened", category: "unstarted", expected: true},
+		{name: "reopened issue still completed locally", action: "reopened", category: "completed", expected: false},
+		{name: "reopened issue still cancelled locally", action: "reopened", category: "cancelled", expected: false},
+		{name: "edited issue never matches workflow state", action: "edited", category: "completed", expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, issueActionMatchesStoryStatusCategory(tt.action, tt.category))
+		})
+	}
+}
+
+func TestGitHubIssueSyncHashMatchesEquivalentIssuePayload(t *testing.T) {
+	outboundHash := githubIssueSyncHash("Ship account settings", "Line one\r\nLine two", "closed")
+	inboundHash := githubIssueSyncHash("Ship account settings", "Line one\nLine two", "closed")
+
+	require.Equal(t, outboundHash, inboundHash)
+}
+
+func TestShouldIgnoreFortyOneIssueEcho(t *testing.T) {
+	syncHash := githubIssueSyncHash("Fix webhook loop", "Body", "closed")
+
+	require.True(t, shouldIgnoreFortyOneIssueEcho("closed", "fortyone", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "github", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "fortyone", syncHash, githubIssueSyncHash("Fix webhook loop", "Changed", "closed")))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "", syncHash, syncHash))
+	require.False(t, shouldIgnoreFortyOneIssueEcho("labeled", "fortyone", syncHash, syncHash))
 }

@@ -11,6 +11,16 @@ export type Team = {
   sprintsEnabled: boolean;
 };
 
+export type TeamsPage = {
+  teams: Team[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type CreateTeamInput = {
   name: string;
   code: string;
@@ -26,6 +36,9 @@ export type TeamSprintSettings = {
   sprintDurationWeeks: number;
   sprintStartDay: string;
   moveIncompleteStoriesEnabled: boolean;
+  nextAutoSprintNumber: number;
+  autoCreateDisabledAt: string | null;
+  autoCreateDisabledReason: string | null;
   createdAt: string;
   updatedAt: string;
 };

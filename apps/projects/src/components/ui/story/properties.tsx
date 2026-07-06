@@ -11,6 +11,7 @@ import {
 import {
   ArrowRight2Icon,
   CalendarIcon,
+  EstimateIcon,
   ObjectiveIcon,
   SprintsIcon,
   SubStoryIcon,
@@ -18,9 +19,10 @@ import {
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
+import { EstimateMenu } from "@/components/ui/story/estimate-menu";
 import { Labels } from "@/components/ui/story/labels";
 import { sprintTooltip } from "@/components/ui/story/sprint-tooltip";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
@@ -37,11 +39,10 @@ import {
   useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { useSprint } from "@/modules/sprints/hooks/sprint-details";
-import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { hexToRgba, slugify } from "@/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatEstimate } from "@/lib/estimate";
 import { RowWrapper } from "../row-wrapper";
 
 type StoryPropertiesProps = Story & {
@@ -52,11 +53,19 @@ type StoryPropertiesProps = Story & {
   setIsExpanded?: (isExpanded: boolean) => void;
 };
 
+const completedOrCancelled = (category?: StateCategory) => {
+  return ["completed", "cancelled", "paused"].includes(category || "");
+};
+
 export const StoryProperties = ({
   handleUpdate,
   statusId,
   priority,
+  estimateValue,
+  estimateScheme,
+  objective,
   objectiveId,
+  sprint,
   sprintId,
   id,
   teamId,
@@ -74,10 +83,8 @@ export const StoryProperties = ({
   const { isColumnVisible } = useBoard();
   const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useTeamStatuses(teamId);
-  const { data: selectedSprint } = useSprint(sprintId, teamId);
-  const { data: selectedObjective } = useObjective(objectiveId, teamId);
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
-  const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
+  const pendingStatusIdRef = useRef<string | null>(null);
 
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
@@ -85,37 +92,41 @@ export const StoryProperties = ({
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
-  const completedOrCancelled = (category?: StateCategory) => {
-    return ["completed", "cancelled", "paused"].includes(category || "");
-  };
-
+  const selectedObjective =
+    objectiveId && objective?.id === objectiveId ? objective : null;
+  const selectedSprint = sprintId && sprint?.id === sprintId ? sprint : null;
   const isDoneStatus = (statusId: string) => {
     const status = statuses.find((s) => s.id === statusId);
     return status?.category === "completed";
   };
 
   const getUndoneChildren = () => {
-    const unstartedAndStartedStatusIds = statuses
-      .filter(
-        (status) =>
-          status.category === "started" ||
-          status.category === "unstarted" ||
-          status.category === "backlog",
-      )
-      .map((s) => s.id);
+    const activeStatusIds = new Set<string>();
+    for (const status of statuses) {
+      if (
+        status.category === "started" ||
+        status.category === "unstarted" ||
+        status.category === "backlog"
+      ) {
+        activeStatusIds.add(status.id);
+      }
+    }
 
-    return subStories
-      .filter((subStory) =>
-        unstartedAndStartedStatusIds.includes(subStory.statusId),
-      )
-      .map((s) => s.id);
+    const undoneChildren: string[] = [];
+    for (const subStory of subStories) {
+      if (activeStatusIds.has(subStory.statusId)) {
+        undoneChildren.push(subStory.id);
+      }
+    }
+
+    return undoneChildren;
   };
 
   const handleStatusUpdate = (statusId: string) => {
     if (isDoneStatus(statusId)) {
       const undoneChildrenIds = getUndoneChildren();
       if (undoneChildrenIds.length > 0) {
-        setPendingStatusId(statusId);
+        pendingStatusIdRef.current = statusId;
         setShowChildrenDialog(true);
         return; // Don't update yet
       }
@@ -126,6 +137,7 @@ export const StoryProperties = ({
   };
 
   const handleConfirmStatusChange = (markChildrenAsDone: boolean) => {
+    const pendingStatusId = pendingStatusIdRef.current;
     if (!pendingStatusId) return;
 
     // Update the main story
@@ -140,7 +152,7 @@ export const StoryProperties = ({
 
     // Reset dialog state
     setShowChildrenDialog(false);
-    setPendingStatusId(null);
+    pendingStatusIdRef.current = null;
   };
 
   return (
@@ -188,8 +200,8 @@ export const StoryProperties = ({
               </Button>
             ) : (
               <button
-                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label={priority}
+                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isGuest}
                 type="button"
               >
@@ -208,20 +220,58 @@ export const StoryProperties = ({
           />
         </PrioritiesMenu>
       )}
+      {isColumnVisible("Estimate") && estimateValue ? (
+        <EstimateMenu>
+          <Tooltip
+            className="pointer-events-none py-3"
+            title={formatEstimate(estimateScheme, estimateValue, "full")}
+          >
+            <span>
+              <EstimateMenu.Trigger>
+                <Button
+                  aria-label={formatEstimate(
+                    estimateScheme,
+                    estimateValue,
+                    "full",
+                  )}
+                  className="gap-1 px-2"
+                  color="tertiary"
+                  disabled={isGuest}
+                  rounded={asKanban ? "md" : "xl"}
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <EstimateIcon className="h-4" />
+                  <span>{formatEstimate(estimateScheme, estimateValue)}</span>
+                </Button>
+              </EstimateMenu.Trigger>
+            </span>
+          </Tooltip>
+          <EstimateMenu.Items
+            estimateScheme={estimateScheme}
+            estimateValue={estimateValue}
+            setEstimateValue={(estimateValue) => {
+              handleUpdate({ estimateValue });
+            }}
+          />
+        </EstimateMenu>
+      ) : null}
       {isColumnVisible("Objective") && selectedObjective ? (
         <ObjectivesMenu>
           <Tooltip
-            className="max-w-80 py-3"
+            className="w-80 max-w-[calc(100vw-2rem)] py-3"
+            collisionPadding={16}
             title={
               <Flex align="start" gap={2}>
                 <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
-                <Box>
+                <Box className="min-w-0">
                   <Text className="mb-1.5" fontSize="md">
                     {selectedObjective.name}
                   </Text>
                   <Box
-                    className="text-text-muted mt-1 line-clamp-4"
-                    html={selectedObjective.description}
+                    className="text-text-muted mt-1 line-clamp-4 min-w-0 break-words"
+                    html={selectedObjective.description ?? ""}
                   />
                 </Box>
               </Flex>

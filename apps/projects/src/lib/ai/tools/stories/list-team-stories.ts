@@ -7,11 +7,22 @@ import type { GroupedStoryParams } from "@/modules/stories/types";
 
 export const listTeamStories = tool({
   description:
-    "List all stories from a specific team, grouped by status. Returns stories with their details, assignments, and metadata.",
+    "List stories across the workspace or within specific teams, grouped by status, assignee, priority, or not grouped. Supports board-grade filters for manager, project manager, developer, and assignee questions.",
   inputSchema: z.object({
-    teamId: z.string().describe("Team ID to get stories from (required)"),
+    teamId: z
+      .string()
+      .optional()
+      .describe(
+        "Optional team ID to get stories from. Omit for workspace-wide story questions.",
+      ),
     filters: z
       .object({
+        teamIds: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Filter by one or more team IDs. Ignored when teamId is provided.",
+          ),
         statusIds: z
           .array(z.string())
           .optional()
@@ -20,6 +31,14 @@ export const listTeamStories = tool({
           .array(z.string())
           .optional()
           .describe("Filter by assignee IDs"),
+        reporterIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by reporter or creator IDs"),
+        titleContains: z
+          .string()
+          .optional()
+          .describe("Filter stories whose title or content contains this text"),
         priorities: z
           .array(z.string())
           .optional()
@@ -28,7 +47,23 @@ export const listTeamStories = tool({
           .array(z.string())
           .optional()
           .describe("Filter by sprint IDs"),
+        labelIds: z
+          .array(z.string())
+          .optional()
+          .describe("Filter by label IDs"),
+        estimateValues: z
+          .array(z.number().int())
+          .optional()
+          .describe(
+            "Filter by canonical estimate values for the team's estimation scheme",
+          ),
         objectiveId: z.string().optional().describe("Filter by objective ID"),
+        epicId: z.string().optional().describe("Filter by epic ID"),
+        parentId: z.string().optional().describe("Filter by parent story ID"),
+        hasNoAssignee: z
+          .boolean()
+          .optional()
+          .describe("Show only stories with no assignee"),
         assignedToMe: z
           .boolean()
           .optional()
@@ -113,11 +148,6 @@ export const listTeamStories = tool({
           .default(20)
           .optional()
           .describe("Number of stories to return per group (default: 20)"),
-        page: z
-          .number()
-          .min(1)
-          .optional()
-          .describe("Page number for pagination (default: 1)"),
       })
       .optional()
       .describe("Optional filters for story queries"),
@@ -125,9 +155,17 @@ export const listTeamStories = tool({
       .enum(["status", "assignee", "priority", "none"])
       .default("status")
       .describe("Group by status, assignee, or priority"),
+    orderBy: z
+      .enum(["created", "updated", "deadline", "priority"])
+      .optional()
+      .describe("Sort field for stories inside each group"),
+    orderDirection: z.enum(["asc", "desc"]).optional().describe("Sort order"),
   }),
 
-  execute: async ({ teamId, filters, groupBy }, { experimental_context }) => {
+  execute: async (
+    { teamId, filters, groupBy, orderBy, orderDirection },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -138,7 +176,7 @@ export const listTeamStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -148,9 +186,14 @@ export const listTeamStories = tool({
 
       const params: GroupedStoryParams = {
         groupBy,
-        teamIds: [teamId],
+        orderBy,
+        orderDirection,
+        teamIds: teamId ? [teamId] : filters?.teamIds,
         ...filters,
       };
+      if (teamId) {
+        params.teamIds = [teamId];
+      }
 
       const result = await getGroupedStories(ctx, params);
 
@@ -162,7 +205,9 @@ export const listTeamStories = tool({
         })),
         meta: result.meta,
         userRole,
-        message: `Found ${result.meta.totalGroups} status groups in this team.`,
+        message: teamId
+          ? `Found ${result.meta.totalGroups} story groups in this team.`
+          : `Found ${result.meta.totalGroups} story groups in this workspace.`,
       };
     } catch (error) {
       return {

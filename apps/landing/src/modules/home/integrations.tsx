@@ -7,7 +7,10 @@ import { SIGNUP_URL } from "@/lib/app-url";
 
 export const Integrations = () => {
   return (
-    <Box className="from-surface-muted to-surface dark:from-background dark:via-background relative mt-20 bg-linear-to-b py-16 md:mb-28 md:py-40 dark:to-black">
+    <Box
+      className="from-surface via-surface-muted to-surface dark:from-background dark:via-background relative mt-20 scroll-mt-24 bg-linear-to-b py-16 md:mb-28 md:py-40 dark:to-black"
+      id="integrations"
+    >
       <Image
         alt="Slack logo"
         className="pointer-events-none absolute top-24 left-16 hidden rotate-6 md:block"
@@ -64,7 +67,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
-              Sync up your whole stack.
+              Your tools become AI context.
             </Text>
           </motion.div>
           <motion.div
@@ -77,10 +80,10 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
-              GitHub merges, Slack threads, Figma handoffs, GitLab pipelines —
-              they all happen in isolation, then get lost. FortyOne pulls them
-              into a single, coherent view so your team stops chasing context
-              across five tabs.
+              Google Calendar helps AI understand real availability. Slack lets
+              teams create tasks and ask the assistant where work is already
+              happening. GitHub, Figma, and GitLab bring delivery context back
+              into the project plan.
             </Text>
           </motion.div>
           <motion.div
@@ -93,7 +96,7 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
-              Get started
+              Get started free
             </Button>
           </motion.div>
         </Flex>

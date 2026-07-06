@@ -15,6 +15,7 @@ export type User = {
   avatarUrl: string | null;
   isActive: boolean;
   isSystem: boolean;
+  isInternal: boolean;
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
   timezone: string;
@@ -41,8 +42,27 @@ export type Member = {
   avatarUrl: string | null;
   isActive: boolean;
   isSystem: boolean;
+  isInternal: boolean;
+  teamAiRoleTitle?: string;
+  teamAiRoleDescription?: string;
+  inferredTeamAiRoleTitle?: string;
+  inferredTeamAiRoleDescription?: string;
+  inferredTeamAiRoleStoryCount?: number;
+  inferredTeamAiRoleConfidence?: number;
+  inferredTeamAiRoleGeneratedAt?: string | null;
+  lastStoryActivityAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type MembersPage = {
+  members: Member[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 export type Label = {
@@ -53,6 +73,16 @@ export type Label = {
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type LabelsPage = {
+  labels: Label[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 export type Link = {
@@ -125,6 +155,7 @@ export type WorkspaceSettings = {
 export type AutomationPreferences = {
   id: string;
   autoAssignSelf: boolean;
+  autoAssignMaya: boolean;
   assignSelfOnBranchCopy: boolean;
   moveStoryToStartedOnBranch: boolean;
   openStoryInDialog: boolean;

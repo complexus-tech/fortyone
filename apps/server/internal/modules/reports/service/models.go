@@ -55,10 +55,246 @@ type StatsFilters struct {
 // ReportFilters represents common filters for workspace reports
 type ReportFilters struct {
 	TeamIDs      []uuid.UUID `json:"teamIds"`
+	AssigneeIDs  []uuid.UUID `json:"assigneeIds"`
 	StartDate    *time.Time  `json:"startDate"`
 	EndDate      *time.Time  `json:"endDate"`
 	SprintIDs    []uuid.UUID `json:"sprintIds"`
 	ObjectiveIDs []uuid.UUID `json:"objectiveIds"`
+}
+
+type CoreWorkspaceAnalyticsEventInput struct {
+	WorkspaceID uuid.UUID      `json:"workspaceId"`
+	UserID      uuid.UUID      `json:"userId"`
+	EventName   string         `json:"eventName"`
+	Surface     string         `json:"surface"`
+	TeamID      *uuid.UUID     `json:"teamId,omitempty"`
+	StoryID     *uuid.UUID     `json:"storyId,omitempty"`
+	ObjectiveID *uuid.UUID     `json:"objectiveId,omitempty"`
+	SprintID    *uuid.UUID     `json:"sprintId,omitempty"`
+	KeyResultID *uuid.UUID     `json:"keyResultId,omitempty"`
+	Properties  map[string]any `json:"properties,omitempty"`
+	OccurredAt  time.Time      `json:"occurredAt"`
+}
+
+type CoreWorkspaceCommandCenterReport struct {
+	WorkspaceID   uuid.UUID                                `json:"workspaceId"`
+	ReportDate    time.Time                                `json:"reportDate"`
+	Filters       ReportFilters                            `json:"filters"`
+	SectionErrors []CoreWorkspaceCommandCenterSectionError `json:"sectionErrors"`
+	Overview      CoreWorkspaceOverview                    `json:"overview"`
+	Pulse         CorePulseReport                          `json:"pulse"`
+	Stories       CoreStoryAnalytics                       `json:"stories"`
+	Objectives    CoreObjectiveProgress                    `json:"objectives"`
+	Teams         CoreTeamPerformance                      `json:"teams"`
+	Workload      CoreWorkloadAnalysis                     `json:"workload"`
+	Sprints       CoreSprintAnalyticsWorkspace             `json:"sprints"`
+	Trends        CoreTimelineTrends                       `json:"trends"`
+	Requests      CoreRequestSourceAnalytics               `json:"requests"`
+	Engagement    CoreWorkspaceEngagementAnalytics         `json:"engagement"`
+}
+
+type CoreWorkspaceCommandCenterSectionError struct {
+	Section string `json:"section"`
+	Message string `json:"message"`
+}
+
+type CoreRequestSourceAnalytics struct {
+	Providers        []CoreRequestProviderPerformance `json:"providers"`
+	TotalRequests    int                              `json:"totalRequests"`
+	PendingRequests  int                              `json:"pendingRequests"`
+	AcceptedRequests int                              `json:"acceptedRequests"`
+	DeclinedRequests int                              `json:"declinedRequests"`
+}
+
+type CoreRequestProviderPerformance struct {
+	Provider         string  `json:"provider"`
+	TotalRequests    int     `json:"totalRequests"`
+	PendingRequests  int     `json:"pendingRequests"`
+	AcceptedRequests int     `json:"acceptedRequests"`
+	DeclinedRequests int     `json:"declinedRequests"`
+	UrgentRequests   int     `json:"urgentRequests"`
+	HighRequests     int     `json:"highRequests"`
+	StaleRequests    int     `json:"staleRequests"`
+	AcceptanceRate   float64 `json:"acceptanceRate"`
+}
+
+type CoreWorkspaceEngagementAnalytics struct {
+	TotalEvents     int                            `json:"totalEvents"`
+	UniqueUsers     int                            `json:"uniqueUsers"`
+	EventsByName    []CoreWorkspaceEngagementCount `json:"eventsByName"`
+	EventsBySurface []CoreWorkspaceEngagementCount `json:"eventsBySurface"`
+	TopUsers        []CoreWorkspaceEngagementUser  `json:"topUsers"`
+}
+
+type CoreWorkspaceEngagementCount struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+type CoreWorkspaceEngagementUser struct {
+	UserID    uuid.UUID `json:"userId"`
+	FullName  string    `json:"fullName"`
+	Username  string    `json:"username"`
+	AvatarURL string    `json:"avatarUrl"`
+	Events    int       `json:"events"`
+}
+
+// Workload Analysis Models
+type CoreWorkloadAnalysis struct {
+	Summary    CoreWorkloadSummary       `json:"summary"`
+	Members    []CoreMemberWorkload      `json:"members"`
+	Teams      []CoreTeamWorkloadSummary `json:"teams"`
+	Unassigned CoreUnassignedWorkload    `json:"unassigned"`
+	Risks      CoreWorkloadRisks         `json:"risks"`
+}
+
+type CoreWorkloadSummary struct {
+	TotalOpenStories    int `json:"totalOpenStories" db:"total_open_stories"`
+	TotalEstimate       int `json:"totalEstimate" db:"total_estimate"`
+	OverdueStories      int `json:"overdueStories" db:"overdue_stories"`
+	UrgentStories       int `json:"urgentStories" db:"urgent_stories"`
+	HighPriorityStories int `json:"highPriorityStories" db:"high_priority_stories"`
+	UnestimatedStories  int `json:"unestimatedStories" db:"unestimated_stories"`
+	UnassignedStories   int `json:"unassignedStories" db:"unassigned_stories"`
+}
+
+type CoreMemberWorkload struct {
+	UserID                uuid.UUID  `json:"userId" db:"user_id"`
+	FullName              string     `json:"fullName" db:"full_name"`
+	Username              string     `json:"username" db:"username"`
+	AvatarURL             string     `json:"avatarUrl" db:"avatar_url"`
+	TeamAIRoleTitle       string     `json:"teamAiRoleTitle" db:"team_ai_role_title"`
+	TeamAIRoleDescription string     `json:"teamAiRoleDescription" db:"team_ai_role_description"`
+	OpenStories           int        `json:"openStories" db:"open_stories"`
+	StartedStories        int        `json:"startedStories" db:"started_stories"`
+	PausedStories         int        `json:"pausedStories" db:"paused_stories"`
+	CompletedStories      int        `json:"completedStories" db:"completed_stories"`
+	OverdueStories        int        `json:"overdueStories" db:"overdue_stories"`
+	UrgentStories         int        `json:"urgentStories" db:"urgent_stories"`
+	HighPriorityStories   int        `json:"highPriorityStories" db:"high_priority_stories"`
+	UnestimatedStories    int        `json:"unestimatedStories" db:"unestimated_stories"`
+	EstimateTotal         int        `json:"estimateTotal" db:"estimate_total"`
+	LastStoryActivityAt   *time.Time `json:"lastStoryActivityAt,omitempty" db:"last_story_activity_at"`
+}
+
+type CoreTeamWorkloadSummary struct {
+	TeamID             uuid.UUID `json:"teamId" db:"team_id"`
+	TeamName           string    `json:"teamName" db:"team_name"`
+	TeamCode           string    `json:"teamCode" db:"team_code"`
+	OpenStories        int       `json:"openStories" db:"open_stories"`
+	EstimateTotal      int       `json:"estimateTotal" db:"estimate_total"`
+	OverdueStories     int       `json:"overdueStories" db:"overdue_stories"`
+	UnassignedStories  int       `json:"unassignedStories" db:"unassigned_stories"`
+	UnestimatedStories int       `json:"unestimatedStories" db:"unestimated_stories"`
+}
+
+type CoreUnassignedWorkload struct {
+	Stories             int `json:"stories" db:"stories"`
+	EstimateTotal       int `json:"estimateTotal" db:"estimate_total"`
+	OverdueStories      int `json:"overdueStories" db:"overdue_stories"`
+	UrgentStories       int `json:"urgentStories" db:"urgent_stories"`
+	HighPriorityStories int `json:"highPriorityStories" db:"high_priority_stories"`
+	UnestimatedStories  int `json:"unestimatedStories" db:"unestimated_stories"`
+}
+
+type CoreWorkloadRisks struct {
+	OverloadedMembers   []CoreMemberWorkload `json:"overloadedMembers"`
+	OverdueMembers      []CoreMemberWorkload `json:"overdueMembers"`
+	UnassignedStories   int                  `json:"unassignedStories"`
+	UnestimatedStories  int                  `json:"unestimatedStories"`
+	HighPriorityStories int                  `json:"highPriorityStories"`
+}
+
+type PulseRiskSeverity string
+
+const (
+	PulseRiskSeverityHigh   PulseRiskSeverity = "high"
+	PulseRiskSeverityMedium PulseRiskSeverity = "medium"
+	PulseRiskSeverityLow    PulseRiskSeverity = "low"
+)
+
+type PulseRiskKind string
+
+const (
+	PulseRiskKindOverdueStories    PulseRiskKind = "overdue_stories"
+	PulseRiskKindBlockedStories    PulseRiskKind = "blocked_stories"
+	PulseRiskKindOverloadedMembers PulseRiskKind = "overloaded_members"
+	PulseRiskKindAtRiskSprints     PulseRiskKind = "at_risk_sprints"
+	PulseRiskKindAtRiskObjectives  PulseRiskKind = "at_risk_objectives"
+	PulseRiskKindPendingRequests   PulseRiskKind = "pending_requests"
+	PulseRiskKindUnassignedStories PulseRiskKind = "unassigned_stories"
+)
+
+type CorePulseReport struct {
+	WorkspaceID uuid.UUID                `json:"workspaceId"`
+	ReportDate  time.Time                `json:"reportDate"`
+	Filters     ReportFilters            `json:"filters"`
+	Summary     CorePulseSummary         `json:"summary"`
+	Stories     CorePulseStoryHealth     `json:"stories"`
+	Sprints     CorePulseSprintHealth    `json:"sprints"`
+	Objectives  CorePulseObjectiveHealth `json:"objectives"`
+	Requests    CorePulseRequestHealth   `json:"requests"`
+	Workload    CoreWorkloadAnalysis     `json:"workload"`
+	Risks       []CorePulseRisk          `json:"risks"`
+}
+
+type CorePulseSummary struct {
+	OpenStories       int `json:"openStories"`
+	OverdueStories    int `json:"overdueStories"`
+	BlockedStories    int `json:"blockedStories"`
+	AtRiskSprints     int `json:"atRiskSprints"`
+	AtRiskObjectives  int `json:"atRiskObjectives"`
+	PendingRequests   int `json:"pendingRequests"`
+	OverloadedMembers int `json:"overloadedMembers"`
+}
+
+type CorePulseStoryHealth struct {
+	OpenStories         int `json:"openStories" db:"open_stories"`
+	StartedStories      int `json:"startedStories" db:"started_stories"`
+	PausedStories       int `json:"pausedStories" db:"paused_stories"`
+	CompletedStories    int `json:"completedStories" db:"completed_stories"`
+	CancelledStories    int `json:"cancelledStories" db:"cancelled_stories"`
+	BlockedStories      int `json:"blockedStories" db:"blocked_stories"`
+	OverdueStories      int `json:"overdueStories" db:"overdue_stories"`
+	UrgentStories       int `json:"urgentStories" db:"urgent_stories"`
+	HighPriorityStories int `json:"highPriorityStories" db:"high_priority_stories"`
+	UnassignedStories   int `json:"unassignedStories" db:"unassigned_stories"`
+	UnestimatedStories  int `json:"unestimatedStories" db:"unestimated_stories"`
+}
+
+type CorePulseSprintHealth struct {
+	ActiveSprints      int `json:"activeSprints" db:"active_sprints"`
+	UpcomingSprints    int `json:"upcomingSprints" db:"upcoming_sprints"`
+	CompletedSprints   int `json:"completedSprints" db:"completed_sprints"`
+	AtRiskSprints      int `json:"atRiskSprints" db:"at_risk_sprints"`
+	OverdueSprints     int `json:"overdueSprints" db:"overdue_sprints"`
+	UnestimatedStories int `json:"unestimatedStories" db:"unestimated_stories"`
+}
+
+type CorePulseObjectiveHealth struct {
+	ActiveObjectives   int `json:"activeObjectives" db:"active_objectives"`
+	AtRiskObjectives   int `json:"atRiskObjectives" db:"at_risk_objectives"`
+	OffTrackObjectives int `json:"offTrackObjectives" db:"off_track_objectives"`
+	OverdueObjectives  int `json:"overdueObjectives" db:"overdue_objectives"`
+	ObjectivesDueSoon  int `json:"objectivesDueSoon" db:"objectives_due_soon"`
+}
+
+type CorePulseRequestHealth struct {
+	PendingRequests  int `json:"pendingRequests" db:"pending_requests"`
+	UrgentRequests   int `json:"urgentRequests" db:"urgent_requests"`
+	HighRequests     int `json:"highRequests" db:"high_requests"`
+	GitHubRequests   int `json:"gitHubRequests" db:"github_requests"`
+	SlackRequests    int `json:"slackRequests" db:"slack_requests"`
+	IntercomRequests int `json:"intercomRequests" db:"intercom_requests"`
+	StaleRequests    int `json:"staleRequests" db:"stale_requests"`
+}
+
+type CorePulseRisk struct {
+	Kind        PulseRiskKind     `json:"kind"`
+	Severity    PulseRiskSeverity `json:"severity"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Count       int               `json:"count"`
 }
 
 // 1. Workspace Overview Models

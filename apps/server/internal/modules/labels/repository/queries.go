@@ -31,12 +31,39 @@ func (r *repo) GetLabels(ctx context.Context, workspaceId uuid.UUID, filters map
 	`
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
-
-	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+	search, hasSearch := filters["search"].(string)
+	if hasSearch {
+		search = strings.TrimSpace(search)
+		if search == "" {
+			delete(filters, "search")
+			hasSearch = false
+		} else {
+			filters["search"] = search
+		}
 	}
 
-	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY created_at DESC;"
+	for field := range filters {
+		switch field {
+		case "search", "page", "pageSize", "limit", "offset":
+			continue
+		case "team_id":
+			setClauses = append(setClauses, "(team_id = :team_id OR team_id IS NULL)")
+		default:
+			setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		}
+	}
+	if hasSearch {
+		setClauses = append(setClauses, "name ILIKE '%' || :search || '%'")
+	}
+
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY created_at DESC"
+	if limit, ok := positiveIntFilter(filters, "limit"); ok {
+		offset, _ := nonNegativeIntFilter(filters, "offset")
+		filters["limit"] = limit
+		filters["offset"] = offset
+		query += " LIMIT :limit OFFSET :offset"
+	}
+	query += ";"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

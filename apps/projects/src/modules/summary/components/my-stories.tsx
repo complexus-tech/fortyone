@@ -4,18 +4,16 @@ import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
 import { cn } from "lib";
+import { useState } from "react";
 import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { useMembers } from "@/lib/hooks/members";
 import type { Story } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { MyStoriesSkeleton } from "./my-stories-skeleton";
-import { useState } from "react";
 
 const StoryRow = ({
   id,
@@ -23,26 +21,20 @@ const StoryRow = ({
   priority,
   statusId,
   sequenceId,
-  teamId,
-  assigneeId,
+  team,
+  assignee,
   endDate,
 }: Story) => {
   const { withWorkspace } = useWorkspacePath();
-  const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useStatuses();
-  const { data: members = [] } = useMembers();
-
-  const getTeamLabel = () => {
-    return teams.find((team) => team.id === teamId)?.code;
-  };
 
   const getStoryStatus = () => {
     return statuses.find((status) => status.id === statusId)?.name;
   };
 
-  const getStoryMember = () => {
-    return members.find((member) => member.id === assigneeId);
-  };
+  const storyReference = team?.code
+    ? `${team.code}-${sequenceId}`
+    : String(sequenceId);
 
   return (
     <Link href={withWorkspace(`/story/${id}/${slugify(title)}`)}>
@@ -50,7 +42,7 @@ const StoryRow = ({
         <Flex align="center" className="relative select-none" gap={2}>
           <Flex align="center" gap={2}>
             <Text className="hidden opacity-80 md:block" color="muted">
-              {getTeamLabel()}-{sequenceId}
+              {storyReference}
             </Text>
             <PriorityIcon className="relative -top-px" priority={priority} />
             <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
@@ -104,9 +96,9 @@ const StoryRow = ({
             </Tooltip>
           ) : null}
           <Avatar
-            name={getStoryMember()?.fullName}
+            name={assignee?.fullName || assignee?.username}
             size="xs"
-            src={getStoryMember()?.avatarUrl}
+            src={assignee?.avatarUrl}
           />
         </Flex>
       </RowWrapper>
@@ -122,6 +114,13 @@ const List = ({ stories }: { stories: Story[] }) => {
       ))}
     </Box>
   );
+};
+
+const getStoriesFromGrouped = (
+  grouped?: { groups: { stories: Story[] }[] },
+): Story[] => {
+  if (!grouped) return [];
+  return grouped.groups.flatMap((group) => group.stories);
 };
 
 export const MyStories = () => {
@@ -164,14 +163,6 @@ export const MyStories = () => {
       deadlineBefore: now,
       storiesPerGroup: 9,
     });
-
-  // Extract stories from grouped data structure
-  const getStoriesFromGrouped = (
-    grouped: typeof inProgressGrouped,
-  ): Story[] => {
-    if (!grouped) return [];
-    return grouped.groups.flatMap((group) => group.stories);
-  };
 
   const inProgressStories = getStoriesFromGrouped(inProgressGrouped);
   const upcomingStories = getStoriesFromGrouped(upcomingGrouped);

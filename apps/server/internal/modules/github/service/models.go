@@ -56,6 +56,7 @@ type StoryService interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (stories.CoreSingleStory, error)
 	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
+	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
 	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
 	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
 	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)

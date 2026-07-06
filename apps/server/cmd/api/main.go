@@ -46,11 +46,12 @@ var (
 
 type Config struct {
 	Auth struct {
-		SecretKey          string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		CookieDomain       string `env:"APP_AUTH_COOKIE_DOMAIN"`
-		GoogleClientIDs    string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
-		GoogleClientSecret string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
-		GoogleRedirectURL  string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
+		SecretKey                 string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		CookieDomain              string `env:"APP_AUTH_COOKIE_DOMAIN"`
+		GoogleClientIDs           string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleRedirectURL         string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
+		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
@@ -138,6 +139,15 @@ type Config struct {
 		RedirectURL      string `env:"GITHUB_REDIRECT_URL"`
 		WebhookURL       string `env:"GITHUB_WEBHOOK_URL"`
 		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
+	}
+	Slack struct {
+		ClientID      string `env:"SLACK_CLIENT_ID"`
+		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
+		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
+		RedirectURL   string `env:"SLACK_REDIRECT_URL"`
+	}
+	Bot struct {
+		Token string `env:"FORTYONE_BOT_TOKEN"`
 	}
 }
 
@@ -348,9 +358,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Initialize Google service
 	googleService, err := google.NewService(google.Config{
-		ClientIDs:    googleClientIDs,
-		ClientSecret: cfg.Auth.GoogleClientSecret,
-		RedirectURL:  cfg.Auth.GoogleRedirectURL,
+		ClientIDs:           googleClientIDs,
+		ClientSecret:        cfg.Auth.GoogleClientSecret,
+		RedirectURL:         cfg.Auth.GoogleRedirectURL,
+		CalendarRedirectURL: cfg.Auth.GoogleCalendarRedirectURL,
 	})
 	if err != nil {
 		return fmt.Errorf("error initializing google service: %w", err)
@@ -372,25 +383,25 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:             db,
-		Redis:          rdb,
-		Publisher:      publisher,
-		Shutdown:       shutdown,
-		Log:            log,
-		Tracer:         tracer,
-		SecretKey:      cfg.Auth.SecretKey,
-		CookieDomain:   cfg.Auth.CookieDomain,
-		EmailService:   mailerService,
-		BrevoService:   brevoService,
-		GoogleService:  googleService,
-		Validate:       validate,
-		StorageConfig:  storageConfig,
-		StorageService: storageService,
-		Cache:          cacheService,
-		TasksService:   tasksService,
-		StripeClient:   stripeClient,
-		WebhookSecret:  cfg.Stripe.WebhookSecret,
-		WebsiteURL:     cfg.Website.URL,
+		DB:                 db,
+		Redis:              rdb,
+		Publisher:          publisher,
+		Shutdown:           shutdown,
+		Log:                log,
+		Tracer:             tracer,
+		SecretKey:          cfg.Auth.SecretKey,
+		CookieDomain:       cfg.Auth.CookieDomain,
+		EmailService:       mailerService,
+		BrevoService:       brevoService,
+		GoogleService:      googleService,
+		Validate:           validate,
+		StorageConfig:      storageConfig,
+		StorageService:     storageService,
+		Cache:              cacheService,
+		TasksService:       tasksService,
+		StripeClient:       stripeClient,
+		WebhookSecret:      cfg.Stripe.WebhookSecret,
+		WebsiteURL:         cfg.Website.URL,
 		GitHubAppID:        cfg.GitHub.AppID,
 		GitHubAppSlug:      cfg.GitHub.AppSlug,
 		GitHubClientID:     cfg.GitHub.ClientID,
@@ -399,8 +410,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubKeyBase64:    cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect:     cfg.GitHub.RedirectURL,
 		GitHubWebhook:      cfg.GitHub.WebhookSecret,
-		SSEHub:         sseHub,
-		CorsOrigin:     "*",
+		SlackSigningSecret: cfg.Slack.SigningSecret,
+		SlackClientID:      cfg.Slack.ClientID,
+		SlackClientSecret:  cfg.Slack.ClientSecret,
+		SlackRedirectURL:   cfg.Slack.RedirectURL,
+		BotToken:           cfg.Bot.Token,
+		AIAPIKey:           strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
+		SSEHub:             sseHub,
+		CorsOrigin:         "*",
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

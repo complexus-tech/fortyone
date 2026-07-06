@@ -128,10 +128,18 @@ export const createObjectiveTool = tool({
         };
       }
 
+      if (!result.data?.objective?.id) {
+        return {
+          success: false,
+          error: "Objective creation did not return a created objective.",
+        };
+      }
+
       return {
         success: true,
-        objective: result.data,
-        message: `Successfully created objective "${result.data?.name}".`,
+        objective: result.data.objective,
+        keyResults: result.data.keyResults ?? [],
+        message: `Successfully created objective "${result.data.objective.name}".`,
       };
     } catch (error) {
       return {

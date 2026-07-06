@@ -63,14 +63,34 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
 	filters["user_id"] = userID
-
-	for field := range filters {
-		if field != "user_id" { // Skip user_id since it's used in the JOIN
-			setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
+	search, hasSearch := filters["search"].(string)
+	if hasSearch {
+		search = strings.TrimSpace(search)
+		if search == "" {
+			delete(filters, "search")
+			hasSearch = false
+		} else {
+			filters["search"] = search
 		}
 	}
 
-	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.end_date DESC;"
+	for field := range filters {
+		if field != "user_id" && field != "search" && field != "page" && field != "pageSize" && field != "limit" && field != "offset" { // Skip user_id since it's used in the JOIN
+			setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
+		}
+	}
+	if hasSearch {
+		setClauses = append(setClauses, "s.name ILIKE '%' || :search || '%'")
+	}
+
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.end_date DESC"
+	if limit, ok := positiveIntFilter(filters, "limit"); ok {
+		offset, _ := nonNegativeIntFilter(filters, "offset")
+		filters["limit"] = limit
+		filters["offset"] = offset
+		query += " LIMIT :limit OFFSET :offset"
+	}
+	query += ";"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

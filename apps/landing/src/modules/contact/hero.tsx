@@ -5,7 +5,7 @@ import { Container } from "@/components/ui";
 
 export const Hero = () => {
   return (
-    <Container className="relative pb-10 pt-28">
+    <Container className="relative pt-28 pb-10">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         transition={{
@@ -17,21 +17,18 @@ export const Hero = () => {
       >
         <Text
           as="h1"
-          className="my-8 max-w-xl pb-2 text-5xl font-semibold md:text-6xl"
+          className="mb-6 max-w-4xl pb-2 text-5xl font-medium text-balance md:text-[3.5rem]"
         >
-          How can we help you{" "}
-          <Text as="span" className="text-stroke-white">
-            today?
-          </Text>
+          Talk to the team behind FortyOne.
         </Text>
       </motion.div>
       <Text
         as="h2"
-        className="mb-4 max-w-3xl text-lg leading-snug opacity-80 md:text-xl"
+        className="text-text-muted max-w-2xl text-lg leading-8 md:text-xl"
         fontWeight="normal"
       >
-        Connect with our team for product demos, implementation support, or any
-        questions about getting started with fortyone.
+        Ask about pricing, implementation, integrations, support, or whether
+        FortyOne is the right fit for the way your team plans and tracks work.
       </Text>
     </Container>
   );

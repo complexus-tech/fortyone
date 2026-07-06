@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Flex, Button, Text, Box, Tooltip, Avatar } from "ui";
-import { PlusIcon, StoryIcon } from "icons";
+import { Flex, Button, Text, Box, Tooltip, Avatar, Popover } from "ui";
+import { MoreHorizontalIcon, PlusIcon, StoryIcon } from "icons";
 import { cn } from "lib";
 import type { StoryGroup, StoryPriority } from "@/modules/stories/types";
 import type { State } from "@/types/states";
@@ -13,18 +13,70 @@ import type { ViewOptionsGroupBy } from "./stories-view-options-button";
 import { PriorityIcon } from "./priority-icon";
 import { useBoard } from "./board-context";
 
-export const StoriesKanbanHeader = ({
+export const KanbanGroupTitle = ({
   status,
   priority,
-  group,
   groupBy,
   member,
 }: {
   status?: State;
   priority?: StoryPriority;
   member?: Member;
+  groupBy: ViewOptionsGroupBy;
+}) => (
+  <>
+    {groupBy === "status" && (
+      <>
+        <StoryStatusIcon statusId={status?.id} />
+        <span
+          className="inline-block max-w-[20ch] truncate"
+          title={status?.name}
+        >
+          {status?.name}
+        </span>
+      </>
+    )}
+    {groupBy === "priority" && (
+      <>
+        <PriorityIcon priority={priority} />
+        {priority}
+      </>
+    )}
+    {groupBy === "assignee" && (
+      <>
+        <Avatar
+          className={cn({
+            "text-black dark:text-white": !member?.fullName,
+          })}
+          name={member?.fullName}
+          size="xs"
+          src={member?.avatarUrl}
+        />
+        <span
+          className="inline-block max-w-[20ch] truncate"
+          title={member?.username || "Unassigned"}
+        >
+          {member?.username || "Unassigned"}
+        </span>
+      </>
+    )}
+  </>
+);
+
+export const StoriesKanbanHeader = ({
+  status,
+  priority,
+  group,
+  groupBy,
+  member,
+  onHide,
+}: {
+  status?: State;
+  priority?: StoryPriority;
+  member?: Member;
   group: StoryGroup;
   groupBy: ViewOptionsGroupBy;
+  onHide?: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { viewOptions } = useBoard();
@@ -46,41 +98,12 @@ export const StoriesKanbanHeader = ({
         key={status?.id}
       >
         <Flex align="center" gap={2}>
-          {groupBy === "status" && (
-            <>
-              <StoryStatusIcon statusId={status?.id} />
-              <span
-                className="inline-block max-w-[20ch] truncate"
-                title={status?.name}
-              >
-                {status?.name}
-              </span>
-            </>
-          )}
-          {groupBy === "priority" && (
-            <>
-              <PriorityIcon priority={priority} />
-              {priority}
-            </>
-          )}
-          {groupBy === "assignee" && (
-            <>
-              <Avatar
-                className={cn({
-                  "text-black dark:text-white": !member?.fullName,
-                })}
-                name={member?.fullName}
-                size="xs"
-                src={member?.avatarUrl}
-              />
-              <span
-                className="inline-block max-w-[20ch] truncate"
-                title={member?.username || "Unassigned"}
-              >
-                {member?.username || "Unassigned"}
-              </span>
-            </>
-          )}
+          <KanbanGroupTitle
+            groupBy={groupBy}
+            member={member}
+            priority={priority}
+            status={status}
+          />
           <Tooltip side="bottom" title="Total stories">
             <span>
               <StoryIcon className="ml-0 h-5 w-auto" strokeWidth={2} />
@@ -93,19 +116,50 @@ export const StoriesKanbanHeader = ({
             })}
           </Text>
         </Flex>
-        <Button
-          color="tertiary"
-          disabled={userRole === "guest"}
-          onClick={() => {
-            if (userRole !== "guest") {
-              setIsOpen(true);
-            }
-          }}
-          size="sm"
-          variant="naked"
-        >
-          <PlusIcon className="h-[1.2rem] w-auto" />
-        </Button>
+        <Flex align="center" gap={1}>
+          {onHide ? (
+            <Popover>
+              <Popover.Trigger asChild>
+                <Button
+                  aria-label="Column options"
+                  color="tertiary"
+                  size="sm"
+                  variant="naked"
+                >
+                  <MoreHorizontalIcon
+                    className="h-[1.15rem] w-auto"
+                    strokeWidth={4}
+                  />
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content align="end" className="w-44 p-1.5">
+                <Button
+                  className="justify-start px-2"
+                  color="tertiary"
+                  fullWidth
+                  onClick={onHide}
+                  size="sm"
+                  variant="naked"
+                >
+                  Hide column
+                </Button>
+              </Popover.Content>
+            </Popover>
+          ) : null}
+          <Button
+            color="tertiary"
+            disabled={userRole === "guest"}
+            onClick={() => {
+              if (userRole !== "guest") {
+                setIsOpen(true);
+              }
+            }}
+            size="sm"
+            variant="naked"
+          >
+            <PlusIcon className="h-[1.2rem] w-auto" />
+          </Button>
+        </Flex>
       </Flex>
       <NewStoryDialog
         assigneeId={member?.id}

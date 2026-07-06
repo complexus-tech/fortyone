@@ -1,13 +1,15 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Text, Switch, Select, Flex } from "ui";
+import { useState } from "react";
+import { Box, Text, Switch, Select, Flex, Input, Button, Dialog } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { useTerminology } from "@/hooks";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useUpdateSprintSettingsMutation } from "@/modules/teams/hooks/update-sprint-settings-mutation";
 import { useUpdateStoryAutomationSettingsMutation } from "@/modules/teams/hooks/update-story-automation-settings-mutation";
 import { useUpdateEstimationSettingsMutation } from "@/modules/teams/hooks/update-estimation-settings-mutation";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { GitHubAutomations } from "./github-automations";
 
 export const Automations = () => {
@@ -20,6 +22,33 @@ export const Automations = () => {
   const sprintSettings = teamSettings?.sprintSettings;
   const storySettings = teamSettings?.storyAutomationSettings;
   const estimationSettings = teamSettings?.estimationSettings;
+  const [isNextSprintDialogOpen, setIsNextSprintDialogOpen] = useState(false);
+  const [nextSprintNumber, setNextSprintNumber] = useState("");
+  const currentNextSprintNumber = sprintSettings?.nextAutoSprintNumber ?? 1;
+
+  const handleNextSprintDialogOpenChange = (open: boolean) => {
+    if (open) {
+      setNextSprintNumber(currentNextSprintNumber.toString());
+    }
+    setIsNextSprintDialogOpen(open);
+  };
+
+  const handleUpdateNextSprintNumber = () => {
+    const nextValue = Number.parseInt(nextSprintNumber, 10);
+    if (
+      Number.isNaN(nextValue) ||
+      nextValue < 1 ||
+      nextValue > 10000 ||
+      nextValue === currentNextSprintNumber
+    ) {
+      setIsNextSprintDialogOpen(false);
+      setNextSprintNumber(currentNextSprintNumber.toString());
+      return;
+    }
+
+    updateSprintSettings.mutate({ nextAutoSprintNumber: nextValue });
+    setIsNextSprintDialogOpen(false);
+  };
 
   return (
     <>
@@ -50,6 +79,16 @@ export const Automations = () => {
               }}
             />
           </Flex>
+
+          {!sprintSettings?.autoCreateSprints &&
+          sprintSettings?.autoCreateDisabledReason ? (
+            <Box className="px-6 py-4">
+              <Text className="font-medium">Automation paused</Text>
+              <Text className="line-clamp-2" color="muted">
+                {sprintSettings.autoCreateDisabledReason}
+              </Text>
+            </Box>
+          ) : null}
 
           {/* Number of Sprints to Create */}
           {sprintSettings?.autoCreateSprints ? (
@@ -91,6 +130,33 @@ export const Automations = () => {
                   </Select.Option>
                 </Select.Content>
               </Select>
+            </Flex>
+          ) : null}
+
+          {/* Next Auto Sprint Number */}
+          {sprintSettings?.autoCreateSprints ? (
+            <Flex align="center" className="px-6 py-4" justify="between">
+              <Box>
+                <Text className="font-medium">
+                  Next {getTermDisplay("sprintTerm")} number
+                </Text>
+                <Text className="line-clamp-2" color="muted">
+                  The next automated {getTermDisplay("sprintTerm")} will be
+                  named {getTermDisplay("sprintTerm", { capitalize: true })}{" "}
+                  {sprintSettings.nextAutoSprintNumber}
+                </Text>
+              </Box>
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  handleNextSprintDialogOpenChange(true);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                {getTermDisplay("sprintTerm", { capitalize: true })}{" "}
+                {sprintSettings.nextAutoSprintNumber}
+              </Button>
             </Flex>
           ) : null}
 
@@ -208,6 +274,52 @@ export const Automations = () => {
           ) : null}
         </Box>
       </Box>
+
+      <Dialog
+        onOpenChange={handleNextSprintDialogOpenChange}
+        open={isNextSprintDialogOpen}
+      >
+        <Dialog.Content size="sm">
+          <Dialog.Header className="px-6 pt-6 pb-2">
+            <Dialog.Title className="text-lg">
+              Next {getTermDisplay("sprintTerm")} number
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Body className="px-6 pt-2 pb-4">
+            <Input
+              autoFocus
+              label={`Next ${getTermDisplay("sprintTerm")} number`}
+              max={10000}
+              min={1}
+              onChange={(event) => {
+                setNextSprintNumber(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  handleUpdateNextSprintNumber();
+                }
+              }}
+              type="number"
+              value={nextSprintNumber}
+            />
+          </Dialog.Body>
+          <Dialog.Footer className="gap-2">
+            <Button
+              color="tertiary"
+              onClick={() => {
+                setIsNextSprintDialogOpen(false);
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateNextSprintNumber} size="sm">
+              Update
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
 
       {/* Story Automations Section */}
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
@@ -360,7 +472,7 @@ export const Automations = () => {
                   scheme: value as "points" | "hours" | "tshirt" | "ideal_days",
                 });
               }}
-              value={estimationSettings?.scheme ?? "points"}
+              value={estimationSettings?.scheme ?? DEFAULT_ESTIMATE_SCHEME}
             >
               <Select.Trigger className="w-max text-[0.9rem] md:text-base">
                 <Select.Input />
