@@ -215,7 +215,7 @@ const AdminProfileMenu = ({
                   </Text>
                 </Box>
               </Flex>
-              <Badge className="mt-3" color="tertiary" size="sm">
+              <Badge className="mt-3" color="tertiary">
                 Internal
               </Badge>
             </Menu.Group>

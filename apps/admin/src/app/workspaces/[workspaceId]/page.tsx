@@ -1,14 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GitHubIcon, SlackIcon, UserIcon, WorkspaceIcon } from "icons";
-import { Badge, Box, Flex, Table, Text } from "ui";
+import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
 import { getAuditLogs, getWorkspace } from "@/lib/admin-api";
 import {
+  formatAuditValue,
   formatCount,
   formatDate,
   formatDateTime,
   formatTrialState,
-  formatValue,
   humanizeKey,
 } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
@@ -37,7 +37,13 @@ export default async function WorkspaceDetailPage({
         actions={<TrialExtensionDialog workspace={workspace} />}
         description={`${workspace.slug} · Created ${formatDate(workspace.createdAt)}`}
         eyebrow="Workspace"
-        icon={<WorkspaceIcon className="h-[1.1rem]" />}
+        icon={
+          <Avatar
+            className="h-5 text-[0.7rem]"
+            name={workspace.name}
+            src={workspace.avatarUrl}
+          />
+        }
         parentHref="/workspaces"
         title={workspace.name}
       />
@@ -100,12 +106,12 @@ export default async function WorkspaceDetailPage({
               </DetailRow>
               <DetailRow label="Integrations">
                 <Flex align="center" className="gap-2">
-                  <Badge color="tertiary" size="sm">
-                    <SlackIcon className="h-3.5" />
+                  <Badge color="tertiary">
+                    <SlackIcon className="h-4" />
                     {workspace.slackInstalled ? "Slack" : "No Slack"}
                   </Badge>
-                  <Badge color="tertiary" size="sm">
-                    <GitHubIcon className="h-3.5" />
+                  <Badge color="tertiary">
+                    <GitHubIcon className="h-4" />
                     {workspace.githubInstalled ? "GitHub" : "No GitHub"}
                   </Badge>
                 </Flex>
@@ -139,15 +145,8 @@ export default async function WorkspaceDetailPage({
                             className="hover:text-primary line-clamp-1"
                             href={`/users/${member.userId}`}
                           >
-                            {member.fullName || member.email}
+                            {member.fullName || "Unknown user"}
                           </Link>
-                          <Text
-                            as="span"
-                            className="line-clamp-1 text-[0.95rem]"
-                            color="muted"
-                          >
-                            · {member.email}
-                          </Text>
                         </Flex>
                       </Table.Td>
                       <Table.Td className="whitespace-nowrap capitalize">
@@ -196,21 +195,23 @@ export default async function WorkspaceDetailPage({
                         {humanizeKey(entry.action)}
                       </Table.Td>
                       <Table.Td className="min-w-64 whitespace-nowrap">
-                        {entry.actorName || entry.actorEmail}
+                        {entry.actorName || "Unknown actor"}
                       </Table.Td>
                       <Table.Td className="min-w-72 whitespace-nowrap">
                         <Text>
-                          {formatValue(entry.oldValue)} -&gt;{" "}
-                          {formatValue(entry.newValue)}
-                          {entry.fieldName ? (
-                            <Text
-                              as="span"
-                              className="ml-1 text-[0.95rem]"
-                              color="muted"
-                            >
-                              · {entry.fieldName}
-                            </Text>
-                          ) : null}
+                          <Text as="span" fontWeight="semibold">
+                            {entry.fieldName
+                              ? humanizeKey(entry.fieldName)
+                              : "Change"}
+                          </Text>
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            {formatAuditValue(entry.oldValue)} -&gt;{" "}
+                            {formatAuditValue(entry.newValue)}
+                          </Text>
                         </Text>
                       </Table.Td>
                       <Table.Td className="max-w-80">

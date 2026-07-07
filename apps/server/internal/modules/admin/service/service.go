@@ -21,9 +21,17 @@ type Repository interface {
 	InsertAuditEntry(ctx context.Context, input AuditEntryInput) error
 }
 
+type AssetResolver interface {
+	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
+	ResolveWorkspaceLogoURL(ctx context.Context, logo string, expiry time.Duration) (string, error)
+}
+
+const adminAssetURLExpiry = 24 * time.Hour
+
 type Service struct {
-	repo Repository
-	now  func() time.Time
+	repo          Repository
+	assetResolver AssetResolver
+	now           func() time.Time
 }
 
 type Option func(*Service)
@@ -31,6 +39,12 @@ type Option func(*Service)
 func WithNow(now func() time.Time) Option {
 	return func(s *Service) {
 		s.now = now
+	}
+}
+
+func WithAssetResolver(resolver AssetResolver) Option {
+	return func(s *Service) {
+		s.assetResolver = resolver
 	}
 }
 
@@ -71,7 +85,14 @@ func (s *Service) ListWorkspaces(ctx context.Context, actorID uuid.UUID, input L
 	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
 		return ListResult[WorkspaceSummary]{}, err
 	}
-	return s.repo.ListWorkspaces(ctx, normalizeListWorkspacesInput(input))
+	result, err := s.repo.ListWorkspaces(ctx, normalizeListWorkspacesInput(input))
+	if err != nil {
+		return ListResult[WorkspaceSummary]{}, err
+	}
+	for i := range result.Items {
+		s.resolveWorkspaceLogo(ctx, &result.Items[i])
+	}
+	return result, nil
 }
 
 func (s *Service) GetWorkspaceOverview(ctx context.Context, actorID, workspaceID uuid.UUID) (WorkspaceOverview, error) {
@@ -81,7 +102,12 @@ func (s *Service) GetWorkspaceOverview(ctx context.Context, actorID, workspaceID
 	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
 		return WorkspaceOverview{}, err
 	}
-	return s.repo.GetWorkspaceOverview(ctx, workspaceID)
+	overview, err := s.repo.GetWorkspaceOverview(ctx, workspaceID)
+	if err != nil {
+		return WorkspaceOverview{}, err
+	}
+	s.resolveWorkspaceLogo(ctx, &overview.Workspace)
+	return overview, nil
 }
 
 func (s *Service) UpdateWorkspaceTrial(ctx context.Context, actorID, workspaceID uuid.UUID, input UpdateWorkspaceTrialInput) (WorkspaceOverview, error) {
@@ -140,6 +166,7 @@ func (s *Service) UpdateWorkspaceTrial(ctx context.Context, actorID, workspaceID
 	}
 
 	overview.Workspace.TrialEndsOn = &trialEndsOn
+	s.resolveWorkspaceLogo(ctx, &overview.Workspace)
 	return overview, nil
 }
 
@@ -150,7 +177,14 @@ func (s *Service) ListUsers(ctx context.Context, actorID uuid.UUID, input ListUs
 	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
 		return ListResult[UserSummary]{}, err
 	}
-	return s.repo.ListUsers(ctx, normalizeListUsersInput(input))
+	result, err := s.repo.ListUsers(ctx, normalizeListUsersInput(input))
+	if err != nil {
+		return ListResult[UserSummary]{}, err
+	}
+	for i := range result.Items {
+		s.resolveUserAvatar(ctx, &result.Items[i])
+	}
+	return result, nil
 }
 
 func (s *Service) GetUserOverview(ctx context.Context, actorID, userID uuid.UUID) (UserOverview, error) {
@@ -160,7 +194,12 @@ func (s *Service) GetUserOverview(ctx context.Context, actorID, userID uuid.UUID
 	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
 		return UserOverview{}, err
 	}
-	return s.repo.GetUserOverview(ctx, userID)
+	overview, err := s.repo.GetUserOverview(ctx, userID)
+	if err != nil {
+		return UserOverview{}, err
+	}
+	s.resolveUserAvatar(ctx, &overview.User)
+	return overview, nil
 }
 
 func (s *Service) ListAuditLogs(ctx context.Context, actorID uuid.UUID, input ListAuditLogsInput) (ListResult[AuditLog], error) {
@@ -181,7 +220,34 @@ func (s *Service) ensureAdmin(ctx context.Context, actorID uuid.UUID) (UserSumma
 	if !user.IsInternal || !user.IsActive {
 		return UserSummary{}, ErrForbidden
 	}
+	s.resolveUserAvatar(ctx, &user)
 	return user, nil
+}
+
+func (s *Service) resolveUserAvatar(ctx context.Context, user *UserSummary) {
+	if s.assetResolver == nil || user == nil || strings.TrimSpace(user.AvatarURL) == "" {
+		return
+	}
+
+	resolved, err := s.assetResolver.ResolveProfileImageURL(ctx, user.AvatarURL, adminAssetURLExpiry)
+	if err != nil {
+		user.AvatarURL = ""
+		return
+	}
+	user.AvatarURL = resolved
+}
+
+func (s *Service) resolveWorkspaceLogo(ctx context.Context, workspace *WorkspaceSummary) {
+	if s.assetResolver == nil || workspace == nil || workspace.AvatarURL == nil || strings.TrimSpace(*workspace.AvatarURL) == "" {
+		return
+	}
+
+	resolved, err := s.assetResolver.ResolveWorkspaceLogoURL(ctx, *workspace.AvatarURL, adminAssetURLExpiry)
+	if err != nil {
+		workspace.AvatarURL = nil
+		return
+	}
+	workspace.AvatarURL = &resolved
 }
 
 func normalizeListWorkspacesInput(input ListWorkspacesInput) ListWorkspacesInput {

@@ -15,6 +15,8 @@ type adminTestRepo struct {
 	listWorkspacesIn ListWorkspacesInput
 	workspaces       ListResult[WorkspaceSummary]
 	workspace        WorkspaceOverview
+	listUsers        ListResult[UserSummary]
+	user             UserOverview
 	auditEntries     []AuditEntryInput
 }
 
@@ -49,11 +51,14 @@ func (r *adminTestRepo) UpdateWorkspaceTrial(ctx context.Context, input UpdateWo
 }
 
 func (r *adminTestRepo) ListUsers(ctx context.Context, input ListUsersInput) (ListResult[UserSummary], error) {
-	return ListResult[UserSummary]{}, nil
+	return r.listUsers, nil
 }
 
 func (r *adminTestRepo) GetUserOverview(ctx context.Context, userID uuid.UUID) (UserOverview, error) {
-	return UserOverview{}, nil
+	if r.user.User.ID == uuid.Nil {
+		return UserOverview{}, ErrNotFound
+	}
+	return r.user, nil
 }
 
 func (r *adminTestRepo) ListAuditLogs(ctx context.Context, input ListAuditLogsInput) (ListResult[AuditLog], error) {
@@ -119,6 +124,100 @@ func TestListWorkspacesNormalizesSearchAndPagination(t *testing.T) {
 	require.Equal(t, "trialing", repo.listWorkspacesIn.Status)
 	require.Equal(t, 1, repo.listWorkspacesIn.Pagination.Page)
 	require.Equal(t, maxPageLimit, repo.listWorkspacesIn.Pagination.Limit)
+}
+
+func TestListWorkspacesResolvesLogoURLs(t *testing.T) {
+	actorID := uuid.New()
+	workspaceID := uuid.New()
+	avatarURL := "logos/acme.png"
+	repo := &adminTestRepo{
+		users: map[uuid.UUID]UserSummary{
+			actorID: {
+				ID:         actorID,
+				Email:      "ops@fortyone.app",
+				IsActive:   true,
+				IsInternal: true,
+			},
+		},
+		workspaces: ListResult[WorkspaceSummary]{
+			Items: []WorkspaceSummary{{
+				ID:        workspaceID,
+				Name:      "Acme",
+				AvatarURL: &avatarURL,
+			}},
+		},
+	}
+	resolver := &adminTestAssetResolver{}
+	service := New(repo, WithAssetResolver(resolver))
+
+	result, err := service.ListWorkspaces(context.Background(), actorID, ListWorkspacesInput{})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 1)
+	require.NotNil(t, result.Items[0].AvatarURL)
+	require.Equal(t, "workspace:"+avatarURL, *result.Items[0].AvatarURL)
+	require.Equal(t, adminAssetURLExpiry, resolver.workspaceExpiry)
+}
+
+func TestListUsersResolvesProfileImageURLs(t *testing.T) {
+	actorID := uuid.New()
+	userID := uuid.New()
+	repo := &adminTestRepo{
+		users: map[uuid.UUID]UserSummary{
+			actorID: {
+				ID:         actorID,
+				Email:      "ops@fortyone.app",
+				IsActive:   true,
+				IsInternal: true,
+			},
+		},
+		listUsers: ListResult[UserSummary]{
+			Items: []UserSummary{{
+				ID:        userID,
+				Email:     "member@example.com",
+				AvatarURL: "profiles/member.png",
+			}},
+		},
+	}
+	resolver := &adminTestAssetResolver{}
+	service := New(repo, WithAssetResolver(resolver))
+
+	result, err := service.ListUsers(context.Background(), actorID, ListUsersInput{})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 1)
+	require.Equal(t, "profile:profiles/member.png", result.Items[0].AvatarURL)
+	require.Equal(t, adminAssetURLExpiry, resolver.profileExpiry)
+}
+
+func TestGetUserOverviewResolvesProfileImageURL(t *testing.T) {
+	actorID := uuid.New()
+	userID := uuid.New()
+	repo := &adminTestRepo{
+		users: map[uuid.UUID]UserSummary{
+			actorID: {
+				ID:         actorID,
+				Email:      "ops@fortyone.app",
+				IsActive:   true,
+				IsInternal: true,
+			},
+		},
+		user: UserOverview{
+			User: UserSummary{
+				ID:        userID,
+				Email:     "member@example.com",
+				AvatarURL: "profiles/member.png",
+			},
+		},
+	}
+	resolver := &adminTestAssetResolver{}
+	service := New(repo, WithAssetResolver(resolver))
+
+	overview, err := service.GetUserOverview(context.Background(), actorID, userID)
+
+	require.NoError(t, err)
+	require.Equal(t, "profile:profiles/member.png", overview.User.AvatarURL)
+	require.Equal(t, adminAssetURLExpiry, resolver.profileExpiry)
 }
 
 func TestUpdateWorkspaceTrialExtendsTrialAndWritesAudit(t *testing.T) {
@@ -243,4 +342,19 @@ type adminTestRepoWithAuditError struct {
 
 func (r *adminTestRepoWithAuditError) InsertAuditEntry(ctx context.Context, input AuditEntryInput) error {
 	return r.auditErr
+}
+
+type adminTestAssetResolver struct {
+	profileExpiry   time.Duration
+	workspaceExpiry time.Duration
+}
+
+func (r *adminTestAssetResolver) ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error) {
+	r.profileExpiry = expiry
+	return "profile:" + avatar, nil
+}
+
+func (r *adminTestAssetResolver) ResolveWorkspaceLogoURL(ctx context.Context, logo string, expiry time.Duration) (string, error) {
+	r.workspaceExpiry = expiry
+	return "workspace:" + logo, nil
 }

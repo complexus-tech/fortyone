@@ -13,6 +13,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en", {
 });
 
 const numberFormatter = new Intl.NumberFormat("en");
+const isoDateTimePattern = /^\d{4}-\d{2}-\d{2}T/;
 
 export const formatCount = (value: number) => numberFormatter.format(value);
 
@@ -74,4 +75,15 @@ export const formatValue = (value: unknown) => {
   }
 
   return JSON.stringify(value);
+};
+
+export const formatAuditValue = (value: unknown) => {
+  if (typeof value === "string" && isoDateTimePattern.test(value)) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return dateTimeFormatter.format(date);
+    }
+  }
+
+  return formatValue(value);
 };

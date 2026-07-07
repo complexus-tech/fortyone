@@ -17,10 +17,10 @@ export const PageHeader = ({
   title: string;
 }) => {
   return (
-    <Box className="border-border/80 border-b-[0.5px]">
+    <Box>
       <Flex
         align="center"
-        className="h-[3.6rem] gap-4 px-5 md:px-7"
+        className="border-border/80 bg-surface/60 h-[3.6rem] gap-4 border-b-[0.5px] px-5 md:px-7"
         justify="between"
       >
         <BreadCrumbs
@@ -44,7 +44,7 @@ export const PageHeader = ({
       </Flex>
 
       {description ? (
-        <Box className="px-5 pb-5 md:px-7">
+        <Box className="px-5 pt-4 pb-5 md:px-7">
           <Text
             as="h1"
             className="text-[1.55rem] leading-tight"

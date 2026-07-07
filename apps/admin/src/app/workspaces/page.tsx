@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { GitHubIcon, SlackIcon, WorkspaceIcon } from "icons";
-import { Badge, Box, Flex, Table, Text } from "ui";
+import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
 import { getWorkspaces } from "@/lib/admin-api";
 import { formatDate, formatDateTime, formatTrialState } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -66,6 +66,10 @@ export default async function WorkspacesPage({
                     <Table.Tr key={workspace.id}>
                       <Table.Td className="min-w-80 whitespace-nowrap">
                         <Flex align="center" className="gap-2">
+                          <Avatar
+                            name={workspace.name}
+                            src={workspace.avatarUrl}
+                          />
                           <Link
                             className="hover:text-primary line-clamp-1"
                             href={`/workspaces/${workspace.id}`}
@@ -127,12 +131,12 @@ export default async function WorkspacesPage({
                       </Table.Td>
                       <Table.Td className="whitespace-nowrap">
                         <Flex align="center" className="gap-2">
-                          <Badge color="tertiary" size="sm">
-                            <SlackIcon className="h-3.5" />
+                          <Badge color="tertiary">
+                            <SlackIcon className="h-4" />
                             {workspace.slackInstalled ? "Slack" : "No Slack"}
                           </Badge>
-                          <Badge color="tertiary" size="sm">
-                            <GitHubIcon className="h-3.5" />
+                          <Badge color="tertiary">
+                            <GitHubIcon className="h-4" />
                             {workspace.githubInstalled ? "GitHub" : "No GitHub"}
                           </Badge>
                         </Flex>

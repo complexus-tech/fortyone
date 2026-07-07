@@ -52,11 +52,10 @@ export default async function UsersPage({
                 {users.items.length > 0 ? (
                   users.items.map((user) => (
                     <Table.Tr key={user.id}>
-                      <Table.Td className="min-w-96 whitespace-nowrap">
+                      <Table.Td className="min-w-72 whitespace-nowrap">
                         <Flex align="center" className="gap-2">
                           <Avatar
                             name={user.fullName || user.username}
-                            size="sm"
                             src={user.avatarUrl}
                           />
                           <Link
@@ -65,13 +64,6 @@ export default async function UsersPage({
                           >
                             {user.fullName || user.username}
                           </Link>
-                          <Text
-                            as="span"
-                            className="line-clamp-1 text-[0.95rem]"
-                            color="muted"
-                          >
-                            · {user.email}
-                          </Text>
                           {user.githubUsername ? (
                             <Text
                               as="span"

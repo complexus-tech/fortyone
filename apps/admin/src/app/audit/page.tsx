@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { HistoryIcon } from "icons";
+import { HistoryIcon, SearchIcon } from "icons";
 import { Badge, Box, Button, Flex, Input, Table, Text } from "ui";
 import { getAuditLogs } from "@/lib/admin-api";
-import { formatDateTime, formatValue, humanizeKey } from "@/lib/format";
-import { MetricCard } from "@/components/metric-card";
+import { formatAuditValue, formatDateTime, humanizeKey } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 
@@ -42,51 +41,42 @@ export default async function AuditPage({
       />
 
       <Box className="space-y-4 p-5 md:p-7">
-        <Box className="grid gap-3 md:grid-cols-3">
-          <MetricCard
-            detail="Rows matching the current filter"
-            icon={<HistoryIcon />}
-            label="Audit entries"
-            value={String(auditLogs.pagination.total)}
-          />
-        </Box>
-
-        <Box className="border-border bg-surface/70 rounded-lg border-[0.5px] p-3">
-          <form>
-            <Flex align="end" className="gap-2">
-              <label className="block w-52 shrink-0">
-                <Text className="mb-[0.35rem] block">Target type</Text>
-                <select
-                  className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-lg border px-3 outline-none focus-visible:ring-2"
-                  defaultValue={params.targetType ?? ""}
-                  name="targetType"
-                >
-                  {targetTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Box className="min-w-0 flex-1">
-                <Input
-                  defaultValue={params.workspaceId}
-                  label="Workspace ID"
-                  name="workspaceId"
-                  placeholder="Optional workspace UUID"
-                />
-              </Box>
-              <Button color="tertiary" type="submit">
-                Apply
+        <form>
+          <Flex align="end" className="flex-wrap gap-2">
+            <label className="block w-full md:w-44 md:shrink-0">
+              <Text className="mb-[0.35rem] block">Filters</Text>
+              <select
+                className="border-input bg-surface focus-visible:ring-ring h-[2.8rem] w-full rounded-lg border px-3 outline-none focus-visible:ring-2"
+                defaultValue={params.targetType ?? ""}
+                name="targetType"
+              >
+                {targetTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Box className="w-full min-w-0 md:w-80 md:shrink-0">
+              <Input
+                className="md:pl-10"
+                defaultValue={params.workspaceId}
+                label="Workspace ID"
+                leftIcon={<SearchIcon className="h-4" />}
+                name="workspaceId"
+                placeholder="Optional workspace UUID"
+              />
+            </Box>
+            <Button color="tertiary" type="submit">
+              Apply
+            </Button>
+            {params.targetType || params.workspaceId ? (
+              <Button color="tertiary" href="/audit" variant="naked">
+                Clear
               </Button>
-              {params.targetType || params.workspaceId ? (
-                <Button color="tertiary" href="/audit" variant="naked">
-                  Clear
-                </Button>
-              ) : null}
-            </Flex>
-          </form>
-        </Box>
+            ) : null}
+          </Flex>
+        </form>
 
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
@@ -110,32 +100,14 @@ export default async function AuditPage({
                           <Text as="span" fontWeight="semibold">
                             {humanizeKey(entry.action)}
                           </Text>
-                          {entry.fieldName ? (
-                            <Text
-                              as="span"
-                              className="ml-1 text-[0.95rem]"
-                              color="muted"
-                            >
-                              · {entry.fieldName}
-                            </Text>
-                          ) : null}
                         </Text>
                       </Table.Td>
-                      <Table.Td className="min-w-72 whitespace-nowrap">
-                        <Text>
-                          {entry.actorName || entry.actorEmail}
-                          <Text
-                            as="span"
-                            className="ml-1 text-[0.95rem]"
-                            color="muted"
-                          >
-                            · {entry.actorEmail}
-                          </Text>
-                        </Text>
+                      <Table.Td className="min-w-56 whitespace-nowrap">
+                        <Text>{entry.actorName || "Unknown actor"}</Text>
                       </Table.Td>
                       <Table.Td className="min-w-72 whitespace-nowrap">
                         <Flex align="center" className="gap-2">
-                          <Badge color="tertiary" size="sm">
+                          <Badge color="tertiary">
                             {entry.targetType}
                           </Badge>
                           {entry.workspaceId ? (
@@ -148,10 +120,21 @@ export default async function AuditPage({
                           ) : null}
                         </Flex>
                       </Table.Td>
-                      <Table.Td className="min-w-72">
-                        <Text className="line-clamp-2">
-                          {formatValue(entry.oldValue)} -&gt;{" "}
-                          {formatValue(entry.newValue)}
+                      <Table.Td className="min-w-80 whitespace-nowrap">
+                        <Text>
+                          <Text as="span" fontWeight="semibold">
+                            {entry.fieldName
+                              ? humanizeKey(entry.fieldName)
+                              : "Change"}
+                          </Text>
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            {formatAuditValue(entry.oldValue)} -&gt;{" "}
+                            {formatAuditValue(entry.newValue)}
+                          </Text>
                         </Text>
                       </Table.Td>
                       <Table.Td className="min-w-72">

@@ -245,7 +245,7 @@ func buildServices(cfg mux.Config) services {
 
 	return services{
 		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
-		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB)),
+		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB), admin.WithAssetResolver(attachmentsService)),
 		attachments:         attachmentsService,
 		calendar:            calendarService,
 		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),

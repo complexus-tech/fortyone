@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AnalyticsIcon, HistoryIcon, UserIcon, WorkspaceIcon } from "icons";
-import { Badge, Box, Button, Flex, Table, Text } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Table, Text } from "ui";
 import {
   getAuditLogs,
   getDashboardSummary,
@@ -104,6 +104,10 @@ export default async function OverviewPage() {
                       <Table.Tr key={workspace.id}>
                         <Table.Td className="min-w-72 whitespace-nowrap">
                           <Flex align="center" className="gap-2">
+                            <Avatar
+                              name={workspace.name}
+                              src={workspace.avatarUrl}
+                            />
                             <Link
                               className="hover:text-primary line-clamp-1"
                               href={`/workspaces/${workspace.id}`}
@@ -175,12 +179,12 @@ export default async function OverviewPage() {
                       <Text fontWeight="semibold">
                         {humanizeKey(entry.action)}
                       </Text>
-                      <Badge color="tertiary" size="sm">
+                      <Badge color="tertiary">
                         {entry.targetType}
                       </Badge>
                     </Flex>
                     <Text className="mt-1 text-[0.95rem]" color="muted">
-                      {entry.actorName || entry.actorEmail} ·{" "}
+                      {entry.actorName || "Unknown actor"} ·{" "}
                       {formatDateTime(entry.createdAt)}
                     </Text>
                     {entry.workspaceName ? (
