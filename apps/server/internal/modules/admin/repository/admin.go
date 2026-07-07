@@ -93,23 +93,47 @@ type dbWorkspaceMember struct {
 }
 
 type dbAuditLog struct {
-	ID            uuid.UUID       `db:"id"`
-	ActorUserID   uuid.UUID       `db:"actor_user_id"`
-	ActorEmail    string          `db:"actor_email"`
-	ActorName     *string         `db:"actor_name"`
-	TargetType    string          `db:"target_type"`
-	TargetID      *uuid.UUID      `db:"target_id"`
-	WorkspaceID   *uuid.UUID      `db:"workspace_id"`
-	WorkspaceName *string         `db:"workspace_name"`
-	WorkspaceSlug *string         `db:"workspace_slug"`
-	Action        string          `db:"action"`
-	FieldName     *string         `db:"field_name"`
-	OldValue      json.RawMessage `db:"old_value"`
-	NewValue      json.RawMessage `db:"new_value"`
-	Reason        *string         `db:"reason"`
-	Metadata      json.RawMessage `db:"metadata"`
-	CreatedAt     time.Time       `db:"created_at"`
-	TotalCount    int             `db:"total_count"`
+	ID            uuid.UUID    `db:"id"`
+	ActorUserID   uuid.UUID    `db:"actor_user_id"`
+	ActorEmail    string       `db:"actor_email"`
+	ActorName     *string      `db:"actor_name"`
+	TargetType    string       `db:"target_type"`
+	TargetID      *uuid.UUID   `db:"target_id"`
+	WorkspaceID   *uuid.UUID   `db:"workspace_id"`
+	WorkspaceName *string      `db:"workspace_name"`
+	WorkspaceSlug *string      `db:"workspace_slug"`
+	Action        string       `db:"action"`
+	FieldName     *string      `db:"field_name"`
+	OldValue      nullableJSON `db:"old_value"`
+	NewValue      nullableJSON `db:"new_value"`
+	Reason        *string      `db:"reason"`
+	Metadata      nullableJSON `db:"metadata"`
+	CreatedAt     time.Time    `db:"created_at"`
+	TotalCount    int          `db:"total_count"`
+}
+
+type nullableJSON struct {
+	raw json.RawMessage
+}
+
+func (value *nullableJSON) Scan(src any) error {
+	if value == nil {
+		return fmt.Errorf("scan nullable json: nil receiver")
+	}
+	if src == nil {
+		value.raw = nil
+		return nil
+	}
+
+	switch typed := src.(type) {
+	case []byte:
+		value.raw = append([]byte(nil), typed...)
+	case string:
+		value.raw = []byte(typed)
+	default:
+		return fmt.Errorf("scan nullable json: unsupported source type %T", src)
+	}
+	return nil
 }
 
 type dbAdminNote struct {
@@ -1174,10 +1198,10 @@ func toAuditLog(row dbAuditLog) admin.AuditLog {
 		WorkspaceSlug: row.WorkspaceSlug,
 		Action:        row.Action,
 		FieldName:     derefString(row.FieldName),
-		OldValue:      decodeJSON(row.OldValue),
-		NewValue:      decodeJSON(row.NewValue),
+		OldValue:      decodeNullableJSON(row.OldValue),
+		NewValue:      decodeNullableJSON(row.NewValue),
 		Reason:        derefString(row.Reason),
-		Metadata:      decodeJSON(row.Metadata),
+		Metadata:      decodeNullableJSON(row.Metadata),
 		CreatedAt:     row.CreatedAt,
 	}
 }
@@ -1234,4 +1258,8 @@ func decodeJSON(raw json.RawMessage) any {
 		return string(raw)
 	}
 	return value
+}
+
+func decodeNullableJSON(raw nullableJSON) any {
+	return decodeJSON(raw.raw)
 }
