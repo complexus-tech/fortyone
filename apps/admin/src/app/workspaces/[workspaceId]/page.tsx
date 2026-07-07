@@ -34,7 +34,6 @@ export default async function WorkspaceDetailPage({
   return (
     <Box>
       <PageHeader
-        actions={<TrialExtensionDialog workspace={workspace} />}
         description={`${workspace.slug} · Created ${formatDate(workspace.createdAt)}`}
         eyebrow="Workspace"
         icon={
@@ -46,6 +45,7 @@ export default async function WorkspaceDetailPage({
         }
         parentHref="/workspaces"
         title={workspace.name}
+        titleActions={<TrialExtensionDialog workspace={workspace} />}
       />
 
       <Box className="space-y-5 p-5 md:p-7">
@@ -87,16 +87,25 @@ export default async function WorkspaceDetailPage({
                 <WorkspaceStatusBadge workspace={workspace} />
               </DetailRow>
               <DetailRow label="Creator">
-                <Text>
+                <Text
+                  className="truncate"
+                  title={[workspace.createdByName, workspace.createdByEmail]
+                    .filter(Boolean)
+                    .join(" - ")}
+                >
                   {workspace.createdByName ||
                     workspace.createdByEmail ||
                     "Unknown"}
+                  {workspace.createdByName && workspace.createdByEmail ? (
+                    <Text
+                      as="span"
+                      className="ml-1 text-[0.95rem]"
+                      color="muted"
+                    >
+                      · {workspace.createdByEmail}
+                    </Text>
+                  ) : null}
                 </Text>
-                {workspace.createdByEmail ? (
-                  <Text className="mt-0.5 text-[0.95rem]" color="muted">
-                    {workspace.createdByEmail}
-                  </Text>
-                ) : null}
               </DetailRow>
               <DetailRow label="Stripe customer">
                 <Text>{workspace.stripeCustomerId ?? "Not linked"}</Text>
@@ -226,7 +235,10 @@ export default async function WorkspaceDetailPage({
                   ))
                 ) : (
                   <Table.Tr>
-                    <Table.Td className="py-10 text-center" colSpan={5}>
+                    <Table.Td
+                      className="h-36 text-center align-middle"
+                      colSpan={5}
+                    >
                       <Text color="muted">
                         No admin audit entries for this workspace.
                       </Text>

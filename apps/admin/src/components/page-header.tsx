@@ -7,6 +7,7 @@ export const PageHeader = ({
   eyebrow,
   icon,
   parentHref = "/overview",
+  titleActions,
   title,
 }: {
   actions?: ReactNode;
@@ -14,13 +15,14 @@ export const PageHeader = ({
   eyebrow?: string;
   icon?: ReactNode;
   parentHref?: string;
+  titleActions?: ReactNode;
   title: string;
 }) => {
   return (
     <Box>
       <Flex
         align="center"
-        className="border-border/80 bg-surface/60 h-[3.6rem] gap-4 border-b-[0.5px] px-5 md:px-7"
+        className="border-border/80 h-16 gap-4 border-b-[0.5px] px-5 md:px-7"
         justify="between"
       >
         <BreadCrumbs
@@ -45,16 +47,23 @@ export const PageHeader = ({
 
       {description ? (
         <Box className="px-5 pt-4 pb-5 md:px-7">
-          <Text
-            as="h1"
-            className="text-[1.55rem] leading-tight"
-            fontWeight="semibold"
-          >
-            {title}
-          </Text>
-          <Text className="mt-1 max-w-3xl text-[0.98rem]" color="muted">
-            {description}
-          </Text>
+          <Flex align="start" className="gap-4" justify="between">
+            <Box className="min-w-0">
+              <Text
+                as="h1"
+                className="text-[1.55rem] leading-tight"
+                fontWeight="semibold"
+              >
+                {title}
+              </Text>
+              <Text className="mt-1 max-w-3xl text-[0.98rem]" color="muted">
+                {description}
+              </Text>
+            </Box>
+            {titleActions ? (
+              <Box className="shrink-0 pt-0.5">{titleActions}</Box>
+            ) : null}
+          </Flex>
         </Box>
       ) : null}
     </Box>

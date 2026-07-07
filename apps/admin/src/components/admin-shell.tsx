@@ -92,9 +92,9 @@ export const AdminShell = ({
           <Box className="border-border/70 flex h-16 items-center border-b-[0.5px]">
             <Link className="flex items-center gap-3" href="/overview">
               <FortyOneLogo className="h-6" />
-              <Text className="text-[0.95rem]" color="muted">
+              <Badge color="tertiary" size="sm">
                 Admin
-              </Text>
+              </Badge>
             </Link>
           </Box>
 
@@ -198,7 +198,7 @@ const AdminProfileMenu = ({
               <ArrowRight2Icon className="shrink-0" />
             </Button>
           </Menu.Button>
-          <Menu.Items align="end" className="ml-3 w-64 pt-0">
+          <Menu.Items align="end" className="ml-3 w-80 pt-0">
             <Menu.Group className="px-4 pt-2.5 pb-2">
               <Flex align="center" className="gap-2">
                 <Avatar
@@ -215,9 +215,6 @@ const AdminProfileMenu = ({
                   </Text>
                 </Box>
               </Flex>
-              <Badge className="mt-3" color="tertiary">
-                Internal
-              </Badge>
             </Menu.Group>
             <Menu.Separator className="mb-2" />
             <Menu.Group>
@@ -239,7 +236,7 @@ const AdminProfileMenu = ({
                     </span>
                   </span>
                 </Menu.SubTrigger>
-                <Menu.SubItems className="rounded-xl pt-1.5 md:w-48">
+                <Menu.SubItems className="rounded-xl pt-1.5 md:w-56">
                   <Menu.Group>
                     <Menu.Item
                       active={theme === "light"}

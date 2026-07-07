@@ -106,11 +106,10 @@ main table tbody tr {
 }
 
 main table tbody tr:nth-child(odd) {
-  @apply bg-transparent!;
+  @apply bg-surface-elevated/35!;
 }
 
-main table tbody tr:nth-child(even),
-main table tbody tr:first-child {
+main table tbody tr:nth-child(even) {
   @apply bg-transparent!;
 }
 

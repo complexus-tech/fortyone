@@ -27,11 +27,6 @@ export default async function OverviewPage() {
   return (
     <Box>
       <PageHeader
-        actions={
-          <Button color="tertiary" href="/workspaces">
-            View workspaces
-          </Button>
-        }
         description="Monitor platform health, billing posture, access state, and high-risk admin activity."
         eyebrow="Internal operations"
         icon={<AnalyticsIcon className="h-[1.1rem]" />}
@@ -179,9 +174,7 @@ export default async function OverviewPage() {
                       <Text fontWeight="semibold">
                         {humanizeKey(entry.action)}
                       </Text>
-                      <Badge color="tertiary">
-                        {entry.targetType}
-                      </Badge>
+                      <Badge color="tertiary">{entry.targetType}</Badge>
                     </Flex>
                     <Text className="mt-1 text-[0.95rem]" color="muted">
                       {entry.actorName || "Unknown actor"} ·{" "}

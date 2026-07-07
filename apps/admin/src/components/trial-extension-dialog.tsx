@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlusIcon } from "icons";
 import { toast } from "sonner";
-import { Box, Button, Dialog, Flex, Input, Text, TextArea } from "ui";
+import { Box, Button, Dialog, Flex, Input, Menu, Text, TextArea } from "ui";
 import { updateWorkspaceTrial } from "@/lib/admin-api";
 import { formatDateTime, formatTrialState } from "@/lib/format";
 import type { WorkspaceSummary } from "@/lib/types";
@@ -69,73 +69,92 @@ export const TrialExtensionDialog = ({
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <Dialog.Trigger asChild>
-        <Button color="tertiary">
-          <CalendarPlusIcon className="h-5" />
-          Extend trial
-        </Button>
-      </Dialog.Trigger>
-      <Dialog.Content size="md">
-        <form action={handleSubmit}>
-          <Dialog.Header className="px-6">
-            <Dialog.Title>
-              <Text as="span" className="text-[1.35rem]" fontWeight="semibold">
-                Extend workspace trial
-              </Text>
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body>
-            <Box className="border-border bg-surface-muted/70 rounded-lg border-[0.5px] p-3">
-              <Text fontWeight="semibold">{workspace.name}</Text>
-              <Text className="mt-1 text-[0.95rem]" color="muted">
-                Current trial: {formatDateTime(workspace.trialEndsOn)} ·{" "}
-                {formatTrialState(workspace.trialEndsOn)}
-              </Text>
-            </Box>
-            <Box className="mt-4 space-y-4">
-              <Input
-                defaultValue={defaultTrialEnd}
-                label="New trial end"
-                min={minTrialEnd}
-                name="trialEndsOn"
-                required
-                type="datetime-local"
-              />
-              <TextArea
-                className="min-h-28 leading-6"
-                label="Reason"
-                name="reason"
-                placeholder="Customer success request, sales-led onboarding extension, billing remediation..."
-                required
-              />
-            </Box>
-          </Dialog.Body>
-          <Dialog.Footer justify="between">
-            <Button
-              color="tertiary"
-              disabled={isPending}
-              onClick={() => {
-                setOpen(false);
+    <>
+      <Menu>
+        <Menu.Button>
+          <Button color="tertiary" type="button">
+            Actions
+          </Button>
+        </Menu.Button>
+        <Menu.Items align="end" className="w-48">
+          <Menu.Group>
+            <Menu.Item
+              onSelect={() => {
+                setOpen(true);
               }}
-              type="button"
-              variant="naked"
             >
-              Cancel
-            </Button>
-            <Flex className="gap-2">
+              <CalendarPlusIcon className="h-[1.15rem]" />
+              Extend trial
+            </Menu.Item>
+          </Menu.Group>
+        </Menu.Items>
+      </Menu>
+      <Dialog onOpenChange={setOpen} open={open}>
+        <Dialog.Content size="md">
+          <form action={handleSubmit}>
+            <Dialog.Header className="px-6">
+              <Dialog.Title>
+                <Text
+                  as="span"
+                  className="text-[1.35rem]"
+                  fontWeight="semibold"
+                >
+                  Extend workspace trial
+                </Text>
+              </Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>
+              <Box className="border-border bg-surface-muted/70 rounded-lg border-[0.5px] p-3">
+                <Text fontWeight="semibold">{workspace.name}</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Current trial: {formatDateTime(workspace.trialEndsOn)} ·{" "}
+                  {formatTrialState(workspace.trialEndsOn)}
+                </Text>
+              </Box>
+              <Box className="mt-4 space-y-4">
+                <Input
+                  defaultValue={defaultTrialEnd}
+                  label="New trial end"
+                  min={minTrialEnd}
+                  name="trialEndsOn"
+                  required
+                  type="datetime-local"
+                />
+                <TextArea
+                  className="min-h-28 leading-6"
+                  label="Reason"
+                  name="reason"
+                  placeholder="Customer success request, sales-led onboarding extension, billing remediation..."
+                  required
+                />
+              </Box>
+            </Dialog.Body>
+            <Dialog.Footer justify="between">
               <Button
-                color="primary"
-                loading={isPending}
-                loadingText="Updating..."
-                type="submit"
+                color="tertiary"
+                disabled={isPending}
+                onClick={() => {
+                  setOpen(false);
+                }}
+                type="button"
+                variant="naked"
               >
-                Update trial
+                Cancel
               </Button>
-            </Flex>
-          </Dialog.Footer>
-        </form>
-      </Dialog.Content>
-    </Dialog>
+              <Flex className="gap-2">
+                <Button
+                  color="primary"
+                  loading={isPending}
+                  loadingText="Updating..."
+                  type="submit"
+                >
+                  Update trial
+                </Button>
+              </Flex>
+            </Dialog.Footer>
+          </form>
+        </Dialog.Content>
+      </Dialog>
+    </>
   );
 };

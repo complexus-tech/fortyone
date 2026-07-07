@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { GitHubIcon, SlackIcon, WorkspaceIcon } from "icons";
-import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
+import { WorkspaceIcon } from "icons";
+import { Avatar, Box, Flex, Table, Text } from "ui";
 import { getWorkspaces } from "@/lib/admin-api";
-import { formatDate, formatDateTime, formatTrialState } from "@/lib/format";
+import { formatDate, formatTrialState } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SearchToolbar } from "@/components/search-toolbar";
@@ -41,10 +41,11 @@ export default async function WorkspacesPage({
 
       <Box className="space-y-4 p-5 md:p-7">
         <SearchToolbar
+          defaultFilter={params.status}
           defaultQuery={params.q}
-          defaultStatus={params.status}
+          filterOptions={statusOptions}
+          pathname="/workspaces"
           placeholder="Search by workspace, slug, or creator email"
-          statusOptions={statusOptions}
         />
 
         <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
@@ -56,8 +57,9 @@ export default async function WorkspacesPage({
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Trial</Table.Th>
                   <Table.Th>Plan</Table.Th>
-                  <Table.Th>Activity</Table.Th>
-                  <Table.Th>Integrations</Table.Th>
+                  <Table.Th>Last activity</Table.Th>
+                  <Table.Th>Members</Table.Th>
+                  <Table.Th>Teams</Table.Th>
                 </Table.Tr>
               </Table.Head>
               <Table.Body>
@@ -115,37 +117,20 @@ export default async function WorkspacesPage({
                           </Text>
                         </Text>
                       </Table.Td>
-                      <Table.Td className="min-w-72 whitespace-nowrap">
-                        <Text>
-                          {workspace.memberCount} members ·{" "}
-                          {workspace.teamCount} teams
-                          <Text
-                            as="span"
-                            className="ml-1 text-[0.95rem]"
-                            color="muted"
-                          >
-                            · Last opened{" "}
-                            {formatDateTime(workspace.lastAccessedAt)}
-                          </Text>
-                        </Text>
+                      <Table.Td className="min-w-40 whitespace-nowrap">
+                        {formatDate(workspace.lastAccessedAt)}
                       </Table.Td>
                       <Table.Td className="whitespace-nowrap">
-                        <Flex align="center" className="gap-2">
-                          <Badge color="tertiary">
-                            <SlackIcon className="h-4" />
-                            {workspace.slackInstalled ? "Slack" : "No Slack"}
-                          </Badge>
-                          <Badge color="tertiary">
-                            <GitHubIcon className="h-4" />
-                            {workspace.githubInstalled ? "GitHub" : "No GitHub"}
-                          </Badge>
-                        </Flex>
+                        {workspace.memberCount}
+                      </Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {workspace.teamCount}
                       </Table.Td>
                     </Table.Tr>
                   ))
                 ) : (
                   <Table.Tr>
-                    <Table.Td className="py-10 text-center" colSpan={6}>
+                    <Table.Td className="py-10 text-center" colSpan={7}>
                       <Text color="muted">No workspaces match this view.</Text>
                     </Table.Td>
                   </Table.Tr>

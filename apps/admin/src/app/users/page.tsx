@@ -29,9 +29,10 @@ export default async function UsersPage({
         title="Users"
       />
 
-      <Box className="space-y-4 p-5 md:p-7">
+      <Box className="space-y-4 px-5 pt-2 pb-5 md:px-7 md:pt-2 md:pb-7">
         <SearchToolbar
           defaultQuery={params.q}
+          pathname="/users"
           placeholder="Search by name, username, or email"
         />
 
