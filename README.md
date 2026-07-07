@@ -9,7 +9,7 @@ A modern, open-source web platform for project management and collaboration. For
 
 A full-stack, open-source platform for project management and collaboration, with a Go API and multi-app web/mobile clients.
 
-## ✨ Core Features
+## ✨ Core Features.
 
 - **🎯 Project Management**: Organize projects with objectives, key results, and milestones
 - **📋 Task Tracking**: Create, assign, and track tasks with rich text editing
