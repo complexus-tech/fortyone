@@ -1237,7 +1237,7 @@ func nullableString(value string) any {
 
 func marshalNullableJSON(value any) (any, error) {
 	if value == nil {
-		return nil, nil
+		return []byte("null"), nil
 	}
 	return marshalJSON(value)
 }

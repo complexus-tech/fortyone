@@ -19,6 +19,16 @@ func TestAuditLogJSONValuesScanNullAndDecode(t *testing.T) {
 	require.Equal(t, "Admin note added", auditLog.NewValue)
 }
 
+func TestMarshalNullableJSONStoresNullAsJSONNull(t *testing.T) {
+	raw, err := marshalNullableJSON(nil)
+
+	require.NoError(t, err)
+	value, ok := raw.([]byte)
+	require.True(t, ok)
+	require.JSONEq(t, "null", string(value))
+	require.Nil(t, decodeJSON(value))
+}
+
 func scanAuditJSONValue(t *testing.T, value any, src any) {
 	t.Helper()
 
