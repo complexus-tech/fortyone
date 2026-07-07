@@ -112,6 +112,19 @@ type dbAuditLog struct {
 	TotalCount    int             `db:"total_count"`
 }
 
+type dbAdminNote struct {
+	ID              uuid.UUID  `db:"id"`
+	TargetType      string     `db:"target_type"`
+	TargetID        uuid.UUID  `db:"target_id"`
+	WorkspaceID     *uuid.UUID `db:"workspace_id"`
+	Body            string     `db:"body"`
+	CreatedByUserID uuid.UUID  `db:"created_by_user_id"`
+	CreatedByName   *string    `db:"created_by_name"`
+	CreatedByEmail  string     `db:"created_by_email"`
+	CreatedAt       time.Time  `db:"created_at"`
+	TotalCount      int        `db:"total_count"`
+}
+
 type dbDashboardSummary struct {
 	TotalWorkspaces      int `db:"total_workspaces"`
 	ActiveTrials         int `db:"active_trials"`
@@ -364,6 +377,41 @@ func (r *repo) UpdateWorkspaceTrial(ctx context.Context, input admin.UpdateWorks
 	return nil
 }
 
+func (r *repo) UpdateWorkspaceDeleted(ctx context.Context, input admin.UpdateWorkspaceDeletedInput) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.admin.UpdateWorkspaceDeleted")
+	defer span.End()
+
+	const query = `
+		UPDATE public.workspaces
+		SET deleted_at = CASE
+				WHEN :deleted THEN COALESCE(deleted_at, now())
+				ELSE NULL
+			END,
+			deleted_by = CASE
+				WHEN :deleted THEN :actor_user_id
+				ELSE NULL
+			END,
+			updated_at = now()
+		WHERE workspace_id = :workspace_id
+	`
+	result, err := r.db.NamedExecContext(ctx, query, map[string]any{
+		"workspace_id":  input.WorkspaceID,
+		"actor_user_id": input.ActorUserID,
+		"deleted":       input.Deleted,
+	})
+	if err != nil {
+		return fmt.Errorf("update workspace deleted state: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read workspace deleted update result: %w", err)
+	}
+	if affected == 0 {
+		return admin.ErrNotFound
+	}
+	return nil
+}
+
 func (r *repo) ListUsers(ctx context.Context, input admin.ListUsersInput) (admin.ListResult[admin.UserSummary], error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.admin.ListUsers")
 	defer span.End()
@@ -456,6 +504,35 @@ func (r *repo) GetUserOverview(ctx context.Context, userID uuid.UUID) (admin.Use
 	}, nil
 }
 
+func (r *repo) UpdateUserState(ctx context.Context, input admin.UpdateUserStateInput) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.admin.UpdateUserState")
+	defer span.End()
+
+	const query = `
+		UPDATE public.users
+		SET is_active = COALESCE(:is_active, is_active),
+			is_internal = COALESCE(:is_internal, is_internal),
+			updated_at = now()
+		WHERE user_id = :user_id
+	`
+	result, err := r.db.NamedExecContext(ctx, query, map[string]any{
+		"user_id":     input.UserID,
+		"is_active":   input.IsActive,
+		"is_internal": input.IsInternal,
+	})
+	if err != nil {
+		return fmt.Errorf("update user admin state: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read user admin state update result: %w", err)
+	}
+	if affected == 0 {
+		return admin.ErrNotFound
+	}
+	return nil
+}
+
 func (r *repo) ListAuditLogs(ctx context.Context, input admin.ListAuditLogsInput) (admin.ListResult[admin.AuditLog], error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.admin.ListAuditLogs")
 	defer span.End()
@@ -504,6 +581,104 @@ func (r *repo) ListAuditLogs(ctx context.Context, input admin.ListAuditLogsInput
 		Items:      items,
 		Pagination: paginationFromRows(input.Pagination, len(rows), auditLogTotal(rows)),
 	}, nil
+}
+
+func (r *repo) ListAdminNotes(ctx context.Context, input admin.ListAdminNotesInput) (admin.ListResult[admin.AdminNote], error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.admin.ListAdminNotes")
+	defer span.End()
+
+	where, params := adminNoteFilters(input)
+	params["limit"] = input.Pagination.Limit
+	params["offset"] = pageOffset(input.Pagination)
+
+	query := fmt.Sprintf(`
+		SELECT
+			n.id,
+			n.target_type,
+			n.target_id,
+			n.workspace_id,
+			n.body,
+			n.created_by_user_id,
+			creator.full_name AS created_by_name,
+			creator.email AS created_by_email,
+			n.created_at,
+			COUNT(*) OVER() AS total_count
+		FROM public.admin_notes n
+		INNER JOIN public.users creator ON creator.user_id = n.created_by_user_id
+		%s
+		ORDER BY n.created_at DESC
+		LIMIT :limit OFFSET :offset
+	`, where)
+
+	rows, err := selectNamed[dbAdminNote](ctx, r.db, query, params)
+	if err != nil {
+		return admin.ListResult[admin.AdminNote]{}, fmt.Errorf("list admin notes: %w", err)
+	}
+
+	items := make([]admin.AdminNote, len(rows))
+	for i, row := range rows {
+		items[i] = toAdminNote(row)
+	}
+	return admin.ListResult[admin.AdminNote]{
+		Items:      items,
+		Pagination: paginationFromRows(input.Pagination, len(rows), adminNoteTotal(rows)),
+	}, nil
+}
+
+func (r *repo) CreateAdminNote(ctx context.Context, input admin.CreateAdminNoteInput) (admin.AdminNote, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.admin.CreateAdminNote")
+	defer span.End()
+
+	const query = `
+		INSERT INTO public.admin_notes (
+			target_type,
+			target_id,
+			workspace_id,
+			body,
+			created_by_user_id
+		)
+		VALUES (
+			:target_type,
+			:target_id,
+			:workspace_id,
+			:body,
+			:created_by_user_id
+		)
+		RETURNING
+			id,
+			target_type,
+			target_id,
+			workspace_id,
+			body,
+			created_by_user_id,
+			(
+				SELECT full_name
+				FROM public.users
+				WHERE user_id = :created_by_user_id
+			) AS created_by_name,
+			(
+				SELECT email
+				FROM public.users
+				WHERE user_id = :created_by_user_id
+			) AS created_by_email,
+			created_at,
+			1 AS total_count
+	`
+	params := map[string]any{
+		"target_type":        input.TargetType,
+		"target_id":          input.TargetID,
+		"workspace_id":       input.WorkspaceID,
+		"body":               input.Body,
+		"created_by_user_id": input.CreatedByUserID,
+	}
+	rows, err := selectNamed[dbAdminNote](ctx, r.db, query, params)
+	if err != nil {
+		return admin.AdminNote{}, fmt.Errorf("create admin note: %w", err)
+	}
+	if len(rows) == 0 {
+		return admin.AdminNote{}, admin.ErrNotFound
+	}
+	return toAdminNote(rows[0]), nil
 }
 
 func (r *repo) InsertAuditEntry(ctx context.Context, input admin.AuditEntryInput) error {
@@ -785,8 +960,12 @@ func workspaceFilters(input admin.ListWorkspacesInput) (string, map[string]any) 
 		clauses = append(clauses, "w.deleted_at IS NULL AND w.trial_ends_on > now()")
 	case "expired":
 		clauses = append(clauses, "w.deleted_at IS NULL AND w.trial_ends_on IS NOT NULL AND w.trial_ends_on <= now()")
+	case "expiring":
+		clauses = append(clauses, "w.deleted_at IS NULL AND w.trial_ends_on > now() AND w.trial_ends_on <= now() + interval '7 days'")
 	case "paid":
 		clauses = append(clauses, "w.deleted_at IS NULL AND ws.subscription_status IN ('active', 'trialing', 'past_due') AND COALESCE(CAST(ws.subscription_tier AS text), 'free') <> 'free'")
+	case "past_due":
+		clauses = append(clauses, "w.deleted_at IS NULL AND ws.subscription_status = 'past_due'")
 	case "deleted":
 		clauses = append(clauses, "w.deleted_at IS NOT NULL")
 	}
@@ -807,7 +986,7 @@ func userFilters(input admin.ListUsersInput) (string, map[string]any) {
 }
 
 func auditLogFilters(input admin.ListAuditLogsInput) (string, map[string]any) {
-	clauses := make([]string, 0, 2)
+	clauses := make([]string, 0, 7)
 	params := make(map[string]any)
 
 	if input.WorkspaceID != nil {
@@ -817,6 +996,56 @@ func auditLogFilters(input admin.ListAuditLogsInput) (string, map[string]any) {
 	if input.TargetType != "" {
 		clauses = append(clauses, "a.target_type = :target_type")
 		params["target_type"] = input.TargetType
+	}
+	if input.Action != "" {
+		clauses = append(clauses, "a.action = :action")
+		params["action"] = input.Action
+	}
+	if input.Query != "" {
+		clauses = append(clauses, `(
+			a.action ILIKE :query
+			OR a.field_name ILIKE :query
+			OR a.reason ILIKE :query
+			OR w.name ILIKE :query
+			OR w.slug ILIKE :query
+			OR CAST(a.target_id AS text) ILIKE :query
+		)`)
+		params["query"] = "%" + input.Query + "%"
+	}
+	if input.ActorQuery != "" {
+		clauses = append(clauses, "(actor.email ILIKE :actor_query OR actor.full_name ILIKE :actor_query OR actor.username ILIKE :actor_query)")
+		params["actor_query"] = "%" + input.ActorQuery + "%"
+	}
+	if input.From != nil {
+		clauses = append(clauses, "a.created_at >= :from")
+		params["from"] = *input.From
+	}
+	if input.To != nil {
+		clauses = append(clauses, "a.created_at <= :to")
+		params["to"] = *input.To
+	}
+
+	if len(clauses) == 0 {
+		return "", params
+	}
+	return "WHERE " + strings.Join(clauses, " AND "), params
+}
+
+func adminNoteFilters(input admin.ListAdminNotesInput) (string, map[string]any) {
+	clauses := make([]string, 0, 3)
+	params := make(map[string]any)
+
+	if input.TargetType != "" {
+		clauses = append(clauses, "n.target_type = :target_type")
+		params["target_type"] = input.TargetType
+	}
+	if input.TargetID != nil {
+		clauses = append(clauses, "n.target_id = :target_id")
+		params["target_id"] = *input.TargetID
+	}
+	if input.WorkspaceID != nil {
+		clauses = append(clauses, "n.workspace_id = :workspace_id")
+		params["workspace_id"] = *input.WorkspaceID
 	}
 
 	if len(clauses) == 0 {
@@ -870,6 +1099,13 @@ func userTotal(rows []dbUserSummary) int {
 }
 
 func auditLogTotal(rows []dbAuditLog) int {
+	if len(rows) == 0 {
+		return 0
+	}
+	return rows[0].TotalCount
+}
+
+func adminNoteTotal(rows []dbAdminNote) int {
 	if len(rows) == 0 {
 		return 0
 	}
@@ -943,6 +1179,20 @@ func toAuditLog(row dbAuditLog) admin.AuditLog {
 		Reason:        derefString(row.Reason),
 		Metadata:      decodeJSON(row.Metadata),
 		CreatedAt:     row.CreatedAt,
+	}
+}
+
+func toAdminNote(row dbAdminNote) admin.AdminNote {
+	return admin.AdminNote{
+		ID:              row.ID,
+		TargetType:      row.TargetType,
+		TargetID:        row.TargetID,
+		WorkspaceID:     row.WorkspaceID,
+		Body:            row.Body,
+		CreatedByUserID: row.CreatedByUserID,
+		CreatedByName:   derefString(row.CreatedByName),
+		CreatedByEmail:  row.CreatedByEmail,
+		CreatedAt:       row.CreatedAt,
 	}
 }
 

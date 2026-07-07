@@ -5,7 +5,8 @@ import { getAuditLogs } from "@/lib/admin-api";
 import { formatAuditValue, formatDateTime, humanizeKey } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
-import { SearchToolbar } from "@/components/search-toolbar";
+import { AuditDetailDialog } from "@/components/audit-detail-dialog";
+import { AuditFilterToolbar } from "@/components/audit-filter-toolbar";
 
 const targetTypeOptions = [
   { label: "All targets", value: "" },
@@ -19,15 +20,25 @@ export default async function AuditPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    action?: string;
+    actor?: string;
+    from?: string;
     page?: string;
+    q?: string;
     targetType?: string;
+    to?: string;
     workspaceId?: string;
   }>;
 }) {
   const params = await searchParams;
   const auditLogs = await getAuditLogs({
+    action: params.action,
+    actor: params.actor,
+    from: params.from,
     page: params.page ?? 1,
+    q: params.q,
     targetType: params.targetType,
+    to: params.to,
     workspaceId: params.workspaceId,
     limit: 30,
   });
@@ -42,14 +53,15 @@ export default async function AuditPage({
       />
 
       <Box className="space-y-4 p-5 md:p-7">
-        <SearchToolbar
-          defaultFilter={params.targetType}
-          defaultQuery={params.workspaceId}
-          filterName="targetType"
-          filterOptions={targetTypeOptions}
-          inputName="workspaceId"
-          pathname="/audit"
-          placeholder="Search by workspace UUID"
+        <AuditFilterToolbar
+          action={params.action}
+          actor={params.actor}
+          from={params.from}
+          query={params.q}
+          targetType={params.targetType}
+          targetTypeOptions={targetTypeOptions}
+          to={params.to}
+          workspaceId={params.workspaceId}
         />
 
         <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
@@ -64,6 +76,7 @@ export default async function AuditPage({
                   <Table.Th>Change</Table.Th>
                   <Table.Th>Reason</Table.Th>
                   <Table.Th>Time</Table.Th>
+                  <Table.Th />
                 </Table.Tr>
               </Table.Head>
               <Table.Body>
@@ -133,11 +146,14 @@ export default async function AuditPage({
                       <Table.Td className="min-w-44">
                         {formatDateTime(entry.createdAt)}
                       </Table.Td>
+                      <Table.Td className="w-12">
+                        <AuditDetailDialog entry={entry} />
+                      </Table.Td>
                     </Table.Tr>
                   ))
                 ) : (
                   <Table.Tr>
-                    <Table.Td className="py-10 text-center" colSpan={7}>
+                    <Table.Td className="py-10 text-center" colSpan={8}>
                       <Text color="muted">
                         No audit entries match this filter.
                       </Text>
@@ -152,6 +168,11 @@ export default async function AuditPage({
             params={{
               targetType: params.targetType,
               workspaceId: params.workspaceId,
+              action: params.action,
+              actor: params.actor,
+              from: params.from,
+              q: params.q,
+              to: params.to,
             }}
             pathname="/audit"
           />

@@ -115,9 +115,30 @@ export type AuditLog = {
   createdAt: string;
 };
 
+export type AdminNote = {
+  id: string;
+  targetType: string;
+  targetId: string;
+  workspaceId: string | null;
+  body: string;
+  createdByUserId: string;
+  createdByName: string;
+  createdByEmail: string;
+  createdAt: string;
+};
+
 export type AdminListParams = {
   q?: string;
   status?: string;
   page?: string | number;
   limit?: string | number;
+};
+
+export type AuditListParams = AdminListParams & {
+  action?: string;
+  actor?: string;
+  from?: string;
+  targetType?: string;
+  to?: string;
+  workspaceId?: string;
 };

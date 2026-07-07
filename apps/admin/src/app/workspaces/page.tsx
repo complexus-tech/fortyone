@@ -12,8 +12,10 @@ const statusOptions = [
   { label: "All statuses", value: "" },
   { label: "Active", value: "active" },
   { label: "Trialing", value: "trialing" },
+  { label: "Expiring", value: "expiring" },
   { label: "Expired", value: "expired" },
   { label: "Paid", value: "paid" },
+  { label: "Past due", value: "past_due" },
   { label: "Deleted", value: "deleted" },
 ];
 

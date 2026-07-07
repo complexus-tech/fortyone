@@ -244,8 +244,12 @@ func buildServices(cfg mux.Config) services {
 	feedbackService := feedback.New(feedbackrepository.New(cfg.Log, cfg.DB), storiesService)
 
 	return services{
-		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
-		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB), admin.WithAssetResolver(attachmentsService)),
+		activities: activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
+		admin: admin.New(
+			adminrepository.New(cfg.Log, cfg.DB),
+			admin.WithAssetResolver(attachmentsService),
+			admin.WithSubscriptionSyncer(subscriptionsService),
+		),
 		attachments:         attachmentsService,
 		calendar:            calendarService,
 		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),

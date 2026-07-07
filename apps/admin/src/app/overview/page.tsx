@@ -18,11 +18,28 @@ import { PageHeader } from "@/components/page-header";
 import { WorkspaceStatusBadge } from "@/components/status-badge";
 
 export default async function OverviewPage() {
-  const [summary, expiringWorkspaces, auditLogs] = await Promise.all([
-    getDashboardSummary(),
-    getWorkspaces({ status: "expired", limit: 6 }),
-    getAuditLogs({ limit: 6 }),
-  ]);
+  const [summary, expiredTrials, expiringTrials, pastDueWorkspaces, auditLogs] =
+    await Promise.all([
+      getDashboardSummary(),
+      getWorkspaces({ status: "expired", limit: 6 }),
+      getWorkspaces({ status: "expiring", limit: 6 }),
+      getWorkspaces({ status: "past_due", limit: 6 }),
+      getAuditLogs({ limit: 6 }),
+    ]);
+  const queueItems = [
+    ...expiredTrials.items.map((workspace) => ({
+      label: "Expired trial",
+      workspace,
+    })),
+    ...expiringTrials.items.map((workspace) => ({
+      label: "Trial ending",
+      workspace,
+    })),
+    ...pastDueWorkspaces.items.map((workspace) => ({
+      label: "Payment issue",
+      workspace,
+    })),
+  ].slice(0, 8);
 
   return (
     <Box>
@@ -69,34 +86,30 @@ export default async function OverviewPage() {
               justify="between"
             >
               <Box>
-                <Text fontWeight="semibold">Expired trials</Text>
+                <Text fontWeight="semibold">Trial and billing queue</Text>
                 <Text className="mt-1 text-[0.95rem]" color="muted">
-                  Workspaces that may need commercial or support follow-up.
+                  Workspaces that may need support, sales, or billing follow-up.
                 </Text>
               </Box>
-              <Button
-                color="tertiary"
-                href="/workspaces?status=expired"
-                size="sm"
-                variant="naked"
-              >
-                Open list
-              </Button>
             </Flex>
             <Box className="overflow-x-auto">
               <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
+                    <Table.Th>Queue</Table.Th>
                     <Table.Th>Workspace</Table.Th>
                     <Table.Th>Status</Table.Th>
-                    <Table.Th>Trial</Table.Th>
+                    <Table.Th>Trial or plan</Table.Th>
                     <Table.Th>Members</Table.Th>
                   </Table.Tr>
                 </Table.Head>
                 <Table.Body>
-                  {expiringWorkspaces.items.length > 0 ? (
-                    expiringWorkspaces.items.map((workspace) => (
-                      <Table.Tr key={workspace.id}>
+                  {queueItems.length > 0 ? (
+                    queueItems.map(({ label, workspace }) => (
+                      <Table.Tr key={`${label}-${workspace.id}`}>
+                        <Table.Td className="min-w-40 whitespace-nowrap">
+                          {label}
+                        </Table.Td>
                         <Table.Td className="min-w-72 whitespace-nowrap">
                           <Flex align="center" className="gap-2">
                             <Avatar
@@ -132,6 +145,15 @@ export default async function OverviewPage() {
                               · {formatTrialState(workspace.trialEndsOn)}
                             </Text>
                           </Text>
+                          {workspace.subscriptionStatus ? (
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {workspace.subscriptionStatus}
+                            </Text>
+                          ) : null}
                         </Table.Td>
                         <Table.Td className="whitespace-nowrap">
                           {workspace.memberCount}
@@ -140,8 +162,10 @@ export default async function OverviewPage() {
                     ))
                   ) : (
                     <Table.Tr>
-                      <Table.Td className="py-8 text-center" colSpan={4}>
-                        <Text color="muted">No expired trials right now.</Text>
+                      <Table.Td className="py-8 text-center" colSpan={5}>
+                        <Text color="muted">
+                          No trial or billing follow-up right now.
+                        </Text>
                       </Table.Td>
                     </Table.Tr>
                   )}

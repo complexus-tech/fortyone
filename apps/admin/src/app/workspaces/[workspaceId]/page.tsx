@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { GitHubIcon, SlackIcon, UserIcon, WorkspaceIcon } from "icons";
 import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
-import { getAuditLogs, getWorkspace } from "@/lib/admin-api";
+import { getAdminNotes, getAuditLogs, getWorkspace } from "@/lib/admin-api";
 import {
   formatAuditValue,
   formatCount,
@@ -13,7 +13,8 @@ import {
 } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
-import { TrialExtensionDialog } from "@/components/trial-extension-dialog";
+import { AdminNotesPanel } from "@/components/admin-notes-panel";
+import { WorkspaceActionsMenu } from "@/components/workspace-actions-menu";
 import {
   UserStatusBadge,
   WorkspaceStatusBadge,
@@ -25,9 +26,10 @@ export default async function WorkspaceDetailPage({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const [overview, auditLogs] = await Promise.all([
+  const [overview, auditLogs, notes] = await Promise.all([
     getWorkspace(workspaceId),
     getAuditLogs({ workspaceId, limit: 8 }),
+    getAdminNotes({ targetType: "workspace", targetId: workspaceId, limit: 5 }),
   ]);
   const { workspace, members } = overview;
 
@@ -45,7 +47,7 @@ export default async function WorkspaceDetailPage({
         }
         parentHref="/workspaces"
         title={workspace.name}
-        titleActions={<TrialExtensionDialog workspace={workspace} />}
+        titleActions={<WorkspaceActionsMenu workspace={workspace} />}
       />
 
       <Box className="space-y-5 p-5 md:p-7">
@@ -75,57 +77,65 @@ export default async function WorkspaceDetailPage({
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <Box className="border-border bg-surface rounded-lg border-[0.5px]">
-            <Box className="border-border border-b-[0.5px] px-4 py-3">
-              <Text fontWeight="semibold">Workspace details</Text>
-              <Text className="mt-1 text-[0.95rem]" color="muted">
-                Operational state and connected systems.
-              </Text>
-            </Box>
-            <Box className="divide-border divide-y">
-              <DetailRow label="Status">
-                <WorkspaceStatusBadge workspace={workspace} />
-              </DetailRow>
-              <DetailRow label="Creator">
-                <Text
-                  className="truncate"
-                  title={[workspace.createdByName, workspace.createdByEmail]
-                    .filter(Boolean)
-                    .join(" - ")}
-                >
-                  {workspace.createdByName ||
-                    workspace.createdByEmail ||
-                    "Unknown"}
-                  {workspace.createdByName && workspace.createdByEmail ? (
-                    <Text
-                      as="span"
-                      className="ml-1 text-[0.95rem]"
-                      color="muted"
-                    >
-                      · {workspace.createdByEmail}
-                    </Text>
-                  ) : null}
+          <Box className="space-y-5">
+            <Box className="border-border bg-surface rounded-lg border-[0.5px]">
+              <Box className="border-border border-b-[0.5px] px-4 py-3">
+                <Text fontWeight="semibold">Workspace details</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Operational state and connected systems.
                 </Text>
-              </DetailRow>
-              <DetailRow label="Stripe customer">
-                <Text>{workspace.stripeCustomerId ?? "Not linked"}</Text>
-              </DetailRow>
-              <DetailRow label="Stripe subscription">
-                <Text>{workspace.stripeSubscriptionId ?? "Not linked"}</Text>
-              </DetailRow>
-              <DetailRow label="Integrations">
-                <Flex align="center" className="gap-2">
-                  <Badge color="tertiary">
-                    <SlackIcon className="h-4" />
-                    {workspace.slackInstalled ? "Slack" : "No Slack"}
-                  </Badge>
-                  <Badge color="tertiary">
-                    <GitHubIcon className="h-4" />
-                    {workspace.githubInstalled ? "GitHub" : "No GitHub"}
-                  </Badge>
-                </Flex>
-              </DetailRow>
+              </Box>
+              <Box className="divide-border divide-y">
+                <DetailRow label="Status">
+                  <WorkspaceStatusBadge workspace={workspace} />
+                </DetailRow>
+                <DetailRow label="Creator">
+                  <Text
+                    className="truncate"
+                    title={[workspace.createdByName, workspace.createdByEmail]
+                      .filter(Boolean)
+                      .join(" - ")}
+                  >
+                    {workspace.createdByName ||
+                      workspace.createdByEmail ||
+                      "Unknown"}
+                    {workspace.createdByName && workspace.createdByEmail ? (
+                      <Text
+                        as="span"
+                        className="ml-1 text-[0.95rem]"
+                        color="muted"
+                      >
+                        · {workspace.createdByEmail}
+                      </Text>
+                    ) : null}
+                  </Text>
+                </DetailRow>
+                <DetailRow label="Stripe customer">
+                  <Text>{workspace.stripeCustomerId ?? "Not linked"}</Text>
+                </DetailRow>
+                <DetailRow label="Stripe subscription">
+                  <Text>{workspace.stripeSubscriptionId ?? "Not linked"}</Text>
+                </DetailRow>
+                <DetailRow label="Integrations">
+                  <Flex align="center" className="gap-2">
+                    <Badge color="tertiary">
+                      <SlackIcon className="h-4" />
+                      {workspace.slackInstalled ? "Slack" : "No Slack"}
+                    </Badge>
+                    <Badge color="tertiary">
+                      <GitHubIcon className="h-4" />
+                      {workspace.githubInstalled ? "GitHub" : "No GitHub"}
+                    </Badge>
+                  </Flex>
+                </DetailRow>
+              </Box>
             </Box>
+            <AdminNotesPanel
+              notes={notes.items}
+              targetId={workspace.id}
+              targetType="workspace"
+              workspaceId={workspace.id}
+            />
           </Box>
 
           <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">

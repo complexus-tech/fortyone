@@ -105,7 +105,8 @@ func getWorkspace(ctx context.Context, db *sqlx.DB, workspaceSlug string, userID
 			wm.role as user_role
 		FROM workspaces w
 		INNER JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
-		WHERE w.slug = :slug AND wm.user_id = :user_id
+		INNER JOIN users u ON u.user_id = wm.user_id
+		WHERE w.slug = :slug AND wm.user_id = :user_id AND u.is_active = true
 	`
 
 	params := map[string]any{

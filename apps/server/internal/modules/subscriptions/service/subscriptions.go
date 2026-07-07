@@ -98,6 +98,71 @@ func (s *Service) GetSubscription(ctx context.Context, workspaceID uuid.UUID) (C
 	return sub, nil
 }
 
+func (s *Service) SyncSubscription(ctx context.Context, workspaceID uuid.UUID) error {
+	ctx, span := web.AddSpan(ctx, "business.subscriptions.SyncSubscription")
+	defer span.End()
+
+	currentSub, err := s.repo.GetSubscriptionByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to get current subscription: %w", err)
+	}
+	if currentSub.StripeSubscriptionID == nil || *currentSub.StripeSubscriptionID == "" {
+		return ErrSubscriptionNotFound
+	}
+
+	params := &stripe.SubscriptionParams{
+		Expand: []*string{
+			stripe.String("items.data.price"),
+			stripe.String("customer"),
+		},
+	}
+	stripeSub, err := s.stripeClient.Subscriptions.Get(*currentSub.StripeSubscriptionID, params)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("%w: fetching stripe subscription: %v", ErrStripeOperationFailed, err)
+	}
+	if stripeSub == nil {
+		return ErrInvalidSubscription
+	}
+
+	customerID := currentSub.StripeCustomerID
+	if stripeSub.Customer != nil && stripeSub.Customer.ID != "" {
+		customerID = stripeSub.Customer.ID
+	}
+
+	subItemID, seatCount, tier, billingInterval, billingEndsAt, err := s.stripeSubscriptionDetails(ctx, stripeSub)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	status := SubscriptionStatus(stripeSub.Status)
+	var trialEnd *time.Time
+	if stripeSub.TrialEnd > 0 {
+		t := time.Unix(stripeSub.TrialEnd, 0)
+		trialEnd = &t
+	}
+
+	if err := s.repo.UpdateSubscriptionDetails(
+		ctx,
+		stripeSub.ID,
+		customerID,
+		subItemID,
+		status,
+		seatCount,
+		trialEnd,
+		tier,
+		billingInterval,
+		billingEndsAt,
+	); err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("failed to update subscription details: %w", err)
+	}
+
+	return nil
+}
+
 // CreateCheckoutSession initiates a Stripe Checkout process for a NEW subscription.
 // If the workspace already has an active subscription, it returns an error.
 func (s *Service) CreateCheckoutSession(ctx context.Context, workspaceID uuid.UUID, lookupKey string, userEmail string, workspaceName string, successURL string, cancelURL string) (string, error) {
@@ -331,6 +396,33 @@ func (s *Service) mapPriceToTier(ctx context.Context, price *stripe.Price) Subsc
 		s.log.Error(ctx, "Unknown price lookup key for tier mapping", "lookup_key", price.LookupKey, "price_id", price.ID)
 		return TierFree
 	}
+}
+
+func (s *Service) stripeSubscriptionDetails(ctx context.Context, stripeSub *stripe.Subscription) (string, int, SubscriptionTier, *BillingInterval, *time.Time, error) {
+	var subItemID string
+	var seatCount int
+	tier := TierFree
+	var billingEndsAt *time.Time
+	var billingInterval *BillingInterval
+
+	if len(stripeSub.Items.Data) == 0 || stripeSub.Items.Data[0] == nil {
+		return "", 0, TierFree, nil, nil, ErrInvalidSubscription
+	}
+
+	item := stripeSub.Items.Data[0]
+	subItemID = item.ID
+	seatCount = int(item.Quantity)
+	tier = s.mapPriceToTier(ctx, item.Price)
+	if item.Price != nil && item.Price.Recurring != nil {
+		intervalStr := BillingInterval(item.Price.Recurring.Interval)
+		billingInterval = &intervalStr
+	}
+	if int64(item.CurrentPeriodEnd) > 0 {
+		tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
+		billingEndsAt = &tempBillingEndsAt
+	}
+
+	return subItemID, seatCount, tier, billingInterval, billingEndsAt, nil
 }
 
 // HandleWebhookEvent processes incoming Stripe webhook events

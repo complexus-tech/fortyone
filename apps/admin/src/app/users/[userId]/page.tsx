@@ -2,10 +2,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { UserIcon, WorkspaceIcon } from "icons";
 import { Avatar, Box, Flex, Table, Text } from "ui";
-import { getUser } from "@/lib/admin-api";
+import { getAdminNotes, getUser } from "@/lib/admin-api";
 import { formatCount, formatDate, formatDateTime } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
+import { AdminNotesPanel } from "@/components/admin-notes-panel";
+import { UserActionsMenu } from "@/components/user-actions-menu";
 import { UserStatusBadge } from "@/components/status-badge";
 
 export default async function UserDetailPage({
@@ -14,7 +16,10 @@ export default async function UserDetailPage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
-  const overview = await getUser(userId);
+  const [overview, notes] = await Promise.all([
+    getUser(userId),
+    getAdminNotes({ targetType: "user", targetId: userId, limit: 5 }),
+  ]);
   const { user, memberships } = overview;
 
   return (
@@ -31,6 +36,7 @@ export default async function UserDetailPage({
         }
         parentHref="/users"
         title={user.fullName || user.username}
+        titleActions={<UserActionsMenu user={user} />}
       />
 
       <Box className="space-y-5 p-5 md:p-7">
@@ -68,36 +74,43 @@ export default async function UserDetailPage({
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <Box className="border-border bg-surface rounded-lg border-[0.5px]">
-            <Box className="border-border border-b-[0.5px] px-4 py-3">
-              <Text fontWeight="semibold">Account details</Text>
-              <Text className="mt-1 text-[0.95rem]" color="muted">
-                Core user metadata and access flags.
-              </Text>
+          <Box className="space-y-5">
+            <Box className="border-border bg-surface rounded-lg border-[0.5px]">
+              <Box className="border-border border-b-[0.5px] px-4 py-3">
+                <Text fontWeight="semibold">Account details</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Core user metadata and access flags.
+                </Text>
+              </Box>
+              <Box className="divide-border divide-y">
+                <DetailRow label="Status">
+                  <UserStatusBadge
+                    isActive={user.isActive}
+                    isInternal={user.isInternal}
+                  />
+                </DetailRow>
+                <DetailRow label="Email">
+                  <Text>{user.email}</Text>
+                </DetailRow>
+                <DetailRow label="Username">
+                  <Text>{user.username}</Text>
+                </DetailRow>
+                <DetailRow label="Last login">
+                  <Text>{formatDateTime(user.lastLoginAt)}</Text>
+                </DetailRow>
+                <DetailRow label="Last workspace">
+                  <Text>{user.lastUsedWorkspace ?? "Not available"}</Text>
+                </DetailRow>
+                <DetailRow label="Updated">
+                  <Text>{formatDateTime(user.updatedAt)}</Text>
+                </DetailRow>
+              </Box>
             </Box>
-            <Box className="divide-border divide-y">
-              <DetailRow label="Status">
-                <UserStatusBadge
-                  isActive={user.isActive}
-                  isInternal={user.isInternal}
-                />
-              </DetailRow>
-              <DetailRow label="Email">
-                <Text>{user.email}</Text>
-              </DetailRow>
-              <DetailRow label="Username">
-                <Text>{user.username}</Text>
-              </DetailRow>
-              <DetailRow label="Last login">
-                <Text>{formatDateTime(user.lastLoginAt)}</Text>
-              </DetailRow>
-              <DetailRow label="Last workspace">
-                <Text>{user.lastUsedWorkspace ?? "Not available"}</Text>
-              </DetailRow>
-              <DetailRow label="Updated">
-                <Text>{formatDateTime(user.updatedAt)}</Text>
-              </DetailRow>
-            </Box>
+            <AdminNotesPanel
+              notes={notes.items}
+              targetId={user.id}
+              targetType="user"
+            />
           </Box>
 
           <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">

@@ -14,6 +14,10 @@ const (
 
 var (
 	ErrForbidden          = errors.New("admin access requires an internal user")
+	ErrInvalidAdminAction = errors.New("invalid admin action")
+	ErrInvalidAdminNote   = errors.New("admin note body is required")
+	ErrReasonRequired     = errors.New("admin action reason is required")
+	ErrSelfMutation       = errors.New("admin users cannot change their own access state")
 	ErrInvalidTrialEndsOn = errors.New("trial end must extend access into the future")
 	ErrNotFound           = errors.New("admin resource not found")
 )
@@ -136,12 +140,56 @@ type ListAuditLogsInput struct {
 	Pagination  PaginationInput
 	WorkspaceID *uuid.UUID
 	TargetType  string
+	Query       string
+	Action      string
+	ActorQuery  string
+	From        *time.Time
+	To          *time.Time
 }
 
 type UpdateWorkspaceTrialInput struct {
 	WorkspaceID uuid.UUID `json:"-"`
 	TrialEndsOn time.Time `json:"trialEndsOn"`
 	Reason      string    `json:"reason"`
+}
+
+type UpdateWorkspaceDeletedInput struct {
+	WorkspaceID uuid.UUID `json:"-"`
+	ActorUserID uuid.UUID `json:"-"`
+	Deleted     bool      `json:"deleted"`
+	Reason      string    `json:"reason"`
+}
+
+type RequestWorkspaceSubscriptionSyncInput struct {
+	WorkspaceID uuid.UUID `json:"-"`
+	Reason      string    `json:"reason"`
+}
+
+type UpdateUserStateInput struct {
+	UserID     uuid.UUID `json:"-"`
+	IsActive   *bool     `json:"isActive"`
+	IsInternal *bool     `json:"isInternal"`
+	Reason     string    `json:"reason"`
+}
+
+type RequestUserSessionRevocationInput struct {
+	UserID uuid.UUID `json:"-"`
+	Reason string    `json:"reason"`
+}
+
+type ListAdminNotesInput struct {
+	Pagination  PaginationInput
+	TargetType  string
+	TargetID    *uuid.UUID
+	WorkspaceID *uuid.UUID
+}
+
+type CreateAdminNoteInput struct {
+	TargetType      string     `json:"targetType"`
+	TargetID        uuid.UUID  `json:"targetId"`
+	WorkspaceID     *uuid.UUID `json:"workspaceId"`
+	Body            string     `json:"body"`
+	CreatedByUserID uuid.UUID  `json:"-"`
 }
 
 type AuditEntryInput struct {
@@ -174,4 +222,16 @@ type AuditLog struct {
 	Reason        string     `json:"reason"`
 	Metadata      any        `json:"metadata"`
 	CreatedAt     time.Time  `json:"createdAt"`
+}
+
+type AdminNote struct {
+	ID              uuid.UUID  `json:"id"`
+	TargetType      string     `json:"targetType"`
+	TargetID        uuid.UUID  `json:"targetId"`
+	WorkspaceID     *uuid.UUID `json:"workspaceId"`
+	Body            string     `json:"body"`
+	CreatedByUserID uuid.UUID  `json:"createdByUserId"`
+	CreatedByName   string     `json:"createdByName"`
+	CreatedByEmail  string     `json:"createdByEmail"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }

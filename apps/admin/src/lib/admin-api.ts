@@ -1,6 +1,8 @@
 import { ApiError, createApiClient } from "api-client";
 import { getApiUrl } from "@/lib/env";
 import type {
+  AdminNote,
+  AuditListParams,
   AdminListParams,
   AuditLog,
   DashboardSummary,
@@ -61,7 +63,9 @@ const adminRequest = async <T>(
   }
 };
 
-const buildQuery = (params: Record<string, string | number | undefined>) => {
+export const buildQuery = (
+  params: Record<string, string | number | undefined>,
+) => {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -107,6 +111,30 @@ export const updateWorkspaceTrial = async (
   );
 };
 
+export const updateWorkspaceDeleted = async (
+  workspaceId: string,
+  input: { deleted: boolean; reason: string },
+) => {
+  return adminRequest<WorkspaceOverview>(
+    "update_workspace_deleted",
+    adminClient().patch(`admin/workspaces/${workspaceId}/deleted`, {
+      json: input,
+    }),
+  );
+};
+
+export const requestWorkspaceSubscriptionSync = async (
+  workspaceId: string,
+  input: { reason: string },
+) => {
+  return adminRequest<WorkspaceOverview>(
+    "request_workspace_subscription_sync",
+    adminClient().post(`admin/workspaces/${workspaceId}/subscription-sync`, {
+      json: input,
+    }),
+  );
+};
+
 export const getUsers = (params: AdminListParams = {}) =>
   adminRequest<ListResult<UserSummary>>(
     "list_users",
@@ -121,18 +149,93 @@ export const getUser = (userId: string) =>
     adminClient().get(`admin/users/${userId}`, { cache: "no-store" }),
   );
 
-export const getAuditLogs = (
-  params: AdminListParams & { workspaceId?: string; targetType?: string } = {},
-) =>
+export const updateUserState = async (
+  userId: string,
+  input: { isActive?: boolean; isInternal?: boolean; reason: string },
+) => {
+  return adminRequest<UserOverview>(
+    "update_user_state",
+    adminClient().patch(`admin/users/${userId}/state`, {
+      json: input,
+    }),
+  );
+};
+
+export const requestUserSessionRevocation = async (
+  userId: string,
+  input: { reason: string },
+) => {
+  return adminRequest<UserOverview>(
+    "request_user_session_revocation",
+    adminClient().post(`admin/users/${userId}/session-revocation`, {
+      json: input,
+    }),
+  );
+};
+
+export const getAuditLogs = (params: AuditListParams = {}) =>
   adminRequest<ListResult<AuditLog>>(
     "list_audit_logs",
     adminClient().get(
       `admin/audit-logs${buildQuery({
         page: params.page,
         limit: params.limit,
+        q: params.q,
         workspaceId: params.workspaceId,
         targetType: params.targetType,
+        action: params.action,
+        actor: params.actor,
+        from: params.from,
+        to: params.to,
       })}`,
       { cache: "no-store" },
     ),
   );
+
+export const getAuditLogExportUrl = (params: AuditListParams = {}) =>
+  `${getApiUrl()}/admin/audit-logs/export${buildQuery({
+    q: params.q,
+    workspaceId: params.workspaceId,
+    targetType: params.targetType,
+    action: params.action,
+    actor: params.actor,
+    from: params.from,
+    to: params.to,
+  })}`;
+
+export const getAdminNotes = (
+  params: {
+    targetType?: string;
+    targetId?: string;
+    workspaceId?: string;
+    page?: string | number;
+    limit?: string | number;
+  } = {},
+) =>
+  adminRequest<ListResult<AdminNote>>(
+    "list_admin_notes",
+    adminClient().get(
+      `admin/notes${buildQuery({
+        targetType: params.targetType,
+        targetId: params.targetId,
+        workspaceId: params.workspaceId,
+        page: params.page,
+        limit: params.limit,
+      })}`,
+      { cache: "no-store" },
+    ),
+  );
+
+export const createAdminNote = async (input: {
+  targetType: string;
+  targetId: string;
+  workspaceId?: string;
+  body: string;
+}) => {
+  return adminRequest<AdminNote>(
+    "create_admin_note",
+    adminClient().post("admin/notes", {
+      json: input,
+    }),
+  );
+};
