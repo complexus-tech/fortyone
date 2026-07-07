@@ -59,9 +59,27 @@ export const AdminNotesPanel = ({
         </Text>
       </Box>
       <Box className="space-y-4 p-4">
+        <Box className="divide-border divide-y">
+          {notes.length > 0 ? (
+            notes.map((note) => (
+              <Box className="py-3 first:pt-0 last:pb-0" key={note.id}>
+                <Text className="leading-6">{note.body}</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  {note.createdByName || note.createdByEmail || "Unknown admin"}{" "}
+                  · {formatDateTime(note.createdAt)}
+                </Text>
+              </Box>
+            ))
+          ) : (
+            <Box className="py-6 text-center">
+              <Text color="muted">No notes added yet.</Text>
+            </Box>
+          )}
+        </Box>
+
         <form action={handleSubmit} className="space-y-3">
           <TextArea
-            className="min-h-24 leading-6"
+            className="min-h-24 py-3 leading-6"
             name="body"
             onChange={(event) => {
               setBody(event.currentTarget.value);
@@ -83,24 +101,6 @@ export const AdminNotesPanel = ({
             </Button>
           </Flex>
         </form>
-
-        <Box className="divide-border divide-y">
-          {notes.length > 0 ? (
-            notes.map((note) => (
-              <Box className="py-3 first:pt-0 last:pb-0" key={note.id}>
-                <Text className="leading-6">{note.body}</Text>
-                <Text className="mt-1 text-[0.95rem]" color="muted">
-                  {note.createdByName || note.createdByEmail || "Unknown admin"}{" "}
-                  · {formatDateTime(note.createdAt)}
-                </Text>
-              </Box>
-            ))
-          ) : (
-            <Box className="py-6 text-center">
-              <Text color="muted">No notes added yet.</Text>
-            </Box>
-          )}
-        </Box>
       </Box>
     </Box>
   );

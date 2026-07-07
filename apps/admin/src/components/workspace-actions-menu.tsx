@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown2Icon,
   CalendarPlusIcon,
   DeleteIcon,
   NewTabIcon,
@@ -53,11 +54,10 @@ export const WorkspaceActionsMenu = ({
   const router = useRouter();
   const [mode, setMode] = useState<DialogMode | null>(null);
   const [isPending, startTransition] = useTransition();
-  const defaultTrialEnd = useMemo(
-    () => toDateTimeLocal(suggestedTrialEnd(workspace.trialEndsOn)),
-    [workspace.trialEndsOn],
+  const defaultTrialEnd = toDateTimeLocal(
+    suggestedTrialEnd(workspace.trialEndsOn),
   );
-  const minTrialEnd = useMemo(() => toDateTimeLocal(new Date()), []);
+  const minTrialEnd = toDateTimeLocal(new Date());
   const isDeleted = Boolean(workspace.deletedAt);
 
   const closeDialog = () => {
@@ -123,7 +123,11 @@ export const WorkspaceActionsMenu = ({
     <>
       <Menu>
         <Menu.Button>
-          <Button color="tertiary" type="button">
+          <Button
+            color="tertiary"
+            rightIcon={<ArrowDown2Icon className="h-4 text-current!" />}
+            type="button"
+          >
             Actions
           </Button>
         </Menu.Button>
@@ -154,7 +158,7 @@ export const WorkspaceActionsMenu = ({
               {isDeleted ? (
                 <UndoIcon className="h-[1.15rem]" />
               ) : (
-                <DeleteIcon className="h-[1.15rem]" />
+                <DeleteIcon className="h-[1.15rem] text-current!" />
               )}
               {isDeleted ? "Restore workspace" : "Delete workspace"}
             </Menu.Item>

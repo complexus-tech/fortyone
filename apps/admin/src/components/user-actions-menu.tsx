@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown2Icon,
   FileLockedIcon,
   FileUnlockedIcon,
   LockIcon,
@@ -98,11 +99,15 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
     <>
       <Menu>
         <Menu.Button>
-          <Button color="tertiary" type="button">
+          <Button
+            color="tertiary"
+            rightIcon={<ArrowDown2Icon className="h-4 text-current!" />}
+            type="button"
+          >
             Actions
           </Button>
         </Menu.Button>
-        <Menu.Items align="end" className="w-64">
+        <Menu.Items align="end" className="w-80">
           <Menu.Group>
             <Menu.Item
               className={user.isActive ? "text-danger" : undefined}
@@ -111,7 +116,7 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
               }}
             >
               {user.isActive ? (
-                <FileLockedIcon className="h-[1.15rem]" />
+                <FileLockedIcon className="h-[1.15rem] text-current!" />
               ) : (
                 <FileUnlockedIcon className="h-[1.15rem]" />
               )}

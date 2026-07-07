@@ -6,6 +6,12 @@ import {
   getDashboardSummary,
   getWorkspaces,
 } from "@/lib/admin-api";
+import type {
+  AuditLog,
+  DashboardSummary,
+  ListResult,
+  WorkspaceSummary,
+} from "@/lib/types";
 import {
   formatCount,
   formatDate,
@@ -17,15 +23,90 @@ import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { WorkspaceStatusBadge } from "@/components/status-badge";
 
+type SafeResult<T> = {
+  data: T;
+  failed: boolean;
+};
+
+const emptyDashboardSummary: DashboardSummary = {
+  totalWorkspaces: 0,
+  activeTrials: 0,
+  expiredTrials: 0,
+  paidWorkspaces: 0,
+  deletedWorkspaces: 0,
+  totalUsers: 0,
+  internalUsers: 0,
+  activeSubscriptions: 0,
+  slackInstallations: 0,
+  githubInstallations: 0,
+  recentAdminAuditLogs: 0,
+};
+
+const emptyListResult = <T,>(limit: number): ListResult<T> => ({
+  items: [],
+  pagination: {
+    total: 0,
+    page: 1,
+    limit,
+    offset: 0,
+  },
+});
+
+const resolveOverviewData = async <T,>(
+  request: Promise<T>,
+  fallback: T,
+): Promise<SafeResult<T>> => {
+  try {
+    return {
+      data: await request,
+      failed: false,
+    };
+  } catch {
+    return {
+      data: fallback,
+      failed: true,
+    };
+  }
+};
+
 export default async function OverviewPage() {
-  const [summary, expiredTrials, expiringTrials, pastDueWorkspaces, auditLogs] =
-    await Promise.all([
-      getDashboardSummary(),
+  const [
+    summaryResult,
+    expiredTrialsResult,
+    expiringTrialsResult,
+    pastDueWorkspacesResult,
+    auditLogsResult,
+  ] = await Promise.all([
+    resolveOverviewData(getDashboardSummary(), emptyDashboardSummary),
+    resolveOverviewData(
       getWorkspaces({ status: "expired", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
       getWorkspaces({ status: "expiring", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
       getWorkspaces({ status: "past_due", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
       getAuditLogs({ limit: 6 }),
-    ]);
+      emptyListResult<AuditLog>(6),
+    ),
+  ]);
+  const summary = summaryResult.data;
+  const expiredTrials = expiredTrialsResult.data;
+  const expiringTrials = expiringTrialsResult.data;
+  const pastDueWorkspaces = pastDueWorkspacesResult.data;
+  const auditLogs = auditLogsResult.data;
+  const hasPartialData = [
+    summaryResult,
+    expiredTrialsResult,
+    expiringTrialsResult,
+    pastDueWorkspacesResult,
+    auditLogsResult,
+  ].some((result) => result.failed);
   const queueItems = [
     ...expiredTrials.items.map((workspace) => ({
       label: "Expired trial",
@@ -51,6 +132,15 @@ export default async function OverviewPage() {
       />
 
       <Box className="space-y-5 p-5 md:p-7">
+        {hasPartialData ? (
+          <Box className="border-border bg-surface-muted/65 rounded-lg border-[0.5px] px-4 py-3">
+            <Text color="muted">
+              Some overview data could not load. The failing Admin API request
+              was logged by the server renderer.
+            </Text>
+          </Box>
+        ) : null}
+
         <Box className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             detail={`${formatCount(summary.activeTrials)} active trials, ${formatCount(summary.expiredTrials)} expired`}
