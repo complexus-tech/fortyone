@@ -106,11 +106,11 @@ main table tbody tr {
 }
 
 main table tbody tr:nth-child(odd) {
-  @apply bg-surface-muted!;
+  @apply bg-transparent!;
 }
 
 main table tbody tr:nth-child(even) {
-  @apply bg-transparent!;
+  @apply bg-surface-muted/50!;
 }
 
 main table tbody tr:not(:last-child) {
