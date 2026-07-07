@@ -110,7 +110,7 @@ main table tbody tr:nth-child(odd) {
 }
 
 main table tbody tr:nth-child(even) {
-  @apply bg-surface-muted/50!;
+  @apply bg-surface-muted/65!;
 }
 
 main table tbody tr:not(:last-child) {
