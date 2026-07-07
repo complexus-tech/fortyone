@@ -48,7 +48,7 @@ export default async function WorkspacesPage({
           placeholder="Search by workspace, slug, or creator email"
         />
 
-        <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
+        <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
             <Table color="light" variant="bordered">
               <Table.Head>

@@ -100,7 +100,7 @@ export default async function UserDetailPage({
             </Box>
           </Box>
 
-          <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
+          <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Workspace memberships</Text>
               <Text className="mt-1 text-[0.95rem]" color="muted">

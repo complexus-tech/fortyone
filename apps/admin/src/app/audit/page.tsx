@@ -52,7 +52,7 @@ export default async function AuditPage({
           placeholder="Search by workspace UUID"
         />
 
-        <Box className="border-border bg-surface overflow-hidden rounded-lg border-[0.5px]">
+        <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
           <Box className="overflow-x-auto">
             <Table color="light" variant="bordered">
               <Table.Head>

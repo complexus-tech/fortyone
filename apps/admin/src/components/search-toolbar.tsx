@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { FilterIcon, SearchIcon } from "icons";
 import { Box, Button, Flex, Input, Menu } from "ui";

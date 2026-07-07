@@ -92,9 +92,7 @@ export const AdminShell = ({
           <Box className="border-border/70 flex h-16 items-center border-b-[0.5px]">
             <Link className="flex items-center gap-3" href="/overview">
               <FortyOneLogo className="h-6" />
-              <Badge color="tertiary" size="sm">
-                Admin
-              </Badge>
+              <Badge color="tertiary">Admin</Badge>
             </Link>
           </Box>
 

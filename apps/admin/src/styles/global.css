@@ -106,7 +106,7 @@ main table tbody tr {
 }
 
 main table tbody tr:nth-child(odd) {
-  @apply bg-surface-elevated/35!;
+  @apply bg-surface-muted/35!;
 }
 
 main table tbody tr:nth-child(even) {
