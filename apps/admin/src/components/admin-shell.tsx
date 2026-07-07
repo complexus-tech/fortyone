@@ -188,9 +188,6 @@ const AdminProfileMenu = ({
                   <Text className="line-clamp-1" fontWeight="semibold">
                     {displayName}
                   </Text>
-                  <Text className="line-clamp-1 text-[0.95rem]" color="muted">
-                    {session.user.email}
-                  </Text>
                 </Box>
               </Flex>
               <ArrowRight2Icon className="shrink-0" />
@@ -207,9 +204,6 @@ const AdminProfileMenu = ({
                 <Box className="min-w-0">
                   <Text className="line-clamp-1" fontWeight="semibold">
                     {displayName}
-                  </Text>
-                  <Text className="line-clamp-1 text-[0.95rem]" color="muted">
-                    {session.user.email}
                   </Text>
                 </Box>
               </Flex>
