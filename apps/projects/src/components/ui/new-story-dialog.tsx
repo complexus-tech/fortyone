@@ -194,6 +194,8 @@ export const NewStoryDialog = ({
     (automationPreferences?.autoAssignMaya ?? false);
   const { data: mayaAssignee } = useMayaAssignee(autoAssignMaya);
   const currentUserId = session.data?.user.id ?? null;
+  const autoAssignedUserId =
+    !autoAssignMaya && autoAssignSelf ? currentUserId : null;
 
   const initialForm: NewStory = useMemo(
     () => ({
@@ -204,9 +206,7 @@ export const NewStoryDialog = ({
       statusId: defaultStatus?.id,
       endDate: null,
       startDate: null,
-      assigneeId:
-        assigneeId ||
-        (!autoAssignMaya && autoAssignSelf ? currentUserId : null),
+      assigneeId: assigneeId !== undefined ? assigneeId : autoAssignedUserId,
       priority,
       objectiveId: objectiveId || null,
       sprintId: sprintId || null,
@@ -217,9 +217,7 @@ export const NewStoryDialog = ({
       currentTeamId,
       defaultStatus?.id,
       assigneeId,
-      autoAssignMaya,
-      autoAssignSelf,
-      currentUserId,
+      autoAssignedUserId,
       priority,
       objectiveId,
       sprintId,

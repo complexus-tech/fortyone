@@ -276,8 +276,21 @@ export const StoriesBoard = ({
       viewOptions,
       setViewOptions,
       isColumnVisible,
+      newStoryDefaults: {
+        teamId,
+        objectiveId,
+        sprintId,
+      },
     }),
-    [selectedStories, setViewOptions, viewOptions, isColumnVisible],
+    [
+      selectedStories,
+      setViewOptions,
+      viewOptions,
+      isColumnVisible,
+      teamId,
+      objectiveId,
+      sprintId,
+    ],
   );
 
   const hasStories = groupedStories?.groups.some(

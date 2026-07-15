@@ -79,7 +79,7 @@ export const StoriesKanbanHeader = ({
   onHide?: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions } = useBoard();
+  const { newStoryDefaults, viewOptions } = useBoard();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
@@ -162,11 +162,14 @@ export const StoriesKanbanHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        assigneeId={member?.id}
+        assigneeId={groupBy === "assignee" ? member?.id ?? null : undefined}
         isOpen={isOpen}
+        objectiveId={newStoryDefaults.objectiveId}
         priority={priority}
         setIsOpen={setIsOpen}
+        sprintId={newStoryDefaults.sprintId}
         statusId={status?.id}
+        teamId={newStoryDefaults.teamId}
       />
     </Box>
   );

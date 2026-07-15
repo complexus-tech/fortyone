@@ -34,7 +34,7 @@ export const StoriesHeader = ({
   assignee,
 }: StoryHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { selectedStories, setSelectedStories } = useBoard();
+  const { newStoryDefaults, selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
 
@@ -162,11 +162,14 @@ export const StoriesHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        assigneeId={assignee?.id}
+        assigneeId={groupBy === "assignee" ? assignee?.id ?? null : undefined}
         isOpen={isOpen}
+        objectiveId={newStoryDefaults.objectiveId}
         priority={priority}
         setIsOpen={setIsOpen}
+        sprintId={newStoryDefaults.sprintId}
         statusId={status?.id}
+        teamId={newStoryDefaults.teamId}
       />
     </Container>
   );

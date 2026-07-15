@@ -74,6 +74,7 @@ export const KanbanGroup = ({
   groupBy: ViewOptionsGroupBy;
 }) => {
   const { getTermDisplay } = useTerminology();
+  const { newStoryDefaults } = useBoard();
   const [isOpen, setIsOpen] = useState(false);
 
   const getId = () => {
@@ -157,11 +158,14 @@ export const KanbanGroup = ({
       </Button>
 
       <NewStoryDialog
-        assigneeId={member?.id}
+        assigneeId={groupBy === "assignee" ? member?.id ?? null : undefined}
         isOpen={isOpen}
+        objectiveId={newStoryDefaults.objectiveId}
         priority={priority}
         setIsOpen={setIsOpen}
+        sprintId={newStoryDefaults.sprintId}
         statusId={status?.id}
+        teamId={newStoryDefaults.teamId}
       />
       {storyId ? (
         <StoryDialog

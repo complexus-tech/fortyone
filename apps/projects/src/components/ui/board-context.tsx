@@ -11,6 +11,11 @@ export const BoardContext = createContext<{
   viewOptions: StoriesViewOptions;
   setViewOptions?: (value: StoriesViewOptions) => void;
   isColumnVisible: (column: DisplayColumn) => boolean;
+  newStoryDefaults: {
+    teamId?: string;
+    objectiveId?: string;
+    sprintId?: string;
+  };
 } | null>(null);
 
 export const useBoard = () => {
