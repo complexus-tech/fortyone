@@ -10,12 +10,13 @@ import Paragraph from "@tiptap/extension-paragraph";
 import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import { useDebounce, useLocalStorage, useUserRole } from "@/hooks";
+import { useLocalStorage, useUserRole } from "@/hooks";
+import { useDebouncedCallback } from "@/hooks/debounce";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
@@ -77,11 +78,24 @@ export const MainDetails = ({
     (isAssociationsOpen && associations.length > 0) ||
     (isLinksOpen && links.length > 0);
 
-  const handleUpdate = (data: Partial<DetailedStory>) => {
-    updateStory({ storyId, payload: data });
-  };
+  const handleUpdate = useCallback(
+    (data: Partial<DetailedStory>) => {
+      updateStory({ storyId, payload: data });
+    },
+    [storyId, updateStory],
+  );
 
-  const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
+  // Keep independent queues so editing one field never cancels the other field's save.
+  const {
+    callback: debouncedDescriptionUpdate,
+    flush: flushDescriptionUpdate,
+  } = useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+    flushOnUnmount: true,
+  });
+  const { callback: debouncedTitleUpdate, flush: flushTitleUpdate } =
+    useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+      flushOnUnmount: true,
+    });
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -105,10 +119,13 @@ export const MainDetails = ({
     content: descriptionHTML || description,
     editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedDescriptionUpdate({
         descriptionHTML: editor.getHTML(),
         description: editor.getText(),
       });
+    },
+    onBlur: () => {
+      flushDescriptionUpdate();
     },
     immediatelyRender: false,
   });
@@ -123,24 +140,36 @@ export const MainDetails = ({
     content: title,
     editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedTitleUpdate({
         title: editor.getText(),
       });
+    },
+    onBlur: () => {
+      flushTitleUpdate();
     },
     immediatelyRender: false,
   });
 
-  // Sync title editor content when title changes from cache updates
+  // Only apply external updates while the field is idle. Replacing a focused
+  // Tiptap document resets its selection and can overwrite a newer local draft.
   useEffect(() => {
-    if (titleEditor && title && titleEditor.getText() !== title) {
-      titleEditor.commands.setContent(title);
+    if (
+      titleEditor &&
+      !titleEditor.isFocused &&
+      title &&
+      titleEditor.getText() !== title
+    ) {
+      titleEditor.commands.setContent(title, { emitUpdate: false });
     }
     if (
       descriptionEditor &&
+      !descriptionEditor.isFocused &&
       descriptionHTML &&
       descriptionEditor.getHTML() !== descriptionHTML
     ) {
-      descriptionEditor.commands.setContent(descriptionHTML);
+      descriptionEditor.commands.setContent(descriptionHTML, {
+        emitUpdate: false,
+      });
     }
   }, [title, titleEditor, descriptionEditor, descriptionHTML]);
 
