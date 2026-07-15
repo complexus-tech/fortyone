@@ -3,3 +3,29 @@
 @import "tailwind-config";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer components {
+  .rich-text-editor {
+    line-height: 1.5 !important;
+  }
+
+  .rich-text-editor p {
+    margin-block: 1rem !important;
+  }
+
+  .rich-text-editor :is(h1, h2, h3, h4, h5, h6) {
+    margin-block: 2.25rem 1rem !important;
+  }
+
+  .rich-text-editor :is(ul, ol) {
+    margin-block: 1rem !important;
+  }
+
+  .rich-text-editor li {
+    margin-block: 0.5rem !important;
+  }
+
+  .rich-text-editor li > p {
+    margin-block: 0.25rem !important;
+  }
+}
