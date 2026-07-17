@@ -5,8 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer components {
-  .rich-text-editor {
-    line-height: 1.5 !important;
+  .rich-text-editor.prose-lg {
+    line-height: 1.65 !important;
   }
 
   .rich-text-editor p {
@@ -23,9 +23,11 @@
 
   .rich-text-editor li {
     margin-block: 0.5rem !important;
+    line-height: 1.5 !important;
   }
 
   .rich-text-editor li > p {
     margin-block: 0.25rem !important;
+    line-height: 1.5 !important;
   }
 }

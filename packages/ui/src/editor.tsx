@@ -45,6 +45,7 @@ export const TextEditor = ({
           {
             "rich-text-editor prose prose-lg max-w-full prose-stone prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-foreground prose-pre:bg-surface-muted prose-pre:text-[1.1rem] prose-strong:font-medium prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg":
               !asTitle,
+            "mb-4": asTitle,
           },
           className,
         )}
