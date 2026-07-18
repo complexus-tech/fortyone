@@ -58,7 +58,7 @@ export const RealtimeVoiceControl = ({
             void connect();
           }
         }}
-        rounded="sm"
+        rounded="md"
       >
         {label}
       </Button>

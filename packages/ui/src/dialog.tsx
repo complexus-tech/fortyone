@@ -127,7 +127,7 @@ const DialogContent = forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative mx-3.5 mt-[15%] w-full max-w-3xl overflow-hidden rounded-2xl bg-surface-elevated shadow-2xl shadow-shadow backdrop-blur-lg md:mt-[10%] dark:bg-surface-elevated/80",
+            "relative mx-3.5 mt-[15%] w-full max-w-3xl overflow-hidden rounded-2xl border-[0.5px] border-border/60 bg-surface-elevated shadow-2xl shadow-shadow backdrop-blur-lg md:mt-[10%] dark:bg-surface-elevated/80",
             "dialog-content-animate outline-transparent",
             {
               "max-w-md": size === "sm",

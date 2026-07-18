@@ -374,7 +374,7 @@ export const ChatInput = ({
                 color="tertiary"
                 disabled={isLiveVoiceActive}
                 onClick={open}
-                rounded="sm"
+                rounded="md"
                 variant="naked"
               >
                 <PlusIcon /> Attach files
@@ -404,7 +404,7 @@ export const ChatInput = ({
                   handleVoiceRecording();
                 }
               }}
-              rounded="sm"
+              rounded="md"
               variant="naked"
             >
               {isTranscribing
@@ -439,7 +439,7 @@ export const ChatInput = ({
                   onSend();
                 }
               }}
-              rounded="sm"
+              rounded="md"
             >
               {isRecording ? (
                 <CheckIcon className="text-current dark:text-current" />

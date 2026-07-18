@@ -30,7 +30,7 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
         data-chat-button
         leftIcon={<AiIcon className="h-5 text-current dark:text-current" />}
         onClick={onOpen}
-        rounded="sm"
+        rounded="md"
       >
         Ask Maya AI
       </Button>

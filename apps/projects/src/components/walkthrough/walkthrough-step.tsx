@@ -116,10 +116,10 @@ export const WalkthroughStep = ({
     >
       <Box
         className={cn(
-          "bg-surface-elevated shadow-shadow w-108 max-w-[95vw] rounded-2xl border shadow-lg",
+          "bg-surface-elevated shadow-shadow w-108 max-w-[95vw] rounded-2xl shadow-lg",
           step.highlight
-            ? "from-primary to-warning border-transparent bg-linear-to-br p-px"
-            : "border-border",
+            ? "from-primary to-warning border border-transparent bg-linear-to-br p-px"
+            : "border-border/60 border-[0.5px]",
         )}
       >
         <Box
