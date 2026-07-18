@@ -8,8 +8,8 @@ import {
   MaximizeIcon,
 } from "icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "@/lib/auth/client";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { storyKeys } from "@/modules/stories/constants";
@@ -129,13 +129,13 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="bg-surface/80 sticky top-0 z-2 px-6 py-4 backdrop-blur"
+                className="sticky top-0 z-2 px-6 py-4"
                 gap={2}
                 justify="between"
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-foreground/80 border-border bg-surface-muted/30 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
+                    className="text-foreground/80 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {

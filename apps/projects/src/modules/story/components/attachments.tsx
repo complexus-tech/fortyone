@@ -120,7 +120,13 @@ export const Attachments = ({
       </Flex>
       {attachments.length === 0 && (
         <DropZone>
-          <DropZone.Root isDragActive={isDragActive} rootProps={getRootProps()}>
+          <DropZone.Root
+            className={cn("dark:bg-surface/80", {
+              "dark:bg-surface-muted/80": isDragActive,
+            })}
+            isDragActive={isDragActive}
+            rootProps={getRootProps()}
+          >
             <DropZone.Input
               inputProps={getInputProps({
                 multiple: true,
