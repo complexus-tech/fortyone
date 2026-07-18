@@ -42,7 +42,7 @@ export const ChatContent = () => {
         setIsOpen={chat.setIsSprintOpen}
       />
 
-      <Flex className="bg-background h-full min-h-0 flex-col">
+      <Flex className="bg-background dark:bg-sidebar/40 h-full min-h-0 flex-col">
         <Box className="flex h-[3.6rem] shrink-0 items-center px-4">
           <ChatHeader
             currentChatId={chat.currentChatId}
