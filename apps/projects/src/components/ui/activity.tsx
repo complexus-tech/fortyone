@@ -187,6 +187,7 @@ const getActivityVerb = (type: StoryActivity["type"], storyTerm: string) => {
 };
 
 export const Activity = ({
+  avatarSurfaceClassName,
   teamId,
   field,
   currentValue,
@@ -196,7 +197,7 @@ export const Activity = ({
   newValue,
   oldValue,
   reason,
-}: StoryActivity & { teamId?: string }) => {
+}: StoryActivity & { avatarSurfaceClassName?: string; teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
@@ -548,7 +549,12 @@ export const Activity = ({
           }
         >
           <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
+            <Box
+              className={cn(
+                "bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]",
+                avatarSurfaceClassName,
+              )}
+            >
               {member.isSystem ? (
                 <MayaAvatar
                   name={member.fullName}

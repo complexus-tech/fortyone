@@ -251,7 +251,7 @@ export const MainDetails = ({
           storyId={storyId}
         />
         <Divider className="my-6" />
-        <Activities storyId={storyId} teamId={teamId} />
+        <Activities isDialog={isDialog} storyId={storyId} teamId={teamId} />
       </Container>
     </BodyContainer>
   );

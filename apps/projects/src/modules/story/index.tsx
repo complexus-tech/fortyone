@@ -52,6 +52,7 @@ export const StoryPage = ({
         <>
           <Box className="md:hidden">
             <MainDetails
+              isDialog={isDialog}
               isNotifications={Boolean(isNotifications)}
               storyId={storyId}
             />

@@ -1,5 +1,6 @@
 import { Avatar, Box, Flex, Tabs, Text, Button, Skeleton } from "ui";
 import { ClockIcon, CommentIcon, GitHubIcon } from "icons";
+import { cn } from "lib";
 import { useSession } from "@/lib/auth/client";
 import { useStoryGitHubLinks } from "@/lib/hooks/github";
 import { Activity } from "@/components/ui";
@@ -10,10 +11,12 @@ import { GitHubCommentsPanel } from "./github-comments";
 
 export const Activities = ({
   className,
+  isDialog,
   storyId,
   teamId,
 }: {
   className?: string;
+  isDialog?: boolean;
   storyId: string;
   teamId: string;
 }) => {
@@ -79,7 +82,14 @@ export const Activities = ({
             ) : (
               <>
                 {allActivities.map((activity) => (
-                  <Activity key={activity.id} {...activity} teamId={teamId} />
+                  <Activity
+                    avatarSurfaceClassName={
+                      isDialog ? "dark:bg-surface-elevated/95" : undefined
+                    }
+                    key={activity.id}
+                    {...activity}
+                    teamId={teamId}
+                  />
                 ))}
                 {isFetchingNextPage ? (
                   <Box className="mt-4 space-y-3">
@@ -114,16 +124,25 @@ export const Activities = ({
         </Tabs.Panel>
         <Tabs.Panel value="comments">
           <Flex align="start" className="mb-3">
-            <Box className="bg-surface z-1 flex aspect-square items-center rounded-full p-[0.3rem]">
+            <Box
+              className={cn(
+                "bg-surface z-1 flex aspect-square items-center rounded-full p-[0.3rem]",
+                { "dark:bg-surface-elevated/95": isDialog },
+              )}
+            >
               <Avatar
                 name={session?.user.name ?? undefined}
                 size="xs"
                 src={session?.user.image ?? undefined}
               />
             </Box>
-            <CommentInput storyId={storyId} teamId={teamId} />
+            <CommentInput
+              className={isDialog ? "dark:bg-background/40" : undefined}
+              storyId={storyId}
+              teamId={teamId}
+            />
           </Flex>
-          <Comments storyId={storyId} teamId={teamId} />
+          <Comments isDialog={isDialog} storyId={storyId} teamId={teamId} />
         </Tabs.Panel>
         {hasGitHubLinks ? (
           <Tabs.Panel value="github">

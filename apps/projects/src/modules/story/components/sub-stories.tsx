@@ -128,10 +128,12 @@ export const SubStories = ({
         className={cn({
           "border-border border-b-[0.5px]": !isSubStoriesOpen,
         })}
+        gap={2}
         justify={parent.subStories.length > 0 ? "between" : "end"}
+        wrap
       >
         {parent.subStories.length > 0 && (
-          <Flex align="center" gap={2}>
+          <Flex align="center" className="justify-end" gap={2} wrap>
             <Button
               className="font-semibold"
               color="tertiary"

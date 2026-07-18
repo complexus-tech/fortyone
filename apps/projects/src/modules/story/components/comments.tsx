@@ -1,20 +1,20 @@
+import Link from "next/link";
+import { useState } from "react";
 import {
-  Box,
-  Flex,
-  Text,
   Avatar,
-  TimeAgo,
-  Tooltip,
+  Box,
   Button,
   Dialog,
+  Flex,
   Skeleton,
+  Text,
+  TimeAgo,
+  Tooltip,
 } from "ui";
-import Link from "next/link";
-import { cn } from "lib";
-import { useSession } from "@/lib/auth/client";
 import { DeleteIcon, EditIcon, ReplyIcon } from "icons";
-import { useState } from "react";
+import { cn } from "lib";
 import type { Comment } from "@/types";
+import { useSession } from "@/lib/auth/client";
 import { useStoryCommentsInfinite } from "@/modules/story/hooks/story-comments";
 import { CommentInput } from "@/modules/story/components/comment-input";
 import { useDeleteCommentMutation } from "@/lib/hooks/delete-comment-mutation";
@@ -24,10 +24,12 @@ const MainComment = ({
   storyId,
   comment: { id, userId, user, createdAt, comment, subComments },
   isSubComment = false,
+  isDialog,
   className,
   teamId,
 }: {
   comment: Comment;
+  isDialog?: boolean;
   isSubComment?: boolean;
   className?: string;
   storyId: string;
@@ -39,7 +41,7 @@ const MainComment = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const isOwner = userId === session?.user?.id;
+  const isOwner = userId === session?.user.id;
 
   const handleCancel = () => {
     setIsReplying(false);
@@ -65,49 +67,50 @@ const MainComment = ({
         <Tooltip
           className="py-2.5"
           title={
-            user ? (
-              <Box>
-                <Flex align="center" gap={2}>
-                  <Avatar
-                    className="mt-0.5"
-                    name={user.fullName}
-                    src={user.avatarUrl}
-                  />
-                  <Box>
-                    <Link
-                      className="mb-2 flex gap-1"
-                      href={user.isSystem ? "" : withWorkspace(`/profile/${user.id}`)}
+            <Box>
+              <Flex align="center" gap={2}>
+                <Avatar
+                  className="mt-0.5"
+                  name={user.fullName}
+                  src={user.avatarUrl}
+                />
+                <Box>
+                  <Link
+                    className="mb-2 flex gap-1"
+                    href={
+                      user.isSystem ? "" : withWorkspace(`/profile/${user.id}`)
+                    }
+                  >
+                    <Text fontSize="md">{user.fullName}</Text>
+                    <Text color="muted">({user.username})</Text>
+                  </Link>
+                  {!user.isSystem ? (
+                    <Button
+                      className="mb-0.5 ml-px px-2"
+                      color="tertiary"
+                      href={withWorkspace(`/profile/${user.id}`)}
+                      size="xs"
                     >
-                      <Text fontSize="md">{user.fullName}</Text>
-                      <Text color="muted">({user.username})</Text>
-                    </Link>
-                    {!user.isSystem ? (
-                      <Button
-                        className="mb-0.5 ml-px px-2"
-                        color="tertiary"
-                        href={withWorkspace(`/profile/${user.id}`)}
-                        size="xs"
-                      >
-                        Go to profile
-                      </Button>
-                    ) : (
-                      <Text color="muted" fontSize="md">
-                        (System Account)
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
-              </Box>
-            ) : null
+                      Go to profile
+                    </Button>
+                  ) : (
+                    <Text color="muted" fontSize="md">
+                      (System Account)
+                    </Text>
+                  )}
+                </Box>
+              </Flex>
+            </Box>
           }
         >
           <Flex className="cursor-pointer" gap={1}>
-            <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
-              <Avatar
-                name={user.fullName}
-                size="xs"
-                src={user.avatarUrl}
-              />
+            <Box
+              className={cn(
+                "bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]",
+                { "dark:bg-surface-elevated/95": isDialog },
+              )}
+            >
+              <Avatar name={user.fullName} size="xs" src={user.avatarUrl} />
             </Box>
             <Text className="relative top-0.5 ml-1 text-black dark:text-white">
               {user.username}
@@ -162,6 +165,7 @@ const MainComment = ({
           {subComments.map((subComment) => (
             <MainComment
               comment={subComment}
+              isDialog={isDialog}
               isSubComment
               key={subComment.id}
               storyId={storyId}
@@ -186,7 +190,9 @@ const MainComment = ({
       {isReplying ? (
         <Box className="mt-3 pr-1 pl-[2.4rem]">
           <CommentInput
-            className="mb-2 min-h-12 focus-within:shadow-none"
+            className={cn("mb-2 min-h-12 focus-within:shadow-none", {
+              "dark:bg-background/40": isDialog,
+            })}
             onCancel={handleCancel}
             parentId={id}
             storyId={storyId}
@@ -198,7 +204,9 @@ const MainComment = ({
       {isEditing ? (
         <Box className="mt-3 pr-1 pl-8">
           <CommentInput
-            className="mb-2 min-h-12 focus-within:shadow-none"
+            className={cn("mb-2 min-h-12 focus-within:shadow-none", {
+              "dark:bg-background/40": isDialog,
+            })}
             commentId={id}
             initialComment={comment}
             onCancel={handleCancel}
@@ -247,9 +255,11 @@ const MainComment = ({
 };
 
 export const Comments = ({
+  isDialog,
   storyId,
   teamId,
 }: {
+  isDialog?: boolean;
   storyId: string;
   teamId: string;
 }) => {
@@ -263,9 +273,7 @@ export const Comments = ({
   const allComments =
     infiniteData?.pages
       .flatMap((page) => page.comments)
-      .filter(
-        (c) => !c.comment.includes("commented on GitHub issue #"),
-      ) ?? [];
+      .filter((c) => !c.comment.includes("commented on GitHub issue #")) ?? [];
 
   const handleLoadMore = () => {
     fetchNextPage();
@@ -276,6 +284,7 @@ export const Comments = ({
       {allComments.map((comment) => (
         <MainComment
           comment={comment}
+          isDialog={isDialog}
           key={comment.id}
           storyId={storyId}
           teamId={teamId}
