@@ -17,8 +17,8 @@ const avatar = cva(
         lg: "rounded-xl",
       },
       color: {
-        primary: "text-white bg-primary",
-        secondary: "text-white bg-secondary",
+        primary: "text-primary-foreground bg-primary",
+        secondary: "text-secondary-foreground bg-secondary",
         tertiary: "bg-surface-muted",
         naked: "bg-transparent",
       },

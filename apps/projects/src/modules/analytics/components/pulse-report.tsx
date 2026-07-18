@@ -60,7 +60,7 @@ const ReportCard = ({
   return (
     <Box
       className={[
-        "border-border/70 dark:bg-surface h-full rounded-lg border bg-white px-5 py-5",
+        "border-border/70 bg-surface-elevated h-full rounded-lg border px-5 py-5",
         className,
       ]
         .filter(Boolean)
@@ -151,7 +151,7 @@ const RiskCard = ({
     <Link href={href}>
       <Flex
         align="center"
-        className="border-border/70 hover:bg-surface-muted/60 dark:bg-surface h-full gap-3 rounded-lg border bg-white px-4 py-4 transition"
+        className="border-border/70 bg-surface-elevated hover:bg-surface-muted/60 h-full gap-3 rounded-lg border px-4 py-4 transition"
       >
         <Box className="min-w-0 flex-1">
           <Flex align="center" className="gap-2" justify="between">

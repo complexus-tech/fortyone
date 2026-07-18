@@ -9,7 +9,7 @@ const UPDATED_LABEL = "June 24, 2026";
 const cardTextClass = "text-[0.9rem] leading-[1.35]";
 const cardMetaTextClass = "text-[0.82rem] leading-[1.25]";
 const cardSurfaceClass =
-  "rounded-xl border border-white/50 bg-background shadow-lg shadow-shadow dark:border-border";
+  "bg-surface-elevated rounded-xl border border-border/80 shadow-lg shadow-shadow";
 
 export type MarketingVisualRow = {
   label: string;
@@ -66,7 +66,7 @@ function PromptCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="my-10 rounded-2xl bg-black/[0.07] p-2 dark:bg-white/[0.12]">
+    <div className="bg-surface-muted my-10 rounded-2xl p-2">
       <div className="px-3 py-2">
         <p className="text-text-muted text-sm font-medium">{title}</p>
       </div>
@@ -132,7 +132,7 @@ function MockupCard({ card }: { card: MarketingVisual }) {
                     {row.value}
                   </span>
                 </div>
-                <div className="bg-surface-muted h-2 overflow-hidden rounded-full dark:bg-white/10">
+                <div className="bg-surface-muted h-2 overflow-hidden rounded-full">
                   <div
                     className="bg-foreground h-full rounded-full"
                     style={{ width: row.width }}
@@ -141,7 +141,7 @@ function MockupCard({ card }: { card: MarketingVisual }) {
               </div>
             ) : (
               <div
-                className="rounded-lg bg-black/4 px-3 py-2 dark:bg-white/7"
+                className="bg-surface-muted rounded-lg px-3 py-2"
                 key={row.label}
               >
                 <p
@@ -205,7 +205,7 @@ function AvailabilityMark({ available }: { available: boolean }) {
       aria-label={available ? "Available" : "Not available"}
       className={
         available
-          ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black"
+          ? "bg-background-inverse text-foreground-inverse inline-flex h-5 w-5 items-center justify-center rounded-full"
           : "bg-danger inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
       }
     >

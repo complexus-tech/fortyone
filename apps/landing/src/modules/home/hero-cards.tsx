@@ -8,7 +8,7 @@ import "swiper/css";
 import "swiper/css/effect-cards";
 import { useTheme } from "next-themes";
 import { ArrowDown2Icon } from "icons";
-import { Blur, Container, Dot } from "@/components/ui";
+import { Container, Dot } from "@/components/ui";
 import { useCursor } from "@/hooks";
 import objectiveImg from "../../../public/images/product/objective.webp";
 import kanbanImg from "../../../public/images/product/kanban.webp";
@@ -48,8 +48,7 @@ export const HeroCards = () => {
     <Box>
       <Box className="relative">
         <Container className="relative mt-12 overflow-visible">
-          <Blur className="dark:bg-warning/12 absolute -top-[14%] right-5/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
-          <Blur className="dark:bg-danger/12 absolute -top-[14%] -right-8/12 h-[100px] -translate-x-1/2 md:h-[800px] md:w-[800px]" />
+          {/* Decorative colour blurs intentionally removed for the warmer background. */}
           <Box
             className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible"
             onMouseEnter={() => {
@@ -78,7 +77,7 @@ export const HeroCards = () => {
             >
               {cards.map((card) => (
                 <SwiperSlide
-                  className="border-border bg-background/50 dark:bg-background/5 relative rounded-l-lg rounded-r-none border p-0.5 backdrop-blur md:rounded-xl md:p-[0.35rem]"
+                  className="border-border bg-background/50 dark:bg-background/5 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]"
                   key={card.id}
                 >
                   <Flex
@@ -95,10 +94,10 @@ export const HeroCards = () => {
                       strokeWidth={2.5}
                     />
                   </Flex>
-                  <Box className="relative overflow-hidden rounded-l-md rounded-r-none md:rounded-lg">
+                  <Box className="relative overflow-hidden rounded-l-lg rounded-r-none md:rounded-xl">
                     <Image
                       alt={card.title}
-                      className="border-border/70 relative hidden h-88 w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:block"
+                      className="border-border/70 relative hidden h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.src}
@@ -106,7 +105,7 @@ export const HeroCards = () => {
                     />
                     <Image
                       alt={card.title}
-                      className="border-border relative h-88 w-auto max-w-none rounded-l-md rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-lg dark:hidden"
+                      className="border-border relative h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden"
                       placeholder="blur"
                       priority={card.id === 2}
                       src={card.image.srcLight}
@@ -117,7 +116,7 @@ export const HeroCards = () => {
             </Swiper>
           </Box>
         </Container>
-        <Box className="pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t from-white md:block dark:h-140 dark:from-black dark:via-black/80 dark:via-30%" />
+        <Box className="from-background via-background/80 pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t via-30% md:block dark:h-140" />
       </Box>
     </Box>
   );

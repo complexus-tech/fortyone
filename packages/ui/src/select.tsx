@@ -21,7 +21,7 @@ const Trigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap text-foreground outline-none rounded-xl border border-input px-3 py-1 text-sm bg-surface-muted/30",
+      "flex h-[2.1rem] w-full items-center justify-between whitespace-nowrap rounded-lg bg-surface-muted px-3 py-1 text-sm text-foreground outline-none ring-ring focus-visible:ring-2",
       className,
     )}
     {...props}
@@ -76,7 +76,7 @@ const SelectContent = forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-32 overflow-hidden rounded-2xl border shadow-md bg-surface-elevated/90 backdrop-blur text-foreground border-border w-max shadow-shadow",
+        "relative z-50 max-h-96 min-w-32 w-max overflow-hidden rounded-xl bg-surface-elevated/95 text-foreground shadow-xl shadow-shadow backdrop-blur",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className,
@@ -119,7 +119,7 @@ const Item = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full hover:bg-state-hover rounded-lg select-none items-center py-[0.3rem] pl-2 pr-8 text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
+      "relative flex w-full select-none items-center rounded-md py-[0.3rem] pr-8 pl-2 text-sm outline-none hover:bg-state-hover focus:bg-state-hover data-disabled:pointer-events-none data-disabled:opacity-50",
       className,
     )}
     {...props}

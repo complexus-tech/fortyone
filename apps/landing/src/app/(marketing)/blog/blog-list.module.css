@@ -1,0 +1,31 @@
+.bodyFont {
+  font-family: var(--font-body), sans-serif;
+}
+
+.writingLinkTitle {
+  -webkit-box-decoration-break: clone;
+  background-image: linear-gradient(currentcolor, currentcolor);
+  background-position: right calc(100% - 1px);
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  box-decoration-break: clone;
+  transition: background-size 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+a:focus-visible .writingLinkTitle {
+  background-position: left calc(100% - 1px);
+  background-size: 100% 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a:hover .writingLinkTitle {
+    background-position: left calc(100% - 1px);
+    background-size: 100% 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .writingLinkTitle {
+    transition: none;
+  }
+}

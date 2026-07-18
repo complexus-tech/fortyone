@@ -71,6 +71,9 @@
   --color-primary: var(--color-primary);
   --color-primary-foreground: var(--color-primary-foreground);
 
+  --color-brand: var(--color-brand);
+  --color-brand-foreground: var(--color-brand-foreground);
+
   --color-secondary: var(--color-secondary);
   --color-secondary-foreground: var(--color-secondary-foreground);
 

@@ -108,7 +108,7 @@ export const AuthLayout = ({
             Back to{" "}
             <button
               type="button"
-              className="text-primary underline dark:text-white"
+              className="text-primary underline"
               onClick={() => {
                 setIsSent(false);
               }}
@@ -138,7 +138,7 @@ export const AuthLayout = ({
                 <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
                   Don&apos;t have an account?{" "}
                   <Link
-                    className="text-primary underline dark:text-white"
+                    className="text-primary underline"
                     href="/signup"
                   >
                     Create one
@@ -149,7 +149,7 @@ export const AuthLayout = ({
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
-              <Link className="text-primary underline dark:text-white" href="/">
+              <Link className="text-primary underline" href="/">
                 Sign in
               </Link>
             </Text>

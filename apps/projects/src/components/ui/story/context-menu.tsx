@@ -265,7 +265,7 @@ export const StoryContextMenu = ({
             </Button>
             <Button
               className="px-4"
-              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
+              leftIcon={<ArchiveIcon className="text-current" />}
               onClick={handleArchive}
             >
               Archive
@@ -303,7 +303,7 @@ export const StoryContextMenu = ({
             </Button>
             <Button
               className="px-4"
-              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
+              leftIcon={<ArchiveIcon className="text-current" />}
               onClick={handleUnarchive}
             >
               Unarchive
@@ -338,7 +338,7 @@ export const StoryContextMenu = ({
             </Button>
             <Button
               className="px-4"
-              leftIcon={<UndoIcon className="text-white dark:text-white" />}
+              leftIcon={<UndoIcon className="text-current" />}
               onClick={handleRestore}
             >
               Restore

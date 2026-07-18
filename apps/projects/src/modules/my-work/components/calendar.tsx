@@ -748,7 +748,7 @@ export const MyWorkCalendar = () => {
                     <Box
                       className={cn(
                         "flex h-7 min-w-7 items-center justify-center rounded-md px-2",
-                        today ? "bg-primary text-white" : "text-foreground",
+                        today ? "bg-primary text-primary-foreground" : "text-foreground",
                       )}
                     >
                       <Text

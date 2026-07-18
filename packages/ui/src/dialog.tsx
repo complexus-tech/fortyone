@@ -27,7 +27,7 @@ const dialogAnimationStyles = `
   @keyframes dialog-content-show {
     from { 
       opacity: 0; 
-      transform: translateY(-16px) scale(0.95); 
+      transform: translateY(-10px) scale(0.97);
     }
     to { 
       opacity: 1; 
@@ -42,24 +42,24 @@ const dialogAnimationStyles = `
     }
     to { 
       opacity: 0; 
-      transform: translateY(-16px) scale(0.95); 
+      transform: translateY(-10px) scale(0.97);
     }
   }
   
   .dialog-overlay-animate[data-state="open"] {
-    animation: dialog-overlay-show 300ms ease-out;
+    animation: dialog-overlay-show 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .dialog-overlay-animate[data-state="closed"] {
-    animation: dialog-overlay-hide 300ms ease-in;
+    animation: dialog-overlay-hide 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .dialog-content-animate[data-state="open"] {
-    animation: dialog-content-show 300ms ease-out;
+    animation: dialog-content-show 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .dialog-content-animate[data-state="closed"] {
-    animation: dialog-content-hide 300ms ease-in;
+    animation: dialog-content-hide 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 `;
 
@@ -101,7 +101,7 @@ const DialogClose = ({ className }: { className?: string }) => (
   <DialogPrimitive.Close
     data-testid="close-modal"
     className={cn(
-      "inline-block rounded-lg p-1 outline-none transition hover:bg-accent",
+      "inline-block rounded-md p-1 outline-none transition hover:bg-accent",
       className,
     )}
   >
@@ -127,7 +127,7 @@ const DialogContent = forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "relative mt-[15%] md:mt-[10%] w-full mx-3.5 max-w-3xl backdrop-blur-lg overflow-hidden rounded-3xl border-[0.5px] border-border-strong bg-surface",
+            "relative mx-3.5 mt-[15%] w-full max-w-3xl overflow-hidden rounded-xl bg-surface-elevated shadow-2xl shadow-shadow backdrop-blur-lg md:mt-[10%]",
             "dialog-content-animate outline-transparent",
             {
               "max-w-md": size === "sm",
@@ -190,7 +190,7 @@ const DialogTitle = forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "font-medium leading-none tracking-tight dark:text-white",
+      "font-medium leading-none tracking-tight text-foreground",
       className,
     )}
     {...props}
@@ -217,7 +217,7 @@ type BodyProps = ComponentProps<typeof Box>;
 const Body = ({ className, ...props }: BodyProps) => (
   <Box
     className={cn(
-      "max-h-[80dvh] overflow-y-auto px-6 pb-4 pt-2 dark:text-white",
+      "max-h-[80dvh] overflow-y-auto px-6 pb-4 pt-2 text-foreground",
       className,
     )}
     {...props}

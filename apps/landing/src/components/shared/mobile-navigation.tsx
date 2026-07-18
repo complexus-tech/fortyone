@@ -32,7 +32,7 @@ const NavMenuButton = ({
       <span>
         <span
           className={cn(
-            "mb-[0.4rem] block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
+            "bg-foreground mb-[0.4rem] block h-px w-5 transition duration-300 ease-in-out",
             {
               "mb-0 rotate-45": open,
             },
@@ -40,7 +40,7 @@ const NavMenuButton = ({
         />
         <span
           className={cn(
-            "block h-px w-5 bg-black transition duration-300 ease-in-out dark:bg-white",
+            "bg-foreground block h-px w-5 transition duration-300 ease-in-out",
             {
               "-translate-y-[0.05rem] -rotate-45": open,
             },
@@ -100,7 +100,7 @@ export const MobileNavigation = () => {
                         <Flex className="pl-4" direction="column" gap={3}>
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="text-base opacity-80"
+                              className="hover:bg-accent -mx-2 rounded-md px-2 py-1.5 text-base opacity-80 transition-colors hover:opacity-100"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -117,7 +117,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="text-lg font-medium"
+                      className="hover:bg-accent -mx-2 rounded-md px-2 py-1.5 text-lg font-medium transition-colors"
                       href={href}
                       key={label}
                       onClick={() => {

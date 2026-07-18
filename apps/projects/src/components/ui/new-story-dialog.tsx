@@ -926,7 +926,7 @@ export const NewStoryDialog = ({
               </label>
             </Text>
             <Button
-              leftIcon={<PlusIcon className="text-white" />}
+              leftIcon={<PlusIcon className="text-current" />}
               loading={loading}
               loadingText={`Creating ${getTermDisplay("storyTerm")}...`}
               onClick={handleCreateStory}

@@ -65,7 +65,7 @@ export default function GitHubCallbackPage() {
   }, [searchParams]);
 
   return (
-    <Flex align="center" className="h-dvh dark:bg-black" justify="center">
+    <Flex align="center" className="bg-background h-dvh" justify="center">
       <Flex align="center" direction="column" justify="center">
         <Logo asIcon className="animate-pulse" />
         <Text color="muted" fontWeight="medium" className="mt-4">

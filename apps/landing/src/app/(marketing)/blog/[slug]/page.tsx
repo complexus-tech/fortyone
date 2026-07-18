@@ -1,13 +1,14 @@
-import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
+import { ArrowLeft2Icon } from "icons";
+import Link from "next/link";
+import { MDXRemote } from "next-mdx-remote/rsc";
 import { notFound } from "next/navigation";
-import { BlurImage, Box, Flex, Text } from "ui";
-// import { ArrowLeft2Icon } from "icons";
-// import Link from "next/link";
-import { getPostBySlug, getAllPosts } from "@/lib/posts";
-import { mdxComponents } from "@/mdx-components";
+import { Box, Flex, Text } from "ui";
 import { CallToAction } from "@/components/shared";
 import { Container } from "@/components/ui";
+import { getAllPosts, getPostBySlug } from "@/lib/posts";
+import { mdxComponents } from "@/mdx-components";
+import styles from "./article.module.css";
 
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
@@ -48,6 +49,15 @@ export async function generateMetadata({
     },
   };
 }
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
+const getReadingTime = (content: string) =>
+  Math.max(1, Math.ceil(content.trim().split(/\s+/).length / 220));
 
 export default async function BlogPost({
   params,
@@ -92,44 +102,38 @@ export default async function BlogPost({
       />
       <Container
         as="article"
-        className="grid grid-cols-[1fr_4fr_1fr] items-start gap-10 py-32"
+        className="w-[calc(100%-2.5rem)] max-w-[640px] px-0 pt-32 pb-24 md:px-0 md:pt-40"
+        full
       >
-        <span />
-        {/* <Link className="flex items-center gap-1 pt-4" href="/blog">
-          <ArrowLeft2Icon className="dark:text-foreground" />
-          <span className="opacity-80">All blogs</span>
-        </Link> */}
-        <Box className="mx-auto max-w-2xl">
-          <Flex gap={2}>
-            <Text className="opacity-80">
-              {new Date(post.metadata.date as string).toLocaleDateString(
-                "en-US",
-                {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                },
-              )}
+        <Link
+          className="text-text-muted hover:text-foreground mb-12 inline-flex items-center gap-1.5 text-sm transition-colors"
+          href="/blog"
+        >
+          <ArrowLeft2Icon className="size-4" />
+          All posts
+        </Link>
+
+        <header className="border-border mb-12 border-b pb-10 md:mb-14 md:pb-12">
+          <Flex align="center" className="gap-2 text-sm">
+            <Text color="muted">
+              {dateFormatter.format(new Date(post.metadata.date as string))}
             </Text>
-            &bull;
-            <Text className="opacity-80">6 min read</Text>
+            <span aria-hidden="true">·</span>
+            <Text color="muted">{getReadingTime(post.content)} min read</Text>
           </Flex>
           <Text
             as="h1"
-            className="mt-4 mb-8 text-4xl leading-tight font-semibold"
+            className={`${styles.articleTitle} mt-5 text-[clamp(2rem,5vw,2.75rem)] leading-[1.08] font-medium tracking-[-0.025em]`}
           >
             {post.metadata.title}
           </Text>
-          <Box className="border-border d mb-6 rounded-xl border p-1.5">
-            <BlurImage
-              alt={post.metadata.title}
-              className="aspect-16/8 rounded-lg"
-              src={post.metadata.featuredImage}
-            />
-          </Box>
-          <Box className="prose prose-base prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground max-w-full">
-            <MDXRemote components={mdxComponents} source={post.content} />
-          </Box>
+          <Text className="mt-5 max-w-2xl text-base leading-7" color="muted">
+            {post.metadata.description}
+          </Text>
+        </header>
+
+        <Box className={styles.articleBody}>
+          <MDXRemote components={mdxComponents} source={post.content} />
         </Box>
       </Container>
       <CallToAction />

@@ -6,7 +6,6 @@ import { useState } from "react";
 import { CheckIcon } from "icons";
 import { usePathname } from "next/navigation";
 import { SIGNUP_URL } from "@/lib/app-url";
-import { Blur } from "./blur";
 import { Container } from "./container";
 
 type Billing = "annual" | "monthly";
@@ -108,9 +107,9 @@ const Package = ({
   return (
     <Box
       className={cn(
-        "border-border shadow-shadow h-full rounded-3xl border px-6 pt-6 pb-8 shadow-2xl",
+        "border-border bg-surface shadow-shadow h-full rounded-xl border px-6 pt-6 pb-8 shadow-lg",
         {
-          "border-2 border-black dark:border-white": recommended,
+          "border-foreground border-2 shadow-xl": recommended,
         },
       )}
     >
@@ -176,8 +175,7 @@ export const Pricing = ({
 
   return (
     <Box className={cn("relative md:pt-12", className)}>
-      <Blur className="dark:bg-warning/10 absolute top-32 right-5/12 hidden h-[100px] -translate-x-1/2 md:block md:h-[800px] md:w-[800px]" />
-      <Blur className="dark:bg-danger/12 absolute top-32 -right-8/12 hidden h-[100px] -translate-x-1/2 md:block md:h-[800px] md:w-[800px]" />
+      {/* Decorative colour blurs intentionally removed for the warmer background. */}
       <Container className="max-w-332">
         <Box
           className={cn(
@@ -225,7 +223,7 @@ export const Pricing = ({
             viewport={{ once: true, amount: 0.5 }}
             whileInView={{ y: 0, opacity: 1 }}
           >
-            <Box className="border-border bg-surface flex w-max gap-1 rounded-full border p-1">
+            <Box className="bg-surface-muted flex w-max gap-1 rounded-xl p-1">
               {["annual", "monthly"].map((option) => (
                 <Button
                   className={cn("px-3 capitalize", {
@@ -236,7 +234,7 @@ export const Pricing = ({
                   onClick={() => {
                     setBilling(option as Billing);
                   }}
-                  rounded="full"
+                  rounded="md"
                   size="sm"
                   variant={option === billing ? "solid" : "naked"}
                 >

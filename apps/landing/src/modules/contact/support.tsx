@@ -49,7 +49,7 @@ export const Support = () => {
           ))}
         </Box>
 
-        <Box className="bg-surface-muted rounded-2xl p-6 dark:bg-white/[0.06]">
+        <Box className="bg-surface-muted rounded-2xl p-6">
           <Text as="h2" className="text-foreground text-xl font-medium">
             What helps us respond faster
           </Text>

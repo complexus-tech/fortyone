@@ -6,21 +6,27 @@ const postsDir = path.join(process.cwd(), "src/content/blog");
 
 export function getAllPosts() {
   const filenames = fs.readdirSync(postsDir);
-  return filenames.map((name) => {
-    const filePath = path.join(postsDir, name);
-    const source = fs.readFileSync(filePath, "utf8");
-    const { data: metadata } = matter(source);
+  return filenames
+    .map((name) => {
+      const filePath = path.join(postsDir, name);
+      const source = fs.readFileSync(filePath, "utf8");
+      const { data: metadata } = matter(source);
 
-    return {
-      slug: name.replace(/\.mdx$/, ""),
-      metadata: metadata as {
-        title: string;
-        description: string;
-        date: string;
-        featuredImage: string;
-      },
-    };
-  });
+      return {
+        slug: name.replace(/\.mdx$/, ""),
+        metadata: metadata as {
+          title: string;
+          description: string;
+          date: string;
+          featuredImage: string;
+        },
+      };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.metadata.date).getTime() -
+        new Date(a.metadata.date).getTime(),
+    );
 }
 
 export function getPostBySlug(slug: string) {
