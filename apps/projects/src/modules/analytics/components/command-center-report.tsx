@@ -243,7 +243,7 @@ const ChartTooltip = ({
   }
 
   return (
-    <Box className="border-border dark:bg-surface-elevated z-50 min-w-36 rounded-lg border bg-white px-3 py-3 text-[0.95rem] shadow-lg">
+    <Box className="border-border bg-surface-elevated z-50 min-w-36 rounded-lg border px-3 py-3 text-[0.95rem] shadow-lg">
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         {payload.map((entry) => (
@@ -956,7 +956,7 @@ const ProviderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   ];
 
   return (
-    <Box className="border-border dark:bg-surface-elevated z-50 min-w-44 rounded-lg border bg-white px-3 py-3 text-[0.95rem] shadow-lg">
+    <Box className="border-border bg-surface-elevated z-50 min-w-44 rounded-lg border px-3 py-3 text-[0.95rem] shadow-lg">
       <Flex align="center" className="mb-2 gap-2" justify="between">
         <Text className="font-medium">{row.provider}</Text>
         <Text color="muted">{formatNumber(row.total)} total</Text>

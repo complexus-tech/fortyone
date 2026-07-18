@@ -16,7 +16,7 @@ const fadeUp = {
 const CARD_TEXT_CLASS = "text-[0.9rem] leading-[1.35]";
 const CARD_META_TEXT_CLASS = "text-[0.82rem] leading-[1.25]";
 const CARD_SURFACE_CLASS =
-  "bg-background rounded-xl border border-white/50 dark:border-border shadow-lg shadow-shadow";
+  "bg-surface-elevated rounded-xl border border-border/80 shadow-lg shadow-shadow";
 
 /* ─── Brand icons (inline SVGs) ───────────────────────────── */
 function DriveIcon({ className }: { className?: string }) {

@@ -85,7 +85,7 @@ export const MayaChat = () => {
             <Text>{error.message || "An error occurred."} </Text>
             <Button
               className="mt-2"
-              leftIcon={<ReloadIcon className="text-white dark:text-white" />}
+              leftIcon={<ReloadIcon className="text-current" />}
               onClick={() => {
                 regenerate();
               }}

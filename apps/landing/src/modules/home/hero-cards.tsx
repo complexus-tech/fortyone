@@ -117,7 +117,7 @@ export const HeroCards = () => {
             </Swiper>
           </Box>
         </Container>
-        <Box className="pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t from-white md:block dark:h-140 dark:from-black dark:via-black/80 dark:via-30%" />
+        <Box className="from-background via-background/80 pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t via-30% md:block dark:h-140" />
       </Box>
     </Box>
   );

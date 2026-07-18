@@ -681,7 +681,7 @@ export const NewObjectiveDialog = ({
               Discard
             </Button>
             <Button
-              leftIcon={<PlusIcon className="text-white" />}
+              leftIcon={<PlusIcon className="text-current" />}
               loading={createMutation.isPending}
               loadingText="Creating..."
               onClick={handleCreateObjective}

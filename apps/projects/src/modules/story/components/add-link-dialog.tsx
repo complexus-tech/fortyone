@@ -109,7 +109,7 @@ export const AddLinkDialog = ({
                 })}
                 leftIcon={
                   isEditing ? null : (
-                    <PlusIcon className="text-white dark:text-gray-200" />
+                    <PlusIcon className="text-current" />
                   )
                 }
                 type="submit"

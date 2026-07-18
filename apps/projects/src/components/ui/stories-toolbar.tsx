@@ -278,7 +278,7 @@ export const StoriesToolbar = () => {
         ) : null}
 
         <Button
-          leftIcon={<DeleteIcon className="h-[1.15rem] text-white" />}
+          leftIcon={<DeleteIcon className="h-[1.15rem] text-current" />}
           onClick={() => {
             setIsOpen(true);
           }}
@@ -313,7 +313,7 @@ export const StoriesToolbar = () => {
               </Button>
               <Button
                 leftIcon={
-                  <ArchiveIcon className="text-white dark:text-white" />
+                  <ArchiveIcon className="text-current" />
                 }
                 onClick={handleBulkArchive}
               >
@@ -351,7 +351,7 @@ export const StoriesToolbar = () => {
               </Button>
               <Button
                 leftIcon={
-                  <ArchiveIcon className="text-white dark:text-white" />
+                  <ArchiveIcon className="text-current" />
                 }
                 onClick={handleBulkUnarchive}
               >
@@ -385,7 +385,7 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={<UndoIcon className="text-white dark:text-white" />}
+                leftIcon={<UndoIcon className="text-current" />}
                 onClick={handleBulkRestore}
               >
                 Restore
@@ -421,7 +421,7 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={<DeleteIcon className="text-white" />}
+                leftIcon={<DeleteIcon className="text-current" />}
                 loading={isPending}
                 loadingText="Deleting..."
                 onClick={handleBulkDelete}

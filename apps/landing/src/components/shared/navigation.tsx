@@ -84,7 +84,7 @@ const NavigationDropdown = ({
     <NavigationMenu.Content
       className={cn("top-full z-50 mt-1.5", contentClassName)}
     >
-      <Box className="border-border shadow-shadow dark:bg-surface-elevated rounded-xl border bg-white px-1.5 py-1.5 shadow-xl">
+      <Box className="border-border bg-surface-elevated shadow-shadow rounded-xl border px-1.5 py-1.5 shadow-xl">
         {items.map((item) => (
           <NavigationMenuLink key={item.href} {...item} />
         ))}
@@ -114,7 +114,7 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
 
 export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   return (
-    <Box className="border-border/40 fixed left-0 z-15 w-screen border-b bg-white/60 backdrop-blur-xl dark:bg-black/50">
+    <Box className="border-border/60 bg-background/70 fixed left-0 z-15 w-screen border-b backdrop-blur-xl">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>

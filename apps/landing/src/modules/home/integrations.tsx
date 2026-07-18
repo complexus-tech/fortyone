@@ -8,7 +8,7 @@ import { SIGNUP_URL } from "@/lib/app-url";
 export const Integrations = () => {
   return (
     <Box
-      className="from-surface via-surface-muted to-surface dark:from-background dark:via-background relative mt-20 scroll-mt-24 bg-linear-to-b py-16 md:mb-28 md:py-40 dark:to-black"
+      className="from-surface via-surface-muted to-surface relative mt-20 scroll-mt-24 bg-linear-to-b py-16 md:mb-28 md:py-40"
       id="integrations"
     >
       <Image

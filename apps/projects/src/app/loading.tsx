@@ -5,7 +5,7 @@ export default function Loading() {
   return (
     <Flex
       align="center"
-      className="relative h-dvh dark:bg-black"
+      className="bg-background relative h-dvh"
       justify="center"
     >
       <Flex align="center" direction="column" justify="center">

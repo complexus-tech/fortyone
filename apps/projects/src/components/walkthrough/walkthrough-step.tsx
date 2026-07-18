@@ -185,9 +185,9 @@ export const WalkthroughStep = ({
                 onClick={nextStep}
                 rightIcon={
                   isLastStep ? (
-                    <CheckIcon className="text-white" />
+                    <CheckIcon className="text-current" />
                   ) : (
-                    <ArrowRight2Icon className="text-white" />
+                    <ArrowRight2Icon className="text-current" />
                   )
                 }
               >

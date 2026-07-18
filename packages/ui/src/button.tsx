@@ -68,8 +68,18 @@ export const buttonVariants = cva(
       // Solid variant
       {
         variant: "solid",
-        color: ["primary", "secondary", "danger", "info"],
+        color: "primary",
+        className: "text-primary-foreground",
+      },
+      {
+        variant: "solid",
+        color: ["secondary", "danger"],
         className: "text-white",
+      },
+      {
+        variant: "solid",
+        color: "info",
+        className: "text-info-foreground",
       },
       {
         variant: "solid",

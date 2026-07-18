@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tailwind-config";
+@import "tailwind-config/brand-theme";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));

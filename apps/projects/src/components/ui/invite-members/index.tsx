@@ -256,7 +256,7 @@ export const InviteMembersDialog = ({
               Role
             </Text>
             <Select onValueChange={handleRoleChange} value={formState.role}>
-              <Select.Trigger className="h-[2.8rem] border bg-white px-4 text-base dark:bg-transparent">
+              <Select.Trigger className="bg-surface h-[2.8rem] border px-4 text-base">
                 <Select.Input placeholder="Select role" />
               </Select.Trigger>
               <Select.Content>
