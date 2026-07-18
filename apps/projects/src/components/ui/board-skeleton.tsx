@@ -235,7 +235,8 @@ export const BoardSkeleton = ({
     <BodyContainer
       className={cn(
         {
-          "bg-surface-muted/50 overflow-x-auto": layout === "kanban",
+          "dark:bg-surface-muted/50 overflow-x-auto bg-white":
+            layout === "kanban",
           "bg-background overflow-auto": layout === "gantt",
         },
         className,

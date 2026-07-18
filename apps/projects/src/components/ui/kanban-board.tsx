@@ -259,7 +259,10 @@ export const KanbanBoard = ({
 
   return (
     <BodyContainer
-      className={cn("bg-surface-muted/50 overflow-x-auto", className)}
+      className={cn(
+        "dark:bg-surface-muted/50 overflow-x-auto bg-white",
+        className,
+      )}
     >
       <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex

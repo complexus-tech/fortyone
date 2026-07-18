@@ -1,7 +1,6 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
-import { cn } from "lib";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
@@ -228,7 +227,7 @@ export const StoriesViewOptionsButton = ({
             </Select.Content>
           </Select>
         </Flex>
-        <Divider className="my-2" />
+        <Divider className="dark:border-border-strong/80 my-2" />
         <Box className="max-w-108 px-4 py-2">
           <Text className="mb-4" fontWeight="medium">
             Display options
@@ -278,12 +277,8 @@ export const StoriesViewOptionsButton = ({
               const isSelected = displayColumns.includes(column);
               return (
                 <Button
-                  active={isSelected}
-                  className={cn("rounded-lg pl-1.5", {
-                    "bg-state-selected border-transparent": isSelected,
-                    "bg-transparent": !isSelected,
-                  })}
-                  color="tertiary"
+                  className="rounded-lg pl-1.5"
+                  color={isSelected ? "primary" : "tertiary"}
                   key={column}
                   onClick={() => {
                     if (isSelected) {
@@ -301,7 +296,7 @@ export const StoriesViewOptionsButton = ({
                     }
                   }}
                   size="xs"
-                  variant="outline"
+                  variant={isSelected ? "solid" : "outline"}
                 >
                   {getDisplayColumnText(column)}
                 </Button>
@@ -309,7 +304,7 @@ export const StoriesViewOptionsButton = ({
             })}
           </Flex>
         </Box>
-        <Divider className="my-2" />
+        <Divider className="dark:border-border-strong/80 my-2" />
         <Flex className="px-4 pb-[0.1rem]" justify="end">
           <Button
             className="text-primary dark:text-primary"
