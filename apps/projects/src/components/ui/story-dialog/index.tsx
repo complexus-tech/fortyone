@@ -141,7 +141,7 @@ export const StoryDialog = ({
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    variant="naked"
+                    variant="solid"
                   >
                     Close
                   </Button>
@@ -157,7 +157,7 @@ export const StoryDialog = ({
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
                       onClick={handlePrev}
-                      variant="naked"
+                      variant="solid"
                     >
                       <span className="sr-only">Previous</span>
                     </Button>
@@ -172,7 +172,7 @@ export const StoryDialog = ({
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
                       onClick={handleNext}
-                      variant="naked"
+                      variant="solid"
                     >
                       <span className="sr-only">Next</span>
                     </Button>
