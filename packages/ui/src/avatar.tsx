@@ -31,10 +31,10 @@ const avatar = cva(
     },
     defaultVariants: {
       size: "md",
-      rounded: "full",
+      rounded: "md",
       color: "tertiary",
     },
-  }
+  },
 );
 
 export interface AvatarProps
@@ -68,7 +68,11 @@ const getInitials = (name: string) => {
 
 export const Avatar: FC<AvatarProps> = (props) => {
   const { className, src, name, color, size, rounded, ...rest } = props;
-  const classes = cn(avatar({ rounded, color, size }), className);
+  const resolvedRounded = rounded ?? "md";
+  const classes = cn(
+    avatar({ rounded: resolvedRounded, color, size }),
+    className,
+  );
   const asIcon = !src && !name;
 
   return (
@@ -84,10 +88,10 @@ export const Avatar: FC<AvatarProps> = (props) => {
           priority
           alt={name}
           className={cn("w-full h-full aspect-square", {
-            "rounded-full": rounded === "full",
-            "rounded-sm": rounded === "sm",
-            "rounded-md": rounded === "md",
-            "rounded-lg": rounded === "lg",
+            "rounded-full": resolvedRounded === "full",
+            "rounded-sm": resolvedRounded === "sm",
+            "rounded-lg": resolvedRounded === "md",
+            "rounded-xl": resolvedRounded === "lg",
           })}
           imageClassName="object-top object-cover"
         />
