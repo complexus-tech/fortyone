@@ -1,4 +1,3 @@
-import "ui/styles.css";
 import "../styles/global.css";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";

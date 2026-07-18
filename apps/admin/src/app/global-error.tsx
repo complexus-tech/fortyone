@@ -1,6 +1,5 @@
 "use client";
 
-import "ui/styles.css";
 import "../styles/global.css";
 import { AdminErrorState } from "@/components/admin-error-state";
 
