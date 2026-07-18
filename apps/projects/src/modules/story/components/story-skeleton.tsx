@@ -1,9 +1,16 @@
 "use client";
 import { Box } from "ui";
+import { cn } from "lib";
 import { MainDetailsSkeleton } from "./main-details-skeleton";
 import { OptionsSkeleton } from "./options-skeleton";
 
-export const StorySkeleton = ({ bodyOnly = false }: { bodyOnly?: boolean }) => {
+export const StorySkeleton = ({
+  bodyOnly = false,
+  isDialog = false,
+}: {
+  bodyOnly?: boolean;
+  isDialog?: boolean;
+}) => {
   if (bodyOnly) {
     return (
       <Box>
@@ -14,11 +21,19 @@ export const StorySkeleton = ({ bodyOnly = false }: { bodyOnly?: boolean }) => {
 
   return (
     <Box>
-      <Box className="md:hidden">
+      <Box
+        className={cn("md:hidden", {
+          "dark:bg-surface": isDialog,
+        })}
+      >
         <MainDetailsSkeleton />
       </Box>
       <Box className="hidden md:flex">
-        <Box className="min-w-0 flex-1">
+        <Box
+          className={cn("min-w-0 flex-1", {
+            "dark:bg-surface": isDialog,
+          })}
+        >
           <MainDetailsSkeleton />
         </Box>
         <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]">

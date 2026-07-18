@@ -39,7 +39,12 @@ export const StoryPage = ({
   );
 
   if (isPending) {
-    return <StorySkeleton bodyOnly={shouldUseNotificationBodyOnlySkeleton} />;
+    return (
+      <StorySkeleton
+        bodyOnly={shouldUseNotificationBodyOnlySkeleton}
+        isDialog={isDialog}
+      />
+    );
   }
 
   return (
@@ -50,7 +55,11 @@ export const StoryPage = ({
     >
       {story ? (
         <>
-          <Box className="md:hidden">
+          <Box
+            className={cn("md:hidden", {
+              "dark:bg-surface": isDialog,
+            })}
+          >
             <MainDetails
               isDialog={isDialog}
               isNotifications={Boolean(isNotifications)}
@@ -62,7 +71,11 @@ export const StoryPage = ({
               "notification-story-container": isNotifications,
             })}
           >
-            <Box className="min-w-0 flex-1">
+            <Box
+              className={cn("min-w-0 flex-1", {
+                "dark:bg-surface": isDialog,
+              })}
+            >
               <MainDetails
                 isDialog={isDialog}
                 isNotifications={Boolean(isNotifications)}
