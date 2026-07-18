@@ -266,7 +266,7 @@ export const Activity = ({
       label: "Status",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <StoryStatusIcon className="h-5" statusId={value} />
+          <StoryStatusIcon className="size-3" statusId={value} />
           {statuses.find((status) => status.id === value)?.name}
         </span>
       ),

@@ -51,7 +51,7 @@ const StoryRow = ({
 
         <Flex align="center" className="shrink-0" gap={3}>
           <Text className="flex shrink-0 items-center gap-1">
-            <StoryStatusIcon className="relative -top-px" statusId={statusId} />
+            <StoryStatusIcon statusId={statusId} />
             <span className="hidden max-w-[16ch] truncate md:inline-block">
               {getStoryStatus()}
             </span>
