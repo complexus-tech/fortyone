@@ -86,10 +86,10 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-xl border-[0.5px] border-border bg-surface-elevated/90 p-2 shadow-lg shadow-shadow backdrop-blur",
+          "w-max rounded-xl border-[0.5px] border-border bg-surface-elevated p-2 shadow-lg shadow-shadow backdrop-blur-md dark:bg-surface-elevated/80",
           {
             hidden: isLinkOpen,
-          }
+          },
         )}
         gap={2}
       >
@@ -295,10 +295,10 @@ export const BubbleMenu = ({
       <Flex
         align="center"
         className={cn(
-          "w-max rounded-lg border border-border bg-surface-elevated/80 px-2 py-[0.2rem] backdrop-blur",
+          "w-max rounded-lg border border-border bg-surface-elevated px-2 py-[0.2rem] backdrop-blur-md dark:bg-surface-elevated/80",
           {
             hidden: !isLinkOpen,
-          }
+          },
         )}
         gap={1}
       >

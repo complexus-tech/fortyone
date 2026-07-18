@@ -169,10 +169,7 @@ export const StoriesViewOptionsButton = ({
           )}
         </Button>
       </Popover.Trigger>
-      <Popover.Content
-        align="end"
-        className="bg-surface-elevated dark:bg-surface-prominent/60 min-w-[20rem] md:max-w-[24rem]"
-      >
+      <Popover.Content align="end" className="min-w-[20rem] md:max-w-[24rem]">
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select
@@ -187,7 +184,7 @@ export const StoriesViewOptionsButton = ({
             <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content className="ring-border/70 bg-popover dark:bg-surface-prominent/85 shadow-2xl ring-1">
+            <Select.Content className="ring-border/70 shadow-2xl ring-1">
               <Select.Group>
                 {groupByOptions.map((option) => (
                   <Select.Option
@@ -216,7 +213,7 @@ export const StoriesViewOptionsButton = ({
             <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content className="ring-border/70 bg-popover dark:bg-surface-prominent/85 shadow-2xl ring-1">
+            <Select.Content className="ring-border/70 shadow-2xl ring-1">
               <Select.Group>
                 {orderByOptions.map((option) => (
                   <Select.Option
