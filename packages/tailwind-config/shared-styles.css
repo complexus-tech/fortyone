@@ -3,7 +3,7 @@
 @layer base {
   @supports (corner-shape: squircle) {
     :root {
-      --radius-scale: 2;
+      --radius-scale: 1;
     }
 
     [class*="rounded"]:not([class*="rounded-full"]) {
@@ -13,7 +13,8 @@
 }
 
 @theme {
-  --radius-scale: 1;
+  /* Circular fallbacks look rounder than squircles at the same radius. */
+  --radius-scale: 0.5;
   --radius-base: 0.3rem;
   --radius-base-xs: 0.15rem;
   --radius-base-sm: 0.3rem;

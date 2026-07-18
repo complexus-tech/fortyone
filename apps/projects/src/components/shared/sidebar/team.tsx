@@ -176,7 +176,6 @@ export const Team = ({
                     className="opacity-0 transition-opacity group-hover:opacity-100"
                     color="tertiary"
                     leftIcon={<MoreHorizontalIcon />}
-                    rounded="full"
                     size="sm"
                     variant="naked"
                   >

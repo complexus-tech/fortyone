@@ -82,7 +82,6 @@ export const Teams = () => {
                 color="tertiary"
                 data-manage-teams-button
                 leftIcon={<MoreHorizontalIcon />}
-                rounded="full"
                 size="sm"
                 variant="naked"
               >
