@@ -107,6 +107,9 @@ export const ChatInput = ({
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
+  const handleAutoStop = useCallback(() => {
+    processRecordingRef.current();
+  }, []);
   const realtimeVoice = useMayaRealtimeVoice();
   const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts =
@@ -138,9 +141,7 @@ export const ChatInput = ({
     stopRecording,
     getAudioBlob,
     resetRecording,
-  } = useVoiceRecording(() => {
-    processRecordingRef.current();
-  });
+  } = useVoiceRecording(handleAutoStop);
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
@@ -373,7 +374,7 @@ export const ChatInput = ({
                 color="tertiary"
                 disabled={isLiveVoiceActive}
                 onClick={open}
-                rounded="full"
+                rounded="sm"
                 variant="naked"
               >
                 <PlusIcon /> Attach files
@@ -403,7 +404,7 @@ export const ChatInput = ({
                   handleVoiceRecording();
                 }
               }}
-              rounded="full"
+              rounded="sm"
               variant="naked"
             >
               {isTranscribing
@@ -438,7 +439,7 @@ export const ChatInput = ({
                   onSend();
                 }
               }}
-              rounded="full"
+              rounded="sm"
             >
               {isRecording ? (
                 <CheckIcon className="text-current dark:text-current" />

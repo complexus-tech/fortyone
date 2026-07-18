@@ -135,13 +135,12 @@ export const StoryDialog = ({
               >
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-foreground/80 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
+                    className="text-foreground/80 bg-surface-muted dark:bg-accent shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    variant="solid"
                   >
                     Close
                   </Button>
@@ -152,12 +151,11 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="ml-5"
+                      className="bg-surface-muted dark:bg-accent ml-5 border-0"
                       color="tertiary"
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
                       onClick={handlePrev}
-                      variant="solid"
                     >
                       <span className="sr-only">Previous</span>
                     </Button>
@@ -168,11 +166,11 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
+                      className="bg-surface-muted dark:bg-accent border-0"
                       color="tertiary"
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
                       onClick={handleNext}
-                      variant="solid"
                     >
                       <span className="sr-only">Next</span>
                     </Button>

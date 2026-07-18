@@ -29,7 +29,7 @@ export const buttonVariants = cva(
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "border-border bg-surface hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+          "border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-black dark:text-dark border-white bg-white ring-white",
@@ -87,6 +87,11 @@ export const buttonVariants = cva(
         className: "text-warning-foreground",
       },
       {
+        variant: ["solid", "outline"],
+        color: "tertiary",
+        className: "bg-white dark:bg-surface",
+      },
+      {
         variant: "outline",
         color: "black",
         className: "text-foreground border-border bg-transparent ring-ring",
@@ -128,12 +133,13 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-transparent text-text-disabled cursor-not-allowed",
+        className:
+          "cursor-not-allowed bg-transparent text-text-disabled dark:bg-transparent",
       },
       {
         active: true,
         color: "tertiary",
-        className: "bg-state-selected",
+        className: "bg-state-selected dark:bg-state-selected",
       },
     ],
     defaultVariants: {

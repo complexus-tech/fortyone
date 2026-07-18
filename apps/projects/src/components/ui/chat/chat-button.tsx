@@ -25,12 +25,12 @@ export const ChatButton = ({ onOpen, isOpen }: ChatButtonProps) => {
       )}
     >
       <Button
-        className="border-0 px-5 shadow-xl shadow-gray-200 md:h-[3.4rem] dark:shadow-none"
+        className="border-0 px-4 shadow-xl shadow-gray-200 md:h-12 dark:shadow-none"
         color="invert"
         data-chat-button
         leftIcon={<AiIcon className="h-5 text-current dark:text-current" />}
         onClick={onOpen}
-        rounded="full"
+        rounded="sm"
       >
         Ask Maya AI
       </Button>

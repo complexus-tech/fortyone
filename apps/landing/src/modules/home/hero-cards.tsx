@@ -10,10 +10,10 @@ import { useTheme } from "next-themes";
 import { ArrowDown2Icon } from "icons";
 import { Container, Dot } from "@/components/ui";
 import { useCursor } from "@/hooks";
-import objectiveImg from "../../../public/images/product/objective.webp";
+// import objectiveImg from "../../../public/images/product/objective.webp";
 import kanbanImg from "../../../public/images/product/kanban.webp";
 import kanbanImgLight from "../../../public/images/product/kanban-light.webp";
-import objectiveImgLight from "../../../public/images/product/objective-light.webp";
+// import objectiveImgLight from "../../../public/images/product/objective-light.webp";
 
 export const HeroCards = () => {
   const cursor = useCursor();
@@ -31,17 +31,17 @@ export const HeroCards = () => {
         alt: "Project management kanban board - task workflow",
       },
     },
-    {
-      id: 2,
-      title: "Done work updates the goal.",
-      description:
-        "As tasks close, objective progress updates with them. Leaders can see what shipped without chasing status updates.",
-      image: {
-        src: objectiveImg,
-        srcLight: objectiveImgLight,
-        alt: "OKR objective tracking in project management platform",
-      },
-    },
+    // {
+    //   id: 2,
+    //   title: "Done work updates the goal.",
+    //   description:
+    //     "As tasks close, objective progress updates with them. Leaders can see what shipped without chasing status updates.",
+    //   image: {
+    //     src: objectiveImg,
+    //     srcLight: objectiveImgLight,
+    //     alt: "OKR objective tracking in project management platform",
+    //   },
+    // },
   ];
 
   return (
@@ -100,8 +100,8 @@ export const HeroCards = () => {
                       className="border-border/70 relative hidden h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block"
                       placeholder="blur"
                       priority={card.id === 2}
-                      src={card.image.src}
                       quality={100}
+                      src={card.image.src}
                     />
                     <Image
                       alt={card.title}
@@ -116,7 +116,7 @@ export const HeroCards = () => {
             </Swiper>
           </Box>
         </Container>
-        <Box className="from-background via-background/80 pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-120 bg-linear-to-t via-30% md:block dark:h-140" />
+        <Box className="from-background via-background/80 pointer-events-none absolute right-0 -bottom-1 left-0 z-10 hidden h-10 bg-linear-to-t via-30% md:block" />
       </Box>
     </Box>
   );

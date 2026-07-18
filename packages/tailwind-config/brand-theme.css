@@ -105,9 +105,9 @@
   --color-state-selected: rgb(231 231 226 / 16%);
   --color-state-disabled: rgb(231 231 226 / 48%);
 
-  --color-sidebar: #151513;
+  --color-sidebar: #1d1c18;
   --color-sidebar-foreground: #e7e7e2;
-  --color-sidebar-accent: #1b1b19;
+  --color-sidebar-accent: #27251f;
   --color-sidebar-accent-foreground: #e7e7e2;
   --color-sidebar-border: #2a2a27;
   --color-skeleton: #2a2a27;
