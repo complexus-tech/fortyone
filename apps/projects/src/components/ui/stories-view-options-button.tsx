@@ -1,6 +1,7 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
 import { ArrowDownIcon, PreferencesIcon } from "icons";
+import { cn } from "lib";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
@@ -168,7 +169,10 @@ export const StoriesViewOptionsButton = ({
           )}
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="min-w-[20rem] md:max-w-[24rem]">
+      <Popover.Content
+        align="end"
+        className="bg-surface-elevated dark:bg-surface-prominent/60 min-w-[20rem] md:max-w-[24rem]"
+      >
         <Flex align="center" className="my-2 px-4" gap={2} justify="between">
           <Text color="muted">Group by</Text>
           <Select
@@ -180,10 +184,10 @@ export const StoriesViewOptionsButton = ({
             }}
             value={groupBy}
           >
-            <Select.Trigger className="w-32 capitalize">
+            <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content>
+            <Select.Content className="ring-border/70 bg-popover dark:bg-surface-prominent/85 shadow-2xl ring-1">
               <Select.Group>
                 {groupByOptions.map((option) => (
                   <Select.Option
@@ -209,10 +213,10 @@ export const StoriesViewOptionsButton = ({
             }}
             value={orderBy}
           >
-            <Select.Trigger className="w-32 capitalize">
+            <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content>
+            <Select.Content className="ring-border/70 bg-popover dark:bg-surface-prominent/85 shadow-2xl ring-1">
               <Select.Group>
                 {orderByOptions.map((option) => (
                   <Select.Option
@@ -277,8 +281,12 @@ export const StoriesViewOptionsButton = ({
               const isSelected = displayColumns.includes(column);
               return (
                 <Button
-                  className="rounded-lg pl-1.5"
-                  color={isSelected ? "primary" : "tertiary"}
+                  active={isSelected}
+                  className={cn("rounded-lg pl-1.5", {
+                    "bg-state-selected border-transparent": isSelected,
+                    "bg-transparent": !isSelected,
+                  })}
+                  color="tertiary"
                   key={column}
                   onClick={() => {
                     if (isSelected) {
@@ -296,7 +304,7 @@ export const StoriesViewOptionsButton = ({
                     }
                   }}
                   size="xs"
-                  variant={isSelected ? "solid" : "outline"}
+                  variant="outline"
                 >
                   {getDisplayColumnText(column)}
                 </Button>
