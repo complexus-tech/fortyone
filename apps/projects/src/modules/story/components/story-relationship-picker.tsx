@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useState } from "react";
-import { Box, Button, Flex, Input, Popover, Skeleton, Text } from "ui";
+import { Box, Button, Flex, Input, Popover, Skeleton, Text, Tooltip } from "ui";
 import {
   CloseIcon,
   CopyIcon,
@@ -231,31 +231,33 @@ export const StoryRelationshipPicker = ({
   const handleCreateStoryDialogOpenChange: Dispatch<SetStateAction<boolean>> = (
     open,
   ) => {
-    setIsCreateStoryOpen((currentOpen) => {
-      const nextOpen = typeof open === "function" ? open(currentOpen) : open;
+    const nextOpen =
+      typeof open === "function" ? open(isCreateStoryOpen) : open;
 
-      if (!nextOpen) {
-        setSelectedOption(RELATIONSHIP_OPTIONS[0]);
-      }
+    setIsCreateStoryOpen(nextOpen);
 
-      return nextOpen;
-    });
+    if (!nextOpen) {
+      setSelectedOption(RELATIONSHIP_OPTIONS[0]);
+    }
   };
 
   return (
     <>
       <Popover onOpenChange={setIsOpen} open={isOpen}>
-        <Popover.Trigger asChild>
-          <Button
-            active={isOpen}
-            color="tertiary"
-            leftIcon={<LinkIcon className="h-4" />}
-            size="sm"
-            variant="naked"
-          >
-            Association
-          </Button>
-        </Popover.Trigger>
+        <Tooltip title="Add association">
+          <Popover.Trigger asChild>
+            <Button
+              active={isOpen}
+              aria-label="Add association"
+              asIcon
+              color="tertiary"
+              size="sm"
+              variant="naked"
+            >
+              <LinkIcon className="h-4" />
+            </Button>
+          </Popover.Trigger>
+        </Tooltip>
 
         <Popover.Content
           align="end"

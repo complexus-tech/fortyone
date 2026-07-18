@@ -117,6 +117,7 @@ jest.mock("ui", () => {
       fontSize?: string;
       fontWeight?: string;
     }>) => <Component {...props}>{children}</Component>,
+    Tooltip: ({ children }: PropsWithChildren) => <>{children}</>,
   };
 });
 

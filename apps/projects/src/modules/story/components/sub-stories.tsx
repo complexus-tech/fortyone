@@ -125,7 +125,7 @@ export const SubStories = ({
     <>
       <Flex
         align="center"
-        className={cn({
+        className={cn("@container w-full min-w-0", {
           "border-border border-b-[0.5px]": !isSubStoriesOpen,
         })}
         gap={2}
@@ -163,8 +163,14 @@ export const SubStories = ({
         )}
 
         {userRole !== "guest" && (
-          <Flex align="center" gap={2}>
+          <Flex
+            align="center"
+            className="ml-auto max-w-full min-w-0 justify-end"
+            gap={2}
+            wrap
+          >
             <Button
+              className="shrink-0"
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
@@ -175,10 +181,11 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              <span className="md:hidden">Improve</span>
-              <span className="hidden md:inline">Improve description</span>
+              <span className="@lg:hidden">Improve</span>
+              <span className="hidden @lg:inline">Improve description</span>
             </Button>
             <Button
+              className="shrink-0"
               color="tertiary"
               disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
@@ -195,8 +202,8 @@ export const SubStories = ({
                 <Thinking message="Maya is thinking" />
               ) : (
                 <>
-                  <span className="md:hidden">Suggest</span>
-                  <span className="hidden md:inline">
+                  <span className="@lg:hidden">Suggest</span>
+                  <span className="hidden @lg:inline">
                     Suggest sub{" "}
                     {getTermDisplay("storyTerm", {
                       variant: "plural",
@@ -214,23 +221,18 @@ export const SubStories = ({
               teamCode={parent.teamCode}
               teamId={parent.teamId}
             />
-            <Tooltip
-              title={parent.subStories.length > 0 ? "Add Sub Story" : null}
-            >
+            <Tooltip title={`Add sub ${getTermDisplay("storyTerm")}`}>
               <Button
+                aria-label={`Add sub ${getTermDisplay("storyTerm")}`}
+                asIcon
                 color="tertiary"
-                leftIcon={<PlusIcon />}
                 onClick={() => {
                   setIsCreateSubStoryOpen(true);
                 }}
                 size="sm"
                 variant="naked"
               >
-                <span
-                  className={cn({ "sr-only": parent.subStories.length > 0 })}
-                >
-                  Add sub {getTermDisplay("storyTerm")}
-                </span>
+                <PlusIcon />
               </Button>
             </Tooltip>
           </Flex>
