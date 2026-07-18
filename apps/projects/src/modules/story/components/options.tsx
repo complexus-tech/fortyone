@@ -291,7 +291,7 @@ export const Options = ({
       className={cn(
         isInline
           ? "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0"
-          : "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+          : "md:from-sidebar/70 md:to-sidebar/40 bg-transparent bg-none pb-2 md:h-dvh md:overflow-y-auto md:bg-linear-to-br md:pb-6",
         {
           "h-[85dvh]": isDialog,
         },
