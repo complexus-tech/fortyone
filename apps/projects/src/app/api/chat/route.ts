@@ -112,8 +112,8 @@ export async function POST(req: NextRequest) {
       },
       providerOptions: {
         openai: {
-          reasoningEffort: "low",
-          textVerbosity: "low",
+          reasoningEffort: "high",
+          textVerbosity: "medium",
         } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
