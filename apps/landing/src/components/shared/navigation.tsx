@@ -114,7 +114,7 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
 
 export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   return (
-    <Box className="border-border/60 bg-background/70 fixed left-0 z-15 w-screen border-b backdrop-blur-xl">
+    <Box className="border-border/50 bg-background/70 fixed left-0 z-15 w-screen border-b backdrop-blur-xl">
       <Container className="flex h-16 items-center justify-between gap-12">
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
