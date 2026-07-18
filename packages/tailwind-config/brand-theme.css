@@ -1,24 +1,25 @@
 :root {
   color-scheme: light;
+  --radius-scale: 1;
 
   --color-background: #fdfdfc;
   --color-foreground: #222322;
   --color-foreground-inverse: #fdfdfc;
   --color-background-inverse: #222322;
 
-  --color-surface: #fdfdfc;
+  --color-surface: #f8f8f5;
   --color-surface-foreground: #222322;
   --color-surface-elevated: #ffffff;
   --color-surface-elevated-foreground: #222322;
-  --color-surface-muted: #f4f4f0;
+  --color-surface-muted: #f1f1ed;
   --color-surface-muted-foreground: #74746f;
   --color-surface-prominent: #d8d8d2;
   --color-popover: #ffffff;
   --color-popover-foreground: #222322;
 
-  --color-muted: #f4f4f0;
+  --color-muted: #f1f1ed;
   --color-muted-foreground: #74746f;
-  --color-accent: #f4f4f0;
+  --color-accent: #ecece7;
   --color-accent-foreground: #222322;
 
   --color-border: #e7e7e2;
@@ -47,9 +48,9 @@
   --color-text-muted: #74746f;
   --color-text-disabled: #9b9b95;
 
-  --color-state-hover: rgb(34 35 34 / 4%);
-  --color-state-active: rgb(34 35 34 / 8%);
-  --color-state-selected: rgb(34 35 34 / 10%);
+  --color-state-hover: rgb(34 35 34 / 7%);
+  --color-state-active: rgb(34 35 34 / 11%);
+  --color-state-selected: rgb(34 35 34 / 14%);
   --color-state-disabled: rgb(34 35 34 / 48%);
 
   --color-sidebar: #f8f8f5;
@@ -80,7 +81,7 @@
 
   --color-muted: #1b1b19;
   --color-muted-foreground: #8d8d86;
-  --color-accent: #222220;
+  --color-accent: #2a2a27;
   --color-accent-foreground: #e7e7e2;
 
   --color-border: #2a2a27;
@@ -99,9 +100,9 @@
   --color-text-muted: #8d8d86;
   --color-text-disabled: #62625f;
 
-  --color-state-hover: rgb(231 231 226 / 4%);
-  --color-state-active: rgb(231 231 226 / 8%);
-  --color-state-selected: rgb(231 231 226 / 10%);
+  --color-state-hover: rgb(231 231 226 / 8%);
+  --color-state-active: rgb(231 231 226 / 12%);
+  --color-state-selected: rgb(231 231 226 / 16%);
   --color-state-disabled: rgb(231 231 226 / 48%);
 
   --color-sidebar: #151513;

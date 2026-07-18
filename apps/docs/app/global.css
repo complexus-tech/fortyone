@@ -2,10 +2,62 @@
 @import "fumadocs-ui/css/black.css";
 @import "fumadocs-ui/css/preset.css";
 
+:root {
+  --color-fd-background: #fdfdfc;
+  --color-fd-foreground: #222322;
+  --color-fd-muted: #f1f1ed;
+  --color-fd-muted-foreground: #74746f;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #222322;
+  --color-fd-card: #f8f8f5;
+  --color-fd-card-foreground: #222322;
+  --color-fd-border: #e7e7e2;
+  --color-fd-primary: #ea6060;
+  --color-fd-primary-foreground: #222322;
+  --color-fd-secondary: #f1f1ed;
+  --color-fd-secondary-foreground: #222322;
+  --color-fd-accent: #ecece7;
+  --color-fd-accent-foreground: #222322;
+  --color-fd-ring: #ea6060;
+}
+
+.dark {
+  --color-fd-background: #10100f;
+  --color-fd-foreground: #e7e7e2;
+  --color-fd-muted: #1b1b19;
+  --color-fd-muted-foreground: #8d8d86;
+  --color-fd-popover: #222220;
+  --color-fd-popover-foreground: #e7e7e2;
+  --color-fd-card: #1b1b19;
+  --color-fd-card-foreground: #e7e7e2;
+  --color-fd-border: #2a2a27;
+  --color-fd-primary: #ea6060;
+  --color-fd-primary-foreground: #10100f;
+  --color-fd-secondary: #222220;
+  --color-fd-secondary-foreground: #e7e7e2;
+  --color-fd-accent: #2a2a27;
+  --color-fd-accent-foreground: #e7e7e2;
+  --color-fd-ring: #ea6060;
+}
+
 .max-w-fd-container {
-  @apply max-w-6xl mx-auto;
+  @apply mx-auto max-w-6xl;
 }
 
 img {
-  @apply rounded-xl border-4;
+  @apply rounded-md;
+}
+
+[role="dialog"],
+[data-radix-popper-content-wrapper] > * {
+  border-radius: 0.6rem;
+}
+
+.prose :where(h1, h2, h3, h4) {
+  letter-spacing: -0.02em;
+}
+
+.prose pre,
+.prose code {
+  border-radius: 0.45rem;
 }

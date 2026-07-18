@@ -24,19 +24,19 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-surface-elevated/90 backdrop-blur-md z-50 border border-border w-max shadow-lg shadow-shadow mt-1 py-2",
+  "bg-surface-elevated/95 backdrop-blur-md z-50 w-max shadow-xl shadow-shadow mt-1 py-2",
   {
     variants: {
       rounded: {
         sm: "rounded",
         md: "rounded-lg",
-        lg: "rounded-2xl",
+        lg: "rounded-xl",
       },
     },
     defaultVariants: {
       rounded: "lg",
     },
-  }
+  },
 );
 
 const SubTrigger = forwardRef<
@@ -47,11 +47,11 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-[state=open]:bg-accent data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-[state=open]:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
-      className
+      className,
     )}
     ref={ref}
     {...rest}
@@ -94,11 +94,11 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
-      className
+      className,
     )}
     ref={ref}
     {...rest}
@@ -113,11 +113,11 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": checked,
       },
-      className
+      className,
     )}
     ref={ref}
     checked={checked}
@@ -181,13 +181,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         className={cn(
           "w-full bg-transparent py-[0.15rem] outline-none",
-          className
+          className,
         )}
         ref={ref}
         {...rest}
       />
     </div>
-  )
+  ),
 );
 
 const Separator = forwardRef<

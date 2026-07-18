@@ -65,7 +65,7 @@ const AccordionItem = ({
         aria-controls={panelId}
         aria-expanded={isOpen}
         className={cn(
-          "group font-heading flex w-full items-start justify-between py-6 text-left text-xl opacity-90 outline-none md:text-2xl",
+          "group font-body flex w-full items-start justify-between py-6 text-left text-xl font-medium opacity-90 outline-none md:text-2xl",
         )}
         id={buttonId}
         onClick={onToggle}

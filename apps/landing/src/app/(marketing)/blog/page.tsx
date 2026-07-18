@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BlurImage, Box, Button, Divider, Flex, Text } from "ui";
-import { ArrowRight2Icon } from "icons";
-import { getAllPosts } from "@/lib/posts";
+import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
-import { CallToAction } from "@/components/shared";
+import { getAllPosts } from "@/lib/posts";
 import { BlogJsonLd } from "./json-ld";
+import styles from "./blog-list.module.css";
 
 export const metadata: Metadata = {
   title: "Project Management Resources & Guides | FortyOne Blog",
@@ -33,96 +32,62 @@ export const metadata: Metadata = {
   },
 };
 
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+});
+
+const ExternalMark = () => (
+  <svg
+    aria-hidden="true"
+    className="text-text-muted size-[13px] fill-none stroke-current stroke-[1.25] transition-transform duration-200 [stroke-linecap:round] [stroke-linejoin:round] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-0"
+    viewBox="0 0 16 16"
+  >
+    <path d="M4 12 12 4M6 4h6v6" />
+  </svg>
+);
+
 export default function Page() {
   const posts = getAllPosts();
-  const firstPost = posts[0];
-  const remainingPosts = posts.slice(1);
+
   return (
-    <>
-      <Container className="mt-16 max-w-7xl pt-12 md:pt-16">
-        <BlogJsonLd />
-        <Link
-          className="group grid grid-cols-1 items-center gap-8 md:grid-cols-[1.5fr_1fr]"
-          href={`/blog/${firstPost.slug}`}
-        >
-          <Box className="rounded-xl border border-border p-1.5 d">
-            <BlurImage
-              alt={firstPost.metadata.title}
-              className="aspect-[16/9.5] rounded-lg"
-              src={firstPost.metadata.featuredImage}
-            />
-          </Box>
-          <Box>
-            <Text className="mb-4 opacity-80">
-              {firstPost.metadata.date
-                ? new Date(firstPost.metadata.date).toLocaleDateString(
-                    "en-US",
-                    {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    },
-                  )
-                : null}
-            </Text>
+    <Container
+      className="w-[calc(100%-2.5rem)] max-w-[640px] px-0 pt-32 pb-32 md:px-0 md:pt-40"
+      full
+    >
+      <BlogJsonLd />
+      <Text
+        as="h1"
+        className={`${styles.bodyFont} text-base leading-6 font-medium`}
+      >
+        Blog
+      </Text>
+
+      <Box className="border-border mt-[72px] border-t">
+        {posts.map(({ slug, metadata: postMetadata }) => (
+          <Link
+            className="group border-border grid grid-cols-[minmax(0,1fr)_72px_16px] items-center gap-3 border-b py-4 md:grid-cols-[minmax(0,1fr)_86px_16px] md:gap-5"
+            href={`/blog/${slug}`}
+            key={slug}
+          >
             <Text
-              as="h3"
-              className="mb-3 text-4xl font-semibold group-hover:underline"
+              as="h2"
+              className={`${styles.bodyFont} min-w-0 text-base font-medium`}
             >
-              {firstPost.metadata.title}
+              <span className={styles.writingLinkTitle}>
+                {postMetadata.title}
+              </span>
             </Text>
-            <Text className="mb-4 line-clamp-4 text-lg opacity-80">
-              {firstPost.metadata.description}
-            </Text>
-            <Button
-              className="gap-1"
-              color="white"
-              rightIcon={<ArrowRight2Icon className="dark:text-foreground" />}
+            <time
+              className="text-text-muted group-hover:text-text-secondary text-right text-[13px] tabular-nums transition-colors duration-200"
+              dateTime={postMetadata.date}
             >
-              Read More
-            </Button>
-          </Box>
-        </Link>
-        <Divider className="my-10" />
-        <Box className="mb-20 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-3">
-          {remainingPosts.map(
-            ({ slug, metadata: { title, featuredImage, date } }, idx) => (
-              <Link
-                className="group"
-                href={`/blog/${slug}`}
-                key={`${slug}-${idx}`}
-              >
-                <Box className="rounded-xl border border-border p-1.5 d dark:bg-dark-100/60">
-                  <BlurImage
-                    alt={title}
-                    className="aspect-video rounded-lg"
-                    src={featuredImage}
-                  />
-                </Box>
-                <Flex align="center" className="my-3" justify="between">
-                  <Text className="opacity-80">
-                    {date
-                      ? new Date(date).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      : null}
-                  </Text>
-                  <Text className="opacity-80">6 min read</Text>
-                </Flex>
-                <Text
-                  as="h3"
-                  className="text-2xl font-semibold group-hover:underline"
-                >
-                  {title}
-                </Text>
-              </Link>
-            ),
-          )}
-        </Box>
-      </Container>
-      <CallToAction />
-    </>
+              {dateFormatter.format(new Date(postMetadata.date))}
+            </time>
+            <ExternalMark />
+          </Link>
+        ))}
+      </Box>
+    </Container>
   );
 }
