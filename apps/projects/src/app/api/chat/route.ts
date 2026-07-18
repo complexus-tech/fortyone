@@ -3,7 +3,6 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-
 import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
 
   let client =
     provider === "openai"
-      ? openaiClient("gpt-5.4-mini")
+      ? openaiClient("gpt-5.6-luna")
       : googleClient("gemini-3-flash-preview");
 
   if (process.env.NODE_ENV === "development") {
@@ -82,7 +81,7 @@ export async function POST(req: NextRequest) {
   }
 
   const model = withTracing(client, phClient, {
-    posthogDistinctId: session?.user?.email ?? undefined,
+    posthogDistinctId: session?.user.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
       paid: subscription?.status === "active",
