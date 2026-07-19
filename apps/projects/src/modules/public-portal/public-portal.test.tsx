@@ -1,7 +1,13 @@
 /* global beforeAll, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type * as ReactTypes from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
 import { publicPortalFixture } from "./fixtures";
 import {
@@ -17,6 +23,7 @@ import {
 
 const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
+let triggerIntersection: (() => void) | undefined;
 const portalViewer = {
   accountHref: "/city-roads/settings/account",
   appHref: "/city-roads/my-work",
@@ -119,11 +126,13 @@ jest.mock("ui", () => {
   const React = jest.requireActual("react");
 
   const Box = ({
+    as: Tag = "div",
     children,
     ...props
-  }: ReactTypes.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => (
-    <div {...getDomProps(props)}>{children}</div>
-  );
+  }: ReactTypes.HTMLAttributes<HTMLElement> &
+    Record<string, unknown> & {
+      as?: ReactTypes.ElementType;
+    }) => React.createElement(Tag, getDomProps(props), children);
   const Flex = ({
     children,
     ...props
@@ -284,6 +293,15 @@ jest.mock("ui", () => {
 describe("Public portal UI", () => {
   beforeAll(() => {
     class IntersectionObserverMock {
+      constructor(callback: IntersectionObserverCallback) {
+        triggerIntersection = () => {
+          callback(
+            [{ isIntersecting: true } as IntersectionObserverEntry],
+            this as unknown as IntersectionObserver,
+          );
+        };
+      }
+
       disconnect = jest.fn();
       observe = jest.fn();
       unobserve = jest.fn();
@@ -297,6 +315,7 @@ describe("Public portal UI", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    window.history.replaceState({}, "", "/portal/city-roads/feedback");
     createFeedbackActionMock.mockResolvedValue({ data: null });
     createFeedbackCommentActionMock.mockResolvedValue({
       data: {
@@ -331,11 +350,43 @@ describe("Public portal UI", () => {
         const requestUrl = new URL(url, "https://fortyone.test");
         const status = requestUrl.searchParams.get("status");
         const boardId = requestUrl.searchParams.get("boardId");
+        const search = requestUrl.searchParams.get("search")?.toLowerCase();
+        const sort = requestUrl.searchParams.get("sort");
+        const page = requestUrl.searchParams.get("page");
+        if (page === "2") {
+          return {
+            json: async () => ({
+              data: {
+                ...publicPortalFixture,
+                requests: [
+                  {
+                    ...publicPortalFixture.requests[0],
+                    id: "req-5",
+                    slug: "new-page-feedback",
+                    title: "New page feedback",
+                  },
+                ],
+                requestsHasMore: false,
+              },
+            }),
+            ok: true,
+          } as Response;
+        }
         const requests = publicPortalFixture.requests.filter(
           (request) =>
             (!status || request.status === status) &&
-            (!boardId || request.boardId === boardId),
+            (!boardId || request.boardId === boardId) &&
+            (!search ||
+              `${request.title} ${request.description}`
+                .toLowerCase()
+                .includes(search)),
         );
+
+        requests.sort((first, second) => {
+          if (sort === "oldest") return first.id.localeCompare(second.id);
+          if (sort === "newest") return second.id.localeCompare(first.id);
+          return second.voteCount - first.voteCount;
+        });
 
         return {
           json: async () => ({
@@ -422,6 +473,88 @@ describe("Public portal UI", () => {
       expect(
         screen.queryByText("Add pedestrian crossing near East Avenue school"),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  it("searches only after submitting and clears back to all feedback", async () => {
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    const search = screen.getByPlaceholderText("Search feedback...");
+    fireEvent.change(search, { target: { value: "storm drain" } });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    fireEvent.submit(search.closest("form")!);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("search=storm+drain"),
+      );
+    });
+    expect(window.location.search).toContain("search=storm+drain");
+    expect(
+      await screen.findByText("Blocked storm drain on 4th Street"),
+    ).toBeVisible();
+
+    const activeSearch = screen.getByPlaceholderText("Search feedback...");
+    fireEvent.change(activeSearch, { target: { value: "" } });
+    fireEvent.submit(activeSearch.closest("form")!);
+
+    await waitFor(() => {
+      expect(window.location.search).not.toContain("search=");
+      expect(
+        screen.getByText("Add pedestrian crossing near East Avenue school"),
+      ).toBeVisible();
+    });
+  });
+
+  it("stores board, status, and sort filters in the URL", async () => {
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Drainage" }));
+    await waitFor(() => {
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get("boardId")).toBe("drainage");
+      expect(params.get("sort")).toBe("top");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reviewing" }));
+    await waitFor(() => {
+      expect(new URLSearchParams(window.location.search).get("status")).toBe(
+        "reviewing",
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: /newest/i }));
+
+    await waitFor(() => {
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get("boardId")).toBe("drainage");
+      expect(params.get("status")).toBe("reviewing");
+      expect(params.get("sort")).toBe("newest");
+      expect(
+        screen.queryByText("Add pedestrian crossing near East Avenue school"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("loads the next feedback page when the list sentinel becomes visible", async () => {
+    render(
+      <PublicPortalRequestsPage
+        portal={{ ...publicPortalFixture, requestsHasMore: true }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(triggerIntersection).toBeDefined();
+    });
+    act(() => {
+      triggerIntersection?.();
+    });
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("page=2"),
+      );
+      expect(screen.getByText("New page feedback")).toBeVisible();
     });
   });
 

@@ -8,6 +8,15 @@ export type PublicRequestStatus =
   | "completed"
   | "closed";
 
+export type PublicPortalSort = "top" | "newest" | "oldest";
+
+export type PublicPortalFilters = {
+  boardId?: string;
+  search: string;
+  sort: PublicPortalSort;
+  status?: PublicRequestStatus;
+};
+
 export type PublicRequestBoard = {
   id: string;
   teamId?: string;

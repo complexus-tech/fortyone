@@ -81,7 +81,7 @@ export const PublicPortalSidebar = ({
   viewer?: PublicPortalViewer | null;
 }) => {
   return (
-    <aside className="space-y-8">
+    <aside className="space-y-8 md:min-h-0 md:overflow-y-auto">
       {viewer ? (
         <NewFeedbackButton portal={portal} />
       ) : (
@@ -106,7 +106,7 @@ export const PublicPortalSidebar = ({
           aria-pressed={!selectedBoardId}
           className={cn(
             "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
-            { "bg-state-selected": !selectedBoardId },
+            { "bg-state-hover": !selectedBoardId },
           )}
           onClick={() => {
             onBoardSelect(undefined);
@@ -126,7 +126,7 @@ export const PublicPortalSidebar = ({
             aria-pressed={selectedBoardId === board.id}
             className={cn(
               "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
-              { "bg-state-selected": selectedBoardId === board.id },
+              { "bg-state-hover": selectedBoardId === board.id },
             )}
             key={board.id}
             onClick={() => {

@@ -55,7 +55,7 @@ const FeedbackCommentComposer = ({
 
   return (
     <Flex align="start" className="mb-6 gap-2">
-      <Box className="bg-surface flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
+      <Box className="bg-background flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
         <Avatar name={viewer.name} size="xs" src={viewer.avatarUrl} />
       </Box>
       <Flex
@@ -120,7 +120,7 @@ const FeedbackCommentComposer = ({
 const FeedbackComment = ({ comment }: { comment: PublicRequestComment }) => (
   <Box className="pb-5">
     <Flex align="center" gap={1}>
-      <Box className="bg-surface flex aspect-square items-center rounded-full p-[0.3rem]">
+      <Box className="bg-background flex aspect-square items-center rounded-full p-[0.3rem]">
         <Avatar
           name={comment.authorName}
           size="xs"

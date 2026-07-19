@@ -1,22 +1,28 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowUpDownIcon, RequestsIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { toast } from "sonner";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
-import type { PublicPortal, PublicRequest, PublicRequestStatus } from "./types";
-
-type SortMode = "top" | "newest" | "oldest";
+import type { PublicPortal, PublicPortalFilters, PublicRequest } from "./types";
 
 type ApiResponse<T> = {
   data: T;
 };
 
 const PAGE_SIZE = 20;
+
+const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
+  const requests = new Map(current.map((request) => [request.id, request]));
+  incoming.forEach((request) => {
+    requests.set(request.id, request);
+  });
+  return Array.from(requests.values());
+};
 
 const fetchPortalPage = async (url: string) => {
   try {
@@ -32,26 +38,20 @@ const fetchPortalPage = async (url: string) => {
 const buildUrl = ({
   page,
   portal,
-  boardId,
-  search,
-  sort,
-  status,
+  filters,
 }: {
   page: number;
   portal: PublicPortal;
-  boardId?: string;
-  search: string;
-  sort: SortMode;
-  status?: PublicRequestStatus;
+  filters: PublicPortalFilters;
 }) => {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(PAGE_SIZE),
-    sort,
+    sort: filters.sort,
   });
-  if (boardId) params.set("boardId", boardId);
-  if (search.trim()) params.set("search", search.trim());
-  if (status) params.set("status", status);
+  if (filters.boardId) params.set("boardId", filters.boardId);
+  if (filters.search.trim()) params.set("search", filters.search.trim());
+  if (filters.status) params.set("status", filters.status);
   return `/api/public-portal/${portal.slug}?${params.toString()}`;
 };
 
@@ -72,32 +72,75 @@ const FeedbackListSkeleton = () => (
   </Box>
 );
 
+const FeedbackSearch = ({
+  initialValue,
+  onSubmit,
+}: {
+  initialValue: string;
+  onSubmit: (search: string) => void;
+}) => {
+  const [value, setValue] = useState(initialValue);
+
+  return (
+    <Box
+      as="form"
+      className="min-w-0 flex-1 md:max-w-80"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit(value.trim());
+      }}
+    >
+      <Input
+        className="h-10"
+        leftIcon={<SearchIcon className="h-4" />}
+        onChange={(event) => {
+          setValue(event.target.value);
+        }}
+        placeholder="Search feedback..."
+        type="search"
+        value={value}
+        variant="solid"
+      />
+    </Box>
+  );
+};
+
 export const PublicFeedbackList = ({
-  boardId,
+  filters,
+  onFiltersChange,
   portal,
 }: {
-  boardId?: string;
+  filters: PublicPortalFilters;
+  onFiltersChange: (updates: Partial<PublicPortalFilters>) => void;
   portal: PublicPortal;
 }) => {
   const [loadedRequests, setLoadedRequests] = useState<PublicRequest[] | null>(
     null,
   );
   const requests = loadedRequests ?? portal.requests;
-  const [hasMore, setHasMore] = useState(portal.requestsHasMore);
+  const [loadedHasMore, setLoadedHasMore] = useState<boolean | null>(null);
+  const hasMore = loadedHasMore ?? portal.requestsHasMore;
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<PublicRequestStatus | undefined>();
-  const [sort, setSort] = useState<SortMode>("top");
-  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const hasMountedRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const requestSequenceRef = useRef(0);
+  const filterKey = [
+    filters.boardId ?? "",
+    filters.search,
+    filters.sort,
+    filters.status ?? "",
+  ].join(":");
+  const previousFilterKeyRef = useRef(filterKey);
 
-  const loadPage = useCallback(
+  const loadPage = useEffectEvent(
     async (nextPage: number, mode: "append" | "replace") => {
+      const requestSequence = requestSequenceRef.current + 1;
+      requestSequenceRef.current = requestSequence;
       setIsLoading(true);
       const nextPortal = await fetchPortalPage(
-        buildUrl({ boardId, page: nextPage, portal, search, sort, status }),
+        buildUrl({ filters, page: nextPage, portal }),
       );
+      if (requestSequence !== requestSequenceRef.current) return;
       if (!nextPortal) {
         toast.error("Unable to load feedback");
         setIsLoading(false);
@@ -105,24 +148,21 @@ export const PublicFeedbackList = ({
       }
       setLoadedRequests((current) =>
         mode === "append"
-          ? [...(current ?? portal.requests), ...nextPortal.requests]
+          ? mergeRequests(current ?? portal.requests, nextPortal.requests)
           : nextPortal.requests,
       );
-      setHasMore(nextPortal.requestsHasMore);
+      setLoadedHasMore(nextPortal.requestsHasMore);
       setPage(nextPage);
       setIsLoading(false);
     },
-    [boardId, portal, search, sort, status],
   );
 
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
+    if (previousFilterKeyRef.current === filterKey) return;
 
+    previousFilterKeyRef.current = filterKey;
     void loadPage(1, "replace");
-  }, [loadPage]);
+  }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events must not be dependencies.
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -138,7 +178,7 @@ export const PublicFeedbackList = ({
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, isLoading, loadPage, page]);
+  }, [hasMore, isLoading, page]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events must not be dependencies.
 
   let feedbackContent: ReactNode = requests.map((request) => (
     <PublicRequestCard key={request.id} portal={portal} request={request} />
@@ -146,7 +186,9 @@ export const PublicFeedbackList = ({
   if (isLoading && page === 1) {
     feedbackContent = <FeedbackListSkeleton />;
   } else if (requests.length === 0) {
-    const selectedBoard = portal.boards.find((board) => board.id === boardId);
+    const selectedBoard = portal.boards.find(
+      (board) => board.id === filters.boardId,
+    );
     feedbackContent = (
       <Flex
         align="center"
@@ -173,23 +215,31 @@ export const PublicFeedbackList = ({
     );
   }
 
+  const changeFilters = (updates: Partial<PublicPortalFilters>) => {
+    const changed = (
+      Object.keys(updates) as (keyof PublicPortalFilters)[]
+    ).some((key) => filters[key] !== updates[key]);
+
+    if (changed) {
+      setLoadedRequests([]);
+      setLoadedHasMore(false);
+      setPage(1);
+      setIsLoading(true);
+    }
+    onFiltersChange(updates);
+  };
+
   return (
-    <>
-      <Box className="border-border/60 border-b">
+    <Flex className="min-h-0 md:h-full" direction="column">
+      <Box className="border-border/60 bg-background sticky top-0 z-10 shrink-0 border-b">
         <Flex align="center" className="gap-3 py-3" justify="between">
-          <Box className="min-w-0 flex-1 md:max-w-72">
-            <Input
-              className="h-10"
-              leftIcon={<SearchIcon className="h-4" />}
-              onChange={(event) => {
-                setSearch(event.target.value);
-              }}
-              placeholder="Search feedback..."
-              type="search"
-              value={search}
-              variant="solid"
-            />
-          </Box>
+          <FeedbackSearch
+            initialValue={filters.search}
+            key={filters.search}
+            onSubmit={(search) => {
+              changeFilters({ search });
+            }}
+          />
           <Flex
             align="center"
             className="bg-surface-muted/85 h-10 shrink-0 gap-1 rounded-xl p-1"
@@ -200,12 +250,12 @@ export const PublicFeedbackList = ({
                   "text-text-muted hover:text-foreground flex h-full items-center gap-1.5 rounded-xl border border-transparent px-3 capitalize transition",
                   {
                     "border-border bg-surface-elevated text-foreground":
-                      sort === option,
+                      filters.sort === option,
                   },
                 )}
                 key={option}
                 onClick={() => {
-                  setSort(option);
+                  changeFilters({ sort: option });
                 }}
                 type="button"
               >
@@ -225,11 +275,12 @@ export const PublicFeedbackList = ({
             className={cn(
               "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3.5 transition",
               {
-                "border-border bg-surface-elevated text-foreground": !status,
+                "border-border bg-surface-elevated text-foreground":
+                  !filters.status,
               },
             )}
             onClick={() => {
-              setStatus(undefined);
+              changeFilters({ status: undefined });
             }}
             type="button"
           >
@@ -243,12 +294,12 @@ export const PublicFeedbackList = ({
                   "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 shrink-0 items-center justify-center gap-2 rounded-xl border border-transparent px-3.5 transition",
                   {
                     "border-border bg-surface-elevated text-foreground":
-                      status === filter,
+                      filters.status === filter,
                   },
                 )}
                 key={filter}
                 onClick={() => {
-                  setStatus(filter);
+                  changeFilters({ status: filter });
                 }}
                 type="button"
               >
@@ -262,11 +313,11 @@ export const PublicFeedbackList = ({
         </Flex>
       </Box>
 
-      <Box>
+      <Box className="min-h-0 md:flex-1 md:overflow-y-auto">
         {feedbackContent}
         <div ref={sentinelRef} />
         {isLoading && page > 1 ? <FeedbackListSkeleton /> : null}
       </Box>
-    </>
+    </Flex>
   );
 };

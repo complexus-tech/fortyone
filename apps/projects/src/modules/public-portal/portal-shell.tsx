@@ -32,8 +32,8 @@ export const PublicPortalShell = ({
   portal: PublicPortal;
   viewer?: PublicPortalViewer | null;
 }) => (
-  <Box className="bg-background min-h-dvh overflow-y-auto">
-    <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
+  <Box className="bg-background flex h-dvh flex-col overflow-hidden">
+    <Box className="border-border/60 bg-background sticky top-0 z-20 shrink-0 border-b">
       <Box className="relative mx-auto flex h-16 w-full max-w-[78rem] items-center justify-between px-4 md:px-6">
         <Link
           aria-label={`${portal.workspace.name} feedback`}
@@ -126,6 +126,8 @@ export const PublicPortalShell = ({
         })}
       </nav>
     </Box>
-    <Box className="bg-background min-h-[calc(100dvh-4rem)]">{children}</Box>
+    <Box className="bg-background min-h-0 flex-1 overflow-y-auto">
+      {children}
+    </Box>
   </Box>
 );

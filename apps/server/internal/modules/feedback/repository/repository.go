@@ -88,6 +88,8 @@ type storyLinkRow struct {
 	CreatedAt       time.Time  `db:"created_at"`
 }
 
+const feedbackItemSearchVector = "to_tsvector('english', fi.title || ' ' || fi.description || ' ' || fi.slug)"
+
 func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
@@ -218,36 +220,7 @@ func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (
 
 func (r *Repo) ListItems(ctx context.Context, input feedback.CoreListItemsInput) (feedback.CoreItemsPage, error) {
 	var rows []itemRow
-	where := []string{"fi.portal_id = :portal_id"}
-	params := map[string]any{
-		"portal_id": input.PortalID,
-		"limit":     input.PageSize + 1,
-		"offset":    (input.Page - 1) * input.PageSize,
-	}
-	if input.Status != "" {
-		where = append(where, "fi.status = :status")
-		params["status"] = input.Status
-	}
-	if input.BoardID != nil {
-		where = append(where, "fi.board_id = :board_id")
-		params["board_id"] = *input.BoardID
-	}
-	if input.Search != "" {
-		where = append(where, `
-			to_tsvector('english', fi.title || ' ' || fi.description || ' ' || fi.slug) @@ plainto_tsquery('english', :search)
-		`)
-		params["search"] = input.Search
-	}
-	orderBy := "vote_count DESC, fi.created_at DESC"
-	switch input.Sort {
-	case "newest":
-		orderBy = "fi.created_at DESC"
-	case "oldest":
-		orderBy = "fi.created_at ASC"
-	case "top":
-		orderBy = "vote_count DESC, fi.created_at DESC"
-	}
-	query := fmt.Sprintf("%s WHERE %s ORDER BY %s LIMIT :limit OFFSET :offset", itemSelectQuery(), strings.Join(where, " AND "), orderBy)
+	query, params := buildListItemsQuery(input)
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		return feedback.CoreItemsPage{}, err
@@ -265,6 +238,38 @@ func (r *Repo) ListItems(ctx context.Context, input feedback.CoreListItemsInput)
 		result = append(result, toCoreItem(row))
 	}
 	return feedback.CoreItemsPage{Items: result, HasMore: hasMore}, nil
+}
+
+func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]any) {
+	where := []string{"fi.portal_id = :portal_id"}
+	params := map[string]any{
+		"portal_id": input.PortalID,
+		"limit":     input.PageSize + 1,
+		"offset":    (input.Page - 1) * input.PageSize,
+	}
+	if input.Status != "" {
+		where = append(where, "fi.status = :status")
+		params["status"] = input.Status
+	}
+	if input.BoardID != nil {
+		where = append(where, "fi.board_id = :board_id")
+		params["board_id"] = *input.BoardID
+	}
+	if input.Search != "" {
+		where = append(where, feedbackItemSearchVector+" @@ websearch_to_tsquery('english', :search)")
+		params["search"] = input.Search
+	}
+	orderBy := "vote_count DESC, fi.created_at DESC"
+	switch input.Sort {
+	case "newest":
+		orderBy = "fi.created_at DESC"
+	case "oldest":
+		orderBy = "fi.created_at ASC"
+	case "top":
+		orderBy = "vote_count DESC, fi.created_at DESC"
+	}
+	query := fmt.Sprintf("%s WHERE %s ORDER BY %s LIMIT :limit OFFSET :offset", itemSelectQuery(), strings.Join(where, " AND "), orderBy)
+	return query, params
 }
 
 func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback.CoreComment, error) {
