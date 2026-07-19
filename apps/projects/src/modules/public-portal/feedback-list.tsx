@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpDownIcon, RequestsIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
+import { toast } from "sonner";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
 import type { PublicPortal, PublicRequest, PublicRequestStatus } from "./types";
@@ -16,6 +17,17 @@ type ApiResponse<T> = {
 };
 
 const PAGE_SIZE = 20;
+
+const fetchPortalPage = async (url: string) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const payload = (await response.json()) as ApiResponse<PublicPortal>;
+    return payload.data;
+  } catch {
+    return null;
+  }
+};
 
 const buildUrl = ({
   page,
@@ -67,7 +79,10 @@ export const PublicFeedbackList = ({
   boardId?: string;
   portal: PublicPortal;
 }) => {
-  const [requests, setRequests] = useState<PublicRequest[]>(portal.requests);
+  const [loadedRequests, setLoadedRequests] = useState<PublicRequest[] | null>(
+    null,
+  );
+  const requests = loadedRequests ?? portal.requests;
   const [hasMore, setHasMore] = useState(portal.requestsHasMore);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<PublicRequestStatus | undefined>();
@@ -80,22 +95,22 @@ export const PublicFeedbackList = ({
   const loadPage = useCallback(
     async (nextPage: number, mode: "append" | "replace") => {
       setIsLoading(true);
-      try {
-        const response = await fetch(
-          buildUrl({ boardId, page: nextPage, portal, search, sort, status }),
-        );
-        if (!response.ok) return;
-        const payload = (await response.json()) as ApiResponse<PublicPortal>;
-        setRequests((current) =>
-          mode === "append"
-            ? [...current, ...payload.data.requests]
-            : payload.data.requests,
-        );
-        setHasMore(payload.data.requestsHasMore);
-        setPage(nextPage);
-      } finally {
+      const nextPortal = await fetchPortalPage(
+        buildUrl({ boardId, page: nextPage, portal, search, sort, status }),
+      );
+      if (!nextPortal) {
+        toast.error("Unable to load feedback");
         setIsLoading(false);
+        return;
       }
+      setLoadedRequests((current) =>
+        mode === "append"
+          ? [...(current ?? portal.requests), ...nextPortal.requests]
+          : nextPortal.requests,
+      );
+      setHasMore(nextPortal.requestsHasMore);
+      setPage(nextPage);
+      setIsLoading(false);
     },
     [boardId, portal, search, sort, status],
   );
@@ -135,7 +150,7 @@ export const PublicFeedbackList = ({
     feedbackContent = (
       <Flex
         align="center"
-        className="min-h-72 text-center"
+        className="mt-28 min-h-72 text-center"
         direction="column"
         justify="center"
       >
@@ -204,11 +219,11 @@ export const PublicFeedbackList = ({
         </Flex>
         <Flex
           align="center"
-          className="bg-surface-muted/85 mb-3 w-max max-w-full gap-1 overflow-x-auto rounded-xl p-1"
+          className="bg-surface-muted/85 mb-3 h-10 w-full gap-1 overflow-x-auto rounded-xl p-1"
         >
           <button
             className={cn(
-              "text-text-muted hover:text-foreground rounded-xl border border-transparent px-3.5 py-1.5 transition",
+              "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3.5 transition",
               {
                 "border-border bg-surface-elevated text-foreground": !status,
               },
@@ -225,7 +240,7 @@ export const PublicFeedbackList = ({
             return (
               <button
                 className={cn(
-                  "text-text-muted hover:text-foreground flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-3.5 py-1.5 transition",
+                  "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 shrink-0 items-center justify-center gap-2 rounded-xl border border-transparent px-3.5 transition",
                   {
                     "border-border bg-surface-elevated text-foreground":
                       status === filter,

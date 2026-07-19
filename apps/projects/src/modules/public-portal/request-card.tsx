@@ -37,7 +37,7 @@ export const PublicRequestCard = ({
   const board = getBoard(portal, request.boardId);
 
   return (
-    <Box className="hover:bg-state-hover group -mx-3 rounded-xl px-3 transition">
+    <Box className="hover:bg-state-hover/25 group transition-colors">
       <Box className="border-border/70 border-b-[0.5px] py-5">
         <Flex align="start" className="gap-3">
           <Link

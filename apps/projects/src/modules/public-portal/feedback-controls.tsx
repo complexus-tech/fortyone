@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import { useEditor } from "@tiptap/react";
 import {
   ArrowRight2Icon,
   CheckIcon,
@@ -8,28 +12,47 @@ import {
   RequestsIcon,
   ThumbsUpIcon,
 } from "icons";
-import { Box, Button, Dialog, Input, Menu, Text, TextArea } from "ui";
+import { Box, Button, Dialog, Input, Menu, Text, TextEditor } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { TeamColor } from "@/components/ui/team-color";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type { PublicPortal, PublicRequest } from "./types";
 import { createFeedbackAction, toggleFeedbackVoteAction } from "./actions";
 
 export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [boardId, setBoardId] = useState(
     portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
   );
   const [isPending, startTransition] = useTransition();
   const selectedBoard = portal.boards.find((board) => board.id === boardId);
+  const descriptionEditor = useEditor({
+    content: "",
+    editable: true,
+    editorProps: {
+      attributes: {
+        "aria-label": "Feedback description",
+        class: "min-h-40 outline-none",
+      },
+    },
+    extensions: [
+      createRichTextStarterKit(),
+      Underline,
+      Link.configure({ autolink: true }),
+      Placeholder.configure({
+        placeholder: "Describe the feedback, context, or expected outcome...",
+      }),
+    ],
+    immediatelyRender: false,
+  });
 
   const submit = () => {
     startTransition(async () => {
       const response = await createFeedbackAction({
         boardId,
-        description,
+        description: descriptionEditor?.getText() ?? "",
         portalId: portal.id,
         portalSlug: portal.slug,
         title,
@@ -41,7 +64,7 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
       }
       setOpen(false);
       setTitle("");
-      setDescription("");
+      descriptionEditor?.commands.setContent("");
       toast.success("Feedback submitted");
     });
   };
@@ -59,7 +82,7 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
       >
         New Feedback
       </Button>
-      <Dialog.Content className="max-w-2xl">
+      <Dialog.Content className="max-w-4xl" hideClose>
         <Dialog.Header className="flex items-center justify-between px-6 pt-6">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
@@ -124,17 +147,7 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
               value={title}
             />
           </Box>
-          <Box className="border-border/60 mt-1 border-t-[0.5px]">
-            <TextArea
-              aria-label="Feedback description"
-              className="min-h-40 border-0 bg-transparent px-0 py-4 leading-6 focus-visible:ring-0 dark:bg-transparent"
-              onChange={(event) => {
-                setDescription(event.target.value);
-              }}
-              placeholder="Describe the feedback, context, or expected outcome..."
-              value={description}
-            />
-          </Box>
+          <TextEditor className="min-h-40" editor={descriptionEditor} />
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-2">
           <Button

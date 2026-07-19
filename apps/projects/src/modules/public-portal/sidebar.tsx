@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyIcon, ShareIcon } from "icons";
+import { CheckIcon, CopyIcon, ShareIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
@@ -104,6 +104,9 @@ export const PublicPortalSidebar = ({
           <Text fontWeight={!selectedBoardId ? "semibold" : "normal"}>
             All boards
           </Text>
+          {!selectedBoardId ? (
+            <CheckIcon className="ml-auto h-4 w-auto" />
+          ) : null}
         </button>
         {portal.boards.map((board) => (
           <button
@@ -125,6 +128,9 @@ export const PublicPortalSidebar = ({
             >
               {board.name}
             </Text>
+            {selectedBoardId === board.id ? (
+              <CheckIcon className="ml-auto h-4 w-auto" />
+            ) : null}
           </button>
         ))}
       </Box>

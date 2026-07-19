@@ -163,8 +163,19 @@ jest.mock("ui", () => {
     children: ReactTypes.ReactNode;
     open?: boolean;
   }) => <div>{open ? children : children}</div>;
-  function DialogContent({ children }: { children: ReactTypes.ReactNode }) {
-    return <div>{children}</div>;
+  function DialogContent({
+    children,
+    hideClose,
+  }: {
+    children: ReactTypes.ReactNode;
+    hideClose?: boolean;
+  }) {
+    return (
+      <div>
+        {children}
+        {hideClose ? null : <button type="button">Close</button>}
+      </div>
+    );
   }
   function DialogHeader({ children }: { children: ReactTypes.ReactNode }) {
     return <div>{children}</div>;
@@ -198,6 +209,10 @@ jest.mock("ui", () => {
   const TextArea = (
     props: ReactTypes.TextareaHTMLAttributes<HTMLTextAreaElement>,
   ) => <textarea {...props} />;
+  const TextEditor = ({ editor }: { editor?: unknown }) => {
+    void editor;
+    return <div data-testid="text-editor" />;
+  };
   const Menu = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
   );
@@ -242,6 +257,7 @@ jest.mock("ui", () => {
     Menu,
     Text,
     TextArea,
+    TextEditor,
   };
 });
 
@@ -330,6 +346,8 @@ describe("Public portal UI", () => {
       "/",
     );
     expect(screen.queryByText("All Requests")).not.toBeInTheDocument();
+    expect(screen.getByTestId("text-editor")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
   });
 
   it("filters public feedback by the selected board", async () => {
