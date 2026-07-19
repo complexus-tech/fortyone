@@ -15,7 +15,23 @@ import (
 	"github.com/google/uuid"
 )
 
-const avatarAccessURLExpiry = 24 * time.Hour
+const (
+	avatarAccessURLExpiry          = 24 * time.Hour
+	publicFeedbackItemBodyLimit    = 128 << 10
+	publicFeedbackCommentBodyLimit = 64 << 10
+	publicFeedbackVoteBodyLimit    = 4 << 10
+)
+
+func decodePublicRequest(w http.ResponseWriter, r *http.Request, input any, bodyLimit int64) (int, error) {
+	r.Body = http.MaxBytesReader(w, r.Body, bodyLimit)
+	if err := web.Decode(r, input); err != nil {
+		if errors.Is(err, web.ErrRequestBodyTooLarge) {
+			return http.StatusRequestEntityTooLarge, err
+		}
+		return http.StatusBadRequest, err
+	}
+	return 0, nil
+}
 
 type profileImageResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
@@ -244,6 +260,29 @@ func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *htt
 	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusCreated)
 }
 
+func (h *Handlers) CreatePublicItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppCreatePublicItem
+	if status, err := decodePublicRequest(w, r, &input, publicFeedbackItemBodyLimit); err != nil {
+		return web.RespondError(ctx, w, err, status)
+	}
+	item, err := h.feedback.CreatePublicItem(ctx, feedback.CorePublicItemInput{
+		PortalSlug:  web.Params(r, "portalSlug"),
+		BoardID:     input.BoardID,
+		AuthorID:    userID,
+		Title:       input.Title,
+		Description: input.Description,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, make(map[string]*string))
+	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusCreated)
+}
+
 func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -298,6 +337,32 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	return web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
 }
 
+func (h *Handlers) CreatePublicComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppCreateComment
+	if status, err := decodePublicRequest(w, r, &input, publicFeedbackCommentBodyLimit); err != nil {
+		return web.RespondError(ctx, w, err, status)
+	}
+	comment, err := h.feedback.CreatePublicComment(ctx, feedback.CorePublicCommentInput{
+		PortalSlug: web.Params(r, "portalSlug"),
+		ItemID:     itemID,
+		AuthorID:   userID,
+		Body:       input.Body,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	comment.AuthorAvatar = h.resolveAuthorAvatar(ctx, comment.AuthorAvatar, make(map[string]*string))
+	return web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
+}
+
 func (h *Handlers) ToggleVote(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -319,6 +384,31 @@ func (h *Handlers) ToggleVote(ctx context.Context, w http.ResponseWriter, r *htt
 		input.Vote = 1
 	}
 	result, err := h.feedback.ToggleVote(ctx, workspace.ID, itemID, userID, input.Vote)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, AppVoteResult{Vote: result.Vote, Voted: result.Vote == 1, VoteCount: result.VoteCount}, http.StatusOK)
+}
+
+func (h *Handlers) TogglePublicVote(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppVoteInput
+	if status, err := decodePublicRequest(w, r, &input, publicFeedbackVoteBodyLimit); err != nil {
+		return web.RespondError(ctx, w, err, status)
+	}
+	result, err := h.feedback.TogglePublicVote(ctx, feedback.CorePublicVoteInput{
+		PortalSlug: web.Params(r, "portalSlug"),
+		ItemID:     itemID,
+		UserID:     userID,
+		Vote:       input.Vote,
+	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}

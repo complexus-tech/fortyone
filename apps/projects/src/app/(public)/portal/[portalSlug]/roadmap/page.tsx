@@ -10,7 +10,7 @@ export default async function PortalRoadmapPage({
   const { portalSlug } = await params;
   const [portal, viewer] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug),
-    getPublicPortalViewer(),
+    getPublicPortalViewer(portalSlug),
   ]);
 
   return <PublicPortalRoadmapPage portal={portal} viewer={viewer} />;

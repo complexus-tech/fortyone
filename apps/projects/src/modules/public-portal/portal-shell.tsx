@@ -3,13 +3,14 @@ import Link from "next/link";
 import { BellIcon, RequestsIcon, RoadmapIcon, UpdatesIcon } from "icons";
 import { Avatar, Box, Button, Flex, Text } from "ui";
 import { cn, getReadableTextColor } from "lib";
+import { getLoginUrl } from "@/utils/callback-url";
 import type {
   PublicPortal,
   PublicPortalTab,
   PublicPortalViewer,
 } from "./types";
 import { PublicPortalUserMenu } from "./user-menu";
-import { getPortalPath } from "./utils";
+import { getPortalCallbackUrl, getPortalPath } from "./utils";
 
 const navItems = [
   { icon: RequestsIcon, label: "Feedback", tab: "feedback" },
@@ -24,11 +25,13 @@ const navItems = [
 export const PublicPortalShell = ({
   activeTab,
   children,
+  loginCallbackUrl,
   portal,
   viewer,
 }: {
-  activeTab: PublicPortalTab;
+  activeTab?: PublicPortalTab;
   children: ReactNode;
+  loginCallbackUrl?: string;
   portal: PublicPortal;
   viewer?: PublicPortalViewer | null;
 }) => (
@@ -84,21 +87,31 @@ export const PublicPortalShell = ({
         <Flex align="center" className="min-w-0 flex-1 justify-end" gap={2}>
           {viewer ? (
             <>
-              <Button
-                asIcon
-                className="hidden md:flex"
-                color="tertiary"
-                href={viewer.notificationsHref}
-                size="md"
-                variant="naked"
-              >
-                <BellIcon className="h-[1.35rem] w-auto" />
-                <span className="sr-only">Notifications</span>
-              </Button>
+              {viewer.notificationsHref ? (
+                <Button
+                  asIcon
+                  className="hidden md:flex"
+                  color="tertiary"
+                  href={viewer.notificationsHref}
+                  size="md"
+                  variant="naked"
+                >
+                  <BellIcon className="h-[1.35rem] w-auto" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              ) : null}
               <PublicPortalUserMenu viewer={viewer} />
             </>
           ) : (
-            <Button className="h-10 px-4" color="invert" href="/" size="md">
+            <Button
+              className="h-10 px-4"
+              color="invert"
+              href={getLoginUrl(
+                loginCallbackUrl ??
+                  getPortalCallbackUrl(portal, activeTab ?? "feedback"),
+              )}
+              size="md"
+            >
               Login/signup
             </Button>
           )}

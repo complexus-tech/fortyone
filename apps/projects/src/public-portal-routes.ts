@@ -22,7 +22,12 @@ export const getCanonicalPublicPath = (
   if (pathname.startsWith(`${portalPrefix}/requests/`)) {
     return pathname.replace(`${portalPrefix}/requests`, "/feedback");
   }
-  for (const section of ["feedback", "roadmap", "updates"] as const) {
+  for (const section of [
+    "account",
+    "feedback",
+    "roadmap",
+    "updates",
+  ] as const) {
     const legacyPrefix = `${portalPrefix}/${section}`;
     if (pathname === legacyPrefix || pathname.startsWith(`${legacyPrefix}/`)) {
       return pathname.replace(legacyPrefix, `/${section}`);
@@ -36,7 +41,12 @@ export const getInternalPublicPath = (
   pathname: string,
   workspaceSlug: string,
 ) => {
-  for (const section of ["feedback", "roadmap", "updates"] as const) {
+  for (const section of [
+    "account",
+    "feedback",
+    "roadmap",
+    "updates",
+  ] as const) {
     const publicPrefix = `/${section}`;
     if (pathname === publicPrefix || pathname.startsWith(`${publicPrefix}/`)) {
       return `/portal/${workspaceSlug}${pathname}`;

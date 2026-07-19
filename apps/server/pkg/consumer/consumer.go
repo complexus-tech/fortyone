@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/url"
 	"strings"
 	"time"
 
@@ -485,15 +486,23 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
-	var verificationURL = fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, payload.Email, payload.Token)
-	if payload.IsMobile {
-		verificationURL += "?mobile=true"
+	verificationURL, err := url.Parse(fmt.Sprintf("%s/verify/%s/%s", c.websiteURL, url.PathEscape(payload.Email), url.PathEscape(payload.Token)))
+	if err != nil {
+		return fmt.Errorf("build email verification URL: %w", err)
 	}
+	query := verificationURL.Query()
+	if payload.IsMobile {
+		query.Set("mobileApp", "true")
+	}
+	if payload.CallbackURL != "" {
+		query.Set("callbackUrl", payload.CallbackURL)
+	}
+	verificationURL.RawQuery = query.Encode()
 
 	c.log.Info(ctx, "consumer.handleEmailVerification", "email", payload.Email)
 
 	data := map[string]any{
-		"VerificationURL": verificationURL,
+		"VerificationURL": verificationURL.String(),
 		"ExpiresIn":       "10 minutes",
 		"IsMobile":        payload.IsMobile,
 		"OTP":             payload.Token,

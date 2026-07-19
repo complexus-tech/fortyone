@@ -205,6 +205,19 @@ func (r *Repo) ListBoards(ctx context.Context, portalID uuid.UUID) ([]feedback.C
 	return result, nil
 }
 
+func (r *Repo) GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (feedback.CoreBoard, error) {
+	var row boardRow
+	err := r.db.GetContext(ctx, &row, `
+		SELECT id, workspace_id, portal_id, team_id, name, slug, color, order_index, created_at, updated_at
+		FROM feedback_boards
+		WHERE portal_id = $1 AND id = $2
+	`, portalID, boardID)
+	if err != nil {
+		return feedback.CoreBoard{}, err
+	}
+	return toCoreBoard(row), nil
+}
+
 func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (feedback.CoreBoard, error) {
 	var row boardRow
 	err := r.db.GetContext(ctx, &row, `
@@ -317,6 +330,17 @@ func (r *Repo) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (feed
 	err := r.db.GetContext(ctx, &row, itemSelectQuery()+`
 		WHERE fi.workspace_id = $1 AND fi.id = $2
 	`, workspaceID, itemID)
+	if err != nil {
+		return feedback.CoreItem{}, err
+	}
+	return toCoreItem(row), nil
+}
+
+func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (feedback.CoreItem, error) {
+	var row itemRow
+	err := r.db.GetContext(ctx, &row, itemSelectQuery()+`
+		WHERE fi.portal_id = $1 AND fi.id = $2
+	`, portalID, itemID)
 	if err != nil {
 		return feedback.CoreItem{}, err
 	}

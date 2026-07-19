@@ -4,16 +4,19 @@ import { Text, Flex } from "ui";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/ui";
+import { getAuthCallbackPath } from "@/utils/callback-url";
 import { logIn } from "./actions";
 
 export const EmailVerificationCallback = ({
+  callbackUrl,
   isMobileApp,
 }: {
+  callbackUrl?: string;
   isMobileApp: boolean;
 }) => {
   const params = useParams<{ email: string; token: string }>();
-  const validatedEmail = decodeURIComponent(params?.email || "");
-  const validatedToken = decodeURIComponent(params?.token || "");
+  const validatedEmail = decodeURIComponent(params.email);
+  const validatedToken = decodeURIComponent(params.token);
   const hasValidated = useRef(false);
 
   useEffect(() => {
@@ -24,18 +27,21 @@ export const EmailVerificationCallback = ({
       hasValidated.current = true;
       const res = await logIn(validatedEmail, validatedToken);
 
-      if (res?.error) {
-        window.location.href = `/?error=${encodeURIComponent(res.error)}`;
+      if (res.error) {
+        const errorPath = `/?error=${encodeURIComponent(res.error)}`;
+        window.location.href = callbackUrl
+          ? `${errorPath}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : errorPath;
         return;
       }
 
       window.location.href = isMobileApp
         ? "/auth-callback?mobileApp=true"
-        : "/auth-callback";
+        : getAuthCallbackPath(callbackUrl);
     };
 
     void validate();
-  }, [validatedEmail, validatedToken, isMobileApp]);
+  }, [callbackUrl, validatedEmail, validatedToken, isMobileApp]);
 
   return (
     <Flex

@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
@@ -17,6 +19,12 @@ var (
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
+
+const (
+	maxPublicFeedbackTitleCharacters       = 200
+	maxPublicFeedbackDescriptionCharacters = 20_000
+	maxPublicFeedbackCommentCharacters     = 10_000
+)
 
 type Service struct {
 	repo    Repository
@@ -187,6 +195,41 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 	return s.repo.CreateItem(ctx, input)
 }
 
+func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInput) (CoreItem, error) {
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+	if input.Title == "" {
+		return CoreItem{}, errors.New("feedback title is required")
+	}
+	if utf8.RuneCountInString(input.Title) > maxPublicFeedbackTitleCharacters {
+		return CoreItem{}, fmt.Errorf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
+	}
+	if utf8.RuneCountInString(input.Description) > maxPublicFeedbackDescriptionCharacters {
+		return CoreItem{}, fmt.Errorf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
+	}
+
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
+	if err != nil {
+		return CoreItem{}, err
+	}
+	board, err := s.repo.GetBoard(ctx, portal.ID, input.BoardID)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if board.WorkspaceID != portal.WorkspaceID {
+		return CoreItem{}, ErrNotFound
+	}
+
+	return s.CreateItem(ctx, CoreItemInput{
+		WorkspaceID: portal.WorkspaceID,
+		PortalID:    portal.ID,
+		BoardID:     board.ID,
+		AuthorID:    input.AuthorID,
+		Title:       input.Title,
+		Description: input.Description,
+	})
+}
+
 func (s *Service) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error) {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil {
 		return CoreItem{}, errors.New("workspace id and feedback id are required")
@@ -212,6 +255,35 @@ func (s *Service) CreateComment(ctx context.Context, input CoreCommentInput) (Co
 	return s.repo.CreateComment(ctx, input)
 }
 
+func (s *Service) CreatePublicComment(ctx context.Context, input CorePublicCommentInput) (CoreComment, error) {
+	input.Body = strings.TrimSpace(input.Body)
+	if input.Body == "" {
+		return CoreComment{}, errors.New("comment body is required")
+	}
+	if utf8.RuneCountInString(input.Body) > maxPublicFeedbackCommentCharacters {
+		return CoreComment{}, fmt.Errorf("comment body must be %d characters or fewer", maxPublicFeedbackCommentCharacters)
+	}
+
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
+	if err != nil {
+		return CoreComment{}, err
+	}
+	item, err := s.repo.GetItemByPortal(ctx, portal.ID, input.ItemID)
+	if err != nil {
+		return CoreComment{}, err
+	}
+	if item.WorkspaceID != portal.WorkspaceID {
+		return CoreComment{}, ErrNotFound
+	}
+
+	return s.CreateComment(ctx, CoreCommentInput{
+		WorkspaceID: portal.WorkspaceID,
+		ItemID:      item.ID,
+		AuthorID:    input.AuthorID,
+		Body:        input.Body,
+	})
+}
+
 func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error) {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil || userID == uuid.Nil {
 		return CoreVoteResult{}, errors.New("workspace, feedback, and user are required")
@@ -223,6 +295,22 @@ func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uu
 		return CoreVoteResult{}, err
 	}
 	return s.repo.ToggleVote(ctx, workspaceID, itemID, userID, vote)
+}
+
+func (s *Service) TogglePublicVote(ctx context.Context, input CorePublicVoteInput) (CoreVoteResult, error) {
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
+	if err != nil {
+		return CoreVoteResult{}, err
+	}
+	item, err := s.repo.GetItemByPortal(ctx, portal.ID, input.ItemID)
+	if err != nil {
+		return CoreVoteResult{}, err
+	}
+	if item.WorkspaceID != portal.WorkspaceID {
+		return CoreVoteResult{}, ErrNotFound
+	}
+
+	return s.ToggleVote(ctx, portal.WorkspaceID, item.ID, input.UserID, input.Vote)
 }
 
 func (s *Service) LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error) {

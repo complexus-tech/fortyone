@@ -19,6 +19,7 @@ type Config struct {
 	Log            *logger.Logger
 	SecretKey      string
 	CookieDomain   string
+	WebsiteURL     string
 	GoogleService  *google.Service
 	Publisher      *publisher.Publisher
 	TasksService   *tasks.Service
@@ -38,6 +39,7 @@ func Routes(cfg Config, app *web.App) {
 		attachmentsService,
 		cfg.SecretKey,
 		cfg.CookieDomain,
+		cfg.WebsiteURL,
 		cfg.Cache,
 		cfg.GoogleService,
 		cfg.Publisher,

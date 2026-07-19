@@ -21,6 +21,8 @@ import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type { PublicPortal, PublicRequest } from "./types";
 import { createFeedbackAction, toggleFeedbackVoteAction } from "./actions";
 
+const MAX_FEEDBACK_TITLE_LENGTH = 200;
+
 export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -54,10 +56,8 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
       const response = await createFeedbackAction({
         boardId,
         description: descriptionEditor?.getText() ?? "",
-        portalId: portal.id,
         portalSlug: portal.slug,
         title,
-        workspaceSlug: portal.workspace.slug,
       });
       if (response.error?.message) {
         toast.error("Feedback", { description: response.error.message });
@@ -141,6 +141,7 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
               aria-label="Feedback title"
               autoFocus
               className="h-auto border-0 bg-transparent px-0 py-3 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
+              maxLength={MAX_FEEDBACK_TITLE_LENGTH}
               onChange={(event) => {
                 setTitle(event.target.value);
               }}
@@ -198,7 +199,6 @@ export const FeedbackVoteButton = ({
         itemSlug: request.slug,
         portalSlug: portal.slug,
         vote: nextVote,
-        workspaceSlug: portal.workspace.slug,
       });
       if (response.error?.message) {
         toast.error("Vote", { description: response.error.message });

@@ -10,7 +10,7 @@ export default async function PortalUpdatesPage({
   const { portalSlug } = await params;
   const [portal, viewer] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug),
-    getPublicPortalViewer(),
+    getPublicPortalViewer(portalSlug),
   ]);
 
   return <PublicPortalUpdatesPage portal={portal} viewer={viewer} />;

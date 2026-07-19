@@ -19,7 +19,7 @@ export default async function PublicPortalFeedbackRoute({
   const filters = parsePublicPortalFilters(resolvedSearchParams);
   const [portal, viewer] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug, filters),
-    getPublicPortalViewer(),
+    getPublicPortalViewer(portalSlug),
   ]);
 
   return (

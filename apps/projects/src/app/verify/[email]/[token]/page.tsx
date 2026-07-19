@@ -16,10 +16,11 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobileApp?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params?.mobileApp === "true";
+  const isMobileApp = params.mobileApp === "true";
+  const callbackUrl = params.callbackUrl;
   const session = await auth();
   if (session && !isMobileApp) {
     const [invitations, workspaces, profile] = await Promise.all([
@@ -31,9 +32,15 @@ export default async function Page({
       getRedirectUrl(
         workspaces,
         invitations.data || [],
-        profile?.lastUsedWorkspaceId,
+        profile.lastUsedWorkspaceId,
+        callbackUrl,
       ),
     );
   }
-  return <EmailVerificationCallback isMobileApp={isMobileApp} />;
+  return (
+    <EmailVerificationCallback
+      callbackUrl={callbackUrl}
+      isMobileApp={isMobileApp}
+    />
+  );
 }

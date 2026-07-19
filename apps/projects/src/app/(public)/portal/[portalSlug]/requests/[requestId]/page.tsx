@@ -11,7 +11,7 @@ export default async function PortalRequestDetailPage({
   const { portalSlug, requestId } = await params;
   const [portal, viewer] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug, { pageSize: 1, search: requestId }),
-    getPublicPortalViewer(),
+    getPublicPortalViewer(portalSlug),
   ]);
   const request = portal.requests.find(
     (publicRequest) =>

@@ -79,8 +79,9 @@ type googleAuthState struct {
 
 // EmailVerificationRequest represents a request to send a verification email
 type EmailVerificationRequest struct {
-	Email    string `json:"email"`
-	IsMobile bool   `json:"isMobile"` // Whether the request is coming from a mobile app login
+	Email       string `json:"email"`
+	IsMobile    bool   `json:"isMobile"` // Whether the request is coming from a mobile app login
+	CallbackURL string `json:"callbackURL,omitempty"`
 }
 
 // VerifyEmailRequest represents a request to verify an email token

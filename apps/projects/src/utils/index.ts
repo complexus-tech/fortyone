@@ -1,6 +1,7 @@
 import { ApiError } from "api-client";
 import type { ApiResponse, Workspace } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
+import { getSafeCallbackUrl } from "./callback-url";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -8,12 +9,18 @@ export const getRedirectUrl = (
   workspaces: Workspace[],
   invitations: Invitation[] = [],
   lastUsedWorkspaceId?: string,
+  callbackUrl?: string,
 ) => {
+  const safeCallbackUrl = getSafeCallbackUrl(callbackUrl);
+  if (safeCallbackUrl) {
+    return safeCallbackUrl;
+  }
+
   if (workspaces.length === 0) {
     if (invitations.length > 0) {
       return `/onboarding/join?token=${invitations[0].token}`;
     }
-    return "/onboarding/create";
+    return "/account";
   }
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
@@ -26,12 +33,12 @@ export const getRedirectUrl = (
   return `/${activeWorkspace.slug}/my-work`;
 };
 
-export const buildWorkspaceUrl = (slug: string) => {
+export const buildWorkspaceUrl = (slug: string, path = "/my-work") => {
   if (isFortyOneApp) {
-    return `https://${slug}.fortyone.app/my-work`;
+    return `https://${slug}.fortyone.app${path}`;
   }
 
-  return `/${slug}/my-work`;
+  return `/${slug}${path}`;
 };
 
 export const withWorkspacePath = (path: string, slug?: string) => {

@@ -43,6 +43,15 @@ describe("workspace public portal routes", () => {
     );
   });
 
+  it("keeps portal account settings outside workspace application routes", () => {
+    expect(getInternalPublicPath("/account", "art-circles")).toBe(
+      "/portal/art-circles/account",
+    );
+    expect(
+      getCanonicalPublicPath("/portal/art-circles/account", "art-circles"),
+    ).toBe("/account");
+  });
+
   it("keeps feedback detail paths on the workspace subdomain", () => {
     expect(
       getInternalPublicPath(

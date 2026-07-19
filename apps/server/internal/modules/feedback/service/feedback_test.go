@@ -3,6 +3,7 @@ package feedback
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
@@ -81,6 +82,15 @@ func (r *repoStub) ListBoards(ctx context.Context, portalID uuid.UUID) ([]CoreBo
 	return result, nil
 }
 
+func (r *repoStub) GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (CoreBoard, error) {
+	for _, board := range r.boards {
+		if board.PortalID == portalID && board.ID == boardID {
+			return board, nil
+		}
+	}
+	return CoreBoard{}, sql.ErrNoRows
+}
+
 func (r *repoStub) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error) {
 	board := CoreBoard{ID: uuid.New(), WorkspaceID: input.WorkspaceID, PortalID: input.PortalID, TeamID: input.TeamID, Name: input.Name, Slug: input.Slug, Color: input.Color}
 	r.boards = append(r.boards, board)
@@ -108,6 +118,15 @@ func (r *repoStub) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]Co
 func (r *repoStub) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {
 	for _, item := range r.items {
 		if item.WorkspaceID == workspaceID && item.ID == itemID {
+			return item, nil
+		}
+	}
+	return CoreItem{}, sql.ErrNoRows
+}
+
+func (r *repoStub) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error) {
+	for _, item := range r.items {
+		if item.PortalID == portalID && item.ID == itemID {
 			return item, nil
 		}
 	}
@@ -291,6 +310,124 @@ func TestCreateItemPreservesProvidedSlug(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "custom-feedback-slug", item.Slug)
+}
+
+func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	authorID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		boards:  []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	item, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug: "city-roads",
+		BoardID:    boardID,
+		AuthorID:   authorID,
+		Title:      "Repair the crossing signal",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, workspaceID, item.WorkspaceID)
+	require.Equal(t, portalID, item.PortalID)
+	require.Equal(t, authorID, item.AuthorID)
+	require.Equal(t, workspaceID, repo.createdItems[0].WorkspaceID)
+}
+
+func TestPublicFeedbackRejectsBoardFromAnotherPortal(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		boards:  []CoreBoard{{ID: uuid.New(), WorkspaceID: workspaceID, PortalID: uuid.New()}},
+	}
+	service := New(repo, nil)
+
+	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug: "city-roads",
+		BoardID:    repo.boards[0].ID,
+		AuthorID:   uuid.New(),
+		Title:      "Cross-portal feedback",
+	})
+
+	require.ErrorIs(t, err, sql.ErrNoRows)
+	require.Empty(t, repo.createdItems)
+}
+
+func TestPublicFeedbackRejectsOversizedContent(t *testing.T) {
+	service := New(&repoStub{}, nil)
+
+	_, titleErr := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		Title: strings.Repeat("a", maxPublicFeedbackTitleCharacters+1),
+	})
+	_, descriptionErr := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		Title:       "Valid title",
+		Description: strings.Repeat("a", maxPublicFeedbackDescriptionCharacters+1),
+	})
+	_, commentErr := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		Body: strings.Repeat("a", maxPublicFeedbackCommentCharacters+1),
+	})
+
+	require.ErrorContains(t, titleErr, "200 characters or fewer")
+	require.ErrorContains(t, descriptionErr, "20000 characters or fewer")
+	require.ErrorContains(t, commentErr, "10000 characters or fewer")
+}
+
+func TestPublicCommentAndVoteRejectItemFromAnotherPortal(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items:   []CoreItem{{ID: itemID, WorkspaceID: workspaceID, PortalID: uuid.New()}},
+	}
+	service := New(repo, nil)
+
+	_, commentErr := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   uuid.New(),
+		Body:       "This should not be accepted.",
+	})
+	_, voteErr := service.TogglePublicVote(context.Background(), CorePublicVoteInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		UserID:     uuid.New(),
+		Vote:       1,
+	})
+
+	require.ErrorIs(t, commentErr, sql.ErrNoRows)
+	require.ErrorIs(t, voteErr, sql.ErrNoRows)
+}
+
+func TestPublicCommentAndVoteRejectItemFromAnotherWorkspace(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items:   []CoreItem{{ID: itemID, WorkspaceID: uuid.New(), PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	_, commentErr := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   uuid.New(),
+		Body:       "This should not be accepted.",
+	})
+	_, voteErr := service.TogglePublicVote(context.Background(), CorePublicVoteInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		UserID:     uuid.New(),
+		Vote:       1,
+	})
+
+	require.ErrorIs(t, commentErr, sql.ErrNoRows)
+	require.ErrorIs(t, voteErr, sql.ErrNoRows)
 }
 
 func TestToggleVoteSupportsUpvotesAndDownvotes(t *testing.T) {

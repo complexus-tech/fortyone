@@ -44,7 +44,7 @@ func TestSendEmailVerificationReturnsTooManyRequestsWhenTokenCreationIsRateLimit
 
 func newEmailVerificationTestHandler(repo users.Repository) *Handlers {
 	log := logger.NewWithText(io.Discard, slog.LevelError, "users-http-test")
-	return New(users.New(log, repo, nil), nil, "test-secret", "", nil, nil, nil)
+	return New(users.New(log, repo, nil), nil, "test-secret", "", "http://localhost:3000", nil, nil, nil)
 }
 
 type emailVerificationRateLimitRepo struct{}

@@ -1,22 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { post } from "api-client";
 import { auth } from "@/auth";
-import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 
 type CreateFeedbackInput = {
-  workspaceSlug: string;
   portalSlug: string;
-  portalId: string;
   boardId: string;
   title: string;
   description: string;
 };
 
 type ItemInput = {
-  workspaceSlug: string;
   portalSlug: string;
   itemId: string;
   itemSlug?: string;
@@ -69,24 +66,13 @@ export const createFeedbackAction = async (input: CreateFeedbackInput) => {
       };
     }
 
-    const ctx = { session, workspaceSlug: input.workspaceSlug };
-    const response = await post<
-      {
-        boardId: string;
-        description: string;
-        portalId: string;
-        title: string;
-      },
-      ApiResponse<unknown>
-    >(
-      "feedback/items",
+    const response = await post<ApiResponse<unknown>>(
+      `portals/${input.portalSlug}/feedback/items`,
       {
         boardId: input.boardId,
         description: input.description,
-        portalId: input.portalId,
         title: input.title,
       },
-      ctx,
     );
     refreshPortal(input.portalSlug);
     return response;
@@ -105,11 +91,10 @@ export const toggleFeedbackVoteAction = async (input: VoteInput) => {
       };
     }
 
-    const ctx = { session, workspaceSlug: input.workspaceSlug };
-    const response = await post<
-      { vote: -1 | 1 },
-      ApiResponse<FeedbackVoteResult>
-    >(`feedback/items/${input.itemId}/vote`, { vote: input.vote }, ctx);
+    const response = await post<ApiResponse<FeedbackVoteResult>>(
+      `portals/${input.portalSlug}/feedback/items/${input.itemId}/vote`,
+      { vote: input.vote },
+    );
     refreshPortal(input.portalSlug);
     return response;
   } catch (error) {
@@ -127,11 +112,10 @@ export const createFeedbackCommentAction = async (input: CommentInput) => {
       };
     }
 
-    const ctx = { session, workspaceSlug: input.workspaceSlug };
-    const response = await post<
-      { body: string },
-      ApiResponse<CreatedFeedbackComment>
-    >(`feedback/items/${input.itemId}/comments`, { body: input.body }, ctx);
+    const response = await post<ApiResponse<CreatedFeedbackComment>>(
+      `portals/${input.portalSlug}/feedback/items/${input.itemId}/comments`,
+      { body: input.body },
+    );
     refreshPortal(input.portalSlug);
     refreshFeedbackItem(input.portalSlug, input.itemSlug);
     return response;

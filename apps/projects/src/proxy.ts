@@ -97,10 +97,12 @@ export default async function proxy(req: NextRequest) {
     const redirectUrl = buildAuthUrl(pathname, searchParams);
 
     if (pathname === "/") {
-      redirectUrl.searchParams.set(
-        "callbackUrl",
-        `https://${subdomain}${DOMAIN_SUFFIX}/my-work`,
-      );
+      if (!redirectUrl.searchParams.has("callbackUrl")) {
+        redirectUrl.searchParams.set(
+          "callbackUrl",
+          `https://${subdomain}${DOMAIN_SUFFIX}/my-work`,
+        );
+      }
     }
 
     return NextResponse.redirect(redirectUrl);

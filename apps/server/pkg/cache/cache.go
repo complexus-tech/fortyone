@@ -15,6 +15,15 @@ var (
 	ErrNotFound = errors.New("item not found in cache")
 )
 
+var incrementWithTTLScript = redis.NewScript(`
+local count = redis.call("INCR", KEYS[1])
+local ttl = redis.call("PTTL", KEYS[1])
+if ttl < 0 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+return count
+`)
+
 // Service defines the cache service interface
 type Service struct {
 	log   *logger.Logger
@@ -61,6 +70,22 @@ func (s *Service) Get(ctx context.Context, key string, dest any) error {
 	}
 
 	return nil
+}
+
+// IncrementWithTTL atomically increments a counter and ensures it expires.
+// It is intended for fixed-window counters such as request rate limits.
+func (s *Service) IncrementWithTTL(ctx context.Context, key string, ttl time.Duration) (int64, error) {
+	if ttl <= 0 {
+		return 0, errors.New("cache counter ttl must be positive")
+	}
+
+	count, err := incrementWithTTLScript.Run(ctx, s.redis, []string{key}, ttl.Milliseconds()).Int64()
+	if err != nil {
+		s.log.Error(ctx, "failed to increment cache counter", "key", key, "error", err)
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // Delete removes a value from the cache

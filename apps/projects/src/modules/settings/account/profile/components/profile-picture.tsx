@@ -1,15 +1,19 @@
 "use client";
 
-import { Avatar } from "ui";
-import { ProfileUploadDialog } from "ui";
+import { Avatar, ProfileUploadDialog } from "ui";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { User } from "@/types";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUploadProfileImageMutation } from "@/lib/hooks/user/upload-profile-image-mutation";
 import { useDeleteProfileImageMutation } from "@/lib/hooks/user/delete-profile-image-mutation";
 
-export const ProfilePicture = () => {
-  const { data: profile } = useProfile();
+export const ProfilePicture = ({
+  initialProfile,
+}: {
+  initialProfile?: User;
+}) => {
+  const { data: profile } = useProfile(initialProfile);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);

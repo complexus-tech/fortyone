@@ -25,7 +25,7 @@ const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
 let triggerIntersection: (() => void) | undefined;
 const portalViewer = {
-  accountHref: "/city-roads/settings/account",
+  accountHref: "/portal/city-roads/account",
   appHref: "/city-roads/my-work",
   avatarUrl: null,
   email: "ada@example.com",
@@ -449,7 +449,10 @@ describe("Public portal UI", () => {
 
     expect(
       screen.getByRole("link", { name: "Login to submit feedback" }),
-    ).toHaveAttribute("href", "/");
+    ).toHaveAttribute(
+      "href",
+      "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback",
+    );
     expect(
       screen.queryByRole("button", { name: "New Feedback" }),
     ).not.toBeInTheDocument();
@@ -635,7 +638,29 @@ describe("Public portal UI", () => {
     );
     expect(
       screen.getByRole("link", { name: /account settings/i }),
-    ).toHaveAttribute("href", "/city-roads/settings/account");
+    ).toHaveAttribute("href", "/portal/city-roads/account");
+  });
+
+  it("keeps account controls but hides workspace actions for external users", () => {
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={{
+          accountHref: "/portal/city-roads/account",
+          avatarUrl: null,
+          email: "external@example.com",
+          name: "External Contributor",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: /account settings/i }),
+    ).toHaveAttribute("href", "/portal/city-roads/account");
+    expect(
+      screen.queryByRole("link", { name: "Open FortyOne" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
   });
 
   it("copies the public portal link and confirms it with a toast", async () => {
@@ -696,6 +721,24 @@ describe("Public portal UI", () => {
     expect(screen.getByLabelText("Comment")).toBeInTheDocument();
     expect(screen.getByText("Road repairs")).toBeInTheDocument();
     expect(screen.getByText("Copy link")).toBeInTheDocument();
+  });
+
+  it("returns logged-out commenters to the same feedback item", () => {
+    render(
+      <PublicPortalRequestDetailPage
+        portal={publicPortalFixture}
+        request={publicPortalFixture.requests[0]}
+      />,
+    );
+
+    const loginLinks = screen.getAllByRole("link", { name: "Login/signup" });
+    expect(loginLinks).toHaveLength(2);
+    loginLinks.forEach((link) => {
+      expect(link).toHaveAttribute(
+        "href",
+        "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback%2Fadd-pedestrian-crossing-near-east-avenue-school",
+      );
+    });
   });
 
   it("adds a new public feedback comment to the discussion", async () => {

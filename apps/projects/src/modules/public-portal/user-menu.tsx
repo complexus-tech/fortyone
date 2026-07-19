@@ -93,15 +93,17 @@ export const PublicPortalUserMenu = ({
         </Menu.Group>
         <Menu.Separator className="mb-2" />
         <Menu.Group>
-          <Menu.Item>
-            <Link
-              className="group flex w-full items-center gap-2"
-              href={viewer.appHref}
-            >
-              <ExternalLinkIcon className="text-current transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              Open FortyOne
-            </Link>
-          </Menu.Item>
+          {viewer.appHref ? (
+            <Menu.Item>
+              <Link
+                className="group flex w-full items-center gap-2"
+                href={viewer.appHref}
+              >
+                <ExternalLinkIcon className="text-current transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                Open FortyOne
+              </Link>
+            </Menu.Item>
+          ) : null}
           <Menu.Item>
             <Link
               className="flex w-full items-center gap-2"

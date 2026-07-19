@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "lib";
 import type { PublicPortal, PublicPortalViewer } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
+import { getPortalLoginUrl } from "./utils";
 
 const copyLink = async () => {
   try {
@@ -88,7 +89,7 @@ export const PublicPortalSidebar = ({
         <Button
           className="h-12 w-full justify-center text-[1rem]"
           color="invert"
-          href="/"
+          href={getPortalLoginUrl(portal, "feedback")}
           size="lg"
         >
           Login to submit feedback

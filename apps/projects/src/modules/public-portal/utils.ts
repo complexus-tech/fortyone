@@ -1,3 +1,4 @@
+import { getLoginUrl } from "@/utils/callback-url";
 import type { PublicPortal, PublicRequest } from "./types";
 
 const isWorkspaceSubdomainDeployment =
@@ -13,10 +14,47 @@ export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
 
 export const getPortalPath = (
   portal: PublicPortal,
-  path: "" | "feedback" | "roadmap" | "updates",
+  path: "" | "account" | "feedback" | "roadmap" | "updates",
+) => getPortalPathBySlug(portal.slug, path);
+
+export const getPortalPathBySlug = (
+  portalSlug: string,
+  path: "" | "account" | "feedback" | "roadmap" | "updates",
 ) => {
   if (isWorkspaceSubdomainDeployment) {
     return `/${path || "feedback"}`;
   }
-  return `/portal/${portal.slug}${path ? `/${path}` : ""}`;
+  return `/portal/${portalSlug}${path ? `/${path}` : ""}`;
 };
+
+export const getPortalCallbackUrl = (
+  portal: PublicPortal,
+  path: "account" | "feedback" | "roadmap" | "updates",
+) => {
+  const portalPath = getPortalPath(portal, path);
+
+  if (!isWorkspaceSubdomainDeployment) return portalPath;
+
+  return `https://${portal.workspace.slug}.fortyone.app${portalPath}`;
+};
+
+export const getPortalLoginUrl = (
+  portal: PublicPortal,
+  path: "account" | "feedback" | "roadmap" | "updates",
+) => getLoginUrl(getPortalCallbackUrl(portal, path));
+
+export const getRequestCallbackUrl = (
+  portal: PublicPortal,
+  request: PublicRequest,
+) => {
+  const requestPath = getRequestPath(portal, request);
+
+  if (!isWorkspaceSubdomainDeployment) return requestPath;
+
+  return `https://${portal.workspace.slug}.fortyone.app${requestPath}`;
+};
+
+export const getRequestLoginUrl = (
+  portal: PublicPortal,
+  request: PublicRequest,
+) => getLoginUrl(getRequestCallbackUrl(portal, request));

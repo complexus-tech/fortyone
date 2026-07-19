@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
@@ -38,17 +39,19 @@ type Handlers struct {
 	attachments   users.AttachmentsService
 	secretKey     string
 	cookieDomain  string
+	websiteURL    string
 	cache         *cache.Service
 	googleService *google.Service
 	publisher     *publisher.Publisher
 }
 
-func New(users *users.Service, attachments users.AttachmentsService, secretKey string, cookieDomain string, cacheService *cache.Service, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
+func New(users *users.Service, attachments users.AttachmentsService, secretKey, cookieDomain, websiteURL string, cacheService *cache.Service, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
 		users:         users,
 		attachments:   attachments,
 		secretKey:     secretKey,
 		cookieDomain:  cookieDomain,
+		websiteURL:    websiteURL,
 		cache:         cacheService,
 		googleService: googleService,
 		publisher:     publisher,
@@ -171,10 +174,53 @@ func isSecureRequest(r *http.Request) bool {
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
-func sanitizeCallbackURL(raw string) (string, error) {
+const maxCallbackURLLength = 2048
+
+func isLocalCallbackHostname(hostname string) bool {
+	return hostname == "localhost" ||
+		hostname == "127.0.0.1" ||
+		strings.HasSuffix(hostname, ".localhost")
+}
+
+func configuredWebsiteHostname(websiteURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(websiteURL))
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSuffix(parsed.Hostname(), "."))
+}
+
+func isAllowedCallbackHostname(hostname, configuredDomain, websiteURL string) bool {
+	hostname = strings.ToLower(strings.TrimSuffix(hostname, "."))
+	configuredDomain = strings.ToLower(strings.Trim(strings.TrimSpace(configuredDomain), "."))
+	websiteHostname := configuredWebsiteHostname(websiteURL)
+
+	if hostname == websiteHostname && websiteHostname != "" {
+		return true
+	}
+	if isLocalCallbackHostname(hostname) && isLocalCallbackHostname(websiteHostname) {
+		return true
+	}
+	if configuredDomain != "" &&
+		(hostname == configuredDomain || strings.HasSuffix(hostname, "."+configuredDomain)) {
+		return true
+	}
+
+	return hostname == "fortyone.app" || strings.HasSuffix(hostname, ".fortyone.app")
+}
+
+func sanitizeCallbackURL(raw, configuredDomain, websiteURL string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", nil
+	}
+	if len(raw) > maxCallbackURLLength {
+		return "", errors.New("invalid callbackURL")
+	}
+	if strings.IndexFunc(raw, func(character rune) bool {
+		return character == '\\' || unicode.IsControl(character)
+	}) >= 0 {
+		return "", errors.New("invalid callbackURL")
 	}
 
 	if strings.HasPrefix(raw, "/") && !strings.HasPrefix(raw, "//") {
@@ -189,6 +235,15 @@ func sanitizeCallbackURL(raw string) (string, error) {
 		return "", errors.New("invalid callbackURL")
 	}
 	if parsed.Host == "" {
+		return "", errors.New("invalid callbackURL")
+	}
+	if parsed.User != nil {
+		return "", errors.New("invalid callbackURL")
+	}
+	if !isAllowedCallbackHostname(parsed.Hostname(), configuredDomain, websiteURL) {
+		return "", errors.New("invalid callbackURL")
+	}
+	if parsed.Scheme == "http" && !isLocalCallbackHostname(parsed.Hostname()) {
 		return "", errors.New("invalid callbackURL")
 	}
 
@@ -438,7 +493,11 @@ func (h *Handlers) StartGoogleAuth(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
 	}
 
-	callbackURL, err := sanitizeCallbackURL(r.URL.Query().Get("callbackURL"))
+	callbackURL, err := sanitizeCallbackURL(
+		r.URL.Query().Get("callbackURL"),
+		h.cookieDomain,
+		h.websiteURL,
+	)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
@@ -579,6 +638,10 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	req.Email = normalizedEmail
+	callbackURL, err := sanitizeCallbackURL(req.CallbackURL, h.cookieDomain, h.websiteURL)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
 	count, err := h.users.GetValidTokenCount(ctx, req.Email, 10*time.Minute)
 	if err != nil {
@@ -602,10 +665,11 @@ func (h *Handlers) SendEmailVerification(ctx context.Context, w http.ResponseWri
 	event := events.Event{
 		Type: events.EmailVerification,
 		Payload: events.EmailVerificationPayload{
-			Email:     req.Email,
-			IsMobile:  req.IsMobile,
-			Token:     token.Token,
-			TokenType: string(tokenType),
+			Email:       req.Email,
+			IsMobile:    req.IsMobile,
+			Token:       token.Token,
+			TokenType:   string(tokenType),
+			CallbackURL: callbackURL,
 		},
 		Timestamp: time.Now(),
 		ActorID:   uuid.Nil,

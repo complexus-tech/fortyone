@@ -128,6 +128,28 @@ type CoreItemInput struct {
 	Slug        string
 }
 
+type CorePublicItemInput struct {
+	PortalSlug  string
+	BoardID     uuid.UUID
+	AuthorID    uuid.UUID
+	Title       string
+	Description string
+}
+
+type CorePublicCommentInput struct {
+	PortalSlug string
+	ItemID     uuid.UUID
+	AuthorID   uuid.UUID
+	Body       string
+}
+
+type CorePublicVoteInput struct {
+	PortalSlug string
+	ItemID     uuid.UUID
+	UserID     uuid.UUID
+	Vote       int
+}
+
 type CoreUpdateItemStatusInput struct {
 	Status         string
 	RoadmapSummary *string
@@ -172,11 +194,13 @@ type Repository interface {
 	CreatePortal(ctx context.Context, input CorePortalInput) (CorePortal, error)
 	UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error)
 	ListBoards(ctx context.Context, portalID uuid.UUID) ([]CoreBoard, error)
+	GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (CoreBoard, error)
 	CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error)
 	ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error)
 	ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error)
 	ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error)
 	GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error)
+	GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error)
 	CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error)

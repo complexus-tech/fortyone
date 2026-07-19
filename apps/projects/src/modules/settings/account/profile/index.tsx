@@ -4,7 +4,7 @@ import { Box, Button, Text } from "ui";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
 import { SectionHeader } from "../../components";
-import { Form } from "./components/form";
+import { ProfileForm } from "./components/form";
 import { GitHubAccountLink } from "./components/github-link";
 
 export const ProfileSettings = () => {
@@ -19,7 +19,7 @@ export const ProfileSettings = () => {
       <Text as="h1" className="mb-6 text-2xl font-medium">
         Profile Settings
       </Text>
-      <Form />
+      <ProfileForm />
       <GitHubAccountLink />
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader

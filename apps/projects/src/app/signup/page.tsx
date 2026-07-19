@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { AuthLayout } from "@/modules/auth";
 import { auth } from "@/auth";
 import { getProfile } from "@/lib/queries/profile";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { redirect } from "next/navigation";
 import { getRedirectUrl } from "@/utils";
 
 export const metadata: Metadata = {
@@ -15,10 +15,11 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobileApp?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params?.mobileApp === "true";
+  const isMobileApp = params.mobileApp === "true";
+  const callbackUrl = params.callbackUrl;
   const session = await auth();
 
   // Only redirect web users if they're already logged in
@@ -27,9 +28,17 @@ export default async function Page({
       getWorkspaces(),
       getProfile(),
     ]);
-    redirect(getRedirectUrl(workspaces, [], profile?.lastUsedWorkspaceId));
+    redirect(
+      getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId, callbackUrl),
+    );
   }
 
   // Mobile app users always see signup form (even if already logged in on web)
-  return <AuthLayout isMobileApp={isMobileApp} page="signup" />;
+  return (
+    <AuthLayout
+      callbackUrl={callbackUrl}
+      isMobileApp={isMobileApp}
+      page="signup"
+    />
+  );
 }

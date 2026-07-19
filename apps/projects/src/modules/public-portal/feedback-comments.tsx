@@ -14,6 +14,7 @@ import type {
 } from "./types";
 import { createFeedbackCommentAction } from "./actions";
 import { getPublicAvatarColor } from "./avatar-color";
+import { getRequestLoginUrl } from "./utils";
 
 const COMMENTS_PAGE_SIZE = 10;
 
@@ -46,7 +47,11 @@ const FeedbackCommentComposer = ({
         justify="between"
       >
         <Text color="muted">Log in to join the conversation.</Text>
-        <Button color="invert" href="/" size="sm">
+        <Button
+          color="invert"
+          href={getRequestLoginUrl(portal, request)}
+          size="sm"
+        >
           Login/signup
         </Button>
       </Flex>
@@ -86,7 +91,6 @@ const FeedbackCommentComposer = ({
                   itemId: request.id,
                   itemSlug: request.slug,
                   portalSlug: portal.slug,
-                  workspaceSlug: portal.workspace.slug,
                 });
                 if (response.error?.message) {
                   toast.error("Comment", {

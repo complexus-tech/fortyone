@@ -5,15 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"reflect"
 	"strings"
 )
+
+var ErrRequestBodyTooLarge = errors.New("request body is too large")
 
 // HumanizeJSONDecodeError converts low-level JSON decoder errors into
 // user-friendly validation messages.
 func HumanizeJSONDecodeError(err error) error {
 	if err == nil {
 		return nil
+	}
+
+	var maxBytesErr *http.MaxBytesError
+	if errors.As(err, &maxBytesErr) {
+		return fmt.Errorf("%w: maximum size is %d bytes", ErrRequestBodyTooLarge, maxBytesErr.Limit)
 	}
 
 	var typeErr *json.UnmarshalTypeError

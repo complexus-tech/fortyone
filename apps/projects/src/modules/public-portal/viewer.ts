@@ -1,29 +1,34 @@
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
-import { getRedirectUrl, withWorkspacePath } from "@/utils";
+import { buildWorkspaceUrl, getRedirectUrl } from "@/utils";
+import { getPortalPathBySlug } from "./utils";
 import type { PublicPortalViewer } from "./types";
 
-export const getPublicPortalViewer =
-  async (): Promise<PublicPortalViewer | null> => {
-    const session = await auth();
+export const getPublicPortalViewer = async (
+  portalSlug: string,
+): Promise<PublicPortalViewer | null> => {
+  const session = await auth();
 
-    if (!session) {
-      return null;
-    }
+  if (!session) {
+    return null;
+  }
 
-    const workspaces = await getWorkspaces();
-    const activeWorkspace =
-      workspaces.find(
-        (workspace) => workspace.id === session.user.lastUsedWorkspaceId,
-      ) ?? workspaces[0];
-    const workspaceSlug = activeWorkspace.slug;
+  const workspaces = await getWorkspaces();
+  const activeWorkspace =
+    workspaces.find(
+      (workspace) => workspace.id === session.user.lastUsedWorkspaceId,
+    ) ?? workspaces.at(0);
 
-    return {
-      name: session.user.fullName || session.user.username || session.user.name,
-      email: session.user.email,
-      avatarUrl: session.user.image,
-      appHref: getRedirectUrl(workspaces, [], session.user.lastUsedWorkspaceId),
-      accountHref: withWorkspacePath("/settings/account", workspaceSlug),
-      notificationsHref: withWorkspacePath("/notifications", workspaceSlug),
-    };
+  return {
+    name: session.user.fullName || session.user.username || session.user.name,
+    email: session.user.email,
+    avatarUrl: session.user.image,
+    appHref: activeWorkspace
+      ? getRedirectUrl(workspaces, [], session.user.lastUsedWorkspaceId)
+      : undefined,
+    accountHref: getPortalPathBySlug(portalSlug, "account"),
+    notificationsHref: activeWorkspace
+      ? buildWorkspaceUrl(activeWorkspace.slug, "/notifications")
+      : undefined,
   };
+};

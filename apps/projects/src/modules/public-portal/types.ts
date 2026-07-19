@@ -77,9 +77,9 @@ export type PublicPortalViewer = {
   name: string;
   email: string;
   avatarUrl: string | null;
-  appHref: string;
+  appHref?: string;
   accountHref: string;
-  notificationsHref: string;
+  notificationsHref?: string;
 };
 
 export type PublicPortal = {

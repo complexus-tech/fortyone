@@ -1,34 +1,37 @@
+"use client";
+
 import type { FormEvent } from "react";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Input, Button } from "ui";
+import type { User } from "@/types";
 import { SectionHeader } from "@/modules/settings/components";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
 import { ProfilePicture } from "./profile-picture";
 
-export const Form = () => {
-  const { data: profile } = useProfile();
+type ProfileFormProps = {
+  initialProfile?: User;
+};
+
+export const ProfileForm = ({ initialProfile }: ProfileFormProps) => {
+  const { data: profile } = useProfile(initialProfile);
   const { mutate: updateProfile } = useUpdateProfileMutation();
-  const profileForm = {
-    fullName: profile?.fullName || "",
-    username: profile?.username || "",
-  };
-  const [profileSnapshot, setProfileSnapshot] = useState(profileForm);
-  const [form, setForm] = useState(profileForm);
+  const profileFullName = profile?.fullName ?? "";
+  const profileUsername = profile?.username ?? "";
+  const [form, setForm] = useState(() => ({
+    fullName: profileFullName,
+    username: profileUsername,
+  }));
 
-  if (
-    profileSnapshot.fullName !== profileForm.fullName ||
-    profileSnapshot.username !== profileForm.username
-  ) {
-    setProfileSnapshot(profileForm);
-    setForm(profileForm);
-  }
+  useEffect(() => {
+    setForm({
+      fullName: profileFullName,
+      username: profileUsername,
+    });
+  }, [profileFullName, profileUsername]);
 
-  const hasChanged = () => {
-    return (
-      form.fullName !== profile?.fullName || form.username !== profile.username
-    );
-  };
+  const hasChanged =
+    form.fullName !== profileFullName || form.username !== profileUsername;
 
   const handleUpdateProfile = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,7 +44,7 @@ export const Form = () => {
   return (
     <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
-        action={<ProfilePicture />}
+        action={<ProfilePicture initialProfile={initialProfile} />}
         description="Update your personal information and profile picture."
         title="Personal Information"
       />
@@ -66,11 +69,11 @@ export const Form = () => {
             value={form.username}
           />
         </Box>
-        {hasChanged() && (
+        {hasChanged ? (
           <Button className="mt-3" type="submit">
             Save changes
           </Button>
-        )}
+        ) : null}
       </form>
     </Box>
   );

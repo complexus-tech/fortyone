@@ -41,7 +41,6 @@ type AppItem struct {
 	BoardID        uuid.UUID      `json:"boardId"`
 	AuthorID       uuid.UUID      `json:"authorId"`
 	AuthorName     string         `json:"authorName"`
-	AuthorEmail    string         `json:"authorEmail"`
 	AuthorAvatar   *string        `json:"authorAvatar"`
 	Title          string         `json:"title"`
 	Description    string         `json:"description"`
@@ -109,6 +108,12 @@ type AppCreateItem struct {
 	Description string    `json:"description"`
 }
 
+type AppCreatePublicItem struct {
+	BoardID     uuid.UUID `json:"boardId"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+}
+
 type AppUpdateItemStatus struct {
 	Status         string  `json:"status"`
 	RoadmapSummary *string `json:"roadmapSummary"`
@@ -165,7 +170,6 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		BoardID:        core.BoardID,
 		AuthorID:       core.AuthorID,
 		AuthorName:     core.AuthorName,
-		AuthorEmail:    core.AuthorEmail,
 		AuthorAvatar:   core.AuthorAvatar,
 		Title:          core.Title,
 		Description:    core.Description,
