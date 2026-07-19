@@ -76,10 +76,16 @@ export const PublicRequestCard = ({
               ) : null}
               <Flex align="center" className="mt-4 gap-2">
                 <RequestStatusPill status={request.status} />
-                <Flex align="center" className="text-text-muted gap-1">
-                  <CommentIcon className="h-4" />
-                  <span>{request.commentCount}</span>
-                </Flex>
+                {request.commentCount > 0 ? (
+                  <Flex
+                    align="center"
+                    aria-label={`${request.commentCount} comments`}
+                    className="text-text-muted gap-1"
+                  >
+                    <CommentIcon className="h-4" />
+                    <span>{request.commentCount}</span>
+                  </Flex>
+                ) : null}
               </Flex>
             </Box>
           </Link>

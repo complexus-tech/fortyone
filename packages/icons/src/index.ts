@@ -113,6 +113,7 @@ export * from "./warning";
 export * from "./info";
 export * from "./share";
 export * from "./new-tab";
+export * from "./external-link";
 export * from "./sub-story";
 export * from "./download";
 export * from "./crown";

@@ -35,22 +35,28 @@ export const PublicPortalShell = ({
   <Box className="bg-background min-h-dvh overflow-y-auto">
     <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
       <Box className="relative mx-auto flex h-16 w-full max-w-[78rem] items-center justify-between px-4 md:px-6">
-        <Flex align="center" className="min-w-0 flex-1" gap={3}>
-          <Avatar
-            className="!size-9 text-base font-bold shadow-sm"
-            name={portal.workspace.name}
-            rounded="full"
-            size="md"
-            src={portal.workspace.avatarUrl}
-            style={{
-              backgroundColor: portal.workspace.color,
-              color: getReadableTextColor(portal.workspace.color),
-            }}
-          />
-          <Text className="line-clamp-1 text-base" fontWeight="semibold">
-            {portal.workspace.name}
-          </Text>
-        </Flex>
+        <Link
+          aria-label={`${portal.workspace.name} feedback`}
+          className="min-w-0 flex-1 transition-opacity hover:opacity-80"
+          href={getPortalPath(portal, "feedback")}
+        >
+          <Flex align="center" gap={3}>
+            <Avatar
+              className="!size-9 text-base font-bold shadow-sm"
+              name={portal.workspace.name}
+              rounded="full"
+              size="md"
+              src={portal.workspace.avatarUrl}
+              style={{
+                backgroundColor: portal.workspace.color,
+                color: getReadableTextColor(portal.workspace.color),
+              }}
+            />
+            <Text className="line-clamp-1 text-base" fontWeight="semibold">
+              {portal.workspace.name}
+            </Text>
+          </Flex>
+        </Link>
         <Box className="absolute left-1/2 hidden -translate-x-1/2 md:block">
           <nav className="bg-surface-muted/85 ml-2 hidden rounded-xl p-1 md:flex">
             {navItems.map((item) => {

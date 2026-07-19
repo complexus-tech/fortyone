@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
   ArrowRightIcon,
-  DashboardIcon,
+  ExternalLinkIcon,
   LogoutIcon,
   MoonIcon,
   SettingsIcon,
@@ -95,11 +95,11 @@ export const PublicPortalUserMenu = ({
         <Menu.Group>
           <Menu.Item>
             <Link
-              className="flex w-full items-center gap-2"
+              className="group flex w-full items-center gap-2"
               href={viewer.appHref}
             >
-              <DashboardIcon className="h-[1.15rem]" />
-              Open app
+              <ExternalLinkIcon className="text-current transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              Open FortyOne
             </Link>
           </Menu.Item>
           <Menu.Item>

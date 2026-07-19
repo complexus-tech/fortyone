@@ -60,6 +60,7 @@ jest.mock("icons", () => {
     CommentIcon: Icon,
     CopyIcon: Icon,
     DashboardIcon: Icon,
+    ExternalLinkIcon: Icon,
     GanttIcon: Icon,
     KanbanIcon: Icon,
     ListIcon: Icon,
@@ -371,6 +372,25 @@ describe("Public portal UI", () => {
     expect(screen.queryByText("All Requests")).not.toBeInTheDocument();
     expect(screen.getByTestId("text-editor")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+    expect(
+      screen.getByRole("link", { name: "City Roads Program feedback" }),
+    ).toHaveAttribute("href", "/portal/city-roads/feedback");
+  });
+
+  it("hides comment metadata when feedback has no comments", () => {
+    const portal = {
+      ...publicPortalFixture,
+      requests: [
+        {
+          ...publicPortalFixture.requests[0],
+          commentCount: 0,
+        },
+      ],
+    };
+
+    render(<PublicPortalRequestsPage portal={portal} />);
+
+    expect(screen.queryByLabelText("0 comments")).not.toBeInTheDocument();
   });
 
   it("sends logged-out visitors to login before submitting feedback", () => {
@@ -476,7 +496,7 @@ describe("Public portal UI", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Open account menu")).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /open app/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open FortyOne" })).toHaveAttribute(
       "href",
       "/city-roads/my-work",
     );
