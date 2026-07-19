@@ -36,6 +36,9 @@ const workspaceCtx = async (workspaceSlug: string) => {
 };
 
 const refreshPortal = (portalSlug: string) => {
+  revalidatePath("/feedback");
+  revalidatePath("/roadmap");
+  revalidatePath("/updates");
   revalidatePath(`/portal/${portalSlug}`);
   revalidatePath(`/portal/${portalSlug}/feedback`);
   revalidatePath(`/portal/${portalSlug}/roadmap`);
@@ -43,6 +46,7 @@ const refreshPortal = (portalSlug: string) => {
 
 const refreshFeedbackItem = (portalSlug: string, itemSlug?: string) => {
   if (!itemSlug) return;
+  revalidatePath(`/feedback/${itemSlug}`);
   revalidatePath(`/portal/${portalSlug}/feedback/${itemSlug}`);
   revalidatePath(`/portal/${portalSlug}/requests/${itemSlug}`);
 };

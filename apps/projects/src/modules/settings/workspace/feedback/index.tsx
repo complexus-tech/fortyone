@@ -20,6 +20,9 @@ const colorOptions = [
   { label: "Red", value: "red" },
 ];
 
+const isWorkspaceSubdomainDeployment =
+  process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+
 const selectClassName =
   "border-border ring-ring h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 dark:bg-surface-elevated";
 
@@ -27,7 +30,11 @@ const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   return (
     <Button
       color="tertiary"
-      href={`/portal/${portal.slug}/feedback`}
+      href={
+        isWorkspaceSubdomainDeployment
+          ? "/feedback"
+          : `/portal/${portal.slug}/feedback`
+      }
       leftIcon={<LinkIcon className="h-4" />}
       size="sm"
       target="_blank"
@@ -86,7 +93,9 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
         <Box className="bg-surface-muted/60 rounded-xl px-4 py-3">
           <Text className="font-medium">{portal.name}</Text>
           <Text className="mt-1" color="muted">
-            /portal/{portal.slug}/feedback
+            {isWorkspaceSubdomainDeployment
+              ? "/feedback"
+              : `/portal/${portal.slug}/feedback`}
           </Text>
         </Box>
         <TextArea

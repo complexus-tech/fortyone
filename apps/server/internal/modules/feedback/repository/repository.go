@@ -471,8 +471,8 @@ func itemSelectQuery() string {
 			COALESCE(u.email, '') AS author_email,
 			u.avatar_url AS author_avatar,
 			fi.title, fi.description, fi.slug, fi.status,
-			(SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id)::int AS vote_count,
-			(SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id)::int AS comment_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id) AS integer) AS vote_count,
+			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
 			fi.roadmap_summary, fi.created_at, fi.updated_at
 		FROM feedback_items fi
 		LEFT JOIN users u ON u.user_id = fi.author_id

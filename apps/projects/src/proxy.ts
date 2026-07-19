@@ -1,5 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "auth";
+import {
+  getCanonicalPublicPath,
+  getInternalPublicPath,
+  isPublicPath,
+} from "./public-portal-routes";
 
 const AUTH_HOST = process.env.NEXT_PUBLIC_AUTH_HOST ?? "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
@@ -11,7 +16,6 @@ const AUTH_ONLY_PREFIXES = new Set([
   "/onboarding",
   "/unauthorized",
 ]);
-const PUBLIC_PREFIXES = new Set(["/portal"]);
 
 const getHostname = (req: NextRequest) => req.nextUrl.hostname;
 
@@ -26,9 +30,6 @@ const isFortyOneHost = (hostname: string) =>
 const isAuthOnlyPath = (pathname: string) =>
   pathname === "/" ||
   Array.from(AUTH_ONLY_PREFIXES).some((prefix) => pathname.startsWith(prefix));
-
-const isPublicPath = (pathname: string) =>
-  Array.from(PUBLIC_PREFIXES).some((prefix) => pathname.startsWith(prefix));
 
 const buildAuthUrl = (pathname: string, searchParams: string) => {
   const url = new URL(pathname, `https://${AUTH_HOST}`);
@@ -54,6 +55,25 @@ export default async function proxy(req: NextRequest) {
   const searchParams = req.nextUrl.search;
   const hostname = getHostname(req);
   const isAuthenticated = Boolean(user);
+  const subdomain = getSubdomain(hostname);
+  const isWorkspaceSubdomain =
+    typeof subdomain === "string" && !RESERVED_SUBDOMAINS.has(subdomain);
+
+  if (isWorkspaceSubdomain) {
+    const canonicalPublicPath = getCanonicalPublicPath(pathname, subdomain);
+    if (canonicalPublicPath) {
+      const canonicalUrl = req.nextUrl.clone();
+      canonicalUrl.pathname = canonicalPublicPath;
+      return NextResponse.redirect(canonicalUrl);
+    }
+
+    const internalPublicPath = getInternalPublicPath(pathname, subdomain);
+    if (internalPublicPath) {
+      const internalUrl = req.nextUrl.clone();
+      internalUrl.pathname = internalPublicPath;
+      return NextResponse.rewrite(internalUrl);
+    }
+  }
 
   if (isPublicPath(pathname)) {
     return NextResponse.next();
@@ -66,10 +86,6 @@ export default async function proxy(req: NextRequest) {
 
     return NextResponse.next();
   }
-
-  const subdomain = getSubdomain(hostname);
-  const isWorkspaceSubdomain =
-    typeof subdomain === "string" && !RESERVED_SUBDOMAINS.has(subdomain);
 
   if (isWorkspaceSubdomain && isAuthOnlyPath(pathname)) {
     if (pathname === "/" && isAuthenticated) {
