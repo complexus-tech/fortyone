@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"net/url"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ type NotificationMessage struct {
 type NotificationEmailData struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
+	EntityType       string          `db:"entity_type"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	UserEmail        string          `db:"user_email"`
@@ -38,15 +40,18 @@ type NotificationEmailData struct {
 	WorkspaceName    string          `db:"workspace_name"`
 	WorkspaceSlug    string          `db:"workspace_slug"`
 	EmailEnabled     bool            `db:"email_enabled"`
+	FeedbackSlug     string          `db:"feedback_slug"`
 }
 
 type NotificationEmailDigestItem struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
+	EntityType       string          `db:"entity_type"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	CreatedAt        time.Time       `db:"created_at"`
 	ActorName        string          `db:"actor_name"`
+	FeedbackSlug     string          `db:"feedback_slug"`
 }
 
 type NotificationEmailDigestData struct {
@@ -60,6 +65,7 @@ type NotificationEmailDigestData struct {
 type notificationEmailDigestRow struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
+	EntityType       string          `db:"entity_type"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	CreatedAt        time.Time       `db:"created_at"`
@@ -68,6 +74,7 @@ type notificationEmailDigestRow struct {
 	ActorName        string          `db:"actor_name"`
 	WorkspaceName    string          `db:"workspace_name"`
 	WorkspaceSlug    string          `db:"workspace_slug"`
+	FeedbackSlug     string          `db:"feedback_slug"`
 }
 
 // ParsedMessage represents the final parsed notification message
@@ -115,6 +122,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 		SELECT
 			n.notification_id,
 			n.type,
+			n.entity_type,
 			n.title,
 			n.message,
 			u.email AS user_email,
@@ -122,12 +130,14 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			COALESCE(NULLIF(actor_u.full_name, ''), actor_u.username) AS actor_name,
 			w.name AS workspace_name,
 			w.slug AS workspace_slug,
+			COALESCE(fi.slug, '') AS feedback_slug,
 			CAST(COALESCE(np.preferences -> CAST(n.type AS TEXT) ->> 'email', 'true') AS BOOLEAN) AS email_enabled
 		FROM
 			notifications n
 			INNER JOIN users u ON n.recipient_id = u.user_id
 			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
 			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
+			LEFT JOIN feedback_items fi ON n.entity_type::text = 'feedback' AND fi.id = n.entity_id
 			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
 			AND n.workspace_id = np.workspace_id
 		WHERE
@@ -168,6 +178,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 		SELECT
 			n.notification_id,
 			n.type,
+			n.entity_type,
 			n.title,
 			n.message,
 			n.created_at,
@@ -175,12 +186,14 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			COALESCE(NULLIF(u.full_name, ''), u.username) AS user_name,
 			COALESCE(NULLIF(actor_u.full_name, ''), actor_u.username) AS actor_name,
 			w.name AS workspace_name,
-			w.slug AS workspace_slug
+			w.slug AS workspace_slug,
+			COALESCE(fi.slug, '') AS feedback_slug
 		FROM
 			notifications n
 			INNER JOIN users u ON n.recipient_id = u.user_id
 			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
 			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
+			LEFT JOIN feedback_items fi ON n.entity_type::text = 'feedback' AND fi.id = n.entity_id
 			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
 				AND n.workspace_id = np.workspace_id
 		WHERE
@@ -222,10 +235,12 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 		items[i] = NotificationEmailDigestItem{
 			NotificationID:   row.NotificationID,
 			NotificationType: row.NotificationType,
+			EntityType:       row.EntityType,
 			Title:            row.Title,
 			Message:          row.Message,
 			CreatedAt:        row.CreatedAt,
 			ActorName:        row.ActorName,
+			FeedbackSlug:     row.FeedbackSlug,
 		}
 	}
 
@@ -271,19 +286,38 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 		}
 
 		parsedMessage := parseNotificationMessage(notificationMsg)
-		notificationURL := fmt.Sprintf("%s/notifications/%s", workspaceURL, item.NotificationID.String())
+		notificationURL, entityLabel := notificationEmailDestination(item.EntityType, item.FeedbackSlug, item.NotificationID, workspaceURL)
 		itemStyle := defaultItemStyle
 		if index == 0 {
 			itemStyle = firstItemStyle
 		}
 		content += fmt.Sprintf(`
 			<div style="%s">
-				<p style="%s">%s for task <a href="%s" style="%s">%s</a></p>
+				<p style="%s">%s for %s <a href="%s" style="%s">%s</a></p>
 			</div>
-		`, itemStyle, messageStyle, parsedMessage.HTML, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title))
+		`, itemStyle, messageStyle, parsedMessage.HTML, entityLabel, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title))
 	}
 
 	return content + "</div></div>", nil
+}
+
+func notificationEmailDestination(entityType, feedbackSlug string, notificationID uuid.UUID, workspaceURL string) (string, string) {
+	if entityType == "feedback" && feedbackSlug != "" {
+		return fmt.Sprintf("%s/feedback/%s", workspaceURL, url.PathEscape(feedbackSlug)), "feedback"
+	}
+	return fmt.Sprintf("%s/notifications/%s", workspaceURL, notificationID.String()), "task"
+}
+
+func feedbackOnlyDigest(items []NotificationEmailDigestItem) bool {
+	if len(items) == 0 {
+		return false
+	}
+	for _, item := range items {
+		if item.EntityType != "feedback" || item.FeedbackSlug == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *handlers) markNotificationsEmailSent(ctx context.Context, notificationIDs []uuid.UUID) error {
@@ -358,6 +392,14 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 
 	// Send email with real data
 	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", data.WorkspaceSlug)
+	notificationCTAURL := fmt.Sprintf("%s/notifications", workspaceURL)
+	notificationCTALabel := "Open notifications"
+	notificationsSettingsURL := fmt.Sprintf("%s/settings/account/notifications", workspaceURL)
+	if data.EntityType == "feedback" && data.FeedbackSlug != "" {
+		notificationCTAURL = fmt.Sprintf("%s/feedback/%s", workspaceURL, url.PathEscape(data.FeedbackSlug))
+		notificationCTALabel = "View feedback"
+		notificationsSettingsURL = ""
+	}
 
 	mailData := map[string]any{
 		"UserName":                 data.UserName,
@@ -368,9 +410,9 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 		"NotificationTitle":        data.Title,
 		"NotificationMessage":      parsedMessage.HTML,
 		"NotificationType":         data.NotificationType,
-		"NotificationCTAURL":       fmt.Sprintf("%s/notifications", workspaceURL),
-		"NotificationCTALabel":     "Open notifications",
-		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
+		"NotificationCTAURL":       notificationCTAURL,
+		"NotificationCTALabel":     notificationCTALabel,
+		"NotificationsSettingsURL": notificationsSettingsURL,
 	}
 
 	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
@@ -431,6 +473,14 @@ func (h *handlers) HandleNotificationEmailDigest(ctx context.Context, t *asynq.T
 	}
 
 	subject := buildNotificationDigestSubject(data.WorkspaceName, len(data.Items))
+	notificationCTAURL := fmt.Sprintf("%s/notifications", workspaceURL)
+	notificationCTALabel := "Open notifications"
+	notificationsSettingsURL := fmt.Sprintf("%s/settings/account/notifications", workspaceURL)
+	if feedbackOnlyDigest(data.Items) {
+		notificationCTAURL = fmt.Sprintf("%s/feedback", workspaceURL)
+		notificationCTALabel = "Open feedback"
+		notificationsSettingsURL = ""
+	}
 	mailData := map[string]any{
 		"UserName":                 data.UserName,
 		"ActorName":                "",
@@ -440,9 +490,9 @@ func (h *handlers) HandleNotificationEmailDigest(ctx context.Context, t *asynq.T
 		"NotificationTitle":        subject,
 		"NotificationMessage":      notificationMessage,
 		"NotificationType":         "notification_digest",
-		"NotificationCTAURL":       fmt.Sprintf("%s/notifications", workspaceURL),
-		"NotificationCTALabel":     "Open notifications",
-		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
+		"NotificationCTAURL":       notificationCTAURL,
+		"NotificationCTALabel":     notificationCTALabel,
+		"NotificationsSettingsURL": notificationsSettingsURL,
 	}
 
 	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{

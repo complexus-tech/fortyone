@@ -1,3 +1,5 @@
+"use client";
+
 import { Avatar, Box, Flex, Text } from "ui";
 import { PublicPortalShell } from "./portal-shell";
 import { RequestStatusPill } from "./request-card";
@@ -7,6 +9,7 @@ import { FeedbackVoteButton } from "./feedback-controls";
 import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackDiscussion } from "./feedback-comments";
 import { PublicPortalActions } from "./sidebar";
+import { usePublicFeedbackDetail } from "./client-query";
 
 export const PublicPortalRequestDetailPage = ({
   portal,
@@ -17,12 +20,13 @@ export const PublicPortalRequestDetailPage = ({
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
 }) => {
-  const board = getBoard(portal, request.boardId);
+  const { data: activeRequest } = usePublicFeedbackDetail({ portal, request });
+  const board = getBoard(portal, activeRequest.boardId);
 
   return (
     <PublicPortalShell
       activeTab="feedback"
-      loginCallbackUrl={getRequestCallbackUrl(portal, request)}
+      loginCallbackUrl={getRequestCallbackUrl(portal, activeRequest)}
       portal={portal}
       viewer={viewer}
     >
@@ -30,40 +34,40 @@ export const PublicPortalRequestDetailPage = ({
         <main>
           <Flex align="start" gap={3}>
             <Avatar
-              name={request.authorName}
+              name={activeRequest.authorName}
               size="md"
-              src={request.authorAvatar}
+              src={activeRequest.authorAvatar}
               style={{
-                backgroundColor: getPublicAvatarColor(request.authorName),
+                backgroundColor: getPublicAvatarColor(activeRequest.authorName),
               }}
             />
             <Box className="min-w-0 flex-1">
               <Text className="text-[1.05rem]" fontWeight="semibold">
-                {request.authorName}
+                {activeRequest.authorName}
               </Text>
-              <Text color="muted">{request.createdAtLabel}</Text>
+              <Text color="muted">{activeRequest.createdAtLabel}</Text>
             </Box>
           </Flex>
 
           <Text as="h1" className="mt-8 text-2xl" fontWeight="semibold">
-            {request.title}
+            {activeRequest.title}
           </Text>
           <Text
             className="mt-4 max-w-3xl text-[1.02rem] leading-7"
             color="muted"
           >
-            {request.description}
+            {activeRequest.description}
           </Text>
 
           <Flex align="center" className="mt-6" gap={3}>
-            <RequestStatusPill status={request.status} />
+            <RequestStatusPill status={activeRequest.status} />
             <Flex align="center" className="text-text-muted" gap={1}>
-              <span>{request.commentCount} comments</span>
+              <span>{activeRequest.commentCount} comments</span>
             </Flex>
             <Box className="ml-auto">
               <FeedbackVoteButton
                 portal={portal}
-                request={request}
+                request={activeRequest}
                 showDownvote
               />
             </Box>
@@ -72,7 +76,7 @@ export const PublicPortalRequestDetailPage = ({
           <Box className="border-border/70 mt-8 border-t-[0.5px] pt-8">
             <FeedbackDiscussion
               portal={portal}
-              request={request}
+              request={activeRequest}
               viewer={viewer}
             />
           </Box>
@@ -82,7 +86,7 @@ export const PublicPortalRequestDetailPage = ({
           <Box className="border-border bg-surface rounded-xl border-[0.5px] p-5">
             <Flex className="py-2" justify="between">
               <Text color="muted">Status</Text>
-              <RequestStatusPill status={request.status} />
+              <RequestStatusPill status={activeRequest.status} />
             </Flex>
             {board ? (
               <Flex className="py-2" justify="between">
@@ -97,7 +101,7 @@ export const PublicPortalRequestDetailPage = ({
             ) : null}
             <Flex className="py-2" justify="between">
               <Text color="muted">Posted</Text>
-              <Text>{request.createdAtLabel}</Text>
+              <Text>{activeRequest.createdAtLabel}</Text>
             </Flex>
           </Box>
           <PublicPortalActions portal={portal} />

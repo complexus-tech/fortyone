@@ -63,6 +63,7 @@ export const PublicPortalRequestsPage = ({
         <Box className="min-h-0">
           <PublicFeedbackList
             filters={filters}
+            initialFilters={initialFilters}
             onFiltersChange={updateFilters}
             portal={portal}
           />

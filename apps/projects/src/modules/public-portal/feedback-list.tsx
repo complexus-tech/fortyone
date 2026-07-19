@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpDownIcon, RequestsIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
@@ -9,12 +9,7 @@ import { toast } from "sonner";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
 import type { PublicPortal, PublicPortalFilters, PublicRequest } from "./types";
-
-type ApiResponse<T> = {
-  data: T;
-};
-
-const PAGE_SIZE = 20;
+import { usePublicFeedbackList } from "./client-query";
 
 const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
   const requests = new Map(current.map((request) => [request.id, request]));
@@ -22,37 +17,6 @@ const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
     requests.set(request.id, request);
   });
   return Array.from(requests.values());
-};
-
-const fetchPortalPage = async (url: string) => {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const payload = (await response.json()) as ApiResponse<PublicPortal>;
-    return payload.data;
-  } catch {
-    return null;
-  }
-};
-
-const buildUrl = ({
-  page,
-  portal,
-  filters,
-}: {
-  page: number;
-  portal: PublicPortal;
-  filters: PublicPortalFilters;
-}) => {
-  const params = new URLSearchParams({
-    page: String(page),
-    pageSize: String(PAGE_SIZE),
-    sort: filters.sort,
-  });
-  if (filters.boardId) params.set("boardId", filters.boardId);
-  if (filters.search.trim()) params.set("search", filters.search.trim());
-  if (filters.status) params.set("status", filters.status);
-  return `/api/public-portal/${portal.slug}?${params.toString()}`;
 };
 
 const FeedbackListSkeleton = () => (
@@ -107,70 +71,44 @@ const FeedbackSearch = ({
 
 export const PublicFeedbackList = ({
   filters,
+  initialFilters,
   onFiltersChange,
   portal,
 }: {
   filters: PublicPortalFilters;
+  initialFilters: PublicPortalFilters;
   onFiltersChange: (updates: Partial<PublicPortalFilters>) => void;
   portal: PublicPortal;
 }) => {
-  const [loadedRequests, setLoadedRequests] = useState<PublicRequest[] | null>(
-    null,
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    isPending,
+  } = usePublicFeedbackList({
+    filters,
+    initialFilters,
+    initialPortal: portal,
+  });
+  const requests = (data?.pages ?? []).reduce<PublicRequest[]>(
+    (current, page) => mergeRequests(current, page.requests),
+    [],
   );
-  const requests = loadedRequests ?? portal.requests;
-  const [loadedHasMore, setLoadedHasMore] = useState<boolean | null>(null);
-  const hasMore = loadedHasMore ?? portal.requestsHasMore;
-  const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const requestSequenceRef = useRef(0);
-  const filterKey = [
-    filters.boardId ?? "",
-    filters.search,
-    filters.sort,
-    filters.status ?? "",
-  ].join(":");
-  const previousFilterKeyRef = useRef(filterKey);
-
-  const loadPage = useEffectEvent(
-    async (nextPage: number, mode: "append" | "replace") => {
-      const requestSequence = requestSequenceRef.current + 1;
-      requestSequenceRef.current = requestSequence;
-      setIsLoading(true);
-      const nextPortal = await fetchPortalPage(
-        buildUrl({ filters, page: nextPage, portal }),
-      );
-      if (requestSequence !== requestSequenceRef.current) return;
-      if (!nextPortal) {
-        toast.error("Unable to load feedback");
-        setIsLoading(false);
-        return;
-      }
-      setLoadedRequests((current) =>
-        mode === "append"
-          ? mergeRequests(current ?? portal.requests, nextPortal.requests)
-          : nextPortal.requests,
-      );
-      setLoadedHasMore(nextPortal.requestsHasMore);
-      setPage(nextPage);
-      setIsLoading(false);
-    },
-  );
 
   useEffect(() => {
-    if (previousFilterKeyRef.current === filterKey) return;
-
-    previousFilterKeyRef.current = filterKey;
-    void loadPage(1, "replace");
-  }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events must not be dependencies.
+    if (isError) toast.error("Unable to load feedback");
+  }, [isError]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore) return;
+    if (!sentinel || !hasNextPage) return;
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting && !isLoading) {
-        void loadPage(page + 1, "append");
+      if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+        void fetchNextPage();
       }
     });
     observer.observe(sentinel);
@@ -178,12 +116,12 @@ export const PublicFeedbackList = ({
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, isLoading, page]); // eslint-disable-line react-hooks/exhaustive-deps -- Effect Events must not be dependencies.
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   let feedbackContent: ReactNode = requests.map((request) => (
     <PublicRequestCard key={request.id} portal={portal} request={request} />
   ));
-  if (isLoading && page === 1) {
+  if (isPending) {
     feedbackContent = <FeedbackListSkeleton />;
   } else if (requests.length === 0) {
     const selectedBoard = portal.boards.find(
@@ -216,16 +154,6 @@ export const PublicFeedbackList = ({
   }
 
   const changeFilters = (updates: Partial<PublicPortalFilters>) => {
-    const changed = (
-      Object.keys(updates) as (keyof PublicPortalFilters)[]
-    ).some((key) => filters[key] !== updates[key]);
-
-    if (changed) {
-      setLoadedRequests([]);
-      setLoadedHasMore(false);
-      setPage(1);
-      setIsLoading(true);
-    }
     onFiltersChange(updates);
   };
 
@@ -316,7 +244,7 @@ export const PublicFeedbackList = ({
       <Box className="hide-scrollbar min-h-0 md:flex-1 md:overflow-y-auto">
         {feedbackContent}
         <div ref={sentinelRef} />
-        {isLoading && page > 1 ? <FeedbackListSkeleton /> : null}
+        {isFetchingNextPage ? <FeedbackListSkeleton /> : null}
       </Box>
     </Flex>
   );

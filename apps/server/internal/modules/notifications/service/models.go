@@ -18,6 +18,7 @@ type Variable struct {
 
 // CoreNewNotification represents a new notification to be created.
 type CoreNewNotification struct {
+	DedupeKey   string              `json:"-"`
 	RecipientID uuid.UUID           `json:"recipient_id"`
 	WorkspaceID uuid.UUID           `json:"workspace_id"`
 	Type        string              `json:"type"`
@@ -41,6 +42,14 @@ type CoreNotification struct {
 	Message     NotificationMessage `json:"message"`
 	CreatedAt   time.Time           `json:"created_at"`
 	ReadAt      *time.Time          `json:"read_at"`
+}
+
+type CorePortalNotification struct {
+	Notification  CoreNotification
+	ActorName     string
+	ActorAvatar   *string
+	FeedbackTitle string
+	FeedbackSlug  string
 }
 
 // CoreNotificationPreferences represents a user's notification preferences.

@@ -79,7 +79,47 @@ export type PublicPortalViewer = {
   avatarUrl: string | null;
   appHref?: string;
   accountHref: string;
-  notificationsHref?: string;
+};
+
+export type PublicPortalNotification = {
+  id: string;
+  type: "feedback_comment" | "feedback_status_update";
+  title: string;
+  message: {
+    template: string;
+    variables: Partial<
+      Record<
+        string,
+        {
+          type: string;
+          value: string;
+        }
+      >
+    >;
+  };
+  actor: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  feedback: {
+    id: string;
+    title: string;
+    slug: string;
+    path: string;
+  };
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type PublicPortalNotificationsPage = {
+  notifications: PublicPortalNotification[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 export type PublicPortal = {
@@ -87,7 +127,6 @@ export type PublicPortal = {
   name: string;
   slug: string;
   workspace: PublicPortalWorkspace;
-  description: string;
   boards: PublicRequestBoard[];
   requests: PublicRequest[];
   requestsHasMore: boolean;

@@ -12,7 +12,6 @@ type AppPortal struct {
 	WorkspaceID  uuid.UUID  `json:"workspaceId"`
 	Name         string     `json:"name"`
 	Slug         string     `json:"slug"`
-	Description  string     `json:"description"`
 	IsPublic     bool       `json:"isPublic"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
@@ -49,6 +48,7 @@ type AppItem struct {
 	VoteCount      int            `json:"voteCount"`
 	CommentCount   int            `json:"commentCount"`
 	RoadmapSummary *string        `json:"roadmapSummary,omitempty"`
+	Board          *AppBoard      `json:"board,omitempty"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Comments       []AppComment   `json:"comments"`
@@ -73,6 +73,7 @@ type AppStoryLink struct {
 	ItemID          uuid.UUID `json:"itemId"`
 	StoryID         uuid.UUID `json:"storyId"`
 	Relationship    string    `json:"relationship"`
+	IsPrimary       bool      `json:"isPrimary"`
 	CreatedByUserID uuid.UUID `json:"createdByUserId"`
 	CreatedAt       time.Time `json:"createdAt"`
 }
@@ -88,8 +89,7 @@ type AppVoteInput struct {
 }
 
 type AppUpdatePortal struct {
-	Description string `json:"description"`
-	IsPublic    bool   `json:"isPublic"`
+	IsPublic bool `json:"isPublic"`
 }
 
 type AppCreateBoard struct {
@@ -125,6 +125,7 @@ type AppCreateComment struct {
 
 type AppCreateStoryFromItem struct {
 	TeamID   uuid.UUID  `json:"teamId"`
+	StoryID  *uuid.UUID `json:"storyId"`
 	StatusID *uuid.UUID `json:"statusId"`
 }
 
@@ -132,6 +133,19 @@ type AppCreateStoryResult struct {
 	ItemID  uuid.UUID `json:"itemId"`
 	StoryID uuid.UUID `json:"storyId"`
 	LinkID  uuid.UUID `json:"linkId"`
+	Created bool      `json:"created"`
+}
+
+type AppItemsPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+	NextPage int  `json:"nextPage"`
+}
+
+type AppTeamFeedbackResponse struct {
+	Feedback   []AppItem          `json:"feedback"`
+	Pagination AppItemsPagination `json:"pagination"`
 }
 
 func toAppPortal(core feedback.CorePortal) AppPortal {
@@ -140,7 +154,6 @@ func toAppPortal(core feedback.CorePortal) AppPortal {
 		WorkspaceID: core.WorkspaceID,
 		Name:        core.Name,
 		Slug:        core.Slug,
-		Description: core.Description,
 		IsPublic:    core.IsPublic,
 		CreatedAt:   core.CreatedAt,
 		UpdatedAt:   core.UpdatedAt,
@@ -163,7 +176,7 @@ func toAppBoard(core feedback.CoreBoard) AppBoard {
 }
 
 func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLink) AppItem {
-	return AppItem{
+	item := AppItem{
 		ID:             core.ID,
 		WorkspaceID:    core.WorkspaceID,
 		PortalID:       core.PortalID,
@@ -183,6 +196,11 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		Comments:       comments,
 		StoryLinks:     links,
 	}
+	if core.Board.ID != uuid.Nil {
+		board := toAppBoard(core.Board)
+		item.Board = &board
+	}
+	return item
 }
 
 func toAppComment(core feedback.CoreComment) AppComment {
@@ -206,6 +224,7 @@ func toAppStoryLink(core feedback.CoreStoryLink) AppStoryLink {
 		ItemID:          core.ItemID,
 		StoryID:         core.StoryID,
 		Relationship:    core.Relationship,
+		IsPrimary:       core.IsPrimary,
 		CreatedByUserID: core.CreatedByUserID,
 		CreatedAt:       core.CreatedAt,
 	}

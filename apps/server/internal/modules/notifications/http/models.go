@@ -33,6 +33,39 @@ type AppNotificationsResponse struct {
 	Pagination    AppPagination     `json:"pagination"`
 }
 
+type AppPortalNotificationActor struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL *string   `json:"avatarUrl"`
+}
+
+type AppPortalNotificationFeedback struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+	Slug  string    `json:"slug"`
+	Path  string    `json:"path"`
+}
+
+type AppPortalNotification struct {
+	ID        uuid.UUID                         `json:"id"`
+	Type      string                            `json:"type"`
+	Title     string                            `json:"title"`
+	Message   notifications.NotificationMessage `json:"message"`
+	Actor     AppPortalNotificationActor        `json:"actor"`
+	Feedback  AppPortalNotificationFeedback     `json:"feedback"`
+	CreatedAt time.Time                         `json:"createdAt"`
+	ReadAt    *time.Time                        `json:"readAt"`
+}
+
+type AppPortalNotificationsResponse struct {
+	Notifications []AppPortalNotification `json:"notifications"`
+	Pagination    AppPagination           `json:"pagination"`
+}
+
+type AppUnreadCount struct {
+	Count int `json:"count"`
+}
+
 type NotificationChannel struct {
 	Email bool `json:"email"`
 	InApp bool `json:"inApp"`
@@ -80,6 +113,42 @@ func toAppNotifications(ns []notifications.CoreNotification) []AppNotification {
 func toAppNotificationsResponse(ns []notifications.CoreNotification, page, pageSize int, hasMore bool) AppNotificationsResponse {
 	return AppNotificationsResponse{
 		Notifications: toAppNotifications(ns),
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: page + 1,
+		},
+	}
+}
+
+func toAppPortalNotificationsResponse(ns []notifications.CorePortalNotification, page, pageSize int, hasMore bool) AppPortalNotificationsResponse {
+	result := make([]AppPortalNotification, 0, len(ns))
+	for _, portalNotification := range ns {
+		notification := portalNotification.Notification
+		result = append(result, AppPortalNotification{
+			ID:      notification.ID,
+			Type:    notification.Type,
+			Title:   notification.Title,
+			Message: notification.Message,
+			Actor: AppPortalNotificationActor{
+				ID:        notification.ActorID,
+				Name:      portalNotification.ActorName,
+				AvatarURL: portalNotification.ActorAvatar,
+			},
+			Feedback: AppPortalNotificationFeedback{
+				ID:    notification.EntityID,
+				Title: portalNotification.FeedbackTitle,
+				Slug:  portalNotification.FeedbackSlug,
+				Path:  "/feedback/" + portalNotification.FeedbackSlug,
+			},
+			CreatedAt: notification.CreatedAt,
+			ReadAt:    notification.ReadAt,
+		})
+	}
+
+	return AppPortalNotificationsResponse{
+		Notifications: result,
 		Pagination: AppPagination{
 			Page:     page,
 			PageSize: pageSize,

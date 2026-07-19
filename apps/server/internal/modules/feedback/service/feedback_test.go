@@ -5,20 +5,24 @@ import (
 	"database/sql"
 	"strings"
 	"testing"
+	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 type repoStub struct {
-	portals        []CorePortal
-	boards         []CoreBoard
-	items          []CoreItem
-	storyLinks     []CoreStoryLink
-	statusID       uuid.UUID
-	createdItems   []CoreItemInput
-	createdPortals []CorePortalInput
+	portals         []CorePortal
+	boards          []CoreBoard
+	items           []CoreItem
+	storyLinks      []CoreStoryLink
+	linkStoryErr    error
+	linkStoryWinner *CoreStoryLink
+	statusID        uuid.UUID
+	createdItems    []CoreItemInput
+	createdPortals  []CorePortalInput
 }
 
 func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error) {
@@ -55,7 +59,7 @@ func (r *repoStub) ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]Co
 
 func (r *repoStub) CreatePortal(ctx context.Context, input CorePortalInput) (CorePortal, error) {
 	r.createdPortals = append(r.createdPortals, input)
-	portal := CorePortal{ID: uuid.New(), WorkspaceID: input.WorkspaceID, Name: "City Roads Program", Slug: "city-roads", Description: input.Description, IsPublic: input.IsPublic}
+	portal := CorePortal{ID: uuid.New(), WorkspaceID: input.WorkspaceID, Name: "City Roads Program", Slug: "city-roads", IsPublic: input.IsPublic}
 	r.portals = append(r.portals, portal)
 	return portal, nil
 }
@@ -63,7 +67,6 @@ func (r *repoStub) CreatePortal(ctx context.Context, input CorePortalInput) (Cor
 func (r *repoStub) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error) {
 	for index, portal := range r.portals {
 		if portal.WorkspaceID == workspaceID && portal.ID == portalID {
-			portal.Description = input.Description
 			portal.IsPublic = input.IsPublic
 			r.portals[index] = portal
 			return portal, nil
@@ -100,9 +103,13 @@ func (r *repoStub) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreB
 func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error) {
 	result := make([]CoreItem, 0, len(r.items))
 	for _, item := range r.items {
-		if item.PortalID == input.PortalID {
-			result = append(result, item)
+		if input.PortalID != uuid.Nil && item.PortalID != input.PortalID {
+			continue
 		}
+		if input.TeamID != nil && item.Board.TeamID != *input.TeamID {
+			continue
+		}
+		result = append(result, item)
 	}
 	return CoreItemsPage{Items: result, HasMore: false}, nil
 }
@@ -111,8 +118,22 @@ func (r *repoStub) ListComments(ctx context.Context, portalID uuid.UUID) ([]Core
 	return []CoreComment{}, nil
 }
 
+func (r *repoStub) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error) {
+	return []CoreComment{}, nil
+}
+
 func (r *repoStub) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error) {
 	return r.storyLinks, nil
+}
+
+func (r *repoStub) ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreStoryLink, error) {
+	result := make([]CoreStoryLink, 0, len(r.storyLinks))
+	for _, link := range r.storyLinks {
+		if link.WorkspaceID == workspaceID && link.ItemID == itemID {
+			result = append(result, link)
+		}
+	}
+	return result, nil
 }
 
 func (r *repoStub) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {
@@ -150,14 +171,30 @@ func (r *repoStub) CreateItem(ctx context.Context, input CoreItemInput) (CoreIte
 	return item, nil
 }
 
-func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error) {
+func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error) {
 	item, err := r.GetItem(ctx, workspaceID, itemID)
 	if err != nil {
-		return CoreItem{}, err
+		return CoreItem{}, false, err
 	}
+	if !input.AllowLinked {
+		for _, link := range item.StoryLinks {
+			if link.IsPrimary {
+				return CoreItem{}, false, ErrStoryManaged
+			}
+		}
+	}
+	statusChanged := item.Status != input.Status
 	item.Status = input.Status
-	item.RoadmapSummary = input.RoadmapSummary
-	return item, nil
+	if input.RoadmapSummary != nil {
+		item.RoadmapSummary = input.RoadmapSummary
+	}
+	for index := range r.items {
+		if r.items[index].ID == itemID {
+			r.items[index] = item
+			break
+		}
+	}
+	return item, statusChanged, nil
 }
 
 func (r *repoStub) CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error) {
@@ -169,7 +206,15 @@ func (r *repoStub) ToggleVote(ctx context.Context, workspaceID, itemID, userID u
 }
 
 func (r *repoStub) LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error) {
-	link := CoreStoryLink{ID: uuid.New(), WorkspaceID: input.WorkspaceID, ItemID: input.ItemID, StoryID: input.StoryID, Relationship: input.Relationship, CreatedByUserID: input.CreatedByUserID}
+	if r.linkStoryErr != nil {
+		err := r.linkStoryErr
+		r.linkStoryErr = nil
+		if r.linkStoryWinner != nil {
+			r.storyLinks = append(r.storyLinks, *r.linkStoryWinner)
+		}
+		return CoreStoryLink{}, err
+	}
+	link := CoreStoryLink{ID: uuid.New(), WorkspaceID: input.WorkspaceID, ItemID: input.ItemID, StoryID: input.StoryID, Relationship: input.Relationship, IsPrimary: input.IsPrimary, CreatedByUserID: input.CreatedByUserID}
 	r.storyLinks = append(r.storyLinks, link)
 	return link, nil
 }
@@ -178,13 +223,50 @@ func (r *repoStub) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UU
 	return &r.statusID, nil
 }
 
+func (r *repoStub) GetStatusCategory(ctx context.Context, teamID, statusID uuid.UUID) (string, error) {
+	if statusID != r.statusID {
+		return "", sql.ErrNoRows
+	}
+	return "unstarted", nil
+}
+
 type storyServiceStub struct {
 	created []stories.CoreNewStory
+	stories map[uuid.UUID]stories.CoreSingleStory
+	deleted []uuid.UUID
+}
+
+type eventPublisherStub struct {
+	events []events.Event
+}
+
+func (p *eventPublisherStub) Publish(_ context.Context, event events.Event) error {
+	p.events = append(p.events, event)
+	return nil
 }
 
 func (s *storyServiceStub) CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
 	s.created = append(s.created, ns)
-	return stories.CoreSingleStory{ID: uuid.New(), Title: ns.Title}, nil
+	story := stories.CoreSingleStory{ID: uuid.New(), Title: ns.Title, Team: ns.Team, Workspace: workspaceID, Status: ns.Status}
+	if s.stories == nil {
+		s.stories = make(map[uuid.UUID]stories.CoreSingleStory)
+	}
+	s.stories[story.ID] = story
+	return story, nil
+}
+
+func (s *storyServiceStub) Get(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
+	story, ok := s.stories[id]
+	if !ok || story.Workspace != workspaceID {
+		return stories.CoreSingleStory{}, sql.ErrNoRows
+	}
+	return story, nil
+}
+
+func (s *storyServiceStub) Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) error {
+	s.deleted = append(s.deleted, id)
+	delete(s.stories, id)
+	return nil
 }
 
 func TestListPortalsCreatesWorkspaceDefaultPortalWhenMissing(t *testing.T) {
@@ -206,7 +288,7 @@ func TestListPortalsCreatesWorkspaceDefaultPortalWhenMissing(t *testing.T) {
 	require.Len(t, repo.createdPortals, 1)
 }
 
-func TestUpdatePortalCustomizesExistingWorkspacePortal(t *testing.T) {
+func TestUpdatePortalAvailability(t *testing.T) {
 	workspaceID := uuid.New()
 	portalID := uuid.New()
 	repo := &repoStub{
@@ -221,16 +303,145 @@ func TestUpdatePortalCustomizesExistingWorkspacePortal(t *testing.T) {
 	service := New(repo, nil)
 
 	portal, err := service.UpdatePortal(context.Background(), workspaceID, portalID, CorePortalInput{
-		Description: "Share progress on public works requests.",
-		IsPublic:    false,
+		IsPublic: false,
 	})
 
 	require.NoError(t, err)
 	require.Equal(t, "City Roads", portal.Name)
 	require.Equal(t, "city-roads", portal.Slug)
-	require.Equal(t, "Share progress on public works requests.", portal.Description)
 	require.False(t, portal.IsPublic)
 	require.Empty(t, repo.createdPortals)
+}
+
+func TestCreatePublicCommentPublishesAuthorNotificationEvent(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	authorID := uuid.New()
+	commenterID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			PortalID:    portalID,
+			AuthorID:    authorID,
+			Title:       "Safer school crossing",
+			Slug:        "safer-school-crossing",
+		}},
+	}
+	publisher := &eventPublisherStub{}
+	service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+	_, err := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   commenterID,
+		Body:       "This is now under review.",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, publisher.events, 1)
+	require.Equal(t, events.FeedbackCommentCreated, publisher.events[0].Type)
+	payload := publisher.events[0].Payload.(events.FeedbackCommentCreatedPayload)
+	require.Equal(t, authorID, payload.RecipientID)
+	require.Equal(t, itemID, payload.FeedbackID)
+	require.Equal(t, commenterID, publisher.events[0].ActorID)
+}
+
+func TestCreatePublicCommentDoesNotPublishSelfNotification(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	authorID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items:   []CoreItem{{ID: itemID, WorkspaceID: workspaceID, PortalID: portalID, AuthorID: authorID}},
+	}
+	publisher := &eventPublisherStub{}
+	service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+	_, err := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   authorID,
+		Body:       "One more detail.",
+	})
+
+	require.NoError(t, err)
+	require.Empty(t, publisher.events)
+}
+
+func TestUpdateItemStatusPublishesAuthorNotificationEvent(t *testing.T) {
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	authorID := uuid.New()
+	actorID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		AuthorID:    authorID,
+		Title:       "Safer school crossing",
+		Slug:        "safer-school-crossing",
+		Status:      StatusPending,
+	}}}
+	publisher := &eventPublisherStub{}
+	service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+	_, err := service.UpdateItemStatus(context.Background(), workspaceID, itemID, CoreUpdateItemStatusInput{
+		Status:  StatusPlanned,
+		ActorID: actorID,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, publisher.events, 1)
+	require.Equal(t, events.FeedbackStatusUpdated, publisher.events[0].Type)
+	payload := publisher.events[0].Payload.(events.FeedbackStatusUpdatedPayload)
+	require.Equal(t, authorID, payload.RecipientID)
+	require.Equal(t, StatusPlanned, payload.Status)
+}
+
+func TestUpdateItemStatusRejectsFeedbackManagedByPrimaryStory(t *testing.T) {
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		Status:      StatusPlanned,
+		StoryLinks:  []CoreStoryLink{{ID: uuid.New(), StoryID: uuid.New(), IsPrimary: true}},
+	}}}
+	service := New(repo, nil)
+
+	_, err := service.UpdateItemStatus(context.Background(), workspaceID, itemID, CoreUpdateItemStatusInput{
+		Status:  StatusClosed,
+		ActorID: uuid.New(),
+	})
+
+	require.ErrorIs(t, err, ErrStoryManaged)
+	require.Equal(t, StatusPlanned, repo.items[0].Status)
+}
+
+func TestUpdateItemStatusDoesNotPublishWhenStatusIsUnchanged(t *testing.T) {
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		AuthorID:    uuid.New(),
+		Title:       "Safer school crossing",
+		Slug:        "safer-school-crossing",
+		Status:      StatusPlanned,
+	}}}
+	publisher := &eventPublisherStub{}
+	service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+	_, err := service.UpdateItemStatus(context.Background(), workspaceID, itemID, CoreUpdateItemStatusInput{
+		Status:  StatusPlanned,
+		ActorID: uuid.New(),
+	})
+
+	require.NoError(t, err)
+	require.Empty(t, publisher.events)
 }
 
 func TestListPortalBoardsAllowsManagingDisabledPortal(t *testing.T) {
@@ -449,7 +660,7 @@ func TestToggleVoteSupportsUpvotesAndDownvotes(t *testing.T) {
 	require.ErrorContains(t, err, "either -1 or 1")
 }
 
-func TestCreateStoryFromFeedbackLinksInternalStoryWithoutCompletingFeedback(t *testing.T) {
+func TestCreateStoryFromFeedbackPlansAndLinksInternalStory(t *testing.T) {
 	workspaceID := uuid.New()
 	portalID := uuid.New()
 	boardID := uuid.New()
@@ -467,7 +678,8 @@ func TestCreateStoryFromFeedbackLinksInternalStoryWithoutCompletingFeedback(t *t
 			AuthorID:    actorID,
 			Title:       "Add pedestrian crossing",
 			Description: "A marked crossing would make school pickup safer.",
-			Status:      StatusPlanned,
+			Status:      StatusPending,
+			Board:       CoreBoard{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID, TeamID: teamID},
 		}},
 	}
 	storyService := &storyServiceStub{}
@@ -484,5 +696,192 @@ func TestCreateStoryFromFeedbackLinksInternalStoryWithoutCompletingFeedback(t *t
 	require.Equal(t, "A marked crossing would make school pickup safer.", *storyService.created[0].Description)
 	require.Equal(t, &statusID, storyService.created[0].Status)
 	require.Equal(t, RelationshipCreatedFrom, repo.storyLinks[0].Relationship)
+	require.True(t, repo.storyLinks[0].IsPrimary)
 	require.Equal(t, itemID, repo.storyLinks[0].ItemID)
+	require.True(t, result.Created)
+	require.Equal(t, StatusPlanned, repo.items[0].Status)
+}
+
+func TestCreateStoryFromFeedbackLinksExistingStoryInSameTeam(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	itemID := uuid.New()
+	storyID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		Status:      StatusReviewing,
+		Board:       CoreBoard{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID},
+	}}}
+	storyService := &storyServiceStub{stories: map[uuid.UUID]stories.CoreSingleStory{
+		storyID: {ID: storyID, Workspace: workspaceID, Team: teamID},
+	}}
+	service := New(repo, storyService)
+
+	result, err := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{
+		TeamID:  teamID,
+		StoryID: &storyID,
+	})
+
+	require.NoError(t, err)
+	require.False(t, result.Created)
+	require.Equal(t, storyID, result.StoryID)
+	require.Len(t, repo.storyLinks, 1)
+	require.Equal(t, RelationshipSolves, repo.storyLinks[0].Relationship)
+	require.True(t, repo.storyLinks[0].IsPrimary)
+	require.Equal(t, StatusPlanned, repo.items[0].Status)
+}
+
+func TestCreateStoryFromFeedbackRejectsCrossTeamPlanning(t *testing.T) {
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	itemTeamID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		Board:       CoreBoard{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: itemTeamID},
+	}}}
+	service := New(repo, &storyServiceStub{})
+
+	_, err := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{
+		TeamID: uuid.New(),
+	})
+
+	require.ErrorIs(t, err, ErrTeamMismatch)
+}
+
+func TestCreateStoryFromFeedbackRejectsDeletedExistingStory(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	itemID := uuid.New()
+	storyID := uuid.New()
+	deletedAt := time.Now()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		Board:       CoreBoard{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID},
+	}}}
+	storyService := &storyServiceStub{stories: map[uuid.UUID]stories.CoreSingleStory{
+		storyID: {ID: storyID, Workspace: workspaceID, Team: teamID, DeletedAt: &deletedAt},
+	}}
+	service := New(repo, storyService)
+
+	_, err := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{
+		TeamID:  teamID,
+		StoryID: &storyID,
+	})
+
+	require.ErrorIs(t, err, ErrInvalidInput)
+	require.Empty(t, repo.storyLinks)
+}
+
+func TestCreateStoryFromFeedbackReturnsExistingPrimaryLinkOnRetry(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	itemID := uuid.New()
+	storyID := uuid.New()
+	linkID := uuid.New()
+	repo := &repoStub{
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			Status:      StatusPending,
+			Board:       CoreBoard{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID},
+		}},
+		storyLinks: []CoreStoryLink{{
+			ID:           linkID,
+			WorkspaceID:  workspaceID,
+			ItemID:       itemID,
+			StoryID:      storyID,
+			Relationship: RelationshipCreatedFrom,
+			IsPrimary:    true,
+		}},
+	}
+	storyService := &storyServiceStub{}
+	service := New(repo, storyService)
+
+	result, err := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{
+		TeamID: teamID,
+	})
+
+	require.NoError(t, err)
+	require.False(t, result.Created)
+	require.Equal(t, storyID, result.StoryID)
+	require.Equal(t, linkID, result.LinkID)
+	require.Empty(t, storyService.created)
+	require.Equal(t, StatusPending, repo.items[0].Status)
+}
+
+func TestCreateStoryFromFeedbackCompensatesConcurrentDuplicate(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	itemID := uuid.New()
+	winnerStoryID := uuid.New()
+	winnerLinkID := uuid.New()
+	repo := &repoStub{
+		statusID: uuid.New(),
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			Title:       "Add export filters",
+			Status:      StatusPending,
+			Board:       CoreBoard{ID: uuid.New(), WorkspaceID: workspaceID, TeamID: teamID},
+		}},
+		linkStoryErr: ErrAlreadyPlanned,
+		linkStoryWinner: &CoreStoryLink{
+			ID:           winnerLinkID,
+			WorkspaceID:  workspaceID,
+			ItemID:       itemID,
+			StoryID:      winnerStoryID,
+			Relationship: RelationshipCreatedFrom,
+			IsPrimary:    true,
+		},
+	}
+	storyService := &storyServiceStub{}
+	service := New(repo, storyService)
+
+	result, err := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{
+		TeamID: teamID,
+	})
+
+	require.NoError(t, err)
+	require.False(t, result.Created)
+	require.Equal(t, winnerStoryID, result.StoryID)
+	require.Equal(t, winnerLinkID, result.LinkID)
+	require.Len(t, storyService.created, 1)
+	require.Len(t, storyService.deleted, 1)
+}
+
+func TestListTeamItemsScopesFeedbackToBoardTeam(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	otherTeamID := uuid.New()
+	repo := &repoStub{items: []CoreItem{
+		{ID: uuid.New(), WorkspaceID: workspaceID, Board: CoreBoard{TeamID: teamID}},
+		{ID: uuid.New(), WorkspaceID: workspaceID, Board: CoreBoard{TeamID: otherTeamID}},
+	}}
+	service := New(repo, nil)
+
+	page, err := service.ListTeamItems(context.Background(), workspaceID, teamID, "all", 1, 25)
+
+	require.NoError(t, err)
+	require.Len(t, page.Items, 1)
+	require.Equal(t, teamID, page.Items[0].Board.TeamID)
+}
+
+func TestFeedbackStatusForStoryCategory(t *testing.T) {
+	tests := map[string]string{
+		"backlog":   StatusReviewing,
+		"unstarted": StatusPlanned,
+		"started":   StatusInProgress,
+		"paused":    StatusPlanned,
+		"completed": StatusCompleted,
+		"cancelled": StatusClosed,
+	}
+
+	for category, expected := range tests {
+		t.Run(category, func(t *testing.T) {
+			require.Equal(t, expected, feedbackStatusForStoryCategory(category))
+		})
+	}
 }

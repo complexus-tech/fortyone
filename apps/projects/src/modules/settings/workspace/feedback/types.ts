@@ -18,7 +18,6 @@ export type FeedbackPortal = {
   workspaceId: string;
   name: string;
   slug: string;
-  description: string;
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
@@ -30,7 +29,6 @@ export type FeedbackBoardWithTeam = FeedbackBoard & {
 };
 
 export type UpdateFeedbackPortalInput = {
-  description: string;
   isPublic: boolean;
 };
 

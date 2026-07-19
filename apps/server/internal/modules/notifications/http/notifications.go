@@ -5,9 +5,12 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -19,13 +22,122 @@ var (
 	ErrInvalidWorkspaceID    = errors.New("workspace id is not in its proper form")
 )
 
-type Handlers struct {
-	notifications *notifications.Service
+const portalNotificationAvatarExpiry = 24 * time.Hour
+
+type profileImageResolver interface {
+	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
-func New(notifications *notifications.Service) *Handlers {
+type Handlers struct {
+	notifications *notifications.Service
+	profileImages profileImageResolver
+	log           *logger.Logger
+}
+
+func New(notifications *notifications.Service, profileImages profileImageResolver, log *logger.Logger) *Handlers {
 	return &Handlers{
 		notifications: notifications,
+		profileImages: profileImages,
+		log:           log,
+	}
+}
+
+func (h *Handlers) ListPortalFeedback(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	page, pageSize := portalNotificationPagination(r)
+	portalNotifications, err := h.notifications.ListPortalFeedback(
+		ctx,
+		userID,
+		web.Params(r, "portalSlug"),
+		pageSize+1,
+		(page-1)*pageSize,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	hasMore := len(portalNotifications) > pageSize
+	if hasMore {
+		portalNotifications = portalNotifications[:pageSize]
+	}
+	h.resolvePortalNotificationAvatars(ctx, portalNotifications)
+	return web.Respond(ctx, w, toAppPortalNotificationsResponse(portalNotifications, page, pageSize, hasMore), http.StatusOK)
+}
+
+func (h *Handlers) GetPortalFeedbackUnreadCount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	count, err := h.notifications.GetPortalFeedbackUnreadCount(ctx, userID, web.Params(r, "portalSlug"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, AppUnreadCount{Count: count}, http.StatusOK)
+}
+
+func (h *Handlers) MarkPortalFeedbackAsRead(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	notificationID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidNotificationID, http.StatusBadRequest)
+	}
+	if err := h.notifications.MarkPortalFeedbackAsRead(ctx, notificationID, userID, web.Params(r, "portalSlug")); err != nil {
+		if errors.Is(err, notifications.ErrNotificationNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func portalNotificationPagination(r *http.Request) (int, int) {
+	page := 1
+	pageSize := 20
+	if parsed, err := strconv.Atoi(r.URL.Query().Get("page")); err == nil && parsed > 0 {
+		page = parsed
+	}
+	if parsed, err := strconv.Atoi(r.URL.Query().Get("pageSize")); err == nil && parsed > 0 {
+		pageSize = min(parsed, 100)
+	}
+	return page, pageSize
+}
+
+func (h *Handlers) resolvePortalNotificationAvatars(ctx context.Context, portalNotifications []notifications.CorePortalNotification) {
+	resolved := make(map[string]*string)
+	for index := range portalNotifications {
+		avatar := portalNotifications[index].ActorAvatar
+		if avatar == nil || strings.TrimSpace(*avatar) == "" {
+			portalNotifications[index].ActorAvatar = nil
+			continue
+		}
+		avatarKey := strings.TrimSpace(*avatar)
+		if cached, ok := resolved[avatarKey]; ok {
+			portalNotifications[index].ActorAvatar = cached
+			continue
+		}
+		if h.profileImages == nil {
+			resolved[avatarKey] = nil
+			portalNotifications[index].ActorAvatar = nil
+			continue
+		}
+		avatarURL, err := h.profileImages.ResolveProfileImageURL(ctx, avatarKey, portalNotificationAvatarExpiry)
+		if err != nil || strings.TrimSpace(avatarURL) == "" {
+			if err != nil && h.log != nil {
+				h.log.Warn(ctx, "failed to resolve portal notification actor avatar", "error", err)
+			}
+			resolved[avatarKey] = nil
+			portalNotifications[index].ActorAvatar = nil
+			continue
+		}
+		resolved[avatarKey] = &avatarURL
+		portalNotifications[index].ActorAvatar = &avatarURL
 	}
 }
 

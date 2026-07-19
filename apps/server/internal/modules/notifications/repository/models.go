@@ -2,6 +2,7 @@ package notificationsrepository
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
@@ -16,6 +17,7 @@ const (
 	EntityTypeComment   EntityType = "comment"
 	EntityTypeObjective EntityType = "objective"
 	EntityTypeKeyResult EntityType = "key_result"
+	EntityTypeFeedback  EntityType = "feedback"
 )
 
 const (
@@ -25,6 +27,8 @@ const (
 	NotificationTypeObjectiveUpdate NotificationType = "objective_update"
 	NotificationTypeKeyResultUpdate NotificationType = "key_result_update"
 	NotificationTypeMention         NotificationType = "mention"
+	NotificationTypeFeedbackComment NotificationType = "feedback_comment"
+	NotificationTypeFeedbackStatus  NotificationType = "feedback_status_update"
 )
 
 type dbNotification struct {
@@ -52,6 +56,7 @@ type dbNotificationPreferences struct {
 }
 
 type dbNewNotification struct {
+	DedupeKey   string           `db:"dedupe_key"`
 	RecipientID uuid.UUID        `db:"recipient_id"`
 	WorkspaceID uuid.UUID        `db:"workspace_id"`
 	Type        NotificationType `db:"type"`
@@ -62,6 +67,24 @@ type dbNewNotification struct {
 	Message     json.RawMessage  `db:"message"` // JSONB field for structured message
 }
 
+type dbPortalNotification struct {
+	ID            uuid.UUID        `db:"notification_id"`
+	RecipientID   uuid.UUID        `db:"recipient_id"`
+	WorkspaceID   uuid.UUID        `db:"workspace_id"`
+	Type          NotificationType `db:"type"`
+	EntityType    EntityType       `db:"entity_type"`
+	EntityID      uuid.UUID        `db:"entity_id"`
+	ActorID       uuid.UUID        `db:"actor_id"`
+	Title         string           `db:"title"`
+	Message       json.RawMessage  `db:"message"`
+	CreatedAt     time.Time        `db:"created_at"`
+	ReadAt        *time.Time       `db:"read_at"`
+	ActorName     string           `db:"actor_name"`
+	ActorAvatar   *string          `db:"actor_avatar"`
+	FeedbackTitle string           `db:"feedback_title"`
+	FeedbackSlug  string           `db:"feedback_slug"`
+}
+
 // Conversion functions
 func toDBNewNotification(n notifications.CoreNewNotification) (dbNewNotification, error) {
 	messageBytes, err := json.Marshal(n.Message)
@@ -69,7 +92,13 @@ func toDBNewNotification(n notifications.CoreNewNotification) (dbNewNotification
 		return dbNewNotification{}, err
 	}
 
+	dedupeKey := strings.TrimSpace(n.DedupeKey)
+	if dedupeKey == "" {
+		dedupeKey = "notification:" + uuid.NewString()
+	}
+
 	return dbNewNotification{
+		DedupeKey:   dedupeKey,
 		RecipientID: n.RecipientID,
 		WorkspaceID: n.WorkspaceID,
 		Type:        NotificationType(n.Type),
@@ -110,6 +139,36 @@ func toCoreNotifications(ns []dbNotification) ([]notifications.CoreNotification,
 			return nil, err
 		}
 		result[i] = coreNotif
+	}
+	return result, nil
+}
+
+func toCorePortalNotifications(rows []dbPortalNotification) ([]notifications.CorePortalNotification, error) {
+	result := make([]notifications.CorePortalNotification, 0, len(rows))
+	for _, row := range rows {
+		notification, err := toCoreNotification(dbNotification{
+			ID:          row.ID,
+			RecipientID: row.RecipientID,
+			WorkspaceID: row.WorkspaceID,
+			Type:        row.Type,
+			EntityType:  row.EntityType,
+			EntityID:    row.EntityID,
+			ActorID:     row.ActorID,
+			Title:       row.Title,
+			Message:     row.Message,
+			CreatedAt:   row.CreatedAt,
+			ReadAt:      row.ReadAt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, notifications.CorePortalNotification{
+			Notification:  notification,
+			ActorName:     row.ActorName,
+			ActorAvatar:   row.ActorAvatar,
+			FeedbackTitle: row.FeedbackTitle,
+			FeedbackSlug:  row.FeedbackSlug,
+		})
 	}
 	return result, nil
 }

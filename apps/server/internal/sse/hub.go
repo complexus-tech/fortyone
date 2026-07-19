@@ -52,6 +52,10 @@ type Hub struct {
 	unregister chan *Client
 }
 
+func notificationMatchesWorkspace(notification notifications.CoreNotification, workspaceID uuid.UUID) bool {
+	return workspaceID != uuid.Nil && notification.WorkspaceID == workspaceID
+}
+
 // NewHub creates a new Hub instance.
 func NewHub(ctx context.Context, log *logger.Logger, redisClient *redis.Client) *Hub {
 	return &Hub{
@@ -183,6 +187,10 @@ func (h *Hub) listenToUserNotifications(client *Client) {
 			if err := json.Unmarshal([]byte(msg.Payload), &notificationPayload); err != nil {
 				h.log.Error(client.ctx, "Failed to unmarshal notification from Pub/Sub, skipping", "userID", client.UserID, "channel", channelName, "payload", msg.Payload, "error", err)
 				continue // Skip malformed messages
+			}
+			if !notificationMatchesWorkspace(notificationPayload, client.WorkspaceID) {
+				h.log.Warn(client.ctx, "Dropping notification for a different workspace", "userID", client.UserID, "clientWorkspaceID", client.WorkspaceID, "notificationWorkspaceID", notificationPayload.WorkspaceID, "notificationID", notificationPayload.ID)
+				continue
 			}
 
 			h.log.Debug(client.ctx, "Received message from Pub/Sub", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID)

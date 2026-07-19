@@ -90,6 +90,11 @@ export const Team = ({
       disabled: !hasRequests,
     },
     {
+      name: "Feedback",
+      icon: <RequestsIcon className="h-[1.15rem]" />,
+      href: withWorkspace(`/teams/${id}/feedback`),
+    },
+    {
       name: "Backlog",
       icon: <BacklogIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/backlog`),

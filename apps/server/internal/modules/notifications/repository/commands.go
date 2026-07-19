@@ -14,40 +14,40 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) (notifications.CoreNotification, error) {
+const createNotificationQuery = `
+	INSERT INTO notifications (
+		dedupe_key, recipient_id, workspace_id, type, entity_type,
+		entity_id, actor_id, title, message
+	)
+	SELECT
+		:dedupe_key, :recipient_id, :workspace_id, :type, :entity_type,
+		:entity_id, :actor_id, :title, :message
+	FROM users u
+	WHERE u.user_id = :recipient_id
+		AND u.is_active = true
+	ON CONFLICT (dedupe_key) DO NOTHING
+	RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
+		entity_id, actor_id, title, message, created_at, read_at;
+`
+
+const getNotificationByDedupeKeyQuery = `
+	SELECT notification_id, recipient_id, workspace_id, type, entity_type,
+		entity_id, actor_id, title, message, created_at, read_at
+	FROM notifications
+	WHERE dedupe_key = $1 AND recipient_id = $2;
+`
+
+func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) (notifications.CoreNotification, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.Create")
 	defer span.End()
 
-	query := `
-		INSERT INTO notifications (
-			recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, message
-		) 
-		SELECT 
-			:recipient_id, :workspace_id, :type, :entity_type,
-			:entity_id, :actor_id, :title, :message
-		FROM users u
-		WHERE u.user_id = :recipient_id 
-			AND u.is_active = true
-		ON CONFLICT (recipient_id, workspace_id, entity_id, entity_type)
-		DO UPDATE SET
-			title = :title,
-			message = :message,
-			actor_id = :actor_id,
-			read_at = NULL,
-			email_sent_at = NULL,
-			created_at = CURRENT_TIMESTAMP
-		RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, message, created_at, read_at;
-	`
-
 	var notification dbNotification
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	stmt, err := r.db.PrepareNamedContext(ctx, createNotificationQuery)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to prepare statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return notifications.CoreNotification{}, err
+		return notifications.CoreNotification{}, false, err
 	}
 	defer stmt.Close()
 
@@ -56,14 +56,21 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 		errMsg := fmt.Sprintf("failed to convert notification: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to convert notification"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return notifications.CoreNotification{}, err
+		return notifications.CoreNotification{}, false, err
 	}
 
+	inserted := true
 	if err := stmt.GetContext(ctx, &notification, dbNotif); err != nil {
-		errMsg := fmt.Sprintf("failed to create notification: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to create notification"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return notifications.CoreNotification{}, err
+		if errors.Is(err, sql.ErrNoRows) {
+			inserted = false
+			err = r.db.GetContext(ctx, &notification, getNotificationByDedupeKeyQuery, dbNotif.DedupeKey, dbNotif.RecipientID)
+		}
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to create notification: %s", err)
+			r.log.Error(ctx, errMsg)
+			span.RecordError(errors.New("failed to create notification"), trace.WithAttributes(attribute.String("error", errMsg)))
+			return notifications.CoreNotification{}, false, err
+		}
 	}
 
 	span.AddEvent("notification created", trace.WithAttributes(
@@ -75,10 +82,10 @@ func (r *repo) Create(ctx context.Context, n notifications.CoreNewNotification) 
 		errMsg := fmt.Sprintf("failed to convert notification: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to convert notification"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return notifications.CoreNotification{}, err
+		return notifications.CoreNotification{}, false, err
 	}
 
-	return coreNotif, nil
+	return coreNotif, inserted, nil
 }
 
 func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error {
@@ -89,7 +96,8 @@ func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID)
 		UPDATE notifications
 		SET read_at = CURRENT_TIMESTAMP
 		WHERE notification_id = :notification_id
-		AND recipient_id = :user_id;
+		AND recipient_id = :user_id
+		AND entity_type::text <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -267,6 +275,7 @@ func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID)
 		SET read_at = CURRENT_TIMESTAMP
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
+		AND entity_type::text <> 'feedback'
 		AND read_at IS NULL;
 	`
 
@@ -311,7 +320,8 @@ func (r *repo) DeleteNotification(ctx context.Context, notificationID, userID uu
 	query := `
 		DELETE FROM notifications
 		WHERE notification_id = :notification_id
-		AND recipient_id = :user_id;
+		AND recipient_id = :user_id
+		AND entity_type::text <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -359,7 +369,8 @@ func (r *repo) DeleteAllNotifications(ctx context.Context, userID, workspaceID u
 	query := `
 		DELETE FROM notifications
 		WHERE recipient_id = :user_id
-		AND workspace_id = :workspace_id;
+		AND workspace_id = :workspace_id
+		AND entity_type::text <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -404,6 +415,7 @@ func (r *repo) DeleteReadNotifications(ctx context.Context, userID, workspaceID 
 		DELETE FROM notifications
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
+		AND entity_type::text <> 'feedback'
 		AND read_at IS NOT NULL;
 	`
 
@@ -449,7 +461,8 @@ func (r *repo) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUI
 		UPDATE notifications
 		SET read_at = NULL
 		WHERE notification_id = :notification_id
-		AND recipient_id = :user_id;
+		AND recipient_id = :user_id
+		AND entity_type::text <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -487,5 +500,39 @@ func (r *repo) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUI
 		attribute.String("notification.id", notificationID.String()),
 	))
 
+	return nil
+}
+
+func (r *repo) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, userID uuid.UUID, portalSlug string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.MarkPortalFeedbackAsRead")
+	defer span.End()
+
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE notifications n
+		SET read_at = CURRENT_TIMESTAMP
+		FROM feedback_items fi
+		INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+		WHERE n.notification_id = $1
+			AND n.recipient_id = $2
+			AND w.slug = $3
+			AND fp.is_public = true
+			AND fi.id = n.entity_id
+			AND fi.workspace_id = n.workspace_id
+			AND n.entity_type::text = 'feedback'
+			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+	`, notificationID, userID, portalSlug)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("mark portal feedback notification as read: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get portal notification rows affected: %w", err)
+	}
+	if rows == 0 {
+		return notifications.ErrNotificationNotFound
+	}
 	return nil
 }

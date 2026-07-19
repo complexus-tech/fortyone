@@ -14,6 +14,8 @@ const (
 	StoryDuplicated                        EventType = "story.duplicated"
 	CommentCreated                         EventType = "comment.created"
 	CommentReplied                         EventType = "comment.replied"
+	FeedbackCommentCreated                 EventType = "feedback.comment.created"
+	FeedbackStatusUpdated                  EventType = "feedback.status.updated"
 	UserMentioned                          EventType = "user.mentioned"
 	ObjectiveUpdated                       EventType = "objective.updated"
 	KeyResultUpdated                       EventType = "keyresult.updated"
@@ -127,6 +129,30 @@ type CommentRepliedPayload struct {
 	WorkspaceID     uuid.UUID   `json:"workspace_id"`
 	Content         string      `json:"content"`
 	Mentions        []uuid.UUID `json:"mentions"`
+}
+
+// FeedbackCommentCreatedPayload contains the public feedback data required to
+// notify the feedback author without requiring workspace membership.
+type FeedbackCommentCreatedPayload struct {
+	CommentID     uuid.UUID `json:"comment_id"`
+	FeedbackID    uuid.UUID `json:"feedback_id"`
+	FeedbackTitle string    `json:"feedback_title"`
+	FeedbackSlug  string    `json:"feedback_slug"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	RecipientID   uuid.UUID `json:"recipient_id"`
+	Content       string    `json:"content"`
+}
+
+// FeedbackStatusUpdatedPayload contains the public feedback data required to
+// notify its author when the team changes its delivery status.
+type FeedbackStatusUpdatedPayload struct {
+	EventID       uuid.UUID `json:"event_id"`
+	FeedbackID    uuid.UUID `json:"feedback_id"`
+	FeedbackTitle string    `json:"feedback_title"`
+	FeedbackSlug  string    `json:"feedback_slug"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	RecipientID   uuid.UUID `json:"recipient_id"`
+	Status        string    `json:"status"`
 }
 
 // UserMentionedPayload contains data for user mention events

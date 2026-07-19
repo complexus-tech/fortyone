@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
@@ -160,6 +161,68 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 	}
 
 	return notifications, nil
+}
+
+// ProcessFeedbackCommentCreated notifies the feedback author when another
+// person contributes to the public discussion.
+func (r *Rules) ProcessFeedbackCommentCreated(ctx context.Context, payload events.FeedbackCommentCreatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	if !shouldNotify(payload.RecipientID, actorID) {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	if actorName == "" {
+		actorName = "Someone"
+	}
+
+	return []CoreNewNotification{{
+		DedupeKey:   fmt.Sprintf("feedback-comment:%s:%s", payload.CommentID, payload.RecipientID),
+		RecipientID: payload.RecipientID,
+		WorkspaceID: payload.WorkspaceID,
+		Type:        "feedback_comment",
+		EntityType:  "feedback",
+		EntityID:    payload.FeedbackID,
+		ActorID:     actorID,
+		Title:       payload.FeedbackTitle,
+		Message: NotificationMessage{
+			Template: "{actor} commented on your feedback",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		},
+	}}
+}
+
+// ProcessFeedbackStatusUpdated notifies the feedback author when the team
+// advances or closes the item on the public roadmap.
+func (r *Rules) ProcessFeedbackStatusUpdated(ctx context.Context, payload events.FeedbackStatusUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
+	if !shouldNotify(payload.RecipientID, actorID) {
+		return nil
+	}
+
+	actorName := r.getUserName(ctx, actorID)
+	if actorName == "" {
+		actorName = "Someone"
+	}
+	status := strings.ReplaceAll(payload.Status, "_", " ")
+
+	return []CoreNewNotification{{
+		DedupeKey:   fmt.Sprintf("feedback-status:%s:%s", payload.EventID, payload.RecipientID),
+		RecipientID: payload.RecipientID,
+		WorkspaceID: payload.WorkspaceID,
+		Type:        "feedback_status_update",
+		EntityType:  "feedback",
+		EntityID:    payload.FeedbackID,
+		ActorID:     actorID,
+		Title:       payload.FeedbackTitle,
+		Message: NotificationMessage{
+			Template: "{actor} marked your feedback as {status}",
+			Variables: map[string]Variable{
+				"actor":  {Value: actorName, Type: "actor"},
+				"status": {Value: status, Type: "value"},
+			},
+		},
+	}}
 }
 
 // ProcessUserMentioned applies notification rules for user mentions

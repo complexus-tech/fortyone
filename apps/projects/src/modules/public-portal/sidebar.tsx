@@ -29,7 +29,7 @@ const shareLink = async (portal: PublicPortal) => {
   try {
     await share.call(navigator, {
       title: portal.name,
-      text: portal.description || `${portal.workspace.name} feedback`,
+      text: `${portal.workspace.name} feedback`,
       url: window.location.href,
     });
   } catch (error) {
@@ -84,7 +84,7 @@ export const PublicPortalSidebar = ({
   return (
     <aside className="space-y-8 md:min-h-0 md:overflow-y-auto">
       {viewer ? (
-        <NewFeedbackButton portal={portal} />
+        <NewFeedbackButton portal={portal} viewer={viewer} />
       ) : (
         <Button
           className="h-12 w-full justify-center text-[1rem]"

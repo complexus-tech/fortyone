@@ -10,6 +10,6 @@ export const PublicPortalRoadmapPage = ({
   viewer?: PublicPortalViewer | null;
 }) => (
   <PublicPortalShell activeTab="roadmap" portal={portal} viewer={viewer}>
-    <RoadmapBoard portal={portal} />
+    <RoadmapBoard key={portal.slug} portal={portal} />
   </PublicPortalShell>
 );

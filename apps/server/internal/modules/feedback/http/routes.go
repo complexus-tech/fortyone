@@ -5,6 +5,7 @@ import (
 
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -18,11 +19,12 @@ type Config struct {
 	SecretKey   string
 	Cache       *cache.Service
 	Service     *feedback.Service
+	Teams       *teams.Service
 	Attachments *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Service, cfg.Attachments, cfg.Log)
+	h := New(cfg.Service, cfg.Teams, cfg.Attachments, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	createItemRateLimit := mid.AuthenticatedUserRateLimit(cfg.Log, cfg.Cache, mid.AuthenticatedUserRateLimitConfig{
 		Scope:  "public-feedback-item",
@@ -41,6 +43,7 @@ func Routes(cfg Config, app *web.App) {
 	})
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	app.Get("/portals/{portalSlug}/feedback", h.GetPortal)
 	app.Post("/portals/{portalSlug}/feedback/items", h.CreatePublicItem, auth, createItemRateLimit)
@@ -48,11 +51,13 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/portals/{portalSlug}/feedback/items/{itemId}/vote", h.TogglePublicVote, auth, voteRateLimit)
 	app.Get("/workspaces/{workspaceSlug}/portals/{portalSlug}/feedback", h.GetWorkspacePortal)
 	app.Get("/workspaces/{workspaceSlug}/feedback/portals", h.ListPortals, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/teams/{teamId}/feedback", h.ListTeamItems, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/feedback/items/{itemId}", h.GetItem, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/feedback/portals/{portalId}", h.UpdatePortal, auth, workspace, adminOnly)
 	app.Post("/workspaces/{workspaceSlug}/feedback/boards", h.CreateBoard, auth, workspace, adminOnly)
 	app.Post("/workspaces/{workspaceSlug}/feedback/items", h.CreateItem, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/feedback/items/{itemId}/status", h.UpdateItemStatus, auth, workspace, adminOnly)
+	app.Put("/workspaces/{workspaceSlug}/feedback/items/{itemId}/status", h.UpdateItemStatus, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/comments", h.CreateComment, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/vote", h.ToggleVote, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/story", h.CreateStoryFromItem, auth, workspace, adminOnly)
+	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/story", h.CreateStoryFromItem, auth, workspace, memberAndAdmin)
 }

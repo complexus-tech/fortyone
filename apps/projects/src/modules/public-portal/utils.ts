@@ -7,10 +7,16 @@ const isWorkspaceSubdomainDeployment =
 export const getBoard = (portal: PublicPortal, boardId: string) =>
   portal.boards.find((board) => board.id === boardId);
 
-export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
+export const getRequestPathBySlug = (
+  portal: PublicPortal,
+  requestSlug: string,
+) =>
   isWorkspaceSubdomainDeployment
-    ? `/feedback/${request.slug}`
-    : `/portal/${portal.slug}/feedback/${request.slug}`;
+    ? `/feedback/${requestSlug}`
+    : `/portal/${portal.slug}/feedback/${requestSlug}`;
+
+export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
+  getRequestPathBySlug(portal, request.slug);
 
 export const getPortalPath = (
   portal: PublicPortal,

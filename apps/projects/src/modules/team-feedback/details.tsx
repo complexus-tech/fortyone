@@ -1,0 +1,682 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { useEditor } from "@tiptap/react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import {
+  CheckIcon,
+  ArrowLeftIcon,
+  ClockIcon,
+  CloseIcon,
+  CommentIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  RequestsIcon,
+  StoryIcon,
+  ThumbsUpIcon,
+} from "icons";
+import {
+  Avatar,
+  Box,
+  Button,
+  Container,
+  Divider,
+  Flex,
+  Menu,
+  Skeleton,
+  Text,
+  TextEditor,
+  TimeAgo,
+} from "ui";
+import { BodyContainer } from "@/components/shared";
+import { ConfirmDialog } from "@/components/ui";
+import { useWorkspacePath } from "@/hooks";
+import { useSession } from "@/lib/auth/client";
+import { Option } from "@/modules/story/components/options";
+import {
+  getStoryCommentEditorExtensions,
+  serializeStoryCommentToGitHubMarkdown,
+} from "@/modules/story/components/story-comment-editor";
+import { useCreateTeamFeedbackComment } from "./hooks/use-create-comment";
+import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
+import { useTeamFeedbackItem } from "./hooks/use-feedback";
+import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
+import { LinkFeedbackStoryDialog } from "./link-story-dialog";
+import { FeedbackStatusPill } from "./status";
+import type {
+  TeamFeedbackComment,
+  TeamFeedbackItem,
+  TeamFeedbackStatus,
+} from "./types";
+
+const statusBannerCopy: Record<
+  TeamFeedbackStatus,
+  { primary: string; secondary: string }
+> = {
+  pending: {
+    primary: "Feedback is ready for review",
+    secondary: "Plan it when the team is ready to commit.",
+  },
+  reviewing: {
+    primary: "Feedback is being reviewed",
+    secondary: "Plan it to add the work to the roadmap.",
+  },
+  planned: {
+    primary: "Feedback is planned",
+    secondary: "Its linked story now powers the roadmap status.",
+  },
+  in_progress: {
+    primary: "Feedback is in progress",
+    secondary: "The linked story is currently being worked on.",
+  },
+  completed: {
+    primary: "Feedback is completed",
+    secondary: "The linked story has been delivered.",
+  },
+  closed: {
+    primary: "Feedback is closed",
+    secondary: "It is no longer in the team's active queue.",
+  },
+};
+
+const FeedbackBanner = ({
+  feedback,
+  isPlanning,
+  onClose,
+  onLink,
+  onOpenStory,
+  onPlan,
+  onReview,
+}: {
+  feedback: TeamFeedbackItem;
+  isPlanning: boolean;
+  onClose: () => void;
+  onLink: () => void;
+  onOpenStory: () => void;
+  onPlan: () => void;
+  onReview: () => void;
+}) => {
+  const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
+  const isLinked = Boolean(linkedStory);
+  const canPlan = !isLinked && feedback.status !== "closed";
+  const copy = statusBannerCopy[feedback.status];
+
+  return (
+    <Box className="mb-6">
+      <Flex
+        align="center"
+        className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
+        gap={3}
+        justify="between"
+      >
+        <Flex align="center" className="min-w-0" gap={3}>
+          <RequestsIcon className="text-primary h-5 shrink-0" />
+          <Box className="min-w-0">
+            <Text className="line-clamp-1" color="primary" fontWeight="medium">
+              {copy.primary}
+            </Text>
+            <Text className="line-clamp-1 text-[0.92rem]" color="muted">
+              {copy.secondary}
+            </Text>
+          </Box>
+        </Flex>
+        <Flex align="center" className="shrink-0" gap={2}>
+          <Button
+            color="primary"
+            disabled={!canPlan}
+            leftIcon={<CheckIcon className="h-4 w-auto" />}
+            loading={isPlanning}
+            loadingText="Planning..."
+            onClick={onPlan}
+            size="sm"
+          >
+            Plan feedback
+          </Button>
+          <Menu>
+            <Menu.Button>
+              <Button
+                aria-label="More feedback actions"
+                asIcon
+                color="tertiary"
+                leftIcon={<MoreHorizontalIcon className="h-5" />}
+                size="sm"
+                variant="naked"
+              />
+            </Menu.Button>
+            <Menu.Items align="end">
+              {linkedStory ? (
+                <>
+                  <Menu.Group>
+                    <Menu.Item onSelect={onOpenStory}>
+                      <StoryIcon className="h-5 w-auto" />
+                      Open linked story
+                    </Menu.Item>
+                  </Menu.Group>
+                  <Menu.Separator />
+                </>
+              ) : null}
+              <Menu.Group>
+                <Menu.Item
+                  disabled={
+                    isLinked ||
+                    feedback.status === "reviewing" ||
+                    feedback.status === "closed"
+                  }
+                  onSelect={onReview}
+                >
+                  <RequestsIcon className="h-5 w-auto" />
+                  Mark as reviewing
+                </Menu.Item>
+                <Menu.Item
+                  disabled={isLinked || feedback.status === "closed"}
+                  onSelect={onLink}
+                >
+                  <LinkIcon className="h-5 w-auto" />
+                  Link existing story
+                </Menu.Item>
+                <Menu.Item
+                  className="text-danger"
+                  disabled={isLinked || feedback.status === "closed"}
+                  onSelect={onClose}
+                >
+                  <CloseIcon className="text-danger h-5 w-auto" />
+                  Close feedback...
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
+      </Flex>
+    </Box>
+  );
+};
+
+const CommentRow = ({ comment }: { comment: TeamFeedbackComment }) => (
+  <Box className="relative pb-5">
+    <Flex align="center" gap={1}>
+      <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
+        <Avatar
+          className="relative top-0.5"
+          name={comment.authorName}
+          size="xs"
+          src={comment.authorAvatar ?? undefined}
+        />
+      </Box>
+      <Text className="ml-1 text-black dark:text-white">
+        {comment.authorName}
+      </Text>
+      <Text className="mx-0.5 text-[0.95rem]" color="muted">
+        ·
+      </Text>
+      <Text className="text-[0.95rem]" color="muted">
+        <TimeAgo timestamp={comment.createdAt} />
+      </Text>
+    </Flex>
+    <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6">
+      <Markdown remarkPlugins={[remarkGfm]}>{comment.body}</Markdown>
+    </Box>
+  </Box>
+);
+
+const FeedbackCommentComposer = ({ feedbackId }: { feedbackId: string }) => {
+  const { data: session } = useSession();
+  const createComment = useCreateTeamFeedbackComment(feedbackId);
+  const editor = useEditor({
+    content: "",
+    editable: !createComment.isPending,
+    extensions: getStoryCommentEditorExtensions({
+      placeholder: "Leave a comment...",
+    }),
+    immediatelyRender: false,
+  });
+
+  const handleSubmit = () => {
+    if (!editor || editor.isEmpty) {
+      toast.error("Comment is required", {
+        description: "Please enter a comment before submitting",
+      });
+      return;
+    }
+
+    const body = serializeStoryCommentToGitHubMarkdown(editor.getJSON());
+    if (!body) return;
+
+    createComment.mutate(body, {
+      onSuccess: (response) => {
+        if (!response.error?.message) {
+          editor.commands.clearContent();
+        }
+      },
+    });
+  };
+
+  return (
+    <Flex align="start" className="mb-6 gap-2">
+      <Box className="bg-surface flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
+        <Avatar
+          name={session?.user.name ?? undefined}
+          size="xs"
+          src={session?.user.image ?? undefined}
+        />
+      </Box>
+      <Flex
+        className="border-border/40 bg-surface-muted/40 min-h-24 min-w-0 flex-1 rounded-2xl border px-4 pb-4"
+        direction="column"
+        gap={2}
+        justify="between"
+      >
+        <TextEditor
+          aria-label="Comment"
+          className="prose-base prose-a:text-foreground leading-6 antialiased"
+          editor={editor}
+        />
+        <Flex align="center" gap={3} justify="between">
+          <Text className="text-[0.82rem]" color="muted">
+            Visible on the feedback portal
+          </Text>
+          <Button
+            color="tertiary"
+            disabled={createComment.isPending}
+            loading={createComment.isPending}
+            loadingText="Commenting..."
+            onClick={handleSubmit}
+            size="sm"
+            variant="outline"
+          >
+            Comment
+          </Button>
+        </Flex>
+      </Flex>
+    </Flex>
+  );
+};
+
+const MetadataValue = ({ children }: { children: ReactNode }) => (
+  <Flex align="center" className="min-w-0" gap={2}>
+    {children}
+  </Flex>
+);
+
+const FeedbackProperties = ({
+  feedback,
+  linkedStoryHref,
+  variant = "sidebar",
+}: {
+  feedback: TeamFeedbackItem;
+  linkedStoryHref?: string;
+  variant?: "inline" | "sidebar";
+}) => {
+  const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
+  const isInline = variant === "inline";
+
+  return (
+    <Container
+      className={
+        isInline
+          ? "text-text-muted px-0 pt-0 md:px-0"
+          : "text-text-muted px-0.5 pt-4 md:px-6"
+      }
+    >
+      {!isInline ? (
+        <Box className="mb-0 grid grid-cols-[9rem_auto] items-center gap-3 md:mb-6">
+          <Text className="hidden md:block" fontWeight="semibold">
+            Properties
+          </Text>
+        </Box>
+      ) : null}
+      <Box className={isInline ? "flex flex-wrap gap-2" : undefined}>
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Status"
+          value={<FeedbackStatusPill status={feedback.status} />}
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Board"
+          value={
+            <MetadataValue>
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: feedback.board.color }}
+              />
+              <Text className="line-clamp-1">{feedback.board.name}</Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Author"
+          value={
+            <MetadataValue>
+              <Avatar
+                name={feedback.authorName}
+                size="xs"
+                src={feedback.authorAvatar ?? undefined}
+              />
+              <Text className="line-clamp-1">{feedback.authorName}</Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Votes"
+          value={
+            <MetadataValue>
+              <ThumbsUpIcon className="h-4" />
+              <Text>
+                {feedback.voteCount}{" "}
+                {feedback.voteCount === 1 ? "vote" : "votes"}
+              </Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Comments"
+          value={
+            <MetadataValue>
+              <CommentIcon className="h-4" />
+              <Text>
+                {feedback.commentCount}{" "}
+                {feedback.commentCount === 1 ? "comment" : "comments"}
+              </Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Submitted"
+          value={
+            <MetadataValue>
+              <ClockIcon className="h-4" />
+              <Text>
+                <TimeAgo timestamp={feedback.createdAt} />
+              </Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Linked story"
+          value={
+            linkedStory && linkedStoryHref ? (
+              <Button
+                className="max-w-full"
+                color="tertiary"
+                href={linkedStoryHref}
+                leftIcon={<StoryIcon className="h-4 shrink-0" />}
+                size="sm"
+                variant="naked"
+              >
+                <span className="truncate">Open story</span>
+              </Button>
+            ) : (
+              <Text color="muted">Not linked</Text>
+            )
+          }
+        />
+      </Box>
+      {!isInline && feedback.roadmapSummary ? (
+        <Option
+          className="items-start"
+          isNotifications={false}
+          label="Roadmap note"
+          value={
+            <Text className="leading-5" color="muted">
+              {feedback.roadmapSummary}
+            </Text>
+          }
+        />
+      ) : null}
+    </Container>
+  );
+};
+
+const FeedbackDetailsSkeleton = () => (
+  <Box className="h-dvh">
+    <Box className="notification-story-container flex h-full">
+      <Box className="min-w-0 flex-1 px-8 py-7">
+        <Skeleton className="mb-8 h-14 w-full rounded-xl" />
+        <Skeleton className="mb-7 h-10 w-2/5 rounded" />
+        <Skeleton className="mb-3 h-4 w-4/5 rounded" />
+        <Skeleton className="h-4 w-3/5 rounded" />
+      </Box>
+      <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] px-6 py-7">
+        <Skeleton className="mb-8 h-5 w-24 rounded" />
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton className="mb-6 h-5 w-full rounded" key={index} />
+        ))}
+      </Box>
+    </Box>
+  </Box>
+);
+
+export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { withWorkspace } = useWorkspacePath();
+  const {
+    data: feedback,
+    isError,
+    isPending,
+    refetch,
+  } = useTeamFeedbackItem(feedbackId);
+  const planFeedback = usePlanTeamFeedback();
+  const updateStatus = useUpdateTeamFeedbackStatus();
+  const [isClosing, setIsClosing] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+
+  if (isPending) return <FeedbackDetailsSkeleton />;
+
+  if (isError) {
+    return (
+      <Box className="flex h-dvh items-center justify-center px-6">
+        <Box>
+          <Text align="center" className="mb-2" fontSize="xl">
+            Couldn&apos;t load feedback
+          </Text>
+          <Text align="center" className="mb-4" color="muted">
+            Check your connection and try again.
+          </Text>
+          <Flex justify="center">
+            <Button
+              color="tertiary"
+              onClick={() => {
+                void refetch();
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          </Flex>
+        </Box>
+      </Box>
+    );
+  }
+
+  const feedbackTeamId = feedback.board.teamId || teamId;
+  const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
+  const linkedStoryHref = linkedStory
+    ? withWorkspace(`/story/${linkedStory.storyId}`)
+    : undefined;
+  const status = searchParams.get("status");
+  const feedbackListHref = withWorkspace(`/teams/${feedbackTeamId}/feedback`);
+  const listHref = status
+    ? `${feedbackListHref}?status=${encodeURIComponent(status)}`
+    : feedbackListHref;
+
+  const openStory = (storyId: string) => {
+    router.push(withWorkspace(`/story/${storyId}`));
+  };
+
+  const handlePlan = () => {
+    planFeedback.mutate(
+      {
+        feedbackId: feedback.id,
+        payload: { teamId: feedbackTeamId },
+      },
+      {
+        onSuccess: (response) => {
+          if (!response.error?.message && response.data?.storyId) {
+            openStory(response.data.storyId);
+          }
+        },
+      },
+    );
+  };
+
+  const handleReview = () => {
+    updateStatus.mutate({
+      feedbackId: feedback.id,
+      payload: { status: "reviewing", roadmapSummary: null },
+    });
+  };
+
+  return (
+    <Box className="h-dvh">
+      <Box className="notification-story-container flex h-full">
+        <Box className="min-w-0 flex-1">
+          <BodyContainer className="h-dvh overflow-y-auto pb-8">
+            <Container className="max-w-7xl pt-7">
+              <Button
+                className="mb-4 md:hidden"
+                color="tertiary"
+                href={listHref}
+                leftIcon={<ArrowLeftIcon className="h-4" />}
+                size="sm"
+                variant="naked"
+              >
+                Back to feedback
+              </Button>
+              <FeedbackBanner
+                feedback={feedback}
+                isPlanning={planFeedback.isPending}
+                onClose={() => {
+                  setIsClosing(true);
+                }}
+                onLink={() => {
+                  setIsLinking(true);
+                }}
+                onOpenStory={() => {
+                  if (linkedStory) openStory(linkedStory.storyId);
+                }}
+                onPlan={handlePlan}
+                onReview={handleReview}
+              />
+              <Text
+                as="h1"
+                className="mb-7 text-3xl md:text-4xl"
+                fontWeight="semibold"
+              >
+                {feedback.title}
+              </Text>
+              {feedback.description.trim() ? (
+                <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground max-w-full text-lg leading-7">
+                  <Markdown remarkPlugins={[remarkGfm]}>
+                    {feedback.description}
+                  </Markdown>
+                </Box>
+              ) : (
+                <Text className="text-lg" color="muted">
+                  No description was provided.
+                </Text>
+              )}
+              <Box className="notification-story-inline-options mt-6 hidden">
+                <FeedbackProperties
+                  feedback={feedback}
+                  linkedStoryHref={linkedStoryHref}
+                  variant="inline"
+                />
+              </Box>
+              <Divider className="my-7" />
+              <Box>
+                <Text
+                  as="h4"
+                  className="mb-5 flex items-center gap-1.5"
+                  fontWeight="medium"
+                >
+                  <ClockIcon className="relative -top-px" />
+                  Activity feed
+                </Text>
+                <FeedbackCommentComposer feedbackId={feedback.id} />
+                {feedback.comments.length > 0 ? (
+                  feedback.comments.map((comment) => (
+                    <CommentRow comment={comment} key={comment.id} />
+                  ))
+                ) : (
+                  <Flex align="center" className="py-2" gap={2}>
+                    <Avatar
+                      name={feedback.authorName}
+                      size="xs"
+                      src={feedback.authorAvatar ?? undefined}
+                    />
+                    <Text color="muted">
+                      {feedback.authorName} submitted this feedback{" "}
+                      <TimeAgo timestamp={feedback.createdAt} />
+                    </Text>
+                  </Flex>
+                )}
+              </Box>
+            </Container>
+          </BodyContainer>
+        </Box>
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
+          <FeedbackProperties
+            feedback={feedback}
+            linkedStoryHref={linkedStoryHref}
+          />
+        </Box>
+      </Box>
+      <LinkFeedbackStoryDialog
+        feedbackId={feedback.id}
+        isOpen={isLinking}
+        onLinked={openStory}
+        onOpenChange={setIsLinking}
+        teamId={feedbackTeamId}
+      />
+      <ConfirmDialog
+        confirmText="Close feedback"
+        description="Closing removes this item from the team's active feedback queue. It will remain available in the feedback portal."
+        isLoading={updateStatus.isPending}
+        isOpen={isClosing}
+        loadingText="Closing..."
+        onCancel={() => {
+          setIsClosing(false);
+        }}
+        onClose={() => {
+          setIsClosing(false);
+        }}
+        onConfirm={() => {
+          updateStatus.mutate(
+            {
+              feedbackId: feedback.id,
+              payload: { status: "closed", roadmapSummary: null },
+            },
+            {
+              onSuccess: (response) => {
+                if (!response.error?.message) {
+                  setIsClosing(false);
+                  router.push(listHref);
+                }
+              },
+            },
+          );
+        }}
+        title="Close this feedback?"
+      />
+    </Box>
+  );
+};

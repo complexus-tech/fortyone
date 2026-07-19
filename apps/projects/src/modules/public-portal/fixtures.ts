@@ -10,8 +10,6 @@ export const publicPortalFixture: PublicPortal = {
     avatarUrl: "/complexus.png",
     color: "#FF005C",
   },
-  description:
-    "A public request board for surfacing, reviewing, and publishing road delivery work.",
   boards: [
     {
       id: "road-repairs",

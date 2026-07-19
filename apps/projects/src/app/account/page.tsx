@@ -4,7 +4,7 @@ import { AccountPage } from "@/modules/public-portal/account-page";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
-import { buildWorkspaceUrl, getRedirectUrl } from "@/utils";
+import { getRedirectUrl } from "@/utils";
 import { getLoginUrl } from "@/utils/callback-url";
 
 export const metadata: Metadata = {
@@ -43,9 +43,6 @@ export default async function AccountRoute() {
         avatarUrl: profile.avatarUrl,
         email: profile.email,
         name: profile.fullName || profile.username,
-        notificationsHref: activeWorkspace
-          ? buildWorkspaceUrl(activeWorkspace.slug, "/notifications")
-          : undefined,
       }}
     />
   );

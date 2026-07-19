@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import type { Editor } from "@tiptap/core";
 import { useEditor } from "@tiptap/react";
 import { Avatar, Box, Button, Flex, Text, TextEditor } from "ui";
 import { CommentIcon } from "icons";
@@ -12,24 +13,23 @@ import type {
   PublicRequest,
   PublicRequestComment,
 } from "./types";
-import { createFeedbackCommentAction } from "./actions";
 import { getPublicAvatarColor } from "./avatar-color";
 import { getRequestLoginUrl } from "./utils";
+import { useCreatePublicFeedbackComment } from "./feedback-mutations";
 
 const COMMENTS_PAGE_SIZE = 10;
 
 const FeedbackCommentComposer = ({
-  onCreated,
+  onSubmitted,
   portal,
   request,
   viewer,
 }: {
-  onCreated: (comment: PublicRequestComment) => void;
+  onSubmitted: () => void;
   portal: PublicPortal;
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
 }) => {
-  const [isPending, startTransition] = useTransition();
   const editor = useEditor({
     content: "",
     editable: true,
@@ -59,6 +59,36 @@ const FeedbackCommentComposer = ({
   }
 
   return (
+    <AuthenticatedFeedbackCommentComposer
+      editor={editor}
+      onSubmitted={onSubmitted}
+      portal={portal}
+      request={request}
+      viewer={viewer}
+    />
+  );
+};
+
+const AuthenticatedFeedbackCommentComposer = ({
+  editor,
+  onSubmitted,
+  portal,
+  request,
+  viewer,
+}: {
+  editor: Editor | null;
+  onSubmitted: () => void;
+  portal: PublicPortal;
+  request: PublicRequest;
+  viewer: PublicPortalViewer;
+}) => {
+  const createComment = useCreatePublicFeedbackComment({
+    portalSlug: portal.slug,
+    request,
+    viewer,
+  });
+
+  return (
     <Flex align="start" className="mb-6 gap-2">
       <Box className="bg-background flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
         <Avatar name={viewer.name} size="xs" src={viewer.avatarUrl} />
@@ -77,7 +107,7 @@ const FeedbackCommentComposer = ({
         <Flex justify="end">
           <Button
             color="tertiary"
-            disabled={isPending}
+            disabled={createComment.isPending}
             onClick={() => {
               if (!editor || editor.isEmpty) {
                 toast.error("Comment is required", {
@@ -85,29 +115,15 @@ const FeedbackCommentComposer = ({
                 });
                 return;
               }
-              startTransition(async () => {
-                const response = await createFeedbackCommentAction({
-                  body: editor.getText(),
-                  itemId: request.id,
-                  itemSlug: request.slug,
-                  portalSlug: portal.slug,
-                });
-                if (response.error?.message) {
-                  toast.error("Comment", {
-                    description: response.error.message,
-                  });
-                  return;
-                }
-                if (response.data) {
-                  onCreated({
-                    id: response.data.id,
-                    authorName: response.data.authorName,
-                    authorAvatar: response.data.authorAvatar,
-                    body: response.data.body,
-                    createdAtLabel: "Just now",
-                  });
-                }
-                editor.commands.clearContent();
+              const body = editor.getText();
+              editor.commands.clearContent();
+              onSubmitted();
+              createComment.mutate(body, {
+                onError: () => {
+                  if (editor.isEmpty) {
+                    editor.commands.setContent(body);
+                  }
+                },
               });
             }}
             size="sm"
@@ -157,14 +173,8 @@ export const FeedbackDiscussion = ({
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
 }) => {
-  const [createdComments, setCreatedComments] = useState<
-    PublicRequestComment[]
-  >([]);
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE_SIZE);
-  const comments = [...request.comments, ...createdComments].filter(
-    (comment, index, allComments) =>
-      allComments.findIndex(({ id }) => id === comment.id) === index,
-  );
+  const comments = request.comments;
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;
 
@@ -179,8 +189,7 @@ export const FeedbackDiscussion = ({
         Comments
       </Text>
       <FeedbackCommentComposer
-        onCreated={(comment) => {
-          setCreatedComments((current) => [...current, comment]);
+        onSubmitted={() => {
           setVisibleCount((current) => current + 1);
         }}
         portal={portal}

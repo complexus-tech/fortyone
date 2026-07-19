@@ -228,6 +228,10 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 		return c.handleCommentCreated(ctx, event)
 	case events.CommentReplied:
 		return c.handleCommentReplied(ctx, event)
+	case events.FeedbackCommentCreated:
+		return c.handleFeedbackCommentCreated(ctx, event)
+	case events.FeedbackStatusUpdated:
+		return c.handleFeedbackStatusUpdated(ctx, event)
 	case events.UserMentioned:
 		return c.handleUserMentioned(ctx, event)
 	case events.ObjectiveUpdated:
@@ -253,6 +257,59 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 	}
 }
 
+func withEventDedupeKey(event events.Event, notification notifications.CoreNewNotification, index int) notifications.CoreNewNotification {
+	if strings.TrimSpace(notification.DedupeKey) != "" {
+		return notification
+	}
+	notification.DedupeKey = fmt.Sprintf(
+		"event:%s:%s:%s:%d:%s",
+		event.Type,
+		event.Timestamp.UTC().Format(time.RFC3339Nano),
+		notification.RecipientID,
+		index,
+		notification.Type,
+	)
+	return notification
+}
+
+func (c *Consumer) handleFeedbackCommentCreated(ctx context.Context, event events.Event) error {
+	var payload events.FeedbackCommentCreatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("marshal feedback comment payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("unmarshal feedback comment payload: %w", err)
+	}
+
+	for index, notification := range c.notificationRules.ProcessFeedbackCommentCreated(ctx, payload, event.ActorID) {
+		notification = withEventDedupeKey(event, notification, index)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("create feedback comment notification: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Consumer) handleFeedbackStatusUpdated(ctx context.Context, event events.Event) error {
+	var payload events.FeedbackStatusUpdatedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("marshal feedback status payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("unmarshal feedback status payload: %w", err)
+	}
+
+	for index, notification := range c.notificationRules.ProcessFeedbackStatusUpdated(ctx, payload, event.ActorID) {
+		notification = withEventDedupeKey(event, notification, index)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("create feedback status notification: %w", err)
+		}
+	}
+	return nil
+}
+
 // handleStoryUpdated processes story update events using the new notification rules
 func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) error {
 	var payload events.StoryUpdatedPayload
@@ -275,7 +332,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	}
 
 	// Create all notifications
-	for _, notification := range notifications {
+	for index, notification := range notifications {
+		notification = withEventDedupeKey(event, notification, index)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
 			// Continue with other notifications even if one fails
@@ -312,7 +370,8 @@ func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) e
 	}
 
 	// Create all notifications
-	for _, notification := range notifications {
+	for index, notification := range notifications {
+		notification = withEventDedupeKey(event, notification, index)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
 			// Continue with other notifications even if one fails
@@ -441,6 +500,7 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 			},
 		}
 
+		notification = withEventDedupeKey(event, notification, 0)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification for objective lead assignment", "error", err)
 			// Decide if this error should be returned or just logged.
@@ -640,7 +700,8 @@ func (c *Consumer) handleCommentCreated(ctx context.Context, event events.Event)
 	}
 
 	// Create notifications
-	for _, notification := range notifications {
+	for index, notification := range notifications {
+		notification = withEventDedupeKey(event, notification, index)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err)
 			// Continue processing other notifications
@@ -671,7 +732,8 @@ func (c *Consumer) handleCommentReplied(ctx context.Context, event events.Event)
 	}
 
 	// Create notifications
-	for _, notification := range notifications {
+	for index, notification := range notifications {
+		notification = withEventDedupeKey(event, notification, index)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err)
 			// Continue processing other notifications
@@ -702,7 +764,8 @@ func (c *Consumer) handleUserMentioned(ctx context.Context, event events.Event) 
 	}
 
 	// Create notifications
-	for _, notification := range notifications {
+	for index, notification := range notifications {
+		notification = withEventDedupeKey(event, notification, index)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
 			c.log.Error(ctx, "failed to create notification", "error", err)
 			// Continue processing other notifications

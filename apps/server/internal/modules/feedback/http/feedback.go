@@ -9,6 +9,7 @@ import (
 	"time"
 
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -20,6 +21,8 @@ const (
 	publicFeedbackItemBodyLimit    = 128 << 10
 	publicFeedbackCommentBodyLimit = 64 << 10
 	publicFeedbackVoteBodyLimit    = 4 << 10
+	defaultTeamFeedbackPageSize    = 25
+	maxTeamFeedbackPageSize        = 50
 )
 
 func decodePublicRequest(w http.ResponseWriter, r *http.Request, input any, bodyLimit int64) (int, error) {
@@ -37,14 +40,43 @@ type profileImageResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
+type teamAccessService interface {
+	GetByID(ctx context.Context, teamID, workspaceID, userID uuid.UUID) (teams.CoreTeam, error)
+}
+
 type Handlers struct {
 	feedback      *feedback.Service
+	teams         teamAccessService
 	profileImages profileImageResolver
 	log           *logger.Logger
 }
 
-func New(service *feedback.Service, profileImages profileImageResolver, log *logger.Logger) *Handlers {
-	return &Handlers{feedback: service, profileImages: profileImages, log: log}
+func New(service *feedback.Service, teamAccess teamAccessService, profileImages profileImageResolver, log *logger.Logger) *Handlers {
+	return &Handlers{feedback: service, teams: teamAccess, profileImages: profileImages, log: log}
+}
+
+func (h *Handlers) authorizeTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID) error {
+	if h.teams == nil {
+		return errors.New("team access service is required")
+	}
+	if _, err := h.teams.GetByID(ctx, teamID, workspaceID, userID); err != nil {
+		if h.log != nil {
+			h.log.Warn(ctx, "feedback team access denied", "team_id", teamID, "user_id", userID, "error", err)
+		}
+		if errors.Is(err, teams.ErrTeamNotFound) {
+			return feedback.ErrNotFound
+		}
+		return err
+	}
+	return nil
+}
+
+func (h *Handlers) authorizeItemTeam(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error {
+	item, err := h.feedback.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return err
+	}
+	return h.authorizeTeam(ctx, workspaceID, item.Board.TeamID, userID)
 }
 
 func (h *Handlers) resolveAuthorAvatar(
@@ -185,6 +217,86 @@ func (h *Handlers) ListPortals(ctx context.Context, w http.ResponseWriter, r *ht
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
+func (h *Handlers) ListTeamItems(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	teamID, err := uuid.Parse(web.Params(r, "teamId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.authorizeTeam(ctx, workspace.ID, teamID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	page, pageSize := teamFeedbackPagination(r)
+	status := strings.TrimSpace(r.URL.Query().Get("status"))
+	if status == "" {
+		status = "active"
+	}
+	itemsPage, err := h.feedback.ListTeamItems(ctx, workspace.ID, teamID, status, page, pageSize)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	resolvedByAvatar := make(map[string]*string)
+	items := make([]AppItem, 0, len(itemsPage.Items))
+	for _, item := range itemsPage.Items {
+		item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, resolvedByAvatar)
+		links := make([]AppStoryLink, 0, len(item.StoryLinks))
+		for _, link := range item.StoryLinks {
+			links = append(links, toAppStoryLink(link))
+		}
+		items = append(items, toAppItem(item, []AppComment{}, links))
+	}
+	return web.Respond(ctx, w, AppTeamFeedbackResponse{
+		Feedback: items,
+		Pagination: AppItemsPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  itemsPage.HasMore,
+			NextPage: page + 1,
+		},
+	}, http.StatusOK)
+}
+
+func (h *Handlers) GetItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	details, err := h.feedback.GetItemDetails(ctx, workspace.ID, itemID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	if err := h.authorizeTeam(ctx, workspace.ID, details.Item.Board.TeamID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	resolvedByAvatar := make(map[string]*string)
+	details.Item.AuthorAvatar = h.resolveAuthorAvatar(ctx, details.Item.AuthorAvatar, resolvedByAvatar)
+	comments := make([]AppComment, 0, len(details.Comments))
+	for _, comment := range details.Comments {
+		comment.AuthorAvatar = h.resolveAuthorAvatar(ctx, comment.AuthorAvatar, resolvedByAvatar)
+		comments = append(comments, toAppComment(comment))
+	}
+	links := make([]AppStoryLink, 0, len(details.StoryLinks))
+	for _, link := range details.StoryLinks {
+		links = append(links, toAppStoryLink(link))
+	}
+	return web.Respond(ctx, w, toAppItem(details.Item, comments, links), http.StatusOK)
+}
+
 func (h *Handlers) UpdatePortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -199,8 +311,7 @@ func (h *Handlers) UpdatePortal(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	portal, err := h.feedback.UpdatePortal(ctx, workspace.ID, portalID, feedback.CorePortalInput{
-		Description: input.Description,
-		IsPublic:    input.IsPublic,
+		IsPublic: input.IsPublic,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -288,9 +399,16 @@ func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	itemID, err := uuid.Parse(web.Params(r, "itemId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.authorizeItemTeam(ctx, workspace.ID, itemID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	var input AppUpdateItemStatus
 	if err := web.Decode(r, &input); err != nil {
@@ -299,6 +417,7 @@ func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, 
 	item, err := h.feedback.UpdateItemStatus(ctx, workspace.ID, itemID, feedback.CoreUpdateItemStatusInput{
 		Status:         input.Status,
 		RoadmapSummary: input.RoadmapSummary,
+		ActorID:        userID,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -319,6 +438,9 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	itemID, err := uuid.Parse(web.Params(r, "itemId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.authorizeItemTeam(ctx, workspace.ID, itemID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	var input AppCreateComment
 	if err := web.Decode(r, &input); err != nil {
@@ -376,6 +498,9 @@ func (h *Handlers) ToggleVote(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+	if err := h.authorizeItemTeam(ctx, workspace.ID, itemID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
 	var input AppVoteInput
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -428,25 +553,56 @@ func (h *Handlers) CreateStoryFromItem(ctx context.Context, w http.ResponseWrite
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+	if err := h.authorizeItemTeam(ctx, workspace.ID, itemID, userID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
 	var input AppCreateStoryFromItem
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	result, err := h.feedback.CreateStoryFromItem(ctx, workspace.ID, itemID, userID, feedback.CoreCreateStoryInput{
 		TeamID:   input.TeamID,
+		StoryID:  input.StoryID,
 		StatusID: input.StatusID,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
-	return web.Respond(ctx, w, AppCreateStoryResult{ItemID: result.ItemID, StoryID: result.StoryID, LinkID: result.LinkID}, http.StatusCreated)
+	status := http.StatusCreated
+	if !result.Created {
+		status = http.StatusOK
+	}
+	return web.Respond(ctx, w, AppCreateStoryResult{ItemID: result.ItemID, StoryID: result.StoryID, LinkID: result.LinkID, Created: result.Created}, status)
+}
+
+func teamFeedbackPagination(r *http.Request) (int, int) {
+	page := 1
+	pageSize := defaultTeamFeedbackPageSize
+	if parsed, err := strconv.Atoi(r.URL.Query().Get("page")); err == nil && parsed > 0 {
+		page = parsed
+	}
+	if parsed, err := strconv.Atoi(r.URL.Query().Get("pageSize")); err == nil && parsed > 0 {
+		pageSize = parsed
+	}
+	if pageSize > maxTeamFeedbackPageSize {
+		pageSize = maxTeamFeedbackPageSize
+	}
+	return page, pageSize
 }
 
 func httpStatus(err error) int {
 	switch {
 	case errors.Is(err, feedback.ErrNotFound):
 		return http.StatusNotFound
-	default:
+	case errors.Is(err, feedback.ErrAlreadyPlanned):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrStoryManaged):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrTeamMismatch):
 		return http.StatusBadRequest
+	case errors.Is(err, feedback.ErrInvalidInput):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
 	}
 }

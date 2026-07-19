@@ -142,6 +142,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey:   cfg.SecretKey,
 		Cache:       cfg.Cache,
 		Service:     svcs.feedback,
+		Teams:       svcs.teams,
 		Attachments: svcs.attachments,
 	}, app)
 
@@ -328,6 +329,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		TasksService: cfg.TasksService,
 		Cache:        cfg.Cache,
 		Service:      svcs.notifications,
+		Attachments:  svcs.attachments,
 	}, app)
 
 	invitationshttp.Routes(invitationshttp.Config{

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LinkIcon, PlusIcon, TeamIcon } from "icons";
-import { Box, Button, Dialog, Flex, Input, Switch, Text, TextArea } from "ui";
+import { Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import type { FeedbackPortal } from "./types";
@@ -45,23 +45,19 @@ const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
 };
 
 const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
-  const [description, setDescription] = useState(portal.description);
   const [isPublic, setIsPublic] = useState(portal.isPublic);
   const mutation = useUpdateFeedbackPortalMutation();
 
   useEffect(() => {
-    setDescription(portal.description);
     setIsPublic(portal.isPublic);
-  }, [portal.description, portal.isPublic]);
+  }, [portal.isPublic]);
 
-  const hasChanges =
-    description !== portal.description || isPublic !== portal.isPublic;
+  const hasChanges = isPublic !== portal.isPublic;
 
   const submit = async () => {
     await mutation.mutateAsync({
       portalId: portal.id,
       input: {
-        description,
         isPublic,
       },
     });
@@ -71,8 +67,8 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
     <Box className="border-border bg-surface mb-6 rounded-2xl border">
       <SectionHeader
         action={<PublicUrl portal={portal} />}
-        description="Customize the public feedback portal for this workspace."
-        title="Portal Configuration"
+        description="Choose whether people can access your public feedback portal."
+        title="Public portal"
       />
       <Box className="space-y-5 p-6">
         <Flex align="center" justify="between">
@@ -84,28 +80,13 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
             </Text>
           </Box>
           <Switch
+            aria-label="Enable public feedback portal"
             checked={isPublic}
             onCheckedChange={(checked) => {
               setIsPublic(checked);
             }}
           />
         </Flex>
-        <Box className="bg-surface-muted/60 rounded-xl px-4 py-3">
-          <Text className="font-medium">{portal.name}</Text>
-          <Text className="mt-1" color="muted">
-            {isWorkspaceSubdomainDeployment
-              ? "/feedback"
-              : `/portal/${portal.slug}/feedback`}
-          </Text>
-        </Box>
-        <TextArea
-          className="min-h-24"
-          onChange={(event) => {
-            setDescription(event.target.value);
-          }}
-          placeholder="Describe what people should submit here"
-          value={description}
-        />
         <Flex justify="end">
           <Button
             color="primary"
@@ -259,6 +240,12 @@ export const FeedbackSettings = () => {
         <CreateBoardDialog portal={primaryPortal} />
       </Flex>
 
+      <Text className="mb-6 max-w-2xl leading-relaxed" color="muted">
+        Feedback gives your organization a public portal where customers can
+        submit requests, vote on ideas, and follow progress. Boards route every
+        submission to the team responsible for it.
+      </Text>
+
       {primaryPortal ? <PortalConfiguration portal={primaryPortal} /> : null}
 
       <Box className="border-border bg-surface rounded-2xl border">
@@ -300,10 +287,17 @@ export const FeedbackSettings = () => {
                 key={board.id}
               >
                 <Flex align="center" gap={3}>
-                  <Box
-                    className="size-2.5 rounded-full"
-                    style={{ backgroundColor: board.color }}
-                  />
+                  <Flex
+                    align="center"
+                    aria-hidden="true"
+                    className="bg-surface-muted/70 size-8 shrink-0 rounded-lg"
+                    justify="center"
+                  >
+                    <Box
+                      className="size-3 rounded-sm"
+                      style={{ backgroundColor: board.color }}
+                    />
+                  </Flex>
                   <Box>
                     <Text className="font-medium">{board.name}</Text>
                     <Text className="mt-1" color="muted">

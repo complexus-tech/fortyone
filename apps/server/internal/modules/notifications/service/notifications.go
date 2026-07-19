@@ -3,7 +3,9 @@ package notifications
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -17,7 +19,7 @@ import (
 
 // Repository provides access to the notifications storage.
 type Repository interface {
-	Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error)
+	Create(ctx context.Context, n CoreNewNotification) (CoreNotification, bool, error)
 	List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error)
 	GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error
@@ -28,7 +30,12 @@ type Repository interface {
 	DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
 	DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
 	MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error
+	ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]CorePortalNotification, error)
+	GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUID, portalSlug string) (int, error)
+	MarkPortalFeedbackAsRead(ctx context.Context, notificationID, userID uuid.UUID, portalSlug string) error
 }
+
+var ErrNotificationNotFound = errors.New("notification not found")
 
 // TasksService provides access to the task queue for background processing.
 type TasksService interface {
@@ -37,20 +44,23 @@ type TasksService interface {
 
 // Service provides notification-related operations.
 type Service struct {
-	repo         Repository
-	log          *logger.Logger
-	redisClient  *redis.Client
-	tasksService TasksService
+	repo            Repository
+	log             *logger.Logger
+	redisClient     *redis.Client
+	tasksService    TasksService
+	publishRealtime func(context.Context, CoreNotification) error
 }
 
 // New constructs a new notifications service instance with the provided repository, Redis client, and tasks service.
 func New(log *logger.Logger, repo Repository, redisClient *redis.Client, tasksService TasksService) *Service {
-	return &Service{
+	service := &Service{
 		repo:         repo,
 		log:          log,
 		redisClient:  redisClient,
 		tasksService: tasksService,
 	}
+	service.publishRealtime = service.publishNotification
+	return service
 }
 
 func (s *Service) publishNotification(ctx context.Context, notification CoreNotification) error {
@@ -90,21 +100,31 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.Create")
 	defer span.End()
 
-	notification, err := s.repo.Create(ctx, n)
+	notification, inserted, err := s.repo.Create(ctx, n)
 	if err != nil {
 		span.RecordError(err)
 		return CoreNotification{}, err
+	}
+	if !inserted {
+		span.AddEvent("duplicate notification replay skipped", trace.WithAttributes(
+			attribute.String("notification.id", notification.ID.String()),
+		))
+		return notification, nil
 	}
 
 	span.AddEvent("notification created in DB", trace.WithAttributes(
 		attribute.String("notification.id", notification.ID.String()),
 	))
 
-	// Publish notification to Redis Pub/Sub
-	if err := s.publishNotification(ctx, notification); err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", err, "notificationID", notification.ID)
-		return notification, err
+	// Public feedback notifications are consumed through the portal-scoped query
+	// API. Publishing them on the generic user channel would expose them to any
+	// workspace SSE connection for the same user.
+	if notification.EntityType != "feedback" {
+		if err := s.publishRealtime(ctx, notification); err != nil {
+			span.RecordError(err)
+			s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", err, "notificationID", notification.ID)
+			return notification, err
+		}
 	}
 
 	emailPayload := tasks.NotificationEmailDigestPayload{
@@ -322,4 +342,39 @@ func (s *Service) MarkAsUnread(ctx context.Context, notificationID, userID uuid.
 	))
 
 	return nil
+}
+
+// ListPortalFeedback returns only feedback notifications belonging to the
+// requested public portal and recipient.
+func (s *Service) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]CorePortalNotification, error) {
+	portalSlug = strings.TrimSpace(portalSlug)
+	if userID == uuid.Nil || portalSlug == "" {
+		return nil, errors.New("user id and portal slug are required")
+	}
+	if limit < 1 {
+		limit = 21
+	}
+	if limit > 101 {
+		limit = 101
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return s.repo.ListPortalFeedback(ctx, userID, portalSlug, limit, offset)
+}
+
+func (s *Service) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUID, portalSlug string) (int, error) {
+	portalSlug = strings.TrimSpace(portalSlug)
+	if userID == uuid.Nil || portalSlug == "" {
+		return 0, errors.New("user id and portal slug are required")
+	}
+	return s.repo.GetPortalFeedbackUnreadCount(ctx, userID, portalSlug)
+}
+
+func (s *Service) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, userID uuid.UUID, portalSlug string) error {
+	portalSlug = strings.TrimSpace(portalSlug)
+	if notificationID == uuid.Nil || userID == uuid.Nil || portalSlug == "" {
+		return errors.New("notification id, user id, and portal slug are required")
+	}
+	return s.repo.MarkPortalFeedbackAsRead(ctx, notificationID, userID, portalSlug)
 }

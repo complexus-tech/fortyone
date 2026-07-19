@@ -3,6 +3,7 @@ package feedbackrepository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -27,7 +29,6 @@ type portalRow struct {
 	WorkspaceID uuid.UUID `db:"workspace_id"`
 	Name        string    `db:"name"`
 	Slug        string    `db:"slug"`
-	Description string    `db:"description"`
 	IsPublic    bool      `db:"is_public"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
@@ -47,23 +48,36 @@ type boardRow struct {
 }
 
 type itemRow struct {
-	ID             uuid.UUID  `db:"id"`
-	WorkspaceID    uuid.UUID  `db:"workspace_id"`
-	PortalID       uuid.UUID  `db:"portal_id"`
-	BoardID        uuid.UUID  `db:"board_id"`
-	AuthorID       *uuid.UUID `db:"author_id"`
-	AuthorName     string     `db:"author_name"`
-	AuthorEmail    string     `db:"author_email"`
-	AuthorAvatar   *string    `db:"author_avatar"`
-	Title          string     `db:"title"`
-	Description    string     `db:"description"`
-	Slug           string     `db:"slug"`
-	Status         string     `db:"status"`
-	VoteCount      int        `db:"vote_count"`
-	CommentCount   int        `db:"comment_count"`
-	RoadmapSummary *string    `db:"roadmap_summary"`
-	CreatedAt      time.Time  `db:"created_at"`
-	UpdatedAt      time.Time  `db:"updated_at"`
+	ID               uuid.UUID  `db:"id"`
+	WorkspaceID      uuid.UUID  `db:"workspace_id"`
+	PortalID         uuid.UUID  `db:"portal_id"`
+	BoardID          uuid.UUID  `db:"board_id"`
+	AuthorID         *uuid.UUID `db:"author_id"`
+	AuthorName       string     `db:"author_name"`
+	AuthorEmail      string     `db:"author_email"`
+	AuthorAvatar     *string    `db:"author_avatar"`
+	Title            string     `db:"title"`
+	Description      string     `db:"description"`
+	Slug             string     `db:"slug"`
+	Status           string     `db:"status"`
+	VoteCount        int        `db:"vote_count"`
+	CommentCount     int        `db:"comment_count"`
+	RoadmapSummary   *string    `db:"roadmap_summary"`
+	BoardTeamID      uuid.UUID  `db:"board_team_id"`
+	BoardName        string     `db:"board_name"`
+	BoardSlug        string     `db:"board_slug"`
+	BoardColor       string     `db:"board_color"`
+	BoardOrder       int        `db:"board_order_index"`
+	BoardCreatedAt   time.Time  `db:"board_created_at"`
+	BoardUpdatedAt   time.Time  `db:"board_updated_at"`
+	PrimaryLinkID    *uuid.UUID `db:"primary_link_id"`
+	PrimaryStoryID   *uuid.UUID `db:"primary_story_id"`
+	PrimaryRelation  *string    `db:"primary_relationship"`
+	PrimaryCreator   *uuid.UUID `db:"primary_created_by_user_id"`
+	PrimaryCreatedAt *time.Time `db:"primary_created_at"`
+	CreatedAt        time.Time  `db:"created_at"`
+	UpdatedAt        time.Time  `db:"updated_at"`
+	StatusChanged    bool       `db:"status_changed"`
 }
 
 type commentRow struct {
@@ -84,16 +98,29 @@ type storyLinkRow struct {
 	ItemID          uuid.UUID  `db:"item_id"`
 	StoryID         uuid.UUID  `db:"story_id"`
 	Relationship    string     `db:"relationship"`
+	IsPrimary       bool       `db:"is_primary"`
 	CreatedByUserID *uuid.UUID `db:"created_by_user_id"`
 	CreatedAt       time.Time  `db:"created_at"`
 }
 
 const feedbackItemSearchVector = "to_tsvector('english', fi.title || ' ' || fi.description || ' ' || fi.slug)"
 
+const projectedFeedbackStatus = `CASE
+	WHEN primary_link.id IS NULL THEN fi.status
+	WHEN projected_story.deleted_at IS NOT NULL THEN 'closed'
+	WHEN projected_state.category = 'backlog' THEN 'reviewing'
+	WHEN projected_state.category = 'unstarted' THEN 'planned'
+	WHEN projected_state.category = 'started' THEN 'in_progress'
+	WHEN projected_state.category = 'paused' THEN 'planned'
+	WHEN projected_state.category = 'completed' THEN 'completed'
+	WHEN projected_state.category = 'cancelled' THEN 'closed'
+	ELSE fi.status
+END`
+
 func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.description, fp.is_public, fp.created_at, fp.updated_at
+		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE w.slug = $1 AND fp.is_public = true
@@ -108,7 +135,7 @@ func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CoreP
 func (r *Repo) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.description, fp.is_public, fp.created_at, fp.updated_at
+		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE w.slug = $1 AND w.slug = $2 AND fp.is_public = true
@@ -122,7 +149,7 @@ func (r *Repo) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlu
 func (r *Repo) GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.description, fp.is_public, fp.created_at, fp.updated_at
+		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE fp.workspace_id = $1 AND fp.id = $2
@@ -136,7 +163,7 @@ func (r *Repo) GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (
 func (r *Repo) ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]feedback.CorePortal, error) {
 	var rows []portalRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.description, fp.is_public, fp.created_at, fp.updated_at
+		SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE fp.workspace_id = $1
@@ -155,14 +182,14 @@ func (r *Repo) CreatePortal(ctx context.Context, input feedback.CorePortalInput)
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
 		WITH inserted AS (
-			INSERT INTO feedback_portals (workspace_id, description, is_public)
-			VALUES ($1, $2, $3)
-			RETURNING id, workspace_id, description, is_public, created_at, updated_at
+			INSERT INTO feedback_portals (workspace_id, is_public)
+			VALUES ($1, $2)
+			RETURNING id, workspace_id, is_public, created_at, updated_at
 		)
-		SELECT inserted.id, inserted.workspace_id, w.name, w.slug, inserted.description, inserted.is_public, inserted.created_at, inserted.updated_at
+		SELECT inserted.id, inserted.workspace_id, w.name, w.slug, inserted.is_public, inserted.created_at, inserted.updated_at
 		FROM inserted
 		INNER JOIN workspaces w ON w.workspace_id = inserted.workspace_id
-	`, input.WorkspaceID, input.Description, input.IsPublic)
+	`, input.WorkspaceID, input.IsPublic)
 	if err != nil {
 		return feedback.CorePortal{}, err
 	}
@@ -174,14 +201,14 @@ func (r *Repo) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID
 	err := r.db.GetContext(ctx, &row, `
 		WITH updated AS (
 			UPDATE feedback_portals
-			SET description = $3, is_public = $4, updated_at = NOW()
+			SET is_public = $3, updated_at = NOW()
 			WHERE workspace_id = $1 AND id = $2
-			RETURNING id, workspace_id, description, is_public, created_at, updated_at
+			RETURNING id, workspace_id, is_public, created_at, updated_at
 		)
-		SELECT updated.id, updated.workspace_id, w.name, w.slug, updated.description, updated.is_public, updated.created_at, updated.updated_at
+		SELECT updated.id, updated.workspace_id, w.name, w.slug, updated.is_public, updated.created_at, updated.updated_at
 		FROM updated
 		INNER JOIN workspaces w ON w.workspace_id = updated.workspace_id
-	`, workspaceID, portalID, input.Description, input.IsPublic)
+	`, workspaceID, portalID, input.IsPublic)
 	if err != nil {
 		return feedback.CorePortal{}, err
 	}
@@ -254,14 +281,26 @@ func (r *Repo) ListItems(ctx context.Context, input feedback.CoreListItemsInput)
 }
 
 func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]any) {
-	where := []string{"fi.portal_id = :portal_id"}
+	where := make([]string, 0, 5)
 	params := map[string]any{
-		"portal_id": input.PortalID,
-		"limit":     input.PageSize + 1,
-		"offset":    (input.Page - 1) * input.PageSize,
+		"limit":  input.PageSize + 1,
+		"offset": (input.Page - 1) * input.PageSize,
 	}
-	if input.Status != "" {
-		where = append(where, "fi.status = :status")
+	if input.PortalID != uuid.Nil {
+		where = append(where, "fi.portal_id = :portal_id")
+		params["portal_id"] = input.PortalID
+	}
+	if input.TeamID != nil {
+		where = append(where, "fi.workspace_id = :workspace_id", "fb.team_id = :team_id")
+		params["workspace_id"] = input.WorkspaceID
+		params["team_id"] = *input.TeamID
+	}
+	switch input.Status {
+	case "", "all":
+	case "active":
+		where = append(where, projectedFeedbackStatus+" IN ('pending', 'reviewing')")
+	default:
+		where = append(where, projectedFeedbackStatus+" = :status")
 		params["status"] = input.Status
 	}
 	if input.BoardID != nil {
@@ -307,15 +346,53 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback
 	return result, nil
 }
 
+func (r *Repo) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]feedback.CoreComment, error) {
+	var rows []commentRow
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id,
+			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
+			u.avatar_url AS author_avatar,
+			fc.body, fc.created_at, fc.updated_at
+		FROM feedback_comments fc
+		LEFT JOIN users u ON u.user_id = fc.author_id
+		WHERE fc.workspace_id = $1 AND fc.item_id = $2
+		ORDER BY fc.created_at ASC
+	`, workspaceID, itemID); err != nil {
+		return nil, err
+	}
+	result := make([]feedback.CoreComment, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, toCoreComment(row))
+	}
+	return result, nil
+}
+
 func (r *Repo) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]feedback.CoreStoryLink, error) {
 	var rows []storyLinkRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fsl.id, fsl.workspace_id, fsl.item_id, fsl.story_id, fsl.relationship, fsl.created_by_user_id, fsl.created_at
+		SELECT fsl.id, fsl.workspace_id, fsl.item_id, fsl.story_id, fsl.relationship, fsl.is_primary, fsl.created_by_user_id, fsl.created_at
 		FROM feedback_story_links fsl
 		INNER JOIN feedback_items fi ON fi.id = fsl.item_id
 		WHERE fi.portal_id = $1
-		ORDER BY fsl.created_at ASC
+		ORDER BY fsl.is_primary DESC, fsl.created_at ASC
 	`, portalID); err != nil {
+		return nil, err
+	}
+	result := make([]feedback.CoreStoryLink, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, toCoreStoryLink(row))
+	}
+	return result, nil
+}
+
+func (r *Repo) ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]feedback.CoreStoryLink, error) {
+	var rows []storyLinkRow
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT id, workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id, created_at
+		FROM feedback_story_links
+		WHERE workspace_id = $1 AND item_id = $2
+		ORDER BY is_primary DESC, created_at ASC
+	`, workspaceID, itemID); err != nil {
 		return nil, err
 	}
 	result := make([]feedback.CoreStoryLink, 0, len(rows))
@@ -362,9 +439,14 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 			inserted.title, inserted.description, inserted.slug, inserted.status,
 			0 AS vote_count,
 			0 AS comment_count,
-			inserted.roadmap_summary, inserted.created_at, inserted.updated_at
+			inserted.roadmap_summary,
+			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
+			fb.color AS board_color, fb.order_index AS board_order_index,
+			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
+			inserted.created_at, inserted.updated_at
 		FROM inserted
 		LEFT JOIN users u ON u.user_id = inserted.author_id
+		INNER JOIN feedback_boards fb ON fb.id = inserted.board_id
 	`, input.WorkspaceID, input.PortalID, input.BoardID, input.AuthorID, input.Title, input.Description, input.Slug)
 	if err != nil {
 		return feedback.CoreItem{}, err
@@ -372,14 +454,26 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 	return toCoreItem(row), nil
 }
 
-func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input feedback.CoreUpdateItemStatusInput) (feedback.CoreItem, error) {
+func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input feedback.CoreUpdateItemStatusInput) (feedback.CoreItem, bool, error) {
 	var row itemRow
 	err := r.db.GetContext(ctx, &row, `
-		WITH updated AS (
-			UPDATE feedback_items
-			SET status = $3, roadmap_summary = $4, updated_at = NOW()
+		WITH previous AS (
+			SELECT id, status
+			FROM feedback_items
 			WHERE workspace_id = $1 AND id = $2
-			RETURNING *
+				AND ($5 OR NOT EXISTS (
+					SELECT 1
+					FROM feedback_story_links fsl
+					WHERE fsl.item_id = feedback_items.id AND fsl.is_primary = true
+				))
+			FOR UPDATE
+		),
+		updated AS (
+			UPDATE feedback_items fi
+			SET status = $3, roadmap_summary = COALESCE($4, fi.roadmap_summary), updated_at = NOW()
+			FROM previous
+			WHERE fi.id = previous.id
+			RETURNING fi.*, previous.status AS previous_status
 		)
 		SELECT updated.id, updated.workspace_id, updated.portal_id, updated.board_id, updated.author_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
@@ -388,14 +482,35 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			updated.title, updated.description, updated.slug, updated.status,
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = updated.id), 0) AS integer) AS vote_count,
 			(SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id)::int AS comment_count,
-			updated.roadmap_summary, updated.created_at, updated.updated_at
+			updated.roadmap_summary,
+			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
+			fb.color AS board_color, fb.order_index AS board_order_index,
+			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
+			updated.created_at, updated.updated_at,
+			(updated.previous_status IS DISTINCT FROM updated.status) AS status_changed
 		FROM updated
 		LEFT JOIN users u ON u.user_id = updated.author_id
-	`, workspaceID, itemID, input.Status, input.RoadmapSummary)
+		INNER JOIN feedback_boards fb ON fb.id = updated.board_id
+	`, workspaceID, itemID, input.Status, input.RoadmapSummary, input.AllowLinked)
 	if err != nil {
-		return feedback.CoreItem{}, err
+		if err == sql.ErrNoRows && !input.AllowLinked {
+			var storyManaged bool
+			if checkErr := r.db.GetContext(ctx, &storyManaged, `
+				SELECT EXISTS (
+					SELECT 1
+					FROM feedback_story_links
+					WHERE workspace_id = $1 AND item_id = $2 AND is_primary = true
+				)
+			`, workspaceID, itemID); checkErr != nil {
+				return feedback.CoreItem{}, false, checkErr
+			}
+			if storyManaged {
+				return feedback.CoreItem{}, false, feedback.ErrStoryManaged
+			}
+		}
+		return feedback.CoreItem{}, false, err
 	}
-	return toCoreItem(row), nil
+	return toCoreItem(row), row.StatusChanged, nil
 }
 
 func (r *Repo) CreateComment(ctx context.Context, input feedback.CoreCommentInput) (feedback.CoreComment, error) {
@@ -467,15 +582,26 @@ func (r *Repo) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.
 func (r *Repo) LinkStory(ctx context.Context, input feedback.CoreStoryLinkInput) (feedback.CoreStoryLink, error) {
 	var row storyLinkRow
 	err := r.db.GetContext(ctx, &row, `
-		INSERT INTO feedback_story_links (workspace_id, item_id, story_id, relationship, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (item_id, story_id) DO UPDATE SET relationship = EXCLUDED.relationship
-		RETURNING id, workspace_id, item_id, story_id, relationship, created_by_user_id, created_at
-	`, input.WorkspaceID, input.ItemID, input.StoryID, input.Relationship, input.CreatedByUserID)
+		INSERT INTO feedback_story_links (workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (item_id, story_id) DO UPDATE
+		SET relationship = EXCLUDED.relationship, is_primary = EXCLUDED.is_primary
+		RETURNING id, workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id, created_at
+	`, input.WorkspaceID, input.ItemID, input.StoryID, input.Relationship, input.IsPrimary, input.CreatedByUserID)
 	if err != nil {
+		if isPrimaryStoryConflict(err) {
+			return feedback.CoreStoryLink{}, feedback.ErrAlreadyPlanned
+		}
 		return feedback.CoreStoryLink{}, err
 	}
 	return toCoreStoryLink(row), nil
+}
+
+func isPrimaryStoryConflict(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		pgErr.Code == "23505" &&
+		pgErr.ConstraintName == "feedback_story_links_one_primary_per_item"
 }
 
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
@@ -496,18 +622,47 @@ func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, 
 	return &statusID, nil
 }
 
+func (r *Repo) GetStatusCategory(ctx context.Context, teamID, statusID uuid.UUID) (string, error) {
+	var category string
+	if err := r.db.GetContext(ctx, &category, `
+		SELECT category
+		FROM statuses
+		WHERE team_id = $1 AND status_id = $2
+	`, teamID, statusID); err != nil {
+		return "", err
+	}
+	return category, nil
+}
+
 func itemSelectQuery() string {
 	return `
 		SELECT fi.id, fi.workspace_id, fi.portal_id, fi.board_id, fi.author_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
 			COALESCE(u.email, '') AS author_email,
 			u.avatar_url AS author_avatar,
-			fi.title, fi.description, fi.slug, fi.status,
+			fi.title, fi.description, fi.slug, ` + projectedFeedbackStatus + ` AS status,
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
 			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
-			fi.roadmap_summary, fi.created_at, fi.updated_at
+			fi.roadmap_summary,
+			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
+			fb.color AS board_color, fb.order_index AS board_order_index,
+			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
+			primary_link.id AS primary_link_id, primary_link.story_id AS primary_story_id,
+			primary_link.relationship AS primary_relationship,
+			primary_link.created_by_user_id AS primary_created_by_user_id,
+			primary_link.created_at AS primary_created_at,
+			fi.created_at, fi.updated_at
 		FROM feedback_items fi
 		LEFT JOIN users u ON u.user_id = fi.author_id
+		INNER JOIN feedback_boards fb ON fb.id = fi.board_id
+		LEFT JOIN LATERAL (
+			SELECT fsl.id, fsl.story_id, fsl.relationship, fsl.created_by_user_id, fsl.created_at
+			FROM feedback_story_links fsl
+			WHERE fsl.item_id = fi.id AND fsl.is_primary = true
+			LIMIT 1
+		) primary_link ON true
+		LEFT JOIN stories projected_story ON projected_story.id = primary_link.story_id
+		LEFT JOIN statuses projected_state ON projected_state.status_id = projected_story.status_id
 	`
 }
 
@@ -517,7 +672,6 @@ func toCorePortal(row portalRow) feedback.CorePortal {
 		WorkspaceID: row.WorkspaceID,
 		Name:        row.Name,
 		Slug:        row.Slug,
-		Description: row.Description,
 		IsPublic:    row.IsPublic,
 		CreatedAt:   row.CreatedAt,
 		UpdatedAt:   row.UpdatedAt,
@@ -544,7 +698,7 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 	if row.AuthorID != nil {
 		authorID = *row.AuthorID
 	}
-	return feedback.CoreItem{
+	item := feedback.CoreItem{
 		ID:             row.ID,
 		WorkspaceID:    row.WorkspaceID,
 		PortalID:       row.PortalID,
@@ -560,9 +714,38 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 		VoteCount:      row.VoteCount,
 		CommentCount:   row.CommentCount,
 		RoadmapSummary: row.RoadmapSummary,
-		CreatedAt:      row.CreatedAt,
-		UpdatedAt:      row.UpdatedAt,
+		Board: feedback.CoreBoard{
+			ID:          row.BoardID,
+			WorkspaceID: row.WorkspaceID,
+			PortalID:    row.PortalID,
+			TeamID:      row.BoardTeamID,
+			Name:        row.BoardName,
+			Slug:        row.BoardSlug,
+			Color:       row.BoardColor,
+			OrderIndex:  row.BoardOrder,
+			CreatedAt:   row.BoardCreatedAt,
+			UpdatedAt:   row.BoardUpdatedAt,
+		},
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
 	}
+	if row.PrimaryLinkID != nil && row.PrimaryStoryID != nil && row.PrimaryRelation != nil && row.PrimaryCreatedAt != nil {
+		createdBy := uuid.Nil
+		if row.PrimaryCreator != nil {
+			createdBy = *row.PrimaryCreator
+		}
+		item.StoryLinks = []feedback.CoreStoryLink{{
+			ID:              *row.PrimaryLinkID,
+			WorkspaceID:     row.WorkspaceID,
+			ItemID:          row.ID,
+			StoryID:         *row.PrimaryStoryID,
+			Relationship:    *row.PrimaryRelation,
+			IsPrimary:       true,
+			CreatedByUserID: createdBy,
+			CreatedAt:       *row.PrimaryCreatedAt,
+		}}
+	}
+	return item
 }
 
 func toCoreComment(row commentRow) feedback.CoreComment {
@@ -594,6 +777,7 @@ func toCoreStoryLink(row storyLinkRow) feedback.CoreStoryLink {
 		ItemID:          row.ItemID,
 		StoryID:         row.StoryID,
 		Relationship:    row.Relationship,
+		IsPrimary:       row.IsPrimary,
 		CreatedByUserID: createdBy,
 		CreatedAt:       row.CreatedAt,
 	}

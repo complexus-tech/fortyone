@@ -7,7 +7,6 @@ describe("public portal data", () => {
     const portal = toPublicPortal(
       {
         boards: [],
-        description: "Collect feedback",
         id: "portal-1",
         items: [],
         itemsHasMore: true,

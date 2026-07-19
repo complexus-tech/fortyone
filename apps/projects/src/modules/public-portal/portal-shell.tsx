@@ -1,6 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import Link from "next/link";
-import { BellIcon, RequestsIcon, RoadmapIcon, UpdatesIcon } from "icons";
+import { RequestsIcon, RoadmapIcon, UpdatesIcon } from "icons";
 import { Avatar, Box, Button, Flex, Text } from "ui";
 import { cn, getReadableTextColor } from "lib";
 import { getLoginUrl } from "@/utils/callback-url";
@@ -10,6 +10,7 @@ import type {
   PublicPortalViewer,
 } from "./types";
 import { PublicPortalUserMenu } from "./user-menu";
+import { PublicPortalNotifications } from "./notifications-popover";
 import { getPortalCallbackUrl, getPortalPath } from "./utils";
 
 const navItems = [
@@ -87,19 +88,7 @@ export const PublicPortalShell = ({
         <Flex align="center" className="min-w-0 flex-1 justify-end" gap={2}>
           {viewer ? (
             <>
-              {viewer.notificationsHref ? (
-                <Button
-                  asIcon
-                  className="hidden md:flex"
-                  color="tertiary"
-                  href={viewer.notificationsHref}
-                  size="md"
-                  variant="naked"
-                >
-                  <BellIcon className="h-[1.35rem] w-auto" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
-              ) : null}
+              <PublicPortalNotifications portal={portal} />
               <PublicPortalUserMenu viewer={viewer} />
             </>
           ) : (

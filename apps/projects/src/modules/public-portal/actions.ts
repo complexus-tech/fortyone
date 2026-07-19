@@ -5,6 +5,7 @@ import { post } from "api-client";
 import { auth } from "@/auth";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
+import { toPublicRequest, type ApiFeedbackItem } from "./data";
 
 type CreateFeedbackInput = {
   portalSlug: string;
@@ -66,7 +67,7 @@ export const createFeedbackAction = async (input: CreateFeedbackInput) => {
       };
     }
 
-    const response = await post<ApiResponse<unknown>>(
+    const response = await post<ApiResponse<ApiFeedbackItem>>(
       `portals/${input.portalSlug}/feedback/items`,
       {
         boardId: input.boardId,
@@ -75,7 +76,10 @@ export const createFeedbackAction = async (input: CreateFeedbackInput) => {
       },
     );
     refreshPortal(input.portalSlug);
-    return response;
+    return {
+      ...response,
+      data: response.data ? toPublicRequest(response.data) : response.data,
+    };
   } catch (error) {
     return getApiError(error);
   }

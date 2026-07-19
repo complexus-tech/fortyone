@@ -1,6 +1,7 @@
 package notificationshttp
 
 import (
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -19,6 +20,7 @@ type Config struct {
 	TasksService *tasks.Service
 	Cache        *cache.Service
 	Service      *notifications.Service
+	Attachments  *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -26,7 +28,11 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
-	h := New(notificationsService)
+	h := New(notificationsService, cfg.Attachments, cfg.Log)
+
+	app.Get("/portals/{portalSlug}/notifications", h.ListPortalFeedback, auth)
+	app.Get("/portals/{portalSlug}/notifications/unread-count", h.GetPortalFeedbackUnreadCount, auth)
+	app.Put("/portals/{portalSlug}/notifications/{id}/read", h.MarkPortalFeedbackAsRead, auth)
 
 	// Notifications
 	app.Get("/workspaces/{workspaceSlug}/notifications", h.List, auth, workspace)

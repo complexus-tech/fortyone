@@ -23,6 +23,7 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, o
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
+		AND entity_type::text <> 'feedback'
 		ORDER BY created_at DESC
 		LIMIT :limit OFFSET :offset;
 	`
@@ -74,6 +75,7 @@ func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID
 		SELECT COUNT(*) FROM notifications
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
+		AND entity_type::text <> 'feedback'
 		AND read_at IS NULL;
 	`
 
@@ -150,4 +152,68 @@ func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID
 		return notifications.CoreNotificationPreferences{}, err
 	}
 	return corePrefs, nil
+}
+
+func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]notifications.CorePortalNotification, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.ListPortalFeedback")
+	defer span.End()
+
+	var rows []dbPortalNotification
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT n.notification_id, n.recipient_id, n.workspace_id, n.type, n.entity_type,
+			n.entity_id, n.actor_id, n.title, n.message, n.created_at, n.read_at,
+			COALESCE(NULLIF(actor.full_name, ''), NULLIF(actor.username, ''), actor.email, 'Someone') AS actor_name,
+			actor.avatar_url AS actor_avatar,
+			fi.title AS feedback_title,
+			fi.slug AS feedback_slug
+		FROM notifications n
+		INNER JOIN feedback_items fi ON fi.id = n.entity_id
+		INNER JOIN feedback_portals fp ON fp.id = fi.portal_id AND fp.workspace_id = n.workspace_id
+		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+		LEFT JOIN users actor ON actor.user_id = n.actor_id
+		WHERE n.recipient_id = $1
+			AND w.slug = $2
+			AND fp.is_public = true
+			AND n.entity_type::text = 'feedback'
+			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+		ORDER BY n.created_at DESC
+		LIMIT $3 OFFSET $4
+	`, userID, portalSlug, limit, offset); err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("list portal feedback notifications: %w", err)
+	}
+
+	result, err := toCorePortalNotifications(rows)
+	if err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("convert portal feedback notifications: %w", err)
+	}
+	span.SetAttributes(attribute.Int("notifications.count", len(result)))
+	return result, nil
+}
+
+func (r *repo) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUID, portalSlug string) (int, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.GetPortalFeedbackUnreadCount")
+	defer span.End()
+
+	var count int
+	if err := r.db.GetContext(ctx, &count, `
+		SELECT COUNT(*)
+		FROM notifications n
+		INNER JOIN feedback_items fi ON fi.id = n.entity_id
+		INNER JOIN feedback_portals fp ON fp.id = fi.portal_id AND fp.workspace_id = n.workspace_id
+		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+		WHERE n.recipient_id = $1
+			AND w.slug = $2
+			AND fp.is_public = true
+			AND n.entity_type::text = 'feedback'
+			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND n.read_at IS NULL
+	`, userID, portalSlug); err != nil {
+		span.RecordError(err)
+		return 0, fmt.Errorf("count unread portal feedback notifications: %w", err)
+	}
+
+	span.SetAttributes(attribute.Int("notifications.unread_count", count))
+	return count, nil
 }

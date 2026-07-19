@@ -2,13 +2,78 @@ package feedbackhttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	"github.com/google/uuid"
 )
+
+func TestHTTPStatusClassifiesFeedbackErrors(t *testing.T) {
+	t.Parallel()
+
+	if status := httpStatus(fmt.Errorf("%w: invalid status", feedback.ErrInvalidInput)); status != http.StatusBadRequest {
+		t.Fatalf("invalid input status = %d, want %d", status, http.StatusBadRequest)
+	}
+	if status := httpStatus(feedback.ErrStoryManaged); status != http.StatusConflict {
+		t.Fatalf("story-managed status = %d, want %d", status, http.StatusConflict)
+	}
+	if status := httpStatus(errors.New("database unavailable")); status != http.StatusInternalServerError {
+		t.Fatalf("unexpected error status = %d, want %d", status, http.StatusInternalServerError)
+	}
+}
+
+type teamAccessStub struct {
+	err error
+}
+
+func (s teamAccessStub) GetByID(_ context.Context, teamID, workspaceID, _ uuid.UUID) (teams.CoreTeam, error) {
+	if s.err != nil {
+		return teams.CoreTeam{}, s.err
+	}
+	return teams.CoreTeam{ID: teamID, Workspace: workspaceID}, nil
+}
+
+func TestAuthorizeTeamMasksMembershipFailuresAsNotFound(t *testing.T) {
+	t.Parallel()
+
+	handler := New(nil, teamAccessStub{err: teams.ErrTeamNotFound}, nil, nil)
+	err := handler.authorizeTeam(context.Background(), uuid.New(), uuid.New(), uuid.New())
+
+	if !errors.Is(err, feedback.ErrNotFound) {
+		t.Fatalf("authorize team error = %v, want not found", err)
+	}
+}
+
+func TestAuthorizeTeamPreservesInfrastructureFailures(t *testing.T) {
+	t.Parallel()
+
+	infrastructureErr := errors.New("database unavailable")
+	handler := New(nil, teamAccessStub{err: infrastructureErr}, nil, nil)
+	err := handler.authorizeTeam(context.Background(), uuid.New(), uuid.New(), uuid.New())
+
+	if !errors.Is(err, infrastructureErr) {
+		t.Fatalf("authorize team error = %v, want infrastructure failure", err)
+	}
+}
+
+func TestAppPortalDoesNotExposeRemovedDescription(t *testing.T) {
+	t.Parallel()
+
+	payload, err := json.Marshal(toAppPortal(feedback.CorePortal{ID: uuid.New()}))
+	if err != nil {
+		t.Fatalf("marshal portal: %v", err)
+	}
+	if strings.Contains(string(payload), "description") {
+		t.Fatalf("portal payload unexpectedly contains description: %s", payload)
+	}
+}
 
 type profileImageResolverStub struct {
 	resolved map[string]string
@@ -40,7 +105,7 @@ func TestResolvePortalAvatarsUsesPresignedURLs(t *testing.T) {
 			"profiles/joseph.webp": "https://signed.example.com/profiles/joseph.webp",
 		},
 	}
-	handler := New(nil, resolver, nil)
+	handler := New(nil, nil, resolver, nil)
 	portal := feedback.CorePortalSnapshot{
 		Items: []feedback.CoreItem{
 			{ID: itemID, AuthorAvatar: stringPointer("profiles/joseph.webp")},
@@ -72,7 +137,7 @@ func TestResolvePortalAvatarsOmitsUnresolvableAvatar(t *testing.T) {
 			"missing.webp": errors.New("presign failed"),
 		},
 	}
-	handler := New(nil, resolver, nil)
+	handler := New(nil, nil, resolver, nil)
 	portal := feedback.CorePortalSnapshot{
 		Items: []feedback.CoreItem{
 			{ID: uuid.New(), AuthorAvatar: stringPointer("missing.webp")},
@@ -94,7 +159,7 @@ func TestResolvePortalAvatarsOnlyResolvesVisibleComments(t *testing.T) {
 			"visible.webp": "https://signed.example.com/visible.webp",
 		},
 	}
-	handler := New(nil, resolver, nil)
+	handler := New(nil, nil, resolver, nil)
 	visibleItemID := uuid.New()
 	portal := feedback.CorePortalSnapshot{
 		Items: []feedback.CoreItem{{ID: visibleItemID}},

@@ -394,6 +394,54 @@ func TestProcessCommentCreated(t *testing.T) {
 	}
 }
 
+func TestProcessFeedbackCommentCreated(t *testing.T) {
+	actorID := uuid.New()
+	recipientID := uuid.New()
+	payload := events.FeedbackCommentCreatedPayload{
+		CommentID:     uuid.New(),
+		FeedbackID:    uuid.New(),
+		FeedbackTitle: "Export roadmap to PDF",
+		FeedbackSlug:  "export-roadmap-to-pdf",
+		WorkspaceID:   uuid.New(),
+		RecipientID:   recipientID,
+		Content:       "We are working on this.",
+	}
+
+	rules := NewRules(nil, nil, nil, nil)
+	result := rules.ProcessFeedbackCommentCreated(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, recipientID, result[0].RecipientID)
+	assert.Equal(t, "feedback_comment", result[0].Type)
+	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, payload.FeedbackID, result[0].EntityID)
+	assert.Equal(t, payload.FeedbackTitle, result[0].Title)
+
+	assert.Empty(t, rules.ProcessFeedbackCommentCreated(context.Background(), payload, recipientID))
+}
+
+func TestProcessFeedbackStatusUpdated(t *testing.T) {
+	actorID := uuid.New()
+	recipientID := uuid.New()
+	payload := events.FeedbackStatusUpdatedPayload{
+		EventID:       uuid.New(),
+		FeedbackID:    uuid.New(),
+		FeedbackTitle: "Export roadmap to PDF",
+		FeedbackSlug:  "export-roadmap-to-pdf",
+		WorkspaceID:   uuid.New(),
+		RecipientID:   recipientID,
+		Status:        "in_progress",
+	}
+
+	rules := NewRules(nil, nil, nil, nil)
+	result := rules.ProcessFeedbackStatusUpdated(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_status_update", result[0].Type)
+	assert.Equal(t, "in progress", result[0].Message.Variables["status"].Value)
+	assert.Empty(t, rules.ProcessFeedbackStatusUpdated(context.Background(), payload, recipientID))
+}
+
 func TestProcessCommentReplied(t *testing.T) {
 	actorID := uuid.New()
 	workspaceID := uuid.New()

@@ -4,10 +4,11 @@ import type * as ReactTypes from "react";
 import {
   act,
   fireEvent,
-  render,
+  render as renderWithTestingLibrary,
   screen,
   waitFor,
 } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { publicPortalFixture } from "./fixtures";
 import {
@@ -15,6 +16,11 @@ import {
   createFeedbackCommentAction,
   toggleFeedbackVoteAction,
 } from "./actions";
+import {
+  getPublicPortalNotificationsAction,
+  getPublicPortalUnreadCountAction,
+  markPublicPortalNotificationReadAction,
+} from "./notification-actions";
 import {
   PublicPortalRequestDetailPage,
   PublicPortalRequestsPage,
@@ -24,14 +30,43 @@ import {
 const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
 let triggerIntersection: (() => void) | undefined;
+
+const createDeferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+};
+
 const portalViewer = {
   accountHref: "/portal/city-roads/account",
   appHref: "/city-roads/my-work",
   avatarUrl: null,
   email: "ada@example.com",
   name: "Ada Ndlovu",
-  notificationsHref: "/city-roads/notifications",
 };
+
+const createRoadmapQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        gcTime: Infinity,
+        retry: false,
+      },
+    },
+  });
+
+const renderRoadmap = (
+  queryClient = createRoadmapQueryClient(),
+  portal = publicPortalFixture,
+) =>
+  renderWithTestingLibrary(
+    <QueryClientProvider client={queryClient}>
+      <PublicPortalRoadmapPage portal={portal} />
+    </QueryClientProvider>,
+  );
 
 const designSystemOnlyProps = new Set([
   "active",
@@ -109,11 +144,48 @@ jest.mock("./actions", () => ({
   toggleFeedbackVoteAction: jest.fn(),
 }));
 
+jest.mock("./notification-actions", () => ({
+  getPublicPortalNotificationsAction: jest.fn(async () => ({
+    data: {
+      notifications: [],
+      pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+    },
+  })),
+  getPublicPortalUnreadCountAction: jest.fn(async () => ({
+    data: { count: 0 },
+  })),
+  markPublicPortalNotificationReadAction: jest.fn(async () => ({
+    data: null,
+  })),
+}));
+
 const createFeedbackActionMock = jest.mocked(createFeedbackAction);
 const createFeedbackCommentActionMock = jest.mocked(
   createFeedbackCommentAction,
 );
 const toggleFeedbackVoteActionMock = jest.mocked(toggleFeedbackVoteAction);
+const getPublicPortalNotificationsActionMock = jest.mocked(
+  getPublicPortalNotificationsAction,
+);
+const getPublicPortalUnreadCountActionMock = jest.mocked(
+  getPublicPortalUnreadCountAction,
+);
+const markPublicPortalNotificationReadActionMock = jest.mocked(
+  markPublicPortalNotificationReadAction,
+);
+
+const render = (element: ReactTypes.ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { retry: false },
+    },
+  });
+
+  return renderWithTestingLibrary(
+    <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>,
+  );
+};
 
 jest.mock("sonner", () => ({
   toast: {
@@ -123,7 +195,7 @@ jest.mock("sonner", () => ({
 }));
 
 jest.mock("ui", () => {
-  const React = jest.requireActual("react");
+  const React: typeof ReactTypes = jest.requireActual("react");
 
   const Box = ({
     as: Tag = "div",
@@ -275,6 +347,50 @@ jest.mock("ui", () => {
   Menu.SubMenu = MenuSubMenu;
   Menu.SubTrigger = MenuSubTrigger;
   Menu.SubItems = MenuSubItems;
+  const PopoverContext = React.createContext<{
+    onOpenChange?: (open: boolean) => void;
+    open: boolean;
+  }>({ open: false });
+  const Popover = ({
+    children,
+    onOpenChange,
+    open = false,
+  }: {
+    children: ReactTypes.ReactNode;
+    onOpenChange?: (open: boolean) => void;
+    open?: boolean;
+  }) => (
+    <PopoverContext.Provider value={{ onOpenChange, open }}>
+      <div>{children}</div>
+    </PopoverContext.Provider>
+  );
+  const PopoverTrigger = ({ children }: { children: ReactTypes.ReactNode }) => (
+    <PopoverContext.Consumer>
+      {({ onOpenChange, open }) => {
+        if (!React.isValidElement(children)) return children;
+
+        const trigger = children as ReactTypes.ReactElement<{
+          onClick?: ReactTypes.MouseEventHandler;
+        }>;
+        return React.cloneElement(trigger, {
+          onClick: (event: ReactTypes.MouseEvent) => {
+            trigger.props.onClick?.(event);
+            onOpenChange?.(!open);
+          },
+        });
+      }}
+    </PopoverContext.Consumer>
+  );
+  const PopoverContent = ({ children }: { children: ReactTypes.ReactNode }) => (
+    <PopoverContext.Consumer>
+      {({ open }) => (open ? <div>{children}</div> : null)}
+    </PopoverContext.Consumer>
+  );
+  Popover.Trigger = PopoverTrigger;
+  Popover.Content = PopoverContent;
+  const TimeAgo = ({ timestamp }: { timestamp: string }) => (
+    <span>{timestamp}</span>
+  );
 
   return {
     Avatar,
@@ -284,9 +400,11 @@ jest.mock("ui", () => {
     Flex,
     Input,
     Menu,
+    Popover,
     Text,
     TextArea,
     TextEditor,
+    TimeAgo,
   };
 });
 
@@ -315,8 +433,18 @@ describe("Public portal UI", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    triggerIntersection = undefined;
     window.history.replaceState({}, "", "/portal/city-roads/feedback");
-    createFeedbackActionMock.mockResolvedValue({ data: null });
+    createFeedbackActionMock.mockImplementation(async (input) => ({
+      data: {
+        ...publicPortalFixture.requests[0],
+        id: "feedback-new",
+        slug: "new-feedback",
+        boardId: input.boardId,
+        description: input.description,
+        title: input.title,
+      },
+    }));
     createFeedbackCommentActionMock.mockResolvedValue({
       data: {
         authorAvatar: null,
@@ -329,6 +457,18 @@ describe("Public portal UI", () => {
     toggleFeedbackVoteActionMock.mockImplementation(async ({ vote }) => ({
       data: { vote, voteCount: vote === 1 ? 13 : 11 },
     }));
+    getPublicPortalNotificationsActionMock.mockResolvedValue({
+      data: {
+        notifications: [],
+        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+      },
+    });
+    getPublicPortalUnreadCountActionMock.mockResolvedValue({
+      data: { count: 0 },
+    });
+    markPublicPortalNotificationReadActionMock.mockResolvedValue({
+      data: null,
+    });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: clipboardWriteTextMock },
@@ -586,6 +726,43 @@ describe("Public portal UI", () => {
     });
   });
 
+  it("shows new feedback immediately and rolls it back when submission fails", async () => {
+    const submission =
+      createDeferred<Awaited<ReturnType<typeof createFeedbackAction>>>();
+    createFeedbackActionMock.mockReturnValueOnce(submission.promise);
+    const portal = {
+      ...publicPortalFixture,
+      boards: [publicPortalFixture.boards[0]],
+    };
+    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+
+    fireEvent.change(screen.getByLabelText("Feedback title"), {
+      target: { value: "Add protected bike parking" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
+
+    expect(
+      await screen.findByText("Add protected bike parking"),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      submission.resolve({
+        data: null,
+        error: { message: "Unable to submit feedback" },
+      });
+      await submission.promise;
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Add protected bike parking"),
+      ).not.toBeInTheDocument();
+    });
+    expect(toast.error).toHaveBeenCalledWith("Feedback", {
+      description: "Unable to submit feedback",
+    });
+  });
+
   it("toggles an upvote without navigating away from the feedback list", async () => {
     render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
 
@@ -598,6 +775,37 @@ describe("Public portal UI", () => {
     expect(toggleFeedbackVoteActionMock).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: "req-1", vote: 1 }),
     );
+  });
+
+  it("rolls an optimistic vote back when the vote request fails", async () => {
+    const voteRequest =
+      createDeferred<Awaited<ReturnType<typeof toggleFeedbackVoteAction>>>();
+    toggleFeedbackVoteActionMock.mockReturnValueOnce(voteRequest.promise);
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Upvote" })[0]);
+
+    const optimisticVote = await screen.findByRole("button", {
+      name: "Remove upvote",
+    });
+    expect(optimisticVote).toHaveTextContent("13");
+
+    await act(async () => {
+      voteRequest.resolve({
+        data: null,
+        error: { message: "Unable to save vote" },
+      });
+      await voteRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole("button", { name: "Upvote" })[0],
+      ).toHaveTextContent("12");
+    });
+    expect(toast.error).toHaveBeenCalledWith("Vote", {
+      description: "Unable to save vote",
+    });
   });
 
   it("supports downvoting from the feedback detail page", async () => {
@@ -641,7 +849,102 @@ describe("Public portal UI", () => {
     ).toHaveAttribute("href", "/portal/city-roads/account");
   });
 
-  it("keeps account controls but hides workspace actions for external users", () => {
+  it("shows feedback notifications and marks an unread item as read", async () => {
+    getPublicPortalNotificationsActionMock.mockResolvedValue({
+      data: {
+        notifications: [
+          {
+            id: "notification-1",
+            type: "feedback_comment",
+            title: "New feedback comment",
+            message: {
+              template: "{actor} commented on your feedback",
+              variables: {
+                actor: { type: "string", value: "Tariro Moyo" },
+              },
+            },
+            actor: {
+              id: "user-2",
+              name: "Tariro Moyo",
+              avatarUrl: null,
+            },
+            feedback: {
+              id: "req-1",
+              title: "Add pedestrian crossing near East Avenue school",
+              slug: "add-pedestrian-crossing-near-east-avenue-school",
+              path: "/feedback/add-pedestrian-crossing-near-east-avenue-school",
+            },
+            createdAt: "2026-07-20T08:00:00.000Z",
+            readAt: null,
+          },
+        ],
+        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+      },
+    });
+    getPublicPortalUnreadCountActionMock.mockResolvedValue({
+      data: { count: 1 },
+    });
+
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    expect(getPublicPortalNotificationsActionMock).not.toHaveBeenCalled();
+    const notificationsButton = screen.getByRole("button", {
+      name: "Notifications",
+    });
+    fireEvent.click(notificationsButton);
+
+    const notificationMessage = await screen.findByText(
+      "Tariro Moyo commented on your feedback",
+    );
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
+    const notificationLink = notificationMessage.closest("a");
+    expect(notificationLink).toHaveAttribute(
+      "href",
+      "/portal/city-roads/feedback/add-pedestrian-crossing-near-east-avenue-school",
+    );
+    if (!notificationLink)
+      throw new Error("Notification link was not rendered");
+    notificationLink.addEventListener("click", (event) => {
+      event.preventDefault();
+    });
+
+    fireEvent.click(notificationLink);
+
+    await waitFor(() => {
+      expect(markPublicPortalNotificationReadActionMock).toHaveBeenCalledWith({
+        notificationId: "notification-1",
+        portalSlug: "city-roads",
+      });
+    });
+  });
+
+  it("reuses fresh notification data when the popover is reopened", async () => {
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    const notificationsButton = screen.getByRole("button", {
+      name: "Notifications",
+    });
+    fireEvent.click(notificationsButton);
+    expect(await screen.findByText("You're all caught up")).toBeInTheDocument();
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(notificationsButton);
+    fireEvent.click(notificationsButton);
+    expect(await screen.findByText("You're all caught up")).toBeInTheDocument();
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps portal controls but hides workspace actions for external users", () => {
     render(
       <PublicPortalRequestsPage
         portal={publicPortalFixture}
@@ -660,7 +963,9 @@ describe("Public portal UI", () => {
     expect(
       screen.queryByRole("link", { name: "Open FortyOne" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Notifications" }),
+    ).toBeInTheDocument();
   });
 
   it("copies the public portal link and confirms it with a toast", async () => {
@@ -682,16 +987,14 @@ describe("Public portal UI", () => {
     await waitFor(() => {
       expect(shareMock).toHaveBeenCalledWith({
         title: publicPortalFixture.name,
-        text:
-          publicPortalFixture.description ||
-          `${publicPortalFixture.workspace.name} feedback`,
+        text: `${publicPortalFixture.workspace.name} feedback`,
         url: window.location.href,
       });
     });
   });
 
   it("renders roadmap columns from promoted public requests", async () => {
-    render(<PublicPortalRoadmapPage portal={publicPortalFixture} />);
+    renderRoadmap();
 
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
@@ -702,6 +1005,117 @@ describe("Public portal UI", () => {
     expect(
       screen.queryByText("Add pedestrian crossing near East Avenue school"),
     ).not.toBeInTheDocument();
+  });
+
+  it("reuses cached roadmap columns when returning to the roadmap", async () => {
+    const queryClient = createRoadmapQueryClient();
+    const firstRender = renderRoadmap(queryClient);
+
+    expect(
+      await screen.findByText("Resurface Market Road before rainy season"),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+
+    firstRender.unmount();
+    renderRoadmap(queryClient);
+
+    expect(
+      screen.getByText("Resurface Market Road before rainy season"),
+    ).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("loads the next roadmap page when a column sentinel becomes visible", async () => {
+    const plannedRequest = publicPortalFixture.requests.find(
+      (request) => request.status === "planned",
+    )!;
+    global.fetch = jest.fn(
+      async (input: Parameters<typeof fetch>[0]): Promise<Response> => {
+        let url: string;
+        if (typeof input === "string") {
+          url = input;
+        } else if (input instanceof URL) {
+          url = input.toString();
+        } else {
+          url = input.url;
+        }
+        const requestUrl = new URL(url, "https://fortyone.test");
+        const page = requestUrl.searchParams.get("page");
+        const status = requestUrl.searchParams.get("status");
+        const isPlanned = status === "planned";
+        let requests = isPlanned ? [plannedRequest] : [];
+
+        if (isPlanned && page === "2") {
+          requests = [
+            {
+              ...plannedRequest,
+              id: "req-roadmap-page-2",
+              slug: "roadmap-page-two",
+              title: "Roadmap page two",
+            },
+          ];
+        }
+
+        return {
+          json: async () => ({
+            data: {
+              ...publicPortalFixture,
+              requests,
+              requestsHasMore: isPlanned && page === "1",
+            },
+          }),
+          ok: true,
+        } as Response;
+      },
+    );
+
+    renderRoadmap();
+
+    expect(
+      await screen.findByText("Resurface Market Road before rainy season"),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(triggerIntersection).toBeDefined();
+    });
+    act(() => {
+      triggerIntersection?.();
+    });
+
+    expect(await screen.findByText("Roadmap page two")).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/page=2.*status=planned/),
+    );
+  });
+
+  it("renders a roadmap empty state when no feedback has been planned", async () => {
+    global.fetch = jest.fn(
+      async () =>
+        ({
+          json: async () => ({
+            data: {
+              ...publicPortalFixture,
+              requests: [],
+              requestsHasMore: false,
+            },
+          }),
+          ok: true,
+        }) as Response,
+    );
+
+    renderRoadmap();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nothing is on the roadmap yet",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Feedback will appear here once the team plans it for delivery.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("renders a public request detail page with comments and metadata", () => {
@@ -761,5 +1175,93 @@ describe("Public portal UI", () => {
     expect(createFeedbackCommentActionMock).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: "req-1" }),
     );
+  });
+
+  it("rolls an optimistic comment back and restores the draft on failure", async () => {
+    const commentRequest =
+      createDeferred<Awaited<ReturnType<typeof createFeedbackCommentAction>>>();
+    createFeedbackCommentActionMock.mockReturnValueOnce(commentRequest.promise);
+    render(
+      <PublicPortalRequestDetailPage
+        portal={publicPortalFixture}
+        request={publicPortalFixture.requests[0]}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Comment"), {
+      target: { value: "This should appear immediately." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+
+    expect(
+      await screen.findByText("This should appear immediately."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("3 comments")).toBeInTheDocument();
+
+    await act(async () => {
+      commentRequest.resolve({
+        data: null,
+        error: { message: "Unable to add comment" },
+      });
+      await commentRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("This should appear immediately."),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("2 comments")).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText("Comment")).toHaveValue(
+      "This should appear immediately.",
+    );
+    expect(toast.error).toHaveBeenCalledWith("Comment", {
+      description: "Unable to add comment",
+    });
+  });
+
+  it("preserves a newer comment draft when an earlier submission fails", async () => {
+    const commentRequest =
+      createDeferred<Awaited<ReturnType<typeof createFeedbackCommentAction>>>();
+    createFeedbackCommentActionMock.mockReturnValueOnce(commentRequest.promise);
+    render(
+      <PublicPortalRequestDetailPage
+        portal={publicPortalFixture}
+        request={publicPortalFixture.requests[0]}
+        viewer={portalViewer}
+      />,
+    );
+
+    const commentEditor = screen.getByLabelText("Comment");
+    fireEvent.change(commentEditor, {
+      target: { value: "The failed comment." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    fireEvent.change(commentEditor, {
+      target: { value: "A newer draft written while saving." },
+    });
+
+    await act(async () => {
+      commentRequest.resolve({
+        data: null,
+        error: { message: "Unable to add comment" },
+      });
+      await commentRequest.promise;
+    });
+
+    const commentButton = screen.getByRole("button", { name: "Comment" });
+    await waitFor(() => {
+      expect(commentButton).toBeEnabled();
+    });
+    fireEvent.click(commentButton);
+
+    await waitFor(() => {
+      expect(createFeedbackCommentActionMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          body: "A newer draft written while saving.",
+        }),
+      );
+    });
   });
 });

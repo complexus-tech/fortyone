@@ -170,7 +170,7 @@ func (r *repo) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.U
 			errMsg := "team not found or user is not a member"
 			r.log.Info(ctx, errMsg, "team_id", teamID, "user_id", userID)
 			span.RecordError(errors.New("team not found"), trace.WithAttributes(attribute.String("error", errMsg)))
-			return teams.CoreTeam{}, errors.New("team not found")
+			return teams.CoreTeam{}, teams.ErrTeamNotFound
 		}
 		errMsg := fmt.Sprintf("Failed to retrieve team from the database: %s", err)
 		r.log.Error(ctx, errMsg)

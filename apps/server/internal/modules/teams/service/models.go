@@ -13,6 +13,9 @@ var ErrTeamCodeExists = errors.New("team code already exists")
 // ErrTeamMemberExists is returned when attempting to add a member that is already in the team
 var ErrTeamMemberExists = errors.New("user is already a member of this team")
 
+// ErrTeamNotFound is returned when a team does not exist or the user cannot access it.
+var ErrTeamNotFound = errors.New("team not found")
+
 type CoreTeam struct {
 	ID             uuid.UUID
 	Name           string

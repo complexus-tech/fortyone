@@ -11,7 +11,6 @@ type ApiPortal = {
   id: string;
   name: string;
   slug: string;
-  description: string;
   itemsHasMore?: boolean;
   boards?: ApiBoard[];
   items?: ApiFeedbackItem[];
@@ -25,7 +24,7 @@ type ApiBoard = {
   color: string;
 };
 
-type ApiFeedbackItem = {
+export type ApiFeedbackItem = {
   id: string;
   boardId: string;
   authorName: string;
@@ -88,6 +87,37 @@ const dateLabel = (value: string) => {
   });
 };
 
+export const toPublicRequest = (
+  item: ApiFeedbackItem,
+): PublicPortal["requests"][number] => {
+  const comments: PublicRequestComment[] = (item.comments ?? []).map(
+    (comment) => ({
+      id: comment.id,
+      authorName: comment.authorName,
+      authorAvatar: comment.authorAvatar,
+      body: comment.body,
+      createdAtLabel: dateLabel(comment.createdAt),
+    }),
+  );
+
+  return {
+    id: item.id,
+    slug: item.slug,
+    title: item.title,
+    description: item.description,
+    authorName: item.authorName,
+    authorAvatar: item.authorAvatar,
+    boardId: item.boardId,
+    status: item.status,
+    voteCount: item.voteCount,
+    commentCount: item.commentCount,
+    createdAtLabel: dateLabel(item.createdAt),
+    roadmapSummary: item.roadmapSummary ?? undefined,
+    comments,
+    storyLinks: item.storyLinks ?? [],
+  };
+};
+
 export const toPublicPortal = (
   apiPortal: ApiPortal,
   workspace?: PublicPortalWorkspace,
@@ -113,36 +143,8 @@ export const toPublicPortal = (
       name: apiPortal.name,
       slug: apiPortal.slug,
     },
-    description: apiPortal.description,
     boards,
-    requests: (apiPortal.items ?? []).map((item) => {
-      const comments: PublicRequestComment[] = (item.comments ?? []).map(
-        (comment) => ({
-          id: comment.id,
-          authorName: comment.authorName,
-          authorAvatar: comment.authorAvatar,
-          body: comment.body,
-          createdAtLabel: dateLabel(comment.createdAt),
-        }),
-      );
-
-      return {
-        id: item.id,
-        slug: item.slug,
-        title: item.title,
-        description: item.description,
-        authorName: item.authorName,
-        authorAvatar: item.authorAvatar,
-        boardId: item.boardId,
-        status: item.status,
-        voteCount: item.voteCount,
-        commentCount: item.commentCount,
-        createdAtLabel: dateLabel(item.createdAt),
-        roadmapSummary: item.roadmapSummary ?? undefined,
-        comments,
-        storyLinks: item.storyLinks ?? [],
-      };
-    }),
+    requests: (apiPortal.items ?? []).map(toPublicRequest),
     requestsHasMore: apiPortal.itemsHasMore ?? false,
     updates: [],
   };

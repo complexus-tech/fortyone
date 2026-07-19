@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
@@ -18,18 +18,27 @@ import { toast } from "sonner";
 import { cn } from "lib";
 import { TeamColor } from "@/components/ui/team-color";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
-import type { PublicPortal, PublicRequest } from "./types";
-import { createFeedbackAction, toggleFeedbackVoteAction } from "./actions";
+import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
+import {
+  useCreatePublicFeedback,
+  usePublicFeedbackVote,
+} from "./feedback-mutations";
 
 const MAX_FEEDBACK_TITLE_LENGTH = 200;
 
-export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
+export const NewFeedbackButton = ({
+  portal,
+  viewer,
+}: {
+  portal: PublicPortal;
+  viewer: PublicPortalViewer;
+}) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [boardId, setBoardId] = useState(
     portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
   );
-  const [isPending, startTransition] = useTransition();
+  const createFeedback = useCreatePublicFeedback({ portal, viewer });
   const selectedBoard = portal.boards.find((board) => board.id === boardId);
   const descriptionEditor = useEditor({
     content: "",
@@ -52,21 +61,25 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
   });
 
   const submit = () => {
-    startTransition(async () => {
-      const response = await createFeedbackAction({
-        boardId,
-        description: descriptionEditor?.getText() ?? "",
-        portalSlug: portal.slug,
-        title,
-      });
-      if (response.error?.message) {
-        toast.error("Feedback", { description: response.error.message });
-        return;
-      }
-      setOpen(false);
-      setTitle("");
-      descriptionEditor?.commands.setContent("");
-      toast.success("Feedback submitted");
+    const input = {
+      boardId,
+      description: descriptionEditor?.getText() ?? "",
+      portalSlug: portal.slug,
+      title,
+    };
+
+    setOpen(false);
+    setTitle("");
+    descriptionEditor?.commands.setContent("");
+    createFeedback.mutate(input, {
+      onError: () => {
+        setTitle(input.title);
+        descriptionEditor?.commands.setContent(input.description);
+        setOpen(true);
+      },
+      onSuccess: () => {
+        toast.success("Feedback submitted");
+      },
     });
   };
 
@@ -166,7 +179,9 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
           </Button>
           <Button
             color="invert"
-            disabled={!boardId || title.trim().length === 0 || isPending}
+            disabled={
+              !boardId || title.trim().length === 0 || createFeedback.isPending
+            }
             onClick={submit}
           >
             Submit feedback
@@ -188,28 +203,10 @@ export const FeedbackVoteButton = ({
   request: PublicRequest;
   showDownvote?: boolean;
 }) => {
-  const [voteCount, setVoteCount] = useState(request.voteCount);
-  const [vote, setVote] = useState<-1 | 0 | 1>(0);
-  const [isPending, startTransition] = useTransition();
-
-  const submitVote = (nextVote: -1 | 1) => {
-    startTransition(async () => {
-      const response = await toggleFeedbackVoteAction({
-        itemId: request.id,
-        itemSlug: request.slug,
-        portalSlug: portal.slug,
-        vote: nextVote,
-      });
-      if (response.error?.message) {
-        toast.error("Vote", { description: response.error.message });
-        return;
-      }
-      if (response.data) {
-        setVoteCount(response.data.voteCount);
-        setVote(response.data.vote);
-      }
-    });
-  };
+  const { mutation, vote, voteCount } = usePublicFeedbackVote({
+    portalSlug: portal.slug,
+    request,
+  });
 
   return (
     <Box className="flex shrink-0 items-center gap-0.5">
@@ -221,12 +218,12 @@ export const FeedbackVoteButton = ({
           { "text-foreground": vote === 1 },
         )}
         color="tertiary"
-        disabled={isPending}
+        disabled={mutation.isPending}
         leftIcon={
           <ThumbsUpIcon className={compact ? "h-3.5" : "h-4"} strokeWidth={2} />
         }
         onClick={() => {
-          submitVote(1);
+          mutation.mutate(1);
         }}
         size="sm"
         title={vote === 1 ? "Remove upvote" : "Upvote"}
@@ -242,9 +239,9 @@ export const FeedbackVoteButton = ({
             "text-foreground": vote === -1,
           })}
           color="tertiary"
-          disabled={isPending}
+          disabled={mutation.isPending}
           onClick={() => {
-            submitVote(-1);
+            mutation.mutate(-1);
           }}
           size="sm"
           title={vote === -1 ? "Remove downvote" : "Downvote"}

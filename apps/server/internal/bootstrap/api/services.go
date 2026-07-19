@@ -241,7 +241,11 @@ func buildServices(cfg mux.Config) services {
 			integrationrequests.ProviderSlack:  slackService,
 		},
 	)
-	feedbackService := feedback.New(feedbackrepository.New(cfg.Log, cfg.DB), storiesService)
+	feedbackService := feedback.New(
+		feedbackrepository.New(cfg.Log, cfg.DB),
+		storiesService,
+		feedback.WithEventPublisher(cfg.Log, cfg.Publisher),
+	)
 
 	return services{
 		activities: activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),

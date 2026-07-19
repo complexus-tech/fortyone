@@ -21,6 +21,10 @@ export type PublicPortalQuery = {
   sort?: "top" | "newest" | "oldest";
 };
 
+export type PublicPortalCachePolicy = {
+  revalidateSeconds?: number;
+};
+
 const DOMAIN_SUFFIX = ".fortyone.app";
 
 export class PublicPortalRequestError extends Error {
@@ -61,9 +65,17 @@ const buildQuery = (query: PublicPortalQuery) => {
   return value ? `?${value}` : "";
 };
 
+const getPublicFetchOptions = ({
+  revalidateSeconds,
+}: PublicPortalCachePolicy) =>
+  revalidateSeconds === undefined
+    ? ({ cache: "no-store" } as const)
+    : ({ next: { revalidate: revalidateSeconds } } as const);
+
 export const getPublicPortal = async (
   portalSlug: string,
   query: PublicPortalQuery = {},
+  cachePolicy: PublicPortalCachePolicy = {},
 ): Promise<PublicPortal> => {
   const apiUrl = getApiUrl();
 
@@ -78,10 +90,11 @@ export const getPublicPortal = async (
   const feedbackPath = workspaceSlug
     ? `/workspaces/${workspaceSlug}/portals/${portalSlug}/feedback${buildQuery(query)}`
     : `/portals/${portalSlug}/feedback${buildQuery(query)}`;
+  const fetchOptions = getPublicFetchOptions(cachePolicy);
 
   const [workspaceResponse, feedbackResponse] = await Promise.all([
-    fetch(`${apiUrl}${workspacePath}`, { cache: "no-store" }),
-    fetch(`${apiUrl}${feedbackPath}`, { cache: "no-store" }),
+    fetch(`${apiUrl}${workspacePath}`, fetchOptions),
+    fetch(`${apiUrl}${feedbackPath}`, fetchOptions),
   ]);
 
   if (!feedbackResponse.ok) {
@@ -103,9 +116,10 @@ export const getPublicPortal = async (
 export const getPublicPortalOrNotFound = async (
   portalSlug: string,
   query: PublicPortalQuery = {},
+  cachePolicy: PublicPortalCachePolicy = {},
 ) => {
   try {
-    return await getPublicPortal(portalSlug, query);
+    return await getPublicPortal(portalSlug, query, cachePolicy);
   } catch (error) {
     if (isPublicPortalNotFoundError(error)) {
       notFound();

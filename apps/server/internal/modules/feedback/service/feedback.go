@@ -7,15 +7,21 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/pkg/events"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrInvalidInput = errors.New("invalid feedback input")
-	ErrNotFound     = sql.ErrNoRows
+	ErrInvalidInput   = errors.New("invalid feedback input")
+	ErrNotFound       = sql.ErrNoRows
+	ErrAlreadyPlanned = errors.New("feedback is already linked to a primary story")
+	ErrTeamMismatch   = errors.New("feedback and story must belong to the same team")
+	ErrStoryManaged   = errors.New("feedback status is managed by its linked story")
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
@@ -27,12 +33,27 @@ const (
 )
 
 type Service struct {
-	repo    Repository
-	stories StoryService
+	repo      Repository
+	stories   StoryService
+	publisher EventPublisher
+	log       *logger.Logger
 }
 
-func New(repo Repository, stories StoryService) *Service {
-	return &Service{repo: repo, stories: stories}
+type Option func(*Service)
+
+func WithEventPublisher(log *logger.Logger, publisher EventPublisher) Option {
+	return func(service *Service) {
+		service.log = log
+		service.publisher = publisher
+	}
+}
+
+func New(repo Repository, stories StoryService, options ...Option) *Service {
+	service := &Service{repo: repo, stories: stories}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 func (s *Service) GetPortalSnapshot(ctx context.Context, slug string) (CorePortalSnapshot, error) {
@@ -89,7 +110,7 @@ func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal) (Cor
 
 func (s *Service) ListPortals(ctx context.Context, input CoreWorkspacePortalInput) ([]CorePortal, error) {
 	if input.WorkspaceID == uuid.Nil {
-		return nil, errors.New("workspace id is required")
+		return nil, invalidInput("workspace id is required")
 	}
 	portals, err := s.repo.ListPortals(ctx, input.WorkspaceID)
 	if err != nil {
@@ -100,7 +121,6 @@ func (s *Service) ListPortals(ctx context.Context, input CoreWorkspacePortalInpu
 	}
 	portal, err := s.CreatePortal(ctx, CorePortalInput{
 		WorkspaceID: input.WorkspaceID,
-		Description: "Collect public feedback, prioritize requests, and publish roadmap progress.",
 		IsPublic:    true,
 	})
 	if err != nil {
@@ -111,23 +131,21 @@ func (s *Service) ListPortals(ctx context.Context, input CoreWorkspacePortalInpu
 
 func (s *Service) CreatePortal(ctx context.Context, input CorePortalInput) (CorePortal, error) {
 	if input.WorkspaceID == uuid.Nil {
-		return CorePortal{}, errors.New("workspace id is required")
+		return CorePortal{}, invalidInput("workspace id is required")
 	}
-	input.Description = strings.TrimSpace(input.Description)
 	return s.repo.CreatePortal(ctx, input)
 }
 
 func (s *Service) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error) {
 	if workspaceID == uuid.Nil || portalID == uuid.Nil {
-		return CorePortal{}, errors.New("workspace id and portal id are required")
+		return CorePortal{}, invalidInput("workspace id and portal id are required")
 	}
-	input.Description = strings.TrimSpace(input.Description)
 	return s.repo.UpdatePortal(ctx, workspaceID, portalID, input)
 }
 
 func (s *Service) ListPortalBoards(ctx context.Context, workspaceID, portalID uuid.UUID) ([]CoreBoard, error) {
 	if workspaceID == uuid.Nil || portalID == uuid.Nil {
-		return nil, errors.New("workspace id and portal id are required")
+		return nil, invalidInput("workspace id and portal id are required")
 	}
 	portal, err := s.repo.GetPortal(ctx, workspaceID, portalID)
 	if err != nil {
@@ -137,8 +155,8 @@ func (s *Service) ListPortalBoards(ctx context.Context, workspaceID, portalID uu
 }
 
 func (s *Service) ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error) {
-	if input.PortalID == uuid.Nil {
-		return CoreItemsPage{}, errors.New("portal id is required")
+	if input.PortalID == uuid.Nil && (input.WorkspaceID == uuid.Nil || input.TeamID == nil || *input.TeamID == uuid.Nil) {
+		return CoreItemsPage{}, invalidInput("portal id or workspace and team ids are required")
 	}
 	if input.Page < 1 {
 		input.Page = 1
@@ -154,19 +172,56 @@ func (s *Service) ListItems(ctx context.Context, input CoreListItemsInput) (Core
 	if input.Sort == "" {
 		input.Sort = "top"
 	}
-	if input.Status != "" && !isValidStatus(input.Status) {
-		return CoreItemsPage{}, errors.New("unsupported feedback status")
+	if input.Status != "" && input.Status != "active" && input.Status != "all" && !isValidStatus(input.Status) {
+		return CoreItemsPage{}, invalidInput("unsupported feedback status")
 	}
 	return s.repo.ListItems(ctx, input)
 }
 
+func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID uuid.UUID, status string, page, pageSize int) (CoreItemsPage, error) {
+	return s.ListItems(ctx, CoreListItemsInput{
+		WorkspaceID: workspaceID,
+		TeamID:      &teamID,
+		Status:      status,
+		Sort:        "newest",
+		Page:        page,
+		PageSize:    pageSize,
+	})
+}
+
+func (s *Service) GetItemDetails(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItemDetails, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return CoreItemDetails{}, invalidInput("workspace id and feedback id are required")
+	}
+	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItemDetails{}, err
+	}
+	comments, err := s.repo.ListItemComments(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItemDetails{}, err
+	}
+	links, err := s.repo.ListItemStoryLinks(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItemDetails{}, err
+	}
+	return CoreItemDetails{Item: item, Comments: comments, StoryLinks: links}, nil
+}
+
+func (s *Service) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return CoreItem{}, invalidInput("workspace id and feedback id are required")
+	}
+	return s.repo.GetItem(ctx, workspaceID, itemID)
+}
+
 func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error) {
 	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.TeamID == uuid.Nil {
-		return CoreBoard{}, errors.New("workspace, portal, and team are required")
+		return CoreBoard{}, invalidInput("workspace, portal, and team are required")
 	}
 	input.Name = strings.TrimSpace(input.Name)
 	if input.Name == "" {
-		return CoreBoard{}, errors.New("board name is required")
+		return CoreBoard{}, invalidInput("board name is required")
 	}
 	input.Slug = normalizeSlug(input.Slug)
 	if input.Slug == "" {
@@ -181,12 +236,12 @@ func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBo
 
 func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error) {
 	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.BoardID == uuid.Nil || input.AuthorID == uuid.Nil {
-		return CoreItem{}, errors.New("workspace, portal, board, and author are required")
+		return CoreItem{}, invalidInput("workspace, portal, board, and author are required")
 	}
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
 	if input.Title == "" {
-		return CoreItem{}, errors.New("feedback title is required")
+		return CoreItem{}, invalidInput("feedback title is required")
 	}
 	input.Slug = normalizeSlug(input.Slug)
 	if input.Slug == "" {
@@ -199,13 +254,13 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
 	if input.Title == "" {
-		return CoreItem{}, errors.New("feedback title is required")
+		return CoreItem{}, invalidInput("feedback title is required")
 	}
 	if utf8.RuneCountInString(input.Title) > maxPublicFeedbackTitleCharacters {
-		return CoreItem{}, fmt.Errorf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
+		return CoreItem{}, invalidInputf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
 	}
 	if utf8.RuneCountInString(input.Description) > maxPublicFeedbackDescriptionCharacters {
-		return CoreItem{}, fmt.Errorf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
+		return CoreItem{}, invalidInputf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
 	}
 
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
@@ -232,36 +287,60 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 
 func (s *Service) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error) {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil {
-		return CoreItem{}, errors.New("workspace id and feedback id are required")
+		return CoreItem{}, invalidInput("workspace id and feedback id are required")
 	}
 	if !isValidStatus(input.Status) {
-		return CoreItem{}, errors.New("unsupported feedback status")
+		return CoreItem{}, invalidInput("unsupported feedback status")
 	}
 	if input.RoadmapSummary != nil {
 		trimmed := strings.TrimSpace(*input.RoadmapSummary)
 		input.RoadmapSummary = &trimmed
 	}
-	return s.repo.UpdateItemStatus(ctx, workspaceID, itemID, input)
+	item, statusChanged, err := s.repo.UpdateItemStatus(ctx, workspaceID, itemID, input)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if statusChanged && shouldNotify(item.AuthorID, input.ActorID) {
+		s.publish(ctx, events.Event{
+			Type: events.FeedbackStatusUpdated,
+			Payload: events.FeedbackStatusUpdatedPayload{
+				EventID:       uuid.New(),
+				FeedbackID:    item.ID,
+				FeedbackTitle: item.Title,
+				FeedbackSlug:  item.Slug,
+				WorkspaceID:   item.WorkspaceID,
+				RecipientID:   item.AuthorID,
+				Status:        item.Status,
+			},
+			Timestamp: time.Now(),
+			ActorID:   input.ActorID,
+		})
+	}
+	return item, nil
 }
 
 func (s *Service) CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error) {
 	if input.WorkspaceID == uuid.Nil || input.ItemID == uuid.Nil || input.AuthorID == uuid.Nil {
-		return CoreComment{}, errors.New("workspace, feedback, and author are required")
+		return CoreComment{}, invalidInput("workspace, feedback, and author are required")
 	}
 	input.Body = strings.TrimSpace(input.Body)
 	if input.Body == "" {
-		return CoreComment{}, errors.New("comment body is required")
+		return CoreComment{}, invalidInput("comment body is required")
 	}
-	return s.repo.CreateComment(ctx, input)
+	item, err := s.repo.GetItem(ctx, input.WorkspaceID, input.ItemID)
+	if err != nil {
+		return CoreComment{}, err
+	}
+	return s.createComment(ctx, input, item)
 }
 
 func (s *Service) CreatePublicComment(ctx context.Context, input CorePublicCommentInput) (CoreComment, error) {
 	input.Body = strings.TrimSpace(input.Body)
 	if input.Body == "" {
-		return CoreComment{}, errors.New("comment body is required")
+		return CoreComment{}, invalidInput("comment body is required")
 	}
 	if utf8.RuneCountInString(input.Body) > maxPublicFeedbackCommentCharacters {
-		return CoreComment{}, fmt.Errorf("comment body must be %d characters or fewer", maxPublicFeedbackCommentCharacters)
+		return CoreComment{}, invalidInputf("comment body must be %d characters or fewer", maxPublicFeedbackCommentCharacters)
 	}
 
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
@@ -276,20 +355,57 @@ func (s *Service) CreatePublicComment(ctx context.Context, input CorePublicComme
 		return CoreComment{}, ErrNotFound
 	}
 
-	return s.CreateComment(ctx, CoreCommentInput{
+	return s.createComment(ctx, CoreCommentInput{
 		WorkspaceID: portal.WorkspaceID,
 		ItemID:      item.ID,
 		AuthorID:    input.AuthorID,
 		Body:        input.Body,
-	})
+	}, item)
+}
+
+func (s *Service) createComment(ctx context.Context, input CoreCommentInput, item CoreItem) (CoreComment, error) {
+	comment, err := s.repo.CreateComment(ctx, input)
+	if err != nil {
+		return CoreComment{}, err
+	}
+	if shouldNotify(item.AuthorID, input.AuthorID) {
+		s.publish(ctx, events.Event{
+			Type: events.FeedbackCommentCreated,
+			Payload: events.FeedbackCommentCreatedPayload{
+				CommentID:     comment.ID,
+				FeedbackID:    item.ID,
+				FeedbackTitle: item.Title,
+				FeedbackSlug:  item.Slug,
+				WorkspaceID:   item.WorkspaceID,
+				RecipientID:   item.AuthorID,
+				Content:       comment.Body,
+			},
+			Timestamp: time.Now(),
+			ActorID:   input.AuthorID,
+		})
+	}
+	return comment, nil
+}
+
+func (s *Service) publish(ctx context.Context, event events.Event) {
+	if s.publisher == nil {
+		return
+	}
+	if err := s.publisher.Publish(context.WithoutCancel(ctx), event); err != nil && s.log != nil {
+		s.log.Error(ctx, "failed to publish feedback notification event", "event_type", event.Type, "error", err)
+	}
+}
+
+func shouldNotify(recipientID, actorID uuid.UUID) bool {
+	return recipientID != uuid.Nil && actorID != uuid.Nil && recipientID != actorID
 }
 
 func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error) {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil || userID == uuid.Nil {
-		return CoreVoteResult{}, errors.New("workspace, feedback, and user are required")
+		return CoreVoteResult{}, invalidInput("workspace, feedback, and user are required")
 	}
 	if vote != -1 && vote != 1 {
-		return CoreVoteResult{}, errors.New("feedback vote must be either -1 or 1")
+		return CoreVoteResult{}, invalidInput("feedback vote must be either -1 or 1")
 	}
 	if _, err := s.repo.GetItem(ctx, workspaceID, itemID); err != nil {
 		return CoreVoteResult{}, err
@@ -315,7 +431,7 @@ func (s *Service) TogglePublicVote(ctx context.Context, input CorePublicVoteInpu
 
 func (s *Service) LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error) {
 	if input.WorkspaceID == uuid.Nil || input.ItemID == uuid.Nil || input.StoryID == uuid.Nil || input.CreatedByUserID == uuid.Nil {
-		return CoreStoryLink{}, errors.New("workspace, feedback, story, and actor are required")
+		return CoreStoryLink{}, invalidInput("workspace, feedback, story, and actor are required")
 	}
 	if input.Relationship == "" {
 		input.Relationship = RelationshipLinked
@@ -328,20 +444,90 @@ func (s *Service) CreateStoryFromItem(ctx context.Context, workspaceID, itemID, 
 		return CoreCreateStoryResult{}, errors.New("story service is required")
 	}
 	if workspaceID == uuid.Nil || itemID == uuid.Nil || actorID == uuid.Nil || input.TeamID == uuid.Nil {
-		return CoreCreateStoryResult{}, errors.New("workspace, feedback, actor, and team are required")
+		return CoreCreateStoryResult{}, invalidInput("workspace, feedback, actor, and team are required")
 	}
 	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
 	if err != nil {
 		return CoreCreateStoryResult{}, err
 	}
+	if item.Board.TeamID == uuid.Nil || item.Board.TeamID != input.TeamID {
+		return CoreCreateStoryResult{}, ErrTeamMismatch
+	}
+	existingLinks, err := s.repo.ListItemStoryLinks(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreCreateStoryResult{}, err
+	}
+	for _, existingLink := range existingLinks {
+		if !existingLink.IsPrimary {
+			continue
+		}
+		if input.StoryID != nil && existingLink.StoryID != *input.StoryID {
+			return CoreCreateStoryResult{}, ErrAlreadyPlanned
+		}
+		if _, err := s.UpdateItemStatus(ctx, workspaceID, itemID, CoreUpdateItemStatusInput{Status: item.Status, ActorID: actorID, AllowLinked: true}); err != nil {
+			return CoreCreateStoryResult{}, err
+		}
+		return CoreCreateStoryResult{
+			ItemID:  itemID,
+			StoryID: existingLink.StoryID,
+			LinkID:  existingLink.ID,
+			Created: false,
+		}, nil
+	}
+
+	if input.StoryID != nil {
+		story, err := s.stories.Get(ctx, *input.StoryID, workspaceID)
+		if err != nil {
+			return CoreCreateStoryResult{}, err
+		}
+		if story.Team != item.Board.TeamID {
+			return CoreCreateStoryResult{}, ErrTeamMismatch
+		}
+		if story.DeletedAt != nil {
+			return CoreCreateStoryResult{}, fmt.Errorf("%w: deleted stories cannot be linked to feedback", ErrInvalidInput)
+		}
+		plannedStatus := StatusPlanned
+		if story.Status != nil {
+			category, err := s.repo.GetStatusCategory(ctx, item.Board.TeamID, *story.Status)
+			if err != nil {
+				return CoreCreateStoryResult{}, err
+			}
+			plannedStatus = feedbackStatusForStoryCategory(category)
+		}
+		link, err := s.repo.LinkStory(ctx, CoreStoryLinkInput{
+			WorkspaceID:     workspaceID,
+			ItemID:          itemID,
+			StoryID:         story.ID,
+			Relationship:    RelationshipSolves,
+			IsPrimary:       true,
+			CreatedByUserID: actorID,
+		})
+		if err != nil {
+			if errors.Is(err, ErrAlreadyPlanned) {
+				return s.resolveExistingPlan(ctx, workspaceID, itemID, input.StoryID)
+			}
+			return CoreCreateStoryResult{}, err
+		}
+		if _, err := s.UpdateItemStatus(ctx, workspaceID, itemID, CoreUpdateItemStatusInput{Status: plannedStatus, ActorID: actorID, AllowLinked: true}); err != nil {
+			return CoreCreateStoryResult{}, err
+		}
+		return CoreCreateStoryResult{ItemID: itemID, StoryID: story.ID, LinkID: link.ID, Created: false}, nil
+	}
+
 	statusID := input.StatusID
+	statusCategory := "unstarted"
 	if statusID == nil {
 		statusID, err = s.repo.FindFirstStatusByCategory(ctx, input.TeamID, "unstarted")
 		if err != nil {
 			return CoreCreateStoryResult{}, err
 		}
 		if statusID == nil {
-			return CoreCreateStoryResult{}, errors.New("team has no unstarted status configured")
+			return CoreCreateStoryResult{}, invalidInput("team has no unstarted status configured")
+		}
+	} else {
+		statusCategory, err = s.repo.GetStatusCategory(ctx, input.TeamID, *statusID)
+		if err != nil {
+			return CoreCreateStoryResult{}, invalidInput("story status does not belong to the feedback team")
 		}
 	}
 	description := item.Description
@@ -350,7 +536,7 @@ func (s *Service) CreateStoryFromItem(ctx context.Context, workspaceID, itemID, 
 		Description: &description,
 		Status:      statusID,
 		Reporter:    &actorID,
-		Team:        input.TeamID,
+		Team:        item.Board.TeamID,
 		Priority:    "No Priority",
 	}, workspaceID)
 	if err != nil {
@@ -361,12 +547,69 @@ func (s *Service) CreateStoryFromItem(ctx context.Context, workspaceID, itemID, 
 		ItemID:          itemID,
 		StoryID:         story.ID,
 		Relationship:    RelationshipCreatedFrom,
+		IsPrimary:       true,
 		CreatedByUserID: actorID,
 	})
 	if err != nil {
+		if deleteErr := s.stories.Delete(context.WithoutCancel(ctx), story.ID, workspaceID); deleteErr != nil {
+			return CoreCreateStoryResult{}, errors.Join(err, fmt.Errorf("compensating story delete: %w", deleteErr))
+		}
+		if errors.Is(err, ErrAlreadyPlanned) {
+			return s.resolveExistingPlan(ctx, workspaceID, itemID, nil)
+		}
 		return CoreCreateStoryResult{}, err
 	}
-	return CoreCreateStoryResult{ItemID: itemID, StoryID: story.ID, LinkID: link.ID}, nil
+	if _, err := s.UpdateItemStatus(ctx, workspaceID, itemID, CoreUpdateItemStatusInput{Status: feedbackStatusForStoryCategory(statusCategory), ActorID: actorID, AllowLinked: true}); err != nil {
+		return CoreCreateStoryResult{}, err
+	}
+	return CoreCreateStoryResult{ItemID: itemID, StoryID: story.ID, LinkID: link.ID, Created: true}, nil
+}
+
+func (s *Service) resolveExistingPlan(ctx context.Context, workspaceID, itemID uuid.UUID, requestedStoryID *uuid.UUID) (CoreCreateStoryResult, error) {
+	links, err := s.repo.ListItemStoryLinks(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreCreateStoryResult{}, err
+	}
+	for _, link := range links {
+		if !link.IsPrimary {
+			continue
+		}
+		if requestedStoryID != nil && link.StoryID != *requestedStoryID {
+			return CoreCreateStoryResult{}, ErrAlreadyPlanned
+		}
+		return CoreCreateStoryResult{
+			ItemID:  itemID,
+			StoryID: link.StoryID,
+			LinkID:  link.ID,
+			Created: false,
+		}, nil
+	}
+	return CoreCreateStoryResult{}, ErrAlreadyPlanned
+}
+
+func feedbackStatusForStoryCategory(category string) string {
+	switch category {
+	case "backlog":
+		return StatusReviewing
+	case "started":
+		return StatusInProgress
+	case "completed":
+		return StatusCompleted
+	case "cancelled":
+		return StatusClosed
+	case "unstarted", "paused":
+		return StatusPlanned
+	default:
+		return StatusPlanned
+	}
+}
+
+func invalidInput(message string) error {
+	return fmt.Errorf("%w: %s", ErrInvalidInput, message)
+}
+
+func invalidInputf(format string, args ...any) error {
+	return fmt.Errorf("%w: %s", ErrInvalidInput, fmt.Sprintf(format, args...))
 }
 
 func normalizeSlug(value string) string {

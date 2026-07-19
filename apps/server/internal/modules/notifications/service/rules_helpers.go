@@ -13,6 +13,9 @@ import (
 // getUserName gets a user's name with fallback
 func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
 	var userName string
+	if r.users == nil {
+		return userName
+	}
 	if user, err := r.users.GetUser(ctx, userID); err == nil {
 		userName = user.Username
 	}
