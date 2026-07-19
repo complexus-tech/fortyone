@@ -62,7 +62,6 @@ export const WorkspaceInvitee = ({
               asIcon
               color="tertiary"
               leftIcon={<MoreHorizontalIcon />}
-              rounded="full"
               size="sm"
             >
               <span className="sr-only">More options</span>

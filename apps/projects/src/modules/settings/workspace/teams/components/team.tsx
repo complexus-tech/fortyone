@@ -53,7 +53,6 @@ export const WorkspaceTeam = ({
               aria-label="More options"
               asIcon
               color="tertiary"
-              rounded="full"
               size="sm"
               variant="naked"
             >

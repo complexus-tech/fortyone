@@ -99,7 +99,7 @@ export const StateRow = ({
   return (
     <form
       className={cn(
-        "bg-surface-muted flex h-16 w-full items-center justify-between rounded-lg px-3",
+        "border-border dark:bg-surface-elevated flex h-16 w-full items-center justify-between rounded-lg border bg-white px-3",
         {
           "opacity-80 backdrop-blur": isDragging,
           "shadow-lg": isDragging,
@@ -138,7 +138,7 @@ export const StateRow = ({
             className={cn(
               "placeholder:text-foreground bg-transparent font-medium focus:outline-none",
               {
-                "border-border bg-surface/50 my-0.5 rounded-lg border px-3 py-1":
+                "border-border dark:bg-surface my-0.5 rounded-lg border bg-white px-3 py-1":
                   isEditing,
               },
             )}
@@ -168,14 +168,13 @@ export const StateRow = ({
             <Button
               color="tertiary"
               onClick={handleCancelEditing}
-              rounded="full"
               size="sm"
               type="button"
               variant="naked"
             >
               <CloseIcon />
             </Button>
-            <Button color="tertiary" rounded="full" size="sm" variant="naked">
+            <Button color="tertiary" size="sm" variant="naked">
               <CheckIcon />
             </Button>
           </>
@@ -184,12 +183,7 @@ export const StateRow = ({
             {state.isDefault ? <Text color="muted">Default</Text> : null}
             <Menu>
               <Menu.Button>
-                <Button
-                  color="tertiary"
-                  rounded="full"
-                  size="sm"
-                  variant="naked"
-                >
+                <Button color="tertiary" size="sm" variant="naked">
                   <MoreHorizontalIcon />
                 </Button>
               </Menu.Button>

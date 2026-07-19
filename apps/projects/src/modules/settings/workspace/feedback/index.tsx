@@ -21,7 +21,7 @@ const colorOptions = [
 ];
 
 const selectClassName =
-  "border-border bg-surface h-11 w-full rounded-xl border px-3 text-sm outline-none";
+  "border-border ring-ring h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 dark:bg-surface-elevated";
 
 const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   return (
@@ -158,6 +158,7 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
               Owning team
             </Text>
             <select
+              aria-label="Owning team"
               className={selectClassName}
               onChange={(event) => {
                 setTeamId(event.target.value);

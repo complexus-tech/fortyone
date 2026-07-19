@@ -73,7 +73,6 @@ export const TeamMemberRow = ({ member, teamId }: TeamMemberRowProps) => {
                   asIcon
                   color="tertiary"
                   leftIcon={<MoreHorizontalIcon />}
-                  rounded="full"
                   size="sm"
                 >
                   <span className="sr-only">More options</span>

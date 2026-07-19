@@ -104,14 +104,13 @@ export const WorkspaceLabel = ({
               <Button
                 color="tertiary"
                 onClick={handleCancelEditing}
-                rounded="full"
                 size="sm"
                 type="button"
                 variant="naked"
               >
                 <CloseIcon />
               </Button>
-              <Button color="tertiary" rounded="full" size="sm" variant="naked">
+              <Button color="tertiary" size="sm" variant="naked">
                 <CheckIcon />
               </Button>
             </>
@@ -122,12 +121,7 @@ export const WorkspaceLabel = ({
               </Text>
               <Menu>
                 <Menu.Button asChild>
-                  <Button
-                    color="tertiary"
-                    rounded="full"
-                    size="sm"
-                    variant="naked"
-                  >
+                  <Button color="tertiary" size="sm" variant="naked">
                     <MoreHorizontalIcon />
                   </Button>
                 </Menu.Button>

@@ -147,6 +147,7 @@ export const Automations = () => {
                 </Text>
               </Box>
               <Button
+                className="dark:bg-surface-elevated"
                 color="tertiary"
                 onClick={() => {
                   handleNextSprintDialogOpenChange(true);

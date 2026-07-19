@@ -12,6 +12,7 @@ import {
   SuccessIcon,
 } from "icons";
 import { useSortable } from "@dnd-kit/sortable";
+import { cn } from "lib";
 import { useUpdateObjectiveStatusMutation } from "@/modules/objectives/hooks/statuses";
 import type { ObjectiveStatus } from "@/modules/objectives/types";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
@@ -92,7 +93,7 @@ export const StateRow = ({
 
   return (
     <form
-      className="bg-surface-muted flex h-16 w-full items-center justify-between rounded-lg px-3"
+      className="border-border dark:bg-surface-elevated flex h-16 w-full items-center justify-between rounded-lg border bg-white px-3"
       onSubmit={handleSubmit}
       ref={setNodeRef}
       style={style}
@@ -123,7 +124,13 @@ export const StateRow = ({
 
         <Box>
           <input
-            className="placeholder:text-foreground w-max bg-transparent font-medium focus:outline-none"
+            className={cn(
+              "placeholder:text-foreground w-max bg-transparent font-medium focus:outline-none",
+              {
+                "border-border dark:bg-surface my-0.5 rounded-lg border bg-white px-3 py-1":
+                  isEditing,
+              },
+            )}
             onChange={(e) => {
               setForm({ ...form, name: e.target.value });
             }}
@@ -142,14 +149,13 @@ export const StateRow = ({
             <Button
               color="tertiary"
               onClick={handleCancelEditing}
-              rounded="full"
               size="sm"
               type="button"
               variant="naked"
             >
               <CloseIcon />
             </Button>
-            <Button color="tertiary" rounded="full" size="sm" variant="naked">
+            <Button color="tertiary" size="sm" variant="naked">
               <CheckIcon />
             </Button>
           </>
@@ -158,12 +164,7 @@ export const StateRow = ({
             {status.isDefault ? <Text color="muted">Default</Text> : null}
             <Menu>
               <Menu.Button>
-                <Button
-                  color="tertiary"
-                  rounded="full"
-                  size="sm"
-                  variant="naked"
-                >
+                <Button color="tertiary" size="sm" variant="naked">
                   <MoreHorizontalIcon />
                 </Button>
               </Menu.Button>
