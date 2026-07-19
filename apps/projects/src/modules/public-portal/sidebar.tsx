@@ -7,14 +7,14 @@ export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
   <aside className="space-y-8">
     <NewFeedbackButton portal={portal} />
 
-    <Box className="border-border bg-surface shadow-shadow/40 rounded-3xl border-[0.5px] p-2 shadow-sm">
+    <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
       <Text
         className="px-3 py-2 text-[0.8rem] tracking-[0.12em] uppercase"
         color="muted"
       >
         Boards
       </Text>
-      <Box className="bg-state-selected/50 dark:bg-state-selected rounded-full px-3 py-2.5">
+      <Box className="bg-state-selected rounded-lg px-3 py-2.5">
         <Flex align="center" gap={2}>
           <span className="bg-text-muted size-2 rounded-full" />
           <Text fontWeight="semibold">All Feedback</Text>
@@ -23,7 +23,7 @@ export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
       {portal.boards.map((board) => (
         <Flex
           align="center"
-          className="hover:bg-state-hover rounded-full px-3 py-2.5 transition"
+          className="hover:bg-state-hover rounded-lg px-3 py-2.5 transition"
           gap={2}
           key={board.id}
         >
@@ -33,7 +33,7 @@ export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
       ))}
     </Box>
 
-    <Box className="border-border bg-surface shadow-shadow/40 rounded-3xl border-[0.5px] p-4 shadow-sm">
+    <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-4 shadow-sm">
       <Text className="mb-4" fontWeight="semibold">
         Actions
       </Text>

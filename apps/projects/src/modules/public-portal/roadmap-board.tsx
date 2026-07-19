@@ -103,7 +103,7 @@ const RoadmapRequestCard = ({
   request: PublicRequest;
 }) => (
   <Link className="group block" href={getRequestPath(portal, request)}>
-    <Box className="border-border bg-surface shadow-shadow hover:bg-surface-elevated w-full rounded-2xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
+    <Box className="border-border bg-surface shadow-shadow hover:bg-surface-elevated w-full rounded-xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
       <BoardLabel portal={portal} request={request} />
       <Text
         className="mt-2 line-clamp-2 text-[1.05rem] leading-[1.4rem] group-hover:opacity-90"
@@ -142,7 +142,7 @@ const ColumnSkeleton = () => (
   <>
     {Array.from({ length: 3 }).map((_, index) => (
       <Box
-        className="border-border bg-surface w-full animate-pulse rounded-2xl border-[0.5px] p-4"
+        className="border-border bg-surface w-full animate-pulse rounded-xl border-[0.5px] p-4"
         key={index}
       >
         <Box className="bg-surface-muted h-4 w-28 rounded-full" />
@@ -239,7 +239,7 @@ const RoadmapColumn = ({
           <span>{items.length}</span>
         </Flex>
       </Flex>
-      <Flex className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl p-2 transition">
+      <Flex className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl p-2 transition">
         {columnContent}
         <div ref={sentinelRef} />
         {isLoading && page > 1 ? <ColumnSkeleton /> : null}

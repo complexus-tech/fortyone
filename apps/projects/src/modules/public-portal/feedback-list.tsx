@@ -135,7 +135,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
         <Box className="mx-auto flex min-h-16 max-w-[78rem] flex-wrap items-center gap-4 px-4 py-3 md:px-6">
           <Box className="w-full md:w-72">
             <Input
-              className="h-10 rounded-full"
+              className="h-10"
               leftIcon={<SearchIcon className="h-4" />}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -146,13 +146,15 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
               variant="solid"
             />
           </Box>
-          <Flex align="center" className="shrink-0 gap-1">
+          <Flex
+            align="center"
+            className="bg-surface-muted/85 shrink-0 gap-1 rounded-xl p-1"
+          >
             <button
               className={cn(
-                "text-text-muted hover:bg-state-hover hover:text-foreground rounded-full px-3.5 py-1.5 transition",
+                "text-text-muted hover:text-foreground rounded-xl border border-transparent px-3.5 py-1.5 transition",
                 {
-                  "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
-                    !status,
+                  "border-border bg-surface-elevated text-foreground": !status,
                 },
               )}
               onClick={() => {
@@ -167,9 +169,9 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
               return (
                 <button
                   className={cn(
-                    "text-text-muted hover:bg-state-hover hover:text-foreground flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 transition",
+                    "text-text-muted hover:text-foreground flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-3.5 py-1.5 transition",
                     {
-                      "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
+                      "border-border bg-surface-elevated text-foreground":
                         status === filter,
                     },
                   )}
@@ -189,14 +191,14 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
           </Flex>
           <Flex
             align="center"
-            className="bg-surface border-border/70 shadow-shadow/30 shrink-0 gap-1 rounded-full border p-1 shadow-sm"
+            className="bg-surface-muted/85 shrink-0 gap-1 rounded-xl p-1"
           >
             {(["top", "newest", "oldest"] as const).map((option) => (
               <button
                 className={cn(
-                  "text-text-muted hover:bg-state-hover hover:text-foreground flex items-center gap-1.5 rounded-full px-3.5 py-1.5 capitalize transition",
+                  "text-text-muted hover:text-foreground flex items-center gap-1.5 rounded-xl border border-transparent px-3.5 py-1.5 capitalize transition",
                   {
-                    "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
+                    "border-border bg-surface-elevated text-foreground":
                       sort === option,
                   },
                 )}

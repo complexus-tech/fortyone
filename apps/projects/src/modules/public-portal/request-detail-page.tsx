@@ -108,7 +108,7 @@ export const PublicPortalRequestDetailPage = ({
             request={request}
             teams={teams}
           />
-          <Box className="border-border bg-surface rounded-3xl border-[0.5px] p-5">
+          <Box className="border-border bg-surface rounded-xl border-[0.5px] p-5">
             <Flex className="py-2" justify="between">
               <Text color="muted">Status</Text>
               <RequestStatusPill status={request.status} />

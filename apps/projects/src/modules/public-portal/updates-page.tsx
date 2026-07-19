@@ -21,7 +21,7 @@ export const PublicPortalUpdatesPage = ({
       <Box className="space-y-4">
         {portal.updates.map((update) => (
           <Box
-            className="border-border bg-surface rounded-3xl border-[0.5px] p-5"
+            className="border-border bg-surface rounded-xl border-[0.5px] p-5"
             key={update.id}
           >
             <Flex align="center" justify="between">

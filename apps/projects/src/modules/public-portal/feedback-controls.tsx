@@ -50,7 +50,6 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
         onClick={() => {
           setOpen(true);
         }}
-        rounded="full"
         size="lg"
       >
         New Feedback
@@ -67,7 +66,7 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
               Board
             </Text>
             <select
-              className="border-border bg-surface h-11 w-full rounded-2xl border px-3"
+              className="border-border bg-surface h-11 w-full rounded-lg border px-3"
               onChange={(event) => {
                 setBoardId(event.target.value);
               }}
@@ -165,7 +164,7 @@ export const FeedbackCommentComposer = ({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Box className="border-border bg-surface rounded-3xl border-[0.5px] p-4">
+    <Box className="border-border bg-surface rounded-xl border-[0.5px] p-4">
       <TextArea
         className="min-h-28 border-none p-0 shadow-none"
         onChange={(event) => {
@@ -226,7 +225,6 @@ export const CreateStoryFromFeedbackButton = ({
         onClick={() => {
           setOpen(true);
         }}
-        rounded="full"
       >
         Create internal story
       </Button>
@@ -242,7 +240,7 @@ export const CreateStoryFromFeedbackButton = ({
             Public feedback stays visible in the portal.
           </Text>
           <select
-            className="border-border bg-surface h-11 w-full rounded-2xl border px-3"
+            className="border-border bg-surface h-11 w-full rounded-lg border px-3"
             onChange={(event) => {
               setTeamId(event.target.value);
             }}

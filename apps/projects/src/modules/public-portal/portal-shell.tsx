@@ -52,16 +52,16 @@ export const PublicPortalShell = ({
           </Text>
         </Flex>
         <Box className="absolute left-1/2 hidden -translate-x-1/2 md:block">
-          <nav className="bg-surface border-border/70 shadow-shadow/30 ml-2 hidden rounded-full border p-1 shadow-sm md:flex">
+          <nav className="bg-surface-muted/85 ml-2 hidden rounded-xl p-1 md:flex">
             {navItems.map((item) => {
               const isActive = item.tab === activeTab;
               const Icon = item.icon;
               return (
                 <Link
                   className={cn(
-                    "text-text-muted hover:text-foreground flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.95rem] transition",
+                    "text-text-muted hover:text-foreground flex items-center gap-2 rounded-xl border border-transparent px-3.5 py-1.5 text-[0.95rem] transition",
                     {
-                      "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
+                      "border-border bg-surface-elevated text-foreground":
                         isActive,
                     },
                   )}
@@ -83,7 +83,6 @@ export const PublicPortalShell = ({
                 className="hidden md:flex"
                 color="tertiary"
                 href={viewer.notificationsHref}
-                rounded="full"
                 size="md"
                 variant="naked"
               >
@@ -93,13 +92,7 @@ export const PublicPortalShell = ({
               <PublicPortalUserMenu viewer={viewer} />
             </>
           ) : (
-            <Button
-              className="h-10 px-4"
-              color="invert"
-              href="/"
-              rounded="full"
-              size="md"
-            >
+            <Button className="h-10 px-4" color="invert" href="/" size="md">
               Login/signup
             </Button>
           )}
@@ -112,10 +105,9 @@ export const PublicPortalShell = ({
           return (
             <Link
               className={cn(
-                "text-text-muted flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-center text-[0.95rem]",
+                "text-text-muted flex flex-1 items-center justify-center gap-2 rounded-xl border border-transparent py-2.5 text-center text-[0.95rem]",
                 {
-                  "bg-state-selected/50 text-foreground dark:bg-state-selected":
-                    isActive,
+                  "border-border bg-surface-elevated text-foreground": isActive,
                 },
               )}
               href={getPortalPath(portal, item.tab)}

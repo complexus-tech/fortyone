@@ -16,7 +16,7 @@ export const RequestStatusPill = ({
   return (
     <span
       className={cn(
-        "inline-flex h-7 items-center gap-2 rounded-full border px-2.5 text-[0.92rem] font-medium",
+        "inline-flex h-7 items-center gap-2 rounded-lg border px-2.5 text-[0.92rem] font-medium",
         meta.badgeClassName,
       )}
     >
