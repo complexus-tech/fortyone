@@ -56,7 +56,11 @@ export const PublicPortalRequestDetailPage = ({
               <span>{request.commentCount} comments</span>
             </Flex>
             <Box className="ml-auto">
-              <FeedbackVoteButton portal={portal} request={request} />
+              <FeedbackVoteButton
+                portal={portal}
+                request={request}
+                showDownvote
+              />
             </Box>
           </Flex>
 

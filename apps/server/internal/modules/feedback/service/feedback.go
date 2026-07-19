@@ -182,7 +182,7 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 	}
 	input.Slug = normalizeSlug(input.Slug)
 	if input.Slug == "" {
-		input.Slug = normalizeSlug(input.Title)
+		input.Slug = normalizeSlug(input.Title) + "-" + uuid.NewString()[:8]
 	}
 	return s.repo.CreateItem(ctx, input)
 }
@@ -212,11 +212,17 @@ func (s *Service) CreateComment(ctx context.Context, input CoreCommentInput) (Co
 	return s.repo.CreateComment(ctx, input)
 }
 
-func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (CoreVoteResult, error) {
+func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error) {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil || userID == uuid.Nil {
 		return CoreVoteResult{}, errors.New("workspace, feedback, and user are required")
 	}
-	return s.repo.ToggleVote(ctx, workspaceID, itemID, userID)
+	if vote != -1 && vote != 1 {
+		return CoreVoteResult{}, errors.New("feedback vote must be either -1 or 1")
+	}
+	if _, err := s.repo.GetItem(ctx, workspaceID, itemID); err != nil {
+		return CoreVoteResult{}, err
+	}
+	return s.repo.ToggleVote(ctx, workspaceID, itemID, userID, vote)
 }
 
 func (s *Service) LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error) {

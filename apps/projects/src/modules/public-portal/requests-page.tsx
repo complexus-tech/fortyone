@@ -26,6 +26,7 @@ export const PublicPortalRequestsPage = ({
           onBoardSelect={setSelectedBoardId}
           portal={portal}
           selectedBoardId={selectedBoardId}
+          viewer={viewer}
         />
       </Box>
     </PublicPortalShell>

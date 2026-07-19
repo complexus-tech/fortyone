@@ -79,8 +79,13 @@ type AppStoryLink struct {
 }
 
 type AppVoteResult struct {
+	Vote      int  `json:"vote"`
 	Voted     bool `json:"voted"`
 	VoteCount int  `json:"voteCount"`
+}
+
+type AppVoteInput struct {
+	Vote int `json:"vote"`
 }
 
 type AppUpdatePortal struct {

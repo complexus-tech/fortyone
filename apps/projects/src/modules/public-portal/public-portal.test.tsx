@@ -17,6 +17,14 @@ import {
 
 const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
+const portalViewer = {
+  accountHref: "/city-roads/settings/account",
+  appHref: "/city-roads/my-work",
+  avatarUrl: null,
+  email: "ada@example.com",
+  name: "Ada Ndlovu",
+  notificationsHref: "/city-roads/notifications",
+};
 
 const designSystemOnlyProps = new Set([
   "active",
@@ -66,6 +74,7 @@ jest.mock("icons", () => {
     StoryIcon: Icon,
     SunIcon: Icon,
     SystemIcon: Icon,
+    ThumbsDownIcon: Icon,
     ThumbsUpIcon: Icon,
     UpdatesIcon: Icon,
   };
@@ -209,10 +218,20 @@ jest.mock("ui", () => {
   const TextArea = (
     props: ReactTypes.TextareaHTMLAttributes<HTMLTextAreaElement>,
   ) => <textarea {...props} />;
-  const TextEditor = ({ editor }: { editor?: unknown }) => {
-    void editor;
-    return <div data-testid="text-editor" />;
-  };
+  const TextEditor = ({
+    editor,
+    ...props
+  }: ReactTypes.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    editor?: { commands?: { setContent: (value: string) => void } };
+  }) => (
+    <textarea
+      data-testid="text-editor"
+      {...props}
+      onChange={(event) => {
+        editor?.commands?.setContent(event.target.value);
+      }}
+    />
+  );
   const Menu = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
   );
@@ -287,9 +306,9 @@ describe("Public portal UI", () => {
         id: "comment-new",
       },
     });
-    toggleFeedbackVoteActionMock.mockResolvedValue({
-      data: { voted: true, voteCount: 13 },
-    });
+    toggleFeedbackVoteActionMock.mockImplementation(async ({ vote }) => ({
+      data: { vote, voteCount: vote === 1 ? 13 : 11 },
+    }));
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: clipboardWriteTextMock },
@@ -332,7 +351,12 @@ describe("Public portal UI", () => {
   });
 
   it("renders the public feedback page with feedback terminology", () => {
-    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
 
     expect(
       screen.getAllByRole("link", { name: /^Feedback$/i }).length,
@@ -341,13 +365,23 @@ describe("Public portal UI", () => {
       screen.getByRole("button", { name: /new feedback/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("All boards")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Login/signup" })).toHaveAttribute(
-      "href",
-      "/",
-    );
+    expect(
+      screen.queryByRole("link", { name: "Login/signup" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("All Requests")).not.toBeInTheDocument();
     expect(screen.getByTestId("text-editor")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+  });
+
+  it("sends logged-out visitors to login before submitting feedback", () => {
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    expect(
+      screen.getByRole("link", { name: "Login to submit feedback" }),
+    ).toHaveAttribute("href", "/");
+    expect(
+      screen.queryByRole("button", { name: "New Feedback" }),
+    ).not.toBeInTheDocument();
   });
 
   it("filters public feedback by the selected board", async () => {
@@ -376,16 +410,22 @@ describe("Public portal UI", () => {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
     };
-    render(<PublicPortalRequestsPage portal={portal} />);
+    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
 
     fireEvent.change(screen.getByLabelText("Feedback title"), {
       target: { value: "Add a safer crossing" },
+    });
+    fireEvent.change(screen.getByLabelText("Feedback description"), {
+      target: { value: "The current crossing is unsafe." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
 
     await waitFor(() => {
       expect(createFeedbackActionMock).toHaveBeenCalledWith(
-        expect.objectContaining({ boardId: "road-repairs" }),
+        expect.objectContaining({
+          boardId: "road-repairs",
+          description: "The current crossing is unsafe.",
+        }),
       );
     });
   });
@@ -400,7 +440,26 @@ describe("Public portal UI", () => {
     });
     expect(activeVote).toHaveTextContent("13");
     expect(toggleFeedbackVoteActionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ itemId: "req-1" }),
+      expect.objectContaining({ itemId: "req-1", vote: 1 }),
+    );
+  });
+
+  it("supports downvoting from the feedback detail page", async () => {
+    render(
+      <PublicPortalRequestDetailPage
+        portal={publicPortalFixture}
+        request={publicPortalFixture.requests[0]}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Downvote" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Remove downvote" }),
+    ).toBeInTheDocument();
+    expect(toggleFeedbackVoteActionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ itemId: "req-1", vote: -1 }),
     );
   });
 
@@ -408,14 +467,7 @@ describe("Public portal UI", () => {
     render(
       <PublicPortalRequestsPage
         portal={publicPortalFixture}
-        viewer={{
-          accountHref: "/city-roads/settings/account",
-          appHref: "/city-roads/my-work",
-          avatarUrl: null,
-          email: "ada@example.com",
-          name: "Ada Ndlovu",
-          notificationsHref: "/city-roads/notifications",
-        }}
+        viewer={portalViewer}
       />,
     );
 
@@ -479,14 +531,7 @@ describe("Public portal UI", () => {
       <PublicPortalRequestDetailPage
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={{
-          accountHref: "/city-roads/settings/account",
-          appHref: "/city-roads/my-work",
-          avatarUrl: null,
-          email: "ada@example.com",
-          name: "Ada Ndlovu",
-          notificationsHref: "/city-roads/notifications",
-        }}
+        viewer={portalViewer}
       />,
     );
 
@@ -495,9 +540,7 @@ describe("Public portal UI", () => {
         name: "Add pedestrian crossing near East Avenue school",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("Leave a comment..."),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Comment")).toBeInTheDocument();
     expect(screen.getByText("Road repairs")).toBeInTheDocument();
     expect(screen.getByText("Copy link")).toBeInTheDocument();
   });
@@ -507,14 +550,7 @@ describe("Public portal UI", () => {
       <PublicPortalRequestDetailPage
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={{
-          accountHref: "/city-roads/settings/account",
-          appHref: "/city-roads/my-work",
-          avatarUrl: null,
-          email: "ada@example.com",
-          name: "Ada Ndlovu",
-          notificationsHref: "/city-roads/notifications",
-        }}
+        viewer={portalViewer}
       />,
     );
 

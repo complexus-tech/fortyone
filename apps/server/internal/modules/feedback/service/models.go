@@ -141,7 +141,7 @@ type CoreCommentInput struct {
 }
 
 type CoreVoteResult struct {
-	Voted     bool
+	Vote      int
 	VoteCount int
 }
 
@@ -180,7 +180,7 @@ type Repository interface {
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error)
 	CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error)
-	ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (CoreVoteResult, error)
+	ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error)
 	LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
 }

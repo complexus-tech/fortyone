@@ -145,8 +145,8 @@ func (r *repoStub) CreateComment(ctx context.Context, input CoreCommentInput) (C
 	return CoreComment{ID: uuid.New(), WorkspaceID: input.WorkspaceID, ItemID: input.ItemID, AuthorID: input.AuthorID, Body: input.Body}, nil
 }
 
-func (r *repoStub) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (CoreVoteResult, error) {
-	return CoreVoteResult{Voted: true, VoteCount: 1}, nil
+func (r *repoStub) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error) {
+	return CoreVoteResult{Vote: vote, VoteCount: vote}, nil
 }
 
 func (r *repoStub) LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error) {
@@ -265,8 +265,51 @@ func TestCreateItemDefaultsToPendingAndGeneratesSlug(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, StatusPending, item.Status)
-	require.Equal(t, "repair-school-zone-signal-timing", item.Slug)
-	require.Equal(t, "repair-school-zone-signal-timing", repo.createdItems[0].Slug)
+	require.Regexp(t, `^repair-school-zone-signal-timing-[a-f0-9]{8}$`, item.Slug)
+	require.Equal(t, item.Slug, repo.createdItems[0].Slug)
+}
+
+func TestCreateItemPreservesProvidedSlug(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID}},
+		boards:  []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	item, err := service.CreateItem(context.Background(), CoreItemInput{
+		WorkspaceID: workspaceID,
+		PortalID:    portalID,
+		BoardID:     boardID,
+		AuthorID:    uuid.New(),
+		Title:       "Repair school-zone signal timing",
+		Description: "Morning crossing phase is too short.",
+		Slug:        "custom-feedback-slug",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "custom-feedback-slug", item.Slug)
+}
+
+func TestToggleVoteSupportsUpvotesAndDownvotes(t *testing.T) {
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	userID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{ID: itemID, WorkspaceID: workspaceID}}}
+	service := New(repo, nil)
+
+	upvote, err := service.ToggleVote(context.Background(), workspaceID, itemID, userID, 1)
+	require.NoError(t, err)
+	require.Equal(t, 1, upvote.Vote)
+
+	downvote, err := service.ToggleVote(context.Background(), workspaceID, itemID, userID, -1)
+	require.NoError(t, err)
+	require.Equal(t, -1, downvote.Vote)
+
+	_, err = service.ToggleVote(context.Background(), workspaceID, itemID, userID, 0)
+	require.ErrorContains(t, err, "either -1 or 1")
 }
 
 func TestCreateStoryFromFeedbackLinksInternalStoryWithoutCompletingFeedback(t *testing.T) {

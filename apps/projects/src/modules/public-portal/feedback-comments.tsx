@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Avatar, Box, Button, Flex, Text, TextArea } from "ui";
+import { useEditor } from "@tiptap/react";
+import { Avatar, Box, Button, Flex, Text, TextEditor } from "ui";
 import { CommentIcon } from "icons";
 import { toast } from "sonner";
+import { getStoryCommentEditorExtensions } from "@/modules/story/components/story-comment-editor";
 import type {
   PublicPortal,
   PublicPortalViewer,
@@ -26,8 +28,15 @@ const FeedbackCommentComposer = ({
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
 }) => {
-  const [body, setBody] = useState("");
   const [isPending, startTransition] = useTransition();
+  const editor = useEditor({
+    content: "",
+    editable: true,
+    extensions: getStoryCommentEditorExtensions({
+      placeholder: "Leave a comment...",
+    }),
+    immediatelyRender: false,
+  });
 
   if (!viewer) {
     return (
@@ -50,28 +59,30 @@ const FeedbackCommentComposer = ({
         <Avatar name={viewer.name} size="xs" src={viewer.avatarUrl} />
       </Box>
       <Flex
-        className="border-border/40 bg-surface-muted/40 min-h-24 min-w-0 flex-1 rounded-xl border px-4 pb-4"
+        className="border-border/40 bg-surface-muted/40 min-h-24 min-w-0 flex-1 rounded-2xl border px-4 pb-4"
         direction="column"
         gap={2}
         justify="between"
       >
-        <TextArea
+        <TextEditor
           aria-label="Comment"
-          className="min-h-16 border-0 bg-transparent px-0 py-3 leading-6 focus-visible:ring-0 dark:bg-transparent"
-          onChange={(event) => {
-            setBody(event.target.value);
-          }}
-          placeholder="Leave a comment..."
-          value={body}
+          className="prose-base prose-a:text-foreground leading-6 antialiased"
+          editor={editor}
         />
         <Flex justify="end">
           <Button
             color="tertiary"
-            disabled={body.trim().length === 0 || isPending}
+            disabled={isPending}
             onClick={() => {
+              if (!editor || editor.isEmpty) {
+                toast.error("Comment is required", {
+                  description: "Please enter a comment before submitting",
+                });
+                return;
+              }
               startTransition(async () => {
                 const response = await createFeedbackCommentAction({
-                  body,
+                  body: editor.getText(),
                   itemId: request.id,
                   itemSlug: request.slug,
                   portalSlug: portal.slug,
@@ -92,10 +103,11 @@ const FeedbackCommentComposer = ({
                     createdAtLabel: "Just now",
                   });
                 }
-                setBody("");
+                editor.commands.clearContent();
               });
             }}
             size="sm"
+            variant="outline"
           >
             Comment
           </Button>
@@ -141,8 +153,14 @@ export const FeedbackDiscussion = ({
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
 }) => {
-  const [comments, setComments] = useState(request.comments);
+  const [createdComments, setCreatedComments] = useState<
+    PublicRequestComment[]
+  >([]);
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE_SIZE);
+  const comments = [...request.comments, ...createdComments].filter(
+    (comment, index, allComments) =>
+      allComments.findIndex(({ id }) => id === comment.id) === index,
+  );
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = visibleCount < comments.length;
 
@@ -155,13 +173,10 @@ export const FeedbackDiscussion = ({
       >
         <CommentIcon className="h-[1.1rem]" />
         Comments
-        <Text as="span" color="muted">
-          {comments.length}
-        </Text>
       </Text>
       <FeedbackCommentComposer
         onCreated={(comment) => {
-          setComments((current) => [...current, comment]);
+          setCreatedComments((current) => [...current, comment]);
           setVisibleCount((current) => current + 1);
         }}
         portal={portal}

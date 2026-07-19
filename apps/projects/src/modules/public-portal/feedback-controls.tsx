@@ -10,6 +10,7 @@ import {
   CheckIcon,
   PlusIcon,
   RequestsIcon,
+  ThumbsDownIcon,
   ThumbsUpIcon,
 } from "icons";
 import { Box, Button, Dialog, Input, Menu, Text, TextEditor } from "ui";
@@ -147,7 +148,11 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
               value={title}
             />
           </Box>
-          <TextEditor className="min-h-40" editor={descriptionEditor} />
+          <TextEditor
+            aria-label="Feedback description"
+            className="min-h-40"
+            editor={descriptionEditor}
+          />
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-2">
           <Button
@@ -175,52 +180,79 @@ export const FeedbackVoteButton = ({
   compact = false,
   portal,
   request,
+  showDownvote = false,
 }: {
   compact?: boolean;
   portal: PublicPortal;
   request: PublicRequest;
+  showDownvote?: boolean;
 }) => {
   const [voteCount, setVoteCount] = useState(request.voteCount);
-  const [voted, setVoted] = useState(false);
+  const [vote, setVote] = useState<-1 | 0 | 1>(0);
   const [isPending, startTransition] = useTransition();
 
-  return (
-    <Button
-      active={voted}
-      aria-label={voted ? "Remove upvote" : "Upvote"}
-      className={cn(
-        "bg-surface-muted/70 text-text-muted hover:text-foreground shrink-0",
-        compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-2.5",
-        { "bg-state-selected text-foreground": voted },
-      )}
-      color="tertiary"
-      disabled={isPending}
-      leftIcon={
-        <ThumbsUpIcon className={compact ? "h-3.5" : "h-4"} strokeWidth={2} />
+  const submitVote = (nextVote: -1 | 1) => {
+    startTransition(async () => {
+      const response = await toggleFeedbackVoteAction({
+        itemId: request.id,
+        itemSlug: request.slug,
+        portalSlug: portal.slug,
+        vote: nextVote,
+        workspaceSlug: portal.workspace.slug,
+      });
+      if (response.error?.message) {
+        toast.error("Vote", { description: response.error.message });
+        return;
       }
-      onClick={() => {
-        startTransition(async () => {
-          const response = await toggleFeedbackVoteAction({
-            itemId: request.id,
-            itemSlug: request.slug,
-            portalSlug: portal.slug,
-            workspaceSlug: portal.workspace.slug,
-          });
-          if (response.error?.message) {
-            toast.error("Vote", { description: response.error.message });
-            return;
-          }
-          if (response.data) {
-            setVoteCount(response.data.voteCount);
-            setVoted(response.data.voted);
-          }
-        });
-      }}
-      size="sm"
-      title={voted ? "Remove upvote" : "Upvote"}
-      variant="naked"
-    >
-      {voteCount}
-    </Button>
+      if (response.data) {
+        setVoteCount(response.data.voteCount);
+        setVote(response.data.vote);
+      }
+    });
+  };
+
+  return (
+    <Box className="flex shrink-0 items-center gap-0.5">
+      <Button
+        aria-label={vote === 1 ? "Remove upvote" : "Upvote"}
+        className={cn(
+          "text-text-muted hover:text-foreground",
+          compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-2.5",
+          { "text-foreground": vote === 1 },
+        )}
+        color="tertiary"
+        disabled={isPending}
+        leftIcon={
+          <ThumbsUpIcon className={compact ? "h-3.5" : "h-4"} strokeWidth={2} />
+        }
+        onClick={() => {
+          submitVote(1);
+        }}
+        size="sm"
+        title={vote === 1 ? "Remove upvote" : "Upvote"}
+        variant="naked"
+      >
+        {voteCount}
+      </Button>
+      {showDownvote ? (
+        <Button
+          aria-label={vote === -1 ? "Remove downvote" : "Downvote"}
+          asIcon
+          className={cn("text-text-muted hover:text-foreground h-9", {
+            "text-foreground": vote === -1,
+          })}
+          color="tertiary"
+          disabled={isPending}
+          onClick={() => {
+            submitVote(-1);
+          }}
+          size="sm"
+          title={vote === -1 ? "Remove downvote" : "Downvote"}
+          variant="naked"
+        >
+          <ThumbsDownIcon className="h-4" strokeWidth={2} />
+        </Button>
+      ) : null}
+    </Box>
   );
 };

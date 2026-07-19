@@ -22,12 +22,16 @@ type ItemInput = {
   itemSlug?: string;
 };
 
+type VoteInput = ItemInput & {
+  vote: -1 | 1;
+};
+
 type CommentInput = ItemInput & {
   body: string;
 };
 
 export type FeedbackVoteResult = {
-  voted: boolean;
+  vote: -1 | 0 | 1;
   voteCount: number;
 };
 
@@ -37,11 +41,6 @@ export type CreatedFeedbackComment = {
   authorAvatar?: string | null;
   body: string;
   createdAt: string;
-};
-
-const workspaceCtx = async (workspaceSlug: string) => {
-  const session = await auth();
-  return { session: session!, workspaceSlug };
 };
 
 const refreshPortal = (portalSlug: string) => {
@@ -62,7 +61,15 @@ const refreshFeedbackItem = (portalSlug: string, itemSlug?: string) => {
 
 export const createFeedbackAction = async (input: CreateFeedbackInput) => {
   try {
-    const ctx = await workspaceCtx(input.workspaceSlug);
+    const session = await auth();
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Please log in to submit feedback" },
+      };
+    }
+
+    const ctx = { session, workspaceSlug: input.workspaceSlug };
     const response = await post<
       {
         boardId: string;
@@ -88,13 +95,21 @@ export const createFeedbackAction = async (input: CreateFeedbackInput) => {
   }
 };
 
-export const toggleFeedbackVoteAction = async (input: ItemInput) => {
+export const toggleFeedbackVoteAction = async (input: VoteInput) => {
   try {
-    const ctx = await workspaceCtx(input.workspaceSlug);
+    const session = await auth();
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Please log in to vote" },
+      };
+    }
+
+    const ctx = { session, workspaceSlug: input.workspaceSlug };
     const response = await post<
-      Record<string, never>,
+      { vote: -1 | 1 },
       ApiResponse<FeedbackVoteResult>
-    >(`feedback/items/${input.itemId}/vote`, {}, ctx);
+    >(`feedback/items/${input.itemId}/vote`, { vote: input.vote }, ctx);
     refreshPortal(input.portalSlug);
     return response;
   } catch (error) {
@@ -104,7 +119,15 @@ export const toggleFeedbackVoteAction = async (input: ItemInput) => {
 
 export const createFeedbackCommentAction = async (input: CommentInput) => {
   try {
-    const ctx = await workspaceCtx(input.workspaceSlug);
+    const session = await auth();
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Please log in to comment" },
+      };
+    }
+
+    const ctx = { session, workspaceSlug: input.workspaceSlug };
     const response = await post<
       { body: string },
       ApiResponse<CreatedFeedbackComment>

@@ -357,7 +357,7 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			COALESCE(u.email, '') AS author_email,
 			u.avatar_url AS author_avatar,
 			updated.title, updated.description, updated.slug, updated.status,
-			(SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id)::int AS vote_count,
+			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = updated.id), 0) AS integer) AS vote_count,
 			(SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id)::int AS comment_count,
 			updated.roadmap_summary, updated.created_at, updated.updated_at
 		FROM updated
@@ -390,46 +390,49 @@ func (r *Repo) CreateComment(ctx context.Context, input feedback.CoreCommentInpu
 	return toCoreComment(row), nil
 }
 
-func (r *Repo) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (feedback.CoreVoteResult, error) {
+func (r *Repo) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (feedback.CoreVoteResult, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return feedback.CoreVoteResult{}, err
 	}
 	defer tx.Rollback()
 
-	var exists bool
-	if err := tx.GetContext(ctx, &exists, `
-		SELECT EXISTS (
-			SELECT 1 FROM feedback_votes
+	var currentVote int
+	if err := tx.GetContext(ctx, &currentVote, `
+		SELECT COALESCE((
+			SELECT direction FROM feedback_votes
 			WHERE workspace_id = $1 AND item_id = $2 AND user_id = $3
-		)
+		), 0)
 	`, workspaceID, itemID, userID); err != nil {
 		return feedback.CoreVoteResult{}, err
 	}
-	if exists {
+	resultingVote := vote
+	if currentVote == vote {
 		if _, err := tx.ExecContext(ctx, `
 			DELETE FROM feedback_votes
 			WHERE workspace_id = $1 AND item_id = $2 AND user_id = $3
 		`, workspaceID, itemID, userID); err != nil {
 			return feedback.CoreVoteResult{}, err
 		}
+		resultingVote = 0
 	} else {
 		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO feedback_votes (workspace_id, item_id, user_id)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (item_id, user_id) DO NOTHING
-		`, workspaceID, itemID, userID); err != nil {
+			INSERT INTO feedback_votes (workspace_id, item_id, user_id, direction)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (item_id, user_id)
+			DO UPDATE SET direction = EXCLUDED.direction
+		`, workspaceID, itemID, userID, vote); err != nil {
 			return feedback.CoreVoteResult{}, err
 		}
 	}
 	var count int
-	if err := tx.GetContext(ctx, &count, `SELECT COUNT(*)::int FROM feedback_votes WHERE item_id = $1`, itemID); err != nil {
+	if err := tx.GetContext(ctx, &count, `SELECT CAST(COALESCE(SUM(direction), 0) AS integer) FROM feedback_votes WHERE item_id = $1`, itemID); err != nil {
 		return feedback.CoreVoteResult{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return feedback.CoreVoteResult{}, err
 	}
-	return feedback.CoreVoteResult{Voted: !exists, VoteCount: count}, nil
+	return feedback.CoreVoteResult{Vote: resultingVote, VoteCount: count}, nil
 }
 
 func (r *Repo) LinkStory(ctx context.Context, input feedback.CoreStoryLinkInput) (feedback.CoreStoryLink, error) {
@@ -471,7 +474,7 @@ func itemSelectQuery() string {
 			COALESCE(u.email, '') AS author_email,
 			u.avatar_url AS author_avatar,
 			fi.title, fi.description, fi.slug, fi.status,
-			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id) AS integer) AS vote_count,
+			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
 			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
 			fi.roadmap_summary, fi.created_at, fi.updated_at
 		FROM feedback_items fi

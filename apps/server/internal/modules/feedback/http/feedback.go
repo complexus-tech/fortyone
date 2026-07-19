@@ -243,11 +243,18 @@ func (h *Handlers) ToggleVote(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	result, err := h.feedback.ToggleVote(ctx, workspace.ID, itemID, userID)
+	var input AppVoteInput
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if input.Vote == 0 {
+		input.Vote = 1
+	}
+	result, err := h.feedback.ToggleVote(ctx, workspace.ID, itemID, userID, input.Vote)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
-	return web.Respond(ctx, w, AppVoteResult{Voted: result.Voted, VoteCount: result.VoteCount}, http.StatusOK)
+	return web.Respond(ctx, w, AppVoteResult{Vote: result.Vote, Voted: result.Vote == 1, VoteCount: result.VoteCount}, http.StatusOK)
 }
 
 func (h *Handlers) CreateStoryFromItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

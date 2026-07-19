@@ -1,4 +1,4 @@
-import { ApiError } from "@/lib/http/error";
+import { ApiError } from "api-client";
 import type { ApiResponse, Workspace } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 

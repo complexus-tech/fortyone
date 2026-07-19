@@ -4,7 +4,7 @@ import { CheckIcon, CopyIcon, ShareIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
-import type { PublicPortal } from "./types";
+import type { PublicPortal, PublicPortalViewer } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
 
 const copyLink = async () => {
@@ -73,14 +73,27 @@ export const PublicPortalSidebar = ({
   onBoardSelect,
   portal,
   selectedBoardId,
+  viewer,
 }: {
   onBoardSelect: (boardId?: string) => void;
   portal: PublicPortal;
   selectedBoardId?: string;
+  viewer?: PublicPortalViewer | null;
 }) => {
   return (
     <aside className="space-y-8">
-      <NewFeedbackButton portal={portal} />
+      {viewer ? (
+        <NewFeedbackButton portal={portal} />
+      ) : (
+        <Button
+          className="h-12 w-full justify-center text-[1rem]"
+          color="invert"
+          href="/"
+          size="lg"
+        >
+          Login to submit feedback
+        </Button>
+      )}
 
       <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
         <Text
