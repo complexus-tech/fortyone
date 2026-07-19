@@ -197,7 +197,7 @@ describe("StoryRelationshipPicker", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
 
-    expect(screen.getByText("Add association")).toBeVisible();
+    expect(screen.getAllByText("Add association")).toHaveLength(2);
     expect(screen.queryByText(longTitle)).not.toBeInTheDocument();
   });
 

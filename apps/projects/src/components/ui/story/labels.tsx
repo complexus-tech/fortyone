@@ -28,6 +28,7 @@ export const Labels = ({
   const firstTwoLabels = labels.slice(0, 2);
   const remainingLabels = labels.slice(2);
   const { userRole } = useUserRole();
+  const useStandardRadius = isRectangular || compact;
   const handleUpdateLabels = async (labels: string[] = []) => {
     await mutateAsync({ storyId, labels });
   };
@@ -53,7 +54,7 @@ export const Labels = ({
                 "pointer-events-none cursor-not-allowed": userRole === "guest",
               })}
               color="tertiary"
-              rounded={isRectangular ? "md" : "xl"}
+              rounded={useStandardRadius ? "md" : "xl"}
               variant="outline"
             >
               <TagsIcon className="h-4" style={{ color: labels[0]?.color }} />
@@ -82,7 +83,7 @@ export const Labels = ({
                 "pointer-events-none cursor-not-allowed": userRole === "guest",
               })}
             >
-              <StoryLabel {...label} isRectangular={isRectangular} />
+              <StoryLabel {...label} isRectangular={useStandardRadius} />
             </span>
           </LabelsMenu.Trigger>
           <LabelsMenu.Items
@@ -117,7 +118,7 @@ export const Labels = ({
                       userRole === "guest",
                   })}
                   color="tertiary"
-                  rounded={isRectangular ? "md" : "xl"}
+                  rounded={useStandardRadius ? "md" : "xl"}
                   variant="outline"
                 >
                   <TagsIcon

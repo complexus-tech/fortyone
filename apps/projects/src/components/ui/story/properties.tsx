@@ -33,12 +33,7 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import {
-  useMediaQuery,
-  useTerminology,
-  useUserRole,
-  useWorkspacePath,
-} from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { hexToRgba, slugify } from "@/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -88,7 +83,6 @@ export const StoryProperties = ({
 
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
@@ -163,7 +157,7 @@ export const StoryProperties = ({
             <Button
               className="gap-1 pr-2"
               disabled={isGuest}
-              rounded={asKanban ? "md" : "xl"}
+              rounded="md"
               size="xs"
               style={{
                 backgroundColor: hexToRgba(status?.color, 0.1),
@@ -237,7 +231,7 @@ export const StoryProperties = ({
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
@@ -284,7 +278,7 @@ export const StoryProperties = ({
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
@@ -324,7 +318,7 @@ export const StoryProperties = ({
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
@@ -411,7 +405,7 @@ export const StoryProperties = ({
               }
             }}
             role="button"
-            rounded={asKanban || isMobile ? "md" : "xl"}
+            rounded="md"
             tabIndex={0}
           >
             <SubStoryIcon />
@@ -473,7 +467,7 @@ export const StoryProperties = ({
                   })}
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"

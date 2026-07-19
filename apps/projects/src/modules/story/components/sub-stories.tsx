@@ -224,7 +224,7 @@ export const SubStories = ({
             <Tooltip title={`Add sub ${getTermDisplay("storyTerm")}`}>
               <Button
                 aria-label={`Add sub ${getTermDisplay("storyTerm")}`}
-                asIcon
+                className="aspect-square shrink-0 justify-center px-0 @lg:aspect-auto @lg:px-2"
                 color="tertiary"
                 onClick={() => {
                   setIsCreateSubStoryOpen(true);
@@ -233,6 +233,9 @@ export const SubStories = ({
                 variant="naked"
               >
                 <PlusIcon />
+                <span className="hidden @lg:inline">
+                  Add sub {getTermDisplay("storyTerm")}
+                </span>
               </Button>
             </Tooltip>
           </Flex>

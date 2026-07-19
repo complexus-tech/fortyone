@@ -249,12 +249,13 @@ export const StoryRelationshipPicker = ({
             <Button
               active={isOpen}
               aria-label="Add association"
-              asIcon
+              className="aspect-square justify-center px-0 @lg:aspect-auto @lg:px-2"
               color="tertiary"
               size="sm"
               variant="naked"
             >
               <LinkIcon className="h-4" />
+              <span className="hidden @lg:inline">Add association</span>
             </Button>
           </Popover.Trigger>
         </Tooltip>
