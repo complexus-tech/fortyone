@@ -33,7 +33,7 @@ export const PublicPortalShell = ({
   viewer?: PublicPortalViewer | null;
 }) => (
   <Box className="bg-background min-h-dvh overflow-y-auto">
-    <Box className="border-border/60 bg-background/95 sticky top-0 z-20 border-b backdrop-blur">
+    <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
       <Box className="relative mx-auto flex h-16 w-full max-w-[78rem] items-center justify-between px-4 md:px-6">
         <Flex align="center" className="min-w-0 flex-1" gap={3}>
           <Avatar
@@ -105,7 +105,7 @@ export const PublicPortalShell = ({
           )}
         </Flex>
       </Box>
-      <nav className="border-border/60 bg-surface-muted/40 flex border-t p-1.5 md:hidden">
+      <nav className="border-border/60 bg-background flex border-t p-1.5 md:hidden">
         {navItems.map((item) => {
           const isActive = item.tab === activeTab;
           const Icon = item.icon;
@@ -128,8 +128,6 @@ export const PublicPortalShell = ({
         })}
       </nav>
     </Box>
-    <Box className="bg-surface-muted/70 min-h-[calc(100dvh-4rem)]">
-      {children}
-    </Box>
+    <Box className="bg-background min-h-[calc(100dvh-4rem)]">{children}</Box>
   </Box>
 );

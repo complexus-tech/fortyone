@@ -131,7 +131,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
 
   return (
     <>
-      <Box className="border-border/60 bg-surface/20 border-b">
+      <Box className="border-border/60 border-b">
         <Box className="mx-auto flex min-h-16 max-w-[78rem] flex-wrap items-center gap-4 px-4 py-3 md:px-6">
           <Box className="w-full md:w-72">
             <Input
@@ -146,10 +146,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
               variant="solid"
             />
           </Box>
-          <Flex
-            align="center"
-            className="bg-surface border-border/70 shadow-shadow/30 shrink-0 gap-1 rounded-full border p-1 shadow-sm"
-          >
+          <Flex align="center" className="shrink-0 gap-1">
             <button
               className={cn(
                 "text-text-muted hover:bg-state-hover hover:text-foreground rounded-full px-3.5 py-1.5 transition",
