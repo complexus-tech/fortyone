@@ -132,7 +132,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
   return (
     <>
       <Box className="border-border/60 border-b">
-        <Box className="mx-auto flex min-h-16 max-w-[78rem] flex-wrap items-center gap-4 px-4 py-3 md:px-6">
+        <Box className="flex min-h-16 flex-wrap items-center gap-4 py-3">
           <Box className="w-full md:w-72">
             <Input
               className="h-10"

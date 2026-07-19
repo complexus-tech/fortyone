@@ -1,13 +1,17 @@
 /* global beforeAll, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type * as ReactTypes from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import { publicPortalFixture } from "./fixtures";
 import {
   PublicPortalRequestDetailPage,
   PublicPortalRequestsPage,
   PublicPortalRoadmapPage,
 } from ".";
+
+const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
+const shareMock = jest.fn(async (_data?: ShareData) => undefined);
 
 const designSystemOnlyProps = new Set([
   "active",
@@ -242,6 +246,15 @@ describe("Public portal UI", () => {
   });
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWriteTextMock },
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: shareMock,
+    });
     global.fetch = jest.fn(
       async (input: Parameters<typeof fetch>[0]): Promise<Response> => {
         let url: string;
@@ -318,6 +331,33 @@ describe("Public portal UI", () => {
     expect(
       screen.getByRole("link", { name: /account settings/i }),
     ).toHaveAttribute("href", "/city-roads/settings/account");
+  });
+
+  it("copies the public portal link and confirms it with a toast", async () => {
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith(window.location.href);
+    });
+    expect(toast.success).toHaveBeenCalledWith("Link copied to clipboard");
+  });
+
+  it("opens the native share sheet for the public portal", async () => {
+    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+
+    await waitFor(() => {
+      expect(shareMock).toHaveBeenCalledWith({
+        title: publicPortalFixture.name,
+        text:
+          publicPortalFixture.description ||
+          `${publicPortalFixture.workspace.name} feedback`,
+        url: window.location.href,
+      });
+    });
   });
 
   it("renders roadmap columns from promoted public requests", async () => {
