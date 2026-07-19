@@ -1,6 +1,7 @@
 package feedbackhttp
 
 import (
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
@@ -10,15 +11,16 @@ import (
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Cache     *cache.Service
-	Service   *feedback.Service
+	DB          *sqlx.DB
+	Log         *logger.Logger
+	SecretKey   string
+	Cache       *cache.Service
+	Service     *feedback.Service
+	Attachments *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Service, cfg.Log)
+	h := New(cfg.Service, cfg.Attachments, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)

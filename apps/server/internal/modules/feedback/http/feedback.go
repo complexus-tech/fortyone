@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -13,13 +15,74 @@ import (
 	"github.com/google/uuid"
 )
 
-type Handlers struct {
-	feedback *feedback.Service
-	log      *logger.Logger
+const avatarAccessURLExpiry = 24 * time.Hour
+
+type profileImageResolver interface {
+	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
-func New(service *feedback.Service, log *logger.Logger) *Handlers {
-	return &Handlers{feedback: service, log: log}
+type Handlers struct {
+	feedback      *feedback.Service
+	profileImages profileImageResolver
+	log           *logger.Logger
+}
+
+func New(service *feedback.Service, profileImages profileImageResolver, log *logger.Logger) *Handlers {
+	return &Handlers{feedback: service, profileImages: profileImages, log: log}
+}
+
+func (h *Handlers) resolveAuthorAvatar(
+	ctx context.Context,
+	avatar *string,
+	resolvedByAvatar map[string]*string,
+) *string {
+	if avatar == nil {
+		return nil
+	}
+
+	avatarKey := strings.TrimSpace(*avatar)
+	if avatarKey == "" {
+		return nil
+	}
+	if resolved, ok := resolvedByAvatar[avatarKey]; ok {
+		return resolved
+	}
+	if h.profileImages == nil {
+		resolvedByAvatar[avatarKey] = nil
+		return nil
+	}
+
+	resolved, err := h.profileImages.ResolveProfileImageURL(ctx, avatarKey, avatarAccessURLExpiry)
+	if err != nil {
+		if h.log != nil {
+			h.log.Warn(ctx, "failed to resolve feedback author avatar", "error", err)
+		}
+		resolvedByAvatar[avatarKey] = nil
+		return nil
+	}
+	if strings.TrimSpace(resolved) == "" {
+		resolvedByAvatar[avatarKey] = nil
+		return nil
+	}
+
+	resolvedByAvatar[avatarKey] = &resolved
+	return &resolved
+}
+
+func (h *Handlers) resolvePortalAvatars(ctx context.Context, portal *feedback.CorePortalSnapshot) {
+	resolvedByAvatar := make(map[string]*string)
+	itemIDs := make(map[uuid.UUID]struct{}, len(portal.Items))
+
+	for i := range portal.Items {
+		itemIDs[portal.Items[i].ID] = struct{}{}
+		portal.Items[i].AuthorAvatar = h.resolveAuthorAvatar(ctx, portal.Items[i].AuthorAvatar, resolvedByAvatar)
+	}
+	for i := range portal.Comments {
+		if _, visible := itemIDs[portal.Comments[i].ItemID]; !visible {
+			continue
+		}
+		portal.Comments[i].AuthorAvatar = h.resolveAuthorAvatar(ctx, portal.Comments[i].AuthorAvatar, resolvedByAvatar)
+	}
 }
 
 func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -31,6 +94,7 @@ func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http
 	if err := h.applyItemsQuery(ctx, r, &portal); err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	h.resolvePortalAvatars(ctx, &portal)
 	return web.Respond(ctx, w, toAppPortalSnapshot(portal), http.StatusOK)
 }
 
@@ -44,6 +108,7 @@ func (h *Handlers) GetWorkspacePortal(ctx context.Context, w http.ResponseWriter
 	if err := h.applyItemsQuery(ctx, r, &portal); err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	h.resolvePortalAvatars(ctx, &portal)
 	return web.Respond(ctx, w, toAppPortalSnapshot(portal), http.StatusOK)
 }
 
@@ -175,6 +240,7 @@ func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, make(map[string]*string))
 	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusCreated)
 }
 
@@ -198,6 +264,7 @@ func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, make(map[string]*string))
 	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusOK)
 }
 
@@ -227,6 +294,7 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	comment.AuthorAvatar = h.resolveAuthorAvatar(ctx, comment.AuthorAvatar, make(map[string]*string))
 	return web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
 }
 
