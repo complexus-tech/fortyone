@@ -117,6 +117,17 @@ func (s *Service) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.U
 	return s.repo.UpdatePortal(ctx, workspaceID, portalID, input)
 }
 
+func (s *Service) ListPortalBoards(ctx context.Context, workspaceID, portalID uuid.UUID) ([]CoreBoard, error) {
+	if workspaceID == uuid.Nil || portalID == uuid.Nil {
+		return nil, errors.New("workspace id and portal id are required")
+	}
+	portal, err := s.repo.GetPortal(ctx, workspaceID, portalID)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListBoards(ctx, portal.ID)
+}
+
 func (s *Service) ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error) {
 	if input.PortalID == uuid.Nil {
 		return CoreItemsPage{}, errors.New("portal id is required")

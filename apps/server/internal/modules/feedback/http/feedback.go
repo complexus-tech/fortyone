@@ -91,12 +91,12 @@ func (h *Handlers) ListPortals(ctx context.Context, w http.ResponseWriter, r *ht
 	response := make([]AppPortal, 0, len(portals))
 	for _, portal := range portals {
 		appPortal := toAppPortal(portal)
-		snapshot, err := h.feedback.GetWorkspacePortalSnapshot(ctx, workspace.Slug, portal.Slug)
+		boards, err := h.feedback.ListPortalBoards(ctx, workspace.ID, portal.ID)
 		if err != nil {
 			return web.RespondError(ctx, w, err, httpStatus(err))
 		}
-		appPortal.Boards = make([]AppBoard, 0, len(snapshot.Boards))
-		for _, board := range snapshot.Boards {
+		appPortal.Boards = make([]AppBoard, 0, len(boards))
+		for _, board := range boards {
 			appPortal.Boards = append(appPortal.Boards, toAppBoard(board))
 		}
 		response = append(response, appPortal)

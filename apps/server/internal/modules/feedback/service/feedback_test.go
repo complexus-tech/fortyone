@@ -214,6 +214,35 @@ func TestUpdatePortalCustomizesExistingWorkspacePortal(t *testing.T) {
 	require.Empty(t, repo.createdPortals)
 }
 
+func TestListPortalBoardsAllowsManagingDisabledPortal(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{
+			ID:          portalID,
+			WorkspaceID: workspaceID,
+			Name:        "City Roads",
+			Slug:        "city-roads",
+			IsPublic:    false,
+		}},
+		boards: []CoreBoard{{
+			ID:          boardID,
+			WorkspaceID: workspaceID,
+			PortalID:    portalID,
+			Name:        "Traffic lights",
+			Slug:        "traffic-lights",
+		}},
+	}
+	service := New(repo, nil)
+
+	boards, err := service.ListPortalBoards(context.Background(), workspaceID, portalID)
+
+	require.NoError(t, err)
+	require.Len(t, boards, 1)
+	require.Equal(t, boardID, boards[0].ID)
+}
+
 func TestCreateItemDefaultsToPendingAndGeneratesSlug(t *testing.T) {
 	workspaceID := uuid.New()
 	portalID := uuid.New()
