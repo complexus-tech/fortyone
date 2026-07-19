@@ -1,29 +1,21 @@
-import { BellIcon, CopyIcon, ShareIcon } from "icons";
 import { Avatar, Box, Flex, Text } from "ui";
-import type { Team } from "@/modules/teams/types";
 import { PublicPortalShell } from "./portal-shell";
 import { RequestStatusPill } from "./request-card";
 import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
 import { getBoard } from "./utils";
-import {
-  CreateStoryFromFeedbackButton,
-  FeedbackCommentComposer,
-  FeedbackVoteButton,
-} from "./feedback-controls";
+import { FeedbackVoteButton } from "./feedback-controls";
 import { getPublicAvatarColor } from "./avatar-color";
-
-const EMPTY_TEAMS: Team[] = [];
+import { FeedbackDiscussion } from "./feedback-comments";
+import { PublicPortalActions } from "./sidebar";
 
 export const PublicPortalRequestDetailPage = ({
   portal,
   request,
   viewer,
-  teams = EMPTY_TEAMS,
 }: {
   portal: PublicPortal;
   request: PublicRequest;
   viewer?: PublicPortalViewer | null;
-  teams?: Team[];
 }) => {
   const board = getBoard(portal, request.boardId);
 
@@ -69,45 +61,15 @@ export const PublicPortalRequestDetailPage = ({
           </Flex>
 
           <Box className="border-border/70 mt-8 border-t-[0.5px] pt-8">
-            <FeedbackCommentComposer portal={portal} request={request} />
-
-            {request.comments.length > 0 ? (
-              <Box className="mt-6 space-y-5">
-                {request.comments.map((comment) => (
-                  <Flex align="start" gap={3} key={comment.id}>
-                    <Avatar
-                      name={comment.authorName}
-                      size="sm"
-                      src={comment.authorAvatar}
-                      style={{
-                        backgroundColor: getPublicAvatarColor(
-                          comment.authorName,
-                        ),
-                      }}
-                    />
-                    <Box>
-                      <Flex align="center" gap={2}>
-                        <Text fontWeight="semibold">{comment.authorName}</Text>
-                        <Text color="muted">{comment.createdAtLabel}</Text>
-                      </Flex>
-                      <Text className="mt-1 leading-6" color="muted">
-                        {comment.body}
-                      </Text>
-                    </Box>
-                  </Flex>
-                ))}
-              </Box>
-            ) : null}
+            <FeedbackDiscussion
+              portal={portal}
+              request={request}
+              viewer={viewer}
+            />
           </Box>
         </main>
 
         <aside className="space-y-8">
-          <FeedbackVoteButton portal={portal} request={request} />
-          <CreateStoryFromFeedbackButton
-            portal={portal}
-            request={request}
-            teams={teams}
-          />
           <Box className="border-border bg-surface rounded-xl border-[0.5px] p-5">
             <Flex className="py-2" justify="between">
               <Text color="muted">Status</Text>
@@ -129,26 +91,7 @@ export const PublicPortalRequestDetailPage = ({
               <Text>{request.createdAtLabel}</Text>
             </Flex>
           </Box>
-
-          <Box>
-            <Text className="mb-4" fontWeight="semibold">
-              Actions
-            </Text>
-            <Flex className="text-text-muted gap-4" direction="column">
-              <Flex align="center" gap={2}>
-                <BellIcon className="h-4" />
-                <span>Follow this post</span>
-              </Flex>
-              <Flex align="center" gap={2}>
-                <CopyIcon className="h-4" />
-                <span>Copy link</span>
-              </Flex>
-              <Flex align="center" gap={2}>
-                <ShareIcon className="h-4" />
-                <span>Share</span>
-              </Flex>
-            </Flex>
-          </Box>
+          <PublicPortalActions portal={portal} />
         </aside>
       </Box>
     </PublicPortalShell>

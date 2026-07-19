@@ -26,8 +26,17 @@ type CommentInput = ItemInput & {
   body: string;
 };
 
-type CreateStoryInput = ItemInput & {
-  teamId: string;
+export type FeedbackVoteResult = {
+  voted: boolean;
+  voteCount: number;
+};
+
+export type CreatedFeedbackComment = {
+  id: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  body: string;
+  createdAt: string;
 };
 
 const workspaceCtx = async (workspaceSlug: string) => {
@@ -82,11 +91,10 @@ export const createFeedbackAction = async (input: CreateFeedbackInput) => {
 export const toggleFeedbackVoteAction = async (input: ItemInput) => {
   try {
     const ctx = await workspaceCtx(input.workspaceSlug);
-    const response = await post<Record<string, never>, ApiResponse<unknown>>(
-      `feedback/items/${input.itemId}/vote`,
-      {},
-      ctx,
-    );
+    const response = await post<
+      Record<string, never>,
+      ApiResponse<FeedbackVoteResult>
+    >(`feedback/items/${input.itemId}/vote`, {}, ctx);
     refreshPortal(input.portalSlug);
     return response;
   } catch (error) {
@@ -97,29 +105,10 @@ export const toggleFeedbackVoteAction = async (input: ItemInput) => {
 export const createFeedbackCommentAction = async (input: CommentInput) => {
   try {
     const ctx = await workspaceCtx(input.workspaceSlug);
-    const response = await post<{ body: string }, ApiResponse<unknown>>(
-      `feedback/items/${input.itemId}/comments`,
-      { body: input.body },
-      ctx,
-    );
-    refreshPortal(input.portalSlug);
-    refreshFeedbackItem(input.portalSlug, input.itemSlug);
-    return response;
-  } catch (error) {
-    return getApiError(error);
-  }
-};
-
-export const createStoryFromFeedbackAction = async (
-  input: CreateStoryInput,
-) => {
-  try {
-    const ctx = await workspaceCtx(input.workspaceSlug);
-    const response = await post<{ teamId: string }, ApiResponse<unknown>>(
-      `feedback/items/${input.itemId}/story`,
-      { teamId: input.teamId },
-      ctx,
-    );
+    const response = await post<
+      { body: string },
+      ApiResponse<CreatedFeedbackComment>
+    >(`feedback/items/${input.itemId}/comments`, { body: input.body }, ctx);
     refreshPortal(input.portalSlug);
     refreshFeedbackItem(input.portalSlug, input.itemSlug);
     return response;

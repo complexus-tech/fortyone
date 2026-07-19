@@ -3,6 +3,7 @@
 import { CopyIcon, ShareIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
+import { cn } from "lib";
 import type { PublicPortal } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
 
@@ -36,7 +37,47 @@ const shareLink = async (portal: PublicPortal) => {
   }
 };
 
-export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => {
+export const PublicPortalActions = ({ portal }: { portal: PublicPortal }) => (
+  <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
+    <Text className="px-2 py-2" fontWeight="semibold">
+      Actions
+    </Text>
+    <Flex direction="column" gap={1}>
+      <Button
+        className="w-full justify-start px-2"
+        color="tertiary"
+        leftIcon={<CopyIcon className="h-4" />}
+        onClick={() => {
+          void copyLink();
+        }}
+        variant="naked"
+      >
+        Copy link
+      </Button>
+      <Button
+        className="w-full justify-start px-2"
+        color="tertiary"
+        leftIcon={<ShareIcon className="h-4" />}
+        onClick={() => {
+          void shareLink(portal);
+        }}
+        variant="naked"
+      >
+        Share
+      </Button>
+    </Flex>
+  </Box>
+);
+
+export const PublicPortalSidebar = ({
+  onBoardSelect,
+  portal,
+  selectedBoardId,
+}: {
+  onBoardSelect: (boardId?: string) => void;
+  portal: PublicPortal;
+  selectedBoardId?: string;
+}) => {
   return (
     <aside className="space-y-8">
       <NewFeedbackButton portal={portal} />
@@ -48,54 +89,47 @@ export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => {
         >
           Boards
         </Text>
-        <Box className="bg-state-selected rounded-lg px-3 py-2.5">
-          <Flex align="center" gap={2}>
-            <span className="bg-text-muted size-2 rounded-full" />
-            <Text fontWeight="semibold">All Feedback</Text>
-          </Flex>
-        </Box>
+        <button
+          aria-pressed={!selectedBoardId}
+          className={cn(
+            "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
+            { "bg-state-selected": !selectedBoardId },
+          )}
+          onClick={() => {
+            onBoardSelect(undefined);
+          }}
+          type="button"
+        >
+          <span className="bg-text-muted size-2 rounded-full" />
+          <Text fontWeight={!selectedBoardId ? "semibold" : "normal"}>
+            All boards
+          </Text>
+        </button>
         {portal.boards.map((board) => (
-          <Flex
-            align="center"
-            className="hover:bg-state-hover rounded-lg px-3 py-2.5 transition"
-            gap={2}
+          <button
+            aria-pressed={selectedBoardId === board.id}
+            className={cn(
+              "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
+              { "bg-state-selected": selectedBoardId === board.id },
+            )}
             key={board.id}
+            onClick={() => {
+              onBoardSelect(board.id);
+            }}
+            type="button"
           >
             <span className={`${board.colorClassName} size-2 rounded-full`} />
-            <Text color="muted">{board.name}</Text>
-          </Flex>
+            <Text
+              color={selectedBoardId === board.id ? undefined : "muted"}
+              fontWeight={selectedBoardId === board.id ? "semibold" : "normal"}
+            >
+              {board.name}
+            </Text>
+          </button>
         ))}
       </Box>
 
-      <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
-        <Text className="px-2 py-2" fontWeight="semibold">
-          Actions
-        </Text>
-        <Flex direction="column" gap={1}>
-          <Button
-            className="w-full justify-start px-2"
-            color="tertiary"
-            leftIcon={<CopyIcon className="h-4" />}
-            onClick={() => {
-              void copyLink();
-            }}
-            variant="naked"
-          >
-            Copy link
-          </Button>
-          <Button
-            className="w-full justify-start px-2"
-            color="tertiary"
-            leftIcon={<ShareIcon className="h-4" />}
-            onClick={() => {
-              void shareLink(portal);
-            }}
-            variant="naked"
-          >
-            Share
-          </Button>
-        </Flex>
-      </Box>
+      <PublicPortalActions portal={portal} />
     </aside>
   );
 };

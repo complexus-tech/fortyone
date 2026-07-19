@@ -1,24 +1,29 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowUpIcon, PlusIcon } from "icons";
-import { Box, Button, Dialog, Flex, Input, Text, TextArea } from "ui";
-import { toast } from "sonner";
-import type { Team } from "@/modules/teams/types";
-import type { PublicPortal, PublicRequest } from "./types";
 import {
-  createStoryFromFeedbackAction,
-  createFeedbackAction,
-  createFeedbackCommentAction,
-  toggleFeedbackVoteAction,
-} from "./actions";
+  ArrowRight2Icon,
+  CheckIcon,
+  PlusIcon,
+  RequestsIcon,
+  ThumbsUpIcon,
+} from "icons";
+import { Box, Button, Dialog, Input, Menu, Text, TextArea } from "ui";
+import { toast } from "sonner";
+import { cn } from "lib";
+import { TeamColor } from "@/components/ui/team-color";
+import type { PublicPortal, PublicRequest } from "./types";
+import { createFeedbackAction, toggleFeedbackVoteAction } from "./actions";
 
 export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [boardId, setBoardId] = useState(portal.boards[0]?.id ?? "");
+  const [boardId, setBoardId] = useState(
+    portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
+  );
   const [isPending, startTransition] = useTransition();
+  const selectedBoard = portal.boards.find((board) => board.id === boardId);
 
   const submit = () => {
     startTransition(async () => {
@@ -54,48 +59,84 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
       >
         New Feedback
       </Button>
-      <Dialog.Content className="max-w-xl">
-        <Dialog.Header>
-          <Dialog.Title className="px-6 pt-1 text-lg">
-            New Feedback
+      <Dialog.Content className="max-w-2xl">
+        <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+          <Dialog.Title className="flex items-center gap-1 text-lg">
+            <Menu>
+              <Menu.Button>
+                <Button
+                  className="dark:bg-surface-elevated/90 gap-1.5 text-[0.95rem] font-semibold"
+                  color="tertiary"
+                  disabled={portal.boards.length === 0}
+                  leftIcon={
+                    selectedBoard ? (
+                      <TeamColor color={selectedBoard.color} />
+                    ) : (
+                      <RequestsIcon className="h-4" />
+                    )
+                  }
+                  size="sm"
+                >
+                  {selectedBoard?.name ?? "Select board"}
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="start" className="w-60">
+                <Menu.Group>
+                  {portal.boards.map((board) => (
+                    <Menu.Item
+                      active={board.id === boardId}
+                      className="justify-between gap-3"
+                      key={board.id}
+                      onSelect={() => {
+                        setBoardId(board.id);
+                      }}
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <TeamColor className="shrink-0" color={board.color} />
+                        <span className="truncate">{board.name}</span>
+                      </span>
+                      {board.id === boardId ? (
+                        <CheckIcon className="h-[1.1rem] w-auto" />
+                      ) : null}
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+            <ArrowRight2Icon
+              className="h-4.5 w-auto opacity-30"
+              strokeWidth={3}
+            />
+            <Text color="muted">New feedback</Text>
           </Dialog.Title>
+          <Dialog.Close />
         </Dialog.Header>
-        <Dialog.Body className="space-y-4">
+        <Dialog.Body className="pt-2">
           <Box>
-            <Text className="mb-2 text-sm" fontWeight="medium">
-              Board
-            </Text>
-            <select
-              className="border-border bg-surface h-11 w-full rounded-lg border px-3"
+            <Input
+              aria-label="Feedback title"
+              autoFocus
+              className="h-auto border-0 bg-transparent px-0 py-3 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
               onChange={(event) => {
-                setBoardId(event.target.value);
+                setTitle(event.target.value);
               }}
-              value={boardId}
-            >
-              {portal.boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Feedback title"
+              value={title}
+            />
           </Box>
-          <Input
-            onChange={(event) => {
-              setTitle(event.target.value);
-            }}
-            placeholder="Summarize the feedback"
-            value={title}
-          />
-          <TextArea
-            className="min-h-32"
-            onChange={(event) => {
-              setDescription(event.target.value);
-            }}
-            placeholder="Add details, context, or examples"
-            value={description}
-          />
+          <Box className="border-border/60 mt-1 border-t-[0.5px]">
+            <TextArea
+              aria-label="Feedback description"
+              className="min-h-40 border-0 bg-transparent px-0 py-4 leading-6 focus-visible:ring-0 dark:bg-transparent"
+              onChange={(event) => {
+                setDescription(event.target.value);
+              }}
+              placeholder="Describe the feedback, context, or expected outcome..."
+              value={description}
+            />
+          </Box>
         </Dialog.Body>
-        <Dialog.Footer className="justify-end gap-3">
+        <Dialog.Footer className="justify-end gap-2">
           <Button
             color="tertiary"
             onClick={() => {
@@ -105,11 +146,11 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
             Cancel
           </Button>
           <Button
-            color="primary"
+            color="invert"
             disabled={!boardId || title.trim().length === 0 || isPending}
             onClick={submit}
           >
-            Submit
+            Submit feedback
           </Button>
         </Dialog.Footer>
       </Dialog.Content>
@@ -118,20 +159,32 @@ export const NewFeedbackButton = ({ portal }: { portal: PublicPortal }) => {
 };
 
 export const FeedbackVoteButton = ({
+  compact = false,
   portal,
   request,
 }: {
+  compact?: boolean;
   portal: PublicPortal;
   request: PublicRequest;
 }) => {
+  const [voteCount, setVoteCount] = useState(request.voteCount);
+  const [voted, setVoted] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   return (
     <Button
-      className="h-8 rounded-xl px-3"
+      active={voted}
+      aria-label={voted ? "Remove upvote" : "Upvote"}
+      className={cn(
+        "bg-surface-muted/70 text-text-muted hover:text-foreground shrink-0",
+        compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-2.5",
+        { "bg-state-selected text-foreground": voted },
+      )}
       color="tertiary"
       disabled={isPending}
-      leftIcon={<ArrowUpIcon className="h-3.5" />}
+      leftIcon={
+        <ThumbsUpIcon className={compact ? "h-3.5" : "h-4"} strokeWidth={2} />
+      }
       onClick={() => {
         startTransition(async () => {
           const response = await toggleFeedbackVoteAction({
@@ -142,151 +195,19 @@ export const FeedbackVoteButton = ({
           });
           if (response.error?.message) {
             toast.error("Vote", { description: response.error.message });
+            return;
+          }
+          if (response.data) {
+            setVoteCount(response.data.voteCount);
+            setVoted(response.data.voted);
           }
         });
       }}
       size="sm"
+      title={voted ? "Remove upvote" : "Upvote"}
       variant="naked"
     >
-      {request.voteCount}
+      {voteCount}
     </Button>
-  );
-};
-
-export const FeedbackCommentComposer = ({
-  portal,
-  request,
-}: {
-  portal: PublicPortal;
-  request: PublicRequest;
-}) => {
-  const [body, setBody] = useState("");
-  const [isPending, startTransition] = useTransition();
-
-  return (
-    <Box className="border-border bg-surface rounded-xl border-[0.5px] p-4">
-      <TextArea
-        className="min-h-28 border-none p-0 shadow-none"
-        onChange={(event) => {
-          setBody(event.target.value);
-        }}
-        placeholder="Add a comment..."
-        value={body}
-      />
-      <Flex align="end" className="mt-4" justify="end">
-        <Button
-          color="tertiary"
-          disabled={body.trim().length === 0 || isPending}
-          onClick={() => {
-            startTransition(async () => {
-              const response = await createFeedbackCommentAction({
-                body,
-                itemId: request.id,
-                itemSlug: request.slug,
-                portalSlug: portal.slug,
-                workspaceSlug: portal.workspace.slug,
-              });
-              if (response.error?.message) {
-                toast.error("Comment", { description: response.error.message });
-                return;
-              }
-              setBody("");
-            });
-          }}
-          size="sm"
-        >
-          Comment
-        </Button>
-      </Flex>
-    </Box>
-  );
-};
-
-export const CreateStoryFromFeedbackButton = ({
-  portal,
-  request,
-  teams,
-}: {
-  portal: PublicPortal;
-  request: PublicRequest;
-  teams: Team[];
-}) => {
-  const [open, setOpen] = useState(false);
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
-  const [isPending, startTransition] = useTransition();
-
-  if (teams.length === 0) return null;
-
-  return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <Button
-        className="w-full justify-center"
-        color="tertiary"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        Create internal story
-      </Button>
-      <Dialog.Content className="max-w-md">
-        <Dialog.Header>
-          <Dialog.Title className="px-6 pt-1 text-lg">
-            Create Story
-          </Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body className="space-y-4">
-          <Text color="muted">
-            This creates a FortyOne story and links it to this feedback item.
-            Public feedback stays visible in the portal.
-          </Text>
-          <select
-            className="border-border bg-surface h-11 w-full rounded-lg border px-3"
-            onChange={(event) => {
-              setTeamId(event.target.value);
-            }}
-            value={teamId}
-          >
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </Dialog.Body>
-        <Dialog.Footer className="justify-end gap-3">
-          <Button
-            color="tertiary"
-            onClick={() => {
-              setOpen(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="primary"
-            disabled={!teamId || isPending}
-            onClick={() => {
-              startTransition(async () => {
-                const response = await createStoryFromFeedbackAction({
-                  itemId: request.id,
-                  itemSlug: request.slug,
-                  portalSlug: portal.slug,
-                  teamId,
-                  workspaceSlug: portal.workspace.slug,
-                });
-                if (response.error?.message) {
-                  toast.error("Story", { description: response.error.message });
-                  return;
-                }
-                setOpen(false);
-                toast.success("Story created");
-              });
-            }}
-          >
-            Create
-          </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog>
   );
 };

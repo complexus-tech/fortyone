@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpDownIcon, SearchIcon } from "icons";
+import { ArrowUpDownIcon, RequestsIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { requestFilters, requestStatusMeta } from "./status";
@@ -20,12 +20,14 @@ const PAGE_SIZE = 20;
 const buildUrl = ({
   page,
   portal,
+  boardId,
   search,
   sort,
   status,
 }: {
   page: number;
   portal: PublicPortal;
+  boardId?: string;
   search: string;
   sort: SortMode;
   status?: PublicRequestStatus;
@@ -35,6 +37,7 @@ const buildUrl = ({
     pageSize: String(PAGE_SIZE),
     sort,
   });
+  if (boardId) params.set("boardId", boardId);
   if (search.trim()) params.set("search", search.trim());
   if (status) params.set("status", status);
   return `/api/public-portal/${portal.slug}?${params.toString()}`;
@@ -57,7 +60,13 @@ const FeedbackListSkeleton = () => (
   </Box>
 );
 
-export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
+export const PublicFeedbackList = ({
+  boardId,
+  portal,
+}: {
+  boardId?: string;
+  portal: PublicPortal;
+}) => {
   const [requests, setRequests] = useState<PublicRequest[]>(portal.requests);
   const [hasMore, setHasMore] = useState(portal.requestsHasMore);
   const [page, setPage] = useState(1);
@@ -73,7 +82,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          buildUrl({ page: nextPage, portal, search, sort, status }),
+          buildUrl({ boardId, page: nextPage, portal, search, sort, status }),
         );
         if (!response.ok) return;
         const payload = (await response.json()) as ApiResponse<PublicPortal>;
@@ -88,7 +97,7 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
         setIsLoading(false);
       }
     },
-    [portal, search, sort, status],
+    [boardId, portal, search, sort, status],
   );
 
   useEffect(() => {
@@ -122,9 +131,29 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
   if (isLoading && page === 1) {
     feedbackContent = <FeedbackListSkeleton />;
   } else if (requests.length === 0) {
+    const selectedBoard = portal.boards.find((board) => board.id === boardId);
     feedbackContent = (
-      <Flex align="center" className="min-h-56" justify="center">
-        <Text color="muted">No feedback found</Text>
+      <Flex
+        align="center"
+        className="min-h-72 text-center"
+        direction="column"
+        justify="center"
+      >
+        <Flex
+          align="center"
+          className="bg-surface-muted text-text-muted mb-4 size-12 rounded-xl"
+          justify="center"
+        >
+          <RequestsIcon className="h-5 text-current" />
+        </Flex>
+        <Text className="text-[1.05rem]" fontWeight="semibold">
+          No feedback yet
+        </Text>
+        <Text className="mt-1 max-w-sm" color="muted">
+          {selectedBoard
+            ? `No feedback has been submitted to ${selectedBoard.name}.`
+            : "New feedback will appear here once it has been submitted."}
+        </Text>
       </Flex>
     );
   }
@@ -132,8 +161,8 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
   return (
     <>
       <Box className="border-border/60 border-b">
-        <Box className="flex min-h-16 flex-wrap items-center gap-4 py-3">
-          <Box className="w-full md:w-72">
+        <Flex align="center" className="gap-3 py-3" justify="between">
+          <Box className="min-w-0 flex-1 md:max-w-72">
             <Input
               className="h-10"
               leftIcon={<SearchIcon className="h-4" />}
@@ -148,55 +177,12 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
           </Box>
           <Flex
             align="center"
-            className="bg-surface-muted/85 shrink-0 gap-1 rounded-xl p-1"
-          >
-            <button
-              className={cn(
-                "text-text-muted hover:text-foreground rounded-xl border border-transparent px-3.5 py-1.5 transition",
-                {
-                  "border-border bg-surface-elevated text-foreground": !status,
-                },
-              )}
-              onClick={() => {
-                setStatus(undefined);
-              }}
-              type="button"
-            >
-              All
-            </button>
-            {requestFilters.map((filter) => {
-              const meta = requestStatusMeta[filter];
-              return (
-                <button
-                  className={cn(
-                    "text-text-muted hover:text-foreground flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-3.5 py-1.5 transition",
-                    {
-                      "border-border bg-surface-elevated text-foreground":
-                        status === filter,
-                    },
-                  )}
-                  key={filter}
-                  onClick={() => {
-                    setStatus(filter);
-                  }}
-                  type="button"
-                >
-                  <span
-                    className={cn("size-2 rounded-full", meta.dotClassName)}
-                  />
-                  <span>{meta.label}</span>
-                </button>
-              );
-            })}
-          </Flex>
-          <Flex
-            align="center"
-            className="bg-surface-muted/85 shrink-0 gap-1 rounded-xl p-1"
+            className="bg-surface-muted/85 h-10 shrink-0 gap-1 rounded-xl p-1"
           >
             {(["top", "newest", "oldest"] as const).map((option) => (
               <button
                 className={cn(
-                  "text-text-muted hover:text-foreground flex items-center gap-1.5 rounded-xl border border-transparent px-3.5 py-1.5 capitalize transition",
+                  "text-text-muted hover:text-foreground flex h-full items-center gap-1.5 rounded-xl border border-transparent px-3 capitalize transition",
                   {
                     "border-border bg-surface-elevated text-foreground":
                       sort === option,
@@ -215,7 +201,50 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
               </button>
             ))}
           </Flex>
-        </Box>
+        </Flex>
+        <Flex
+          align="center"
+          className="bg-surface-muted/85 mb-3 w-max max-w-full gap-1 overflow-x-auto rounded-xl p-1"
+        >
+          <button
+            className={cn(
+              "text-text-muted hover:text-foreground rounded-xl border border-transparent px-3.5 py-1.5 transition",
+              {
+                "border-border bg-surface-elevated text-foreground": !status,
+              },
+            )}
+            onClick={() => {
+              setStatus(undefined);
+            }}
+            type="button"
+          >
+            All
+          </button>
+          {requestFilters.map((filter) => {
+            const meta = requestStatusMeta[filter];
+            return (
+              <button
+                className={cn(
+                  "text-text-muted hover:text-foreground flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-3.5 py-1.5 transition",
+                  {
+                    "border-border bg-surface-elevated text-foreground":
+                      status === filter,
+                  },
+                )}
+                key={filter}
+                onClick={() => {
+                  setStatus(filter);
+                }}
+                type="button"
+              >
+                <span
+                  className={cn("size-2 rounded-full", meta.dotClassName)}
+                />
+                <span>{meta.label}</span>
+              </button>
+            );
+          })}
+        </Flex>
       </Box>
 
       <Box>
