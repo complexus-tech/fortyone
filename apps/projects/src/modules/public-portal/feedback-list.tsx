@@ -313,7 +313,7 @@ export const PublicFeedbackList = ({
         </Flex>
       </Box>
 
-      <Box className="min-h-0 md:flex-1 md:overflow-y-auto">
+      <Box className="hide-scrollbar min-h-0 md:flex-1 md:overflow-y-auto">
         {feedbackContent}
         <div ref={sentinelRef} />
         {isLoading && page > 1 ? <FeedbackListSkeleton /> : null}

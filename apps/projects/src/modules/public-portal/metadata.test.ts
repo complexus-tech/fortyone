@@ -15,7 +15,7 @@ describe("public portal metadata", () => {
     );
 
     expect(metadata.title).toBe(
-      "Send a request to City Roads Program | FortyOne",
+      "Send feedback to City Roads Program | FortyOne",
     );
     expect(metadata.description).toContain(
       "Send requests and feedback directly to City Roads Program",
@@ -23,7 +23,7 @@ describe("public portal metadata", () => {
     expect(metadata.alternates?.canonical).toEqual(canonicalUrl);
     expect(metadata.openGraph).toEqual(
       expect.objectContaining({
-        title: "Send a request to City Roads Program | FortyOne",
+        title: "Send feedback to City Roads Program | FortyOne",
         type: "website",
         url: canonicalUrl,
       }),

@@ -45,7 +45,7 @@ export const buildPublicPortalMetadata = (
   canonicalUrl: URL,
 ): Metadata => {
   const organizationName = portal.workspace.name;
-  const title = `Send a request to ${organizationName} | FortyOne`;
+  const title = `Send feedback to ${organizationName} | FortyOne`;
   const description = `Send requests and feedback directly to ${organizationName}. Browse existing ideas, vote on priorities, and follow public progress.`;
 
   return {
