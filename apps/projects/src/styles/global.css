@@ -9,9 +9,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body), "Segoe UI",
+  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body-fallback),
     sans-serif;
-  --font-heading: var(--font-heading);
+  --font-heading: -apple-system, BlinkMacSystemFont,
+    var(--font-heading-fallback), sans-serif;
 }
 
 :root {

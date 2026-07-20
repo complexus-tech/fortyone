@@ -15,13 +15,13 @@ import { OnlineStatusMonitor } from "./online-monitor";
 
 const font = Geist({
   subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-body-fallback",
   display: "swap",
   weight: "variable",
 });
 
 const heading = BricolageGrotesque({
-  variable: "--font-heading",
+  variable: "--font-heading-fallback",
   display: "swap",
   subsets: ["latin"],
   weight: "variable",
