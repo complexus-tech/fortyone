@@ -27,7 +27,7 @@ export const usePlanTeamFeedback = () => {
       }
       toast.success(response.data?.created ? "Story created" : "Story linked");
     },
-    onSettled: (_response, _error, { feedbackId }) => {
+    onSettled: (response, _error, { feedbackId }) => {
       queryClient.invalidateQueries({
         queryKey: feedbackKeys.detail(workspaceSlug, feedbackId),
       });
@@ -37,6 +37,14 @@ export const usePlanTeamFeedback = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
       });
+      if (response?.data?.storyId) {
+        queryClient.invalidateQueries({
+          queryKey: feedbackKeys.storyLinks(
+            workspaceSlug,
+            response.data.storyId,
+          ),
+        });
+      }
     },
   });
 };

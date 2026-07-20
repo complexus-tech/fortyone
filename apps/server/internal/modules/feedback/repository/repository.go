@@ -48,36 +48,38 @@ type boardRow struct {
 }
 
 type itemRow struct {
-	ID               uuid.UUID  `db:"id"`
-	WorkspaceID      uuid.UUID  `db:"workspace_id"`
-	PortalID         uuid.UUID  `db:"portal_id"`
-	BoardID          uuid.UUID  `db:"board_id"`
-	AuthorID         *uuid.UUID `db:"author_id"`
-	AuthorName       string     `db:"author_name"`
-	AuthorEmail      string     `db:"author_email"`
-	AuthorAvatar     *string    `db:"author_avatar"`
-	Title            string     `db:"title"`
-	Description      string     `db:"description"`
-	Slug             string     `db:"slug"`
-	Status           string     `db:"status"`
-	VoteCount        int        `db:"vote_count"`
-	CommentCount     int        `db:"comment_count"`
-	RoadmapSummary   *string    `db:"roadmap_summary"`
-	BoardTeamID      uuid.UUID  `db:"board_team_id"`
-	BoardName        string     `db:"board_name"`
-	BoardSlug        string     `db:"board_slug"`
-	BoardColor       string     `db:"board_color"`
-	BoardOrder       int        `db:"board_order_index"`
-	BoardCreatedAt   time.Time  `db:"board_created_at"`
-	BoardUpdatedAt   time.Time  `db:"board_updated_at"`
-	PrimaryLinkID    *uuid.UUID `db:"primary_link_id"`
-	PrimaryStoryID   *uuid.UUID `db:"primary_story_id"`
-	PrimaryRelation  *string    `db:"primary_relationship"`
-	PrimaryCreator   *uuid.UUID `db:"primary_created_by_user_id"`
-	PrimaryCreatedAt *time.Time `db:"primary_created_at"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
-	StatusChanged    bool       `db:"status_changed"`
+	ID                uuid.UUID  `db:"id"`
+	WorkspaceID       uuid.UUID  `db:"workspace_id"`
+	PortalID          uuid.UUID  `db:"portal_id"`
+	BoardID           uuid.UUID  `db:"board_id"`
+	AuthorID          *uuid.UUID `db:"author_id"`
+	AuthorName        string     `db:"author_name"`
+	AuthorEmail       string     `db:"author_email"`
+	AuthorAvatar      *string    `db:"author_avatar"`
+	Title             string     `db:"title"`
+	Description       string     `db:"description"`
+	Slug              string     `db:"slug"`
+	Status            string     `db:"status"`
+	VoteCount         int        `db:"vote_count"`
+	CommentCount      int        `db:"comment_count"`
+	RoadmapSummary    *string    `db:"roadmap_summary"`
+	BoardTeamID       uuid.UUID  `db:"board_team_id"`
+	BoardName         string     `db:"board_name"`
+	BoardSlug         string     `db:"board_slug"`
+	BoardColor        string     `db:"board_color"`
+	BoardOrder        int        `db:"board_order_index"`
+	BoardCreatedAt    time.Time  `db:"board_created_at"`
+	BoardUpdatedAt    time.Time  `db:"board_updated_at"`
+	PrimaryLinkID     *uuid.UUID `db:"primary_link_id"`
+	PrimaryStoryID    *uuid.UUID `db:"primary_story_id"`
+	PrimaryStoryTitle *string    `db:"primary_story_title"`
+	PrimaryRelation   *string    `db:"primary_relationship"`
+	PrimaryCreator    *uuid.UUID `db:"primary_created_by_user_id"`
+	PrimaryCreatedAt  *time.Time `db:"primary_created_at"`
+	CreatedAt         time.Time  `db:"created_at"`
+	UpdatedAt         time.Time  `db:"updated_at"`
+	StatusChanged     bool       `db:"status_changed"`
+	ReadAt            *time.Time `db:"read_at"`
 }
 
 type commentRow struct {
@@ -97,10 +99,30 @@ type storyLinkRow struct {
 	WorkspaceID     uuid.UUID  `db:"workspace_id"`
 	ItemID          uuid.UUID  `db:"item_id"`
 	StoryID         uuid.UUID  `db:"story_id"`
+	StoryTitle      string     `db:"story_title"`
 	Relationship    string     `db:"relationship"`
 	IsPrimary       bool       `db:"is_primary"`
 	CreatedByUserID *uuid.UUID `db:"created_by_user_id"`
 	CreatedAt       time.Time  `db:"created_at"`
+}
+
+type storyFeedbackLinkRow struct {
+	ID            uuid.UUID `db:"id"`
+	WorkspaceID   uuid.UUID `db:"workspace_id"`
+	ItemID        uuid.UUID `db:"item_id"`
+	StoryID       uuid.UUID `db:"story_id"`
+	TeamID        uuid.UUID `db:"team_id"`
+	FeedbackTitle string    `db:"feedback_title"`
+	Relationship  string    `db:"relationship"`
+	IsPrimary     bool      `db:"is_primary"`
+	CreatedAt     time.Time `db:"created_at"`
+}
+
+type teamSummaryRow struct {
+	TeamID      uuid.UUID `db:"team_id"`
+	Enabled     bool      `db:"enabled"`
+	TotalCount  int       `db:"total_count"`
+	UnreadCount int       `db:"unread_count"`
 }
 
 const feedbackItemSearchVector = "to_tsvector('english', fi.title || ' ' || fi.description || ' ' || fi.slug)"
@@ -295,6 +317,11 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 		params["workspace_id"] = input.WorkspaceID
 		params["team_id"] = *input.TeamID
 	}
+	selectQuery := itemSelectQuery()
+	if input.ViewerID != uuid.Nil {
+		selectQuery = itemSelectQueryForViewer(":viewer_id")
+		params["viewer_id"] = input.ViewerID
+	}
 	switch input.Status {
 	case "", "all":
 	case "active":
@@ -320,7 +347,7 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 	case "top":
 		orderBy = "vote_count DESC, fi.created_at DESC"
 	}
-	query := fmt.Sprintf("%s WHERE %s ORDER BY %s LIMIT :limit OFFSET :offset", itemSelectQuery(), strings.Join(where, " AND "), orderBy)
+	query := fmt.Sprintf("%s WHERE %s ORDER BY %s LIMIT :limit OFFSET :offset", selectQuery, strings.Join(where, " AND "), orderBy)
 	return query, params
 }
 
@@ -388,16 +415,39 @@ func (r *Repo) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]feedba
 func (r *Repo) ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]feedback.CoreStoryLink, error) {
 	var rows []storyLinkRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT id, workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id, created_at
-		FROM feedback_story_links
-		WHERE workspace_id = $1 AND item_id = $2
-		ORDER BY is_primary DESC, created_at ASC
+		SELECT fsl.id, fsl.workspace_id, fsl.item_id, fsl.story_id, s.title AS story_title,
+			fsl.relationship, fsl.is_primary, fsl.created_by_user_id, fsl.created_at
+		FROM feedback_story_links fsl
+		INNER JOIN stories s ON s.id = fsl.story_id AND s.workspace_id = fsl.workspace_id
+		WHERE fsl.workspace_id = $1 AND fsl.item_id = $2
+		ORDER BY fsl.is_primary DESC, fsl.created_at ASC
 	`, workspaceID, itemID); err != nil {
 		return nil, err
 	}
 	result := make([]feedback.CoreStoryLink, 0, len(rows))
 	for _, row := range rows {
 		result = append(result, toCoreStoryLink(row))
+	}
+	return result, nil
+}
+
+func (r *Repo) ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]feedback.CoreStoryFeedbackLink, error) {
+	var rows []storyFeedbackLinkRow
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT fsl.id, fsl.workspace_id, fsl.item_id, fsl.story_id,
+			fb.team_id, fi.title AS feedback_title,
+			fsl.relationship, fsl.is_primary, fsl.created_at
+		FROM feedback_story_links fsl
+		INNER JOIN feedback_items fi ON fi.id = fsl.item_id AND fi.workspace_id = fsl.workspace_id
+		INNER JOIN feedback_boards fb ON fb.id = fi.board_id AND fb.workspace_id = fsl.workspace_id
+		WHERE fsl.workspace_id = $1 AND fsl.story_id = $2 AND fsl.is_primary = true
+		ORDER BY fsl.created_at ASC
+	`, workspaceID, storyID); err != nil {
+		return nil, err
+	}
+	result := make([]feedback.CoreStoryFeedbackLink, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, toCoreStoryFeedbackLink(row))
 	}
 	return result, nil
 }
@@ -411,6 +461,77 @@ func (r *Repo) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (feed
 		return feedback.CoreItem{}, err
 	}
 	return toCoreItem(row), nil
+}
+
+func (r *Repo) GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error) {
+	var readAt time.Time
+	if err := r.db.GetContext(ctx, &readAt, `
+		SELECT fir.read_at
+		FROM feedback_item_reads fir
+		INNER JOIN feedback_items fi ON fi.id = fir.item_id
+		WHERE fi.workspace_id = $1 AND fir.item_id = $2 AND fir.user_id = $3
+	`, workspaceID, itemID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &readAt, nil
+}
+
+func (r *Repo) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]feedback.CoreTeamSummary, error) {
+	var rows []teamSummaryRow
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT fb.team_id,
+			true AS enabled,
+			COUNT(fi.id)::int AS total_count,
+			COUNT(fi.id) FILTER (WHERE fi.id IS NOT NULL AND fir.item_id IS NULL)::int AS unread_count
+		FROM feedback_boards fb
+		INNER JOIN team_members tm ON tm.team_id = fb.team_id AND tm.user_id = $2
+		LEFT JOIN feedback_items fi ON fi.board_id = fb.id AND fi.workspace_id = fb.workspace_id
+		LEFT JOIN feedback_item_reads fir ON fir.item_id = fi.id AND fir.user_id = $2
+		WHERE fb.workspace_id = $1
+		GROUP BY fb.team_id
+		ORDER BY fb.team_id
+	`, workspaceID, userID); err != nil {
+		return nil, err
+	}
+	result := make([]feedback.CoreTeamSummary, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, feedback.CoreTeamSummary{
+			TeamID:      row.TeamID,
+			Enabled:     row.Enabled,
+			TotalCount:  row.TotalCount,
+			UnreadCount: row.UnreadCount,
+		})
+	}
+	return result, nil
+}
+
+func (r *Repo) MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (time.Time, error) {
+	var readAt time.Time
+	if err := r.db.GetContext(ctx, &readAt, `
+		INSERT INTO feedback_item_reads (item_id, user_id)
+		SELECT fi.id, $3
+		FROM feedback_items fi
+		WHERE fi.workspace_id = $1 AND fi.id = $2
+		ON CONFLICT (item_id, user_id)
+		DO UPDATE SET read_at = feedback_item_reads.read_at
+		RETURNING read_at
+	`, workspaceID, itemID, userID); err != nil {
+		return time.Time{}, err
+	}
+	return readAt, nil
+}
+
+func (r *Repo) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM feedback_item_reads fir
+		USING feedback_items fi
+		WHERE fi.id = fir.item_id AND fi.workspace_id = $1
+			AND fir.item_id = $2 AND fir.user_id = $3
+	`, workspaceID, itemID, userID)
+	return err
 }
 
 func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (feedback.CoreItem, error) {
@@ -635,6 +756,18 @@ func (r *Repo) GetStatusCategory(ctx context.Context, teamID, statusID uuid.UUID
 }
 
 func itemSelectQuery() string {
+	return itemSelectQueryForViewer("")
+}
+
+func itemSelectQueryForViewer(viewerReference string) string {
+	readAtSelect := "CAST(NULL AS timestamptz) AS read_at"
+	readJoin := ""
+	if viewerReference != "" {
+		readAtSelect = "feedback_read.read_at"
+		readJoin = `
+		LEFT JOIN feedback_item_reads feedback_read
+			ON feedback_read.item_id = fi.id AND feedback_read.user_id = ` + viewerReference
+	}
 	return `
 		SELECT fi.id, fi.workspace_id, fi.portal_id, fi.board_id, fi.author_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
@@ -651,6 +784,8 @@ func itemSelectQuery() string {
 			primary_link.relationship AS primary_relationship,
 			primary_link.created_by_user_id AS primary_created_by_user_id,
 			primary_link.created_at AS primary_created_at,
+			projected_story.title AS primary_story_title,
+			` + readAtSelect + `,
 			fi.created_at, fi.updated_at
 		FROM feedback_items fi
 		LEFT JOIN users u ON u.user_id = fi.author_id
@@ -663,6 +798,7 @@ func itemSelectQuery() string {
 		) primary_link ON true
 		LEFT JOIN stories projected_story ON projected_story.id = primary_link.story_id
 		LEFT JOIN statuses projected_state ON projected_state.status_id = projected_story.status_id
+		` + readJoin + `
 	`
 }
 
@@ -714,6 +850,7 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 		VoteCount:      row.VoteCount,
 		CommentCount:   row.CommentCount,
 		RoadmapSummary: row.RoadmapSummary,
+		ReadAt:         row.ReadAt,
 		Board: feedback.CoreBoard{
 			ID:          row.BoardID,
 			WorkspaceID: row.WorkspaceID,
@@ -739,6 +876,7 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 			WorkspaceID:     row.WorkspaceID,
 			ItemID:          row.ID,
 			StoryID:         *row.PrimaryStoryID,
+			StoryTitle:      pointerValue(row.PrimaryStoryTitle),
 			Relationship:    *row.PrimaryRelation,
 			IsPrimary:       true,
 			CreatedByUserID: createdBy,
@@ -776,9 +914,32 @@ func toCoreStoryLink(row storyLinkRow) feedback.CoreStoryLink {
 		WorkspaceID:     row.WorkspaceID,
 		ItemID:          row.ItemID,
 		StoryID:         row.StoryID,
+		StoryTitle:      row.StoryTitle,
 		Relationship:    row.Relationship,
 		IsPrimary:       row.IsPrimary,
 		CreatedByUserID: createdBy,
 		CreatedAt:       row.CreatedAt,
 	}
+}
+
+func toCoreStoryFeedbackLink(row storyFeedbackLinkRow) feedback.CoreStoryFeedbackLink {
+	return feedback.CoreStoryFeedbackLink{
+		ID:            row.ID,
+		WorkspaceID:   row.WorkspaceID,
+		ItemID:        row.ItemID,
+		StoryID:       row.StoryID,
+		TeamID:        row.TeamID,
+		FeedbackTitle: row.FeedbackTitle,
+		Relationship:  row.Relationship,
+		IsPrimary:     row.IsPrimary,
+		CreatedAt:     row.CreatedAt,
+	}
+}
+
+func pointerValue[T any](value *T) T {
+	if value == nil {
+		var zero T
+		return zero
+	}
+	return *value
 }

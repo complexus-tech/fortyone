@@ -173,14 +173,43 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UU
 }
 
 func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter integrationrequests.CoreListRequestsFilter) ([]integrationrequests.CoreIntegrationRequest, error) {
+	query, args := teamRequestFilterQuery(workspaceID, teamID, filter)
+	query = `SELECT * ` + query + ` ORDER BY created_at DESC`
+	if filter.PageSize > 0 {
+		page := filter.Page
+		if page <= 0 {
+			page = 1
+		}
+		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
+		query += ` LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
+	}
+
+	var rows []requestRow
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+	result := make([]integrationrequests.CoreIntegrationRequest, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, toCore(row))
+	}
+	return result, nil
+}
+
+func (r *Repo) CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter integrationrequests.CoreListRequestsFilter) (int, error) {
+	query, args := teamRequestFilterQuery(workspaceID, teamID, filter)
+	var count int
+	if err := r.db.GetContext(ctx, &count, `SELECT COUNT(*) `+query, args...); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func teamRequestFilterQuery(workspaceID, teamID uuid.UUID, filter integrationrequests.CoreListRequestsFilter) (string, []any) {
 	status := filter.Status
 	if status == "" {
 		status = integrationrequests.StatusPending
 	}
-	var rows []requestRow
-	query := `
-		SELECT *
-		FROM integration_requests
+	query := `FROM integration_requests
 		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
 	`
 	args := []any{workspaceID, teamID, status}
@@ -204,24 +233,7 @@ func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, fi
 		args = append(args, *filter.CreatedBefore)
 		query += ` AND created_at <= $` + strconv.Itoa(len(args))
 	}
-	query += ` ORDER BY created_at DESC`
-	if filter.PageSize > 0 {
-		page := filter.Page
-		if page <= 0 {
-			page = 1
-		}
-		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
-		query += ` LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
-	}
-	err := r.db.SelectContext(ctx, &rows, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]integrationrequests.CoreIntegrationRequest, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, toCore(row))
-	}
-	return result, nil
+	return query, args
 }
 
 func (r *Repo) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error) {

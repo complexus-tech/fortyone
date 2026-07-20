@@ -38,10 +38,30 @@ export type TeamFeedbackStoryLink = {
   workspaceId: string;
   itemId: string;
   storyId: string;
+  storyTitle?: string | null;
   relationship: "created_from" | "linked" | "solves";
   isPrimary: boolean;
   createdByUserId: string;
   createdAt: string;
+};
+
+export type StoryFeedbackLink = {
+  id: string;
+  workspaceId: string;
+  itemId: string;
+  storyId: string;
+  teamId: string;
+  feedbackTitle: string;
+  relationship: "created_from" | "linked" | "solves";
+  isPrimary: boolean;
+  createdAt: string;
+};
+
+export type TeamFeedbackSummary = {
+  teamId: string;
+  enabled: boolean;
+  totalCount: number;
+  unreadCount: number;
 };
 
 export type TeamFeedbackItem = {
@@ -58,6 +78,7 @@ export type TeamFeedbackItem = {
   status: TeamFeedbackStatus;
   voteCount: number;
   commentCount: number;
+  readAt?: string | null;
   roadmapSummary?: string | null;
   createdAt: string;
   updatedAt: string;

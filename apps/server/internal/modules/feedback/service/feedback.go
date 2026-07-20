@@ -178,10 +178,11 @@ func (s *Service) ListItems(ctx context.Context, input CoreListItemsInput) (Core
 	return s.repo.ListItems(ctx, input)
 }
 
-func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID uuid.UUID, status string, page, pageSize int) (CoreItemsPage, error) {
+func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewerID uuid.UUID, status string, page, pageSize int) (CoreItemsPage, error) {
 	return s.ListItems(ctx, CoreListItemsInput{
 		WorkspaceID: workspaceID,
 		TeamID:      &teamID,
+		ViewerID:    viewerID,
 		Status:      status,
 		Sort:        "newest",
 		Page:        page,
@@ -189,11 +190,15 @@ func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID uuid.UU
 	})
 }
 
-func (s *Service) GetItemDetails(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItemDetails, error) {
-	if workspaceID == uuid.Nil || itemID == uuid.Nil {
-		return CoreItemDetails{}, invalidInput("workspace id and feedback id are required")
+func (s *Service) GetItemDetails(ctx context.Context, workspaceID, itemID, viewerID uuid.UUID) (CoreItemDetails, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil || viewerID == uuid.Nil {
+		return CoreItemDetails{}, invalidInput("workspace, feedback, and viewer ids are required")
 	}
 	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItemDetails{}, err
+	}
+	item.ReadAt, err = s.repo.GetItemReadAt(ctx, workspaceID, itemID, viewerID)
 	if err != nil {
 		return CoreItemDetails{}, err
 	}
@@ -206,6 +211,38 @@ func (s *Service) GetItemDetails(ctx context.Context, workspaceID, itemID uuid.U
 		return CoreItemDetails{}, err
 	}
 	return CoreItemDetails{Item: item, Comments: comments, StoryLinks: links}, nil
+}
+
+func (s *Service) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreTeamSummary, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil {
+		return nil, invalidInput("workspace and user ids are required")
+	}
+	return s.repo.ListTeamSummaries(ctx, workspaceID, userID)
+}
+
+func (s *Service) MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil || userID == uuid.Nil {
+		return nil, invalidInput("workspace, feedback, and user ids are required")
+	}
+	readAt, err := s.repo.MarkItemRead(ctx, workspaceID, itemID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &readAt, nil
+}
+
+func (s *Service) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil || userID == uuid.Nil {
+		return invalidInput("workspace, feedback, and user ids are required")
+	}
+	return s.repo.MarkItemUnread(ctx, workspaceID, itemID, userID)
+}
+
+func (s *Service) ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]CoreStoryFeedbackLink, error) {
+	if workspaceID == uuid.Nil || storyID == uuid.Nil {
+		return nil, invalidInput("workspace and story ids are required")
+	}
+	return s.repo.ListStoryFeedbackLinks(ctx, workspaceID, storyID)
 }
 
 func (s *Service) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {

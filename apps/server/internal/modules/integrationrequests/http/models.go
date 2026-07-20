@@ -54,10 +54,11 @@ type AppBulkRequestResult struct {
 }
 
 type AppPagination struct {
-	Page     int  `json:"page"`
-	PageSize int  `json:"pageSize"`
-	HasMore  bool `json:"hasMore"`
-	NextPage int  `json:"nextPage"`
+	Page       int  `json:"page"`
+	PageSize   int  `json:"pageSize"`
+	TotalCount int  `json:"totalCount"`
+	HasMore    bool `json:"hasMore"`
+	NextPage   int  `json:"nextPage"`
 }
 
 type AppIntegrationRequestsResponse struct {
@@ -109,14 +110,15 @@ func toAppRequests(core []integrationrequests.CoreIntegrationRequest) []AppInteg
 	return result
 }
 
-func toAppRequestsResponse(core []integrationrequests.CoreIntegrationRequest, page, pageSize int, hasMore bool) AppIntegrationRequestsResponse {
+func toAppRequestsResponse(core []integrationrequests.CoreIntegrationRequest, page, pageSize, totalCount int, hasMore bool) AppIntegrationRequestsResponse {
 	return AppIntegrationRequestsResponse{
 		Requests: toAppRequests(core),
 		Pagination: AppPagination{
-			Page:     page,
-			PageSize: pageSize,
-			HasMore:  hasMore,
-			NextPage: page + 1,
+			Page:       page,
+			PageSize:   pageSize,
+			TotalCount: totalCount,
+			HasMore:    hasMore,
+			NextPage:   page + 1,
 		},
 	}
 }

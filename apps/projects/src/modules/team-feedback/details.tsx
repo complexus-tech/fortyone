@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,6 +15,8 @@ import {
   CommentIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  NotificationsCheckIcon,
+  NotificationsUnreadIcon,
   RequestsIcon,
   StoryIcon,
   ThumbsUpIcon,
@@ -33,7 +35,7 @@ import {
   TimeAgo,
 } from "ui";
 import { BodyContainer } from "@/components/shared";
-import { ConfirmDialog } from "@/components/ui";
+import { ConfirmDialog, Dot } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { Option } from "@/modules/story/components/options";
@@ -43,10 +45,11 @@ import {
 } from "@/modules/story/components/story-comment-editor";
 import { useCreateTeamFeedbackComment } from "./hooks/use-create-comment";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
+import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
 import { useTeamFeedbackItem } from "./hooks/use-feedback";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
 import { LinkFeedbackStoryDialog } from "./link-story-dialog";
-import { FeedbackStatusPill } from "./status";
+import { FeedbackStatus } from "./status";
 import type {
   TeamFeedbackComment,
   TeamFeedbackItem,
@@ -86,24 +89,34 @@ const statusBannerCopy: Record<
 const FeedbackBanner = ({
   feedback,
   isPlanning,
+  isUpdatingReadState,
   onClose,
   onLink,
   onOpenStory,
   onPlan,
+  onReadStateChange,
   onReview,
 }: {
   feedback: TeamFeedbackItem;
   isPlanning: boolean;
+  isUpdatingReadState: boolean;
   onClose: () => void;
   onLink: () => void;
   onOpenStory: () => void;
   onPlan: () => void;
+  onReadStateChange: (isRead: boolean) => void;
   onReview: () => void;
 }) => {
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isLinked = Boolean(linkedStory);
   const canPlan = !isLinked && feedback.status !== "closed";
   const copy = statusBannerCopy[feedback.status];
+  const primaryCopy = linkedStory
+    ? "Feedback is linked to a story"
+    : copy.primary;
+  const secondaryCopy = linkedStory
+    ? linkedStory.storyTitle || "Open linked story"
+    : copy.secondary;
 
   return (
     <Box className="mb-6">
@@ -114,52 +127,89 @@ const FeedbackBanner = ({
         justify="between"
       >
         <Flex align="center" className="min-w-0" gap={3}>
-          <RequestsIcon className="text-primary h-5 shrink-0" />
-          <Box className="min-w-0">
-            <Text className="line-clamp-1" color="primary" fontWeight="medium">
-              {copy.primary}
-            </Text>
-            <Text className="line-clamp-1 text-[0.92rem]" color="muted">
-              {copy.secondary}
-            </Text>
-          </Box>
+          {linkedStory ? (
+            <StoryIcon className="text-primary h-5 shrink-0" />
+          ) : (
+            <RequestsIcon className="text-primary h-5 shrink-0" />
+          )}
+          {linkedStory ? (
+            <button
+              className="min-w-0 text-left"
+              onClick={onOpenStory}
+              type="button"
+            >
+              <Text
+                className="line-clamp-1"
+                color="primary"
+                fontWeight="medium"
+              >
+                {primaryCopy}
+              </Text>
+              <Text className="line-clamp-1 text-[0.92rem]" color="muted">
+                {secondaryCopy}
+              </Text>
+            </button>
+          ) : (
+            <Box className="min-w-0">
+              <Text
+                className="line-clamp-1"
+                color="primary"
+                fontWeight="medium"
+              >
+                {primaryCopy}
+              </Text>
+              <Text className="line-clamp-1 text-[0.92rem]" color="muted">
+                {secondaryCopy}
+              </Text>
+            </Box>
+          )}
         </Flex>
-        <Flex align="center" className="shrink-0" gap={2}>
-          <Button
-            color="primary"
-            disabled={!canPlan}
-            leftIcon={<CheckIcon className="h-4 w-auto" />}
-            loading={isPlanning}
-            loadingText="Planning..."
-            onClick={onPlan}
-            size="sm"
-          >
-            Plan feedback
-          </Button>
+        <Flex align="center" className="shrink-0" gap={1}>
+          {linkedStory ? (
+            <button
+              aria-label="Open linked story"
+              className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+              onClick={onOpenStory}
+              type="button"
+            >
+              <LinkIcon className="text-current" />
+            </button>
+          ) : null}
           <Menu>
             <Menu.Button>
-              <Button
+              <button
                 aria-label="More feedback actions"
-                asIcon
-                color="tertiary"
-                leftIcon={<MoreHorizontalIcon className="h-5" />}
-                size="sm"
-                variant="naked"
-              />
+                className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+                type="button"
+              >
+                <MoreHorizontalIcon className="h-5 text-current" />
+              </button>
             </Menu.Button>
             <Menu.Items align="end">
-              {linkedStory ? (
-                <>
-                  <Menu.Group>
-                    <Menu.Item onSelect={onOpenStory}>
-                      <StoryIcon className="h-5 w-auto" />
-                      Open linked story
-                    </Menu.Item>
-                  </Menu.Group>
-                  <Menu.Separator />
-                </>
-              ) : null}
               <Menu.Group>
+                <Menu.Item
+                  disabled={isUpdatingReadState}
+                  onSelect={() => {
+                    onReadStateChange(!feedback.readAt);
+                  }}
+                >
+                  {feedback.readAt ? (
+                    <NotificationsUnreadIcon />
+                  ) : (
+                    <NotificationsCheckIcon />
+                  )}
+                  {feedback.readAt ? "Mark as unread" : "Mark as read"}
+                </Menu.Item>
+                <Menu.Item disabled={!canPlan || isPlanning} onSelect={onPlan}>
+                  <CheckIcon className="h-5 w-auto" />
+                  {isPlanning ? "Planning feedback..." : "Plan feedback"}
+                </Menu.Item>
+                {linkedStory ? (
+                  <Menu.Item onSelect={onOpenStory}>
+                    <StoryIcon className="h-5 w-auto" />
+                    Open linked story
+                  </Menu.Item>
+                ) : null}
                 <Menu.Item
                   disabled={
                     isLinked ||
@@ -178,6 +228,9 @@ const FeedbackBanner = ({
                   <LinkIcon className="h-5 w-auto" />
                   Link existing story
                 </Menu.Item>
+              </Menu.Group>
+              <Menu.Separator />
+              <Menu.Group>
                 <Menu.Item
                   className="text-danger"
                   disabled={isLinked || feedback.status === "closed"}
@@ -263,34 +316,36 @@ const FeedbackCommentComposer = ({ feedbackId }: { feedbackId: string }) => {
           src={session?.user.image ?? undefined}
         />
       </Box>
-      <Flex
-        className="border-border/40 bg-surface-muted/40 min-h-24 min-w-0 flex-1 rounded-2xl border px-4 pb-4"
-        direction="column"
-        gap={2}
-        justify="between"
-      >
-        <TextEditor
-          aria-label="Comment"
-          className="prose-base prose-a:text-foreground leading-6 antialiased"
-          editor={editor}
-        />
-        <Flex align="center" gap={3} justify="between">
-          <Text className="text-[0.82rem]" color="muted">
-            Visible on the feedback portal
-          </Text>
-          <Button
-            color="tertiary"
-            disabled={createComment.isPending}
-            loading={createComment.isPending}
-            loadingText="Commenting..."
-            onClick={handleSubmit}
-            size="sm"
-            variant="outline"
-          >
-            Comment
-          </Button>
+      <Box className="min-w-0 flex-1">
+        <Flex
+          className="border-border/40 bg-surface-muted/40 min-h-24 rounded-2xl border px-4 pb-4"
+          direction="column"
+          gap={2}
+          justify="between"
+        >
+          <TextEditor
+            aria-label="Comment"
+            className="prose-base prose-a:text-foreground leading-6 antialiased"
+            editor={editor}
+          />
+          <Flex justify="end">
+            <Button
+              color="tertiary"
+              disabled={createComment.isPending}
+              loading={createComment.isPending}
+              loadingText="Commenting..."
+              onClick={handleSubmit}
+              size="sm"
+              variant="outline"
+            >
+              Comment
+            </Button>
+          </Flex>
         </Flex>
-      </Flex>
+        <Text className="mt-1.5 text-[0.95rem]" color="muted">
+          Comments are visible on the feedback portal.
+        </Text>
+      </Box>
     </Flex>
   );
 };
@@ -330,26 +385,26 @@ const FeedbackProperties = ({
       ) : null}
       <Box className={isInline ? "flex flex-wrap gap-2" : undefined}>
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Status"
-          value={<FeedbackStatusPill status={feedback.status} />}
+          value={<FeedbackStatus status={feedback.status} />}
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Board"
           value={
             <MetadataValue>
-              <span
-                className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: feedback.board.color }}
-              />
+              <Dot className="size-3" color={feedback.board.color} />
               <Text className="line-clamp-1">{feedback.board.name}</Text>
             </MetadataValue>
           }
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Author"
@@ -365,6 +420,7 @@ const FeedbackProperties = ({
           }
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Votes"
@@ -379,6 +435,7 @@ const FeedbackProperties = ({
           }
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Comments"
@@ -393,6 +450,7 @@ const FeedbackProperties = ({
           }
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Submitted"
@@ -406,6 +464,7 @@ const FeedbackProperties = ({
           }
         />
         <Option
+          className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
           label="Linked story"
@@ -419,7 +478,9 @@ const FeedbackProperties = ({
                 size="sm"
                 variant="naked"
               >
-                <span className="truncate">Open story</span>
+                <span className="truncate">
+                  {linkedStory.storyTitle || "Open story"}
+                </span>
               </Button>
             ) : (
               <Text color="muted">Not linked</Text>
@@ -429,7 +490,7 @@ const FeedbackProperties = ({
       </Box>
       {!isInline && feedback.roadmapSummary ? (
         <Option
-          className="items-start"
+          className="my-5 items-start md:my-6"
           isNotifications={false}
           label="Roadmap note"
           value={
@@ -474,9 +535,25 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     refetch,
   } = useTeamFeedbackItem(feedbackId);
   const planFeedback = usePlanTeamFeedback();
+  const { isPending: isUpdatingReadState, mutate: setReadState } =
+    useSetTeamFeedbackReadState();
   const updateStatus = useUpdateTeamFeedbackStatus();
+  const lastAutoReadFeedbackId = useRef<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
+
+  useEffect(() => {
+    if (
+      !feedback ||
+      feedback.readAt ||
+      lastAutoReadFeedbackId.current === feedback.id
+    ) {
+      return;
+    }
+
+    lastAutoReadFeedbackId.current = feedback.id;
+    setReadState({ feedbackId: feedback.id, isRead: true });
+  }, [feedback, setReadState]);
 
   if (isPending) return <FeedbackDetailsSkeleton />;
 
@@ -564,6 +641,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
               <FeedbackBanner
                 feedback={feedback}
                 isPlanning={planFeedback.isPending}
+                isUpdatingReadState={isUpdatingReadState}
                 onClose={() => {
                   setIsClosing(true);
                 }}
@@ -574,6 +652,9 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   if (linkedStory) openStory(linkedStory.storyId);
                 }}
                 onPlan={handlePlan}
+                onReadStateChange={(isRead) => {
+                  setReadState({ feedbackId: feedback.id, isRead });
+                }}
                 onReview={handleReview}
               />
               <Text
@@ -612,23 +693,20 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   Activity feed
                 </Text>
                 <FeedbackCommentComposer feedbackId={feedback.id} />
-                {feedback.comments.length > 0 ? (
-                  feedback.comments.map((comment) => (
-                    <CommentRow comment={comment} key={comment.id} />
-                  ))
-                ) : (
-                  <Flex align="center" className="py-2" gap={2}>
-                    <Avatar
-                      name={feedback.authorName}
-                      size="xs"
-                      src={feedback.authorAvatar ?? undefined}
-                    />
-                    <Text color="muted">
-                      {feedback.authorName} submitted this feedback{" "}
-                      <TimeAgo timestamp={feedback.createdAt} />
-                    </Text>
-                  </Flex>
-                )}
+                <Flex align="center" className="mb-5 py-1" gap={2}>
+                  <Avatar
+                    name={feedback.authorName}
+                    size="xs"
+                    src={feedback.authorAvatar ?? undefined}
+                  />
+                  <Text color="muted">
+                    {feedback.authorName} submitted this feedback{" "}
+                    <TimeAgo timestamp={feedback.createdAt} />
+                  </Text>
+                </Flex>
+                {feedback.comments.map((comment) => (
+                  <CommentRow comment={comment} key={comment.id} />
+                ))}
               </Box>
             </Container>
           </BodyContainer>

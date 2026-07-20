@@ -69,6 +69,9 @@ export const useCreateFeedbackBoardMutation = () => {
       void queryClient.invalidateQueries({
         queryKey: feedbackKeys.portals(workspaceSlug),
       });
+      void queryClient.invalidateQueries({
+        queryKey: feedbackKeys.teamSummaries(workspaceSlug),
+      });
     },
     onError: (error) => {
       toast.error("Failed to create board", {

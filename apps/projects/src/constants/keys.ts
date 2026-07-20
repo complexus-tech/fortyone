@@ -189,6 +189,8 @@ export const feedbackKeys = {
   all: (workspaceSlug: string) => ["feedback", workspaceSlug] as const,
   portals: (workspaceSlug: string) =>
     [...feedbackKeys.all(workspaceSlug), "portals"] as const,
+  teamSummaries: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "team-summaries"] as const,
   lists: (workspaceSlug: string) =>
     [...feedbackKeys.all(workspaceSlug), "list"] as const,
   team: (workspaceSlug: string, teamId: string, status = "active") =>
@@ -197,4 +199,6 @@ export const feedbackKeys = {
     [...feedbackKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, feedbackId: string) =>
     [...feedbackKeys.details(workspaceSlug), feedbackId] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    [...feedbackKeys.all(workspaceSlug), "story-links", storyId] as const,
 };

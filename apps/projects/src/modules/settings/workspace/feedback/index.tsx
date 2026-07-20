@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { cn } from "lib";
 import { LinkIcon, PlusIcon, TeamIcon } from "icons";
 import { Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -48,19 +49,23 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
   const [isPublic, setIsPublic] = useState(portal.isPublic);
   const mutation = useUpdateFeedbackPortalMutation();
 
-  useEffect(() => {
-    setIsPublic(portal.isPublic);
-  }, [portal.isPublic]);
+  const updateAvailability = async (checked: boolean) => {
+    const previousValue = isPublic;
+    setIsPublic(checked);
 
-  const hasChanges = isPublic !== portal.isPublic;
-
-  const submit = async () => {
-    await mutation.mutateAsync({
-      portalId: portal.id,
-      input: {
-        isPublic,
-      },
-    });
+    try {
+      const response = await mutation.mutateAsync({
+        portalId: portal.id,
+        input: {
+          isPublic: checked,
+        },
+      });
+      if (response.error?.message) {
+        setIsPublic(previousValue);
+      }
+    } catch {
+      setIsPublic(previousValue);
+    }
   };
 
   return (
@@ -82,21 +87,11 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
           <Switch
             aria-label="Enable public feedback portal"
             checked={isPublic}
+            disabled={mutation.isPending}
             onCheckedChange={(checked) => {
-              setIsPublic(checked);
+              void updateAvailability(checked);
             }}
           />
-        </Flex>
-        <Flex justify="end">
-          <Button
-            color="primary"
-            disabled={!hasChanges || mutation.isPending}
-            onClick={() => {
-              void submit();
-            }}
-          >
-            Save Changes
-          </Button>
         </Flex>
       </Box>
     </Box>
@@ -172,13 +167,24 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
           <Flex className="flex-wrap gap-2">
             {colorOptions.map((option) => (
               <button
-                className="bg-surface-muted hover:bg-state-hover rounded-full px-3 py-2 text-sm"
+                aria-pressed={color === option.value}
+                className={cn(
+                  "bg-surface-muted hover:bg-state-hover flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition",
+                  color === option.value
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-transparent",
+                )}
                 key={option.value}
                 onClick={() => {
                   setColor(option.value);
                 }}
                 type="button"
               >
+                <Box
+                  aria-hidden="true"
+                  className="size-3 rounded-sm"
+                  style={{ backgroundColor: option.value }}
+                />
                 {option.label}
               </button>
             ))}
@@ -218,10 +224,7 @@ export const FeedbackSettings = () => {
   const { data: teams = [] } = useTeams();
   const primaryPortal = portals.at(0);
 
-  const teamsById = useMemo(
-    () => new Map(teams.map((team) => [team.id, team])),
-    [teams],
-  );
+  const teamsById = new Map(teams.map((team) => [team.id, team]));
 
   const boards = portals.flatMap((portal) =>
     portal.boards.map((board) => ({
@@ -246,7 +249,12 @@ export const FeedbackSettings = () => {
         submission to the team responsible for it.
       </Text>
 
-      {primaryPortal ? <PortalConfiguration portal={primaryPortal} /> : null}
+      {primaryPortal ? (
+        <PortalConfiguration
+          key={`${primaryPortal.id}:${primaryPortal.isPublic}`}
+          portal={primaryPortal}
+        />
+      ) : null}
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader

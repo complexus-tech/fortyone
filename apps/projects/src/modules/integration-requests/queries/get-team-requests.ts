@@ -25,6 +25,7 @@ const emptyRequestsPage = (
   pagination: {
     page,
     pageSize,
+    totalCount: 0,
     hasMore: false,
     nextPage: page + 1,
   },
@@ -62,6 +63,5 @@ export const getTeamIntegrationRequests = async (
   ctx: WorkspaceCtx,
   status: IntegrationRequestStatus = "pending",
 ) => {
-  const page = await getTeamIntegrationRequestsPage(teamId, ctx, status);
-  return page.requests;
+  return getTeamIntegrationRequestsPage(teamId, ctx, status);
 };

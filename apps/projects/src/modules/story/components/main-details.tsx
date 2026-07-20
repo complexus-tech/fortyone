@@ -27,6 +27,7 @@ import type { DetailedStory } from "../types";
 import { Activities } from "./activities";
 import { Associations } from "./associations";
 import { Attachments } from "./attachments";
+import { FeedbackSection } from "./feedback-section";
 import { GitHubSection } from "./github-section";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
@@ -203,6 +204,7 @@ export const MainDetails = ({
           </Box>
         ) : null}
         <GitHubSection.Banner storyId={storyId} />
+        <FeedbackSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
           className="text-foreground relative -left-px text-3xl font-semibold md:text-4xl"

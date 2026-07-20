@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Dialog, Flex, Input, Skeleton, Text } from "ui";
 import { SearchIcon } from "icons";
 import { useDebouncedCallback } from "@/hooks/debounce";
+import { Dot } from "@/components/ui";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
@@ -12,7 +13,7 @@ const SEARCH_PAGE_SIZE = 8;
 
 const StorySearchSkeleton = () => (
   <Flex align="center" className="px-2 py-2.5" gap={3}>
-    <Skeleton className="size-3.5 shrink-0 rounded-full" />
+    <Skeleton className="size-3.5 shrink-0 rounded-sm" />
     <Skeleton className="h-4 w-16 rounded" />
     <Skeleton className="h-4 w-52 max-w-[55%] rounded" />
   </Flex>
@@ -34,9 +35,7 @@ export const LinkFeedbackStoryDialog = ({
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { callback: updateSearchQuery, cancel: cancelSearchQuery } =
-    useDebouncedCallback<string>((value) => {
-      setSearchQuery(value.trim());
-    }, 300);
+    useDebouncedCallback<string>(setSearchQuery, 300);
   const { data, isFetching } = useSearch({
     pageSize: SEARCH_PAGE_SIZE,
     query: searchQuery,
@@ -113,12 +112,9 @@ export const LinkFeedbackStoryDialog = ({
               }}
               type="button"
             >
-              <span
-                aria-hidden="true"
-                className="bg-text-muted size-3.5 shrink-0 rounded-full"
-                style={{
-                  backgroundColor: statusColorById.get(story.statusId),
-                }}
+              <Dot
+                className="size-3.5"
+                color={statusColorById.get(story.statusId)}
               />
               <Text className="line-clamp-1 min-w-0">
                 <span className="text-text-muted mr-2">{identifier}</span>
@@ -155,7 +151,7 @@ export const LinkFeedbackStoryDialog = ({
               name="feedback-story-search"
               onChange={(event) => {
                 setQuery(event.target.value);
-                updateSearchQuery(event.target.value);
+                updateSearchQuery(event.target.value.trim());
               }}
               placeholder="Search stories…"
               type="search"

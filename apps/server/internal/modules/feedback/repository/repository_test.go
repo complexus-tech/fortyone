@@ -69,9 +69,11 @@ func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 func TestBuildListItemsQueryScopesTeamFeedbackAcrossBoards(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
+	viewerID := uuid.New()
 	query, params := buildListItemsQuery(feedback.CoreListItemsInput{
 		WorkspaceID: workspaceID,
 		TeamID:      &teamID,
+		ViewerID:    viewerID,
 		Status:      "active",
 		Sort:        "newest",
 		Page:        1,
@@ -80,10 +82,13 @@ func TestBuildListItemsQueryScopesTeamFeedbackAcrossBoards(t *testing.T) {
 
 	require.Contains(t, query, "fi.workspace_id = :workspace_id")
 	require.Contains(t, query, "fb.team_id = :team_id")
+	require.Contains(t, query, "feedback_read.user_id = :viewer_id")
+	require.Contains(t, query, "feedback_read.read_at")
 	require.Contains(t, query, projectedFeedbackStatus+" IN ('pending', 'reviewing')")
 	require.NotContains(t, query, "fi.portal_id = :portal_id")
 	require.Equal(t, workspaceID, params["workspace_id"])
 	require.Equal(t, teamID, params["team_id"])
+	require.Equal(t, viewerID, params["viewer_id"])
 }
 
 func TestProjectedFeedbackStatusCoversEveryStoryCategory(t *testing.T) {
@@ -109,21 +114,27 @@ func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
 	linkID := uuid.New()
 	storyID := uuid.New()
 	relationship := feedback.RelationshipCreatedFrom
+	storyTitle := "Repair the traffic signals"
+	readAt := time.Now().Add(-time.Minute)
 	createdAt := time.Now()
 
 	item := toCoreItem(itemRow{
-		ID:               itemID,
-		WorkspaceID:      workspaceID,
-		PrimaryLinkID:    &linkID,
-		PrimaryStoryID:   &storyID,
-		PrimaryRelation:  &relationship,
-		PrimaryCreatedAt: &createdAt,
+		ID:                itemID,
+		WorkspaceID:       workspaceID,
+		PrimaryLinkID:     &linkID,
+		PrimaryStoryID:    &storyID,
+		PrimaryStoryTitle: &storyTitle,
+		PrimaryRelation:   &relationship,
+		PrimaryCreatedAt:  &createdAt,
+		ReadAt:            &readAt,
 	})
 
 	require.Len(t, item.StoryLinks, 1)
 	require.Equal(t, linkID, item.StoryLinks[0].ID)
 	require.Equal(t, storyID, item.StoryLinks[0].StoryID)
+	require.Equal(t, storyTitle, item.StoryLinks[0].StoryTitle)
 	require.True(t, item.StoryLinks[0].IsPrimary)
+	require.Equal(t, readAt, *item.ReadAt)
 }
 
 func TestBuildListItemsQuerySortsFeedback(t *testing.T) {

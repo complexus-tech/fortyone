@@ -30,7 +30,7 @@ export const IntegrationRequestsHeader = ({
       <Flex align="center" className="gap-2">
         <MobileMenuButton />
         <RequestsIcon className="h-5 w-auto" />
-        <Text>Requests</Text>
+        <Text>Intake</Text>
       </Flex>
       <Flex align="center" gap={2}>
         <Menu>

@@ -48,6 +48,7 @@ type AppItem struct {
 	VoteCount      int            `json:"voteCount"`
 	CommentCount   int            `json:"commentCount"`
 	RoadmapSummary *string        `json:"roadmapSummary,omitempty"`
+	ReadAt         *time.Time     `json:"readAt"`
 	Board          *AppBoard      `json:"board,omitempty"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
@@ -72,10 +73,34 @@ type AppStoryLink struct {
 	WorkspaceID     uuid.UUID `json:"workspaceId"`
 	ItemID          uuid.UUID `json:"itemId"`
 	StoryID         uuid.UUID `json:"storyId"`
+	StoryTitle      string    `json:"storyTitle,omitempty"`
 	Relationship    string    `json:"relationship"`
 	IsPrimary       bool      `json:"isPrimary"`
 	CreatedByUserID uuid.UUID `json:"createdByUserId"`
 	CreatedAt       time.Time `json:"createdAt"`
+}
+
+type AppStoryFeedbackLink struct {
+	ID            uuid.UUID `json:"id"`
+	WorkspaceID   uuid.UUID `json:"workspaceId"`
+	ItemID        uuid.UUID `json:"itemId"`
+	StoryID       uuid.UUID `json:"storyId"`
+	TeamID        uuid.UUID `json:"teamId"`
+	FeedbackTitle string    `json:"feedbackTitle"`
+	Relationship  string    `json:"relationship"`
+	IsPrimary     bool      `json:"isPrimary"`
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
+type AppTeamFeedbackSummary struct {
+	TeamID      uuid.UUID `json:"teamId"`
+	Enabled     bool      `json:"enabled"`
+	TotalCount  int       `json:"totalCount"`
+	UnreadCount int       `json:"unreadCount"`
+}
+
+type AppFeedbackReadState struct {
+	ReadAt *time.Time `json:"readAt"`
 }
 
 type AppVoteResult struct {
@@ -191,6 +216,7 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		VoteCount:      core.VoteCount,
 		CommentCount:   core.CommentCount,
 		RoadmapSummary: core.RoadmapSummary,
+		ReadAt:         core.ReadAt,
 		CreatedAt:      core.CreatedAt,
 		UpdatedAt:      core.UpdatedAt,
 		Comments:       comments,
@@ -223,10 +249,25 @@ func toAppStoryLink(core feedback.CoreStoryLink) AppStoryLink {
 		WorkspaceID:     core.WorkspaceID,
 		ItemID:          core.ItemID,
 		StoryID:         core.StoryID,
+		StoryTitle:      core.StoryTitle,
 		Relationship:    core.Relationship,
 		IsPrimary:       core.IsPrimary,
 		CreatedByUserID: core.CreatedByUserID,
 		CreatedAt:       core.CreatedAt,
+	}
+}
+
+func toAppStoryFeedbackLink(core feedback.CoreStoryFeedbackLink) AppStoryFeedbackLink {
+	return AppStoryFeedbackLink{
+		ID:            core.ID,
+		WorkspaceID:   core.WorkspaceID,
+		ItemID:        core.ItemID,
+		StoryID:       core.StoryID,
+		TeamID:        core.TeamID,
+		FeedbackTitle: core.FeedbackTitle,
+		Relationship:  core.Relationship,
+		IsPrimary:     core.IsPrimary,
+		CreatedAt:     core.CreatedAt,
 	}
 }
 

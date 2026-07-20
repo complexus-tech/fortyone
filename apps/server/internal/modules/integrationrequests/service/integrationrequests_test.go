@@ -67,6 +67,13 @@ func (r *requestRepoStub) ListByTeam(ctx context.Context, workspaceID, teamID uu
 	return result, nil
 }
 
+func (r *requestRepoStub) CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) (int, error) {
+	filter.Page = 0
+	filter.PageSize = 0
+	requests, err := r.ListByTeam(ctx, workspaceID, teamID, filter)
+	return len(requests), err
+}
+
 func (r *requestRepoStub) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error) {
 	for _, request := range r.requests {
 		if request.WorkspaceID == workspaceID && request.ID == requestID {

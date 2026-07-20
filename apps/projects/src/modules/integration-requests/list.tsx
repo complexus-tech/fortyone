@@ -13,6 +13,7 @@ export const ListIntegrationRequests = () => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
     useTeamIntegrationRequestsInfinite(teamId);
   const requests = data?.pages.flatMap((page) => page.requests) ?? [];
+  const totalCount = data?.pages[0]?.pagination.totalCount ?? 0;
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
     rootMargin: "240px",
@@ -26,10 +27,7 @@ export const ListIntegrationRequests = () => {
 
   return (
     <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
-      <IntegrationRequestsHeader
-        requestCount={requests.length}
-        teamId={teamId}
-      />
+      <IntegrationRequestsHeader requestCount={totalCount} teamId={teamId} />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {isPending ? (
           <Box className="space-y-0">

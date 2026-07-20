@@ -24,6 +24,9 @@ func TestHTTPStatusClassifiesFeedbackErrors(t *testing.T) {
 	if status := httpStatus(feedback.ErrStoryManaged); status != http.StatusConflict {
 		t.Fatalf("story-managed status = %d, want %d", status, http.StatusConflict)
 	}
+	if status := httpStatus(feedback.ErrNotFound); status != http.StatusNotFound {
+		t.Fatalf("not found status = %d, want %d", status, http.StatusNotFound)
+	}
 	if status := httpStatus(errors.New("database unavailable")); status != http.StatusInternalServerError {
 		t.Fatalf("unexpected error status = %d, want %d", status, http.StatusInternalServerError)
 	}

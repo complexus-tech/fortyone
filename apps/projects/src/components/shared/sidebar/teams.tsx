@@ -1,19 +1,20 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
 import { MoreHorizontalIcon } from "icons";
-import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useSession } from "@/lib/auth/client";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
 import { TeamsMenu } from "@/components/ui/teams-menu";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { useAddMemberMutation } from "@/modules/teams/hooks/add-member-mutation";
 import { useReorderTeamsMutation } from "@/modules/teams/hooks/use-reorder-teams";
+import { useTeamFeedbackSummaries } from "@/modules/team-feedback/hooks/use-team-feedback-summaries";
 import { ConfirmDialog } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { Team } from "./team";
@@ -28,6 +29,7 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 
 export const Teams = () => {
   const { data: teams = [] } = useTeams();
+  const { data: feedbackSummaries = [] } = useTeamFeedbackSummaries();
   const { userRole } = useUserRole();
   const { data: session } = useSession();
   const [team, setTeam] = useState<TeamType | null>(null);
@@ -36,10 +38,13 @@ export const Teams = () => {
 
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { mutate: addMember } = useAddMemberMutation();
+  const feedbackSummaryByTeamId = new Map(
+    feedbackSummaries.map((summary) => [summary.teamId, summary]),
+  );
 
   const handleTeam = (teamId: string, action: "join" | "leave") => {
     if (action === "join") {
-      addMember({ teamId, memberId: session?.user?.id ?? "" });
+      addMember({ teamId, memberId: session?.user.id ?? "" });
     } else {
       const team = teams.find((t) => t.id === teamId);
       if (!team) return;
@@ -104,6 +109,7 @@ export const Teams = () => {
             {teams.map((team, idx) => (
               <Team
                 color={team.color}
+                feedbackSummary={feedbackSummaryByTeamId.get(team.id)}
                 id={team.id}
                 idx={idx}
                 isPrivate={team.isPrivate}
@@ -132,7 +138,7 @@ export const Teams = () => {
           if (team) {
             removeMember({
               teamId: team.id,
-              memberId: session?.user?.id ?? "",
+              memberId: session?.user.id ?? "",
             });
             setIsOpen(false);
           }

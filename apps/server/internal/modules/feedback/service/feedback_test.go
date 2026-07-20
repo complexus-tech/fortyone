@@ -23,6 +23,11 @@ type repoStub struct {
 	statusID        uuid.UUID
 	createdItems    []CoreItemInput
 	createdPortals  []CorePortalInput
+	reads           map[string]time.Time
+}
+
+func feedbackReadKey(itemID, userID uuid.UUID) string {
+	return itemID.String() + ":" + userID.String()
 }
 
 func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error) {
@@ -109,6 +114,11 @@ func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (Cor
 		if input.TeamID != nil && item.Board.TeamID != *input.TeamID {
 			continue
 		}
+		if input.ViewerID != uuid.Nil && r.reads != nil {
+			if readAt, ok := r.reads[feedbackReadKey(item.ID, input.ViewerID)]; ok {
+				item.ReadAt = &readAt
+			}
+		}
 		result = append(result, item)
 	}
 	return CoreItemsPage{Items: result, HasMore: false}, nil
@@ -136,6 +146,31 @@ func (r *repoStub) ListItemStoryLinks(ctx context.Context, workspaceID, itemID u
 	return result, nil
 }
 
+func (r *repoStub) ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]CoreStoryFeedbackLink, error) {
+	result := make([]CoreStoryFeedbackLink, 0)
+	for _, link := range r.storyLinks {
+		if link.WorkspaceID != workspaceID || link.StoryID != storyID || !link.IsPrimary {
+			continue
+		}
+		for _, item := range r.items {
+			if item.ID == link.ItemID {
+				result = append(result, CoreStoryFeedbackLink{
+					ID:            link.ID,
+					WorkspaceID:   workspaceID,
+					ItemID:        item.ID,
+					StoryID:       storyID,
+					TeamID:        item.Board.TeamID,
+					FeedbackTitle: item.Title,
+					Relationship:  link.Relationship,
+					IsPrimary:     true,
+					CreatedAt:     link.CreatedAt,
+				})
+			}
+		}
+	}
+	return result, nil
+}
+
 func (r *repoStub) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {
 	for _, item := range r.items {
 		if item.WorkspaceID == workspaceID && item.ID == itemID {
@@ -143,6 +178,60 @@ func (r *repoStub) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (
 		}
 	}
 	return CoreItem{}, sql.ErrNoRows
+}
+
+func (r *repoStub) GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error) {
+	if r.reads == nil {
+		return nil, nil
+	}
+	readAt, ok := r.reads[feedbackReadKey(itemID, userID)]
+	if !ok {
+		return nil, nil
+	}
+	return &readAt, nil
+}
+
+func (r *repoStub) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreTeamSummary, error) {
+	byTeam := make(map[uuid.UUID]*CoreTeamSummary)
+	for _, board := range r.boards {
+		if board.WorkspaceID != workspaceID {
+			continue
+		}
+		byTeam[board.TeamID] = &CoreTeamSummary{TeamID: board.TeamID, Enabled: true}
+	}
+	for _, item := range r.items {
+		summary := byTeam[item.Board.TeamID]
+		if summary == nil || item.WorkspaceID != workspaceID {
+			continue
+		}
+		summary.TotalCount++
+		if _, read := r.reads[feedbackReadKey(item.ID, userID)]; !read {
+			summary.UnreadCount++
+		}
+	}
+	result := make([]CoreTeamSummary, 0, len(byTeam))
+	for _, summary := range byTeam {
+		result = append(result, *summary)
+	}
+	return result, nil
+}
+
+func (r *repoStub) MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (time.Time, error) {
+	if r.reads == nil {
+		r.reads = make(map[string]time.Time)
+	}
+	key := feedbackReadKey(itemID, userID)
+	if readAt, ok := r.reads[key]; ok {
+		return readAt, nil
+	}
+	readAt := time.Now()
+	r.reads[key] = readAt
+	return readAt, nil
+}
+
+func (r *repoStub) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error {
+	delete(r.reads, feedbackReadKey(itemID, userID))
+	return nil
 }
 
 func (r *repoStub) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error) {
@@ -862,11 +951,90 @@ func TestListTeamItemsScopesFeedbackToBoardTeam(t *testing.T) {
 	}}
 	service := New(repo, nil)
 
-	page, err := service.ListTeamItems(context.Background(), workspaceID, teamID, "all", 1, 25)
+	page, err := service.ListTeamItems(context.Background(), workspaceID, teamID, uuid.New(), "all", 1, 25)
 
 	require.NoError(t, err)
 	require.Len(t, page.Items, 1)
 	require.Equal(t, teamID, page.Items[0].Board.TeamID)
+}
+
+func TestFeedbackReadStateIsPerUserAndDrivesTeamSummary(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	boardID := uuid.New()
+	itemID := uuid.New()
+	firstUserID := uuid.New()
+	secondUserID := uuid.New()
+	repo := &repoStub{
+		boards: []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, TeamID: teamID}},
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			BoardID:     boardID,
+			Board:       CoreBoard{ID: boardID, WorkspaceID: workspaceID, TeamID: teamID},
+		}},
+	}
+	service := New(repo, nil)
+
+	readAt, err := service.MarkItemRead(context.Background(), workspaceID, itemID, firstUserID)
+	require.NoError(t, err)
+	require.NotNil(t, readAt)
+	secondReadAt, err := service.MarkItemRead(context.Background(), workspaceID, itemID, firstUserID)
+	require.NoError(t, err)
+	require.Equal(t, *readAt, *secondReadAt)
+
+	firstDetails, err := service.GetItemDetails(context.Background(), workspaceID, itemID, firstUserID)
+	require.NoError(t, err)
+	require.Equal(t, *readAt, *firstDetails.Item.ReadAt)
+
+	secondDetails, err := service.GetItemDetails(context.Background(), workspaceID, itemID, secondUserID)
+	require.NoError(t, err)
+	require.Nil(t, secondDetails.Item.ReadAt)
+
+	firstSummaries, err := service.ListTeamSummaries(context.Background(), workspaceID, firstUserID)
+	require.NoError(t, err)
+	require.Equal(t, 1, firstSummaries[0].TotalCount)
+	require.Zero(t, firstSummaries[0].UnreadCount)
+
+	secondSummaries, err := service.ListTeamSummaries(context.Background(), workspaceID, secondUserID)
+	require.NoError(t, err)
+	require.Equal(t, 1, secondSummaries[0].UnreadCount)
+
+	require.NoError(t, service.MarkItemUnread(context.Background(), workspaceID, itemID, firstUserID))
+	firstSummaries, err = service.ListTeamSummaries(context.Background(), workspaceID, firstUserID)
+	require.NoError(t, err)
+	require.Equal(t, 1, firstSummaries[0].UnreadCount)
+}
+
+func TestListStoryFeedbackLinksReturnsPrimaryFeedbackMetadata(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	itemID := uuid.New()
+	storyID := uuid.New()
+	repo := &repoStub{
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			Title:       "Add monthly CSV exports",
+			Board:       CoreBoard{TeamID: teamID},
+		}},
+		storyLinks: []CoreStoryLink{{
+			ID:           uuid.New(),
+			WorkspaceID:  workspaceID,
+			ItemID:       itemID,
+			StoryID:      storyID,
+			Relationship: RelationshipCreatedFrom,
+			IsPrimary:    true,
+		}},
+	}
+	service := New(repo, nil)
+
+	links, err := service.ListStoryFeedbackLinks(context.Background(), workspaceID, storyID)
+
+	require.NoError(t, err)
+	require.Len(t, links, 1)
+	require.Equal(t, teamID, links[0].TeamID)
+	require.Equal(t, "Add monthly CSV exports", links[0].FeedbackTitle)
 }
 
 func TestFeedbackStatusForStoryCategory(t *testing.T) {

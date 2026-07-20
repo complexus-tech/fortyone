@@ -8,6 +8,7 @@ import {
   ArrowRight2Icon,
   BacklogIcon,
   DeleteIcon,
+  DownloadIcon,
   DragIcon,
   LogoutIcon,
   MoreHorizontalIcon,
@@ -18,8 +19,8 @@ import {
   StoryIcon,
 } from "icons";
 import Link from "next/link";
-import { useSession } from "@/lib/auth/client";
 import { useSortable } from "@dnd-kit/sortable";
+import { useSession } from "@/lib/auth/client";
 import {
   useLocalStorage,
   useTerminology,
@@ -31,17 +32,21 @@ import {
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
+import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
+import { NavCount } from "./nav-count";
 
 export const Team = ({
   id,
   name: teamName,
   color,
   isPrivate,
+  feedbackSummary,
   totalTeams,
   idx,
 }: Pick<TeamType, "id" | "name" | "color" | "isPrivate"> & {
+  feedbackSummary?: TeamFeedbackSummary;
   totalTeams: number;
   idx: number;
 }) => {
@@ -55,13 +60,14 @@ export const Team = ({
     idx === 0,
   );
   const { data: statuses } = useTeamStatuses(id);
-  const { data: pendingRequests = [] } = useTeamIntegrationRequests(id);
+  const { data: pendingRequestsPage } = useTeamIntegrationRequests(id);
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
   const hasBacklog = statuses?.some((status) => status.category === "backlog");
-  const hasRequests = pendingRequests.length > 0;
+  const intakeCount = pendingRequestsPage?.pagination.totalCount ?? 0;
+  const hasIntake = intakeCount > 0;
 
   const {
     attributes,
@@ -83,16 +89,18 @@ export const Team = ({
 
   const links = [
     {
-      name: "Requests",
-      icon: <RequestsIcon className="h-[1.15rem]" />,
+      name: "Intake",
+      icon: <DownloadIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/requests`),
-      count: pendingRequests.length,
-      disabled: !hasRequests,
+      count: intakeCount,
+      disabled: !hasIntake,
     },
     {
       name: "Feedback",
       icon: <RequestsIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/feedback`),
+      count: feedbackSummary?.totalCount ?? 0,
+      disabled: !feedbackSummary?.enabled,
     },
     {
       name: "Backlog",
@@ -246,28 +254,24 @@ export const Team = ({
               gap={1}
               suppressHydrationWarning
             >
-              {links
-                .filter(({ disabled }) => !disabled)
-                .map(({ name, icon, href, count }) => {
-                  const isActive =
-                    href === withWorkspace("/")
-                      ? pathname === href ||
-                        pathname.startsWith(withWorkspace("/dashboard"))
-                      : pathname.startsWith(href);
-                  return (
-                    <NavLink active={isActive} href={href} key={name}>
-                      {icon}
-                      <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                        <span className="capitalize">{name}</span>
-                        {count ? (
-                          <span className="text-foreground-inverse bg-background-inverse flex size-4.5 items-center justify-center rounded-full text-[0.8rem] font-bold">
-                            {count}
-                          </span>
-                        ) : null}
-                      </span>
-                    </NavLink>
-                  );
-                })}
+              {links.map(({ name, icon, href, count, disabled }) => {
+                if (disabled) return null;
+
+                const isActive =
+                  href === withWorkspace("/")
+                    ? pathname === href ||
+                      pathname.startsWith(withWorkspace("/dashboard"))
+                    : pathname.startsWith(href);
+                return (
+                  <NavLink active={isActive} href={href} key={name}>
+                    {icon}
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                      <span className="capitalize">{name}</span>
+                      <NavCount count={count ?? 0} />
+                    </span>
+                  </NavLink>
+                );
+              })}
             </Flex>
           </Box>
         </div>
@@ -331,7 +335,7 @@ export const Team = ({
         onConfirm={() => {
           removeMember({
             teamId: id,
-            memberId: session?.user?.id ?? "",
+            memberId: session?.user.id ?? "",
           });
           setIsLeaving(false);
         }}

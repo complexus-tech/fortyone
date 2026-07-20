@@ -4,13 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "lib";
-import { CheckIcon, CloseIcon, RequestsIcon } from "icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  NotificationsCheckIcon,
+  NotificationsUnreadIcon,
+  RequestsIcon,
+} from "icons";
 import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
-import { ConfirmDialog } from "@/components/ui";
+import { ConfirmDialog, Dot } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
+import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
-import { FeedbackStatusPill } from "./status";
+import { FeedbackStatus } from "./status";
 import type { TeamFeedbackItem } from "./types";
 
 export const TeamFeedbackCard = ({
@@ -25,10 +32,12 @@ export const TeamFeedbackCard = ({
   const searchParams = useSearchParams();
   const { withWorkspace } = useWorkspacePath();
   const planFeedback = usePlanTeamFeedback();
+  const setReadState = useSetTeamFeedbackReadState();
   const updateStatus = useUpdateTeamFeedbackStatus();
   const [isClosing, setIsClosing] = useState(false);
   const isActive = pathname.includes(feedback.id);
   const isLinked = feedback.storyLinks.some((link) => link.isPrimary);
+  const isUnread = !feedback.readAt;
   const canPlan = !isLinked && feedback.status !== "closed";
   const status = searchParams.get("status");
   const feedbackHref = withWorkspace(
@@ -65,11 +74,18 @@ export const TeamFeedbackCard = ({
           <Box
             className={cn(
               "border-border hover:bg-surface-muted block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
-              { "bg-surface-muted": isActive },
+              {
+                "bg-surface-muted": isActive,
+                "border-l-primary dark:border-l-primary border-l-[1.5px]":
+                  isUnread,
+              },
             )}
           >
             <Flex align="center" className="mb-2" gap={2} justify="between">
-              <Text className="line-clamp-1 flex-1 font-medium">
+              <Text
+                className="line-clamp-1 flex-1 font-medium"
+                color={isUnread ? undefined : "muted"}
+              >
                 {feedback.title}
               </Text>
               <Text className="shrink-0 text-[0.95rem]" color="muted">
@@ -78,21 +94,39 @@ export const TeamFeedbackCard = ({
             </Flex>
             <Flex align="center" gap={3} justify="between">
               <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: feedback.board.color }}
-                />
+                <Dot className="size-3" color={feedback.board.color} />
                 <Text className="line-clamp-1" color="muted">
                   {feedback.authorName} in {feedback.board.name}
                 </Text>
               </Flex>
-              <FeedbackStatusPill compact status={feedback.status} />
+              <FeedbackStatus status={feedback.status} />
             </Flex>
           </Box>
         </Link>
       </ContextMenu.Trigger>
       <ContextMenu.Items>
         <ContextMenu.Group>
+          {isUnread ? (
+            <ContextMenu.Item
+              disabled={setReadState.isPending}
+              onSelect={() => {
+                setReadState.mutate({ feedbackId: feedback.id, isRead: true });
+              }}
+            >
+              <NotificationsCheckIcon />
+              Mark as read
+            </ContextMenu.Item>
+          ) : (
+            <ContextMenu.Item
+              disabled={setReadState.isPending}
+              onSelect={() => {
+                setReadState.mutate({ feedbackId: feedback.id, isRead: false });
+              }}
+            >
+              <NotificationsUnreadIcon />
+              Mark as unread
+            </ContextMenu.Item>
+          )}
           <ContextMenu.Item
             disabled={!canPlan || planFeedback.isPending}
             onSelect={handlePlan}

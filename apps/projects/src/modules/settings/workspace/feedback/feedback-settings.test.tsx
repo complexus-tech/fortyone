@@ -168,7 +168,7 @@ describe("FeedbackSettings", () => {
     } as never);
   });
 
-  it("explains feedback and keeps portal configuration focused on availability", async () => {
+  it("saves portal availability as soon as the switch changes", async () => {
     render(<FeedbackSettings />);
 
     expect(
@@ -182,12 +182,11 @@ describe("FeedbackSettings", () => {
     const enabledSwitch = screen.getByRole("switch", {
       name: "Enable public feedback portal",
     });
-    const saveButton = screen.getByRole("button", { name: "Save Changes" });
 
-    expect(saveButton).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Save Changes" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(enabledSwitch);
-    expect(saveButton).toBeEnabled();
-    fireEvent.click(saveButton);
 
     await waitFor(() => {
       expect(updatePortal).toHaveBeenCalledWith({
@@ -197,14 +196,37 @@ describe("FeedbackSettings", () => {
     });
   });
 
+  it.each([
+    ["an API error response", { error: { message: "Could not update" } }],
+    ["a rejected request", new Error("Network unavailable")],
+  ])("rolls the switch back after %s", async (_label, result) => {
+    if (result instanceof Error) {
+      updatePortal.mockRejectedValueOnce(result);
+    } else {
+      updatePortal.mockResolvedValueOnce(result);
+    }
+    render(<FeedbackSettings />);
+
+    const enabledSwitch = screen.getByRole("switch", {
+      name: "Enable public feedback portal",
+    });
+    fireEvent.click(enabledSwitch);
+
+    await waitFor(() => {
+      expect(enabledSwitch).toHaveAttribute("aria-checked", "true");
+    });
+  });
+
   it("places the board color inside a muted surface", () => {
     const { container } = render(<FeedbackSettings />);
 
-    const swatch = container.querySelector<HTMLElement>(
+    const swatches = container.querySelectorAll<HTMLElement>(
       '[style*="background-color: red"]',
     );
+    const boardSwatch = Array.from(swatches).find((swatch) =>
+      swatch.parentElement?.classList.contains("bg-surface-muted/70"),
+    );
 
-    expect(swatch).toBeInTheDocument();
-    expect(swatch?.parentElement).toHaveClass("bg-surface-muted/70");
+    expect(boardSwatch).toBeInTheDocument();
   });
 });

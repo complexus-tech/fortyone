@@ -20,6 +20,7 @@ var (
 type Repository interface {
 	UpsertPending(ctx context.Context, input CoreUpsertRequestInput) (CoreIntegrationRequest, error)
 	ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error)
+	CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) (int, error)
 	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
 	UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error)
@@ -52,6 +53,10 @@ func (s *Service) UpsertPending(ctx context.Context, input CoreUpsertRequestInpu
 
 func (s *Service) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error) {
 	return s.repo.ListByTeam(ctx, workspaceID, teamID, filter)
+}
+
+func (s *Service) CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) (int, error) {
+	return s.repo.CountByTeam(ctx, workspaceID, teamID, filter)
 }
 
 func (s *Service) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error) {

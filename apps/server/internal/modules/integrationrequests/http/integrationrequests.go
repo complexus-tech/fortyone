@@ -51,7 +51,7 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	page, pageSize := paginationParams(r, defaultRequestsPageSize, maxRequestsPageSize)
-	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, integrationrequests.CoreListRequestsFilter{
+	filter := integrationrequests.CoreListRequestsFilter{
 		Status:        status,
 		Provider:      provider,
 		Priority:      priority,
@@ -60,7 +60,12 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 		CreatedBefore: createdBefore,
 		Page:          page,
 		PageSize:      pageSize + 1,
-	})
+	}
+	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, filter)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	totalCount, err := h.requests.CountByTeam(ctx, workspace.ID, teamID, filter)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -68,7 +73,7 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 	if hasMore {
 		requests = requests[:pageSize]
 	}
-	return web.Respond(ctx, w, toAppRequestsResponse(requests, page, pageSize, hasMore), http.StatusOK)
+	return web.Respond(ctx, w, toAppRequestsResponse(requests, page, pageSize, totalCount, hasMore), http.StatusOK)
 }
 
 func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

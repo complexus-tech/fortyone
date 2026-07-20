@@ -63,6 +63,7 @@ type CoreItem struct {
 	RoadmapSummary *string
 	Board          CoreBoard
 	StoryLinks     []CoreStoryLink
+	ReadAt         *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -84,10 +85,30 @@ type CoreStoryLink struct {
 	WorkspaceID     uuid.UUID
 	ItemID          uuid.UUID
 	StoryID         uuid.UUID
+	StoryTitle      string
 	Relationship    string
 	IsPrimary       bool
 	CreatedByUserID uuid.UUID
 	CreatedAt       time.Time
+}
+
+type CoreStoryFeedbackLink struct {
+	ID            uuid.UUID
+	WorkspaceID   uuid.UUID
+	ItemID        uuid.UUID
+	StoryID       uuid.UUID
+	TeamID        uuid.UUID
+	FeedbackTitle string
+	Relationship  string
+	IsPrimary     bool
+	CreatedAt     time.Time
+}
+
+type CoreTeamSummary struct {
+	TeamID      uuid.UUID
+	Enabled     bool
+	TotalCount  int
+	UnreadCount int
 }
 
 type CorePortalSnapshot struct {
@@ -214,7 +235,12 @@ type Repository interface {
 	ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error)
 	ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error)
 	ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreStoryLink, error)
+	ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]CoreStoryFeedbackLink, error)
 	GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error)
+	GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error)
+	ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreTeamSummary, error)
+	MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (time.Time, error)
+	MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error
 	GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error)
@@ -229,6 +255,7 @@ type CoreListItemsInput struct {
 	WorkspaceID uuid.UUID
 	PortalID    uuid.UUID
 	TeamID      *uuid.UUID
+	ViewerID    uuid.UUID
 	Status      string
 	BoardID     *uuid.UUID
 	Search      string

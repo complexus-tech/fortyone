@@ -34,6 +34,7 @@ export type IntegrationRequestsPage = {
   pagination: {
     page: number;
     pageSize: number;
+    totalCount: number;
     hasMore: boolean;
     nextPage: number;
   };
