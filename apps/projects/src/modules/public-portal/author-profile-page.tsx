@@ -171,7 +171,7 @@ const ContributorStats = ({
   ];
 
   return (
-    <dl className="mt-6 flex flex-wrap gap-y-2 text-[0.95rem]">
+    <dl className="flex flex-wrap justify-end gap-y-2 text-[0.95rem]">
       {stats.map((stat) => (
         <div
           className="border-border/70 flex items-baseline gap-1.5 border-l px-4 first:border-l-0 first:pl-0"
@@ -437,7 +437,6 @@ export const PublicPortalAuthorProfilePage = ({
                 </Text>
               </Box>
             </Flex>
-            <ContributorStats contributor={contributor} />
           </Box>
 
           <Tabs
@@ -445,21 +444,28 @@ export const PublicPortalAuthorProfilePage = ({
             onValueChange={changeTab}
             value={activeTab}
           >
-            <Box className="border-border/60 bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 shrink-0 border-b pb-3 backdrop-blur-xl">
-              <Tabs.List className="mx-0 shrink-0 md:mx-0">
-                <Tabs.Tab
-                  leftIcon={<RequestsIcon className="h-4 text-current" />}
-                  value="feedback"
-                >
-                  Feedback
-                </Tabs.Tab>
-                <Tabs.Tab
-                  leftIcon={<CommentIcon className="h-4 text-current" />}
-                  value="comments"
-                >
-                  Comments
-                </Tabs.Tab>
-              </Tabs.List>
+            <Box className="border-border/60 bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 shrink-0 border-b py-3 backdrop-blur-xl">
+              <Flex
+                align="center"
+                className="flex-wrap gap-x-6 gap-y-3"
+                justify="between"
+              >
+                <Tabs.List className="mx-0 shrink-0 md:mx-0">
+                  <Tabs.Tab
+                    leftIcon={<RequestsIcon className="h-4 text-current" />}
+                    value="feedback"
+                  >
+                    Feedback
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    leftIcon={<CommentIcon className="h-4 text-current" />}
+                    value="comments"
+                  >
+                    Comments
+                  </Tabs.Tab>
+                </Tabs.List>
+                <ContributorStats contributor={contributor} />
+              </Flex>
             </Box>
             <Tabs.Panel className="min-h-0 md:flex-1" value="feedback">
               {requests.length > 0 ? (
