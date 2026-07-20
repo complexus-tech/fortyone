@@ -9,8 +9,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-body: var(--font-inter), "Helvetica Neue", Helvetica, sans-serif;
-  --font-heading: var(--font-inter), "Helvetica Neue", Helvetica, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, var(--font-inter), sans-serif;
+  --font-heading: -apple-system, BlinkMacSystemFont, var(--font-inter),
+    sans-serif;
 }
 
 :root {
