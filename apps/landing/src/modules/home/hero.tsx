@@ -56,7 +56,7 @@ export const Hero = () => {
               <Text
                 as="h1"
                 className={cn(
-                  "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-[3.5rem]",
+                  "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-6xl",
                 )}
               >
                 Plan and deliver projects with customer feedback built in.
