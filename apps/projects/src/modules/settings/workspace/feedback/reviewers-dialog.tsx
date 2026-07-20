@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Avatar, Box, Button, Dialog, Flex, Select, Skeleton, Text } from "ui";
 import type {
   FeedbackBoard,
@@ -110,12 +109,15 @@ const ReviewersSkeleton = () => (
 
 export const FeedbackReviewersDialog = ({
   board,
+  onOpenChange,
+  open,
   teamName,
 }: {
   board: FeedbackBoard;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
   teamName: string;
 }) => {
-  const [open, setOpen] = useState(false);
   const reviewersQuery = useFeedbackBoardReviewers(board.id, open);
   const reviewers = reviewersQuery.data ?? [];
   const subscribedCount = reviewers.reduce(
@@ -125,16 +127,7 @@ export const FeedbackReviewersDialog = ({
   );
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <Button
-        color="tertiary"
-        onClick={() => {
-          setOpen(true);
-        }}
-        size="sm"
-      >
-        Reviewers
-      </Button>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <Dialog.Content className="max-w-xl">
         <Dialog.Header className="space-y-2 px-6 pt-5 pb-3">
           <Dialog.Title className="pr-10 text-lg">Reviewers</Dialog.Title>

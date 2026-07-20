@@ -2,11 +2,19 @@
 
 import { useState } from "react";
 import { cn } from "lib";
-import { ArrowDownIcon, DeleteIcon, LinkIcon, PlusIcon, TeamIcon } from "icons";
-import { Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
+import {
+  ArrowDownIcon,
+  DeleteIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  TeamIcon,
+} from "icons";
+import { Box, Button, Dialog, Flex, Input, Menu, Switch, Text } from "ui";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
+import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import type { FeedbackBoard, FeedbackPortal } from "./types";
 import {
   useCreateFeedbackBoardMutation,
@@ -232,6 +240,10 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
 export const FeedbackSettings = () => {
   const { data: portals = [], isLoading } = useFeedbackPortals();
   const { data: teams = [] } = useTeams();
+  const [reviewersDialog, setReviewersDialog] = useState<{
+    board: FeedbackBoard;
+    teamName: string;
+  } | null>(null);
   const [boardToDelete, setBoardToDelete] = useState<FeedbackBoard | null>(
     null,
   );
@@ -325,22 +337,47 @@ export const FeedbackSettings = () => {
                     {board.portalName}
                   </Text>
                   <Flex align="center" className="w-40" gap={1} justify="end">
-                    <FeedbackReviewersDialog
-                      board={board}
-                      teamName={board.team?.name ?? "team"}
-                    />
-                    <Button
-                      aria-label={`Delete ${board.name}`}
-                      asIcon
-                      color="tertiary"
-                      onClick={() => {
-                        setBoardToDelete(board);
-                      }}
-                      size="sm"
-                      variant="naked"
-                    >
-                      <DeleteIcon className="text-danger h-4.5 w-auto" />
-                    </Button>
+                    <Menu>
+                      <Menu.Button>
+                        <Button
+                          aria-label={`Options for ${board.name}`}
+                          asIcon
+                          color="tertiary"
+                          size="sm"
+                          variant="naked"
+                        >
+                          <MoreHorizontalIcon className="h-5 w-auto" />
+                        </Button>
+                      </Menu.Button>
+                      <Menu.Items align="end" className="w-48">
+                        <Menu.Group>
+                          <Menu.Item
+                            onSelect={() => {
+                              openDialogAfterMenuClose((open) => {
+                                if (open) setBoardToDelete(board);
+                              });
+                            }}
+                          >
+                            <DeleteIcon />
+                            Delete Board
+                          </Menu.Item>
+                          <Menu.Item
+                            onSelect={() => {
+                              openDialogAfterMenuClose((open) => {
+                                if (!open) return;
+                                setReviewersDialog({
+                                  board,
+                                  teamName: board.team?.name ?? "team",
+                                });
+                              });
+                            }}
+                          >
+                            <TeamIcon />
+                            Manage reviewers
+                          </Menu.Item>
+                        </Menu.Group>
+                      </Menu.Items>
+                    </Menu>
                   </Flex>
                 </Flex>
               </Flex>
@@ -348,6 +385,16 @@ export const FeedbackSettings = () => {
           </>
         )}
       </Box>
+      {reviewersDialog ? (
+        <FeedbackReviewersDialog
+          board={reviewersDialog.board}
+          onOpenChange={(open) => {
+            if (!open) setReviewersDialog(null);
+          }}
+          open
+          teamName={reviewersDialog.teamName}
+        />
+      ) : null}
       <ConfirmDialog
         confirmText="Delete board"
         description="This permanently deletes the board and all feedback submitted to it. This action cannot be undone."

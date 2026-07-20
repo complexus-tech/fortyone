@@ -31,6 +31,7 @@ jest.mock("icons", () => {
     ArrowDownIcon: Icon,
     DeleteIcon: Icon,
     LinkIcon: Icon,
+    MoreHorizontalIcon: Icon,
     PlusIcon: Icon,
     TeamIcon: Icon,
   };
@@ -116,6 +117,25 @@ jest.mock("ui", () => {
     Title: DialogPart,
   });
 
+  const Menu = ({ children }: { children: ReactNode }) =>
+    React.createElement("div", null, children);
+  const MenuItem = ({
+    children,
+    onSelect,
+    ...props
+  }: ComponentPropsWithoutRef<"button"> & { onSelect?: () => void }) =>
+    React.createElement(
+      "button",
+      { ...props, onClick: onSelect, type: "button" },
+      children,
+    );
+  Object.assign(Menu, {
+    Button: DialogPart,
+    Group: DialogPart,
+    Item: MenuItem,
+    Items: DialogPart,
+  });
+
   const Select = ({
     children,
     disabled = false,
@@ -168,6 +188,7 @@ jest.mock("ui", () => {
     Flex,
     Input: (props: ComponentPropsWithoutRef<"input">) =>
       React.createElement("input", props),
+    Menu,
     Switch: ({
       checked,
       onCheckedChange,
@@ -379,12 +400,15 @@ describe("FeedbackSettings", () => {
     );
   });
 
-  it("requires confirmation before deleting a board", () => {
+  it("requires confirmation before deleting a board", async () => {
     render(<FeedbackSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete Road safety" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Options for Road safety" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete Board" }));
 
-    expect(screen.getByText("Delete Road safety?")).toBeInTheDocument();
+    expect(await screen.findByText("Delete Road safety?")).toBeInTheDocument();
     expect(
       screen.getByText(/permanently deletes the board and all feedback/i),
     ).toBeInTheDocument();
@@ -424,13 +448,13 @@ describe("FeedbackSettings", () => {
   it("loads reviewers only when opened and auto-saves their frequency", async () => {
     render(<FeedbackSettings />);
 
-    expect(mockUseFeedbackBoardReviewers).toHaveBeenCalledWith(
-      "board-1",
-      false,
-    );
+    expect(mockUseFeedbackBoardReviewers).not.toHaveBeenCalled();
     expect(screen.queryByText("1 subscribed")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Reviewers" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Options for Road safety" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Manage reviewers" }));
 
     await waitFor(() => {
       expect(mockUseFeedbackBoardReviewers).toHaveBeenLastCalledWith(
