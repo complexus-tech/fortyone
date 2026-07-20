@@ -1,30 +1,13 @@
-"use client";
 import Image from "next/image";
 import { Box, Button } from "ui";
-import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
 import meshImage from "../../../public/images/meshing.webp";
 
-const viewport = { once: true, amount: 0.35 };
-const scaleIn = {
-  hidden: { scale: 0.98, opacity: 0 },
-  show: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.7, ease: "easeOut" },
-  },
-};
-
 export const CallToAction = () => {
   return (
     <Container className="py-16 md:py-20">
-      <motion.div
-        initial="hidden"
-        variants={scaleIn}
-        viewport={viewport}
-        whileInView="show"
-      >
+      <Box data-landing-reveal>
         <Box className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl md:rounded-3xl">
           <Image
             alt=""
@@ -50,7 +33,7 @@ export const CallToAction = () => {
             </Button>
           </Box>
         </Box>
-      </motion.div>
+      </Box>
     </Container>
   );
 };

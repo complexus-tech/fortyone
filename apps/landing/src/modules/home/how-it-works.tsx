@@ -1,18 +1,10 @@
-"use client";
-
 import Image from "next/image";
 import { cn } from "lib";
 import { Text, Box, Button, Flex } from "ui";
-import { motion } from "framer-motion";
 import { AiIcon, GitHubIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
 import { Container } from "@/components/ui";
 import meshImage from "../../../public/images/meshing.webp";
 
-const viewport = { once: true, amount: 0.3 };
-const fadeUp = {
-  hidden: { y: 20, opacity: 0 },
-  show: { y: 0, opacity: 1, transition: { duration: 0.7, ease: "easeOut" } },
-};
 const CARD_TEXT_CLASS = "text-[0.9rem] leading-[1.35]";
 const CARD_META_TEXT_CLASS = "text-[0.82rem] leading-[1.25]";
 const CARD_SURFACE_CLASS =
@@ -626,35 +618,30 @@ function FeatureCard({
   delay?: number;
 }) {
   return (
-    <Box className="h-full">
-      <motion.div
-        initial="hidden"
-        style={{ height: "100%" }}
-        transition={{ delay }}
-        variants={fadeUp}
-        viewport={viewport}
-        whileInView="show"
-      >
-        <Box className="flex h-full flex-col">
-          <Box className="relative flex min-h-[280px] flex-1 items-end overflow-hidden rounded-2xl md:min-h-[330px]">
-            <Image
-              alt=""
-              className="object-cover dark:opacity-40"
-              src={meshImage}
-              fill
-              quality={100}
-              sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
-            />
-            <Box className="relative z-10 w-full p-5">{children}</Box>
-          </Box>
-          <Box className="mt-5 flex flex-col">
-            <Text className="text-foreground mb-2 text-lg font-semibold">
-              {title}
-            </Text>
-            <Text className="text-text-muted">{description}</Text>
-          </Box>
+    <Box
+      className="h-full"
+      data-landing-reveal
+      style={{ transitionDelay: `${delay * 1000}ms` }}
+    >
+      <Box className="flex h-full flex-col">
+        <Box className="relative flex h-[280px] shrink-0 items-end overflow-hidden rounded-2xl md:h-[330px]">
+          <Image
+            alt=""
+            className="object-cover dark:opacity-40"
+            fill
+            quality={100}
+            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
+            src={meshImage}
+          />
+          <Box className="relative z-10 w-full p-5">{children}</Box>
         </Box>
-      </motion.div>
+        <Box className="mt-5 flex flex-col">
+          <Text className="text-foreground mb-2 text-lg font-semibold">
+            {title}
+          </Text>
+          <Text className="text-text-muted">{description}</Text>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -664,12 +651,7 @@ export const HowItWorks = () => {
   return (
     <Container className="scroll-mt-24 py-16 md:pt-36" id="ai-planning">
       {/* Headline */}
-      <motion.div
-        initial="hidden"
-        variants={fadeUp}
-        viewport={viewport}
-        whileInView="show"
-      >
+      <Box data-landing-reveal>
         <Text
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
@@ -677,7 +659,7 @@ export const HowItWorks = () => {
         >
           Keep the original request attached to the work.
         </Text>
-      </motion.div>
+      </Box>
 
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
@@ -709,12 +691,7 @@ export const HowItWorks = () => {
 export const PlatformWorkflow = () => {
   return (
     <Container className="scroll-mt-24 py-16 md:pt-24 md:pb-28" id="roadmaps">
-      <motion.div
-        initial="hidden"
-        variants={fadeUp}
-        viewport={viewport}
-        whileInView="show"
-      >
+      <Box data-landing-reveal>
         <Text
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
@@ -722,7 +699,7 @@ export const PlatformWorkflow = () => {
         >
           See what is moving, blocked, and at risk.
         </Text>
-      </motion.div>
+      </Box>
 
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard

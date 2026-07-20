@@ -15,6 +15,78 @@
 
 :root {
   --nprogress-color: #ea6060;
+  --landing-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes landing-hero-title-enter {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(0.32em);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-hero-support-enter {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.landing-hero-title-word {
+  animation: landing-hero-title-enter 1000ms var(--landing-ease-out) both;
+}
+
+.landing-hero-copy {
+  animation: landing-hero-support-enter 780ms var(--landing-ease-out) 520ms both;
+}
+
+.landing-hero-action {
+  animation: landing-hero-support-enter 780ms var(--landing-ease-out) 620ms both;
+}
+
+.landing-reveal-ready [data-landing-reveal] {
+  opacity: 0;
+  filter: blur(7px);
+  transform: translateY(18px);
+  transition:
+    opacity 600ms var(--landing-ease-out),
+    transform 700ms var(--landing-ease-out),
+    filter 780ms var(--landing-ease-out);
+}
+
+.landing-reveal-ready [data-landing-reveal][data-visible="true"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-title-word,
+  .landing-hero-copy,
+  .landing-hero-action {
+    animation: none;
+  }
+
+  .landing-reveal-ready [data-landing-reveal] {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition-duration: 0.01ms;
+  }
 }
 
 .animate-gradient {

@@ -1,6 +1,5 @@
 "use client";
 import { Flex, Text, Box, Button, Badge, Divider } from "ui";
-import { motion } from "framer-motion";
 import { cn } from "lib";
 import { useState } from "react";
 import { CheckIcon } from "icons";
@@ -185,15 +184,7 @@ export const Pricing = ({
             },
           )}
         >
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
+          <Box data-landing-reveal>
             <Text
               as={pathname === "/pricing" ? "h1" : "h2"}
               className={cn("mt-6 max-w-3xl pb-2 text-4xl md:text-5xl", {
@@ -203,26 +194,20 @@ export const Pricing = ({
             >
               Start with one team. Scale when the work does.
             </Text>
-          </motion.div>
+          </Box>
           {!hideDescription ? (
-            <Text className="w-full max-w-xl opacity-70 md:mt-4">
-              No card and no trial clock. Run a real project on the free plan,
-              then add teams, goals, integrations, and AI capacity as your
-              organization grows.
-            </Text>
+            <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
+              <Text className="w-full max-w-xl opacity-70 md:mt-4">
+                No card and no trial clock. Run a real project on the free plan,
+                then add teams, goals, integrations, and AI capacity as your
+                organization grows.
+              </Text>
+            </Box>
           ) : null}
         </Box>
 
         <Flex className="mb-10" direction="column">
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.3,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
+          <Box data-landing-reveal>
             <Box className="bg-surface-muted flex w-max gap-1 rounded-xl p-1">
               {["annual", "monthly"].map((option) => (
                 <Button
@@ -242,9 +227,13 @@ export const Pricing = ({
                 </Button>
               ))}
             </Box>
-          </motion.div>
+          </Box>
         </Flex>
-        <Box className="grid grid-cols-1 gap-5 md:grid-cols-4">
+        <Box
+          className="grid grid-cols-1 gap-5 md:grid-cols-4"
+          data-landing-reveal
+          style={{ transitionDelay: "70ms" }}
+        >
           {packages.map((pkg) => (
             <Package
               billing={billing}

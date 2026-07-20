@@ -4,14 +4,7 @@ import { Box, Flex, Text } from "ui";
 import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Container } from "./container";
-
-const viewport = { once: true, amount: 0.35 };
-const fadeUp = {
-  hidden: { y: 16, opacity: 0 },
-  show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: "easeOut" } },
-};
 
 type FaqItem = {
   question: string;
@@ -70,7 +63,11 @@ const AccordionItem = ({
   const buttonId = `faq-trigger-${index}`;
   const panelId = `faq-panel-${index}`;
   return (
-    <Box className="border-border d border-b last:border-b-0">
+    <Box
+      className="border-border d border-b last:border-b-0"
+      data-landing-reveal
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
       <button
         aria-controls={panelId}
         aria-expanded={isOpen}
@@ -126,16 +123,11 @@ export const Faqs = () => {
   return (
     <Box className="py-16 md:pt-24">
       <Container className="grid grid-cols-1 gap-8 md:grid-cols-[auto_1fr] md:justify-between md:gap-16">
-        <motion.div
-          initial="hidden"
-          variants={fadeUp}
-          viewport={viewport}
-          whileInView="show"
-        >
+        <Box data-landing-reveal>
           <Text as="h2" className="mb-2 text-4xl md:mb-12 md:text-5xl">
             Questions worth <br /> answering.
           </Text>
-        </motion.div>
+        </Box>
 
         <Flex className="pb-4" direction="column">
           {faqItems.map((item, index) => (

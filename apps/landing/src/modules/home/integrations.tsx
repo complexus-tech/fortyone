@@ -1,7 +1,5 @@
-"use client";
 import { Flex, Text, Box, Button } from "ui";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
 
@@ -54,50 +52,26 @@ export const Integrations = () => {
           className="mb-4 text-center md:mt-18"
           direction="column"
         >
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
+          <Box data-landing-reveal>
             <Text
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
               Your tools bring the context. FortyOne turns it into a plan.
             </Text>
-          </motion.div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.3,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
+          </Box>
+          <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
             <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
               Use Google Calendar for availability and Slack for task intake.
               GitHub, Figma, and GitLab bring delivery context into the project
               plan.
             </Text>
-          </motion.div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            transition={{
-              duration: 1,
-              delay: 0.6,
-            }}
-            viewport={{ once: true, amount: 0.5 }}
-            whileInView={{ y: 0, opacity: 1 }}
-          >
+          </Box>
+          <Box data-landing-reveal style={{ transitionDelay: "130ms" }}>
             <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
               Start free
             </Button>
-          </motion.div>
+          </Box>
         </Flex>
       </Container>
       <Image

@@ -46,7 +46,7 @@ export const HeroCards = () => {
 
   return (
     <Box>
-      <Box className="relative">
+      <Box className="relative" data-landing-reveal>
         <Container className="relative mt-12 overflow-visible">
           {/* Decorative colour blurs intentionally removed for the warmer background. */}
           <Box

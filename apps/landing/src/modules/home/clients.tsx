@@ -10,7 +10,10 @@ import Image from "next/image";
 
 export const SampleClients = () => {
   return (
-    <Container className="relative z-10 mt-16 hidden md:block">
+    <Container
+      className="relative z-10 mt-16 hidden md:block"
+      data-landing-reveal
+    >
       <Flex align="center" className="gap-12 pl-2" wrap>
         <Text className="text-foreground/60 text-[0.95rem]">
           Trusted by <br /> teams at
