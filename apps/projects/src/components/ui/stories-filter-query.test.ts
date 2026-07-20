@@ -53,6 +53,31 @@ describe("story filter query mapping", () => {
     });
   });
 
+  it("maps negated content and collection operators to exclusion params", () => {
+    const filters = {
+      ...baseFilters,
+      contentContains: "deprecated",
+      statusIds: ["status-1"],
+      assigneeIds: ["user-1"],
+      operators: {
+        contentContains: "doesNotContain",
+        statusIds: "isNotAnyOf",
+        assigneeIds: "isNotAnyOf",
+      },
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      titleNotContains: "deprecated",
+      excludedStatusIds: ["status-1"],
+      excludedAssigneeIds: ["user-1"],
+    });
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      titleContains: undefined,
+      statusIds: undefined,
+      assigneeIds: undefined,
+    });
+  });
+
   it("counts content and labels as active filters", () => {
     const filters = {
       ...baseFilters,
@@ -90,6 +115,12 @@ describe("getScopedStoriesFilterTeamId", () => {
     expect(getScopedStoriesFilterTeamId(undefined, null)).toBeUndefined();
     expect(
       getScopedStoriesFilterTeamId(undefined, ["team-a", "team-b"]),
+    ).toBeUndefined();
+  });
+
+  it("does not scope dependent filters to an excluded team", () => {
+    expect(
+      getScopedStoriesFilterTeamId(undefined, ["team-a"], "isNotAnyOf"),
     ).toBeUndefined();
   });
 });

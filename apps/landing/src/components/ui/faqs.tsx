@@ -20,14 +20,24 @@ type FaqItem = {
 
 const faqItems: FaqItem[] = [
   {
-    question: "What makes FortyOne an AI project manager?",
+    question: "What makes FortyOne different from a task manager?",
     answer:
-      "FortyOne combines project management software with an AI assistant that can turn project context into tasks, suggest owners, add estimates, plan timing, and surface delivery risks before work slips.",
+      "FortyOne connects customer feedback and company goals to the tasks that deliver them. Teams can decide what to build without losing the original request or the reason behind the work.",
   },
   {
-    question: "What happens when I assign work to AI?",
+    question: "How does customer feedback work?",
     answer:
-      "The AI reviews the task, team context, workload, estimates, and availability, then helps find the right owner, schedule, and next action. Admins can review important AI actions before they are applied.",
+      "Customers can submit requests, vote, and comment in a public portal. Feedback boards route each request to the team that owns the work. The team can review it, close it, or turn it into planned work.",
+  },
+  {
+    question: "What can FortyOne's AI do?",
+    answer:
+      "AI can suggest an owner, fill in an estimate, find time for the work, and surface delivery risk from the project context already in FortyOne.",
+  },
+  {
+    question: "Can we review AI actions before they are applied?",
+    answer:
+      "Yes. Teams can review and edit important suggestions before they change the project plan.",
   },
   {
     question: "Is the free plan actually free?",
@@ -40,9 +50,9 @@ const faqItems: FaqItem[] = [
       "Yes. Google Calendar integration lets FortyOne sync availability so AI can recommend better schedules and work windows without storing private event details unnecessarily.",
   },
   {
-    question: "Can we create tasks from Slack?",
+    question: "Which tools does FortyOne work with?",
     answer:
-      "Yes. Slack support lets teams create tasks from Slack and ask the AI assistant for help where conversations already happen, while keeping the project plan in FortyOne.",
+      "FortyOne works with tools including Google Calendar, Slack, GitHub, GitLab, Figma, and Google Drive. These connections bring availability and source context into the project plan.",
   },
 ];
 

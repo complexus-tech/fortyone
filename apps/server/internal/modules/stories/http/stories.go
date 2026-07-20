@@ -1371,15 +1371,24 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.PageSize = getIntParam(r, "pageSize", 0)
 
 	query.Filters.StatusIDs = parseUUIDArray(r, "statusIds")
+	query.Filters.ExcludedStatusIDs = parseUUIDArray(r, "excludedStatusIds")
 	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
+	query.Filters.ExcludedAssigneeIDs = parseUUIDArray(r, "excludedAssigneeIds")
 	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
+	query.Filters.ExcludedReporterIDs = parseUUIDArray(r, "excludedReporterIds")
 	query.Filters.TitleContains = parseStringParam(r, "titleContains")
+	query.Filters.TitleNotContains = parseStringParam(r, "titleNotContains")
 	query.Filters.TeamIDs = parseUUIDArray(r, "teamIds")
+	query.Filters.ExcludedTeamIDs = parseUUIDArray(r, "excludedTeamIds")
 	query.Filters.SprintIDs = parseUUIDArray(r, "sprintIds")
+	query.Filters.ExcludedSprintIDs = parseUUIDArray(r, "excludedSprintIds")
 	query.Filters.LabelIDs = parseUUIDArray(r, "labelIds")
+	query.Filters.ExcludedLabelIDs = parseUUIDArray(r, "excludedLabelIds")
 	query.Filters.EstimateValues = parseInt16Array(r, "estimateValues")
+	query.Filters.ExcludedEstimateValues = parseInt16Array(r, "excludedEstimateValues")
 
 	query.Filters.Priorities = parseStringArray(r, "priorities")
+	query.Filters.ExcludedPriorities = parseStringArray(r, "excludedPriorities")
 	query.Filters.Categories = parseStringArray(r, "categories")
 
 	query.Filters.Parent = parseUUIDParam(r, "parentId")
@@ -1560,38 +1569,47 @@ func isValidGroupBy(groupBy string) bool {
 func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 	return stories.CoreStoryQuery{
 		Filters: stories.CoreStoryFilters{
-			StatusIDs:       query.Filters.StatusIDs,
-			AssigneeIDs:     query.Filters.AssigneeIDs,
-			ReporterIDs:     query.Filters.ReporterIDs,
-			TitleContains:   query.Filters.TitleContains,
-			Priorities:      query.Filters.Priorities,
-			Categories:      query.Filters.Categories,
-			TeamIDs:         query.Filters.TeamIDs,
-			SprintIDs:       query.Filters.SprintIDs,
-			LabelIDs:        query.Filters.LabelIDs,
-			EstimateValues:  query.Filters.EstimateValues,
-			Parent:          query.Filters.Parent,
-			Objective:       query.Filters.Objective,
-			Epic:            query.Filters.Epic,
-			HasNoAssignee:   query.Filters.HasNoAssignee,
-			HasBlockedBy:    query.Filters.HasBlockedBy,
-			AssignedToMe:    query.Filters.AssignedToMe,
-			CreatedByMe:     query.Filters.CreatedByMe,
-			ShowSubStories:  query.Filters.ShowSubStories,
-			IncludeArchived: query.Filters.IncludeArchived,
-			IncludeDeleted:  query.Filters.IncludeDeleted,
-			CreatedAfter:    query.Filters.CreatedAfter,
-			CreatedBefore:   query.Filters.CreatedBefore,
-			UpdatedAfter:    query.Filters.UpdatedAfter,
-			UpdatedBefore:   query.Filters.UpdatedBefore,
-			StartDateAfter:  query.Filters.StartDateAfter,
-			StartDateBefore: query.Filters.StartDateBefore,
-			DeadlineAfter:   query.Filters.DeadlineAfter,
-			DeadlineBefore:  query.Filters.DeadlineBefore,
-			CompletedAfter:  query.Filters.CompletedAfter,
-			CompletedBefore: query.Filters.CompletedBefore,
-			CurrentUserID:   uuid.Nil,
-			WorkspaceID:     uuid.Nil,
+			StatusIDs:              query.Filters.StatusIDs,
+			ExcludedStatusIDs:      query.Filters.ExcludedStatusIDs,
+			AssigneeIDs:            query.Filters.AssigneeIDs,
+			ExcludedAssigneeIDs:    query.Filters.ExcludedAssigneeIDs,
+			ReporterIDs:            query.Filters.ReporterIDs,
+			ExcludedReporterIDs:    query.Filters.ExcludedReporterIDs,
+			TitleContains:          query.Filters.TitleContains,
+			TitleNotContains:       query.Filters.TitleNotContains,
+			Priorities:             query.Filters.Priorities,
+			ExcludedPriorities:     query.Filters.ExcludedPriorities,
+			Categories:             query.Filters.Categories,
+			TeamIDs:                query.Filters.TeamIDs,
+			ExcludedTeamIDs:        query.Filters.ExcludedTeamIDs,
+			SprintIDs:              query.Filters.SprintIDs,
+			ExcludedSprintIDs:      query.Filters.ExcludedSprintIDs,
+			LabelIDs:               query.Filters.LabelIDs,
+			ExcludedLabelIDs:       query.Filters.ExcludedLabelIDs,
+			EstimateValues:         query.Filters.EstimateValues,
+			ExcludedEstimateValues: query.Filters.ExcludedEstimateValues,
+			Parent:                 query.Filters.Parent,
+			Objective:              query.Filters.Objective,
+			Epic:                   query.Filters.Epic,
+			HasNoAssignee:          query.Filters.HasNoAssignee,
+			HasBlockedBy:           query.Filters.HasBlockedBy,
+			AssignedToMe:           query.Filters.AssignedToMe,
+			CreatedByMe:            query.Filters.CreatedByMe,
+			ShowSubStories:         query.Filters.ShowSubStories,
+			IncludeArchived:        query.Filters.IncludeArchived,
+			IncludeDeleted:         query.Filters.IncludeDeleted,
+			CreatedAfter:           query.Filters.CreatedAfter,
+			CreatedBefore:          query.Filters.CreatedBefore,
+			UpdatedAfter:           query.Filters.UpdatedAfter,
+			UpdatedBefore:          query.Filters.UpdatedBefore,
+			StartDateAfter:         query.Filters.StartDateAfter,
+			StartDateBefore:        query.Filters.StartDateBefore,
+			DeadlineAfter:          query.Filters.DeadlineAfter,
+			DeadlineBefore:         query.Filters.DeadlineBefore,
+			CompletedAfter:         query.Filters.CompletedAfter,
+			CompletedBefore:        query.Filters.CompletedBefore,
+			CurrentUserID:          uuid.Nil,
+			WorkspaceID:            uuid.Nil,
 		},
 		GroupBy:         query.GroupBy,
 		OrderBy:         query.OrderBy,
@@ -1612,29 +1630,56 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	if len(filters.StatusIDs) > 0 {
 		result["status_ids"] = filters.StatusIDs
 	}
+	if len(filters.ExcludedStatusIDs) > 0 {
+		result["excluded_status_ids"] = filters.ExcludedStatusIDs
+	}
 	if len(filters.AssigneeIDs) > 0 {
 		result["assignee_ids"] = filters.AssigneeIDs
+	}
+	if len(filters.ExcludedAssigneeIDs) > 0 {
+		result["excluded_assignee_ids"] = filters.ExcludedAssigneeIDs
 	}
 	if len(filters.ReporterIDs) > 0 {
 		result["reporter_ids"] = filters.ReporterIDs
 	}
+	if len(filters.ExcludedReporterIDs) > 0 {
+		result["excluded_reporter_ids"] = filters.ExcludedReporterIDs
+	}
 	if filters.TitleContains != nil {
 		result["title_contains"] = *filters.TitleContains
+	}
+	if filters.TitleNotContains != nil {
+		result["title_not_contains"] = *filters.TitleNotContains
 	}
 	if len(filters.Priorities) > 0 {
 		result["priorities"] = filters.Priorities
 	}
+	if len(filters.ExcludedPriorities) > 0 {
+		result["excluded_priorities"] = filters.ExcludedPriorities
+	}
 	if len(filters.TeamIDs) > 0 {
 		result["team_ids"] = filters.TeamIDs
+	}
+	if len(filters.ExcludedTeamIDs) > 0 {
+		result["excluded_team_ids"] = filters.ExcludedTeamIDs
 	}
 	if len(filters.SprintIDs) > 0 {
 		result["sprint_ids"] = filters.SprintIDs
 	}
+	if len(filters.ExcludedSprintIDs) > 0 {
+		result["excluded_sprint_ids"] = filters.ExcludedSprintIDs
+	}
 	if len(filters.LabelIDs) > 0 {
 		result["label_ids"] = filters.LabelIDs
 	}
+	if len(filters.ExcludedLabelIDs) > 0 {
+		result["excluded_label_ids"] = filters.ExcludedLabelIDs
+	}
 	if len(filters.EstimateValues) > 0 {
 		result["estimate_values"] = filters.EstimateValues
+	}
+	if len(filters.ExcludedEstimateValues) > 0 {
+		result["excluded_estimate_values"] = filters.ExcludedEstimateValues
 	}
 	if filters.Parent != nil {
 		result["parent_id"] = *filters.Parent

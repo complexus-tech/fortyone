@@ -59,14 +59,14 @@ export const Hero = () => {
                   "relative z-1 text-5xl font-medium text-balance md:max-w-7xl md:text-[3.5rem]",
                 )}
               >
-                The smartest AI project manager for modern teams.
+                Plan and deliver projects with customer feedback built in.
               </Text>
             </m.div>
 
             <m.div {...createRevealMotion(0.3, shouldReduceMotion)}>
               <Text className="w-full max-w-xl opacity-80 md:mb-0.5">
-                Plan work, assign tasks, track progress, and let AI help find
-                the right owner, estimate, schedule, and next step.
+                Collect requests, decide what matters, and move accepted
+                feedback into the project plan without losing its context.
               </Text>
             </m.div>
           </Box>

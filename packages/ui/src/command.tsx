@@ -112,7 +112,7 @@ const CommandItem = ({
 }) => (
   <CommandPrimitive.Item
     className={cn(
-      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus:bg-accent rounded-md w-full py-1.5 px-2 outline-none cursor-pointer data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:pointer-events-none",
+      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus:bg-accent rounded-md w-full py-1.5 px-2 outline-none cursor-pointer data-[disabled=true]:opacity-50 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none",
       {
         "bg-accent": active,
       },

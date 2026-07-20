@@ -239,27 +239,36 @@ type CoreNewComment struct {
 
 // CoreStoryFilters represents filtering options for stories
 type CoreStoryFilters struct {
-	StatusIDs      []uuid.UUID `json:"statusIds"`
-	AssigneeIDs    []uuid.UUID `json:"assigneeIds"`
-	ReporterIDs    []uuid.UUID `json:"reporterIds"`
-	TitleContains  *string     `json:"titleContains"`
-	Priorities     []string    `json:"priorities"`
-	Categories     []string    `json:"categories"`
-	TeamIDs        []uuid.UUID `json:"teamIds"`
-	SprintIDs      []uuid.UUID `json:"sprintIds"`
-	LabelIDs       []uuid.UUID `json:"labelIds"`
-	EstimateValues []int16     `json:"estimateValues"`
-	Parent         *uuid.UUID  `json:"parentId"`
-	Objective      *uuid.UUID  `json:"objectiveId"`
-	Epic           *uuid.UUID  `json:"epicId"`
-	KeyResult      *uuid.UUID  `json:"keyResultId"`
-	HasNoAssignee  *bool       `json:"hasNoAssignee"`
-	HasBlockedBy   *bool       `json:"hasBlockedBy"`
-	AssignedToMe   *bool       `json:"assignedToMe"`
-	CreatedByMe    *bool       `json:"createdByMe"`
-	ShowSubStories *bool       `json:"showSubStories"`
-	CurrentUserID  uuid.UUID   `json:"currentUserId"`
-	WorkspaceID    uuid.UUID   `json:"workspaceId"`
+	StatusIDs              []uuid.UUID `json:"statusIds"`
+	ExcludedStatusIDs      []uuid.UUID `json:"excludedStatusIds"`
+	AssigneeIDs            []uuid.UUID `json:"assigneeIds"`
+	ExcludedAssigneeIDs    []uuid.UUID `json:"excludedAssigneeIds"`
+	ReporterIDs            []uuid.UUID `json:"reporterIds"`
+	ExcludedReporterIDs    []uuid.UUID `json:"excludedReporterIds"`
+	TitleContains          *string     `json:"titleContains"`
+	TitleNotContains       *string     `json:"titleNotContains"`
+	Priorities             []string    `json:"priorities"`
+	ExcludedPriorities     []string    `json:"excludedPriorities"`
+	Categories             []string    `json:"categories"`
+	TeamIDs                []uuid.UUID `json:"teamIds"`
+	ExcludedTeamIDs        []uuid.UUID `json:"excludedTeamIds"`
+	SprintIDs              []uuid.UUID `json:"sprintIds"`
+	ExcludedSprintIDs      []uuid.UUID `json:"excludedSprintIds"`
+	LabelIDs               []uuid.UUID `json:"labelIds"`
+	ExcludedLabelIDs       []uuid.UUID `json:"excludedLabelIds"`
+	EstimateValues         []int16     `json:"estimateValues"`
+	ExcludedEstimateValues []int16     `json:"excludedEstimateValues"`
+	Parent                 *uuid.UUID  `json:"parentId"`
+	Objective              *uuid.UUID  `json:"objectiveId"`
+	Epic                   *uuid.UUID  `json:"epicId"`
+	KeyResult              *uuid.UUID  `json:"keyResultId"`
+	HasNoAssignee          *bool       `json:"hasNoAssignee"`
+	HasBlockedBy           *bool       `json:"hasBlockedBy"`
+	AssignedToMe           *bool       `json:"assignedToMe"`
+	CreatedByMe            *bool       `json:"createdByMe"`
+	ShowSubStories         *bool       `json:"showSubStories"`
+	CurrentUserID          uuid.UUID   `json:"currentUserId"`
+	WorkspaceID            uuid.UUID   `json:"workspaceId"`
 	// Date range filters
 	CreatedAfter    *time.Time `json:"createdAfter"`
 	CreatedBefore   *time.Time `json:"createdBefore"`

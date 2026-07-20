@@ -2,7 +2,7 @@ import {
   GitIcon,
   HistoryIcon,
   OKRIcon,
-  SettingsIcon,
+  RequestsIcon,
   SprintsIcon,
 } from "icons";
 import type { Icon } from "icons/src/types";
@@ -32,45 +32,45 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Goal-connected tasks.",
+    title: "Work tied to goals.",
     description:
-      "Connect everyday work to company goals so progress means more than a completed checklist.",
+      "Connect tasks to company goals so the team knows why each item matters.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "AI task assignment.",
+    title: "Capacity-aware assignments.",
     description:
-      "Assign work to AI and let it help choose the right owner from team workload and context.",
+      "Use workload and task context to find an owner without overloading the team.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "Smart estimates and timing.",
+    title: "AI help with planning.",
     description:
-      "Fill in missing estimates, find schedule windows, and surface risks before work starts slipping.",
+      "Fill in missing estimates, find time for the work, and flag delivery risk early.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "One project source of truth.",
+    title: "One place for the project.",
     description:
-      "Plans, assignments, tasks, and progress live together instead of being rebuilt in status meetings.",
+      "Keep plans, tasks, owners, and progress together. No one has to rebuild the latest status by hand.",
   },
   {
     icon: (
-      <SettingsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
+      <RequestsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Flexible team workflows.",
+    title: "Feedback tied to delivery.",
     description:
-      "Customize statuses, terminology, permissions, and planning rules without losing historical context.",
+      "Collect requests in a public portal, route them to the right team, and turn selected feedback into planned work.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Integrations that feed AI.",
+    title: "Context from your tools.",
     description:
-      "Google Calendar, Slack, GitHub, Figma, and GitLab become context AI can use to plan and act.",
+      "Attach conversations, files, and commits to the work they created.",
   },
 ];
 
@@ -78,8 +78,8 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      description="FortyOne combines AI project management, task management, goal tracking, and team planning in one workspace so work can move without constant handoffs."
-      mainHeading="Everything a modern team needs to plan, assign, and track work."
+      description="Feedback and goals stay with the tasks they create. Owners can see what was requested, why it matters, and how the work is going."
+      mainHeading="Know where the work came from and why it matters."
       // smallHeading="What's inside"
     />
   );

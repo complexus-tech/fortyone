@@ -671,34 +671,33 @@ export const HowItWorks = () => {
         whileInView="show"
       >
         <Text
-          color="gradientDark"
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
+          color="gradientDark"
         >
-          <span className="block">Turn plans into real work.</span>
-          <span className="block">Keep every team aligned.</span>
+          Keep the original request attached to the work.
         </Text>
       </motion.div>
 
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          title="Plan the work."
-          description="Turn goals, ideas, and requests into clear tasks that already carry the context behind them."
+          description="Turn selected feedback, company goals, and team requests into clear tasks with the source context attached."
+          title="Plan the right work."
         >
           <TaskGoalCard />
         </FeatureCard>
         <FeatureCard
-          title="Assign with AI."
-          description="Use team context, workload, estimates, and availability to help pick the right owner and timing."
           delay={0.1}
+          description="Let AI use workload, estimates, and availability to suggest an owner and time for the work."
+          title="Assign with context."
         >
           <AIAssignmentCard />
         </FeatureCard>
         <FeatureCard
-          title="Turn tools into context."
-          description="Bring conversations, files, commits, and backlog details into the plan before work starts."
           delay={0.2}
+          description="Bring conversations, files, and commits into the task so the team can see where the work came from."
+          title="Keep the source attached."
         >
           <IntegrationCard />
         </FeatureCard>
@@ -717,32 +716,32 @@ export const PlatformWorkflow = () => {
         whileInView="show"
       >
         <Text
-          color="gradientDark"
           as="h2"
           className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
+          color="gradientDark"
         >
-          Keep every team, task, and decision moving together.
+          See what is moving, blocked, and at risk.
         </Text>
       </motion.div>
 
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          title="Track every moving part."
-          description="Goals, tasks, and delivery progress stay connected so everyone can see what is done, next, and at risk."
+          description="Keep goals, tasks, and progress connected so the team can see what is done and what needs attention."
+          title="Track delivery."
         >
           <ProgressCard />
         </FeatureCard>
         <FeatureCard
-          title="Balance team capacity."
-          description="Plan work around real team load before assignments create bottlenecks or missed handoffs."
           delay={0.1}
+          description="Check team workload before new assignments create a bottleneck."
+          title="Plan around capacity."
         >
           <CapacityCard />
         </FeatureCard>
         <FeatureCard
-          title="Control AI actions."
-          description="Review important suggestions, adjust the plan, and keep managers in control of how work changes."
           delay={0.2}
+          description="Approve or edit important suggestions before they change the plan."
+          title="Review AI changes."
         >
           <ControlCard />
         </FeatureCard>

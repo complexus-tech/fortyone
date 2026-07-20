@@ -67,7 +67,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
-              Your tools become AI context.
+              Your tools bring the context. FortyOne turns it into a plan.
             </Text>
           </motion.div>
           <motion.div
@@ -80,10 +80,9 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Text className="mt-4 mb-10 max-w-[550px]" color="muted">
-              Google Calendar helps AI understand real availability. Slack lets
-              teams create tasks and ask the assistant where work is already
-              happening. GitHub, Figma, and GitLab bring delivery context back
-              into the project plan.
+              Use Google Calendar for availability and Slack for task intake.
+              GitHub, Figma, and GitLab bring delivery context into the project
+              plan.
             </Text>
           </motion.div>
           <motion.div
@@ -96,7 +95,7 @@ export const Integrations = () => {
             whileInView={{ y: 0, opacity: 1 }}
           >
             <Button color="invert" href={SIGNUP_URL} rounded="lg" size="lg">
-              Get started free
+              Start free
             </Button>
           </motion.div>
         </Flex>

@@ -12,9 +12,9 @@ type Billing = "annual" | "monthly";
 const packages = [
   {
     name: "Hobby",
-    cta: "Start free - no card needed",
+    cta: "Start free",
     href: SIGNUP_URL,
-    overview: "For individuals and small teams getting started.",
+    overview: "For small teams running their first project.",
     price: 0,
     features: [
       "1 team",
@@ -29,7 +29,7 @@ const packages = [
     name: "Professional",
     cta: "Try Professional",
     href: SIGNUP_URL,
-    overview: "For growing teams who need OKRs and more room to move.",
+    overview: "For growing teams that need goals and more room to plan.",
     price: 7,
     features: [
       "Everything in Hobby",
@@ -45,7 +45,7 @@ const packages = [
     name: "Business",
     cta: "Try Business",
     href: SIGNUP_URL,
-    overview: "For teams who need full control, no limits, and fast support.",
+    overview: "For organizations coordinating work across several teams.",
     price: 10,
     features: [
       "Everything in Professional",
@@ -63,7 +63,7 @@ const packages = [
     cta: "Talk to sales",
     href: "mailto:info@complexus.app",
     overview:
-      "For orgs with complex requirements, compliance needs, or on-premise preferences.",
+      "For organizations with security, compliance, deployment, or integration requirements.",
     features: [
       "Custom onboarding & integrations",
       "On-premise/Private Cloud Option",
@@ -201,14 +201,14 @@ export const Pricing = ({
                   pathname === "/pricing",
               })}
             >
-              Start free. Scale AI project management as your team grows.
+              Start with one team. Scale when the work does.
             </Text>
           </motion.div>
           {!hideDescription ? (
             <Text className="w-full max-w-xl opacity-70 md:mt-4">
-              No card required and no trial clock. Plan real projects on the
-              free plan, then add more teams, goals, integrations, and AI
-              capacity as work gets bigger.
+              No card and no trial clock. Run a real project on the free plan,
+              then add teams, goals, integrations, and AI capacity as your
+              organization grows.
             </Text>
           ) : null}
         </Box>

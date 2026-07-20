@@ -527,17 +527,32 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if statusIds, ok := filters["status_ids"].([]uuid.UUID); ok {
 		coreFilters.StatusIDs = statusIds
 	}
+	if excludedStatusIds, ok := filters["excluded_status_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedStatusIDs = excludedStatusIds
+	}
 	if assigneeIds, ok := filters["assignee_ids"].([]uuid.UUID); ok {
 		coreFilters.AssigneeIDs = assigneeIds
+	}
+	if excludedAssigneeIds, ok := filters["excluded_assignee_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedAssigneeIDs = excludedAssigneeIds
 	}
 	if reporterIds, ok := filters["reporter_ids"].([]uuid.UUID); ok {
 		coreFilters.ReporterIDs = reporterIds
 	}
+	if excludedReporterIds, ok := filters["excluded_reporter_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedReporterIDs = excludedReporterIds
+	}
 	if titleContains, ok := filters["title_contains"].(string); ok {
 		coreFilters.TitleContains = &titleContains
 	}
+	if titleNotContains, ok := filters["title_not_contains"].(string); ok {
+		coreFilters.TitleNotContains = &titleNotContains
+	}
 	if priorities, ok := filters["priorities"].([]string); ok {
 		coreFilters.Priorities = priorities
+	}
+	if excludedPriorities, ok := filters["excluded_priorities"].([]string); ok {
+		coreFilters.ExcludedPriorities = excludedPriorities
 	}
 	if categories, ok := filters["categories"].([]string); ok {
 		coreFilters.Categories = categories
@@ -545,14 +560,26 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if teamIds, ok := filters["team_ids"].([]uuid.UUID); ok {
 		coreFilters.TeamIDs = teamIds
 	}
+	if excludedTeamIds, ok := filters["excluded_team_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedTeamIDs = excludedTeamIds
+	}
 	if sprintIds, ok := filters["sprint_ids"].([]uuid.UUID); ok {
 		coreFilters.SprintIDs = sprintIds
+	}
+	if excludedSprintIds, ok := filters["excluded_sprint_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedSprintIDs = excludedSprintIds
 	}
 	if labelIds, ok := filters["label_ids"].([]uuid.UUID); ok {
 		coreFilters.LabelIDs = labelIds
 	}
+	if excludedLabelIds, ok := filters["excluded_label_ids"].([]uuid.UUID); ok {
+		coreFilters.ExcludedLabelIDs = excludedLabelIds
+	}
 	if estimateValues, ok := filters["estimate_values"].([]int16); ok {
 		coreFilters.EstimateValues = estimateValues
+	}
+	if excludedEstimateValues, ok := filters["excluded_estimate_values"].([]int16); ok {
+		coreFilters.ExcludedEstimateValues = excludedEstimateValues
 	}
 	if parentId, ok := filters["parent_id"].(uuid.UUID); ok {
 		coreFilters.Parent = &parentId
@@ -1283,21 +1310,36 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if len(filters.StatusIDs) > 0 {
 		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
 	}
+	if len(filters.ExcludedStatusIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.status_id = ANY(:excluded_status_ids))")
+	}
 
 	if len(filters.AssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+	if len(filters.ExcludedAssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
 	}
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
+	if len(filters.ExcludedReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.reporter_id IS NULL OR NOT (s.reporter_id = ANY(:excluded_reporter_ids)))")
+	}
 
 	if filters.TitleContains != nil {
 		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
+	if filters.TitleNotContains != nil {
+		whereClauses = append(whereClauses, "NOT (COALESCE(s.title, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description_html, '') ILIKE '%' || :title_not_contains || '%')")
+	}
 
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+	if len(filters.ExcludedPriorities) > 0 {
+		whereClauses = append(whereClauses, "(s.priority IS NULL OR NOT (s.priority = ANY(:excluded_priorities)))")
 	}
 
 	if len(filters.Categories) > 0 {
@@ -1310,9 +1352,23 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		// If no specific teams are provided, only show stories from teams user is a member of
 		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
+	if len(filters.ExcludedTeamIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.team_id = ANY(:excluded_team_ids))")
+	}
 
 	if len(filters.SprintIDs) > 0 {
 		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+	if len(filters.ExcludedSprintIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.sprint_id IS NULL OR NOT (s.sprint_id = ANY(:excluded_sprint_ids)))")
+	}
+
+	if len(filters.ExcludedLabelIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT EXISTS (SELECT 1 FROM story_labels sl_excluded WHERE sl_excluded.story_id = s.id AND sl_excluded.label_id = ANY(:excluded_label_ids))")
+	}
+
+	if len(filters.ExcludedEstimateValues) > 0 {
+		whereClauses = append(whereClauses, "(s.estimate_unit IS NULL OR NOT (s.estimate_unit = ANY(:excluded_estimate_values)))")
 	}
 
 	if filters.Objective != nil {
@@ -1772,14 +1828,26 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.StatusIDs) > 0 {
 		params["status_ids"] = filters.StatusIDs
 	}
+	if len(filters.ExcludedStatusIDs) > 0 {
+		params["excluded_status_ids"] = filters.ExcludedStatusIDs
+	}
 	if len(filters.AssigneeIDs) > 0 {
 		params["assignee_ids"] = filters.AssigneeIDs
+	}
+	if len(filters.ExcludedAssigneeIDs) > 0 {
+		params["excluded_assignee_ids"] = filters.ExcludedAssigneeIDs
 	}
 	if len(filters.ReporterIDs) > 0 {
 		params["reporter_ids"] = filters.ReporterIDs
 	}
+	if len(filters.ExcludedReporterIDs) > 0 {
+		params["excluded_reporter_ids"] = filters.ExcludedReporterIDs
+	}
 	if len(filters.Priorities) > 0 {
 		params["priorities"] = filters.Priorities
+	}
+	if len(filters.ExcludedPriorities) > 0 {
+		params["excluded_priorities"] = filters.ExcludedPriorities
 	}
 	if len(filters.Categories) > 0 {
 		params["categories"] = filters.Categories
@@ -1787,17 +1855,32 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if len(filters.TeamIDs) > 0 {
 		params["team_ids"] = filters.TeamIDs
 	}
+	if len(filters.ExcludedTeamIDs) > 0 {
+		params["excluded_team_ids"] = filters.ExcludedTeamIDs
+	}
 	if len(filters.SprintIDs) > 0 {
 		params["sprint_ids"] = filters.SprintIDs
+	}
+	if len(filters.ExcludedSprintIDs) > 0 {
+		params["excluded_sprint_ids"] = filters.ExcludedSprintIDs
 	}
 	if len(filters.LabelIDs) > 0 {
 		params["label_ids"] = filters.LabelIDs
 	}
+	if len(filters.ExcludedLabelIDs) > 0 {
+		params["excluded_label_ids"] = filters.ExcludedLabelIDs
+	}
 	if len(filters.EstimateValues) > 0 {
 		params["estimate_values"] = filters.EstimateValues
 	}
+	if len(filters.ExcludedEstimateValues) > 0 {
+		params["excluded_estimate_values"] = filters.ExcludedEstimateValues
+	}
 	if filters.TitleContains != nil {
 		params["title_contains"] = *filters.TitleContains
+	}
+	if filters.TitleNotContains != nil {
+		params["title_not_contains"] = *filters.TitleNotContains
 	}
 
 	// Single value parameters
@@ -2003,21 +2086,36 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if len(filters.StatusIDs) > 0 {
 		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
 	}
+	if len(filters.ExcludedStatusIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.status_id = ANY(:excluded_status_ids))")
+	}
 
 	if len(filters.AssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+	if len(filters.ExcludedAssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
 	}
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
+	if len(filters.ExcludedReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.reporter_id IS NULL OR NOT (s.reporter_id = ANY(:excluded_reporter_ids)))")
+	}
 
 	if filters.TitleContains != nil {
 		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
+	if filters.TitleNotContains != nil {
+		whereClauses = append(whereClauses, "NOT (COALESCE(s.title, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description_html, '') ILIKE '%' || :title_not_contains || '%')")
+	}
 
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+	if len(filters.ExcludedPriorities) > 0 {
+		whereClauses = append(whereClauses, "(s.priority IS NULL OR NOT (s.priority = ANY(:excluded_priorities)))")
 	}
 
 	if len(filters.Categories) > 0 {
@@ -2030,9 +2128,15 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		// If no specific teams are provided, only show stories from teams user is a member of
 		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
+	if len(filters.ExcludedTeamIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.team_id = ANY(:excluded_team_ids))")
+	}
 
 	if len(filters.SprintIDs) > 0 {
 		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+	if len(filters.ExcludedSprintIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.sprint_id IS NULL OR NOT (s.sprint_id = ANY(:excluded_sprint_ids)))")
 	}
 
 	if len(filters.LabelIDs) > 0 {
@@ -2041,9 +2145,15 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		`
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
 	}
+	if len(filters.ExcludedLabelIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT EXISTS (SELECT 1 FROM story_labels sl_excluded WHERE sl_excluded.story_id = s.id AND sl_excluded.label_id = ANY(:excluded_label_ids))")
+	}
 
 	if len(filters.EstimateValues) > 0 {
 		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
+	}
+	if len(filters.ExcludedEstimateValues) > 0 {
+		whereClauses = append(whereClauses, "(s.estimate_unit IS NULL OR NOT (s.estimate_unit = ANY(:excluded_estimate_values)))")
 	}
 
 	if filters.Objective != nil {
@@ -2524,21 +2634,36 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	if len(filters.StatusIDs) > 0 {
 		whereClauses = append(whereClauses, "s.status_id = ANY(:status_ids)")
 	}
+	if len(filters.ExcludedStatusIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.status_id = ANY(:excluded_status_ids))")
+	}
 
 	if len(filters.AssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "s.assignee_id = ANY(:assignee_ids)")
+	}
+	if len(filters.ExcludedAssigneeIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
 	}
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
 	}
+	if len(filters.ExcludedReporterIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.reporter_id IS NULL OR NOT (s.reporter_id = ANY(:excluded_reporter_ids)))")
+	}
 
 	if filters.TitleContains != nil {
 		whereClauses = append(whereClauses, "(s.title ILIKE '%' || :title_contains || '%' OR s.description ILIKE '%' || :title_contains || '%' OR s.description_html ILIKE '%' || :title_contains || '%')")
 	}
+	if filters.TitleNotContains != nil {
+		whereClauses = append(whereClauses, "NOT (COALESCE(s.title, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description, '') ILIKE '%' || :title_not_contains || '%' OR COALESCE(s.description_html, '') ILIKE '%' || :title_not_contains || '%')")
+	}
 
 	if len(filters.Priorities) > 0 {
 		whereClauses = append(whereClauses, "s.priority = ANY(:priorities)")
+	}
+	if len(filters.ExcludedPriorities) > 0 {
+		whereClauses = append(whereClauses, "(s.priority IS NULL OR NOT (s.priority = ANY(:excluded_priorities)))")
 	}
 
 	if len(filters.Categories) > 0 {
@@ -2551,17 +2676,29 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		// If no specific teams are provided, only show stories from teams user is a member of
 		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = s.team_id AND tm.user_id = :current_user_id)")
 	}
+	if len(filters.ExcludedTeamIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT (s.team_id = ANY(:excluded_team_ids))")
+	}
 
 	if len(filters.SprintIDs) > 0 {
 		whereClauses = append(whereClauses, "s.sprint_id = ANY(:sprint_ids)")
+	}
+	if len(filters.ExcludedSprintIDs) > 0 {
+		whereClauses = append(whereClauses, "(s.sprint_id IS NULL OR NOT (s.sprint_id = ANY(:excluded_sprint_ids)))")
 	}
 
 	if len(filters.LabelIDs) > 0 {
 		whereClauses = append(whereClauses, "sl_filter.label_id = ANY(:label_ids)")
 	}
+	if len(filters.ExcludedLabelIDs) > 0 {
+		whereClauses = append(whereClauses, "NOT EXISTS (SELECT 1 FROM story_labels sl_excluded WHERE sl_excluded.story_id = s.id AND sl_excluded.label_id = ANY(:excluded_label_ids))")
+	}
 
 	if len(filters.EstimateValues) > 0 {
 		whereClauses = append(whereClauses, "s.estimate_unit = ANY(:estimate_values)")
+	}
+	if len(filters.ExcludedEstimateValues) > 0 {
+		whereClauses = append(whereClauses, "(s.estimate_unit IS NULL OR NOT (s.estimate_unit = ANY(:excluded_estimate_values)))")
 	}
 
 	if filters.Parent != nil {

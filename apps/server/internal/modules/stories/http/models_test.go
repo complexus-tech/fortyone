@@ -55,6 +55,31 @@ func TestParseStoryQueryMapsEstimateValues(t *testing.T) {
 	}
 }
 
+func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
+	statusID := uuid.New()
+	assigneeID := uuid.New()
+	request := httptest.NewRequest(
+		"GET",
+		"/stories?excludedStatusIds="+statusID.String()+"&excludedAssigneeIds="+assigneeID.String()+"&titleNotContains=deprecated",
+		nil,
+	)
+
+	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	if err != nil {
+		t.Fatalf("expected query to parse, got error: %v", err)
+	}
+
+	if len(query.Filters.ExcludedStatusIDs) != 1 || query.Filters.ExcludedStatusIDs[0] != statusID {
+		t.Fatalf("expected excluded status %s, got %v", statusID, query.Filters.ExcludedStatusIDs)
+	}
+	if len(query.Filters.ExcludedAssigneeIDs) != 1 || query.Filters.ExcludedAssigneeIDs[0] != assigneeID {
+		t.Fatalf("expected excluded assignee %s, got %v", assigneeID, query.Filters.ExcludedAssigneeIDs)
+	}
+	if query.Filters.TitleNotContains == nil || *query.Filters.TitleNotContains != "deprecated" {
+		t.Fatalf("expected titleNotContains to be parsed, got %v", query.Filters.TitleNotContains)
+	}
+}
+
 func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 	teamID := uuid.New()
 	objectiveID := uuid.New()

@@ -76,7 +76,12 @@ import {
   type EstimateScheme,
 } from "@/lib/estimate";
 import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
-import type { StoriesFilter } from "./stories-filter-types";
+import type {
+  NegatableStoriesFilterField,
+  StoriesFilter,
+  StoriesFilterOperator,
+} from "./stories-filter-types";
+import { getStoriesFilterOperator } from "./stories-filter-types";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -104,8 +109,14 @@ type FilterChip = {
   field: StoriesFilterField;
   label: string;
   operator: string;
+  operatorOptions?: readonly OperatorOption[];
   value: ReactNode;
   icon?: ReactNode;
+};
+
+type OperatorOption = {
+  label: string;
+  value: StoriesFilterOperator;
 };
 
 type FilterOption = {
@@ -123,6 +134,52 @@ type StoriesFilterBarProps = {
 };
 
 const EMPTY_FILTER_FIELDS: readonly StoriesFilterField[] = [];
+
+const CONTENT_OPERATOR_OPTIONS = [
+  { label: "contains", value: "contains" },
+  { label: "does not contain", value: "doesNotContain" },
+] as const satisfies readonly OperatorOption[];
+
+const MULTI_VALUE_OPERATOR_OPTIONS = [
+  { label: "is any of", value: "isAnyOf" },
+  { label: "is not any of", value: "isNotAnyOf" },
+] as const satisfies readonly OperatorOption[];
+
+const NEGATABLE_FILTER_FIELDS = new Set<StoriesFilterField>([
+  "contentContains",
+  "statusIds",
+  "assigneeIds",
+  "reporterIds",
+  "priorities",
+  "teamIds",
+  "sprintIds",
+  "labelIds",
+  "estimateValues",
+]);
+
+const isNegatableFilterField = (
+  field: StoriesFilterField,
+): field is NegatableStoriesFilterField => NEGATABLE_FILTER_FIELDS.has(field);
+
+const getOperatorOptions = (field: NegatableStoriesFilterField) =>
+  field === "contentContains"
+    ? CONTENT_OPERATOR_OPTIONS
+    : MULTI_VALUE_OPERATOR_OPTIONS;
+
+const getOperatorConfig = (
+  filters: StoriesFilter,
+  field: NegatableStoriesFilterField,
+) => {
+  const operator = getStoriesFilterOperator(filters, field);
+  const operatorOptions = getOperatorOptions(field);
+
+  return {
+    operator:
+      operatorOptions.find((option) => option.value === operator)?.label ??
+      operatorOptions[0].label,
+    operatorOptions,
+  };
+};
 
 const getNames = (
   ids: string[] | null | undefined,
@@ -774,7 +831,11 @@ const SprintEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useTeamSprintsInfinite(
       scopedTeamId ?? "",
@@ -873,7 +934,11 @@ const ObjectiveEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useTeamObjectivesInfinite(
       scopedTeamId ?? "",
@@ -1216,6 +1281,7 @@ const Chip = ({
   filters,
   setFilters,
   onEditTitle,
+  onOperatorChange,
   onRemove,
 }: {
   chip: FilterChip;
@@ -1223,6 +1289,7 @@ const Chip = ({
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   onEditTitle: () => void;
+  onOperatorChange: (operator: StoriesFilterOperator) => void;
   onRemove: () => void;
 }) => {
   const isEditable =
@@ -1283,9 +1350,40 @@ const Chip = ({
         {chip.icon}
         {chip.label}
       </span>
-      <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
-        {chip.operator}
-      </span>
+      {chip.operatorOptions ? (
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label={`Change ${chip.label} filter operator`}
+              className="hover:bg-state-hover border-border text-text-secondary flex h-[2.1rem] items-center border-r px-2.5 transition"
+              type="button"
+            >
+              {chip.operator}
+            </button>
+          </Menu.Button>
+          <Menu.Items align="start" className="w-44 p-1">
+            {chip.operatorOptions.map((option) => (
+              <Menu.Item
+                active={chip.operator === option.label}
+                className="justify-between"
+                key={option.value}
+                onSelect={() => {
+                  onOperatorChange(option.value);
+                }}
+              >
+                <span>{option.label}</span>
+                {chip.operator === option.label ? (
+                  <CheckIcon className="h-4 w-auto" />
+                ) : null}
+              </Menu.Item>
+            ))}
+          </Menu.Items>
+        </Menu>
+      ) : (
+        <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
+          {chip.operator}
+        </span>
+      )}
       {valueControl}
       <button
         aria-label={`Remove ${chip.label} filter`}
@@ -1308,7 +1406,11 @@ export const StoriesFilterBar = ({
 }: StoriesFilterBarProps) => {
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data: allStatuses = [] } = useStatuses();
   const { data: allUsers = [] } = useMembers();
   const resolvedTeamId = scopedTeamId ?? "";
@@ -1388,7 +1490,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "contentContains",
         label: "Content",
-        operator: "contains",
+        ...getOperatorConfig(filters, "contentContains"),
         value: filters.contentContains.trim(),
         icon: <ListIcon className="h-4 w-auto" />,
       });
@@ -1423,7 +1525,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "statusIds",
         label: "Status",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "statusIds"),
         value: <StatusChipValue statuses={selectedStatuses} />,
         icon: <StoryStatusIcon statusId={filters.statusIds[0]} />,
       });
@@ -1437,7 +1539,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "assigneeIds",
         label: "Assignee",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "assigneeIds"),
         value: (
           <PeopleChipValue
             label="assignee"
@@ -1456,7 +1558,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "reporterIds",
         label: "Creator",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "reporterIds"),
         value: (
           <PeopleChipValue
             label="creator"
@@ -1473,7 +1575,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "priorities",
         label: "Priority",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "priorities"),
         value: <PriorityChipValue priorities={selectedPriorities} />,
         icon: (
           <PriorityIcon priority={filters.priorities[0] as StoryPriority} />
@@ -1485,7 +1587,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "teamIds",
         label: "Team",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "teamIds"),
         value: getNames(filters.teamIds, teamById),
         icon: <TeamColor color={teamColorById.get(filters.teamIds[0])} />,
       });
@@ -1495,7 +1597,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "sprintIds",
         label: "Sprint",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "sprintIds"),
         value: getNames(filters.sprintIds, sprintById),
       });
     }
@@ -1508,7 +1610,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "labelIds",
         label: "Label",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "labelIds"),
         value: <LabelChipValue labels={selectedLabels} />,
         icon: (
           <TagsIcon
@@ -1523,7 +1625,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "estimateValues",
         label: "Estimate",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "estimateValues"),
         value: (
           <EstimateChipValue
             estimateScheme={estimateScheme}
@@ -1570,6 +1672,15 @@ export const StoriesFilterBar = ({
   const removeFilter = (field: StoriesFilterField) => {
     if (field === "assignedToMe" || field === "createdByMe") {
       setFilters({ ...filters, [field]: false });
+      return;
+    }
+
+    if (isNegatableFilterField(field)) {
+      setFilters({
+        ...filters,
+        [field]: null,
+        operators: { ...filters.operators, [field]: undefined },
+      });
       return;
     }
 
@@ -1666,6 +1777,19 @@ export const StoriesFilterBar = ({
             key={chip.field}
             onEditTitle={() => {
               setTitleDialogOpen(true);
+            }}
+            onOperatorChange={(operator) => {
+              if (!isNegatableFilterField(chip.field)) {
+                return;
+              }
+
+              setFilters({
+                ...filters,
+                operators: {
+                  ...filters.operators,
+                  [chip.field]: operator,
+                },
+              });
             }}
             onRemove={() => {
               removeFilter(chip.field);

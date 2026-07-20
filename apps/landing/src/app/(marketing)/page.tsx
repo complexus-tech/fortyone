@@ -13,9 +13,9 @@ import {
 } from "@/modules/home";
 
 export const metadata: Metadata = {
-  title: "FortyOne | AI Project Manager for Modern Teams",
+  title: "FortyOne | Customer Feedback and Project Management",
   description:
-    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
   keywords: [
     "AI project management",
     "AI project manager",
@@ -29,17 +29,17 @@ export const metadata: Metadata = {
     "project planning software",
   ],
   openGraph: {
-    title: "FortyOne | AI Project Manager for Modern Teams",
+    title: "FortyOne | Customer Feedback and Project Management",
     description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
     url: "/",
     siteName: "FortyOne",
     type: "website",
   },
   twitter: {
-    title: "FortyOne | AI Project Manager for Modern Teams",
+    title: "FortyOne | Customer Feedback and Project Management",
     description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
     card: "summary_large_image",
   },
 };
