@@ -11,6 +11,7 @@ type AppTeamSprintSettings struct {
 	UpcomingSprintsCount         int        `json:"upcomingSprintsCount"`
 	SprintDurationWeeks          int        `json:"sprintDurationWeeks"`
 	SprintStartDay               string     `json:"sprintStartDay"`
+	WorkingDays                  []int      `json:"workingDays"`
 	MoveIncompleteStoriesEnabled bool       `json:"moveIncompleteStoriesEnabled"`
 	NextAutoSprintNumber         int        `json:"nextAutoSprintNumber"`
 	AutoCreateDisabledAt         *time.Time `json:"autoCreateDisabledAt"`
@@ -45,6 +46,7 @@ type AppUpdateTeamSprintSettings struct {
 	UpcomingSprintsCount         *int    `json:"upcomingSprintsCount,omitempty"`
 	SprintDurationWeeks          *int    `json:"sprintDurationWeeks,omitempty"`
 	SprintStartDay               *string `json:"sprintStartDay,omitempty"`
+	WorkingDays                  *[]int  `json:"workingDays,omitempty"`
 	MoveIncompleteStoriesEnabled *bool   `json:"moveIncompleteStoriesEnabled,omitempty"`
 	NextAutoSprintNumber         *int    `json:"nextAutoSprintNumber,omitempty"`
 }
@@ -67,6 +69,7 @@ func toAppTeamSprintSettings(settings teamsettings.CoreTeamSprintSettings) AppTe
 		UpcomingSprintsCount:         settings.UpcomingSprintsCount,
 		SprintDurationWeeks:          settings.SprintDurationWeeks,
 		SprintStartDay:               settings.SprintStartDay,
+		WorkingDays:                  settings.WorkingDays,
 		MoveIncompleteStoriesEnabled: settings.MoveIncompleteStoriesEnabled,
 		NextAutoSprintNumber:         settings.NextAutoSprintNumber,
 		AutoCreateDisabledAt:         settings.AutoCreateDisabledAt,
@@ -101,6 +104,7 @@ func toCoreUpdateTeamSprintSettings(app AppUpdateTeamSprintSettings) teamsetting
 		UpcomingSprintsCount:         app.UpcomingSprintsCount,
 		SprintDurationWeeks:          app.SprintDurationWeeks,
 		SprintStartDay:               app.SprintStartDay,
+		WorkingDays:                  app.WorkingDays,
 		MoveIncompleteStoriesEnabled: app.MoveIncompleteStoriesEnabled,
 		NextAutoSprintNumber:         app.NextAutoSprintNumber,
 	}

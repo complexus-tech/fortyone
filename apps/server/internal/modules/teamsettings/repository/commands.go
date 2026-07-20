@@ -56,6 +56,10 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 		setClauses = append(setClauses, "sprint_start_day = :sprint_start_day")
 		params["sprint_start_day"] = *updates.SprintStartDay
 	}
+	if updates.WorkingDays != nil {
+		setClauses = append(setClauses, "working_days = :working_days")
+		params["working_days"] = pq.Int64Array(intsToInt64s(*updates.WorkingDays))
+	}
 	if updates.MoveIncompleteStoriesEnabled != nil {
 		setClauses = append(setClauses, "move_incomplete_stories_enabled = :move_incomplete_stories_enabled")
 		params["move_incomplete_stories_enabled"] = *updates.MoveIncompleteStoriesEnabled
@@ -88,6 +92,8 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidSprintDuration
 			case "team_sprint_settings_upcoming_sprints_count_check":
 				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidUpcomingCount
+			case "team_sprint_settings_working_days_check":
+				return teamsettings.CoreTeamSprintSettings{}, teamsettings.ErrInvalidWorkingDays
 			}
 		}
 		errMsg := fmt.Sprintf("Failed to update team sprint settings: %s", err)
@@ -100,7 +106,7 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 	if err := tx.GetContext(ctx, &updated, `
 		SELECT
 			team_id, workspace_id, auto_create_sprints, upcoming_sprints_count,
-			sprint_duration_weeks, sprint_start_day, move_incomplete_stories_enabled,
+			sprint_duration_weeks, sprint_start_day, working_days, move_incomplete_stories_enabled,
 			last_auto_sprint_number, next_auto_sprint_number, auto_create_disabled_at,
 			auto_create_disabled_reason, created_at, updated_at
 		FROM team_sprint_settings
@@ -304,6 +310,7 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			upcoming_sprints_count,
 			sprint_duration_weeks,
 			sprint_start_day,
+			working_days,
 			move_incomplete_stories_enabled,
 			last_auto_sprint_number,
 			next_auto_sprint_number
@@ -314,6 +321,7 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			2,
 			2,
 			'Monday',
+			ARRAY[1, 2, 3, 4, 5]::smallint[],
 			true,
 			0,
 			1
@@ -325,6 +333,7 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			upcoming_sprints_count,
 			sprint_duration_weeks,
 			sprint_start_day,
+			working_days,
 			move_incomplete_stories_enabled,
 			last_auto_sprint_number,
 			next_auto_sprint_number,

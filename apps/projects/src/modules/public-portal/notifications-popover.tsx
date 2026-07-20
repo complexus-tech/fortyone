@@ -10,7 +10,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { BellIcon } from "icons";
-import { Avatar, Box, Button, Flex, Popover, Text, TimeAgo } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Popover, Text, TimeAgo } from "ui";
 import { cn } from "lib";
 import { toast } from "sonner";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -102,8 +102,8 @@ const NotificationItem = ({
   return (
     <Link
       className={cn(
-        "hover:bg-surface-muted/60 relative block px-4 py-3 transition-colors",
-        { "bg-surface-muted/30": isUnread },
+        "hover:bg-state-hover relative block px-4 py-3 transition-colors",
+        { "bg-state-hover/50": isUnread },
       )}
       href={getRequestPathBySlug(portal, notification.feedback.slug)}
       onClick={() => {
@@ -124,7 +124,7 @@ const NotificationItem = ({
         <Box className="min-w-0 flex-1">
           <Flex align="start" gap={2} justify="between">
             <Text
-              className="line-clamp-2 text-[0.95rem] leading-5"
+              className="line-clamp-1 text-[0.95rem] leading-5"
               fontWeight={isUnread ? "semibold" : "medium"}
             >
               {renderNotificationMessage(notification)}
@@ -133,10 +133,10 @@ const NotificationItem = ({
               <span className="bg-primary mt-1.5 size-2 shrink-0 rounded-full" />
             ) : null}
           </Flex>
-          <Text className="mt-1 line-clamp-1 text-sm" color="muted">
+          <Text className="mt-1 line-clamp-1 text-[0.95rem]" color="muted">
             {notification.feedback.title}
           </Text>
-          <Text className="mt-1 text-xs" color="muted">
+          <Text className="mt-1 text-sm" color="muted">
             <TimeAgo timestamp={notification.createdAt} />
           </Text>
         </Box>
@@ -286,24 +286,34 @@ export const PublicPortalNotifications = ({
         >
           <BellIcon className="h-[1.35rem] w-auto" />
           {unreadCount > 0 ? (
-            <span className="bg-danger border-background absolute top-1.5 right-1.5 flex min-h-2 min-w-2 rounded-full border" />
+            <Badge
+              className="absolute -top-1 -right-1 shrink-0"
+              rounded="full"
+              size="sm"
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </Badge>
           ) : null}
         </Button>
       </Popover.Trigger>
       <Popover.Content
         align="end"
         aria-label="Notifications"
-        className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden p-0"
+        className="w-[min(28rem,calc(100vw-2rem))] overflow-hidden p-0"
         sideOffset={8}
       >
         <Flex
           align="center"
-          className="border-border/60 h-14 border-b-[0.5px] px-4"
+          className="border-border/60 dark:border-border-strong/80 h-14 border-b-[0.5px] px-4"
           justify="between"
         >
           <Text fontWeight="semibold">Notifications</Text>
           {unreadCount > 0 ? (
-            <Text className="text-sm tabular-nums" color="muted">
+            <Text
+              className="text-[0.95rem] tabular-nums"
+              color="muted"
+              fontWeight="medium"
+            >
               {unreadCount} unread
             </Text>
           ) : null}

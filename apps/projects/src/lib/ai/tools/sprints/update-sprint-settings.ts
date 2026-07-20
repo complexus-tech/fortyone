@@ -31,6 +31,15 @@ export const updateSprintSettings = tool({
       .enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
       .optional()
       .describe("Day of the week when sprints start"),
+    workingDays: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days).size === days.length, {
+        message: "Working days must be unique",
+      })
+      .optional()
+      .describe("ISO working weekdays where Monday is 1 and Sunday is 7"),
     moveIncompleteStoriesEnabled: z
       .boolean()
       .optional()
@@ -50,10 +59,11 @@ export const updateSprintSettings = tool({
       upcomingSprintsCount,
       sprintDurationWeeks,
       sprintStartDay,
+      workingDays,
       moveIncompleteStoriesEnabled,
       nextAutoSprintNumber,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -64,7 +74,7 @@ export const updateSprintSettings = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -84,6 +94,7 @@ export const updateSprintSettings = tool({
         upcomingSprintsCount,
         sprintDurationWeeks,
         sprintStartDay,
+        workingDays,
         moveIncompleteStoriesEnabled,
         nextAutoSprintNumber,
       };

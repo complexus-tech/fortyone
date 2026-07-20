@@ -99,7 +99,7 @@ export const Team = ({
       name: "Feedback",
       icon: <RequestsIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/feedback`),
-      count: feedbackSummary?.totalCount ?? 0,
+      count: feedbackSummary?.unreadCount ?? 0,
       disabled: !feedbackSummary?.enabled,
     },
     {

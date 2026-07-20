@@ -7,6 +7,7 @@ import {
   render as renderWithTestingLibrary,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -256,6 +257,12 @@ jest.mock("ui", () => {
   const Avatar = ({ name }: { name?: string }) => (
     <div>{name ? name.slice(0, 2).toUpperCase() : "U"}</div>
   );
+  const Badge = ({
+    children,
+    ...props
+  }: ReactTypes.HTMLAttributes<HTMLSpanElement> & Record<string, unknown>) => (
+    <span {...getDomProps(props)}>{children}</span>
+  );
   const Dialog = ({
     children,
     open,
@@ -473,6 +480,7 @@ jest.mock("ui", () => {
 
   return {
     Avatar,
+    Badge,
     Box,
     Button,
     Dialog,
@@ -629,6 +637,9 @@ describe("Public portal UI", () => {
         viewer={portalViewer}
       />,
     );
+    const feedbackDescription = screen.getByText(
+      "Families are crossing a fast section of East Avenue during school pickup. A marked crossing and speed-calming work would make this safer.",
+    );
 
     expect(
       screen.getAllByRole("link", { name: /^Feedback$/i }).length,
@@ -637,6 +648,8 @@ describe("Public portal UI", () => {
       screen.getByRole("button", { name: /new feedback/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("All boards")).toBeInTheDocument();
+    expect(feedbackDescription).toHaveClass("line-clamp-2");
+    expect(feedbackDescription).not.toHaveClass("max-w-2xl");
     expect(
       screen.queryByRole("link", { name: "Login/signup" }),
     ).not.toBeInTheDocument();
@@ -990,14 +1003,26 @@ describe("Public portal UI", () => {
     const notificationMessage = await screen.findByText(
       "Tariro Moyo commented on your feedback",
     );
-    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
     const notificationLink = notificationMessage.closest("a");
+    if (!notificationLink)
+      throw new Error("Notification link was not rendered");
+
+    expect(notificationMessage).toHaveClass("line-clamp-1");
+    expect(
+      within(notificationLink).getByText(
+        "Add pedestrian crossing near East Avenue school",
+      ),
+    ).toHaveClass("line-clamp-1", "text-[0.95rem]");
+    expect(
+      within(notificationLink)
+        .getByText("2026-07-20T08:00:00.000Z")
+        .closest("p"),
+    ).toHaveClass("text-sm");
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
     expect(notificationLink).toHaveAttribute(
       "href",
       "/portal/city-roads/feedback/add-pedestrian-crossing-near-east-avenue-school",
     );
-    if (!notificationLink)
-      throw new Error("Notification link was not rendered");
     notificationLink.addEventListener("click", (event) => {
       event.preventDefault();
     });
@@ -1010,6 +1035,29 @@ describe("Public portal UI", () => {
         portalSlug: "city-roads",
       });
     });
+  });
+
+  it("shows the unread notification count using the projects badge pattern", async () => {
+    getPublicPortalUnreadCountActionMock.mockResolvedValue({
+      data: { count: 100 },
+    });
+
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    expect(await screen.findByText("9+")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Notifications",
+      }),
+    );
+
+    expect(await screen.findByText("100 unread")).toHaveClass("text-[0.95rem]");
   });
 
   it("reuses fresh notification data when the popover is reopened", async () => {

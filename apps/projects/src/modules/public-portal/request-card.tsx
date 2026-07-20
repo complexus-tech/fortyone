@@ -70,7 +70,7 @@ export const PublicRequestCard = ({
                 {request.title}
               </Text>
               {request.description ? (
-                <Text className="mt-1.5 line-clamp-2 max-w-2xl" color="muted">
+                <Text className="mt-1.5 line-clamp-2" color="muted">
                   {request.description}
                 </Text>
               ) : null}

@@ -105,6 +105,7 @@ type PlanInput struct {
 	DurationMinutes  int
 	WindowStart      time.Time
 	WindowEnd        time.Time
+	WorkingDays      []int
 	Candidates       []CandidateSchedule
 	AssignmentReason string
 }

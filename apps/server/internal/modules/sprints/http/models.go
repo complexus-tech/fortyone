@@ -152,6 +152,7 @@ func toAppSprint(sprint sprints.CoreSprint) AppSprint {
 
 type AppSprintAnalytics struct {
 	SprintID       uuid.UUID              `json:"sprintId"`
+	WorkingDays    []int                  `json:"workingDays"`
 	Overview       SprintOverview         `json:"overview"`
 	StoryBreakdown StoryBreakdown         `json:"storyBreakdown"`
 	Burndown       []BurndownDataPoint    `json:"burndown"`
@@ -191,7 +192,8 @@ type TeamMemberAllocation struct {
 // toAppSprintAnalytics converts core sprint analytics to app sprint analytics.
 func toAppSprintAnalytics(analytics sprints.CoreSprintAnalytics) AppSprintAnalytics {
 	return AppSprintAnalytics{
-		SprintID: analytics.SprintID,
+		SprintID:    analytics.SprintID,
+		WorkingDays: analytics.WorkingDays,
 		Overview: SprintOverview{
 			CompletionPercentage: analytics.Overview.CompletionPercentage,
 			DaysElapsed:          analytics.Overview.DaysElapsed,

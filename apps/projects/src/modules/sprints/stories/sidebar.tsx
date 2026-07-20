@@ -126,7 +126,10 @@ export const Sidebar = () => {
       <Divider className="my-6" />
       <Box className="px-6">
         <Text>Burndown Chart</Text>
-        <BurndownChart burndownData={analytics.burndown} />
+        <BurndownChart
+          burndownData={analytics.burndown}
+          workingDays={analytics.workingDays}
+        />
       </Box>
       <Divider className="my-6" />
       <Box className="px-6">

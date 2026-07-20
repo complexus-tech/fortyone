@@ -48,6 +48,7 @@ type CoreUpdateSprint struct {
 
 type CoreSprintAnalytics struct {
 	SprintID       uuid.UUID
+	WorkingDays    []int
 	Overview       CoreSprintOverview
 	StoryBreakdown CoreStoryBreakdown
 	Burndown       []CoreBurndownDataPoint

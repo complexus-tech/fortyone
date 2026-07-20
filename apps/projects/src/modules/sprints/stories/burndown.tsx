@@ -1,5 +1,5 @@
-import React, { useCallback } from "react";
-import { format, isWeekend } from "date-fns";
+import React from "react";
+import { format } from "date-fns";
 import {
   Line,
   XAxis,
@@ -14,8 +14,11 @@ import { cn } from "lib";
 import { useTerminology } from "@/hooks";
 import type { SprintAnalytics } from "../types";
 
+const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5];
+
 type BurndownChartProps = {
   burndownData: SprintAnalytics["burndown"];
+  workingDays?: SprintAnalytics["workingDays"];
   className?: string;
 };
 
@@ -26,7 +29,7 @@ const CustomTooltip = ({
 }: {
   active?: boolean;
   payload?: {
-    payload: { actual: number; ideal: number; isWeekend: boolean };
+    payload: { actual: number; ideal: number; isNonWorkingDay: boolean };
   }[];
   label?: string;
 }) => {
@@ -44,7 +47,9 @@ const CustomTooltip = ({
           Ideal: {data.ideal}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        {data.isWeekend ? <Box className="opacity-60">Weekend</Box> : null}
+        {data.isNonWorkingDay ? (
+          <Box className="opacity-60">Non-working day</Box>
+        ) : null}
       </Box>
     );
   }
@@ -100,58 +105,59 @@ const CustomXAxisTick = ({
 
 export const BurndownChart = ({
   burndownData,
+  workingDays = DEFAULT_WORKING_DAYS,
   className,
 }: BurndownChartProps) => {
   const { resolvedTheme } = useTheme();
 
-  // Memoized tick component to avoid recreation on every render
-  const renderTick = useCallback(
-    (props: {
-      x: number;
-      y: number;
-      payload: { value: string };
-      index: number;
-    }) => (
-      <CustomXAxisTick
-        {...props}
-        isDark={resolvedTheme === "dark"}
-        totalLength={burndownData.length - 1}
-      />
-    ),
-    [resolvedTheme, burndownData.length],
+  const renderTick = (props: {
+    x: number;
+    y: number;
+    payload: { value: string };
+    index: number;
+  }) => (
+    <CustomXAxisTick
+      {...props}
+      isDark={resolvedTheme === "dark"}
+      totalLength={burndownData.length - 1}
+    />
   );
 
   // Transform the analytics data for the chart
   const chartData = burndownData.map((item, index) => {
     const date = new Date(item.date);
-    const isWeekendDay = isWeekend(date);
+    const utcWeekday = date.getUTCDay();
+    const isoWeekday = utcWeekday === 0 ? 7 : utcWeekday;
+    const isNonWorkingDay = !workingDays.includes(isoWeekday);
 
     return {
       date: format(date, "MMM d"),
       day: index + 1,
       actual: item.remaining,
       ideal: item.ideal,
-      isWeekend: isWeekendDay,
+      isNonWorkingDay,
       rawDate: item.date,
     };
   });
 
-  // Find weekend ranges for ReferenceArea
-  const weekendRanges: { start: string; end: string }[] = [];
-  let weekendStart: string | null = null;
+  // Find non-working ranges for ReferenceArea
+  const nonWorkingRanges: { start: string; end: string }[] = [];
+  let nonWorkingStart: string | null = null;
 
   chartData.forEach((item, index) => {
-    if (item.isWeekend && !weekendStart) {
-      weekendStart = item.date;
-    } else if (!item.isWeekend && weekendStart) {
+    if (item.isNonWorkingDay && !nonWorkingStart) {
+      nonWorkingStart = item.date;
+    } else if (!item.isNonWorkingDay && nonWorkingStart) {
       const prevItem = chartData[index - 1];
-      weekendRanges.push({ start: weekendStart, end: prevItem.date });
-      weekendStart = null;
+      nonWorkingRanges.push({
+        start: nonWorkingStart,
+        end: prevItem.date,
+      });
+      nonWorkingStart = null;
     }
 
-    // Handle case where sprint ends on weekend (last item)
-    if (index === chartData.length - 1 && weekendStart) {
-      weekendRanges.push({ start: weekendStart, end: item.date });
+    if (index === chartData.length - 1 && nonWorkingStart) {
+      nonWorkingRanges.push({ start: nonWorkingStart, end: item.date });
     }
   });
 
@@ -170,7 +176,7 @@ export const BurndownChart = ({
           <defs>
             <pattern
               height="6"
-              id="weekendPattern"
+              id="nonWorkingPattern"
               patternTransform="rotate(45)"
               patternUnits="userSpaceOnUse"
               width="6"
@@ -185,11 +191,11 @@ export const BurndownChart = ({
             </pattern>
           </defs>
 
-          {weekendRanges.map((range, index) => (
+          {nonWorkingRanges.map((range) => (
             <ReferenceArea
-              fill="url(#weekendPattern)"
+              fill="url(#nonWorkingPattern)"
               fillOpacity={0.6}
-              key={index}
+              key={`${range.start}-${range.end}`}
               x1={range.start}
               x2={range.end}
             />

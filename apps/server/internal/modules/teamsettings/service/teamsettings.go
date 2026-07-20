@@ -29,6 +29,7 @@ type Repository interface {
 var (
 	ErrInvalidSprintStartDay  = errors.New("sprint start day must be Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday")
 	ErrInvalidSprintDuration  = errors.New("sprint duration must be between 1 and 8 weeks")
+	ErrInvalidWorkingDays     = errors.New("working days must contain unique weekday numbers between 1 and 7")
 	ErrInvalidUpcomingCount   = errors.New("upcoming sprints count must be between 0 and 10")
 	ErrInvalidNextAutoNumber  = errors.New("next auto sprint number must be between 1 and 10000")
 	ErrInvalidCloseMonths     = errors.New("auto-close inactive months must be between 1 and 24")
@@ -261,6 +262,22 @@ func (s *Service) validateSprintSettingsUpdate(updates CoreUpdateTeamSprintSetti
 
 	if updates.UpcomingSprintsCount != nil && (*updates.UpcomingSprintsCount < 0 || *updates.UpcomingSprintsCount > 10) {
 		return ErrInvalidUpcomingCount
+	}
+
+	if updates.WorkingDays != nil {
+		if len(*updates.WorkingDays) == 0 || len(*updates.WorkingDays) > 7 {
+			return ErrInvalidWorkingDays
+		}
+		seen := make(map[int]struct{}, len(*updates.WorkingDays))
+		for _, day := range *updates.WorkingDays {
+			if day < 1 || day > 7 {
+				return ErrInvalidWorkingDays
+			}
+			if _, exists := seen[day]; exists {
+				return ErrInvalidWorkingDays
+			}
+			seen[day] = struct{}{}
+		}
 	}
 
 	if updates.NextAutoSprintNumber != nil && (*updates.NextAutoSprintNumber < 1 || *updates.NextAutoSprintNumber > 10000) {

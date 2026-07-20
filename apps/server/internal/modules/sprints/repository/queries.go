@@ -9,8 +9,10 @@ import (
 	"time"
 
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workweek"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -268,6 +270,10 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	if err != nil {
 		return sprints.CoreSprintAnalytics{}, err
 	}
+	workingDays, err := r.getTeamWorkingDays(ctx, sprint.Team, workspaceID)
+	if err != nil {
+		return sprints.CoreSprintAnalytics{}, err
+	}
 
 	// Run independent queries in parallel for better performance
 	var (
@@ -297,7 +303,7 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	// Parallel query 2: Burndown data (simplified for performance)
 	go func() {
 		defer wg.Done()
-		burndown, err := r.getBurndownData(ctx, sprintID, sprint.StartDate, sprint.EndDate)
+		burndown, err := r.getBurndownData(ctx, sprintID, sprint.StartDate, sprint.EndDate, workingDays)
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
@@ -330,10 +336,11 @@ func (r *repo) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID
 	}
 
 	// Calculate overview metrics
-	overview := r.calculateOverview(sprint, storyBreakdown)
+	overview := r.calculateOverview(sprint, storyBreakdown, workingDays)
 
 	analytics := sprints.CoreSprintAnalytics{
 		SprintID:       sprintID,
+		WorkingDays:    workingDays,
 		Overview:       overview,
 		StoryBreakdown: storyBreakdown,
 		Burndown:       burndownData,
@@ -384,8 +391,11 @@ func (r *repo) getStoryBreakdown(ctx context.Context, sprintID uuid.UUID) (sprin
 	return result, nil
 }
 
-func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.CoreStoryBreakdown) sprints.CoreSprintOverview {
-	now := time.Now()
+func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.CoreStoryBreakdown, workingDays []int) sprints.CoreSprintOverview {
+	return calculateOverviewAt(sprint, breakdown, workingDays, time.Now())
+}
+
+func calculateOverviewAt(sprint sprints.CoreSprint, breakdown sprints.CoreStoryBreakdown, workingDays []int, now time.Time) sprints.CoreSprintOverview {
 
 	// Calculate completion percentage
 	completionPercentage := 0
@@ -393,16 +403,16 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 		completionPercentage = (breakdown.Completed * 100) / breakdown.Total
 	}
 
-	// Calculate days elapsed and remaining
-	totalDays := int(sprint.EndDate.Sub(sprint.StartDate).Hours() / 24)
-	daysElapsed := int(now.Sub(sprint.StartDate).Hours() / 24)
-	daysRemaining := int(sprint.EndDate.Sub(now).Hours() / 24)
-
-	// Ensure values are not negative
-	if daysElapsed < 0 {
-		daysElapsed = 0
+	// Sprint boundaries remain continuous calendar dates, but progress and
+	// remaining-day metrics advance only on the team's configured working days.
+	totalDays := workweek.CountInclusive(sprint.StartDate, sprint.EndDate, workingDays)
+	daysElapsed := 0
+	daysRemaining := totalDays
+	if !now.Before(sprint.StartDate) {
+		daysElapsed = workweek.CountInclusive(sprint.StartDate, now.AddDate(0, 0, -1), workingDays)
+		daysRemaining = workweek.CountInclusive(now, sprint.EndDate, workingDays)
 	}
-	if daysRemaining < 0 {
+	if now.After(sprint.EndDate) {
 		daysRemaining = 0
 	}
 
@@ -434,7 +444,7 @@ func (r *repo) calculateOverview(sprint sprints.CoreSprint, breakdown sprints.Co
 	}
 }
 
-func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time) ([]sprints.CoreBurndownDataPoint, error) {
+func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDate, endDate time.Time, workingDays []int) ([]sprints.CoreBurndownDataPoint, error) {
 	// Optimized query for better performance
 	query := `
 		WITH params AS (
@@ -601,7 +611,7 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	currentTotal := initialStories
 	cumulativeCompleted := initialCompleted
 
-	totalDays := len(results)
+	totalWorkingDays := workweek.CountInclusive(startDate, endDate, workingDays)
 	for i, result := range results {
 		dateKey := result.EventDate.Format("2006-01-02")
 
@@ -615,13 +625,15 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 
 		// Calculate Ideal Remaining
 		// Linear burndown from the scope on each day
-		daysRemaining := totalDays - i - 1
-		idealRemaining := 0
-		if i == 0 {
-			idealRemaining = initialStories
-		} else if totalDays > 1 {
-			idealRemaining = int(float64(currentTotal) * float64(daysRemaining) / float64(totalDays-1))
-		}
+		idealRemaining := calculateIdealRemaining(
+			currentTotal,
+			initialStories,
+			i,
+			startDate,
+			result.EventDate,
+			totalWorkingDays,
+			workingDays,
+		)
 		if idealRemaining < 0 {
 			idealRemaining = 0
 		}
@@ -640,6 +652,42 @@ func (r *repo) getBurndownData(ctx context.Context, sprintID uuid.UUID, startDat
 	}
 
 	return burndownData, nil
+}
+
+func calculateIdealRemaining(currentTotal, initialStories, dayIndex int, startDate, currentDate time.Time, totalWorkingDays int, workingDays []int) int {
+	if dayIndex == 0 {
+		return max(initialStories, 0)
+	}
+	if totalWorkingDays <= 1 {
+		return 0
+	}
+
+	workingDaysReached := workweek.CountInclusive(startDate, currentDate, workingDays)
+	workingDayTransitions := max(workingDaysReached-1, 0)
+	remainingTransitions := max(totalWorkingDays-1-workingDayTransitions, 0)
+	return max(int(float64(currentTotal)*float64(remainingTransitions)/float64(totalWorkingDays-1)), 0)
+}
+
+func (r *repo) getTeamWorkingDays(ctx context.Context, teamID, workspaceID uuid.UUID) ([]int, error) {
+	var stored pq.Int64Array
+	if err := r.db.GetContext(ctx, &stored, `
+		SELECT COALESCE(
+			(
+				SELECT working_days
+				FROM team_sprint_settings
+				WHERE team_id = $1 AND workspace_id = $2
+			),
+			ARRAY[1, 2, 3, 4, 5]::smallint[]
+		)
+	`, teamID, workspaceID); err != nil {
+		return nil, fmt.Errorf("get team working days: %w", err)
+	}
+
+	days := make([]int, len(stored))
+	for i, day := range stored {
+		days[i] = int(day)
+	}
+	return workweek.Normalize(days), nil
 }
 
 func (r *repo) getTeamAllocation(ctx context.Context, sprintID uuid.UUID, teamID uuid.UUID) ([]sprints.CoreTeamMemberAllocation, error) {

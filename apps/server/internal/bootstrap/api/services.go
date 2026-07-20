@@ -210,6 +210,7 @@ func buildServices(cfg mux.Config) services {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
 	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB))
+	teamSettingsService := teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
 	mayaPlanner := maya.NewPlanner()
 	if strings.TrimSpace(cfg.AIAPIKey) != "" {
 		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
@@ -218,13 +219,14 @@ func buildServices(cfg mux.Config) services {
 		mayaPlanner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
 	}
 	mayaService := maya.New(maya.Dependencies{
-		Repository:  mayarepository.New(cfg.Log, cfg.DB),
-		Stories:     storiesService,
-		Reports:     reportsService,
-		Calendar:    calendarService,
-		Users:       usersService,
-		Planner:     mayaPlanner,
-		MayaActorID: mayaActorID,
+		Repository:   mayarepository.New(cfg.Log, cfg.DB),
+		Stories:      storiesService,
+		Reports:      reportsService,
+		Calendar:     calendarService,
+		Users:        usersService,
+		TeamSettings: teamSettingsService,
+		Planner:      mayaPlanner,
+		MayaActorID:  mayaActorID,
 	})
 	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
 		if err := ensureBackgroundMayaEnabled(ctx, cfg.DB, input.Story.Workspace); err != nil {
@@ -280,7 +282,7 @@ func buildServices(cfg mux.Config) services {
 		stories:             storiesService,
 		subscriptions:       subscriptionsService,
 		teams:               teamsService,
-		teamSettings:        teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService),
+		teamSettings:        teamSettingsService,
 		users:               usersService,
 		workspaces:          workspacesService,
 	}

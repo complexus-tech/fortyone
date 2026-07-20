@@ -13,6 +13,7 @@ type CoreTeamSprintSettings struct {
 	UpcomingSprintsCount         int
 	SprintDurationWeeks          int
 	SprintStartDay               string
+	WorkingDays                  []int
 	MoveIncompleteStoriesEnabled bool
 	LastAutoSprintNumber         int
 	NextAutoSprintNumber         int
@@ -52,6 +53,7 @@ type CoreUpdateTeamSprintSettings struct {
 	UpcomingSprintsCount         *int
 	SprintDurationWeeks          *int
 	SprintStartDay               *string
+	WorkingDays                  *[]int
 	MoveIncompleteStoriesEnabled *bool
 	NextAutoSprintNumber         *int
 }

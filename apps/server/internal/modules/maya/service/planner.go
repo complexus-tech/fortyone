@@ -11,6 +11,7 @@ import (
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workweek"
 	"github.com/google/uuid"
 )
 
@@ -48,7 +49,7 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		if candidate.Member.UserID == uuid.Nil {
 			continue
 		}
-		plan, ok := planWorkWindow(candidate, normalized.WindowStart, normalized.WindowEnd, time.Duration(normalized.DurationMinutes)*time.Minute)
+		plan, ok := planWorkWindow(candidate, normalized.WindowStart, normalized.WindowEnd, time.Duration(normalized.DurationMinutes)*time.Minute, normalized.WorkingDays)
 		if !ok {
 			continue
 		}
@@ -432,6 +433,7 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 	}
 	input.WindowStart = input.WindowStart.UTC()
 	input.WindowEnd = input.WindowEnd.UTC()
+	input.WorkingDays = workweek.Normalize(input.WorkingDays)
 	input = clampPlanInputToSprintWindow(input)
 	if !input.WindowEnd.After(input.WindowStart) {
 		return PlanInput{}, fmt.Errorf("%w: sprint planning window end must be after start", ErrInvalidPlanInput)
@@ -486,15 +488,15 @@ func sprintWorkdayEnd(value time.Time) time.Time {
 	return time.Date(value.Year(), value.Month(), value.Day(), workdayEndHour, 0, 0, 0, time.UTC)
 }
 
-func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration) (timeSlot, bool) {
+func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration, workingDays []int) (timeSlot, bool) {
 	occupied := occupiedSlots(candidate)
 	cursor := alignToNextHalfHour(startAt.UTC())
 	remaining := duration
 	var plannedStart time.Time
 
 	for cursor.Before(endAt) {
-		if cursor.Weekday() == time.Saturday || cursor.Weekday() == time.Sunday {
-			cursor = nextWorkdayStart(cursor)
+		if !workweek.IsWorkingDay(cursor, workingDays) {
+			cursor = nextWorkdayStart(cursor, workingDays)
 			continue
 		}
 
@@ -504,7 +506,7 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 			cursor = dayStart
 		}
 		if !cursor.Before(dayEnd) {
-			cursor = nextWorkdayStart(cursor)
+			cursor = nextWorkdayStart(cursor, workingDays)
 			continue
 		}
 
@@ -548,9 +550,9 @@ func advancePastOccupiedSlot(cursor time.Time, occupied []timeSlot) (time.Time, 
 	return cursor, false
 }
 
-func nextWorkdayStart(value time.Time) time.Time {
+func nextWorkdayStart(value time.Time, workingDays []int) time.Time {
 	next := time.Date(value.Year(), value.Month(), value.Day()+1, workdayStartHour, 0, 0, 0, time.UTC)
-	for next.Weekday() == time.Saturday || next.Weekday() == time.Sunday {
+	for !workweek.IsWorkingDay(next, workingDays) {
 		next = next.AddDate(0, 0, 1)
 	}
 	return next

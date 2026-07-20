@@ -164,6 +164,8 @@ func teamSettingsErrorStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, teamsettings.ErrInvalidSprintDuration):
 		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrInvalidWorkingDays):
+		return http.StatusBadRequest
 	case errors.Is(err, teamsettings.ErrInvalidUpcomingCount):
 		return http.StatusBadRequest
 	case errors.Is(err, teamsettings.ErrInvalidNextAutoNumber):

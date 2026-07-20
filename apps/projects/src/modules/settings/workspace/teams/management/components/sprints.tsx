@@ -10,6 +10,7 @@ import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useUpdateSprintSettingsMutation } from "@/modules/teams/hooks/update-sprint-settings-mutation";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import type { UpdateSprintSettingsInput } from "@/modules/teams/types";
+import { WorkingDaysSetting } from "./working-days-setting";
 
 export const SprintSettings = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -265,6 +266,15 @@ export const SprintSettings = () => {
               </Select>
             </Flex>
           ) : null}
+
+          <WorkingDaysSetting
+            isPending={updateSprintSettings.isPending}
+            onSave={(workingDays, onSuccess) => {
+              updateSprintSettings.mutate({ workingDays }, { onSuccess });
+            }}
+            sprintTerm={getTermDisplay("sprintTerm")}
+            value={sprintSettings?.workingDays}
+          />
 
           {/* Move Incomplete Stories */}
           {sprintSettings?.autoCreateSprints ? (

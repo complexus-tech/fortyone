@@ -215,6 +215,39 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	}
 }
 
+func TestPlannerHonorsCustomWorkingDays(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	windowStart := time.Date(2026, 6, 19, 9, 0, 0, 0, time.UTC)   // Friday
+	windowEnd := time.Date(2026, 6, 22, 17, 0, 0, 0, time.UTC)    // Monday
+	expectedStart := time.Date(2026, 6, 21, 9, 0, 0, 0, time.UTC) // Sunday
+
+	planner := NewPlanner()
+	result, err := planner.Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID:        storyID,
+			Workspace: workspaceID,
+			Title:     "Plan around the team workweek",
+		},
+		DurationMinutes: 60,
+		WindowStart:     windowStart,
+		WindowEnd:       windowEnd,
+		WorkingDays:     []int{7, 1, 2, 3, 4},
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID, FullName: "Custom Week Person"},
+		}},
+	})
+
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if got := result.Actions[1].Payload.ScheduleBlock.StartAt; !got.Equal(expectedStart) {
+		t.Fatalf("expected work to start on configured Sunday %s, got %s", expectedStart, got)
+	}
+}
+
 func TestPlannerUsesAdvisorRecommendationWhenCandidateIsValid(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()

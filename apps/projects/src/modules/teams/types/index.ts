@@ -35,6 +35,7 @@ export type TeamSprintSettings = {
   upcomingSprintsCount: number;
   sprintDurationWeeks: number;
   sprintStartDay: string;
+  workingDays: number[];
   moveIncompleteStoriesEnabled: boolean;
   nextAutoSprintNumber: number;
   autoCreateDisabledAt: string | null;
