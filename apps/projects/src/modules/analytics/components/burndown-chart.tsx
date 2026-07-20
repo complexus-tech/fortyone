@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTerminology } from "@/hooks";
 import { useStoryAnalytics } from "../hooks/story-analytics";
 import type { BurndownPoint } from "../types";
 
@@ -49,6 +50,7 @@ const formatDate = (date: string) => {
 
 export const BurndownChart = () => {
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const { data: storyAnalytics, isPending } = useStoryAnalytics();
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!storyAnalytics?.burndown.length) {
@@ -68,7 +70,10 @@ export const BurndownChart = () => {
           <Text className="mb-1" fontSize="lg">
             Burndown chart
           </Text>
-          <Text color="muted">Story completion progress over time.</Text>
+          <Text color="muted">
+            {getTermDisplay("storyTerm", { capitalize: true })} completion
+            progress over time.
+          </Text>
         </Box>
         <Box className="bg-skeleton h-[220px] animate-pulse rounded" />
       </Wrapper>
@@ -81,7 +86,10 @@ export const BurndownChart = () => {
         <Text className="mb-1" fontSize="lg">
           Burndown chart
         </Text>
-        <Text color="muted">Story completion progress over time.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", { capitalize: true })} completion
+          progress over time.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">

@@ -25,6 +25,7 @@ const StoryRow = ({
   assignee,
   endDate,
 }: Story) => {
+  const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useStatuses();
 
@@ -69,7 +70,12 @@ const StoryRow = ({
                         new Date(endDate) >= new Date(),
                     })}
                   />
-                  <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                  <Box>
+                    {getDueDateMessage(
+                      new Date(endDate),
+                      getTermDisplay("storyTerm"),
+                    )}
+                  </Box>
                 </Flex>
               }
             >
@@ -116,9 +122,9 @@ const List = ({ stories }: { stories: Story[] }) => {
   );
 };
 
-const getStoriesFromGrouped = (
-  grouped?: { groups: { stories: Story[] }[] },
-): Story[] => {
+const getStoriesFromGrouped = (grouped?: {
+  groups: { stories: Story[] }[];
+}): Story[] => {
   if (!grouped) return [];
   return grouped.groups.flatMap((group) => group.stories);
 };

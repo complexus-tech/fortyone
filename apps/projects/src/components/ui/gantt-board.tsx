@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "@/lib/auth/client";
 import type { DateRange } from "react-day-picker";
 import { CalendarPlusIcon } from "icons";
+import { useSession } from "@/lib/auth/client";
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
@@ -44,6 +44,7 @@ const StoryRow = ({
   // Import router and userRole directly in this component
   const router = useRouter();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
@@ -172,7 +173,9 @@ const StoryRow = ({
                   type="button"
                 >
                   <StoryStatusIcon statusId={story.statusId} />
-                  <span className="sr-only">Story status</span>
+                  <span className="sr-only">
+                    {getTermDisplay("storyTerm", { capitalize: true })} status
+                  </span>
                 </button>
               </StatusesMenu.Trigger>
               <StatusesMenu.Items
@@ -206,7 +209,10 @@ const StoryRow = ({
               <Tooltip title="Add dates">
                 <span className="mt-1">
                   <DatePicker.Trigger>
-                    <button type="button">
+                    <button
+                      aria-label={`Add dates to ${getTermDisplay("storyTerm")}`}
+                      type="button"
+                    >
                       <CalendarPlusIcon />
                     </button>
                   </DatePicker.Trigger>
@@ -243,6 +249,7 @@ type GanttBoardProps = {
 
 export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: teams = [] } = useTeams();
+  const { getTermDisplay } = useTerminology();
   const { mutate } = useUpdateStoryMutation();
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
@@ -251,9 +258,9 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const getTeamCode = useCallback(
     (teamId: string): string => {
       const team = teams.find((t) => t.id === teamId);
-      return team?.code || "STORY";
+      return team?.code || getTermDisplay("storyTerm").toUpperCase();
     },
-    [teams],
+    [getTermDisplay, teams],
   );
 
   // Handle date updates from drag operations

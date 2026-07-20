@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
@@ -10,12 +10,12 @@ import type {
   GroupStoriesResponse,
   Story,
 } from "../types";
+import { useBulkRestoreStoryMutation } from "./restore-mutation";
 
 type Payload = {
   storyIds: string[];
   hardDelete?: boolean;
 };
-import { useBulkRestoreStoryMutation } from "./restore-mutation";
 
 const updateDetailQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
@@ -122,6 +122,8 @@ const updateListQuery = (
 export const useBulkDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { mutateAsync } = useBulkRestoreStoryMutation();
 
   const mutation = useMutation({
@@ -148,9 +150,10 @@ export const useBulkDeleteStoryMutation = () => {
     onError: (error, payload) => {
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
-      toast.error("Failed to delete stories", {
+      toast.error(`Failed to delete ${storyTermPlural}`, {
         description:
-          error.message || "An error occurred while deleting the stories",
+          error.message ||
+          `An error occurred while deleting the ${storyTermPlural}`,
         action: {
           label: "Retry",
           onClick: () => {

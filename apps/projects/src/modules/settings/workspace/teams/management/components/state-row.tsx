@@ -212,8 +212,7 @@ export const StateRow = ({
                     onSelect={() => {
                       if (storyCount) {
                         toast.warning(`Cannot delete status "${form.name}"`, {
-                          description:
-                            "Move all stories to another status before deleting, or delete the stories first.",
+                          description: `Move all ${getTermDisplay("storyTerm", { variant: "plural" })} to another status before deleting, or delete the ${getTermDisplay("storyTerm", { variant: "plural" })} first.`,
                         });
                       } else {
                         onDelete(state);

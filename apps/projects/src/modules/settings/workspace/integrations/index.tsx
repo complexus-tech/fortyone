@@ -7,7 +7,7 @@ import { cn } from "lib";
 import { SearchIcon, SlackIcon } from "icons";
 import { useGitHubIntegration } from "@/lib/hooks/github";
 import { useSlackIntegration } from "@/lib/hooks/slack";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 
 const GitHubIcon = () => (
   <svg
@@ -147,6 +147,8 @@ export const IntegrationsIndex = () => {
   const { data: integration } = useGitHubIntegration();
   const { data: slackIntegration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const [search, setSearch] = useState("");
 
   const basePath = withWorkspace("/settings/workspace/integrations");
@@ -157,7 +159,7 @@ export const IntegrationsIndex = () => {
     {
       id: "github",
       name: "GitHub",
-      description: "Link PRs, branches, and commits to stories.",
+      description: `Link PRs, branches, and commits to ${storyTermPlural}.`,
       icon: <GitHubIcon />,
       enabled: isGitHubEnabled,
       href: "github",
@@ -165,7 +167,7 @@ export const IntegrationsIndex = () => {
     {
       id: "slack",
       name: "Slack",
-      description: "Turn conversations into stories from Slack.",
+      description: `Turn conversations into ${storyTermPlural} from Slack.`,
       icon: <SlackIcon className="h-8 w-8" />,
       enabled: isSlackEnabled,
       href: "slack",
@@ -173,21 +175,21 @@ export const IntegrationsIndex = () => {
     {
       id: "gitlab",
       name: "GitLab",
-      description: "Connect merge requests and pipelines to stories.",
+      description: `Connect merge requests and pipelines to ${storyTermPlural}.`,
       icon: <GitLabIcon />,
       enabled: false,
     },
     {
       id: "figma",
       name: "Figma",
-      description: "Attach designs to stories from Figma.",
+      description: `Attach designs to ${storyTermPlural} from Figma.`,
       icon: <FigmaIcon />,
       enabled: false,
     },
     {
       id: "intercom",
       name: "Intercom",
-      description: "Route customer conversations into stories.",
+      description: `Route customer conversations into ${storyTermPlural}.`,
       icon: <IntercomIcon />,
       enabled: false,
     },

@@ -1,7 +1,6 @@
 "use client";
 import { Flex, Text, Wrapper, Box } from "ui";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { useMemo } from "react";
 import type { TooltipProps } from "recharts";
 import { useTerminology } from "@/hooks";
 import { useStoryAnalytics } from "../hooks/story-analytics";
@@ -46,13 +45,9 @@ export const StatusBreakdown = () => {
   const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const chartData = storyAnalytics?.statusBreakdown ?? [];
-  const totalCount = useMemo(
-    () =>
-      chartData.reduce(
-        (sum: number, status: StatusBreakdownItem) => sum + status.count,
-        0,
-      ),
-    [chartData],
+  const totalCount = chartData.reduce(
+    (sum: number, status: StatusBreakdownItem) => sum + status.count,
+    0,
   );
 
   if (isPending) {
@@ -63,7 +58,13 @@ export const StatusBreakdown = () => {
     <Wrapper>
       <Box className="mb-6">
         <Text fontSize="lg">Status breakdown</Text>
-        <Text color="muted">Stories by status across teams.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          by status across teams.
+        </Text>
       </Box>
 
       <Box>

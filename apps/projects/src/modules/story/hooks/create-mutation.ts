@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { slugify } from "@/utils";
 import { storyKeys } from "@/modules/stories/constants";
@@ -280,6 +280,11 @@ export const useCreateStoryMutation = () => {
   const router = useRouter();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermCapitalized = getTermDisplay("storyTerm", {
+    capitalize: true,
+  });
 
   const mutation = useMutation({
     mutationFn: async (story: NewStory) => {
@@ -288,7 +293,9 @@ export const useCreateStoryMutation = () => {
         throw new Error(response.error.message);
       }
       if (!response.data?.id) {
-        throw new Error("Story creation did not return a created story.");
+        throw new Error(
+          `${storyTermCapitalized} creation did not return a created ${storyTerm}.`,
+        );
       }
       return response.data;
     },
@@ -323,9 +330,9 @@ export const useCreateStoryMutation = () => {
         }
       });
 
-      toast.error(`Failed to create story: ${story.title}`, {
+      toast.error(`Failed to create ${storyTerm}: ${story.title}`, {
         description:
-          error.message || "An error occurred while creating the story",
+          error.message || `An error occurred while creating the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {
@@ -354,9 +361,9 @@ export const useCreateStoryMutation = () => {
         });
       } else {
         toast.success("Success", {
-          description: "Story created successfully",
+          description: `${storyTermCapitalized} created successfully`,
           action: {
-            label: "View story",
+            label: `View ${storyTerm}`,
             onClick: () => {
               router.push(
                 withWorkspace(

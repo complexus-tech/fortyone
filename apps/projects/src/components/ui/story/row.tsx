@@ -12,7 +12,12 @@ import type { Story as StoryProps } from "@/modules/stories/types";
 import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { useUserRole, useMediaQuery, useWorkspacePath } from "@/hooks";
+import {
+  useMediaQuery,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
@@ -45,6 +50,7 @@ export const StoryRow = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -136,7 +142,9 @@ export const StoryRow = ({
                 }}
               />
               {isColumnVisible("ID") && (
-                <Tooltip title={`Story ID: ${storyReference}`}>
+                <Tooltip
+                  title={`${getTermDisplay("storyTerm", { capitalize: true })} ID: ${storyReference}`}
+                >
                   <Text
                     className={cn(
                       "flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem] transition-colors",
@@ -179,10 +187,10 @@ export const StoryRow = ({
               >
                 {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
                 <Text
-                  className="min-w-0 line-clamp-1 hover:opacity-90"
+                  className="line-clamp-1 min-w-0 hover:opacity-90"
                   fontWeight="medium"
-              >
-                {story.title}
+                >
+                  {story.title}
                 </Text>
               </Link>
             </Flex>

@@ -120,7 +120,10 @@ export const StoriesHeader = ({
               </>
             )}
           </Button>
-          <Tooltip side="bottom" title="Total stories">
+          <Tooltip
+            side="bottom"
+            title={`Total ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+          >
             <span>
               <StoryIcon
                 className="text-text-muted ml-1 h-5 w-auto"

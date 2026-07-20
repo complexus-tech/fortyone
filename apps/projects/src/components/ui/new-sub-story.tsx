@@ -21,6 +21,7 @@ import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useTeamMembers } from "@/lib/hooks/team-members";
+import { useTerminology } from "@/hooks";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -41,6 +42,7 @@ export const NewSubStory = ({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useTeamMembers(teamId);
   const defaultStatus =
@@ -86,7 +88,9 @@ export const NewSubStory = ({
       Link.configure({
         autolink: true,
       }),
-      Placeholder.configure({ placeholder: "Story description" }),
+      Placeholder.configure({
+        placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description`,
+      }),
     ],
     content: "",
     editable: true,

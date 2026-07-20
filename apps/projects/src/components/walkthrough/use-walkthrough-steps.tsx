@@ -1,27 +1,30 @@
 import { useMemo } from "react";
 import { Box, Kbd, Text } from "ui";
 import confetti from "canvas-confetti";
-import { useSession } from "@/lib/auth/client";
-import { useUserRole } from "@/hooks";
-import { type WalkthroughStep } from "./walkthrough-provider";
 import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/auth/client";
+import { useTerminology, useUserRole } from "@/hooks";
+import { type WalkthroughStep } from "./walkthrough-provider";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   return useMemo(
     () =>
       [
         {
           id: "welcome",
           target: "[data-workspace-switcher]",
-          title: `Welcome ${session?.user?.name || "to FortyOne"}! 👋`,
+          title: `Welcome ${session?.user.name || "to FortyOne"}! 👋`,
           content: (
             <Box className="space-y-3">
               <Text color="muted">
                 Welcome to your workspace! This is where you and your team
-                collaborate on objectives and stories.
+                collaborate on objectives and {storyTermPlural}.
               </Text>
               <Text color="muted">
                 Click on your workspace name to switch between workspaces,
@@ -31,7 +34,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
-        ...(!pathname?.includes("/maya")
+        ...(!pathname.includes("/maya")
           ? [
               {
                 id: "ai-assistant-floating",
@@ -58,10 +61,10 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         {
           id: "ai-assistant-nav",
           target: "[data-nav-ai-assistant]",
-          title: pathname?.includes("/maya")
+          title: pathname.includes("/maya")
             ? "Meet Maya, Your AI Assistant"
             : "Dedicated AI Space",
-          content: pathname?.includes("/maya") ? (
+          content: pathname.includes("/maya") ? (
             <Box className="space-y-3">
               <Text color="muted">
                 Maya is your always-on AI assistant. She can help you manage
@@ -81,7 +84,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
             </Box>
           ),
           position: "right",
-          highlight: pathname?.includes("/maya"),
+          highlight: pathname.includes("/maya"),
         },
         {
           id: "my-notifications",
@@ -104,16 +107,20 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         {
           id: "create-story",
           target: "[data-sidebar-create-story-button]",
-          title: "Create Your First Story",
+          title: `Create Your First ${getTermDisplay("storyTerm", { capitalize: true })}`,
           content: (
             <Box className="space-y-3">
               <Text color="muted">
-                Stories are the building blocks of your work. They are used to
-                track progress and collaborate with your team.
+                {getTermDisplay("storyTerm", {
+                  capitalize: true,
+                  variant: "plural",
+                })}{" "}
+                are the building blocks of your work. They are used to track
+                progress and collaborate with your team.
               </Text>
               <Text color="muted">
                 Press <Kbd className="inline-flex">Shift + N</Kbd> to quickly
-                create a new story from anywhere!
+                create a new {storyTerm} from anywhere!
               </Text>
             </Box>
           ),
@@ -127,8 +134,10 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
             <Box className="space-y-3">
               <Text color="muted">
                 The sidebar is your main navigation hub. Start with{" "}
-                <Kbd className="inline-flex capitalize">My stories</Kbd> to see
-                everything you created or assigned to you.
+                <Kbd className="inline-flex capitalize">
+                  My {storyTermPlural}
+                </Kbd>{" "}
+                to see everything you created or assigned to you.
               </Text>
               <Text color="muted">
                 This is your personal workspace for tracking your tasks and
@@ -229,7 +238,7 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               </Text>
               <Text color="muted">
                 You&apos;ve completed the walkthrough! Start by creating your
-                first story or setting up your team objectives. Happy
+                first {storyTerm} or setting up your team objectives. Happy
                 collaborating!
               </Text>
             </Box>
@@ -247,6 +256,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           },
         },
       ] as WalkthroughStep[],
-    [session?.user?.name, userRole, pathname],
+    [
+      getTermDisplay,
+      pathname,
+      session?.user.name,
+      storyTerm,
+      storyTermPlural,
+      userRole,
+    ],
   );
 };

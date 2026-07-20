@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { storyKeys } from "@/modules/stories/constants";
 import type { Comment } from "@/types";
@@ -22,6 +22,7 @@ type InfiniteCommentsData = {
 export const useCommentStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
 
   const mutation = useMutation({
@@ -46,7 +47,7 @@ export const useCommentStoryMutation = () => {
         workspaceSlug,
       ),
     onError: (error, variables) => {
-      toast.error("Failed to comment story", {
+      toast.error(`Failed to comment on ${getTermDisplay("storyTerm")}`, {
         description: error.message || "Your comment was not saved",
         action: {
           label: "Retry",
@@ -64,12 +65,12 @@ export const useCommentStoryMutation = () => {
       if (previousData) {
         const newComment = {
           id: "new comment",
-          userId: session?.user?.id ?? "",
+          userId: session?.user.id ?? "",
           user: {
-            id: session?.user?.id ?? "",
-            username: session?.user?.username ?? "",
-            fullName: session?.user?.name ?? "",
-            avatarUrl: session?.user?.image ?? null,
+            id: session?.user.id ?? "",
+            username: session?.user.username ?? "",
+            fullName: session?.user.name ?? "",
+            avatarUrl: session?.user.image ?? null,
             isActive: true,
             isSystem: false,
           },

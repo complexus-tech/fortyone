@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Text } from "ui";
+import { useTerminology } from "@/hooks";
 import { IntegrationRequestCard } from "./card";
 import { IntegrationRequestsHeader } from "./header";
 import { useTeamIntegrationRequestsInfinite } from "./hooks/use-team-requests";
 
 export const ListIntegrationRequests = () => {
+  const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId: string }>();
   const [search, setSearch] = useQueryState(
     "search",
@@ -87,7 +89,7 @@ export const ListIntegrationRequests = () => {
                   <Text align="center" color="muted">
                     {search
                       ? `No intake items match “${search}”.`
-                      : "New integration items will appear here before becoming stories."}
+                      : `New integration items will appear here before becoming ${getTermDisplay("storyTerm", { variant: "plural" })}.`}
                   </Text>
                 </Box>
               </Flex>

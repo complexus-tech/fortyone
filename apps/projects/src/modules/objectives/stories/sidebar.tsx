@@ -25,6 +25,7 @@ import {
 import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-analytics";
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useTerminology } from "@/hooks";
 import { ProgressChart } from "./progress-chart";
 
 const Option = ({
@@ -56,6 +57,7 @@ const Option = ({
 };
 
 export const Sidebar = ({ className }: { className?: string }) => {
+  const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
@@ -80,7 +82,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
     priorityBreakdown,
     progressChart,
   } = analytics;
-  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
+  const canUpdate = isAdminOrOwner || session?.user.id === objective?.leadUser;
 
   // Map progress breakdown to status categories
   const breakdownStatusMap = {
@@ -203,7 +205,13 @@ export const Sidebar = ({ className }: { className?: string }) => {
         <ProgressChart progressData={progressChart} />
       </Box>
       <Divider className="my-6" />
-      <Text className="mb-3">Stories Overview</Text>
+      <Text className="mb-3">
+        {getTermDisplay("storyTerm", {
+          capitalize: true,
+          variant: "plural",
+        })}{" "}
+        Overview
+      </Text>
       <Tabs defaultValue="assignees">
         <Tabs.List className="mx-0 mb-3 md:mx-0">
           <Tabs.Tab value="assignees">Assignees</Tabs.Tab>

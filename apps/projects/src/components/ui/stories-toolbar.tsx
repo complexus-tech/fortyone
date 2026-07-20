@@ -39,6 +39,11 @@ export const StoriesToolbar = () => {
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const { selectedStories, setSelectedStories } = useBoard();
+  const selectedStoryTerm = getTermDisplay("storyTerm", {
+    variant: selectedStories.length === 1 ? "singular" : "plural",
+  });
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { data: teams = [] } = useTeams();
   let finalTeamId = teamId;
   if (teams.length === 1) {
@@ -294,13 +299,14 @@ export const StoriesToolbar = () => {
         <Dialog.Content>
           <Dialog.Header className="px-6 pt-6">
             <Dialog.Title className="text-lg">
-              Archive {selectedStories.length} stories?
+              Archive {selectedStories.length} {selectedStoryTerm}?
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
-              These stories will be moved to the archive and can be unarchived
-              later. They won&apos;t appear in your active story lists.
+              These {storyTermPlural} will be moved to the archive and can be
+              unarchived later. They won&apos;t appear in your active{" "}
+              {storyTerm} lists.
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
@@ -312,9 +318,7 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={
-                  <ArchiveIcon className="text-current" />
-                }
+                leftIcon={<ArchiveIcon className="text-current" />}
                 onClick={handleBulkArchive}
               >
                 Archive
@@ -332,13 +336,14 @@ export const StoriesToolbar = () => {
         <Dialog.Content>
           <Dialog.Header className="px-6 pt-6">
             <Dialog.Title className="text-lg">
-              Unarchive {selectedStories.length} stories?
+              Unarchive {selectedStories.length} {selectedStoryTerm}?
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
-              These stories will be restored to your active story list and can
-              be assigned to sprints and team members again.
+              These {storyTermPlural} will be restored to your active{" "}
+              {storyTerm} list and can be assigned to sprints and team members
+              again.
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
@@ -350,9 +355,7 @@ export const StoriesToolbar = () => {
                 Cancel
               </Button>
               <Button
-                leftIcon={
-                  <ArchiveIcon className="text-current" />
-                }
+                leftIcon={<ArchiveIcon className="text-current" />}
                 onClick={handleBulkUnarchive}
               >
                 Unarchive
@@ -367,13 +370,14 @@ export const StoriesToolbar = () => {
         <Dialog.Content>
           <Dialog.Header className="px-6 pt-6">
             <Dialog.Title className="text-lg">
-              Restore {selectedStories.length} stories?
+              Restore {selectedStories.length} {selectedStoryTerm}?
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
-              These stories will be restored to your active story list and can
-              be assigned to sprints and team members again.
+              These {storyTermPlural} will be restored to your active{" "}
+              {storyTerm} list and can be assigned to sprints and team members
+              again.
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button
@@ -400,15 +404,15 @@ export const StoriesToolbar = () => {
         <Dialog.Content>
           <Dialog.Header className="px-6 pt-6">
             <Dialog.Title className="text-lg">
-              Delete {selectedStories.length} stories
+              Delete {selectedStories.length} {selectedStoryTerm}
               {isOnDeletedStoriesPage ? " forever?" : "?"}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="pt-0">
             <Text color="muted">
               {isOnDeletedStoriesPage
-                ? "This is an irreversible action. The stories will be permanently deleted. You can't restore them."
-                : "These stories will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore them at any time before that."}
+                ? `This is an irreversible action. The ${storyTermPlural} will be permanently deleted. You can't restore them.`
+                : `These ${storyTermPlural} will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore them at any time before that.`}
             </Text>
             <Flex align="center" className="mt-4" gap={2} justify="end">
               <Button

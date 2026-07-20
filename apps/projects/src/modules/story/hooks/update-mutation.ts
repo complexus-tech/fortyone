@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { memberKeys } from "@/constants/keys";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -33,6 +33,7 @@ export const useUpdateStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
 
   const mutation = useMutation<
     ApiResponse<null>,
@@ -110,7 +111,7 @@ export const useUpdateStoryMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
-      toast.error("Failed to update story", {
+      toast.error(`Failed to update ${getTermDisplay("storyTerm")}`, {
         description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
@@ -164,7 +165,11 @@ const resolveAssigneeSummary = (
   assigneeId: string,
 ): UserSummary | null => {
   const memberQueries = queryClient.getQueriesData<
-    Member | Member[] | MembersPage | InfiniteData<MembersPage> | ApiResponse<Member>
+    | Member
+    | Member[]
+    | MembersPage
+    | InfiniteData<MembersPage>
+    | ApiResponse<Member>
   >({
     queryKey: memberKeys.all(workspaceSlug),
   });

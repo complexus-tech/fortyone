@@ -3,12 +3,14 @@ import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { RowWrapper, StoryStatusIcon } from "@/components/ui";
+import { useTerminology } from "@/hooks";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintAnalytics } from "../types";
 import { BurndownChart } from "./burndown";
 
 export const Sidebar = () => {
+  const { getTermDisplay } = useTerminology();
   const { sprintId } = useParams<{ sprintId: string }>();
   const { data: sprint, isPending: isSprintPending } = useSprint(sprintId);
   const { data: analytics, isPending: isAnalyticsPending } =
@@ -133,7 +135,13 @@ export const Sidebar = () => {
       </Box>
       <Divider className="my-6" />
       <Box className="px-6">
-        <Text className="mb-3">Stories Overview</Text>
+        <Text className="mb-3">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          Overview
+        </Text>
         <Tabs defaultValue="assignees">
           <Tabs.List className="mx-0 mb-3 md:mx-0">
             <Tabs.Tab value="assignees">Assignees</Tabs.Tab>

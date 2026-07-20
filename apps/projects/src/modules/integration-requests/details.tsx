@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
@@ -343,11 +343,13 @@ const getRequestSourceBanner = ({
   provider,
   repositoryName,
   slackChannel,
+  storyTerm,
 }: {
   issueNumber: string;
   provider: IntegrationRequest["provider"];
   repositoryName: string | null;
   slackChannel: string | null;
+  storyTerm: string;
 }): RequestSourceBannerDetails => {
   switch (provider) {
     case "github":
@@ -368,7 +370,7 @@ const getRequestSourceBanner = ({
       return {
         icon: <ChatIcon className="text-primary h-5 shrink-0" />,
         openLabel: "Open source",
-        primaryText: "Story from Intercom",
+        primaryText: `${storyTerm} from Intercom`,
         secondaryText: null,
       };
   }
@@ -835,11 +837,12 @@ export const IntegrationRequestDetails = ({
   const { teamId } = useParams<{ teamId: string }>();
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
   const [isDeclining, setIsDeclining] = useState(false);
   const { data: request, isPending } = useIntegrationRequest(requestId);
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const { data: members = [] } = useMembers();
-  const updateRequest = useUpdateIntegrationRequest();
+  const { mutate: updateRequest } = useUpdateIntegrationRequest();
   const acceptRequest = useAcceptIntegrationRequest();
   const declineRequest = useDeclineIntegrationRequest();
 
@@ -849,10 +852,14 @@ export const IntegrationRequestDetails = ({
   const statusId = request?.statusId ?? defaultStatus?.id;
   const priority: StoryPriority = request?.priority ?? "No Priority";
 
-  const handleUpdate = (payload: UpdateIntegrationRequestInput) => {
-    if (!request) return;
-    updateRequest.mutate({ requestId: request.id, payload });
-  };
+  const requestIdForUpdate = request?.id;
+  const handleUpdate = useCallback(
+    (payload: UpdateIntegrationRequestInput) => {
+      if (!requestIdForUpdate) return;
+      updateRequest({ requestId: requestIdForUpdate, payload });
+    },
+    [requestIdForUpdate, updateRequest],
+  );
   const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
 
   const descriptionEditor = useEditor({
@@ -941,6 +948,7 @@ export const IntegrationRequestDetails = ({
     provider: request.provider,
     repositoryName,
     slackChannel,
+    storyTerm: getTermDisplay("storyTerm", { capitalize: true }),
   });
   const selectedStatus = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === request.assigneeId);

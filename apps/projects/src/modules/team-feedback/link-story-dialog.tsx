@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Box, Dialog, Flex, Input, Skeleton, Text } from "ui";
 import { SearchIcon } from "icons";
+import { useTerminology } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { Dot } from "@/components/ui";
 import { useSearch } from "@/modules/search/hooks/use-search";
@@ -32,6 +33,9 @@ export const LinkFeedbackStoryDialog = ({
   onOpenChange: (open: boolean) => void;
   teamId: string;
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { callback: updateSearchQuery, cancel: cancelSearchQuery } =
@@ -62,7 +66,7 @@ export const LinkFeedbackStoryDialog = ({
     if (!searchQuery) {
       return (
         <Text className="px-2 py-6 text-center" color="muted">
-          Search by story title or identifier.
+          Search by {storyTerm} title or identifier.
         </Text>
       );
     }
@@ -80,7 +84,7 @@ export const LinkFeedbackStoryDialog = ({
     if (stories.length === 0) {
       return (
         <Text className="px-2 py-6 text-center" color="muted">
-          No matching stories in this team.
+          No matching {storyTermPlural} in this team.
         </Text>
       );
     }
@@ -88,7 +92,7 @@ export const LinkFeedbackStoryDialog = ({
     return (
       <Box className="max-h-72 overflow-y-auto">
         {stories.map((story) => {
-          const identifier = `${story.team?.code ?? "STORY"}-${story.sequenceId}`;
+          const identifier = `${story.team?.code ?? storyTerm.toUpperCase()}-${story.sequenceId}`;
           return (
             <button
               className="hover:bg-state-hover focus-visible:bg-state-active flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition outline-none"
@@ -131,7 +135,9 @@ export const LinkFeedbackStoryDialog = ({
     <Dialog onOpenChange={handleOpenChange} open={isOpen}>
       <Dialog.Content className="max-w-xl">
         <Dialog.Header className="px-6 pt-6 pb-2">
-          <Dialog.Title className="text-lg">Link existing story</Dialog.Title>
+          <Dialog.Title className="text-lg">
+            Link existing {storyTerm}
+          </Dialog.Title>
         </Dialog.Header>
         <Dialog.Description>
           Connect this feedback to work that your team is already planning.
@@ -145,7 +151,7 @@ export const LinkFeedbackStoryDialog = ({
             <SearchIcon className="text-text-muted h-4 shrink-0" />
             <Box className="min-w-0 flex-1">
               <Input
-                aria-label="Search team stories"
+                aria-label={`Search team ${storyTermPlural}`}
                 autoComplete="off"
                 autoFocus
                 className="h-10 w-full border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
@@ -154,7 +160,7 @@ export const LinkFeedbackStoryDialog = ({
                   setQuery(event.target.value);
                   updateSearchQuery(event.target.value.trim());
                 }}
-                placeholder="Search stories…"
+                placeholder={`Search ${storyTermPlural}…`}
                 type="search"
                 value={query}
               />

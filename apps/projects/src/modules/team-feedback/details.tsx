@@ -35,7 +35,7 @@ import {
 } from "ui";
 import { BodyContainer } from "@/components/shared";
 import { ConfirmDialog, Dot } from "@/components/ui";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { getAuthorPathByPortalSlug } from "@/modules/public-portal/utils";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
@@ -57,34 +57,41 @@ import type {
   TeamFeedbackStatus,
 } from "./types";
 
-const statusBannerCopy: Record<
-  TeamFeedbackStatus,
-  { primary: string; secondary: string }
-> = {
-  pending: {
-    primary: "Feedback is ready for review",
-    secondary: "Plan it when the team is ready to commit.",
-  },
-  reviewing: {
-    primary: "Feedback is being reviewed",
-    secondary: "Plan it to add the work to the roadmap.",
-  },
-  planned: {
-    primary: "Feedback is planned",
-    secondary: "Its linked story now powers the roadmap status.",
-  },
-  in_progress: {
-    primary: "Feedback is in progress",
-    secondary: "The linked story is currently being worked on.",
-  },
-  completed: {
-    primary: "Feedback is completed",
-    secondary: "The linked story has been delivered.",
-  },
-  closed: {
-    primary: "Feedback is closed",
-    secondary: "It is no longer in the team's active queue.",
-  },
+const getStatusBannerCopy = (
+  status: TeamFeedbackStatus,
+  storyTerm: string,
+): { primary: string; secondary: string } => {
+  const copy: Record<
+    TeamFeedbackStatus,
+    { primary: string; secondary: string }
+  > = {
+    pending: {
+      primary: "Feedback is ready for review",
+      secondary: "Plan it when the team is ready to commit.",
+    },
+    reviewing: {
+      primary: "Feedback is being reviewed",
+      secondary: "Plan it to add the work to the roadmap.",
+    },
+    planned: {
+      primary: "Feedback is planned",
+      secondary: `Its linked ${storyTerm} now powers the roadmap status.`,
+    },
+    in_progress: {
+      primary: "Feedback is in progress",
+      secondary: `The linked ${storyTerm} is currently being worked on.`,
+    },
+    completed: {
+      primary: "Feedback is completed",
+      secondary: `The linked ${storyTerm} has been delivered.`,
+    },
+    closed: {
+      primary: "Feedback is closed",
+      secondary: "It is no longer in the team's active queue.",
+    },
+  };
+
+  return copy[status];
 };
 
 const FeedbackBanner = ({
@@ -104,15 +111,17 @@ const FeedbackBanner = ({
   onPlan: () => void;
   onReview: () => void;
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isLinked = Boolean(linkedStory);
   const canPlan = !isLinked && feedback.status !== "closed";
-  const copy = statusBannerCopy[feedback.status];
+  const copy = getStatusBannerCopy(feedback.status, storyTerm);
   const primaryCopy = linkedStory
-    ? "Feedback is linked to a story"
+    ? `Feedback is linked to a ${storyTerm}`
     : copy.primary;
   const secondaryCopy = linkedStory
-    ? linkedStory.storyTitle || "Open linked story"
+    ? linkedStory.storyTitle || `Open linked ${storyTerm}`
     : copy.secondary;
 
   return (
@@ -164,7 +173,7 @@ const FeedbackBanner = ({
         <Flex align="center" className="shrink-0" gap={1}>
           {linkedStory ? (
             <button
-              aria-label="Open linked story"
+              aria-label={`Open linked ${storyTerm}`}
               className="text-primary hover:text-primary/80 rounded-md p-1 transition"
               onClick={onOpenStory}
               type="button"
@@ -190,8 +199,8 @@ const FeedbackBanner = ({
                 </Menu.Item>
                 {linkedStory ? (
                   <Menu.Item onSelect={onOpenStory}>
-                    <StoryIcon className="h-5 w-auto" />
-                    Open linked story
+                    <LinkIcon className="h-5 w-auto" />
+                    Open linked {storyTerm}
                   </Menu.Item>
                 ) : null}
                 <Menu.Item
@@ -210,7 +219,7 @@ const FeedbackBanner = ({
                   onSelect={onLink}
                 >
                   <LinkIcon className="h-5 w-auto" />
-                  Link existing story
+                  Link existing {storyTerm}
                 </Menu.Item>
               </Menu.Group>
               <Menu.Separator />
@@ -351,6 +360,8 @@ const FeedbackProperties = ({
   linkedStoryHref?: string;
   variant?: "inline" | "sidebar";
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isInline = variant === "inline";
 
@@ -464,7 +475,7 @@ const FeedbackProperties = ({
           className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
-          label="Linked story"
+          label={`Linked ${storyTerm}`}
           value={
             linkedStory && linkedStoryHref ? (
               <Button
@@ -476,7 +487,7 @@ const FeedbackProperties = ({
                 variant="naked"
               >
                 <span className="truncate">
-                  {linkedStory.storyTitle || "Open story"}
+                  {linkedStory.storyTitle || `Open ${storyTerm}`}
                 </span>
               </Button>
             ) : (

@@ -104,7 +104,10 @@ export const StoriesKanbanHeader = ({
             priority={priority}
             status={status}
           />
-          <Tooltip side="bottom" title="Total stories">
+          <Tooltip
+            side="bottom"
+            title={`Total ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+          >
             <span>
               <StoryIcon className="ml-0 h-5 w-auto" strokeWidth={2} />
             </span>

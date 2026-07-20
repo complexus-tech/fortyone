@@ -15,7 +15,12 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
-import { useCopyToClipboard, useUserRole, useWorkspacePath } from "@/hooks";
+import {
+  useCopyToClipboard,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { slugify } from "@/utils";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
@@ -46,6 +51,8 @@ export const StoryContextMenu = ({
   const { mutate: restoreStory } = useBulkRestoreStoryMutation();
   const { mutate: duplicateStory } = useDuplicateStoryMutation();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
 
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
@@ -118,7 +125,7 @@ export const StoryContextMenu = ({
         ...(!isOnDeletedPage && !isOnArchivePage
           ? [
               {
-                label: "Archive story",
+                label: `Archive ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
@@ -131,7 +138,7 @@ export const StoryContextMenu = ({
         ...(isOnArchivePage
           ? [
               {
-                label: "Unarchive story",
+                label: `Unarchive ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
@@ -144,7 +151,7 @@ export const StoryContextMenu = ({
         ...(isOnDeletedPage
           ? [
               {
-                label: "Restore story",
+                label: `Restore ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <UndoIcon />,
                 onSelect: () => {
@@ -203,14 +210,14 @@ export const StoryContextMenu = ({
         <Dialog.Content>
           <Dialog.Header>
             <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Delete story
+              Delete {storyTerm}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
               {isOnDeletedPage || isOnArchivePage
-                ? "This is an irreversible action. The story will be permanently deleted. You can't restore it."
-                : "This story will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore it at any time before that."}
+                ? `This is an irreversible action. The ${storyTerm} will be permanently deleted. You can't restore it.`
+                : `This ${storyTerm} will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore it at any time before that.`}
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
@@ -244,13 +251,14 @@ export const StoryContextMenu = ({
         <Dialog.Content>
           <Dialog.Header>
             <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Archive story
+              Archive {storyTerm}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              This story will be moved to the archive and can be unarchived
-              later. It won&apos;t appear in your active story lists.
+              This {storyTerm} will be moved to the archive and can be
+              unarchived later. It won&apos;t appear in your active {storyTerm}{" "}
+              lists.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
@@ -282,13 +290,13 @@ export const StoryContextMenu = ({
         <Dialog.Content>
           <Dialog.Header>
             <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Unarchive story
+              Unarchive {storyTerm}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              This story will be restored to your active story list and can be
-              assigned to sprints and team members again.
+              This {storyTerm} will be restored to your active {storyTerm} list
+              and can be assigned to sprints and team members again.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
@@ -317,13 +325,13 @@ export const StoryContextMenu = ({
         <Dialog.Content>
           <Dialog.Header>
             <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Restore story
+              Restore {storyTerm}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              This story will be restored to your active story list and can be
-              assigned to sprints and team members again.
+              This {storyTerm} will be restored to your active {storyTerm} list
+              and can be assigned to sprints and team members again.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">

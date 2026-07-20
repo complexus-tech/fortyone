@@ -2,6 +2,7 @@ import { NotificationsIcon, StoryIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
+import { useTerminology } from "@/hooks";
 import { PriorityIcon } from "../priority-icon";
 
 type SuggestedPromptsProps = {
@@ -15,6 +16,8 @@ export const SuggestedPrompts = ({
   isOnPage,
   fromIndex = 0,
 }: SuggestedPromptsProps) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { data: profile } = useProfile();
   const name = profile?.fullName.split(" ")[0] || profile?.username;
 
@@ -28,7 +31,7 @@ export const SuggestedPrompts = ({
     {
       icon: <StoryIcon className="text-warning dark:text-warning" />,
       label: "What's on my plate?",
-      value: "View all stories assigned to you across teams.",
+      value: `View all ${storyTermPlural} assigned to you across teams.`,
       classes: "bg-warning/10 dark:bg-warning/10",
     },
     {
@@ -45,7 +48,7 @@ export const SuggestedPrompts = ({
         />
       ),
       label: "High priority work",
-      value: "Find your most urgent stories across teams to focus on.",
+      value: `Find your most urgent ${storyTermPlural} across teams to focus on.`,
       classes: "bg-danger/10 dark:bg-danger/10",
     },
   ];

@@ -1,13 +1,13 @@
 import { Text } from "ui";
 import { format, addDays, differenceInDays, isTomorrow } from "date-fns";
 
-export const getDueDateMessage = (date: Date) => {
+export const getDueDateMessage = (date: Date, storyTerm: string) => {
   if (date < new Date()) {
     const daysOverdue = differenceInDays(new Date(), date);
     if (daysOverdue === 0) {
       return (
         <>
-          <Text fontSize="md">The story is due today</Text>
+          <Text fontSize="md">The {storyTerm} is due today</Text>
           <Text color="muted" fontSize="md">
             Zero days overdue
           </Text>

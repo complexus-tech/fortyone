@@ -5,6 +5,7 @@ import { Button, Flex, Menu, Text } from "ui";
 import { CheckIcon, CloseIcon, IntakeIcon, MoreVerticalIcon } from "icons";
 import { ConfirmDialog } from "@/components/ui";
 import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
+import { useTerminology } from "@/hooks";
 import { useAcceptAllIntegrationRequests } from "./hooks/use-accept-all-requests";
 import { useDeclineAllIntegrationRequests } from "./hooks/use-decline-all-requests";
 
@@ -19,6 +20,7 @@ export const IntegrationRequestsHeader = ({
   search: string;
   teamId: string;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
   const [isDecliningAll, setIsDecliningAll] = useState(false);
   const acceptAllRequests = useAcceptAllIntegrationRequests();
@@ -88,7 +90,7 @@ export const IntegrationRequestsHeader = ({
 
       <ConfirmDialog
         confirmText="Accept all intake items"
-        description="Accept every pending intake item in this team. Each accepted item will become a story."
+        description={`Accept every pending intake item in this team. Each accepted item will become a ${getTermDisplay("storyTerm")}.`}
         isLoading={acceptAllRequests.isPending}
         isOpen={isAcceptingAll}
         loadingText="Accepting..."

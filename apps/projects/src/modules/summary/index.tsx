@@ -58,7 +58,16 @@ export const SummaryPage = () => {
             </ErrorBoundary>
           </Box>
           <Box className="my-4 grid grid-cols-1 gap-4 @5xl:grid-cols-2">
-            <ErrorBoundary fallback={<div>Error loading stories</div>}>
+            <ErrorBoundary
+              fallback={
+                <div>
+                  Error loading{" "}
+                  {getTermDisplay("storyTerm", {
+                    variant: "plural",
+                  })}
+                </div>
+              }
+            >
               <MyStories />
             </ErrorBoundary>
             <ErrorBoundary fallback={<div>Error loading activities</div>}>

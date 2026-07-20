@@ -1,5 +1,6 @@
 "use client";
 import { Box, Flex, Text, Wrapper } from "ui";
+import { useTerminology } from "@/hooks";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import { useAppliedFilters } from "../hooks/filters";
 import { OverviewSkeleton } from "./overview-skeleton";
@@ -34,6 +35,11 @@ const Card = ({ title, count }: { title: string; count?: number }) => (
 
 export const Overview = () => {
   const filters = useAppliedFilters();
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", {
+    capitalize: true,
+    variant: "plural",
+  });
 
   const { data: overview, isPending } = useWorkspaceOverview(filters);
 
@@ -44,11 +50,11 @@ export const Overview = () => {
   const metrics = [
     {
       count: overview?.metrics.totalStories,
-      title: "Total Stories",
+      title: `Total ${storyTermPlural}`,
     },
     {
       count: overview?.metrics.completedStories,
-      title: "Completed Stories",
+      title: `Completed ${storyTermPlural}`,
     },
     {
       count: overview?.metrics.activeObjectives,

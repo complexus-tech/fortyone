@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTerminology } from "@/hooks";
 import { useAppliedFilters } from "@/modules/analytics/hooks/filters";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import type { CompletionTrendPoint } from "../types";
@@ -55,6 +56,7 @@ const formatDate = (date: string) => {
 export const CompletionTrend = () => {
   const filters = useAppliedFilters();
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const { data: overview, isPending } = useWorkspaceOverview(filters);
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!overview?.completionTrend.length) {
@@ -78,7 +80,13 @@ export const CompletionTrend = () => {
         <Text className="mb-1" fontSize="lg">
           Completion trend
         </Text>
-        <Text color="muted">Stories completed over time.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          completed over time.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">

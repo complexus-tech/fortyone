@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTerminology } from "@/hooks";
 import { useTimelineTrends } from "../hooks/timeline-trends";
 import type { StoryCompletionPoint, ObjectiveProgressPoint } from "../types";
 
@@ -61,6 +62,11 @@ const formatDate = (date: string) => {
 
 export const TimelineTrends = () => {
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", {
+    capitalize: true,
+    variant: "plural",
+  });
   const { data: timelineTrends, isPending } = useTimelineTrends();
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!timelineTrends) {
@@ -120,7 +126,8 @@ export const TimelineTrends = () => {
             Timeline trends
           </Text>
           <Text color="muted">
-            Historical trends for stories and objectives.
+            Historical trends for {storyTermPlural.toLowerCase()} and
+            objectives.
           </Text>
         </Box>
         <Box className="bg-skeleton h-[380px] animate-pulse rounded" />
@@ -134,7 +141,9 @@ export const TimelineTrends = () => {
         <Text className="mb-1" fontSize="lg">
           Timeline trends
         </Text>
-        <Text color="muted">Historical trends for stories and objectives.</Text>
+        <Text color="muted">
+          Historical trends for {storyTermPlural.toLowerCase()} and objectives.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={380} width="100%">
@@ -160,13 +169,13 @@ export const TimelineTrends = () => {
           <Bar
             dataKey="storiesCompleted"
             fill="#6366F1"
-            name="Stories Completed"
+            name={`${storyTermPlural} Completed`}
             radius={[4, 4, 0, 0]}
           />
           <Bar
             dataKey="storiesCreated"
             fill="#22c55e"
-            name="Stories Created"
+            name={`${storyTermPlural} Created`}
             radius={[4, 4, 0, 0]}
           />
           <Bar

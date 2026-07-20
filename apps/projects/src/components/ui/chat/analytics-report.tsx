@@ -14,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTerminology } from "@/hooks";
 
 type ChartRow = Record<string, string | number | null | undefined>;
 
@@ -224,6 +225,12 @@ export const AnalyticsReport = ({
 }: {
   output: Record<string, unknown>;
 }) => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", {
+    capitalize: true,
+    variant: "plural",
+  });
   const kind = output.kind;
   const title = String(output.title ?? "Performance report");
 
@@ -387,13 +394,13 @@ export const AnalyticsReport = ({
             {title}
           </Text>
           <Text className="text-foreground/60 text-sm dark:text-white/55">
-            GitHub links attached to {String(story.ref ?? "this story")}.
+            GitHub links attached to {String(story.ref ?? `this ${storyTerm}`)}.
           </Text>
         </Box>
 
         {!links.length ? (
           <Text className="text-foreground/60 bg-surface-muted/50 rounded-lg px-3 py-2 text-sm dark:bg-white/[0.03] dark:text-white/55">
-            No GitHub links are attached to this story.
+            No GitHub links are attached to this {storyTerm}.
           </Text>
         ) : (
           <Box className="space-y-2">
@@ -440,7 +447,10 @@ export const AnalyticsReport = ({
         <Text className="text-xl font-semibold">{title}</Text>
         <MetricGrid
           metrics={[
-            { label: "Stories", value: Number(metrics.totalStories ?? 0) },
+            {
+              label: storyTermPlural,
+              value: Number(metrics.totalStories ?? 0),
+            },
             {
               label: "Completed",
               value: Number(metrics.completedStories ?? 0),
@@ -751,7 +761,9 @@ export const AnalyticsReport = ({
     return (
       <Box className="mt-3 space-y-4">
         <Text className="text-xl font-semibold">{title}</Text>
-        <ChartSection title="Story completion">
+        <ChartSection
+          title={`${getTermDisplay("storyTerm", { capitalize: true })} completion`}
+        >
           <CompactLineChart
             data={asRows(trends.storyCompletion)}
             lines={[

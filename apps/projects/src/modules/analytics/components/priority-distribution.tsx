@@ -53,6 +53,7 @@ const CustomTooltip = ({
 
 export const PriorityDistribution = () => {
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const chartData = useMemo<ChartDataItem[]>(() => {
@@ -78,7 +79,13 @@ export const PriorityDistribution = () => {
         <Text className="mb-1" fontSize="lg">
           Priority distribution
         </Text>
-        <Text color="muted">Stories broken down by priority level.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          broken down by priority level.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">

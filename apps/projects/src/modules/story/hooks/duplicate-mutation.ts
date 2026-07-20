@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { slugify } from "@/utils";
 import type {
   GroupedStoriesResponse,
@@ -280,6 +280,8 @@ export const useDuplicateStoryMutation = () => {
   const router = useRouter();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
 
   const mutation = useMutation({
     mutationFn: ({ storyId }: { storyId: string; story: DetailedStory }) =>
@@ -315,9 +317,10 @@ export const useDuplicateStoryMutation = () => {
         }
       });
 
-      toast.error("Failed to duplicate story", {
+      toast.error(`Failed to duplicate ${storyTerm}`, {
         description:
-          error.message || "An error occurred while duplicating the story",
+          error.message ||
+          `An error occurred while duplicating the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {
@@ -358,9 +361,11 @@ export const useDuplicateStoryMutation = () => {
       });
 
       toast.success("Success", {
-        description: "Story duplicated successfully",
+        description: `${getTermDisplay("storyTerm", {
+          capitalize: true,
+        })} duplicated successfully`,
         action: {
-          label: "View story",
+          label: `View ${storyTerm}`,
           onClick: () => {
             router.push(
               withWorkspace(

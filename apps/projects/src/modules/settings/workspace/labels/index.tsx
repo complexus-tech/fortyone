@@ -5,11 +5,14 @@ import { useState } from "react";
 import { generateRandomColor } from "lib";
 import { TagsIcon } from "icons";
 import { useLabels } from "@/lib/hooks/labels";
+import { useTerminology } from "@/hooks";
 import type { Label } from "@/types";
 import { SectionHeader } from "../../components";
 import { WorkspaceLabel } from "./components/label";
 
 export const WorkspaceLabelsSettings = () => {
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { data: labels = [] } = useLabels();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newLabel, setNewLabel] = useState<Partial<Label> | null>(null);
@@ -39,7 +42,7 @@ export const WorkspaceLabelsSettings = () => {
               Create Label
             </Button>
           }
-          description="Create and manage labels to categorize stories."
+          description={`Create and manage labels to categorize ${storyTermPlural}.`}
           title="Workspace level labels"
         />
 
@@ -49,7 +52,8 @@ export const WorkspaceLabelsSettings = () => {
               <TagsIcon className="mx-auto mb-3 h-9" />
               <Text className="font-medium">No labels created yet</Text>
               <Text className="mt-1" color="muted">
-                Create labels to help organize and categorize your stories
+                Create labels to help organize and categorize your{" "}
+                {storyTermPlural}
               </Text>
             </Box>
           ) : (

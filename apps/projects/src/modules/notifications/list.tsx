@@ -4,11 +4,13 @@ import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Skeleton, Text } from "ui";
 import { NotificationCard } from "@/modules/notifications/card";
+import { useTerminology } from "@/hooks";
 import { NotificationsHeader } from "./header";
 import { useNotificationsInfinite } from "./hooks/notifications";
 import { NotificationsSkeleton } from "./notifications-skeleton";
 
 export const ListNotifications = () => {
+  const { getTermDisplay } = useTerminology();
   const [search, setSearch] = useQueryState(
     "search",
     parseAsString.withDefault(""),
@@ -78,7 +80,7 @@ export const ListNotifications = () => {
               <Text align="center" color="muted">
                 {search
                   ? `No notifications match “${search}”.`
-                  : "You will receive notifications when you are assigned or mentioned in a story."}
+                  : `You will receive notifications when you are assigned or mentioned in a ${getTermDisplay("storyTerm")}.`}
               </Text>
             </Box>
           </Flex>

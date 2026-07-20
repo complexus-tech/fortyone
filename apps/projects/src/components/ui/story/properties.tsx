@@ -450,7 +450,12 @@ export const StoryProperties = ({
                       new Date(endDate) >= new Date(),
                   })}
                 />
-                <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                <Box>
+                  {getDueDateMessage(
+                    new Date(endDate),
+                    getTermDisplay("storyTerm"),
+                  )}
+                </Box>
               </Flex>
             }
           >

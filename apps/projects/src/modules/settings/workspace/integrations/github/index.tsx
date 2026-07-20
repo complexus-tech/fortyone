@@ -19,7 +19,7 @@ import { CheckIcon, GitIcon, PlusIcon } from "icons";
 import { TeamColor } from "@/components/ui/team-color";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCreateGitHubInstallSession,
   useCreateGitHubIssueSyncLink,
@@ -42,6 +42,9 @@ const GitHubIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 );
 
 export const GitHubIntegrationSettings = () => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { data: integration } = useGitHubIntegration();
   const { data: teams = [] } = useTeams();
   const { withWorkspace } = useWorkspacePath();
@@ -142,7 +145,7 @@ export const GitHubIntegrationSettings = () => {
                     </Text>
                   </Box>
                 </Flex>
-                <Badge color="success" className="uppercase">
+                <Badge className="uppercase" color="success">
                   {installation.isActive ? "Connected" : "Disconnected"}
                 </Badge>
               </Flex>
@@ -225,10 +228,10 @@ export const GitHubIntegrationSettings = () => {
           <Box>
             <Text className="font-medium">Format</Text>
             <Text color="muted">
-              Choose the branch name template copied from story pages.
+              Choose the branch name template copied from {storyTerm} pages.
             </Text>
           </Box>
-          <Menu open={branchFormatOpen} onOpenChange={setBranchFormatOpen}>
+          <Menu onOpenChange={setBranchFormatOpen} open={branchFormatOpen}>
             <Menu.Button>
               <Button color="tertiary">
                 {integration?.settings.branchFormat ??
@@ -257,8 +260,8 @@ export const GitHubIntegrationSettings = () => {
 
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
-          description="Include magic words in commit messages to link commits to stories."
-          title="Link commits to stories with magic words"
+          description={`Include magic words in commit messages to link commits to ${storyTermPlural}.`}
+          title={`Link commits to ${storyTermPlural} with magic words`}
         />
         <Flex align="center" className="px-6 py-4" justify="between">
           <Box>
@@ -284,10 +287,12 @@ export const GitHubIntegrationSettings = () => {
         <Box className="divide-border divide-y-[0.5px]">
           <Flex align="center" className="px-6 py-4" justify="between">
             <Box>
-              <Text className="font-medium">Close stories on commit keywords</Text>
+              <Text className="font-medium">
+                Close {storyTermPlural} on commit keywords
+              </Text>
               <Text color="muted">
                 Detect keywords like &quot;fixes PRO-123&quot; in commits to
-                auto-close stories.
+                auto-close {storyTermPlural}.
               </Text>
             </Box>
             <Switch
@@ -301,7 +306,8 @@ export const GitHubIntegrationSettings = () => {
             <Box>
               <Text className="font-medium">Auto-populate PR body</Text>
               <Text color="muted">
-                Pre-fill pull request descriptions with linked story details.
+                Pre-fill pull request descriptions with linked {storyTerm}{" "}
+                details.
               </Text>
             </Box>
             <Switch
@@ -468,7 +474,9 @@ export const GitHubIntegrationSettings = () => {
               <Flex direction="column" gap={2}>
                 <button
                   className={`border-border rounded-lg border px-4 py-3 text-left transition-colors ${syncDirection === "inbound_only" ? "border-primary bg-primary/5" : "hover:bg-surface-muted"}`}
-                  onClick={() => setSyncDirection("inbound_only")}
+                  onClick={() => {
+                    setSyncDirection("inbound_only");
+                  }}
                   type="button"
                 >
                   <Text className="font-medium">One-way sync</Text>
@@ -478,7 +486,9 @@ export const GitHubIntegrationSettings = () => {
                 </button>
                 <button
                   className={`border-border rounded-lg border px-4 py-3 text-left transition-colors ${syncDirection === "bidirectional" ? "border-primary bg-primary/5" : "hover:bg-surface-muted"}`}
-                  onClick={() => setSyncDirection("bidirectional")}
+                  onClick={() => {
+                    setSyncDirection("bidirectional");
+                  }}
                   type="button"
                 >
                   <Text className="font-medium">Two-way sync</Text>
@@ -489,8 +499,13 @@ export const GitHubIntegrationSettings = () => {
               </Flex>
             </Box>
 
-            <Flex justify="end" gap={2}>
-              <Button color="tertiary" onClick={() => setIsModalOpen(false)}>
+            <Flex gap={2} justify="end">
+              <Button
+                color="tertiary"
+                onClick={() => {
+                  setIsModalOpen(false);
+                }}
+              >
                 Cancel
               </Button>
               <Button

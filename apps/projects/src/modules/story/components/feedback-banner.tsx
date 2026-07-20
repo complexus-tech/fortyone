@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CopyIcon, LinkIcon, MoreHorizontalIcon, RequestsIcon } from "icons";
-import { Box, Flex, Menu, Text } from "ui";
+import { Box, Flex, Menu, Text, TimeAgo } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import type { StoryFeedbackLink } from "@/modules/team-feedback/types";
 
@@ -35,7 +35,7 @@ const FeedbackBannerRow = ({ link }: { link: StoryFeedbackLink }) => {
   return (
     <Flex
       align="center"
-      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
+      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-2"
       justify="between"
     >
       <Link className="min-w-0" href={feedbackHref} title="Open feedback">
@@ -47,6 +47,8 @@ const FeedbackBannerRow = ({ link }: { link: StoryFeedbackLink }) => {
             </Text>
             <Text className="line-clamp-1" color="muted">
               {link.feedbackTitle}
+              <span aria-hidden="true"> · </span>
+              Linked <TimeAgo timestamp={link.createdAt} />
             </Text>
           </Box>
         </Flex>

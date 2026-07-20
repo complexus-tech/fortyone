@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Team } from "@/modules/teams/types";
 import { ConfirmDialog, RowWrapper, TeamColor } from "@/components/ui";
 import { useDeleteTeamMutation } from "@/modules/teams/hooks/delete-team-mutation";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 
 export const WorkspaceTeam = ({
   id,
@@ -20,6 +20,7 @@ export const WorkspaceTeam = ({
 >) => {
   const { mutate: deleteTeam } = useDeleteTeamMutation();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleDeleteTeam = () => {
@@ -88,7 +89,7 @@ export const WorkspaceTeam = ({
       </Flex>
       <ConfirmDialog
         confirmPhrase="delete team"
-        description="Are you sure you want to delete this team? This action will remove all members and stories from the team and cannot be undone."
+        description={`Are you sure you want to delete this team? This action will remove all members and ${getTermDisplay("storyTerm", { variant: "plural" })} from the team and cannot be undone.`}
         isOpen={isDeleteOpen}
         onClose={() => {
           setIsDeleteOpen(false);

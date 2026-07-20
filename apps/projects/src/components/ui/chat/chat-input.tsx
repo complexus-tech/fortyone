@@ -20,6 +20,7 @@ import { StoryAttachmentPreview } from "@/modules/story/components/story-attachm
 import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
 import { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
+import { useTerminology } from "@/hooks";
 
 type ChatInputProps = {
   value: string;
@@ -103,6 +104,7 @@ export const ChatInput = ({
   isLiveVoiceVisible = false,
   liveVoiceDisabled = false,
 }: ChatInputProps) => {
+  const { getTermDisplay } = useTerminology();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -127,7 +129,7 @@ export const ChatInput = ({
           "Show me the current sprint...",
           "Open my objectives...",
           "Navigate to the roadmap...",
-          "Find stories in progress...",
+          `Find ${getTermDisplay("storyTerm", { variant: "plural" })} in progress...`,
           "Show my key results...",
         ];
 

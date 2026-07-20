@@ -356,8 +356,8 @@ export const Options = ({
                     disabled={isDeleted || isGuest}
                     leftIcon={<StoryStatusIcon statusId={statusId} />}
                     ref={statusButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {name}
@@ -385,8 +385,8 @@ export const Options = ({
                     disabled={isDeleted || isGuest}
                     leftIcon={<PriorityIcon priority={priority} />}
                     ref={priorityButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {priority}
@@ -424,8 +424,8 @@ export const Options = ({
                       />
                     }
                     ref={assigneeButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {assignee?.username || (
@@ -466,8 +466,8 @@ export const Options = ({
                       />
                     }
                     ref={estimateButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {estimateValue ? (
@@ -548,7 +548,12 @@ export const Options = ({
                             new Date(endDate!) >= new Date(),
                         })}
                       />
-                      <Box>{getDueDateMessage(new Date(endDate!))}</Box>
+                      <Box>
+                        {getDueDateMessage(
+                          new Date(endDate!),
+                          getTermDisplay("storyTerm"),
+                        )}
+                      </Box>
                     </Flex>
                   }
                 >
@@ -612,9 +617,9 @@ export const Options = ({
                         )
                       }
                       ref={objectiveButtonRef}
+                      size="sm"
                       title={objectiveId ? objective?.name : undefined}
                       type="button"
-                      size="sm"
                       variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[12ch] truncate">
@@ -653,8 +658,8 @@ export const Options = ({
                         )
                       }
                       ref={sprintButtonRef}
-                      type="button"
                       size="sm"
+                      type="button"
                       variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">

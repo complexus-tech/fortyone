@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -88,6 +88,8 @@ const updateListQuery = (
 export const useDeleteStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
   const { mutateAsync } = useRestoreStoryMutation();
 
   const mutation = useMutation({
@@ -134,9 +136,9 @@ export const useDeleteStoryMutation = () => {
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
 
-      toast.error("Failed to delete story", {
+      toast.error(`Failed to delete ${storyTerm}`, {
         description:
-          error.message || "An error occurred while deleting the story",
+          error.message || `An error occurred while deleting the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {
@@ -153,7 +155,9 @@ export const useDeleteStoryMutation = () => {
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
       toast.success("Success", {
-        description: "Story deleted successfully",
+        description: `${getTermDisplay("storyTerm", {
+          capitalize: true,
+        })} deleted successfully`,
         cancel: {
           label: "Undo",
           onClick: () => {

@@ -4,6 +4,7 @@ import { Box, Flex } from "ui";
 import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import { useTerminology } from "@/hooks";
 import {
   ChatMessage,
   getMessageProgressLabel,
@@ -26,6 +27,7 @@ export const ChatMessages = ({
   regenerate,
   onPromptSelect,
 }: ChatMessagesProps) => {
+  const { getTermDisplay } = useTerminology();
   const { data: profile } = useProfile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,11 +43,15 @@ export const ChatMessages = ({
       isWorking && message.id === latestAssistantMessageId,
     ),
   );
-  const progressLabel = isWorking
-    ? latestAssistantMessage
+  let rawProgressLabel: string | undefined;
+  if (isWorking) {
+    rawProgressLabel = latestAssistantMessage
       ? getMessageProgressLabel(latestAssistantMessage)
-      : "Thinking"
-    : undefined;
+      : "Thinking";
+  }
+  const progressLabel = rawProgressLabel
+    ?.replaceAll("stories", getTermDisplay("storyTerm", { variant: "plural" }))
+    .replaceAll("story", getTermDisplay("storyTerm"));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTerminology } from "@/hooks";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { TeamAllocationItem } from "../types";
 import { useAppliedFilters } from "../hooks/filters";
@@ -42,6 +43,7 @@ const CustomTooltip = ({
   payload,
   label,
 }: TooltipProps<number, string>) => {
+  const { getTermDisplay } = useTerminology();
   if (!active || !payload?.length) {
     return null;
   }
@@ -53,7 +55,10 @@ const CustomTooltip = ({
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         <Text>Active sprints: {data.activeSprints}</Text>
-        <Text>Total stories: {data.totalStories}</Text>
+        <Text>
+          Total {getTermDisplay("storyTerm", { variant: "plural" })}:{" "}
+          {data.totalStories}
+        </Text>
         <Text>Completed: {data.completedStories}</Text>
       </Box>
     </Box>
