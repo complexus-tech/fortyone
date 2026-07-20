@@ -143,20 +143,22 @@ export const LinkFeedbackStoryDialog = ({
             gap={2}
           >
             <SearchIcon className="text-text-muted h-4 shrink-0" />
-            <Input
-              aria-label="Search team stories"
-              autoComplete="off"
-              autoFocus
-              className="h-10 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-              name="feedback-story-search"
-              onChange={(event) => {
-                setQuery(event.target.value);
-                updateSearchQuery(event.target.value.trim());
-              }}
-              placeholder="Search stories…"
-              type="search"
-              value={query}
-            />
+            <Box className="min-w-0 flex-1">
+              <Input
+                aria-label="Search team stories"
+                autoComplete="off"
+                autoFocus
+                className="h-10 w-full border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                name="feedback-story-search"
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  updateSearchQuery(event.target.value.trim());
+                }}
+                placeholder="Search stories…"
+                type="search"
+                value={query}
+              />
+            </Box>
           </Flex>
           <Box className="mt-3 min-h-28">{renderResults()}</Box>
         </Dialog.Body>

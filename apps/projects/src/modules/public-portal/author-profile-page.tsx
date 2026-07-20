@@ -196,7 +196,7 @@ const ContributorSidebar = ({
     contributor.stats.feedbackCount + contributor.stats.commentCount;
 
   return (
-    <aside className="space-y-8 md:min-h-0 md:overflow-y-auto">
+    <aside className="space-y-8 md:sticky md:top-8 md:self-start">
       <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-5 shadow-sm">
         <Text
           className="text-[0.8rem] tracking-[0.12em] uppercase"
@@ -445,7 +445,7 @@ export const PublicPortalAuthorProfilePage = ({
             onValueChange={changeTab}
             value={activeTab}
           >
-            <Box className="border-border/60 shrink-0 border-b pb-3">
+            <Box className="border-border/60 bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 shrink-0 border-b pb-3 backdrop-blur-xl">
               <Tabs.List className="mx-0 shrink-0 md:mx-0">
                 <Tabs.Tab
                   leftIcon={<RequestsIcon className="h-4 text-current" />}

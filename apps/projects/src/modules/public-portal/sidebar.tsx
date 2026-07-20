@@ -82,7 +82,7 @@ export const PublicPortalSidebar = ({
   viewer?: PublicPortalViewer | null;
 }) => {
   return (
-    <aside className="space-y-8 md:min-h-0 md:overflow-y-auto">
+    <aside className="space-y-8 md:sticky md:top-8 md:self-start">
       {viewer ? (
         <NewFeedbackButton portal={portal} viewer={viewer} />
       ) : (
