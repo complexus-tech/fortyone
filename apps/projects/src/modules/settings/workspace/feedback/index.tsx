@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "lib";
-import { LinkIcon, PlusIcon, TeamIcon } from "icons";
+import { ArrowDownIcon, LinkIcon, PlusIcon, TeamIcon } from "icons";
 import { Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
@@ -26,7 +26,7 @@ const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 const selectClassName =
-  "border-border ring-ring h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 dark:bg-surface-elevated";
+  "border-border ring-ring h-11 w-full appearance-none rounded-xl border bg-white pr-10 pl-3 text-sm outline-none focus-visible:ring-2 dark:bg-surface-elevated";
 
 const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   return (
@@ -101,8 +101,12 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
 
 const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
   const { data: teams = [] } = useTeams();
+  const teamsWithBoards = new Set(
+    (portal?.boards ?? []).map((board) => board.teamId),
+  );
+  const availableTeams = teams.filter((team) => !teamsWithBoards.has(team.id));
   const [open, setOpen] = useState(false);
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  const [teamId, setTeamId] = useState(availableTeams[0]?.id ?? "");
   const [name, setName] = useState("");
   const [color, setColor] = useState("green");
   const mutation = useCreateFeedbackBoardMutation();
@@ -123,10 +127,10 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
     <Dialog onOpenChange={setOpen} open={open}>
       <Button
         color="tertiary"
-        disabled={!portal || teams.length === 0}
+        disabled={!portal || availableTeams.length === 0}
         leftIcon={<PlusIcon className="h-[1.1rem]" />}
         onClick={() => {
-          setTeamId(teams[0]?.id ?? "");
+          setTeamId(availableTeams[0]?.id ?? "");
           setOpen(true);
         }}
       >
@@ -143,20 +147,23 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
             <Text className="mb-2 text-sm" fontWeight="medium">
               Owning team
             </Text>
-            <select
-              aria-label="Owning team"
-              className={selectClassName}
-              onChange={(event) => {
-                setTeamId(event.target.value);
-              }}
-              value={teamId}
-            >
-              {teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </select>
+            <Box className="relative">
+              <select
+                aria-label="Owning team"
+                className={selectClassName}
+                onChange={(event) => {
+                  setTeamId(event.target.value);
+                }}
+                value={teamId}
+              >
+                {availableTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+              <ArrowDownIcon className="text-text-muted pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-auto -translate-y-1/2" />
+            </Box>
           </Box>
           <Input
             onChange={(event) => {
@@ -296,24 +303,13 @@ export const FeedbackSettings = () => {
                 justify="between"
                 key={board.id}
               >
-                <Flex align="center" gap={3}>
-                  <Flex
-                    align="center"
+                <Flex align="center" gap={2}>
+                  <Box
                     aria-hidden="true"
-                    className="bg-surface-muted/70 size-8 shrink-0 rounded-lg"
-                    justify="center"
-                  >
-                    <Box
-                      className="size-3 rounded-sm"
-                      style={{ backgroundColor: board.color }}
-                    />
-                  </Flex>
-                  <Box>
-                    <Text className="font-medium">{board.name}</Text>
-                    <Text className="mt-1" color="muted">
-                      {board.slug}
-                    </Text>
-                  </Box>
+                    className="size-3 shrink-0 rounded-sm"
+                    style={{ backgroundColor: board.color }}
+                  />
+                  <Text className="font-medium">{board.name}</Text>
                 </Flex>
                 <Flex align="center" gap={3} justify="between">
                   <Text className="w-40">

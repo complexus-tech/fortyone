@@ -7,20 +7,17 @@ import { CommentIcon, RequestsIcon } from "icons";
 import { Avatar, Box, Flex, Tabs, Text } from "ui";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getPublicAvatarColor } from "./avatar-color";
-import { PublicBoardPill } from "./board-pill";
-import { FeedbackVoteButton } from "./feedback-controls";
 import { PublicPortalShell } from "./portal-shell";
 import { publicPortalKeys } from "./query-keys";
-import { RequestStatusPill } from "./request-card";
+import { PublicRequestCard } from "./request-card";
 import type {
   PublicContributor,
   PublicContributorComment,
   PublicContributorCommentsPage,
   PublicPortal,
   PublicPortalViewer,
-  PublicRequest,
 } from "./types";
-import { getBoard, getRequestPath, getRequestPathBySlug } from "./utils";
+import { getRequestPathBySlug } from "./utils";
 
 type ApiResponse<T> = {
   data: T;
@@ -90,61 +87,6 @@ const fetchAuthorCommentsPage = async ({
 
 const uniqueById = <T extends { id: string }>(items: T[]) =>
   Array.from(new Map(items.map((item) => [item.id, item])).values());
-
-const AuthorFeedbackItem = ({
-  portal,
-  request,
-}: {
-  portal: PublicPortal;
-  request: PublicRequest;
-}) => {
-  const board = getBoard(portal, request.boardId);
-
-  return (
-    <Box className="hover:bg-state-hover/25 transition-colors">
-      <Box className="border-border/70 border-b-[0.5px] py-5">
-        <Flex align="start" className="gap-3">
-          <Link
-            className="min-w-0 flex-1"
-            href={getRequestPath(portal, request)}
-          >
-            <Flex align="center" className="min-w-0 flex-wrap gap-2">
-              {board ? <PublicBoardPill board={board} /> : null}
-              <Text className="text-sm" color="muted">
-                {request.createdAtLabel}
-              </Text>
-            </Flex>
-            <Text
-              className="mt-3 line-clamp-2 text-[1.08rem]"
-              fontWeight="semibold"
-            >
-              {request.title}
-            </Text>
-            {request.description ? (
-              <Text className="mt-1.5 line-clamp-2 max-w-2xl" color="muted">
-                {request.description}
-              </Text>
-            ) : null}
-            <Flex align="center" className="mt-4 gap-2">
-              <RequestStatusPill status={request.status} />
-              {request.commentCount > 0 ? (
-                <Flex
-                  align="center"
-                  aria-label={`${request.commentCount} comments`}
-                  className="text-text-muted gap-1"
-                >
-                  <CommentIcon className="h-4" />
-                  <span>{request.commentCount}</span>
-                </Flex>
-              ) : null}
-            </Flex>
-          </Link>
-          <FeedbackVoteButton compact portal={portal} request={request} />
-        </Flex>
-      </Box>
-    </Box>
-  );
-};
 
 const AuthorCommentItem = ({
   comment,
@@ -525,7 +467,7 @@ export const PublicPortalAuthorProfilePage = ({
             >
               {requests.length > 0 ? (
                 requests.map((request) => (
-                  <AuthorFeedbackItem
+                  <PublicRequestCard
                     key={request.id}
                     portal={portal}
                     request={request}

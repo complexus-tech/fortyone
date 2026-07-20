@@ -158,6 +158,7 @@ type AppBoardReviewer struct {
 	UserID         uuid.UUID `json:"userId"`
 	Name           string    `json:"name"`
 	Email          string    `json:"email"`
+	AvatarURL      *string   `json:"avatarUrl"`
 	Role           string    `json:"role"`
 	EmailFrequency string    `json:"emailFrequency"`
 }
@@ -250,6 +251,7 @@ func toAppBoardReviewer(core feedback.CoreBoardReviewer) AppBoardReviewer {
 		UserID:         core.UserID,
 		Name:           core.Name,
 		Email:          core.Email,
+		AvatarURL:      core.AvatarURL,
 		Role:           core.Role,
 		EmailFrequency: core.EmailFrequency,
 	}

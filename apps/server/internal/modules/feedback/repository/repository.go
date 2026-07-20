@@ -149,6 +149,7 @@ type boardReviewerRow struct {
 	UserID         uuid.UUID `db:"user_id"`
 	Name           string    `db:"name"`
 	Email          string    `db:"email"`
+	AvatarURL      *string   `db:"avatar_url"`
 	Role           string    `db:"role"`
 	EmailFrequency string    `db:"email_frequency"`
 }
@@ -312,11 +313,15 @@ func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (
 		RETURNING id, workspace_id, portal_id, team_id, name, slug, color, order_index, created_at, updated_at
 	`, input.WorkspaceID, input.PortalID, input.TeamID, input.Name, input.Slug, input.Color, input.OrderIndex)
 	if err != nil {
+		if isBoardTeamConflict(err) {
+			return feedback.CoreBoard{}, feedback.ErrBoardExists
+		}
 		return feedback.CoreBoard{}, err
 	}
-	if _, err := tx.ExecContext(ctx, `
+	var reviewerID uuid.UUID
+	if err := tx.GetContext(ctx, &reviewerID, `
 		INSERT INTO feedback_board_subscriptions (board_id, user_id, email_frequency)
-		SELECT $1, wm.user_id, $4
+		SELECT $1, u.user_id, $5
 		FROM workspace_members wm
 		INNER JOIN team_members tm
 			ON tm.team_id = $3
@@ -326,15 +331,23 @@ func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (
 			AND u.is_active = true
 			AND u.is_system = false
 		WHERE wm.workspace_id = $2
-			AND wm.role = 'admin'
-		ON CONFLICT (board_id, user_id) DO NOTHING
-	`, row.ID, input.WorkspaceID, input.TeamID, feedback.EmailFrequencyDaily); err != nil {
+			AND wm.user_id = $4
+			AND wm.role IN ('admin', 'member')
+		RETURNING user_id
+	`, row.ID, input.WorkspaceID, input.TeamID, input.CreatorID, feedback.EmailFrequencyDaily); err != nil {
 		return feedback.CoreBoard{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return feedback.CoreBoard{}, err
 	}
 	return toCoreBoard(row), nil
+}
+
+func isBoardTeamConflict(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		pgErr.Code == "23505" &&
+		pgErr.ConstraintName == "feedback_boards_workspace_team_unique"
 }
 
 func (r *Repo) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]feedback.CoreBoardReviewer, error) {
@@ -357,6 +370,7 @@ func (r *Repo) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid
 		SELECT u.user_id,
 			COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 			u.email,
+			u.avatar_url,
 			wm.role::text AS role,
 			COALESCE(fbs.email_frequency, $3) AS email_frequency
 		FROM feedback_boards fb
@@ -397,6 +411,7 @@ func (r *Repo) SetBoardReviewer(ctx context.Context, input feedback.CoreBoardRev
 				u.user_id,
 				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 				u.email,
+				u.avatar_url,
 				wm.role::text AS role
 			FROM feedback_boards fb
 			INNER JOIN team_members tm
@@ -420,7 +435,7 @@ func (r *Repo) SetBoardReviewer(ctx context.Context, input feedback.CoreBoardRev
 				updated_at = now()
 			RETURNING user_id, email_frequency
 		)
-		SELECT eligible.user_id, eligible.name, eligible.email, eligible.role, saved.email_frequency
+		SELECT eligible.user_id, eligible.name, eligible.email, eligible.avatar_url, eligible.role, saved.email_frequency
 		FROM eligible
 		INNER JOIN saved ON saved.user_id = eligible.user_id
 	`, input.WorkspaceID, input.BoardID, input.UserID, input.EmailFrequency)
@@ -438,6 +453,7 @@ func (r *Repo) removeBoardReviewer(ctx context.Context, input feedback.CoreBoard
 				u.user_id,
 				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 				u.email,
+				u.avatar_url,
 				wm.role::text AS role
 			FROM feedback_boards fb
 			INNER JOIN team_members tm
@@ -459,7 +475,7 @@ func (r *Repo) removeBoardReviewer(ctx context.Context, input feedback.CoreBoard
 				AND fbs.user_id = eligible.user_id
 			RETURNING fbs.user_id
 		)
-		SELECT eligible.user_id, eligible.name, eligible.email, eligible.role, $4 AS email_frequency
+		SELECT eligible.user_id, eligible.name, eligible.email, eligible.avatar_url, eligible.role, $4 AS email_frequency
 		FROM eligible
 	`, input.WorkspaceID, input.BoardID, input.UserID, feedback.EmailFrequencyOff)
 	if err != nil {
@@ -1147,6 +1163,7 @@ func toCoreBoardReviewer(row boardReviewerRow) feedback.CoreBoardReviewer {
 		UserID:         row.UserID,
 		Name:           row.Name,
 		Email:          row.Email,
+		AvatarURL:      row.AvatarURL,
 		Role:           row.Role,
 		EmailFrequency: row.EmailFrequency,
 	}

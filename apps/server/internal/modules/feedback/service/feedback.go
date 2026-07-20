@@ -19,6 +19,7 @@ import (
 var (
 	ErrInvalidInput   = errors.New("invalid feedback input")
 	ErrNotFound       = sql.ErrNoRows
+	ErrBoardExists    = errors.New("a feedback board already exists for this team")
 	ErrAlreadyPlanned = errors.New("feedback is already linked to a primary story")
 	ErrTeamMismatch   = errors.New("feedback and story must belong to the same team")
 	ErrStoryManaged   = errors.New("feedback status is managed by its linked story")
@@ -249,12 +250,13 @@ func (s *Service) listContributorComments(ctx context.Context, portalID, authorI
 	})
 }
 
-func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewerID uuid.UUID, status string, page, pageSize int) (CoreItemsPage, error) {
+func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewerID uuid.UUID, status, search string, page, pageSize int) (CoreItemsPage, error) {
 	return s.ListItems(ctx, CoreListItemsInput{
 		WorkspaceID: workspaceID,
 		TeamID:      &teamID,
 		ViewerID:    viewerID,
 		Status:      status,
+		Search:      search,
 		Sort:        "newest",
 		Page:        page,
 		PageSize:    pageSize,
@@ -324,8 +326,8 @@ func (s *Service) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (C
 }
 
 func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error) {
-	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.TeamID == uuid.Nil {
-		return CoreBoard{}, invalidInput("workspace, portal, and team are required")
+	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.TeamID == uuid.Nil || input.CreatorID == uuid.Nil {
+		return CoreBoard{}, invalidInput("workspace, portal, team, and creator are required")
 	}
 	input.Name = strings.TrimSpace(input.Name)
 	if input.Name == "" {

@@ -41,11 +41,16 @@ export const TeamFeedbackCard = ({
   const isUnread = !feedback.readAt;
   const canPlan = !isLinked && feedback.status !== "closed";
   const status = searchParams.get("status");
+  const search = searchParams.get("search");
   const feedbackHref = withWorkspace(
     `/teams/${feedback.board.teamId}/feedback/${feedback.id}`,
   );
-  const href = status
-    ? `${feedbackHref}?status=${encodeURIComponent(status)}`
+  const feedbackParams = new URLSearchParams();
+  if (status) feedbackParams.set("status", status);
+  if (search) feedbackParams.set("search", search);
+  const feedbackQuery = feedbackParams.toString();
+  const href = feedbackQuery
+    ? `${feedbackHref}?${feedbackQuery}`
     : feedbackHref;
 
   const handlePlan = () => {

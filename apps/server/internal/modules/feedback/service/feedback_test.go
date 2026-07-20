@@ -24,6 +24,8 @@ type repoStub struct {
 	statusID                   uuid.UUID
 	createdItems               []CoreItemInput
 	createdPortals             []CorePortalInput
+	createdBoards              []CoreBoardInput
+	listItemInputs             []CoreListItemsInput
 	reviewers                  []CoreBoardReviewer
 	reviewerInputs             []CoreBoardReviewerInput
 	reads                      map[string]time.Time
@@ -108,9 +110,42 @@ func (r *repoStub) GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (C
 }
 
 func (r *repoStub) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error) {
+	r.createdBoards = append(r.createdBoards, input)
 	board := CoreBoard{ID: uuid.New(), WorkspaceID: input.WorkspaceID, PortalID: input.PortalID, TeamID: input.TeamID, Name: input.Name, Slug: input.Slug, Color: input.Color}
 	r.boards = append(r.boards, board)
 	return board, nil
+}
+
+func TestCreateBoardRequiresAndPreservesCreator(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	teamID := uuid.New()
+	creatorID := uuid.New()
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	_, err := service.CreateBoard(context.Background(), CoreBoardInput{
+		WorkspaceID: workspaceID,
+		PortalID:    portalID,
+		TeamID:      teamID,
+		CreatorID:   creatorID,
+		Name:        "Product feedback",
+		Color:       "blue",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, repo.createdBoards, 1)
+	require.Equal(t, creatorID, repo.createdBoards[0].CreatorID)
+
+	_, err = service.CreateBoard(context.Background(), CoreBoardInput{
+		WorkspaceID: workspaceID,
+		PortalID:    portalID,
+		TeamID:      teamID,
+		Name:        "Missing creator",
+	})
+	require.ErrorIs(t, err, ErrInvalidInput)
 }
 
 func (r *repoStub) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error) {
@@ -130,6 +165,7 @@ func (r *repoStub) SetBoardReviewer(ctx context.Context, input CoreBoardReviewer
 }
 
 func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error) {
+	r.listItemInputs = append(r.listItemInputs, input)
 	result := make([]CoreItem, 0, len(r.items))
 	for _, item := range r.items {
 		if input.PortalID != uuid.Nil && item.PortalID != input.PortalID {
@@ -1146,11 +1182,35 @@ func TestListTeamItemsScopesFeedbackToBoardTeam(t *testing.T) {
 	}}
 	service := New(repo, nil)
 
-	page, err := service.ListTeamItems(context.Background(), workspaceID, teamID, uuid.New(), "all", 1, 25)
+	page, err := service.ListTeamItems(context.Background(), workspaceID, teamID, uuid.New(), "all", "", 1, 25)
 
 	require.NoError(t, err)
 	require.Len(t, page.Items, 1)
 	require.Equal(t, teamID, page.Items[0].Board.TeamID)
+}
+
+func TestListTeamItemsCarriesTrimmedSearch(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	_, err := service.ListTeamItems(
+		context.Background(),
+		workspaceID,
+		teamID,
+		uuid.New(),
+		"active",
+		"  export filters  ",
+		1,
+		25,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, repo.listItemInputs, 1)
+	require.Equal(t, "export filters", repo.listItemInputs[0].Search)
 }
 
 func TestFeedbackReadStateIsPerUserAndDrivesTeamSummary(t *testing.T) {

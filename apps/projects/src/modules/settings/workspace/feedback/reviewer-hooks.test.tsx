@@ -49,6 +49,7 @@ const mockUpdateFeedbackBoardReviewer = jest.mocked(
 );
 
 const reviewer: FeedbackReviewer = {
+  avatarUrl: "https://cdn.example.com/tariro.jpg",
   email: "tariro@example.com",
   emailFrequency: "off",
   name: "Tariro Ncube",

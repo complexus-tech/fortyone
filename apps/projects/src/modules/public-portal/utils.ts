@@ -19,13 +19,19 @@ export const getRequestPathBySlug = (
 export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
   getRequestPathBySlug(portal, request.slug);
 
-export const getAuthorPath = (portal: PublicPortal, authorId: string) => {
+export const getAuthorPathByPortalSlug = (
+  portalSlug: string,
+  authorId: string,
+) => {
   if (!authorId || authorId === NIL_AUTHOR_ID) return null;
 
   return isWorkspaceSubdomainDeployment
     ? `/people/${authorId}`
-    : `/portal/${portal.slug}/people/${authorId}`;
+    : `/portal/${portalSlug}/people/${authorId}`;
 };
+
+export const getAuthorPath = (portal: PublicPortal, authorId: string) =>
+  getAuthorPathByPortalSlug(portal.slug, authorId);
 
 export const getPortalPath = (
   portal: PublicPortal,

@@ -134,10 +134,12 @@ func TestAppBoardReviewerUsesAutoSaveContract(t *testing.T) {
 	t.Parallel()
 
 	userID := uuid.New()
+	avatarURL := "https://cdn.example.com/ada.jpg"
 	payload, err := json.Marshal(toAppBoardReviewer(feedback.CoreBoardReviewer{
 		UserID:         userID,
 		Name:           "Ada Lovelace",
 		Email:          "ada@example.com",
+		AvatarURL:      &avatarURL,
 		Role:           "member",
 		EmailFrequency: feedback.EmailFrequencyWeekly,
 	}))
@@ -151,6 +153,9 @@ func TestAppBoardReviewerUsesAutoSaveContract(t *testing.T) {
 	}
 	if reviewer.UserID != userID || reviewer.EmailFrequency != feedback.EmailFrequencyWeekly {
 		t.Fatalf("reviewer payload = %+v", reviewer)
+	}
+	if reviewer.AvatarURL == nil || *reviewer.AvatarURL != avatarURL {
+		t.Fatalf("reviewer avatar = %v, want %q", reviewer.AvatarURL, avatarURL)
 	}
 }
 

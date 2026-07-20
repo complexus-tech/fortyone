@@ -148,6 +148,7 @@ type CoreBoardReviewer struct {
 	UserID         uuid.UUID
 	Name           string
 	Email          string
+	AvatarURL      *string
 	Role           string
 	EmailFrequency string
 }
@@ -176,6 +177,7 @@ type CoreBoardInput struct {
 	WorkspaceID uuid.UUID
 	PortalID    uuid.UUID
 	TeamID      uuid.UUID
+	CreatorID   uuid.UUID
 	Name        string
 	Slug        string
 	Color       string

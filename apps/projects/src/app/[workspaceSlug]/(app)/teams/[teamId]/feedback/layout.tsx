@@ -24,6 +24,7 @@ export default async function Layout({
   await queryClient.prefetchInfiniteQuery({
     queryKey: [
       ...feedbackKeys.team(workspaceSlug, teamId, "active"),
+      "",
       "infinite",
     ] as const,
     queryFn: ({ pageParam }) =>
@@ -31,6 +32,7 @@ export default async function Layout({
         teamId,
         ctx,
         "active",
+        "",
         typeof pageParam === "number" ? pageParam : 1,
       ),
     getNextPageParam: (lastPage: TeamFeedbackPage) =>

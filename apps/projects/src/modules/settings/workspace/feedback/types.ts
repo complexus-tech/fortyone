@@ -45,6 +45,7 @@ export type FeedbackReviewer = {
   userId: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   role: "admin" | "member";
   emailFrequency: FeedbackReviewerEmailFrequency;
 };

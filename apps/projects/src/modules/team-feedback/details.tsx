@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useEditor } from "@tiptap/react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -36,6 +37,7 @@ import { BodyContainer } from "@/components/shared";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
+import { getAuthorPathByPortalSlug } from "@/modules/public-portal/utils";
 import { Option } from "@/modules/story/components/options";
 import {
   getStoryCommentEditorExtensions,
@@ -338,10 +340,12 @@ const MetadataValue = ({ children }: { children: ReactNode }) => (
 );
 
 const FeedbackProperties = ({
+  authorProfileHref,
   feedback,
   linkedStoryHref,
   variant = "sidebar",
 }: {
+  authorProfileHref?: string;
   feedback: TeamFeedbackItem;
   linkedStoryHref?: string;
   variant?: "inline" | "sidebar";
@@ -369,6 +373,33 @@ const FeedbackProperties = ({
           className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
+          label="Author"
+          value={
+            <MetadataValue>
+              <Avatar
+                name={feedback.authorName}
+                size="xs"
+                src={feedback.authorAvatar ?? undefined}
+              />
+              {authorProfileHref ? (
+                <Link
+                  className="text-foreground hover:text-primary min-w-0 transition-colors"
+                  href={authorProfileHref}
+                >
+                  <Text as="span" className="line-clamp-1">
+                    {feedback.authorName}
+                  </Text>
+                </Link>
+              ) : (
+                <Text className="line-clamp-1">{feedback.authorName}</Text>
+              )}
+            </MetadataValue>
+          }
+        />
+        <Option
+          className="my-5 md:my-6"
+          isCompact={isInline}
+          isNotifications={isInline}
           label="Status"
           value={<FeedbackStatus status={feedback.status} />}
         />
@@ -381,22 +412,6 @@ const FeedbackProperties = ({
             <MetadataValue>
               <Dot className="size-3" color={feedback.board.color} />
               <Text className="line-clamp-1">{feedback.board.name}</Text>
-            </MetadataValue>
-          }
-        />
-        <Option
-          className="my-5 md:my-6"
-          isCompact={isInline}
-          isNotifications={isInline}
-          label="Author"
-          value={
-            <MetadataValue>
-              <Avatar
-                name={feedback.authorName}
-                size="xs"
-                src={feedback.authorAvatar ?? undefined}
-              />
-              <Text className="line-clamp-1">{feedback.authorName}</Text>
             </MetadataValue>
           }
         />
@@ -505,7 +520,10 @@ const FeedbackDetailsSkeleton = () => (
 );
 
 export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
-  const { teamId } = useParams<{ teamId: string }>();
+  const { teamId, workspaceSlug } = useParams<{
+    teamId: string;
+    workspaceSlug: string;
+  }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { withWorkspace } = useWorkspacePath();
@@ -570,9 +588,16 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     ? withWorkspace(`/story/${linkedStory.storyId}`)
     : undefined;
   const status = searchParams.get("status");
+  const search = searchParams.get("search");
   const feedbackListHref = withWorkspace(`/teams/${feedbackTeamId}/feedback`);
-  const listHref = status
-    ? `${feedbackListHref}?status=${encodeURIComponent(status)}`
+  const authorProfileHref =
+    getAuthorPathByPortalSlug(workspaceSlug, feedback.authorId) ?? undefined;
+  const listParams = new URLSearchParams();
+  if (status) listParams.set("status", status);
+  if (search) listParams.set("search", search);
+  const listQuery = listParams.toString();
+  const listHref = listQuery
+    ? `${feedbackListHref}?${listQuery}`
     : feedbackListHref;
 
   const openStory = (storyId: string) => {
@@ -653,6 +678,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
               )}
               <Box className="notification-story-inline-options mt-6 hidden">
                 <FeedbackProperties
+                  authorProfileHref={authorProfileHref}
                   feedback={feedback}
                   linkedStoryHref={linkedStoryHref}
                   variant="inline"
@@ -669,17 +695,6 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   Activity feed
                 </Text>
                 <FeedbackCommentComposer feedbackId={feedback.id} />
-                <Flex align="center" className="mb-5 py-1" gap={2}>
-                  <Avatar
-                    name={feedback.authorName}
-                    size="xs"
-                    src={feedback.authorAvatar ?? undefined}
-                  />
-                  <Text color="muted">
-                    {feedback.authorName} submitted this feedback{" "}
-                    <TimeAgo timestamp={feedback.createdAt} />
-                  </Text>
-                </Flex>
                 {feedback.comments.map((comment) => (
                   <CommentRow comment={comment} key={comment.id} />
                 ))}
@@ -689,6 +704,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
         </Box>
         <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
           <FeedbackProperties
+            authorProfileHref={authorProfileHref}
             feedback={feedback}
             linkedStoryHref={linkedStoryHref}
           />

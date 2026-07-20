@@ -11,14 +11,20 @@ import type { TeamFeedbackListStatus } from "../types";
 export const useTeamFeedback = (
   teamId: string,
   status: TeamFeedbackListStatus = "active",
+  search = "",
 ) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: feedbackKeys.team(workspaceSlug, teamId, status),
+    queryKey: [...feedbackKeys.team(workspaceSlug, teamId, status), search],
     queryFn: () =>
-      getTeamFeedback(teamId, { session: session!, workspaceSlug }, status),
+      getTeamFeedback(
+        teamId,
+        { session: session!, workspaceSlug },
+        status,
+        search,
+      ),
     enabled: Boolean(teamId && session),
   });
 };
@@ -26,6 +32,7 @@ export const useTeamFeedback = (
 export const useTeamFeedbackInfinite = (
   teamId: string,
   status: TeamFeedbackListStatus = "active",
+  search = "",
 ) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
@@ -33,6 +40,7 @@ export const useTeamFeedbackInfinite = (
   return useInfiniteQuery({
     queryKey: [
       ...feedbackKeys.team(workspaceSlug, teamId, status),
+      search,
       "infinite",
     ] as const,
     queryFn: ({ pageParam }) =>
@@ -40,6 +48,7 @@ export const useTeamFeedbackInfinite = (
         teamId,
         { session: session!, workspaceSlug },
         status,
+        search,
         pageParam,
       ),
     getNextPageParam: (lastPage) =>

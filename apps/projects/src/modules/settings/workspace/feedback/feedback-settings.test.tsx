@@ -27,6 +27,7 @@ jest.mock("icons", () => {
     React.createElement("svg", props);
 
   return {
+    ArrowDownIcon: Icon,
     LinkIcon: Icon,
     PlusIcon: Icon,
     TeamIcon: Icon,
@@ -246,6 +247,7 @@ describe("FeedbackSettings", () => {
     mockUseFeedbackBoardReviewers.mockReturnValue({
       data: [
         {
+          avatarUrl: "https://cdn.example.com/amina.jpg",
           email: "amina@example.com",
           emailFrequency: "daily",
           name: "Amina Moyo",
@@ -323,17 +325,45 @@ describe("FeedbackSettings", () => {
     });
   });
 
-  it("places the board color inside a muted surface", () => {
+  it("shows the board color without a wrapper or slug", () => {
     const { container } = render(<FeedbackSettings />);
 
-    const swatches = container.querySelectorAll<HTMLElement>(
+    const boardSwatch = container.querySelector<HTMLElement>(
       '[style*="background-color: red"]',
-    );
-    const boardSwatch = Array.from(swatches).find((swatch) =>
-      swatch.parentElement?.classList.contains("bg-surface-muted/70"),
     );
 
     expect(boardSwatch).toBeInTheDocument();
+    expect(boardSwatch?.parentElement).not.toHaveClass("bg-surface-muted/70");
+    expect(screen.queryByText("road-safety")).not.toBeInTheDocument();
+  });
+
+  it("disables board creation when every team already has a board", () => {
+    render(<FeedbackSettings />);
+
+    expect(screen.getByRole("button", { name: "Create Board" })).toBeDisabled();
+  });
+
+  it("offers only teams that do not already have a board", () => {
+    mockUseTeams.mockReturnValue({
+      data: [
+        { id: "team-1", name: "Operations" },
+        { id: "team-2", name: "Customer success" },
+      ],
+    } as ReturnType<typeof useTeams>);
+    render(<FeedbackSettings />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Board" }));
+
+    const teamSelect = screen.getByRole("combobox", { name: "Owning team" });
+    expect(teamSelect).toHaveValue("team-2");
+    expect(teamSelect).toHaveClass("appearance-none", "pr-10", "pl-3");
+    expect(teamSelect.nextElementSibling).toHaveClass("right-3.5");
+    expect(
+      screen.queryByRole("option", { name: "Operations" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Customer success" }),
+    ).toBeInTheDocument();
   });
 
   it("loads reviewers only when opened and auto-saves their frequency", async () => {
@@ -355,7 +385,14 @@ describe("FeedbackSettings", () => {
     });
 
     expect(screen.getByText("Feedback stays immediate")).toBeInTheDocument();
+    expect(
+      screen.getByText("Feedback stays immediate").parentElement,
+    ).toHaveClass("dark:bg-white/[0.04]");
     expect(screen.getByText("Amina Moyo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Amina Moyo")).toHaveAttribute(
+      "src",
+      "https://cdn.example.com/amina.jpg",
+    );
     expect(screen.getByText("amina@example.com")).toBeInTheDocument();
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByText("1 subscribed")).toBeInTheDocument();

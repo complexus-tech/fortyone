@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Button, Flex, Text } from "ui";
 import { TeamFeedbackCard } from "./card";
@@ -39,6 +39,10 @@ export const ListTeamFeedback = () => {
     "status",
     parseAsStringLiteral(feedbackListStatuses).withDefault("active"),
   );
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const {
     data,
     fetchNextPage,
@@ -47,7 +51,7 @@ export const ListTeamFeedback = () => {
     isFetchingNextPage,
     isPending,
     refetch,
-  } = useTeamFeedbackInfinite(teamId, status);
+  } = useTeamFeedbackInfinite(teamId, status, search);
   const feedback = data?.pages.flatMap((page) => page.feedback) ?? [];
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
@@ -124,7 +128,9 @@ export const ListTeamFeedback = () => {
                 No feedback
               </Text>
               <Text align="center" color="muted">
-                {emptyStateCopy[status]}
+                {search
+                  ? `No feedback matches “${search}”.`
+                  : emptyStateCopy[status]}
               </Text>
             </Box>
           </Flex>
@@ -136,9 +142,13 @@ export const ListTeamFeedback = () => {
   return (
     <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
       <TeamFeedbackHeader
+        onSearchChange={(nextSearch) => {
+          void setSearch(nextSearch || null);
+        }}
         onStatusChange={(nextStatus) => {
           void setStatus(nextStatus);
         }}
+        search={search}
         status={status}
       />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">{content}</Box>

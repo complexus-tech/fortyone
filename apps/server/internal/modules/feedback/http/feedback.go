@@ -353,7 +353,8 @@ func (h *Handlers) ListTeamItems(ctx context.Context, w http.ResponseWriter, r *
 	if status == "" {
 		status = "active"
 	}
-	itemsPage, err := h.feedback.ListTeamItems(ctx, workspace.ID, teamID, userID, status, page, pageSize)
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	itemsPage, err := h.feedback.ListTeamItems(ctx, workspace.ID, teamID, userID, status, search, page, pageSize)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
@@ -535,6 +536,10 @@ func (h *Handlers) CreateBoard(ctx context.Context, w http.ResponseWriter, r *ht
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	var input AppCreateBoard
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -543,6 +548,7 @@ func (h *Handlers) CreateBoard(ctx context.Context, w http.ResponseWriter, r *ht
 		WorkspaceID: workspace.ID,
 		PortalID:    input.PortalID,
 		TeamID:      input.TeamID,
+		CreatorID:   userID,
 		Name:        input.Name,
 		Slug:        input.Slug,
 		Color:       input.Color,
@@ -568,7 +574,9 @@ func (h *Handlers) ListBoardReviewers(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	response := make([]AppBoardReviewer, 0, len(reviewers))
+	resolvedByAvatar := make(map[string]*string)
 	for _, reviewer := range reviewers {
+		reviewer.AvatarURL = h.resolveAuthorAvatar(ctx, reviewer.AvatarURL, resolvedByAvatar)
 		response = append(response, toAppBoardReviewer(reviewer))
 	}
 	return web.Respond(ctx, w, response, http.StatusOK)
@@ -600,6 +608,7 @@ func (h *Handlers) SetBoardReviewer(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	reviewer.AvatarURL = h.resolveAuthorAvatar(ctx, reviewer.AvatarURL, make(map[string]*string))
 	return web.Respond(ctx, w, toAppBoardReviewer(reviewer), http.StatusOK)
 }
 
@@ -855,6 +864,8 @@ func httpStatus(err error) int {
 	case errors.Is(err, feedback.ErrNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, feedback.ErrAlreadyPlanned):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrBoardExists):
 		return http.StatusConflict
 	case errors.Is(err, feedback.ErrStoryManaged):
 		return http.StatusConflict

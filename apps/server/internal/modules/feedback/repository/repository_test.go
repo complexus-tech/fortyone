@@ -24,6 +24,16 @@ func TestIsPrimaryStoryConflictRecognizesPGXConstraintError(t *testing.T) {
 	require.False(t, isPrimaryStoryConflict(errors.New("database unavailable")))
 }
 
+func TestIsBoardTeamConflictRecognizesPGXConstraintError(t *testing.T) {
+	err := fmt.Errorf("insert feedback board: %w", &pgconn.PgError{
+		Code:           "23505",
+		ConstraintName: "feedback_boards_workspace_team_unique",
+	})
+
+	require.True(t, isBoardTeamConflict(err))
+	require.False(t, isBoardTeamConflict(errors.New("database unavailable")))
+}
+
 func TestItemSelectQuerySupportsNamedPaginationParameters(t *testing.T) {
 	query := fmt.Sprintf(
 		"%s WHERE fi.portal_id = :portal_id ORDER BY fi.created_at DESC LIMIT :limit OFFSET :offset",

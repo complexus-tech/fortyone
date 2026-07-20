@@ -48,7 +48,12 @@ const ReviewerRow = ({
       justify="between"
     >
       <Flex align="center" className="min-w-0" gap={3}>
-        <Avatar className="shrink-0" name={reviewer.name} size="sm" />
+        <Avatar
+          className="shrink-0"
+          name={reviewer.name}
+          size="sm"
+          src={reviewer.avatarUrl}
+        />
         <Box className="min-w-0">
           <Flex align="center" className="min-w-0 gap-2">
             <Text className="truncate font-medium">{reviewer.name}</Text>
@@ -138,7 +143,7 @@ export const FeedbackReviewersDialog = ({
           </Dialog.Description>
         </Dialog.Header>
         <Dialog.Body className="pt-0 pb-6">
-          <Box className="bg-surface-muted/70 mb-5 rounded-xl px-4 py-3.5">
+          <Box className="bg-surface-muted/70 mb-5 rounded-xl px-4 py-3.5 dark:bg-white/[0.04]">
             <Text className="font-medium">Feedback stays immediate</Text>
             <Text className="mt-1 leading-relaxed" color="muted">
               New submissions appear in the {teamName} Feedback queue as they

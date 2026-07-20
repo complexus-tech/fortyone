@@ -7,6 +7,7 @@ export const getTeamFeedbackPage = async (
   teamId: string,
   ctx: WorkspaceCtx,
   status: TeamFeedbackListStatus = "active",
+  search = "",
   page = 1,
   pageSize = 25,
 ) => {
@@ -15,6 +16,7 @@ export const getTeamFeedbackPage = async (
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (search.trim()) params.set("search", search.trim());
   const response = await get<ApiResponse<TeamFeedbackPage>>(
     `teams/${teamId}/feedback?${params.toString()}`,
     ctx,
@@ -33,7 +35,8 @@ export const getTeamFeedback = async (
   teamId: string,
   ctx: WorkspaceCtx,
   status: TeamFeedbackListStatus = "active",
+  search = "",
 ) => {
-  const page = await getTeamFeedbackPage(teamId, ctx, status);
+  const page = await getTeamFeedbackPage(teamId, ctx, status, search);
   return page.feedback;
 };
