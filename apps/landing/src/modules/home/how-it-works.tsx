@@ -652,11 +652,7 @@ export const HowItWorks = () => {
     <Container className="scroll-mt-24 py-16 md:pt-36" id="ai-planning">
       {/* Headline */}
       <Box data-landing-reveal>
-        <Text
-          as="h2"
-          className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
-          color="gradientDark"
-        >
+        <Text as="h2" className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl">
           Keep the original request attached to the work.
         </Text>
       </Box>
@@ -692,11 +688,7 @@ export const PlatformWorkflow = () => {
   return (
     <Container className="scroll-mt-24 py-16 md:pt-24 md:pb-28" id="roadmaps">
       <Box data-landing-reveal>
-        <Text
-          as="h2"
-          className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl"
-          color="gradientDark"
-        >
+        <Text as="h2" className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl">
           See what is moving, blocked, and at risk.
         </Text>
       </Box>

@@ -8,6 +8,7 @@ import {
   SampleClients,
   Integrations,
   CoreValues,
+  FeedbackWorkflow,
   HowItWorks,
   PlatformWorkflow,
 } from "@/modules/home";
@@ -59,6 +60,7 @@ export default function Page() {
       />
       <SampleClients />
       <HowItWorks />
+      <FeedbackWorkflow />
       <CoreValues />
       <PlatformWorkflow />
       <Integrations />

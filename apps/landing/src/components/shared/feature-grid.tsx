@@ -62,11 +62,7 @@ export const FeatureGrid = ({
 
       <Box className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
         <Box data-landing-reveal>
-          <Text
-            as="h2"
-            className="max-w-4xl pb-1 text-4xl md:text-5xl"
-            color="gradientDark"
-          >
+          <Text as="h2" className="max-w-4xl pb-1 text-4xl md:text-5xl">
             {mainHeading}
           </Text>
         </Box>
