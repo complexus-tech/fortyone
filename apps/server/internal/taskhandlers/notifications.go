@@ -287,15 +287,19 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 
 		parsedMessage := parseNotificationMessage(notificationMsg)
 		notificationURL, entityLabel := notificationEmailDestination(item.EntityType, item.FeedbackSlug, item.NotificationID, workspaceURL)
+		messageContext := fmt.Sprintf(" for %s ", entityLabel)
+		if item.EntityType == "feedback" {
+			messageContext = ": "
+		}
 		itemStyle := defaultItemStyle
 		if index == 0 {
 			itemStyle = firstItemStyle
 		}
 		content += fmt.Sprintf(`
 			<div style="%s">
-				<p style="%s">%s for %s <a href="%s" style="%s">%s</a></p>
+				<p style="%s">%s%s<a href="%s" style="%s">%s</a></p>
 			</div>
-		`, itemStyle, messageStyle, parsedMessage.HTML, entityLabel, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title))
+		`, itemStyle, messageStyle, parsedMessage.HTML, messageContext, html.EscapeString(notificationURL), linkStyle, html.EscapeString(item.Title))
 	}
 
 	return content + "</div></div>", nil

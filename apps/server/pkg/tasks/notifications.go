@@ -15,6 +15,11 @@ const (
 	TypeNotificationEmail       = "notification:email:send"
 	TypeNotificationEmailDigest = "notification:email:digest"
 	TypeWeeklyDigestEmail       = "email:digest:weekly"
+
+	notificationEmailDigestDelay = time.Hour
+	// The uniqueness lock must outlive the scheduled delay. Asynq releases it
+	// immediately after successful processing, so this does not extend the next digest.
+	notificationEmailDigestUniqueTTL = 2 * time.Hour
 )
 
 type NotificationEmailPayload struct {
@@ -85,8 +90,8 @@ func (s *Service) EnqueueNotificationEmailDigest(payload NotificationEmailDigest
 	defaultOpts := []asynq.Option{
 		asynq.Queue("notifications"),
 		asynq.MaxRetry(2),
-		asynq.ProcessIn(15 * time.Minute),
-		asynq.Unique(30 * time.Minute),
+		asynq.ProcessIn(notificationEmailDigestDelay),
+		asynq.Unique(notificationEmailDigestUniqueTTL),
 	}
 
 	finalOpts := append(defaultOpts, opts...)
@@ -111,6 +116,6 @@ func (s *Service) EnqueueNotificationEmailDigest(payload NotificationEmailDigest
 		"queue", info.Queue,
 		"recipient_id", payload.RecipientID,
 		"workspace_id", payload.WorkspaceID,
-		"process_in", "15 minutes")
+		"process_in", notificationEmailDigestDelay.String())
 	return info, nil
 }

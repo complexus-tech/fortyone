@@ -62,25 +62,45 @@ func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) 
 }
 
 func TestFormatNotificationDigestMessageLinksFeedbackToPublicItem(t *testing.T) {
-	message, err := json.Marshal(NotificationMessage{
+	commentMessage, err := json.Marshal(NotificationMessage{
 		Template: "{actor} commented on your feedback",
 		Variables: map[string]Variable{
 			"actor": {Value: "Maya Chen", Type: "actor"},
 		},
 	})
 	require.NoError(t, err)
-	items := []NotificationEmailDigestItem{{
-		NotificationID: uuid.New(),
-		EntityType:     "feedback",
-		FeedbackSlug:   "export-roadmap-to-pdf",
-		Title:          "Export roadmap to PDF",
-		Message:        message,
-	}}
+	statusMessage, err := json.Marshal(NotificationMessage{
+		Template: "{actor} marked your feedback as {status}",
+		Variables: map[string]Variable{
+			"actor":  {Value: "Sarah Jones", Type: "actor"},
+			"status": {Value: "planned", Type: "value"},
+		},
+	})
+	require.NoError(t, err)
+	items := []NotificationEmailDigestItem{
+		{
+			NotificationID: uuid.New(),
+			EntityType:     "feedback",
+			FeedbackSlug:   "export-roadmap-to-pdf",
+			Title:          "Export roadmap to PDF",
+			Message:        commentMessage,
+		},
+		{
+			NotificationID: uuid.New(),
+			EntityType:     "feedback",
+			FeedbackSlug:   "dark-mode",
+			Title:          "Dark mode",
+			Message:        statusMessage,
+		},
+	}
 
 	rendered, err := formatNotificationDigestMessage(items, "https://product.fortyone.app")
 
 	require.NoError(t, err)
-	require.Contains(t, rendered, "for feedback")
+	require.Contains(t, rendered, "commented on your feedback:")
+	require.Contains(t, rendered, "marked your feedback as")
+	require.NotContains(t, rendered, "for feedback")
 	require.Contains(t, rendered, "https://product.fortyone.app/feedback/export-roadmap-to-pdf")
+	require.Contains(t, rendered, "https://product.fortyone.app/feedback/dark-mode")
 	require.True(t, feedbackOnlyDigest(items))
 }
