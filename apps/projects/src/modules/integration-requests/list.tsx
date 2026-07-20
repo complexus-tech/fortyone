@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Text } from "ui";
 import { IntegrationRequestCard } from "./card";
@@ -10,8 +11,12 @@ import { useTeamIntegrationRequestsInfinite } from "./hooks/use-team-requests";
 
 export const ListIntegrationRequests = () => {
   const { teamId } = useParams<{ teamId: string }>();
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useTeamIntegrationRequestsInfinite(teamId);
+    useTeamIntegrationRequestsInfinite(teamId, "pending", search);
   const requests = data?.pages.flatMap((page) => page.requests) ?? [];
   const totalCount = data?.pages[0]?.pagination.totalCount ?? 0;
   const [triggerRef, { entry }] = useIntersectionObserver({
@@ -27,7 +32,14 @@ export const ListIntegrationRequests = () => {
 
   return (
     <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
-      <IntegrationRequestsHeader requestCount={totalCount} teamId={teamId} />
+      <IntegrationRequestsHeader
+        onSearchChange={(nextSearch) => {
+          void setSearch(nextSearch || null);
+        }}
+        requestCount={totalCount}
+        search={search}
+        teamId={teamId}
+      />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {isPending ? (
           <Box className="space-y-0">
@@ -70,11 +82,12 @@ export const ListIntegrationRequests = () => {
               <Flex align="center" className="h-full px-6" justify="center">
                 <Box>
                   <Text align="center" className="mb-3" fontSize="xl">
-                    No intake items
+                    {search ? "No matching intake" : "No intake items"}
                   </Text>
                   <Text align="center" color="muted">
-                    New integration items will appear here before becoming
-                    stories.
+                    {search
+                      ? `No intake items match “${search}”.`
+                      : "New integration items will appear here before becoming stories."}
                   </Text>
                 </Box>
               </Flex>

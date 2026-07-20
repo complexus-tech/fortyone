@@ -29,7 +29,7 @@ func (r *notificationRepoStub) Create(context.Context, CoreNewNotification) (Cor
 	return r.notification, inserted, nil
 }
 
-func (r *notificationRepoStub) List(context.Context, uuid.UUID, uuid.UUID, int, int) ([]CoreNotification, error) {
+func (r *notificationRepoStub) List(context.Context, uuid.UUID, uuid.UUID, string, int, int) ([]CoreNotification, error) {
 	return nil, nil
 }
 

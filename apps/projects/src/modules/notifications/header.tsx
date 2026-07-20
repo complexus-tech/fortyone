@@ -12,14 +12,20 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
-import { MobileMenuButton } from "@/components/shared";
+import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
 import { useNotifications } from "./hooks/notifications";
 import { useUnreadNotifications } from "./hooks/unread";
 import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
 import { useDeleteAllMutation } from "./hooks/delete-all-mutation";
 import { useDeleteReadMutation } from "./hooks/delete-read-mutation";
 
-export const NotificationsHeader = () => {
+export const NotificationsHeader = ({
+  onSearchChange,
+  search,
+}: {
+  onSearchChange: (search: string) => void;
+  search: string;
+}) => {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isDeletingRead, setIsDeletingRead] = useState(false);
   const { data: notifications = [] } = useNotifications();
@@ -43,109 +49,116 @@ export const NotificationsHeader = () => {
   };
 
   return (
-    <Flex
-      align="center"
-      className="border-border/60 d h-16 border-b-[0.5px] px-4"
-      justify="between"
-    >
-      <Flex align="center" className="gap-2">
-        <MobileMenuButton />
-        <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
-        <Text>Notifications</Text>
-      </Flex>
-      <Flex align="center" gap={2}>
-        <Menu>
-          <Menu.Button>
-            <Button
-              asIcon
-              className="aspect-square"
-              color="tertiary"
-              leftIcon={<FilterIcon className="h-[1.15rem]" />}
-              size="sm"
-            >
-              <div className="sr-only">Filter</div>
-            </Button>
-          </Menu.Button>
-          <Menu.Items className="w-54">
-            <Menu.Group className="mt-1 mb-3 px-4">
-              <Text color="muted" textOverflow="truncate">
-                Filter notifications
-              </Text>
-            </Menu.Group>
-            <Menu.Separator />
-            <Menu.Group>
-              <Menu.Item>
-                <NotificationsIcon />
-                All notifications
-              </Menu.Item>
-              <Menu.Item>
-                <NotificationsUnreadIcon />
-                Unread notifications
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
-        <Menu>
-          <Menu.Button>
-            <Button
-              asIcon
-              color="tertiary"
-              rightIcon={<MoreVerticalIcon />}
-              size="sm"
-            >
-              <span className="sr-only">More options</span>
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="end">
-            <Menu.Group className="mt-1 mb-3 px-4">
-              <Text color="muted" textOverflow="truncate">
-                Manage notifications
-              </Text>
-            </Menu.Group>
-            <Menu.Separator className="mb-1.5" />
-            <Menu.Group>
-              {unreadNotifications > 0 && (
-                <Menu.Item onSelect={handleMarkAllAsRead}>
-                  <NotificationsCheckIcon className="h-5 w-auto" />
-                  Mark all as read
-                </Menu.Item>
-              )}
-              <Menu.Item>
-                <Link
-                  className="flex items-center gap-2"
-                  href="/settings/account/notifications"
+    <>
+      <ExpandableSearchHeader
+        actions={
+          <>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  asIcon
+                  className="aspect-square"
+                  color="tertiary"
+                  leftIcon={<FilterIcon className="h-[1.15rem]" />}
+                  size="sm"
                 >
-                  <SettingsIcon className="h-5 w-auto" />
-                  Notification settings
-                </Link>
-              </Menu.Item>
-            </Menu.Group>
-            {notifications.length > 0 && (
-              <Menu.Group>
+                  <div className="sr-only">Filter</div>
+                </Button>
+              </Menu.Button>
+              <Menu.Items className="w-54">
+                <Menu.Group className="mt-1 mb-3 px-4">
+                  <Text color="muted" textOverflow="truncate">
+                    Filter notifications
+                  </Text>
+                </Menu.Group>
                 <Menu.Separator />
-                <Menu.Item
-                  onSelect={() => {
-                    setIsDeletingAll(true);
-                  }}
-                >
-                  <DeleteIcon className="h-5 w-auto" />
-                  Delete all notifications
-                </Menu.Item>
-                {notifications.length > unreadNotifications && (
-                  <Menu.Item
-                    onSelect={() => {
-                      setIsDeletingRead(true);
-                    }}
-                  >
-                    <NotificationsCheckIcon className="h-5 w-auto" />
-                    Delete read notifications
+                <Menu.Group>
+                  <Menu.Item>
+                    <NotificationsIcon />
+                    All notifications
                   </Menu.Item>
+                  <Menu.Item>
+                    <NotificationsUnreadIcon />
+                    Unread notifications
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+            <Menu>
+              <Menu.Button>
+                <Button
+                  asIcon
+                  color="tertiary"
+                  rightIcon={<MoreVerticalIcon />}
+                  size="sm"
+                >
+                  <span className="sr-only">More options</span>
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end">
+                <Menu.Group className="mt-1 mb-3 px-4">
+                  <Text color="muted" textOverflow="truncate">
+                    Manage notifications
+                  </Text>
+                </Menu.Group>
+                <Menu.Separator className="mb-1.5" />
+                <Menu.Group>
+                  {unreadNotifications > 0 && (
+                    <Menu.Item onSelect={handleMarkAllAsRead}>
+                      <NotificationsCheckIcon className="h-5 w-auto" />
+                      Mark all as read
+                    </Menu.Item>
+                  )}
+                  <Menu.Item>
+                    <Link
+                      className="flex items-center gap-2"
+                      href="/settings/account/notifications"
+                    >
+                      <SettingsIcon className="h-5 w-auto" />
+                      Notification settings
+                    </Link>
+                  </Menu.Item>
+                </Menu.Group>
+                {notifications.length > 0 && (
+                  <Menu.Group>
+                    <Menu.Separator />
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsDeletingAll(true);
+                      }}
+                    >
+                      <DeleteIcon className="h-5 w-auto" />
+                      Delete all notifications
+                    </Menu.Item>
+                    {notifications.length > unreadNotifications && (
+                      <Menu.Item
+                        onSelect={() => {
+                          setIsDeletingRead(true);
+                        }}
+                      >
+                        <NotificationsCheckIcon className="h-5 w-auto" />
+                        Delete read notifications
+                      </Menu.Item>
+                    )}
+                  </Menu.Group>
                 )}
-              </Menu.Group>
-            )}
-          </Menu.Items>
-        </Menu>
-      </Flex>
+              </Menu.Items>
+            </Menu>
+          </>
+        }
+        initialValue={search}
+        key={search}
+        label="Search notifications"
+        leading={
+          <Flex align="center" className="gap-2">
+            <MobileMenuButton />
+            <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
+            <Text>Notifications</Text>
+          </Flex>
+        }
+        onSubmit={onSearchChange}
+        placeholder="Search notifications..."
+      />
 
       <ConfirmDialog
         description="Are you sure you want to delete all notifications? This action cannot be undone."
@@ -166,6 +179,6 @@ export const NotificationsHeader = () => {
         onConfirm={handleDeleteReadNotifications}
         title="Delete all read notifications"
       />
-    </Flex>
+    </>
   );
 };

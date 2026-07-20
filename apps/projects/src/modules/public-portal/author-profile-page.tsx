@@ -410,8 +410,8 @@ export const PublicPortalAuthorProfilePage = ({
 
   return (
     <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
-      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 pt-8 md:h-full md:min-h-0 md:grid-cols-[minmax(0,1fr)_19rem] md:overflow-hidden md:px-6 md:pt-10">
-        <Flex className="min-h-0 md:h-full" direction="column">
+      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 pt-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6 md:pt-10">
+        <Flex className="min-h-0" direction="column">
           <Box className="shrink-0">
             <Flex align="center" className="gap-4">
               <Avatar
@@ -461,10 +461,7 @@ export const PublicPortalAuthorProfilePage = ({
                 </Tabs.Tab>
               </Tabs.List>
             </Box>
-            <Tabs.Panel
-              className="hide-scrollbar min-h-0 pt-3 md:flex-1 md:overflow-y-auto"
-              value="feedback"
-            >
+            <Tabs.Panel className="min-h-0 md:flex-1" value="feedback">
               {requests.length > 0 ? (
                 requests.map((request) => (
                   <PublicRequestCard
@@ -492,10 +489,7 @@ export const PublicPortalAuthorProfilePage = ({
                 </Text>
               ) : null}
             </Tabs.Panel>
-            <Tabs.Panel
-              className="hide-scrollbar min-h-0 pt-3 md:flex-1 md:overflow-y-auto"
-              value="comments"
-            >
+            <Tabs.Panel className="min-h-0 md:flex-1" value="comments">
               {commentsContent}
               <div ref={commentsSentinelRef} />
               {isFetchingNextCommentsPage ? (

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Skeleton, Text } from "ui";
 import { NotificationCard } from "@/modules/notifications/card";
@@ -8,8 +9,12 @@ import { useNotificationsInfinite } from "./hooks/notifications";
 import { NotificationsSkeleton } from "./notifications-skeleton";
 
 export const ListNotifications = () => {
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useNotificationsInfinite();
+    useNotificationsInfinite(search);
   const notifications = data?.pages.flatMap((page) => page.notifications) ?? [];
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
@@ -25,7 +30,12 @@ export const ListNotifications = () => {
   if (isPending) return <NotificationsSkeleton />;
   return (
     <Box className="border-border/60 d h-dvh border-r-[0.5px] pb-6">
-      <NotificationsHeader />
+      <NotificationsHeader
+        onSearchChange={(nextSearch) => {
+          void setSearch(nextSearch || null);
+        }}
+        search={search}
+      />
       <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
         {notifications.map((notification, idx) => (
           <NotificationCard
@@ -63,11 +73,12 @@ export const ListNotifications = () => {
           <Flex align="center" className="h-full px-6" justify="center">
             <Box>
               <Text align="center" className="mb-3" fontSize="xl">
-                No notifications
+                {search ? "No matching notifications" : "No notifications"}
               </Text>
               <Text align="center" color="muted">
-                You will receive notifications when you are assigned or
-                mentioned in a story.
+                {search
+                  ? `No notifications match “${search}”.`
+                  : "You will receive notifications when you are assigned or mentioned in a story."}
               </Text>
             </Box>
           </Flex>

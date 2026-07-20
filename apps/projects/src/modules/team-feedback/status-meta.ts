@@ -17,7 +17,7 @@ export const feedbackStatusMeta: Record<
     colorClassName: "text-primary",
   },
   in_progress: {
-    label: "In progress",
+    label: "In Progress",
     colorClassName: "text-warning",
   },
   completed: {

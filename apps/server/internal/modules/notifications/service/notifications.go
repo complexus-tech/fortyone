@@ -20,7 +20,7 @@ import (
 // Repository provides access to the notifications storage.
 type Repository interface {
 	Create(ctx context.Context, n CoreNewNotification) (CoreNotification, bool, error)
-	List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error)
+	List(ctx context.Context, userID, workspaceID uuid.UUID, search string, limit, offset int) ([]CoreNotification, error)
 	GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID) error
@@ -155,12 +155,12 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 }
 
 // List returns a list of notifications.
-func (s *Service) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]CoreNotification, error) {
+func (s *Service) List(ctx context.Context, userID, workspaceID uuid.UUID, search string, limit, offset int) ([]CoreNotification, error) {
 	s.log.Info(ctx, "business.core.notifications.List")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.List")
 	defer span.End()
 
-	notifications, err := s.repo.List(ctx, userID, workspaceID, limit, offset)
+	notifications, err := s.repo.List(ctx, userID, workspaceID, search, limit, offset)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

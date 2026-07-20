@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "lib";
-import { Button, Flex, Input, Menu, Text } from "ui";
-import { CheckIcon, MoreVerticalIcon, RequestsIcon, SearchIcon } from "icons";
-import { MobileMenuButton } from "@/components/shared";
+import { Button, Flex, Menu, Text } from "ui";
+import { CheckIcon, MoreVerticalIcon, RequestsIcon } from "icons";
+import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
 import { Dot } from "@/components/ui";
 import { feedbackStatusMeta } from "./status-meta";
 import type { TeamFeedbackListStatus } from "./types";
@@ -16,22 +15,22 @@ const filters: {
 }[] = [
   {
     colorClassName: "text-foreground",
-    label: "All active feedback",
+    label: "All Active Feedback",
     value: "active",
   },
   {
     colorClassName: "text-text-muted",
-    label: "All feedback",
+    label: "All Feedback",
     value: "all",
   },
   {
     colorClassName: feedbackStatusMeta.pending.colorClassName,
-    label: "Pending review",
+    label: "Pending Review",
     value: "pending",
   },
   {
     colorClassName: feedbackStatusMeta.reviewing.colorClassName,
-    label: "In review",
+    label: "In Review",
     value: "reviewing",
   },
   {
@@ -56,39 +55,6 @@ const filters: {
   },
 ];
 
-const FeedbackSearch = ({
-  initialValue,
-  onSubmit,
-}: {
-  initialValue: string;
-  onSubmit: (search: string) => void;
-}) => {
-  const [value, setValue] = useState(initialValue);
-
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit(value.trim());
-      }}
-    >
-      <Input
-        aria-label="Search feedback"
-        className="h-9 w-32 md:w-48"
-        leftIcon={<SearchIcon className="h-4" />}
-        onChange={(event) => {
-          setValue(event.target.value);
-        }}
-        placeholder="Search..."
-        size="sm"
-        type="search"
-        value={value}
-        variant="solid"
-      />
-    </form>
-  );
-};
-
 export const TeamFeedbackHeader = ({
   onSearchChange,
   onStatusChange,
@@ -100,22 +66,8 @@ export const TeamFeedbackHeader = ({
   search: string;
   status: TeamFeedbackListStatus;
 }) => (
-  <Flex
-    align="center"
-    className="border-border/60 h-16 border-b-[0.5px] px-4"
-    justify="between"
-  >
-    <Flex align="center" className="gap-2">
-      <MobileMenuButton />
-      <RequestsIcon className="h-5 w-auto" />
-      <Text>Feedback</Text>
-    </Flex>
-    <Flex align="center" gap={1}>
-      <FeedbackSearch
-        initialValue={search}
-        key={search}
-        onSubmit={onSearchChange}
-      />
+  <ExpandableSearchHeader
+    actions={
       <Menu>
         <Menu.Button>
           <Button
@@ -153,6 +105,18 @@ export const TeamFeedbackHeader = ({
           </Menu.Group>
         </Menu.Items>
       </Menu>
-    </Flex>
-  </Flex>
+    }
+    initialValue={search}
+    key={search}
+    label="Search feedback"
+    leading={
+      <Flex align="center" className="gap-2">
+        <MobileMenuButton />
+        <RequestsIcon className="h-5 w-auto" />
+        <Text>Feedback</Text>
+      </Flex>
+    }
+    onSubmit={onSearchChange}
+    placeholder="Search feedback..."
+  />
 );

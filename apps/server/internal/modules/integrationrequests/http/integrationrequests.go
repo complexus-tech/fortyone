@@ -52,6 +52,7 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 	}
 	page, pageSize := paginationParams(r, defaultRequestsPageSize, maxRequestsPageSize)
 	filter := integrationrequests.CoreListRequestsFilter{
+		Search:        r.URL.Query().Get("search"),
 		Status:        status,
 		Provider:      provider,
 		Priority:      priority,

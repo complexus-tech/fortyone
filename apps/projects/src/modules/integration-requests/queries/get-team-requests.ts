@@ -9,6 +9,7 @@ import type {
 } from "../types";
 
 export type IntegrationRequestListFilters = {
+  search?: string;
   status?: IntegrationRequestStatus;
   provider?: IntegrationRequestProvider;
   priority?: IntegrationRequest["priority"];
@@ -44,6 +45,7 @@ export const getTeamIntegrationRequestsPage = async (
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (filters.search?.trim()) params.set("search", filters.search.trim());
   if (filters.provider) params.set("provider", filters.provider);
   if (filters.priority) params.set("priority", filters.priority);
   if (filters.assigneeId) params.set("assigneeId", filters.assigneeId);

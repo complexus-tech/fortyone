@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -13,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, offset int) ([]notifications.CoreNotification, error) {
+func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, search string, limit, offset int) ([]notifications.CoreNotification, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.List")
 	defer span.End()
 
@@ -24,6 +25,11 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, o
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
 		AND entity_type::text <> 'feedback'
+		AND (
+			:search = ''
+			OR title ILIKE '%' || :search || '%'
+			OR message::text ILIKE '%' || :search || '%'
+		)
 		ORDER BY created_at DESC
 		LIMIT :limit OFFSET :offset;
 	`
@@ -31,6 +37,7 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, limit, o
 	params := map[string]any{
 		"user_id":      userID,
 		"workspace_id": workspaceID,
+		"search":       strings.TrimSpace(search),
 		"limit":        limit,
 		"offset":       offset,
 	}

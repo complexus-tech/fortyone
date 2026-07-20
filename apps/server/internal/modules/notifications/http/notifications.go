@@ -193,7 +193,8 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	notifications, err := h.notifications.List(ctx, userID, workspace.ID, limit, offset)
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	notifications, err := h.notifications.List(ctx, userID, workspace.ID, search, limit, offset)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}

@@ -30,6 +30,7 @@ export const useTeamIntegrationRequests = (
 export const useTeamIntegrationRequestsInfinite = (
   teamId: string,
   status: IntegrationRequestStatus = "pending",
+  search = "",
 ) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
@@ -37,6 +38,7 @@ export const useTeamIntegrationRequestsInfinite = (
   return useInfiniteQuery({
     queryKey: [
       ...integrationRequestKeys.team(workspaceSlug, teamId, status),
+      search,
       "infinite",
     ] as const,
     queryFn: ({ pageParam }) =>
@@ -45,6 +47,8 @@ export const useTeamIntegrationRequestsInfinite = (
         { session: session!, workspaceSlug },
         status,
         pageParam,
+        25,
+        { search },
       ),
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,

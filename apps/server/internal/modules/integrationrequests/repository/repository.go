@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
@@ -213,6 +214,16 @@ func teamRequestFilterQuery(workspaceID, teamID uuid.UUID, filter integrationreq
 		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
 	`
 	args := []any{workspaceID, teamID, status}
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		args = append(args, "%"+search+"%")
+		placeholder := `$` + strconv.Itoa(len(args))
+		query += ` AND (
+			title ILIKE ` + placeholder + `
+			OR COALESCE(description, '') ILIKE ` + placeholder + `
+			OR source_external_id ILIKE ` + placeholder + `
+			OR COALESCE(source_number::text, '') ILIKE ` + placeholder + `
+		)`
+	}
 	if filter.Provider != "" {
 		args = append(args, filter.Provider)
 		query += ` AND provider = $` + strconv.Itoa(len(args))

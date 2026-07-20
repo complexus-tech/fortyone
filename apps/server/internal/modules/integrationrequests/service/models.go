@@ -76,6 +76,7 @@ type CoreUpsertRequestInput struct {
 }
 
 type CoreListRequestsFilter struct {
+	Search        string
 	Status        string
 	Provider      string
 	Priority      string

@@ -158,8 +158,8 @@ export const PublicFeedbackList = ({
   };
 
   return (
-    <Flex className="min-h-0 md:h-full" direction="column">
-      <Box className="border-border/60 bg-background sticky top-0 z-10 shrink-0 border-b">
+    <Flex className="min-h-0" direction="column">
+      <Box className="border-border/60 bg-surface-muted/75 supports-[backdrop-filter]:bg-surface-muted/60 sticky top-0 z-10 shrink-0 border-b backdrop-blur-xl">
         <Flex align="center" className="gap-3 py-3" justify="between">
           <FeedbackSearch
             initialValue={filters.search}
@@ -241,7 +241,7 @@ export const PublicFeedbackList = ({
         </Flex>
       </Box>
 
-      <Box className="hide-scrollbar min-h-0 md:flex-1 md:overflow-y-auto">
+      <Box className="min-h-0 md:flex-1">
         {feedbackContent}
         <div ref={sentinelRef} />
         {isFetchingNextPage ? <FeedbackListSkeleton /> : null}

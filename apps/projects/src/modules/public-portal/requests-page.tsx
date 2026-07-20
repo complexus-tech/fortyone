@@ -59,7 +59,7 @@ export const PublicPortalRequestsPage = ({
 
   return (
     <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
-      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 py-8 md:h-full md:min-h-0 md:grid-cols-[minmax(0,1fr)_19rem] md:overflow-hidden md:px-6">
+      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6">
         <Box className="min-h-0">
           <PublicFeedbackList
             filters={filters}
