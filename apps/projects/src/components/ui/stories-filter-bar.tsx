@@ -1593,6 +1593,11 @@ export const StoriesFilterBar = ({
       label: "Creator",
     },
     {
+      field: "contentContains",
+      icon: <ListIcon className="h-5 w-auto" />,
+      label: "Content",
+    },
+    {
       field: "priorities",
       icon: <PriorityIcon priority="No Priority" />,
       label: "Priority",
@@ -1635,11 +1640,6 @@ export const StoriesFilterBar = ({
       field: "endDate",
       icon: <CalendarIcon className="h-5 w-auto" />,
       label: "End date",
-    },
-    {
-      field: "contentContains",
-      icon: <ListIcon className="h-5 w-auto" />,
-      label: "Content",
     },
   ];
   const filterOptions = baseFilterOptions.filter(
@@ -1688,7 +1688,7 @@ export const StoriesFilterBar = ({
               <Menu.Input autoFocus placeholder="Add filter..." />
             </Box>
             <Menu.Separator className="my-0" />
-            <Menu.Group className="max-h-96 overflow-y-auto px-1 py-1.5">
+            <Menu.Group className="max-h-[min(30rem,calc(100dvh-12rem))] overflow-y-auto px-1 py-1.5">
               {filterOptions.map((option) => {
                 const isActive = chips.some(
                   (chip) => chip.field === option.field,
