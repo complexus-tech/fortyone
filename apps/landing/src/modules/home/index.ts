@@ -1,5 +1,5 @@
 export * from "./hero";
-export * from "./hero-cards";
+export * from "./product-screenshot";
 export * from "./clients";
 export * from "./integrations";
 export * from "./core-values";

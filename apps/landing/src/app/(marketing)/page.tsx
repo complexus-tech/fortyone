@@ -4,13 +4,15 @@ import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
 import {
   Hero,
-  HeroCards,
+  ProductScreenshot,
   SampleClients,
   Integrations,
   CoreValues,
   HowItWorks,
   PlatformWorkflow,
 } from "@/modules/home";
+import kanbanImgLight from "../../../public/images/product/kanban-light.webp";
+import kanbanImg from "../../../public/images/product/kanban.webp";
 
 export const metadata: Metadata = {
   title: "FortyOne | Customer Feedback and Project Management",
@@ -49,10 +51,14 @@ export default function Page() {
     <>
       <JsonLd />
       <Hero />
-      <HeroCards />
+      <ProductScreenshot
+        alt="FortyOne project board showing planned work, active tasks, and MyAI project guidance"
+        darkImage={kanbanImg}
+        lightImage={kanbanImgLight}
+        priority
+      />
       <SampleClients />
       <HowItWorks />
-      <HeroCards />
       <CoreValues />
       <PlatformWorkflow />
       <Integrations />
