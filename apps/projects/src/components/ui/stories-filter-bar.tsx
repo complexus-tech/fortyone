@@ -77,9 +77,9 @@ import {
 } from "@/lib/estimate";
 import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
 import type {
-  NegatableStoriesFilterField,
   StoriesFilter,
   StoriesFilterOperator,
+  StoriesFilterOperatorField,
 } from "./stories-filter-types";
 import { getStoriesFilterOperator } from "./stories-filter-types";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
@@ -145,7 +145,24 @@ const MULTI_VALUE_OPERATOR_OPTIONS = [
   { label: "is not any of", value: "isNotAnyOf" },
 ] as const satisfies readonly OperatorOption[];
 
-const NEGATABLE_FILTER_FIELDS = new Set<StoriesFilterField>([
+const SINGLE_VALUE_OPERATOR_OPTIONS = [
+  { label: "is", value: "is" },
+  { label: "is not", value: "isNot" },
+] as const satisfies readonly OperatorOption[];
+
+const DATE_OPERATOR_OPTIONS = [
+  { label: "is", value: "is" },
+  { label: "is on or before", value: "isOnOrBefore" },
+  { label: "is on or after", value: "isOnOrAfter" },
+  { label: "is not", value: "isNot" },
+] as const satisfies readonly OperatorOption[];
+
+const ASSIGNEE_PRESENCE_OPERATOR_OPTIONS = [
+  { label: "is", value: "isEmpty" },
+  { label: "is not", value: "isNotEmpty" },
+] as const satisfies readonly OperatorOption[];
+
+const FILTER_OPERATOR_FIELDS = new Set<StoriesFilterField>([
   "contentContains",
   "statusIds",
   "assigneeIds",
@@ -155,20 +172,39 @@ const NEGATABLE_FILTER_FIELDS = new Set<StoriesFilterField>([
   "sprintIds",
   "labelIds",
   "estimateValues",
+  "objectiveId",
+  "startDate",
+  "endDate",
+  "hasNoAssignee",
 ]);
 
-const isNegatableFilterField = (
+const isFilterOperatorField = (
   field: StoriesFilterField,
-): field is NegatableStoriesFilterField => NEGATABLE_FILTER_FIELDS.has(field);
+): field is StoriesFilterOperatorField => FILTER_OPERATOR_FIELDS.has(field);
 
-const getOperatorOptions = (field: NegatableStoriesFilterField) =>
-  field === "contentContains"
-    ? CONTENT_OPERATOR_OPTIONS
-    : MULTI_VALUE_OPERATOR_OPTIONS;
+const getOperatorOptions = (field: StoriesFilterOperatorField) => {
+  if (field === "contentContains") {
+    return CONTENT_OPERATOR_OPTIONS;
+  }
+
+  if (field === "startDate" || field === "endDate") {
+    return DATE_OPERATOR_OPTIONS;
+  }
+
+  if (field === "objectiveId") {
+    return SINGLE_VALUE_OPERATOR_OPTIONS;
+  }
+
+  if (field === "hasNoAssignee") {
+    return ASSIGNEE_PRESENCE_OPERATOR_OPTIONS;
+  }
+
+  return MULTI_VALUE_OPERATOR_OPTIONS;
+};
 
 const getOperatorConfig = (
   filters: StoriesFilter,
-  field: NegatableStoriesFilterField,
+  field: StoriesFilterOperatorField,
 ) => {
   const operator = getStoriesFilterOperator(filters, field);
   const operatorOptions = getOperatorOptions(field);
@@ -1500,7 +1536,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "startDate",
         label: "Start date",
-        operator: "is",
+        ...getOperatorConfig(filters, "startDate"),
         value: format(new Date(filters.startDate), "MMM d, yyyy"),
         icon: <CalendarIcon className="h-4 w-auto" />,
       });
@@ -1510,7 +1546,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "endDate",
         label: "End date",
-        operator: "is",
+        ...getOperatorConfig(filters, "endDate"),
         value: format(new Date(filters.endDate), "MMM d, yyyy"),
         icon: <CalendarIcon className="h-4 w-auto" />,
       });
@@ -1640,7 +1676,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "objectiveId",
         label: "Objective",
-        operator: "is",
+        ...getOperatorConfig(filters, "objectiveId"),
         value: objectiveById.get(filters.objectiveId) ?? filters.objectiveId,
         icon: <ObjectiveIcon className="h-4 w-auto" />,
       });
@@ -1650,7 +1686,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "hasNoAssignee",
         label: "Assignee",
-        operator: "is",
+        ...getOperatorConfig(filters, "hasNoAssignee"),
         value: "empty",
       });
     }
@@ -1675,7 +1711,7 @@ export const StoriesFilterBar = ({
       return;
     }
 
-    if (isNegatableFilterField(field)) {
+    if (isFilterOperatorField(field)) {
       setFilters({
         ...filters,
         [field]: null,
@@ -1779,7 +1815,7 @@ export const StoriesFilterBar = ({
               setTitleDialogOpen(true);
             }}
             onOperatorChange={(operator) => {
-              if (!isNegatableFilterField(chip.field)) {
+              if (!isFilterOperatorField(chip.field)) {
                 return;
               }
 

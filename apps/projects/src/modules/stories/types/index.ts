@@ -107,8 +107,10 @@ export type StoryFilters = {
   excludedEstimateValues?: number[] | null;
   parentId?: string | null;
   objectiveId?: string | null;
+  excludedObjectiveId?: string | null;
   epicId?: string | null;
   hasNoAssignee?: boolean | null;
+  hasAssignee?: boolean | null;
   hasBlockedBy?: boolean | null;
   assignedToMe?: boolean;
   createdByMe?: boolean;
@@ -118,8 +120,10 @@ export type StoryFilters = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   includeDeleted?: boolean;
   showSubStories?: boolean;
@@ -180,8 +184,10 @@ export type GroupedStoryParams = {
   excludedEstimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
+  excludedObjectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasAssignee?: boolean;
   hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -189,8 +195,10 @@ export type GroupedStoryParams = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   showSubStories?: boolean;
   completedAfter?: string;
@@ -228,8 +236,10 @@ export type GroupStoryParams = {
   excludedEstimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
+  excludedObjectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasAssignee?: boolean;
   hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -237,8 +247,10 @@ export type GroupStoryParams = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   showSubStories?: boolean;
   includeDeleted?: boolean;

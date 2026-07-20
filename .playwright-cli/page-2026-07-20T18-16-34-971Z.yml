@@ -1,0 +1,186 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "FortyOne home" [ref=e6] [cursor=pointer]:
+          - /url: "#top"
+          - img "FortyOne" [ref=e7]
+        - navigation "Primary navigation" [ref=e8]:
+          - link "Features" [ref=e9] [cursor=pointer]:
+            - /url: "#capabilities"
+          - link "Use Cases" [ref=e10] [cursor=pointer]:
+            - /url: "#system"
+          - link "AI Project Manager" [ref=e11] [cursor=pointer]:
+            - /url: "#planning"
+          - link "Resources" [ref=e12] [cursor=pointer]:
+            - /url: "#integrations"
+          - link "Pricing" [ref=e13] [cursor=pointer]:
+            - /url: "#start"
+        - generic [ref=e14]:
+          - link "Login" [ref=e15] [cursor=pointer]:
+            - /url: "#start"
+          - link "Sign up" [ref=e16] [cursor=pointer]:
+            - /url: "#start"
+    - main [ref=e17]:
+      - region [ref=e18]:
+        - generic [ref=e19]:
+          - heading "Plan and deliver projects with customer feedback built in." [level=1] [ref=e20]:
+            - generic [ref=e21]: Plan
+            - generic [ref=e22]: and
+            - generic [ref=e23]: deliver
+            - generic [ref=e24]: projects
+            - generic [ref=e25]: with
+            - generic [ref=e26]: customer
+            - generic [ref=e27]: feedback
+            - generic [ref=e28]: built
+            - generic [ref=e29]: in.
+          - paragraph [ref=e31]: Collect requests, decide what matters, and move accepted feedback into the project plan without losing its context.
+          - link "Get started free" [ref=e32] [cursor=pointer]:
+            - /url: "#system"
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic [ref=e37]: Project delivery
+            - generic [ref=e38]: Live board
+          - img "FortyOne project board showing planned work across Backlog, Ready, In Progress, In Review, and Done" [ref=e39]
+      - region [ref=e40]:
+        - generic [ref=e41]:
+          - paragraph [ref=e43]: The system
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - heading "One request can become shipped work." [level=2] [ref=e46]
+              - paragraph [ref=e47]: FortyOne gives customers a place to ask, gives teams a place to decide, and keeps the request attached as the work moves through planning and delivery.
+            - list "From feedback to delivery" [ref=e48]:
+              - listitem [ref=e49]:
+                - generic [ref=e50]: "01"
+                - generic [ref=e51]: Feedback
+                - generic [ref=e52]: Capture the request
+              - listitem [ref=e53]:
+                - generic [ref=e54]: "02"
+                - generic [ref=e55]: Review
+                - generic [ref=e56]: Decide what matters
+              - listitem [ref=e57]:
+                - generic [ref=e58]: "03"
+                - generic [ref=e59]: Plan
+                - generic [ref=e60]: Set the goal and scope
+              - listitem [ref=e61]:
+                - generic [ref=e62]: "04"
+                - generic [ref=e63]: Deliver
+                - generic [ref=e64]: Own and schedule the work
+              - listitem [ref=e65]:
+                - generic [ref=e66]: "05"
+                - generic [ref=e67]: Roadmap
+                - generic [ref=e68]: Share progress clearly
+      - region [ref=e69]:
+        - generic [ref=e70]:
+          - paragraph [ref=e72]: 01 / Feedback
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: Start with the customer
+            - heading "Give people a clear place to ask." [level=2] [ref=e75]
+            - paragraph [ref=e76]: Customers can submit feedback, vote on existing requests, and join the discussion. The team sees the demand before deciding what to build.
+        - figure "Public feedback portal Submit · vote · discuss" [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]: Public feedback portal
+            - generic [ref=e81]: Submit · vote · discuss
+          - img "FortyOne public feedback portal with customer requests, votes, filters, and a feedback submission action" [ref=e82]
+      - region [ref=e83]:
+        - generic [ref=e84]:
+          - paragraph [ref=e86]: 02 / Planning
+          - generic [ref=e87]:
+            - paragraph [ref=e88]: Make the decision useful
+            - heading "Turn accepted feedback into a real plan." [level=2] [ref=e89]
+            - paragraph [ref=e90]: Add a goal, owner, estimate, and schedule while keeping the original request close. The work starts with the reason it matters intact.
+        - figure "Team plan Scope · ownership · schedule" [ref=e92]:
+          - generic [ref=e93]:
+            - generic [ref=e94]: Team plan
+            - generic [ref=e95]: Scope · ownership · schedule
+          - img "FortyOne list view showing work grouped by status with owners, estimates, and delivery dates" [ref=e96]
+      - region [ref=e97]:
+        - generic [ref=e98]:
+          - paragraph [ref=e100]: The principle
+          - generic [ref=e101]:
+            - paragraph [ref=e102]: "41"
+            - heading "Keep the customer request connected to the work that delivers it." [level=2] [ref=e103]
+            - paragraph [ref=e104]: Everyone can see what was requested, why it was chosen, who owns it, and where it is in the plan.
+      - region [ref=e105]:
+        - generic [ref=e106]:
+          - paragraph [ref=e108]: 03 / Roadmap
+          - generic [ref=e109]:
+            - paragraph [ref=e110]: Close the loop
+            - heading "Show what is planned, active, and done." [level=2] [ref=e111]
+            - paragraph [ref=e112]: The roadmap reflects the work already in the plan, so customers can follow progress while the team keeps delivering from one place.
+        - figure "Project roadmap Now · next · later" [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e116]: Project roadmap
+            - generic [ref=e117]: Now · next · later
+          - img "FortyOne roadmap timeline showing initiatives, project dates, and progress across several months" [ref=e118]
+      - region [ref=e119]:
+        - generic [ref=e120]:
+          - paragraph [ref=e122]: Built around the plan
+          - generic [ref=e123]:
+            - generic [ref=e124]:
+              - heading "The system around the work." [level=2] [ref=e125]
+              - paragraph [ref=e126]: Six connected parts, so the team spends less time moving context between tools.
+            - generic [ref=e127]:
+              - generic [ref=e128]:
+                - term [ref=e129]:
+                  - generic [ref=e130]: "01"
+                  - text: Feedback portal
+                - definition [ref=e131]: Submit, vote, comment, and follow progress.
+              - generic [ref=e132]:
+                - term [ref=e133]:
+                  - generic [ref=e134]: "02"
+                  - text: Review queue
+                - definition [ref=e135]: Route requests to the team that owns the work.
+              - generic [ref=e136]:
+                - term [ref=e137]:
+                  - generic [ref=e138]: "03"
+                  - text: Goals and projects
+                - definition [ref=e139]: Keep every task tied to the outcome it supports.
+              - generic [ref=e140]:
+                - term [ref=e141]:
+                  - generic [ref=e142]: "04"
+                  - text: Capacity and schedule
+                - definition [ref=e143]: Check workload and availability before assigning work.
+              - generic [ref=e144]:
+                - term [ref=e145]:
+                  - generic [ref=e146]: "05"
+                  - text: AI planning
+                - definition [ref=e147]: Turn context into a practical starting plan.
+              - generic [ref=e148]:
+                - term [ref=e149]:
+                  - generic [ref=e150]: "06"
+                  - text: Connected tools
+                - definition [ref=e151]: Bring conversations, files, calendars, and commits into view.
+      - region [ref=e152]:
+        - generic [ref=e153]:
+          - paragraph [ref=e155]: Connected context
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - heading "Your tools bring the context. FortyOne turns it into a plan." [level=2] [ref=e158]
+              - paragraph [ref=e159]: Keep the tools your team already uses while FortyOne connects the signals that shape the work.
+            - list "Supported integrations" [ref=e160]:
+              - listitem [ref=e161]: Slack
+              - listitem [ref=e162]: GitHub
+              - listitem [ref=e163]: Google Calendar
+              - listitem [ref=e164]: Microsoft Teams
+              - listitem [ref=e165]: Google Drive
+              - listitem [ref=e166]: Notion
+      - region [ref=e167]:
+        - generic [ref=e168]:
+          - paragraph [ref=e169]: Start with one team
+          - heading "Give the team one clear plan." [level=2] [ref=e170]
+          - paragraph [ref=e171]: Bring customer feedback and project delivery into the same system, without losing the context between them.
+          - generic [ref=e172]:
+            - link "Get started free" [ref=e173] [cursor=pointer]:
+              - /url: "#top"
+            - link "See the product story" [ref=e174] [cursor=pointer]:
+              - /url: "#feedback"
+    - contentinfo [ref=e175]:
+      - generic [ref=e176]:
+        - link "FortyOne home" [ref=e177] [cursor=pointer]:
+          - /url: "#top"
+          - img "FortyOne" [ref=e178]
+        - paragraph [ref=e179]: Project management with customer feedback built in.
+        - paragraph [ref=e180]: Editorial homepage concept · Dark mode

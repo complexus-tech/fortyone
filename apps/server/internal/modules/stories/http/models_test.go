@@ -58,9 +58,10 @@ func TestParseStoryQueryMapsEstimateValues(t *testing.T) {
 func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
 	statusID := uuid.New()
 	assigneeID := uuid.New()
+	objectiveID := uuid.New()
 	request := httptest.NewRequest(
 		"GET",
-		"/stories?excludedStatusIds="+statusID.String()+"&excludedAssigneeIds="+assigneeID.String()+"&titleNotContains=deprecated",
+		"/stories?excludedStatusIds="+statusID.String()+"&excludedAssigneeIds="+assigneeID.String()+"&titleNotContains=deprecated&excludedObjectiveId="+objectiveID.String()+"&hasAssignee=true&deadlineNot=2026-08-31&orderDirection=asc",
 		nil,
 	)
 
@@ -77,6 +78,18 @@ func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
 	}
 	if query.Filters.TitleNotContains == nil || *query.Filters.TitleNotContains != "deprecated" {
 		t.Fatalf("expected titleNotContains to be parsed, got %v", query.Filters.TitleNotContains)
+	}
+	if query.Filters.ExcludedObjective == nil || *query.Filters.ExcludedObjective != objectiveID {
+		t.Fatalf("expected excluded objective %s, got %v", objectiveID, query.Filters.ExcludedObjective)
+	}
+	if query.Filters.HasAssignee == nil || !*query.Filters.HasAssignee {
+		t.Fatalf("expected hasAssignee to be parsed, got %v", query.Filters.HasAssignee)
+	}
+	if query.Filters.DeadlineNot == nil {
+		t.Fatal("expected deadlineNot to be parsed")
+	}
+	if query.OrderDirection != "asc" {
+		t.Fatalf("expected ascending order, got %q", query.OrderDirection)
 	}
 }
 

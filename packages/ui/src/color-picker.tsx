@@ -30,16 +30,16 @@ export const ColorPicker = ({
           asIcon
           color="tertiary"
           onClick={onClick}
-          rounded="full"
+          rounded="sm"
           size="sm"
         >
           <span
-            className="size-3.5 cursor-pointer rounded-full"
+            className="size-3.5 cursor-pointer rounded-sm"
             style={{ backgroundColor: value }}
           />
         </Button>
       </Popover.Trigger>
-      <Popover.Content className="p-2.5 rounded-2xl">
+      <Popover.Content className="rounded-lg p-2.5">
         <Box className="grid grid-cols-6 gap-1.5">
           {colors.map((color) => (
             <Box
@@ -48,10 +48,10 @@ export const ColorPicker = ({
               aria-label="Select color"
               key={color}
               className={cn(
-                "size-8 cursor-pointer rounded-full transition-transform focus:outline-none hover:ring-2 ring-primary ",
+                "ring-primary size-8 cursor-pointer rounded-md transition-transform hover:ring-2 focus:outline-none",
                 {
                   "ring-2 ring-offset-background": color === value,
-                }
+                },
               )}
               onClick={() => {
                 onChange?.(color);

@@ -28,6 +28,7 @@ export const TeamOptionsProvider = ({
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "deadline",
+    orderDirection: "desc",
     showEmptyGroups: true,
     showSubStories: false,
     displayColumns: [

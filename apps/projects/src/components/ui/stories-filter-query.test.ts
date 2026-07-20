@@ -78,6 +78,33 @@ describe("story filter query mapping", () => {
     });
   });
 
+  it("maps date comparison, objective, and assignee presence operators", () => {
+    const filters = {
+      ...baseFilters,
+      startDate: "2026-08-01",
+      endDate: "2026-08-31",
+      objectiveId: "objective-1",
+      hasNoAssignee: true,
+      operators: {
+        startDate: "isOnOrAfter",
+        endDate: "isNot",
+        objectiveId: "isNot",
+        hasNoAssignee: "isNotEmpty",
+      },
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      startDateAfter: "2026-08-01",
+      startDateBefore: undefined,
+      deadlineAfter: undefined,
+      deadlineBefore: undefined,
+      deadlineNot: "2026-08-31",
+      excludedObjectiveId: "objective-1",
+      hasNoAssignee: undefined,
+      hasAssignee: true,
+    });
+  });
+
   it("counts content and labels as active filters", () => {
     const filters = {
       ...baseFilters,

@@ -36,6 +36,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     assigneeIds: tab === "assigned" ? [userId] : undefined,
     reporterIds: tab === "created" ? [userId] : undefined,
     orderBy: viewOptions.orderBy,
+    orderDirection: viewOptions.orderDirection,
     showSubStories: viewOptions.showSubStories ? true : undefined,
   });
 

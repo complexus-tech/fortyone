@@ -10,12 +10,14 @@ describe("groupFilters", () => {
         titleContains: "checkout copy",
         excludedStatusIds: ["status-1"],
         startDateAfter: "2026-07-20",
-        startDateBefore: "2026-07-20",
+        deadlineNot: "2026-07-31",
+        excludedObjectiveId: "objective-1",
+        hasAssignee: true,
         hasBlockedBy: true,
       },
       groupBy: "status",
       orderBy: "created",
-      orderDirection: "desc",
+      orderDirection: "asc",
       totalGroups: 1,
     } satisfies GroupedStoriesResponse["meta"];
 
@@ -23,8 +25,11 @@ describe("groupFilters", () => {
       titleContains: "checkout copy",
       excludedStatusIds: ["status-1"],
       startDateAfter: "2026-07-20",
-      startDateBefore: "2026-07-20",
+      deadlineNot: "2026-07-31",
+      excludedObjectiveId: "objective-1",
+      hasAssignee: true,
       hasBlockedBy: true,
+      orderDirection: "asc",
     });
   });
 });

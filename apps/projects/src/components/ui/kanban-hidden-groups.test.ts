@@ -10,6 +10,7 @@ import {
 const viewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "created",
+  orderDirection: "desc",
   showEmptyGroups: true,
   showSubStories: false,
   displayColumns: ["ID", "Status"],

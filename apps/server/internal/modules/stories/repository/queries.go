@@ -587,6 +587,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if objectiveId, ok := filters["objective_id"].(uuid.UUID); ok {
 		coreFilters.Objective = &objectiveId
 	}
+	if excludedObjectiveId, ok := filters["excluded_objective_id"].(uuid.UUID); ok {
+		coreFilters.ExcludedObjective = &excludedObjectiveId
+	}
 	if epicId, ok := filters["epic_id"].(uuid.UUID); ok {
 		coreFilters.Epic = &epicId
 	}
@@ -595,6 +598,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if hasNoAssignee, ok := filters["has_no_assignee"].(bool); ok {
 		coreFilters.HasNoAssignee = &hasNoAssignee
+	}
+	if hasAssignee, ok := filters["has_assignee"].(bool); ok {
+		coreFilters.HasAssignee = &hasAssignee
 	}
 	if hasBlockedBy, ok := filters["has_blocked_by"].(bool); ok {
 		coreFilters.HasBlockedBy = &hasBlockedBy
@@ -629,11 +635,17 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if startDateBefore, ok := filters["start_date_before"].(time.Time); ok {
 		coreFilters.StartDateBefore = &startDateBefore
 	}
+	if startDateNot, ok := filters["start_date_not"].(time.Time); ok {
+		coreFilters.StartDateNot = &startDateNot
+	}
 	if deadlineAfter, ok := filters["deadline_after"].(time.Time); ok {
 		coreFilters.DeadlineAfter = &deadlineAfter
 	}
 	if deadlineBefore, ok := filters["deadline_before"].(time.Time); ok {
 		coreFilters.DeadlineBefore = &deadlineBefore
+	}
+	if deadlineNot, ok := filters["deadline_not"].(time.Time); ok {
+		coreFilters.DeadlineNot = &deadlineNot
 	}
 	if completedAfter, ok := filters["completed_after"].(time.Time); ok {
 		coreFilters.CompletedAfter = &completedAfter
@@ -1374,9 +1386,15 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if filters.Objective != nil {
 		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
 	}
+	if filters.ExcludedObjective != nil {
+		whereClauses = append(whereClauses, "s.objective_id IS DISTINCT FROM :excluded_objective_id")
+	}
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasAssignee != nil && *filters.HasAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NOT NULL")
 	}
 	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
@@ -1419,6 +1437,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if filters.StartDateBefore != nil {
 		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
+	if filters.StartDateNot != nil {
+		whereClauses = append(whereClauses, "s.start_date IS DISTINCT FROM :start_date_not")
+	}
 
 	if filters.DeadlineAfter != nil {
 		whereClauses = append(whereClauses, "(s.end_date >= :deadline_after)")
@@ -1426,6 +1447,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 
 	if filters.DeadlineBefore != nil {
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
+	}
+	if filters.DeadlineNot != nil {
+		whereClauses = append(whereClauses, "s.end_date IS DISTINCT FROM :deadline_not")
 	}
 
 	// Completion filters
@@ -1890,6 +1914,9 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if filters.Objective != nil {
 		params["objective_id"] = *filters.Objective
 	}
+	if filters.ExcludedObjective != nil {
+		params["excluded_objective_id"] = *filters.ExcludedObjective
+	}
 	if filters.Epic != nil {
 		params["epic_id"] = *filters.Epic
 	}
@@ -1913,11 +1940,17 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	if filters.StartDateBefore != nil {
 		params["start_date_before"] = *filters.StartDateBefore
 	}
+	if filters.StartDateNot != nil {
+		params["start_date_not"] = *filters.StartDateNot
+	}
 	if filters.DeadlineAfter != nil {
 		params["deadline_after"] = *filters.DeadlineAfter
 	}
 	if filters.DeadlineBefore != nil {
 		params["deadline_before"] = *filters.DeadlineBefore
+	}
+	if filters.DeadlineNot != nil {
+		params["deadline_not"] = *filters.DeadlineNot
 	}
 	if filters.CompletedAfter != nil {
 		params["completed_after"] = *filters.CompletedAfter
@@ -2159,6 +2192,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if filters.Objective != nil {
 		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
 	}
+	if filters.ExcludedObjective != nil {
+		whereClauses = append(whereClauses, "s.objective_id IS DISTINCT FROM :excluded_objective_id")
+	}
 
 	if filters.Epic != nil {
 		whereClauses = append(whereClauses, "s.epic_id = :epic_id")
@@ -2166,6 +2202,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasAssignee != nil && *filters.HasAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NOT NULL")
 	}
 	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
@@ -2208,6 +2247,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if filters.StartDateBefore != nil {
 		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
+	if filters.StartDateNot != nil {
+		whereClauses = append(whereClauses, "s.start_date IS DISTINCT FROM :start_date_not")
+	}
 
 	if filters.DeadlineAfter != nil {
 		whereClauses = append(whereClauses, "(s.end_date >= :deadline_after)")
@@ -2215,6 +2257,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 
 	if filters.DeadlineBefore != nil {
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
+	}
+	if filters.DeadlineNot != nil {
+		whereClauses = append(whereClauses, "s.end_date IS DISTINCT FROM :deadline_not")
 	}
 
 	// Completion filters
@@ -2711,6 +2756,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	if filters.Objective != nil {
 		whereClauses = append(whereClauses, "s.objective_id = :objective_id")
 	}
+	if filters.ExcludedObjective != nil {
+		whereClauses = append(whereClauses, "s.objective_id IS DISTINCT FROM :excluded_objective_id")
+	}
 
 	if filters.Epic != nil {
 		whereClauses = append(whereClauses, "s.epic_id = :epic_id")
@@ -2718,6 +2766,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.HasNoAssignee != nil && *filters.HasNoAssignee {
 		whereClauses = append(whereClauses, "s.assignee_id IS NULL")
+	}
+	if filters.HasAssignee != nil && *filters.HasAssignee {
+		whereClauses = append(whereClauses, "s.assignee_id IS NOT NULL")
 	}
 	if filters.HasBlockedBy != nil && *filters.HasBlockedBy {
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
@@ -2760,6 +2811,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	if filters.StartDateBefore != nil {
 		whereClauses = append(whereClauses, "(s.start_date <= :start_date_before)")
 	}
+	if filters.StartDateNot != nil {
+		whereClauses = append(whereClauses, "s.start_date IS DISTINCT FROM :start_date_not")
+	}
 
 	if filters.DeadlineAfter != nil {
 		whereClauses = append(whereClauses, "(s.end_date >= :deadline_after)")
@@ -2767,6 +2821,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.DeadlineBefore != nil {
 		whereClauses = append(whereClauses, "(s.end_date <= :deadline_before)")
+	}
+	if filters.DeadlineNot != nil {
+		whereClauses = append(whereClauses, "s.end_date IS DISTINCT FROM :deadline_not")
 	}
 
 	// Completion filters

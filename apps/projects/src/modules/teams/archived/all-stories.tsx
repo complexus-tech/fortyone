@@ -18,6 +18,7 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     viewOptions.groupBy,
     {
       orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
       ...getGroupedStoryFilterParams(filters),
       showSubStories: viewOptions.showSubStories ? true : undefined,
       teamIds: [teamId],

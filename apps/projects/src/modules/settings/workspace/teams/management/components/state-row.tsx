@@ -128,7 +128,7 @@ export const StateRow = ({
             value={form.color}
           />
         ) : (
-          <Box className="bg-surface/40 rounded-md p-2">
+          <Box className="bg-surface-muted flex size-8 shrink-0 items-center justify-center rounded-md">
             <StoryStatusIcon statusId={state.id} />
           </Box>
         )}

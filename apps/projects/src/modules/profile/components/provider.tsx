@@ -27,6 +27,7 @@ export const ProfileProvider = ({
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
+    orderDirection: "desc",
     showEmptyGroups: false,
     showSubStories: true,
     displayColumns: [

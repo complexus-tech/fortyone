@@ -502,9 +502,11 @@ type StoryFilters struct {
 	ExcludedEstimateValues []int16     `json:"excludedEstimateValues"`
 	Parent                 *uuid.UUID  `json:"parentId"`
 	Objective              *uuid.UUID  `json:"objectiveId"`
+	ExcludedObjective      *uuid.UUID  `json:"excludedObjectiveId"`
 	Epic                   *uuid.UUID  `json:"epicId"`
 	KeyResult              *uuid.UUID  `json:"keyResultId"`
 	HasNoAssignee          *bool       `json:"hasNoAssignee"`
+	HasAssignee            *bool       `json:"hasAssignee"`
 	HasBlockedBy           *bool       `json:"hasBlockedBy"`
 	AssignedToMe           *bool       `json:"assignedToMe"`
 	CreatedByMe            *bool       `json:"createdByMe"`
@@ -516,8 +518,10 @@ type StoryFilters struct {
 	UpdatedBefore   *time.Time `json:"updatedBefore"`
 	StartDateAfter  *time.Time `json:"startDateAfter"`
 	StartDateBefore *time.Time `json:"startDateBefore"`
+	StartDateNot    *time.Time `json:"startDateNot"`
 	DeadlineAfter   *time.Time `json:"deadlineAfter"`
 	DeadlineBefore  *time.Time `json:"deadlineBefore"`
+	DeadlineNot     *time.Time `json:"deadlineNot"`
 	CompletedAfter  *time.Time `json:"completedAfter"`
 	CompletedBefore *time.Time `json:"completedBefore"`
 	IncludeArchived *bool      `json:"includeArchived"`

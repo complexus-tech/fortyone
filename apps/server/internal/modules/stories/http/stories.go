@@ -1393,9 +1393,11 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 
 	query.Filters.Parent = parseUUIDParam(r, "parentId")
 	query.Filters.Objective = parseUUIDParam(r, "objectiveId")
+	query.Filters.ExcludedObjective = parseUUIDParam(r, "excludedObjectiveId")
 	query.Filters.Epic = parseUUIDParam(r, "epicId")
 
 	query.Filters.HasNoAssignee = parseBoolParam(r, "hasNoAssignee")
+	query.Filters.HasAssignee = parseBoolParam(r, "hasAssignee")
 	query.Filters.HasBlockedBy = parseBoolParam(r, "hasBlockedBy")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
@@ -1409,8 +1411,10 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.UpdatedBefore = parseDateParam(r, "updatedBefore")
 	query.Filters.StartDateAfter = parseDateParam(r, "startDateAfter")
 	query.Filters.StartDateBefore = parseDateParam(r, "startDateBefore")
+	query.Filters.StartDateNot = parseDateParam(r, "startDateNot")
 	query.Filters.DeadlineAfter = parseDateParam(r, "deadlineAfter")
 	query.Filters.DeadlineBefore = parseDateParam(r, "deadlineBefore")
+	query.Filters.DeadlineNot = parseDateParam(r, "deadlineNot")
 	query.Filters.CompletedAfter = parseDateParam(r, "completedAfter")
 	query.Filters.CompletedBefore = parseDateParam(r, "completedBefore")
 
@@ -1590,8 +1594,10 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			ExcludedEstimateValues: query.Filters.ExcludedEstimateValues,
 			Parent:                 query.Filters.Parent,
 			Objective:              query.Filters.Objective,
+			ExcludedObjective:      query.Filters.ExcludedObjective,
 			Epic:                   query.Filters.Epic,
 			HasNoAssignee:          query.Filters.HasNoAssignee,
+			HasAssignee:            query.Filters.HasAssignee,
 			HasBlockedBy:           query.Filters.HasBlockedBy,
 			AssignedToMe:           query.Filters.AssignedToMe,
 			CreatedByMe:            query.Filters.CreatedByMe,
@@ -1604,8 +1610,10 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			UpdatedBefore:          query.Filters.UpdatedBefore,
 			StartDateAfter:         query.Filters.StartDateAfter,
 			StartDateBefore:        query.Filters.StartDateBefore,
+			StartDateNot:           query.Filters.StartDateNot,
 			DeadlineAfter:          query.Filters.DeadlineAfter,
 			DeadlineBefore:         query.Filters.DeadlineBefore,
+			DeadlineNot:            query.Filters.DeadlineNot,
 			CompletedAfter:         query.Filters.CompletedAfter,
 			CompletedBefore:        query.Filters.CompletedBefore,
 			CurrentUserID:          uuid.Nil,
@@ -1687,11 +1695,17 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	if filters.Objective != nil {
 		result["objective_id"] = *filters.Objective
 	}
+	if filters.ExcludedObjective != nil {
+		result["excluded_objective_id"] = *filters.ExcludedObjective
+	}
 	if filters.Epic != nil {
 		result["epic_id"] = *filters.Epic
 	}
 	if filters.HasNoAssignee != nil {
 		result["has_no_assignee"] = *filters.HasNoAssignee
+	}
+	if filters.HasAssignee != nil {
+		result["has_assignee"] = *filters.HasAssignee
 	}
 	if filters.HasBlockedBy != nil {
 		result["has_blocked_by"] = *filters.HasBlockedBy
@@ -1729,11 +1743,17 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	if filters.StartDateBefore != nil {
 		result["start_date_before"] = *filters.StartDateBefore
 	}
+	if filters.StartDateNot != nil {
+		result["start_date_not"] = *filters.StartDateNot
+	}
 	if filters.DeadlineAfter != nil {
 		result["deadline_after"] = *filters.DeadlineAfter
 	}
 	if filters.DeadlineBefore != nil {
 		result["deadline_before"] = *filters.DeadlineBefore
+	}
+	if filters.DeadlineNot != nil {
+		result["deadline_not"] = *filters.DeadlineNot
 	}
 	if filters.CompletedAfter != nil {
 		result["completed_after"] = *filters.CompletedAfter

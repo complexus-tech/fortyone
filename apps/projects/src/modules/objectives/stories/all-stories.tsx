@@ -50,6 +50,7 @@ export const AllStories = ({
   const { isPending: isStoriesPending, data: groupedStories } =
     useObjectiveStoriesGrouped(objectiveId, viewOptions.groupBy, {
       orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
       ...getGroupedStoryFilterParams(filters),
       teamIds: [teamId],
       objectiveId,

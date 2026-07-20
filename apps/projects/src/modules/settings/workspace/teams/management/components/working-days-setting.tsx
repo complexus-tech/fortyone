@@ -111,17 +111,16 @@ export const WorkingDaysSetting = ({
                 const isSelected = draft.includes(day.value);
                 return (
                   <Button
-                    active={isSelected}
                     aria-pressed={isSelected}
                     className="min-w-12 justify-center"
-                    color="tertiary"
+                    color={isSelected ? "primary" : "tertiary"}
                     key={day.value}
                     onClick={() => {
                       toggleDay(day.value);
                     }}
                     size="sm"
                     title={day.label}
-                    variant="outline"
+                    variant={isSelected ? "solid" : "outline"}
                   >
                     {day.shortLabel}
                   </Button>

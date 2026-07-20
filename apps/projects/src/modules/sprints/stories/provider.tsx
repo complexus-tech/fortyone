@@ -28,6 +28,7 @@ export const SprintStoriesProvider = ({
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
+    orderDirection: "desc",
     showEmptyGroups: true,
     showSubStories: false,
     displayColumns: [

@@ -52,6 +52,7 @@ export default function Page() {
       <HeroCards />
       <SampleClients />
       <HowItWorks />
+      <HeroCards />
       <CoreValues />
       <PlatformWorkflow />
       <Integrations />

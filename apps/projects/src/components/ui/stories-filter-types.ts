@@ -2,9 +2,15 @@ export type StoriesFilterOperator =
   | "contains"
   | "doesNotContain"
   | "isAnyOf"
-  | "isNotAnyOf";
+  | "isNotAnyOf"
+  | "is"
+  | "isNot"
+  | "isOnOrBefore"
+  | "isOnOrAfter"
+  | "isEmpty"
+  | "isNotEmpty";
 
-export type NegatableStoriesFilterField =
+export type StoriesFilterOperatorField =
   | "contentContains"
   | "statusIds"
   | "assigneeIds"
@@ -13,7 +19,11 @@ export type NegatableStoriesFilterField =
   | "teamIds"
   | "sprintIds"
   | "labelIds"
-  | "estimateValues";
+  | "estimateValues"
+  | "objectiveId"
+  | "startDate"
+  | "endDate"
+  | "hasNoAssignee";
 
 export type StoriesFilter = {
   statusIds: string[] | null;
@@ -40,7 +50,7 @@ export type StoriesFilter = {
   isCompleted?: boolean | null;
   isNotCompleted?: boolean | null;
   operators?: Partial<
-    Record<NegatableStoriesFilterField, StoriesFilterOperator>
+    Record<StoriesFilterOperatorField, StoriesFilterOperator>
   >;
 };
 
@@ -68,7 +78,7 @@ export const DEFAULT_STORIES_FILTER: StoriesFilter = {
 };
 
 const DEFAULT_FILTER_OPERATORS: Record<
-  NegatableStoriesFilterField,
+  StoriesFilterOperatorField,
   StoriesFilterOperator
 > = {
   contentContains: "contains",
@@ -80,9 +90,13 @@ const DEFAULT_FILTER_OPERATORS: Record<
   sprintIds: "isAnyOf",
   labelIds: "isAnyOf",
   estimateValues: "isAnyOf",
+  objectiveId: "is",
+  startDate: "is",
+  endDate: "is",
+  hasNoAssignee: "isEmpty",
 };
 
 export const getStoriesFilterOperator = (
   filters: StoriesFilter,
-  field: NegatableStoriesFilterField,
+  field: StoriesFilterOperatorField,
 ) => filters.operators?.[field] ?? DEFAULT_FILTER_OPERATORS[field];

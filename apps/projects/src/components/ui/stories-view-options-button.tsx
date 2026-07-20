@@ -1,6 +1,6 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
-import { ArrowDownIcon, PreferencesIcon } from "icons";
+import { ArrowDownIcon, ArrowUpDownIcon, PreferencesIcon } from "icons";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
@@ -24,10 +24,12 @@ export type ViewOptionsOrderBy =
   | "deadline"
   | "created"
   | "updated";
+export type ViewOptionsOrderDirection = "asc" | "desc";
 
 export type StoriesViewOptions = {
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
+  orderDirection: ViewOptionsOrderDirection;
   showEmptyGroups: boolean;
   showSubStories: boolean;
   displayColumns: DisplayColumn[];
@@ -39,6 +41,7 @@ export type StoriesViewOptions = {
 const defaultViewOptions: StoriesViewOptions = {
   groupBy: "status",
   orderBy: "priority",
+  orderDirection: "desc",
   showEmptyGroups: true,
   showSubStories: false,
   displayColumns: [
@@ -79,8 +82,14 @@ export const StoriesViewOptionsButton = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
-  const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
-    viewOptions;
+  const {
+    groupBy,
+    orderBy,
+    orderDirection = "desc",
+    showEmptyGroups,
+    showSubStories,
+    displayColumns,
+  } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
     "ID",
@@ -200,32 +209,59 @@ export const StoriesViewOptionsButton = ({
         </Flex>
         <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
           <Text color="muted">Order by</Text>
-          <Select
-            onValueChange={(value: ViewOptionsOrderBy) => {
-              setViewOptions({
-                ...viewOptions,
-                orderBy: value,
-              });
-            }}
-            value={orderBy}
-          >
-            <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content className="ring-border/70 shadow-2xl ring-1">
-              <Select.Group>
-                {orderByOptions.map((option) => (
-                  <Select.Option
-                    className="capitalize"
-                    key={option}
-                    value={option}
-                  >
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select>
+          <Flex align="center" gap={2}>
+            <Select
+              onValueChange={(value: ViewOptionsOrderBy) => {
+                setViewOptions({
+                  ...viewOptions,
+                  orderBy: value,
+                });
+              }}
+              value={orderBy}
+            >
+              <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-28 capitalize">
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content className="ring-border/70 shadow-2xl ring-1">
+                <Select.Group>
+                  {orderByOptions.map((option) => (
+                    <Select.Option
+                      className="capitalize"
+                      key={option}
+                      value={option}
+                    >
+                      {option}
+                    </Select.Option>
+                  ))}
+                </Select.Group>
+              </Select.Content>
+            </Select>
+            <Select
+              onValueChange={(value: ViewOptionsOrderDirection) => {
+                setViewOptions({
+                  ...viewOptions,
+                  orderDirection: value,
+                });
+              }}
+              value={orderDirection}
+            >
+              <Select.Trigger
+                aria-label="Order direction"
+                className="bg-surface-muted dark:bg-surface-prominent/70 w-28 capitalize"
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <ArrowUpDownIcon className="text-text-muted h-4 w-auto shrink-0" />
+                  <Select.Input />
+                </span>
+              </Select.Trigger>
+              <Select.Content className="ring-border/70 shadow-2xl ring-1">
+                <Select.Group>
+                  <Select.Option value="asc">Ascending</Select.Option>
+                  <Select.Option value="desc">Descending</Select.Option>
+                </Select.Group>
+              </Select.Content>
+            </Select>
+          </Flex>
         </Flex>
         <Divider className="dark:border-border-strong/80 my-2" />
         <Box className="max-w-108 px-4 py-2">

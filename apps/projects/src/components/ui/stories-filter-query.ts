@@ -12,6 +12,13 @@ export const getGroupedStoryFilterParams = (
     const operator = getStoriesFilterOperator(filters, field);
     return operator === "doesNotContain" || operator === "isNotAnyOf";
   };
+  const objectiveOperator = getStoriesFilterOperator(filters, "objectiveId");
+  const startDateOperator = getStoriesFilterOperator(filters, "startDate");
+  const endDateOperator = getStoriesFilterOperator(filters, "endDate");
+  const assigneePresenceOperator = getStoriesFilterOperator(
+    filters,
+    "hasNoAssignee",
+  );
 
   return {
     statusIds: isExcluded("statusIds")
@@ -40,11 +47,34 @@ export const getGroupedStoryFilterParams = (
       : undefined,
     titleContains: isExcluded("contentContains") ? undefined : content,
     titleNotContains: isExcluded("contentContains") ? content : undefined,
-    objectiveId: filters.objectiveId ?? undefined,
-    startDateAfter: filters.startDate ?? undefined,
-    startDateBefore: filters.startDate ?? undefined,
-    deadlineAfter: filters.endDate ?? undefined,
-    deadlineBefore: filters.endDate ?? undefined,
+    objectiveId:
+      objectiveOperator === "is" ? filters.objectiveId ?? undefined : undefined,
+    excludedObjectiveId:
+      objectiveOperator === "isNot"
+        ? filters.objectiveId ?? undefined
+        : undefined,
+    startDateAfter:
+      startDateOperator === "is" || startDateOperator === "isOnOrAfter"
+        ? filters.startDate ?? undefined
+        : undefined,
+    startDateBefore:
+      startDateOperator === "is" || startDateOperator === "isOnOrBefore"
+        ? filters.startDate ?? undefined
+        : undefined,
+    startDateNot:
+      startDateOperator === "isNot"
+        ? filters.startDate ?? undefined
+        : undefined,
+    deadlineAfter:
+      endDateOperator === "is" || endDateOperator === "isOnOrAfter"
+        ? filters.endDate ?? undefined
+        : undefined,
+    deadlineBefore:
+      endDateOperator === "is" || endDateOperator === "isOnOrBefore"
+        ? filters.endDate ?? undefined
+        : undefined,
+    deadlineNot:
+      endDateOperator === "isNot" ? filters.endDate ?? undefined : undefined,
     teamIds: isExcluded("teamIds") ? undefined : filters.teamIds ?? undefined,
     excludedTeamIds: isExcluded("teamIds")
       ? filters.teamIds ?? undefined
@@ -67,7 +97,14 @@ export const getGroupedStoryFilterParams = (
     excludedEstimateValues: isExcluded("estimateValues")
       ? filters.estimateValues ?? undefined
       : undefined,
-    hasNoAssignee: filters.hasNoAssignee ? true : undefined,
+    hasNoAssignee:
+      filters.hasNoAssignee && assigneePresenceOperator === "isEmpty"
+        ? true
+        : undefined,
+    hasAssignee:
+      filters.hasNoAssignee && assigneePresenceOperator === "isNotEmpty"
+        ? true
+        : undefined,
     hasBlockedBy: filters.hasBlockedBy ? true : undefined,
   };
 };

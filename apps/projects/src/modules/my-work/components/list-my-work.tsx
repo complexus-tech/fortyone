@@ -131,6 +131,7 @@ const StoriesPanelContent = ({
   const { viewOptions, setViewOptions, filters } = useMyWork();
   const tabFilters = getTabFilterParams(tab, filters);
   const groupedFilters = getGroupedStoryFilterParams(filters);
+  const hasEndDateFilter = Boolean(filters.endDate);
 
   let categories: StateCategory[] | undefined;
   if (overdue) {
@@ -156,9 +157,17 @@ const StoriesPanelContent = ({
       categories: categories ?? tabFilters.categories,
       createdAfter: createdAfter ?? tabFilters.createdAfter,
       createdBefore: createdBefore ?? tabFilters.createdBefore,
-      deadlineBefore:
-        filters.endDate ?? overdueDeadline ?? tabFilters.deadlineBefore,
+      deadlineAfter: hasEndDateFilter
+        ? groupedFilters.deadlineAfter
+        : tabFilters.deadlineAfter,
+      deadlineBefore: hasEndDateFilter
+        ? groupedFilters.deadlineBefore
+        : overdueDeadline ?? tabFilters.deadlineBefore,
+      deadlineNot: hasEndDateFilter
+        ? groupedFilters.deadlineNot
+        : tabFilters.deadlineNot,
       orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
       showSubStories: viewOptions.showSubStories ? true : undefined,
     },
   );

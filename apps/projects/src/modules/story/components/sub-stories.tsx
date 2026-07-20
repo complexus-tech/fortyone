@@ -356,6 +356,7 @@ export const SubStories = ({
           viewOptions={{
             groupBy: "none",
             orderBy: "priority",
+            orderDirection: "desc",
             showEmptyGroups: false,
             showSubStories: false,
             displayColumns: [
