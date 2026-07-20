@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AccountPage } from "@/modules/public-portal/account-page";
+import { getFeedbackSetupHref } from "@/modules/public-portal/feedback-setup";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
@@ -38,10 +39,15 @@ export default async function AccountRoute() {
     <AccountPage
       profile={profile}
       viewer={{
+        id: profile.id,
         accountHref: "/account",
         appHref,
         avatarUrl: profile.avatarUrl,
         email: profile.email,
+        feedbackSetupHref: getFeedbackSetupHref(
+          workspaces,
+          profile.lastUsedWorkspaceId,
+        ),
         name: profile.fullName || profile.username,
       }}
     />

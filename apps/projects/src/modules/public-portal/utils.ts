@@ -3,6 +3,7 @@ import type { PublicPortal, PublicRequest } from "./types";
 
 const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+const NIL_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
 
 export const getBoard = (portal: PublicPortal, boardId: string) =>
   portal.boards.find((board) => board.id === boardId);
@@ -17,6 +18,14 @@ export const getRequestPathBySlug = (
 
 export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
   getRequestPathBySlug(portal, request.slug);
+
+export const getAuthorPath = (portal: PublicPortal, authorId: string) => {
+  if (!authorId || authorId === NIL_AUTHOR_ID) return null;
+
+  return isWorkspaceSubdomainDeployment
+    ? `/people/${authorId}`
+    : `/portal/${portal.slug}/people/${authorId}`;
+};
 
 export const getPortalPath = (
   portal: PublicPortal,

@@ -14,22 +14,26 @@ export const publicPortalFixture: PublicPortal = {
     {
       id: "road-repairs",
       name: "Road repairs",
+      color: "#22C55E",
       colorClassName: "bg-success",
     },
     {
       id: "drainage",
       name: "Drainage",
+      color: "#06B6D4",
       colorClassName: "bg-info",
     },
     {
       id: "traffic-lights",
       name: "Traffic lights",
+      color: "#F59E0B",
       colorClassName: "bg-warning",
     },
   ],
   requests: [
     {
       id: "req-1",
+      authorId: "00000000-0000-4000-8000-000000000001",
       slug: "add-pedestrian-crossing-near-east-avenue-school",
       title: "Add pedestrian crossing near East Avenue school",
       description:
@@ -52,6 +56,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-2",
+      authorId: "00000000-0000-4000-8000-000000000002",
       slug: "blocked-storm-drain-on-4th-street",
       title: "Blocked storm drain on 4th Street",
       description:
@@ -67,6 +72,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-3",
+      authorId: "00000000-0000-4000-8000-000000000003",
       slug: "resurface-market-road-before-rainy-season",
       title: "Resurface Market Road before rainy season",
       description:
@@ -83,6 +89,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-4",
+      authorId: "00000000-0000-4000-8000-000000000004",
       slug: "repair-school-zone-signal-timing",
       title: "Repair school-zone signal timing",
       description:

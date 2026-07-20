@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   description: "Create a new account",
 };
 
-export default function CreateAccountPage() {
-  return <CreateAccount />;
+export default async function CreateAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+
+  return <CreateAccount callbackUrl={callbackUrl} />;
 }

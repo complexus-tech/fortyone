@@ -8,6 +8,7 @@ import { Logo } from "@/components/ui";
 import type { Workspace } from "@/types";
 import type { Team } from "@/modules/teams/types";
 import { inviteMembers } from "@/lib/actions/invite-members";
+import { withOnboardingCallbackUrl } from "@/modules/onboarding/routing";
 import { InviteForm } from "./components/invite-form";
 
 type Member = {
@@ -21,9 +22,11 @@ const isValidEmail = (email: string) => {
 
 export const InviteTeam = ({
   activeWorkspace,
+  callbackUrl,
   teams,
 }: {
   activeWorkspace: Workspace;
+  callbackUrl?: string;
   teams: Team[];
 }) => {
   const router = useRouter();
@@ -47,7 +50,7 @@ export const InviteTeam = ({
       teams.map((t) => t.id),
       activeWorkspace.slug,
     );
-    if (res?.error?.message) {
+    if (res.error?.message) {
       setIsLoading(false);
       toast.error("Failed to invite members", {
         description:
@@ -57,8 +60,13 @@ export const InviteTeam = ({
       return;
     }
     setIsLoading(false);
-    router.push("/onboarding/welcome");
+    router.push(withOnboardingCallbackUrl("/onboarding/welcome", callbackUrl));
   };
+
+  const welcomeUrl = withOnboardingCallbackUrl(
+    "/onboarding/welcome",
+    callbackUrl,
+  );
 
   return (
     <Container className="max-h-dvh max-w-120 overflow-y-auto md:max-w-xl">
@@ -85,12 +93,12 @@ export const InviteTeam = ({
       </Button>
       <Button
         align="center"
-        color="tertiary"
         className="mt-2 md:py-3"
-        variant="naked"
+        color="tertiary"
         fullWidth
+        href={welcomeUrl}
         size="lg"
-        href="/onboarding/welcome"
+        variant="naked"
       >
         I&apos;ll do this later
       </Button>

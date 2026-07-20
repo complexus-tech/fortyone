@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Welcome } from "@/modules/onboarding/welcome";
-import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 
@@ -9,11 +8,21 @@ export const metadata: Metadata = {
   description: "Welcome to FortyOne",
 };
 
-export default async function WelcomePage() {
-  const session = await auth();
-  const [workspaces, profile] = await Promise.all([
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const [{ callbackUrl }, workspaces, profile] = await Promise.all([
+    searchParams,
     getWorkspaces(),
     getProfile(),
   ]);
-  return <Welcome profile={profile} workspaces={workspaces} />;
+  return (
+    <Welcome
+      callbackUrl={callbackUrl}
+      profile={profile}
+      workspaces={workspaces}
+    />
+  );
 }

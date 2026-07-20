@@ -45,6 +45,10 @@ export const buildPublicPortalMetadata = (
   canonicalUrl: URL,
 ): Metadata => {
   const organizationName = portal.workspace.name;
+  const organizationLogo = portal.workspace.avatarUrl?.trim();
+  const iconUrl = organizationLogo
+    ? organizationLogo
+    : new URL("/api/public-portal/favicon", canonicalUrl);
   const title = `Send feedback to ${organizationName} | FortyOne`;
   const description = `Send requests and feedback directly to ${organizationName}. Browse existing ideas, vote on priorities, and follow public progress.`;
 
@@ -54,6 +58,11 @@ export const buildPublicPortalMetadata = (
     },
     applicationName: "FortyOne",
     description,
+    icons: {
+      apple: iconUrl,
+      icon: iconUrl,
+      shortcut: iconUrl,
+    },
     keywords: [
       `${organizationName} feedback`,
       `${organizationName} requests`,

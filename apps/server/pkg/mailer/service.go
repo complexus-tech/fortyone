@@ -38,6 +38,7 @@ type Email struct {
 	IsHTML      bool
 	Attachments []Attachment
 	ReplyTo     string
+	MessageID   string
 }
 
 type Attachment struct {
@@ -47,11 +48,12 @@ type Attachment struct {
 }
 
 type TemplatedEmail struct {
-	To       []string
-	Template string
-	Data     any
-	Subject  string
-	ReplyTo  string
+	To        []string
+	Template  string
+	Data      any
+	Subject   string
+	ReplyTo   string
+	MessageID string
 }
 
 type service struct {
@@ -142,6 +144,9 @@ func (s *service) Send(ctx context.Context, email Email) error {
 	msg.SetHeader("From", fmt.Sprintf("%s <%s>", fromName, s.config.FromAddress))
 	msg.SetHeader("To", email.To...)
 	msg.SetHeader("Subject", email.Subject)
+	if email.MessageID != "" {
+		msg.SetHeader("Message-ID", email.MessageID)
+	}
 
 	if email.ReplyTo != "" {
 		msg.SetHeader("Reply-To", email.ReplyTo)
@@ -216,11 +221,12 @@ func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmai
 	}
 
 	email := Email{
-		To:      templateEmail.To,
-		Subject: subject,
-		Body:    buf.String(),
-		IsHTML:  true,
-		ReplyTo: templateEmail.ReplyTo,
+		To:        templateEmail.To,
+		Subject:   subject,
+		Body:      buf.String(),
+		IsHTML:    true,
+		ReplyTo:   templateEmail.ReplyTo,
+		MessageID: templateEmail.MessageID,
 	}
 
 	return s.Send(ctx, email)

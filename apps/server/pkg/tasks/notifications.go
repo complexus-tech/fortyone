@@ -15,6 +15,7 @@ const (
 	TypeNotificationEmail       = "notification:email:send"
 	TypeNotificationEmailDigest = "notification:email:digest"
 	TypeWeeklyDigestEmail       = "email:digest:weekly"
+	TypeFeedbackDigestEmail     = "feedback:email:digest"
 
 	notificationEmailDigestDelay = time.Hour
 	// The uniqueness lock must outlive the scheduled delay. Asynq releases it

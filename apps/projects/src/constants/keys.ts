@@ -189,6 +189,13 @@ export const feedbackKeys = {
   all: (workspaceSlug: string) => ["feedback", workspaceSlug] as const,
   portals: (workspaceSlug: string) =>
     [...feedbackKeys.all(workspaceSlug), "portals"] as const,
+  reviewers: (workspaceSlug: string, boardId: string) =>
+    [
+      ...feedbackKeys.all(workspaceSlug),
+      "boards",
+      boardId,
+      "reviewers",
+    ] as const,
   teamSummaries: (workspaceSlug: string) =>
     [...feedbackKeys.all(workspaceSlug), "team-summaries"] as const,
   lists: (workspaceSlug: string) =>

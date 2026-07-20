@@ -1,11 +1,18 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
+import type {
+  ChangeEvent,
+  ComponentPropsWithoutRef,
+  ElementType,
+  ReactNode,
+} from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
   useCreateFeedbackBoardMutation,
+  useFeedbackBoardReviewers,
   useFeedbackPortals,
+  useUpdateFeedbackBoardReviewerMutation,
   useUpdateFeedbackPortalMutation,
 } from "./hooks";
 import { FeedbackSettings } from ".";
@@ -28,6 +35,12 @@ jest.mock("icons", () => {
 
 jest.mock("ui", () => {
   const React = jest.requireActual("react");
+  const DialogContext = React.createContext(true);
+  const SelectContext = React.createContext({
+    disabled: false,
+    onValueChange: (_value: string) => undefined,
+    value: "",
+  });
 
   const Box = ({ children, ...props }: ComponentPropsWithoutRef<"div">) =>
     React.createElement("div", props, children);
@@ -62,23 +75,81 @@ jest.mock("ui", () => {
       leftIcon,
       children,
     );
-  const Dialog = ({ children }: { children: ReactNode }) =>
-    React.createElement(React.Fragment, null, children);
+  const Dialog = ({
+    children,
+    open = true,
+  }: {
+    children: ReactNode;
+    open?: boolean;
+  }) => React.createElement(DialogContext.Provider, { value: open }, children);
   const DialogPart = ({
     children,
     ...props
   }: ComponentPropsWithoutRef<"div">) =>
     React.createElement("div", props, children);
+  const DialogContent = ({
+    children,
+    ...props
+  }: ComponentPropsWithoutRef<"div">) => {
+    const open = React.useContext(DialogContext);
+    return open ? React.createElement("div", props, children) : null;
+  };
 
   Object.assign(Dialog, {
     Body: DialogPart,
-    Content: DialogPart,
+    Content: DialogContent,
+    Description: DialogPart,
     Footer: DialogPart,
     Header: DialogPart,
     Title: DialogPart,
   });
 
+  const Select = ({
+    children,
+    disabled = false,
+    onValueChange,
+    value,
+  }: {
+    children: ReactNode;
+    disabled?: boolean;
+    onValueChange: (value: string) => void;
+    value: string;
+  }) =>
+    React.createElement(
+      SelectContext.Provider,
+      { value: { disabled, onValueChange, value } },
+      children,
+    );
+  const SelectTrigger = ({
+    children: _children,
+    ...props
+  }: ComponentPropsWithoutRef<"select">) => {
+    const context = React.useContext(SelectContext);
+    return React.createElement(
+      "select",
+      {
+        ...props,
+        disabled: context.disabled,
+        onChange: (event: ChangeEvent<HTMLSelectElement>) => {
+          context.onValueChange(event.target.value);
+        },
+        value: context.value,
+      },
+      React.createElement("option", { value: "off" }, "Off"),
+      React.createElement("option", { value: "daily" }, "Daily"),
+      React.createElement("option", { value: "weekly" }, "Weekly"),
+    );
+  };
+  Object.assign(Select, {
+    Content: () => null,
+    Input: () => null,
+    Option: () => null,
+    Trigger: SelectTrigger,
+  });
+
   return {
+    Avatar: ({ name, ...props }: { name: string }) =>
+      React.createElement("div", { ...props, "aria-label": name }),
     Box,
     Button,
     Dialog,
@@ -102,20 +173,29 @@ jest.mock("ui", () => {
         role: "switch",
         type: "button",
       }),
+    Select,
+    Skeleton: (props: ComponentPropsWithoutRef<"div">) =>
+      React.createElement("div", props),
     Text,
   };
 });
 
 jest.mock("./hooks", () => ({
   useCreateFeedbackBoardMutation: jest.fn(),
+  useFeedbackBoardReviewers: jest.fn(),
   useFeedbackPortals: jest.fn(),
+  useUpdateFeedbackBoardReviewerMutation: jest.fn(),
   useUpdateFeedbackPortalMutation: jest.fn(),
 }));
 
 const mockUseTeams = jest.mocked(useTeams);
 const mockUseFeedbackPortals = jest.mocked(useFeedbackPortals);
+const mockUseFeedbackBoardReviewers = jest.mocked(useFeedbackBoardReviewers);
 const mockUseCreateFeedbackBoardMutation = jest.mocked(
   useCreateFeedbackBoardMutation,
+);
+const mockUseUpdateFeedbackBoardReviewerMutation = jest.mocked(
+  useUpdateFeedbackBoardReviewerMutation,
 );
 const mockUseUpdateFeedbackPortalMutation = jest.mocked(
   useUpdateFeedbackPortalMutation,
@@ -147,6 +227,7 @@ const portal = {
 
 describe("FeedbackSettings", () => {
   const updatePortal = jest.fn();
+  const updateReviewer = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -161,6 +242,31 @@ describe("FeedbackSettings", () => {
     mockUseCreateFeedbackBoardMutation.mockReturnValue({
       isPending: false,
       mutateAsync: jest.fn(),
+    } as never);
+    mockUseFeedbackBoardReviewers.mockReturnValue({
+      data: [
+        {
+          email: "amina@example.com",
+          emailFrequency: "daily",
+          name: "Amina Moyo",
+          role: "admin",
+          userId: "user-1",
+        },
+        {
+          email: "tariro@example.com",
+          emailFrequency: "off",
+          name: "Tariro Ncube",
+          role: "member",
+          userId: "user-2",
+        },
+      ],
+      isError: false,
+      isLoading: false,
+      refetch: jest.fn(),
+    } as never);
+    mockUseUpdateFeedbackBoardReviewerMutation.mockReturnValue({
+      isPending: false,
+      mutate: updateReviewer,
     } as never);
     mockUseUpdateFeedbackPortalMutation.mockReturnValue({
       isPending: false,
@@ -228,5 +334,45 @@ describe("FeedbackSettings", () => {
     );
 
     expect(boardSwatch).toBeInTheDocument();
+  });
+
+  it("loads reviewers only when opened and auto-saves their frequency", async () => {
+    render(<FeedbackSettings />);
+
+    expect(mockUseFeedbackBoardReviewers).toHaveBeenCalledWith(
+      "board-1",
+      false,
+    );
+    expect(screen.queryByText("1 subscribed")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reviewers" }));
+
+    await waitFor(() => {
+      expect(mockUseFeedbackBoardReviewers).toHaveBeenLastCalledWith(
+        "board-1",
+        true,
+      );
+    });
+
+    expect(screen.getByText("Feedback stays immediate")).toBeInTheDocument();
+    expect(screen.getByText("Amina Moyo")).toBeInTheDocument();
+    expect(screen.getByText("amina@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Admin")).toBeInTheDocument();
+    expect(screen.getByText("1 subscribed")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /save/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Email summary for Tariro Ncube",
+      }),
+      { target: { value: "weekly" } },
+    );
+
+    expect(updateReviewer).toHaveBeenCalledWith({
+      input: { emailFrequency: "weekly" },
+      userId: "user-2",
+    });
   });
 });

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,57 @@ func TestHTTPStatusClassifiesFeedbackErrors(t *testing.T) {
 	}
 	if status := httpStatus(errors.New("database unavailable")); status != http.StatusInternalServerError {
 		t.Fatalf("unexpected error status = %d, want %d", status, http.StatusInternalServerError)
+	}
+}
+
+func TestApplyItemsQueryRejectsInvalidAuthorID(t *testing.T) {
+	t.Parallel()
+
+	for _, authorID := range []string{"not-a-uuid", uuid.Nil.String()} {
+		t.Run(authorID, func(t *testing.T) {
+			t.Parallel()
+
+			handler := New(nil, nil, nil, nil)
+			request, err := http.NewRequest(http.MethodGet, "/?authorId="+authorID, nil)
+			if err != nil {
+				t.Fatalf("create request: %v", err)
+			}
+			portal := feedback.CorePortalSnapshot{Portal: feedback.CorePortal{ID: uuid.New()}}
+
+			err = handler.applyItemsQuery(context.Background(), request, &portal)
+			if !errors.Is(err, feedback.ErrInvalidInput) {
+				t.Fatalf("apply items query error = %v, want invalid input", err)
+			}
+			if status := httpStatus(err); status != http.StatusBadRequest {
+				t.Fatalf("invalid author status = %d, want %d", status, http.StatusBadRequest)
+			}
+		})
+	}
+}
+
+func TestPublicContributorIDRejectsInvalidValues(t *testing.T) {
+	t.Parallel()
+
+	for _, value := range []string{"not-a-uuid", uuid.Nil.String()} {
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		request.SetPathValue("authorId", value)
+
+		_, err := publicContributorID(request)
+
+		if !errors.Is(err, feedback.ErrInvalidInput) {
+			t.Fatalf("publicContributorID(%q) error = %v, want invalid input", value, err)
+		}
+	}
+}
+
+func TestPublicContributorPaginationDefersNormalizationToService(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/?page=3&pageSize=25", nil)
+	page, pageSize := publicContributorPagination(request)
+
+	if page != 3 || pageSize != 25 {
+		t.Fatalf("pagination = (%d, %d), want (3, 25)", page, pageSize)
 	}
 }
 
@@ -75,6 +127,30 @@ func TestAppPortalDoesNotExposeRemovedDescription(t *testing.T) {
 	}
 	if strings.Contains(string(payload), "description") {
 		t.Fatalf("portal payload unexpectedly contains description: %s", payload)
+	}
+}
+
+func TestAppBoardReviewerUsesAutoSaveContract(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	payload, err := json.Marshal(toAppBoardReviewer(feedback.CoreBoardReviewer{
+		UserID:         userID,
+		Name:           "Ada Lovelace",
+		Email:          "ada@example.com",
+		Role:           "member",
+		EmailFrequency: feedback.EmailFrequencyWeekly,
+	}))
+	if err != nil {
+		t.Fatalf("marshal reviewer: %v", err)
+	}
+
+	var reviewer AppBoardReviewer
+	if err := json.Unmarshal(payload, &reviewer); err != nil {
+		t.Fatalf("unmarshal reviewer: %v", err)
+	}
+	if reviewer.UserID != userID || reviewer.EmailFrequency != feedback.EmailFrequencyWeekly {
+		t.Fatalf("reviewer payload = %+v", reviewer)
 	}
 }
 
@@ -129,6 +205,77 @@ func TestResolvePortalAvatarsUsesPresignedURLs(t *testing.T) {
 	}
 	if got := resolver.calls["profiles/joseph.webp"]; got != 1 {
 		t.Fatalf("resolver calls = %d, want 1", got)
+	}
+}
+
+func TestRespondPublicContributorUsesPresignedAvatarAndDoesNotExposeEmail(t *testing.T) {
+	t.Parallel()
+
+	resolver := &profileImageResolverStub{
+		resolved: map[string]string{
+			"profiles/ada.webp": "https://signed.example.com/profiles/ada.webp",
+		},
+	}
+	handler := New(nil, nil, resolver, nil)
+	recorder := httptest.NewRecorder()
+	avatar := "profiles/ada.webp"
+
+	err := handler.respondPublicContributor(context.Background(), recorder, feedback.CoreContributor{
+		ID:        uuid.New(),
+		Name:      "Ada Lovelace",
+		AvatarURL: &avatar,
+		JoinedAt:  time.Now(),
+		Stats: feedback.CoreContributorStats{
+			FeedbackCount: 2,
+			CommentCount:  3,
+			VoteScore:     -1,
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("respond contributor: %v", err)
+	}
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", recorder.Code)
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "https://signed.example.com/profiles/ada.webp") {
+		t.Fatalf("response does not contain presigned avatar: %s", body)
+	}
+	if strings.Contains(strings.ToLower(body), "email") {
+		t.Fatalf("response unexpectedly exposes an email field: %s", body)
+	}
+	if !strings.Contains(body, `"voteScore":-1`) {
+		t.Fatalf("response does not contain net vote score: %s", body)
+	}
+}
+
+func TestRespondPublicContributorCommentsBuildsStablePagination(t *testing.T) {
+	t.Parallel()
+
+	recorder := httptest.NewRecorder()
+	err := respondPublicContributorComments(context.Background(), recorder, feedback.CoreContributorCommentsPage{
+		Comments: []feedback.CoreContributorComment{{
+			ID:            uuid.New(),
+			ItemID:        uuid.New(),
+			FeedbackTitle: "Repair the crossing",
+			FeedbackSlug:  "repair-the-crossing",
+			Body:          "This would make the crossing safer.",
+		}},
+		Page:     2,
+		PageSize: 20,
+		HasMore:  true,
+	})
+
+	if err != nil {
+		t.Fatalf("respond contributor comments: %v", err)
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"feedback":{"id":`) || !strings.Contains(body, `"slug":"repair-the-crossing"`) {
+		t.Fatalf("response does not contain feedback context: %s", body)
+	}
+	if !strings.Contains(body, `"page":2`) || !strings.Contains(body, `"nextPage":3`) {
+		t.Fatalf("response has incorrect pagination: %s", body)
 	}
 }
 

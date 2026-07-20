@@ -34,6 +34,41 @@ export type PublicRequestComment = {
   createdAtLabel: string;
 };
 
+export type PublicContributorStats = {
+  feedbackCount: number;
+  commentCount: number;
+  voteScore: number;
+};
+
+export type PublicContributor = {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  joinedAt: string;
+  stats: PublicContributorStats;
+};
+
+export type PublicContributorComment = {
+  id: string;
+  body: string;
+  createdAtLabel: string;
+  feedback: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+};
+
+export type PublicContributorCommentsPage = {
+  comments: PublicContributorComment[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
+};
+
 export type PublicFeedbackStoryLink = {
   id: string;
   storyId: string;
@@ -42,6 +77,7 @@ export type PublicFeedbackStoryLink = {
 
 export type PublicRequest = {
   id: string;
+  authorId: string;
   slug: string;
   title: string;
   description: string;
@@ -74,11 +110,13 @@ export type PublicPortalWorkspace = {
 };
 
 export type PublicPortalViewer = {
+  id: string;
   name: string;
   email: string;
   avatarUrl: string | null;
   appHref?: string;
   accountHref: string;
+  feedbackSetupHref: string;
 };
 
 export type PublicPortalNotification = {

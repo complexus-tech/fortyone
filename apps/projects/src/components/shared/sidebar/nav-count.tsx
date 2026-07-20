@@ -13,7 +13,7 @@ export const NavCount = ({ count }: { count: number }) => {
 
   return (
     <span
-      className="text-foreground-inverse bg-background-inverse flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md px-1 text-[0.75rem] leading-none font-bold"
+      className="text-foreground-inverse bg-background-inverse flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full px-1 text-[0.75rem] leading-none font-bold"
       title={count.toLocaleString()}
     >
       <span aria-hidden="true">{displayCount}</span>

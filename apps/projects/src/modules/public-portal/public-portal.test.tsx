@@ -22,6 +22,7 @@ import {
   markPublicPortalNotificationReadAction,
 } from "./notification-actions";
 import {
+  PublicPortalAuthorProfilePage,
   PublicPortalRequestDetailPage,
   PublicPortalRequestsPage,
   PublicPortalRoadmapPage,
@@ -45,6 +46,8 @@ const portalViewer = {
   appHref: "/city-roads/my-work",
   avatarUrl: null,
   email: "ada@example.com",
+  feedbackSetupHref: "/city-roads/settings/workspace/feedback",
+  id: "00000000-0000-4000-8000-000000000001",
   name: "Ada Ndlovu",
 };
 
@@ -136,6 +139,12 @@ jest.mock("@/components/shared/sidebar/actions", () => ({
 
 jest.mock("@/components/shared/sidebar/utils", () => ({
   clearAllStorage: jest.fn(),
+}));
+
+jest.mock("@/utils", () => ({
+  buildWorkspaceUrl: (slug: string, path = "/my-work") => `/${slug}${path}`,
+  hexToRgba: (color: string, opacity: number) =>
+    `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`,
 }));
 
 jest.mock("./actions", () => ({
@@ -391,6 +400,70 @@ jest.mock("ui", () => {
   const TimeAgo = ({ timestamp }: { timestamp: string }) => (
     <span>{timestamp}</span>
   );
+  const TabsContext = React.createContext<{
+    onValueChange?: (value: string) => void;
+    value: string;
+  }>({ value: "" });
+  const Tabs = ({
+    children,
+    defaultValue = "",
+    onValueChange,
+    value = defaultValue,
+    ...props
+  }: ReactTypes.HTMLAttributes<HTMLDivElement> & {
+    defaultValue?: string;
+    onValueChange?: (value: string) => void;
+    value?: string;
+  }) => (
+    <TabsContext.Provider value={{ onValueChange, value }}>
+      <div {...getDomProps(props)}>{children}</div>
+    </TabsContext.Provider>
+  );
+  const TabsList = ({
+    children,
+    ...props
+  }: ReactTypes.HTMLAttributes<HTMLDivElement>) => (
+    <div role="tablist" {...props}>
+      {children}
+    </div>
+  );
+  const TabsTab = ({
+    children,
+    value,
+    ...props
+  }: ReactTypes.ButtonHTMLAttributes<HTMLButtonElement> & {
+    value: string;
+  }) => (
+    <TabsContext.Consumer>
+      {(context) => (
+        <button
+          aria-selected={context.value === value}
+          onClick={() => {
+            context.onValueChange?.(value);
+          }}
+          role="tab"
+          type="button"
+          {...props}
+        >
+          {children}
+        </button>
+      )}
+    </TabsContext.Consumer>
+  );
+  const TabsPanel = ({
+    children,
+    value,
+    ...props
+  }: ReactTypes.HTMLAttributes<HTMLDivElement> & { value: string }) => (
+    <TabsContext.Consumer>
+      {(context) =>
+        context.value === value ? <div {...props}>{children}</div> : null
+      }
+    </TabsContext.Consumer>
+  );
+  Tabs.List = TabsList;
+  Tabs.Tab = TabsTab;
+  Tabs.Panel = TabsPanel;
 
   return {
     Avatar,
@@ -405,6 +478,7 @@ jest.mock("ui", () => {
     TextArea,
     TextEditor,
     TimeAgo,
+    Tabs,
   };
 });
 
@@ -566,6 +640,9 @@ describe("Public portal UI", () => {
     expect(
       screen.getByRole("link", { name: "City Roads Program feedback" }),
     ).toHaveAttribute("href", "/portal/city-roads/feedback");
+    expect(
+      screen.getByRole("link", { name: "Create your own board" }),
+    ).toHaveAttribute("href", "/city-roads/settings/workspace/feedback");
   });
 
   it("hides comment metadata when feedback has no comments", () => {
@@ -596,6 +673,12 @@ describe("Public portal UI", () => {
     expect(
       screen.queryByRole("button", { name: "New Feedback" }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Create your own board" }),
+    ).toHaveAttribute(
+      "href",
+      "/signup?source=portal&callbackUrl=%2Fonboarding%2Fcreate%3FcallbackUrl%3D%252Fsettings%252Fworkspace%252Ffeedback",
+    );
   });
 
   it("filters public feedback by the selected board", async () => {
@@ -952,6 +1035,8 @@ describe("Public portal UI", () => {
           accountHref: "/portal/city-roads/account",
           avatarUrl: null,
           email: "external@example.com",
+          feedbackSetupHref: "/onboarding/create",
+          id: "00000000-0000-4000-8000-000000000099",
           name: "External Contributor",
         }}
       />,
@@ -999,12 +1084,127 @@ describe("Public portal UI", () => {
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
     expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.getByText("Committed and queued")).toBeInTheDocument();
+    expect(screen.getByText("Actively being delivered")).toBeInTheDocument();
+    expect(screen.getByText("Recently completed")).toBeInTheDocument();
     expect(
       await screen.findByText("Resurface Market Road before rainy season"),
     ).toBeInTheDocument();
+    expect(screen.getByText("Nothing in progress")).toBeInTheDocument();
     expect(
       screen.queryByText("Add pedestrian crossing near East Avenue school"),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders a Kanban-style roadmap card with an author profile link and naked vote count", async () => {
+    renderRoadmap();
+
+    const title = await screen.findByText(
+      "Resurface Market Road before rainy season",
+    );
+    const requestLink = title.closest("a");
+    const card = requestLink?.parentElement;
+
+    expect(requestLink).toHaveAttribute(
+      "href",
+      "/portal/city-roads/feedback/resurface-market-road-before-rainy-season",
+    );
+    expect(card?.firstElementChild).toBe(requestLink);
+    expect(card).toHaveTextContent("Public Works");
+    expect(card).toHaveTextContent("Road repairs");
+    expect(screen.getByRole("link", { name: /Public Works/ })).toHaveAttribute(
+      "href",
+      "/portal/city-roads/people/00000000-0000-4000-8000-000000000003",
+    );
+
+    const voteCount = screen.getByText("18");
+    expect(voteCount.closest("button")).toBeNull();
+  });
+
+  it("renders an author profile and keeps the author filter on subsequent pages", async () => {
+    const authorRequest = publicPortalFixture.requests[2];
+    const contributor = {
+      avatarUrl: authorRequest.authorAvatar,
+      id: authorRequest.authorId,
+      joinedAt: "2025-04-15T10:00:00.000Z",
+      name: authorRequest.authorName,
+      stats: {
+        commentCount: 3,
+        feedbackCount: 5,
+        voteScore: 18,
+      },
+    };
+    const authorPortal = {
+      ...publicPortalFixture,
+      requests: [authorRequest],
+      requestsHasMore: true,
+    };
+
+    render(
+      <PublicPortalAuthorProfilePage
+        authorId={authorRequest.authorId}
+        contributor={contributor}
+        initialComments={{
+          comments: [
+            {
+              body: "The crossing should include accessible signals.",
+              createdAtLabel: "Yesterday",
+              feedback: {
+                id: publicPortalFixture.requests[0].id,
+                slug: publicPortalFixture.requests[0].slug,
+                title: publicPortalFixture.requests[0].title,
+              },
+              id: "comment-profile-1",
+            },
+          ],
+          pagination: {
+            hasMore: false,
+            nextPage: 2,
+            page: 1,
+            pageSize: 20,
+          },
+        }}
+        portal={authorPortal}
+        viewer={portalViewer}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: authorRequest.authorName }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(authorRequest.title)).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getAllByText("18")).toHaveLength(2);
+    expect(screen.getByText("Total contributions")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Comments" }));
+    expect(window.location.search).toBe("?tab=comments");
+    expect(
+      screen.getByText("The crossing should include accessible signals."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(publicPortalFixture.requests[0].title),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Feedback" }));
+    expect(window.location.search).toBe("");
+
+    await waitFor(() => {
+      expect(triggerIntersection).toBeDefined();
+    });
+    act(() => {
+      triggerIntersection?.();
+    });
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`authorId=${authorRequest.authorId}`),
+      );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("page=2"),
+      );
+    });
   });
 
   it("reuses cached roadmap columns when returning to the roadmap", async () => {

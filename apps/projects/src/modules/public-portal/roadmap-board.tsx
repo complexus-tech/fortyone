@@ -4,15 +4,17 @@ import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ArrowUpIcon, RoadmapIcon } from "icons";
+import { RoadmapIcon, ThumbsUpIcon } from "icons";
 import { Avatar, Box, Flex, Text } from "ui";
 import { cn } from "lib";
+import { Dot } from "@/components/ui/dot";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { publicPortalKeys } from "./query-keys";
 import { roadmapStatuses, requestStatusMeta } from "./status";
 import type { PublicPortal, PublicRequest } from "./types";
-import { getBoard, getRequestPath } from "./utils";
+import { getAuthorPath, getBoard, getRequestPath } from "./utils";
 import { getPublicAvatarColor } from "./avatar-color";
+import { PublicBoardPill } from "./board-pill";
 
 type ApiResponse<T> = {
   data: T;
@@ -110,16 +112,16 @@ const RoadmapVote = ({
   <Flex
     align="center"
     className={cn(
-      "bg-surface-muted text-text-primary h-8 shrink-0 gap-0 rounded-lg px-2.5 text-[0.9rem] font-medium",
+      "text-text-muted h-7 shrink-0 gap-1 text-[0.9rem] font-medium",
       className,
     )}
   >
-    <ArrowUpIcon className="-mr-1.5 h-3.5 text-current" />
+    <ThumbsUpIcon className="h-3.5 text-current" strokeWidth={2} />
     <span>{voteCount}</span>
   </Flex>
 );
 
-const BoardLabel = ({
+const BoardBadge = ({
   portal,
   request,
 }: {
@@ -127,22 +129,10 @@ const BoardLabel = ({
   request: PublicRequest;
 }) => {
   const board = getBoard(portal, request.boardId);
-  const meta = requestStatusMeta[request.status];
 
   if (!board) return null;
 
-  return (
-    <Flex align="center" className="min-w-0" gap={2}>
-      <span className={cn("size-2 shrink-0 rounded-full", meta.dotClassName)} />
-      <Text
-        className="truncate text-[0.94rem]"
-        color="muted"
-        fontWeight="semibold"
-      >
-        {board.name}
-      </Text>
-    </Flex>
-  );
+  return <PublicBoardPill board={board} />;
 };
 
 const RoadmapRequestCard = ({
@@ -151,42 +141,54 @@ const RoadmapRequestCard = ({
 }: {
   portal: PublicPortal;
   request: PublicRequest;
-}) => (
-  <Link className="group block" href={getRequestPath(portal, request)}>
-    <Box className="border-border bg-surface shadow-shadow hover:bg-surface-elevated w-full rounded-xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
-      <BoardLabel portal={portal} request={request} />
-      <Text
-        className="mt-2 line-clamp-2 text-[1.05rem] leading-[1.4rem] group-hover:opacity-90"
-        fontWeight="semibold"
-      >
-        {request.title}
-      </Text>
-      {request.roadmapSummary || request.description ? (
-        <Text className="text-text-muted/80 mt-1.5 line-clamp-2 leading-6">
-          {request.roadmapSummary || request.description}
+}) => {
+  const authorPath = getAuthorPath(portal, request.authorId);
+
+  return (
+    <Box className="border-border/70 bg-surface/50 shadow-shadow hover:bg-surface w-full rounded-xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
+      <Link className="group block" href={getRequestPath(portal, request)}>
+        <Text
+          className="line-clamp-3 text-[1.1rem] leading-[1.4rem] group-hover:opacity-90"
+          fontWeight="medium"
+        >
+          {request.title}
         </Text>
-      ) : null}
-      <Flex align="center" className="mt-5 min-w-0 gap-3" justify="between">
-        <Flex align="center" className="min-w-0 flex-1" gap={2}>
-          <Avatar
-            className="shrink-0"
-            name={request.authorName}
-            rounded="full"
-            size="sm"
-            src={request.authorAvatar}
-            style={{
-              backgroundColor: getPublicAvatarColor(request.authorName),
-            }}
-          />
-          <Text className="truncate text-[0.95rem]" fontWeight="medium">
-            {request.authorName}
+        {request.roadmapSummary || request.description ? (
+          <Text className="text-text-muted/80 mt-1.5 line-clamp-2 leading-6">
+            {request.roadmapSummary || request.description}
           </Text>
+        ) : null}
+      </Link>
+      <Flex align="end" className="mt-4 min-w-0 gap-3" justify="between">
+        <Flex align="center" className="min-w-0 flex-1 gap-1.5" wrap>
+          {authorPath ? (
+            <Link
+              className="hover:text-foreground flex min-w-0 items-center gap-1.5 transition-opacity hover:opacity-80"
+              href={authorPath}
+            >
+              <span className="border-border bg-surface-elevated flex h-7 shrink-0 items-center justify-center rounded-md border-[0.5px] px-1">
+                <Avatar
+                  name={request.authorName}
+                  rounded="md"
+                  size="xs"
+                  src={request.authorAvatar}
+                  style={{
+                    backgroundColor: getPublicAvatarColor(request.authorName),
+                  }}
+                />
+              </span>
+              <Text className="max-w-36 truncate text-[0.9rem]" color="muted">
+                {request.authorName}
+              </Text>
+            </Link>
+          ) : null}
+          <BoardBadge portal={portal} request={request} />
         </Flex>
         <RoadmapVote voteCount={request.voteCount} />
       </Flex>
     </Box>
-  </Link>
-);
+  );
+};
 
 const ColumnSkeleton = () => (
   <>
@@ -217,6 +219,7 @@ const RoadmapColumn = ({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const column = roadmapLabels[status];
   const meta = requestStatusMeta[status];
+  const isEmpty = !isPending && !isError && items.length === 0;
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -246,7 +249,11 @@ const RoadmapColumn = ({
     );
   } else if (items.length === 0) {
     columnContent = (
-      <Flex align="center" className="h-56 px-4 text-center" justify="center">
+      <Flex
+        align="center"
+        className="min-h-56 flex-1 px-4 text-center"
+        justify="center"
+      >
         <Text color="muted">{column.emptyTitle}</Text>
       </Flex>
     );
@@ -254,20 +261,31 @@ const RoadmapColumn = ({
 
   return (
     <Box className="flex min-h-0 min-w-0 flex-col" key={status}>
-      <Flex align="center" className="h-14 shrink-0 px-1" justify="between">
-        <Flex align="center" className="min-w-0" gap={2}>
-          <span
-            className={cn("size-2.5 shrink-0 rounded-full", meta.dotClassName)}
-          />
-          <Text className="truncate" fontWeight="medium">
-            {column.title}
+      <Box className="shrink-0 px-1 pt-2 pb-4">
+        <Flex align="center" justify="between">
+          <Flex align="center" className="min-w-0" gap={2}>
+            <Dot className={cn("size-2.5", meta.dotClassName)} />
+            <Text className="truncate" fontWeight="medium">
+              {column.title}
+            </Text>
+          </Flex>
+          <Text className="shrink-0 tabular-nums" color="muted">
+            {items.length}
           </Text>
         </Flex>
-        <Text className="shrink-0 tabular-nums" color="muted">
-          {items.length}
+        <Text className="mt-1.5 text-sm leading-5" color="muted">
+          {column.description}
         </Text>
-      </Flex>
-      <Flex className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl p-2 transition">
+      </Box>
+      <Flex
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl p-2 transition",
+          {
+            "border-border/60 bg-surface/20 min-h-56 border-[0.5px] border-dashed":
+              isEmpty,
+          },
+        )}
+      >
         {columnContent}
         <div ref={sentinelRef} />
         {isLoadingMore ? <ColumnSkeleton /> : null}

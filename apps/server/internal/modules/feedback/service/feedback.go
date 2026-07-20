@@ -30,6 +30,8 @@ const (
 	maxPublicFeedbackTitleCharacters       = 200
 	maxPublicFeedbackDescriptionCharacters = 20_000
 	maxPublicFeedbackCommentCharacters     = 10_000
+	defaultContributorCommentsPageSize     = 20
+	maxContributorCommentsPageSize         = 50
 )
 
 type Service struct {
@@ -178,6 +180,75 @@ func (s *Service) ListItems(ctx context.Context, input CoreListItemsInput) (Core
 	return s.repo.ListItems(ctx, input)
 }
 
+func (s *Service) GetPublicContributor(ctx context.Context, portalSlug string, authorID uuid.UUID) (CoreContributor, error) {
+	if authorID == uuid.Nil {
+		return CoreContributor{}, invalidInput("contributor id is required")
+	}
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreContributor{}, err
+	}
+	return s.repo.GetContributor(ctx, portal.ID, authorID)
+}
+
+func (s *Service) GetWorkspacePublicContributor(ctx context.Context, workspaceSlug, portalSlug string, authorID uuid.UUID) (CoreContributor, error) {
+	if authorID == uuid.Nil {
+		return CoreContributor{}, invalidInput("contributor id is required")
+	}
+	portal, err := s.repo.GetPortalByWorkspaceSlugAndSlug(ctx, strings.TrimSpace(workspaceSlug), strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreContributor{}, err
+	}
+	return s.repo.GetContributor(ctx, portal.ID, authorID)
+}
+
+func (s *Service) ListPublicContributorComments(ctx context.Context, portalSlug string, authorID uuid.UUID, page, pageSize int) (CoreContributorCommentsPage, error) {
+	if authorID == uuid.Nil {
+		return CoreContributorCommentsPage{}, invalidInput("contributor id is required")
+	}
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreContributorCommentsPage{}, err
+	}
+	return s.listContributorComments(ctx, portal.ID, authorID, page, pageSize)
+}
+
+func (s *Service) ListWorkspacePublicContributorComments(ctx context.Context, workspaceSlug, portalSlug string, authorID uuid.UUID, page, pageSize int) (CoreContributorCommentsPage, error) {
+	if authorID == uuid.Nil {
+		return CoreContributorCommentsPage{}, invalidInput("contributor id is required")
+	}
+	portal, err := s.repo.GetPortalByWorkspaceSlugAndSlug(ctx, strings.TrimSpace(workspaceSlug), strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreContributorCommentsPage{}, err
+	}
+	return s.listContributorComments(ctx, portal.ID, authorID, page, pageSize)
+}
+
+func (s *Service) listContributorComments(ctx context.Context, portalID, authorID uuid.UUID, page, pageSize int) (CoreContributorCommentsPage, error) {
+	exists, err := s.repo.ContributorExists(ctx, portalID, authorID)
+	if err != nil {
+		return CoreContributorCommentsPage{}, err
+	}
+	if !exists {
+		return CoreContributorCommentsPage{}, ErrNotFound
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = defaultContributorCommentsPageSize
+	}
+	if pageSize > maxContributorCommentsPageSize {
+		pageSize = maxContributorCommentsPageSize
+	}
+	return s.repo.ListContributorComments(ctx, CoreListContributorCommentsInput{
+		PortalID: portalID,
+		AuthorID: authorID,
+		Page:     page,
+		PageSize: pageSize,
+	})
+}
+
 func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewerID uuid.UUID, status string, page, pageSize int) (CoreItemsPage, error) {
 	return s.ListItems(ctx, CoreListItemsInput{
 		WorkspaceID: workspaceID,
@@ -271,9 +342,34 @@ func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBo
 	return s.repo.CreateBoard(ctx, input)
 }
 
+func (s *Service) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error) {
+	if workspaceID == uuid.Nil || boardID == uuid.Nil {
+		return nil, invalidInput("workspace and board ids are required")
+	}
+	return s.repo.ListBoardReviewers(ctx, workspaceID, boardID)
+}
+
+func (s *Service) SetBoardReviewer(ctx context.Context, input CoreBoardReviewerInput) (CoreBoardReviewer, error) {
+	if input.WorkspaceID == uuid.Nil || input.BoardID == uuid.Nil || input.UserID == uuid.Nil {
+		return CoreBoardReviewer{}, invalidInput("workspace, board, and user ids are required")
+	}
+	input.EmailFrequency = strings.ToLower(strings.TrimSpace(input.EmailFrequency))
+	if !isValidReviewerEmailFrequency(input.EmailFrequency) {
+		return CoreBoardReviewer{}, invalidInput("email frequency must be off, daily, or weekly")
+	}
+	return s.repo.SetBoardReviewer(ctx, input)
+}
+
 func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error) {
 	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.BoardID == uuid.Nil || input.AuthorID == uuid.Nil {
 		return CoreItem{}, invalidInput("workspace, portal, board, and author are required")
+	}
+	input.Source = strings.ToLower(strings.TrimSpace(input.Source))
+	if input.Source == "" {
+		input.Source = SubmissionSourceInternal
+	}
+	if !isValidSubmissionSource(input.Source) {
+		return CoreItem{}, invalidInput("unsupported feedback submission source")
 	}
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
@@ -319,6 +415,7 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		AuthorID:    input.AuthorID,
 		Title:       input.Title,
 		Description: input.Description,
+		Source:      SubmissionSourcePortal,
 	})
 }
 
@@ -658,6 +755,24 @@ func normalizeSlug(value string) string {
 func isValidStatus(status string) bool {
 	switch status {
 	case StatusPending, StatusReviewing, StatusPlanned, StatusInProgress, StatusCompleted, StatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidSubmissionSource(source string) bool {
+	switch source {
+	case SubmissionSourceInternal, SubmissionSourcePortal, SubmissionSourceWidget, SubmissionSourceIntegration:
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidReviewerEmailFrequency(frequency string) bool {
+	switch frequency {
+	case EmailFrequencyOff, EmailFrequencyDaily, EmailFrequencyWeekly:
 		return true
 	default:
 		return false

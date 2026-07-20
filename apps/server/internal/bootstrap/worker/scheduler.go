@@ -126,6 +126,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"0 * * * *", // Hourly; each recipient is evaluated in their local timezone
+		asynq.NewTask(tasks.TypeFeedbackDigestEmail, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register feedback digest email task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"0 1 * * 0", // Sunday 01:00 AM
 		asynq.NewTask(tasks.TypeWorkspaceInactivityWarning, nil),
 		asynq.Queue("notifications"),

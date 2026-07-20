@@ -1,4 +1,6 @@
 import type {
+  PublicContributor,
+  PublicContributorCommentsPage,
   PublicFeedbackStoryLink,
   PublicPortal,
   PublicPortalWorkspace,
@@ -27,6 +29,7 @@ type ApiBoard = {
 export type ApiFeedbackItem = {
   id: string;
   boardId: string;
+  authorId: string;
   authorName: string;
   authorAvatar?: string | null;
   title: string;
@@ -47,6 +50,37 @@ type ApiFeedbackComment = {
   authorAvatar?: string | null;
   body: string;
   createdAt: string;
+};
+
+export type ApiContributor = {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  joinedAt: string;
+  stats: {
+    feedbackCount: number;
+    commentCount: number;
+    voteScore: number;
+  };
+};
+
+export type ApiContributorCommentsPage = {
+  comments: {
+    id: string;
+    body: string;
+    createdAt: string;
+    feedback: {
+      id: string;
+      title: string;
+      slug: string;
+    };
+  }[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 type ApiFeedbackStoryLink = {
@@ -87,6 +121,28 @@ const dateLabel = (value: string) => {
   });
 };
 
+export const toPublicContributor = (
+  contributor: ApiContributor,
+): PublicContributor => ({
+  id: contributor.id,
+  name: contributor.name,
+  avatarUrl: contributor.avatarUrl,
+  joinedAt: contributor.joinedAt,
+  stats: contributor.stats,
+});
+
+export const toPublicContributorCommentsPage = (
+  page: ApiContributorCommentsPage,
+): PublicContributorCommentsPage => ({
+  comments: page.comments.map((comment) => ({
+    id: comment.id,
+    body: comment.body,
+    createdAtLabel: dateLabel(comment.createdAt),
+    feedback: comment.feedback,
+  })),
+  pagination: page.pagination,
+});
+
 export const toPublicRequest = (
   item: ApiFeedbackItem,
 ): PublicPortal["requests"][number] => {
@@ -102,6 +158,7 @@ export const toPublicRequest = (
 
   return {
     id: item.id,
+    authorId: item.authorId,
     slug: item.slug,
     title: item.title,
     description: item.description,

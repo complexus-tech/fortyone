@@ -45,6 +45,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc("overdue:stories:email", cleanupHandlers.HandleOverdueStoriesEmail)
 	mux.HandleFunc("overdue:objectives:email", cleanupHandlers.HandleObjectiveOverdueEmail)
 	mux.HandleFunc(tasks.TypeWeeklyDigestEmail, cleanupHandlers.HandleWeeklyDigestEmail)
+	mux.HandleFunc(tasks.TypeFeedbackDigestEmail, cleanupHandlers.HandleFeedbackDigestEmail)
 	mux.HandleFunc(tasks.TypeDisableInactiveAutomation, cleanupHandlers.HandleDisableInactiveAutomation)
 
 	// Lifecycle management handlers

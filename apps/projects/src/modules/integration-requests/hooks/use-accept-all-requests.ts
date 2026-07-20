@@ -14,11 +14,11 @@ export const useAcceptAllIntegrationRequests = () => {
       acceptAllIntegrationRequestsAction(teamId, workspaceSlug),
     onSuccess: (res) => {
       if (res.error?.message) {
-        toast.error("Requests", { description: res.error.message });
+        toast.error("Intake", { description: res.error.message });
         return;
       }
-      toast.success("Requests accepted", {
-        description: `${res.data?.count ?? 0} request${res.data?.count === 1 ? "" : "s"} accepted`,
+      toast.success("Intake items accepted", {
+        description: `${res.data?.count ?? 0} intake item${res.data?.count === 1 ? "" : "s"} accepted`,
       });
     },
     onSettled: () => {

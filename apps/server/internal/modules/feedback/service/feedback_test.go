@@ -3,6 +3,7 @@ package feedback
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -14,16 +15,23 @@ import (
 )
 
 type repoStub struct {
-	portals         []CorePortal
-	boards          []CoreBoard
-	items           []CoreItem
-	storyLinks      []CoreStoryLink
-	linkStoryErr    error
-	linkStoryWinner *CoreStoryLink
-	statusID        uuid.UUID
-	createdItems    []CoreItemInput
-	createdPortals  []CorePortalInput
-	reads           map[string]time.Time
+	portals                    []CorePortal
+	boards                     []CoreBoard
+	items                      []CoreItem
+	storyLinks                 []CoreStoryLink
+	linkStoryErr               error
+	linkStoryWinner            *CoreStoryLink
+	statusID                   uuid.UUID
+	createdItems               []CoreItemInput
+	createdPortals             []CorePortalInput
+	reviewers                  []CoreBoardReviewer
+	reviewerInputs             []CoreBoardReviewerInput
+	reads                      map[string]time.Time
+	contributors               []CoreContributor
+	contributorPortals         map[uuid.UUID]uuid.UUID
+	contributorComments        []CoreContributorComment
+	contributorCommentsHasMore bool
+	contributorCommentInputs   []CoreListContributorCommentsInput
 }
 
 func feedbackReadKey(itemID, userID uuid.UUID) string {
@@ -105,6 +113,22 @@ func (r *repoStub) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreB
 	return board, nil
 }
 
+func (r *repoStub) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error) {
+	return append([]CoreBoardReviewer(nil), r.reviewers...), nil
+}
+
+func (r *repoStub) SetBoardReviewer(ctx context.Context, input CoreBoardReviewerInput) (CoreBoardReviewer, error) {
+	r.reviewerInputs = append(r.reviewerInputs, input)
+	reviewer := CoreBoardReviewer{
+		UserID:         input.UserID,
+		Name:           "Ada Lovelace",
+		Email:          "ada@example.com",
+		Role:           "member",
+		EmailFrequency: input.EmailFrequency,
+	}
+	return reviewer, nil
+}
+
 func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error) {
 	result := make([]CoreItem, 0, len(r.items))
 	for _, item := range r.items {
@@ -122,6 +146,37 @@ func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (Cor
 		result = append(result, item)
 	}
 	return CoreItemsPage{Items: result, HasMore: false}, nil
+}
+
+func (r *repoStub) GetContributor(ctx context.Context, portalID, authorID uuid.UUID) (CoreContributor, error) {
+	for _, contributor := range r.contributors {
+		if contributor.ID != authorID {
+			continue
+		}
+		if scopedPortalID, ok := r.contributorPortals[authorID]; ok && scopedPortalID != portalID {
+			continue
+		}
+		return contributor, nil
+	}
+	return CoreContributor{}, sql.ErrNoRows
+}
+
+func (r *repoStub) ContributorExists(ctx context.Context, portalID, authorID uuid.UUID) (bool, error) {
+	_, err := r.GetContributor(ctx, portalID, authorID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (r *repoStub) ListContributorComments(ctx context.Context, input CoreListContributorCommentsInput) (CoreContributorCommentsPage, error) {
+	r.contributorCommentInputs = append(r.contributorCommentInputs, input)
+	return CoreContributorCommentsPage{
+		Comments: append([]CoreContributorComment(nil), r.contributorComments...),
+		Page:     input.Page,
+		PageSize: input.PageSize,
+		HasMore:  r.contributorCommentsHasMore,
+	}, nil
 }
 
 func (r *repoStub) ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error) {
@@ -358,6 +413,98 @@ func (s *storyServiceStub) Delete(ctx context.Context, id uuid.UUID, workspaceID
 	return nil
 }
 
+func TestGetPublicContributorReturnsPortalScopedStats(t *testing.T) {
+	t.Parallel()
+
+	portalID := uuid.New()
+	authorID := uuid.New()
+	joinedAt := time.Now().AddDate(-1, 0, 0)
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+		contributors: []CoreContributor{{
+			ID:       authorID,
+			Name:     "Ada Lovelace",
+			JoinedAt: joinedAt,
+			Stats: CoreContributorStats{
+				FeedbackCount: 5,
+				CommentCount:  8,
+				VoteScore:     -2,
+			},
+		}},
+		contributorPortals: map[uuid.UUID]uuid.UUID{authorID: portalID},
+	}
+
+	contributor, err := New(repo, nil).GetPublicContributor(context.Background(), " city-roads ", authorID)
+
+	require.NoError(t, err)
+	require.Equal(t, authorID, contributor.ID)
+	require.Equal(t, "Ada Lovelace", contributor.Name)
+	require.Equal(t, 5, contributor.Stats.FeedbackCount)
+	require.Equal(t, 8, contributor.Stats.CommentCount)
+	require.Equal(t, -2, contributor.Stats.VoteScore)
+	require.Equal(t, joinedAt, contributor.JoinedAt)
+}
+
+func TestListPublicContributorCommentsNormalizesPagination(t *testing.T) {
+	t.Parallel()
+
+	portalID := uuid.New()
+	authorID := uuid.New()
+	commentID := uuid.New()
+	repo := &repoStub{
+		portals:            []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+		contributors:       []CoreContributor{{ID: authorID, Name: "Ada Lovelace"}},
+		contributorPortals: map[uuid.UUID]uuid.UUID{authorID: portalID},
+		contributorComments: []CoreContributorComment{{
+			ID:            commentID,
+			ItemID:        uuid.New(),
+			FeedbackTitle: "Repair the crossing",
+			FeedbackSlug:  "repair-the-crossing",
+			Body:          "This would make the crossing safer.",
+		}},
+		contributorCommentsHasMore: true,
+	}
+
+	page, err := New(repo, nil).ListPublicContributorComments(context.Background(), "city-roads", authorID, 0, 500)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, page.Page)
+	require.Equal(t, 50, page.PageSize)
+	require.True(t, page.HasMore)
+	require.Len(t, page.Comments, 1)
+	require.Equal(t, commentID, page.Comments[0].ID)
+	require.Len(t, repo.contributorCommentInputs, 1)
+	require.Equal(t, portalID, repo.contributorCommentInputs[0].PortalID)
+	require.Equal(t, authorID, repo.contributorCommentInputs[0].AuthorID)
+	require.Equal(t, 1, repo.contributorCommentInputs[0].Page)
+	require.Equal(t, 50, repo.contributorCommentInputs[0].PageSize)
+}
+
+func TestPublicContributorMethodsRejectNilAuthorID(t *testing.T) {
+	t.Parallel()
+
+	service := New(&repoStub{}, nil)
+
+	_, profileErr := service.GetPublicContributor(context.Background(), "city-roads", uuid.Nil)
+	_, commentsErr := service.ListPublicContributorComments(context.Background(), "city-roads", uuid.Nil, 1, 20)
+
+	require.ErrorIs(t, profileErr, ErrInvalidInput)
+	require.ErrorIs(t, commentsErr, ErrInvalidInput)
+}
+
+func TestListPublicContributorCommentsRejectsUnknownContributor(t *testing.T) {
+	t.Parallel()
+
+	portalID := uuid.New()
+	service := New(&repoStub{
+		portals: []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+	}, nil)
+
+	_, err := service.ListPublicContributorComments(context.Background(), "city-roads", uuid.New(), 1, 20)
+
+	require.ErrorIs(t, err, ErrNotFound)
+}
+
 func TestListPortalsCreatesWorkspaceDefaultPortalWhenMissing(t *testing.T) {
 	workspaceID := uuid.New()
 	repo := &repoStub{}
@@ -586,6 +733,22 @@ func TestCreateItemDefaultsToPendingAndGeneratesSlug(t *testing.T) {
 	require.Equal(t, StatusPending, item.Status)
 	require.Regexp(t, `^repair-school-zone-signal-timing-[a-f0-9]{8}$`, item.Slug)
 	require.Equal(t, item.Slug, repo.createdItems[0].Slug)
+	require.Equal(t, SubmissionSourceInternal, repo.createdItems[0].Source)
+}
+
+func TestCreateItemRejectsUnsupportedSubmissionSource(t *testing.T) {
+	service := New(&repoStub{}, nil)
+
+	_, err := service.CreateItem(context.Background(), CoreItemInput{
+		WorkspaceID: uuid.New(),
+		PortalID:    uuid.New(),
+		BoardID:     uuid.New(),
+		AuthorID:    uuid.New(),
+		Title:       "Repair school-zone signal timing",
+		Source:      "email",
+	})
+
+	require.ErrorContains(t, err, "unsupported feedback submission source")
 }
 
 func TestCreateItemPreservesProvidedSlug(t *testing.T) {
@@ -635,6 +798,38 @@ func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
 	require.Equal(t, portalID, item.PortalID)
 	require.Equal(t, authorID, item.AuthorID)
 	require.Equal(t, workspaceID, repo.createdItems[0].WorkspaceID)
+	require.Equal(t, SubmissionSourcePortal, repo.createdItems[0].Source)
+}
+
+func TestSetBoardReviewerNormalizesEmailFrequency(t *testing.T) {
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	reviewer, err := service.SetBoardReviewer(context.Background(), CoreBoardReviewerInput{
+		WorkspaceID:    uuid.New(),
+		BoardID:        uuid.New(),
+		UserID:         uuid.New(),
+		EmailFrequency: " Weekly ",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, EmailFrequencyWeekly, reviewer.EmailFrequency)
+	require.Equal(t, EmailFrequencyWeekly, repo.reviewerInputs[0].EmailFrequency)
+}
+
+func TestSetBoardReviewerRejectsUnsupportedEmailFrequency(t *testing.T) {
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	_, err := service.SetBoardReviewer(context.Background(), CoreBoardReviewerInput{
+		WorkspaceID:    uuid.New(),
+		BoardID:        uuid.New(),
+		UserID:         uuid.New(),
+		EmailFrequency: "hourly",
+	})
+
+	require.ErrorContains(t, err, "email frequency must be off, daily, or weekly")
+	require.Empty(t, repo.reviewerInputs)
 }
 
 func TestPublicFeedbackRejectsBoardFromAnotherPortal(t *testing.T) {

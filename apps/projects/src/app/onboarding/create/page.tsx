@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   description: "Create a new workspace",
 };
 
-export default function CreateWorkspacePage() {
-  return <CreateWorkspace />;
+export default async function CreateWorkspacePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+
+  return <CreateWorkspace callbackUrl={callbackUrl} />;
 }

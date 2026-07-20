@@ -60,4 +60,19 @@ describe("workspace public portal routes", () => {
       ),
     ).toBe("/portal/art-circles/feedback/improve-mobile-navigation");
   });
+
+  it("keeps public contributor profiles on the workspace subdomain", () => {
+    expect(
+      getInternalPublicPath(
+        "/people/00000000-0000-4000-8000-000000000001",
+        "art-circles",
+      ),
+    ).toBe("/portal/art-circles/people/00000000-0000-4000-8000-000000000001");
+    expect(
+      getCanonicalPublicPath(
+        "/portal/art-circles/people/00000000-0000-4000-8000-000000000001",
+        "art-circles",
+      ),
+    ).toBe("/people/00000000-0000-4000-8000-000000000001");
+  });
 });

@@ -199,6 +199,19 @@ func (c *CleanupHandlers) HandleWeeklyDigestEmail(ctx context.Context, t *asynq.
 	return nil
 }
 
+// HandleFeedbackDigestEmail processes due daily and weekly feedback digests.
+func (c *CleanupHandlers) HandleFeedbackDigestEmail(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing FeedbackDigestEmail task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessFeedbackDigestEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+		c.log.Error(ctx, "Failed to process feedback digest email", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("feedback digest email failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed FeedbackDigestEmail task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleWorkspaceInactivityWarning processes the workspace inactivity warning task
 func (c *CleanupHandlers) HandleWorkspaceInactivityWarning(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WorkspaceInactivityWarning task", "task_id", t.ResultWriter().TaskID())

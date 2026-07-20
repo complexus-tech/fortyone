@@ -3,36 +3,41 @@ import { Badge, Box, Button, Container, Text } from "ui";
 import { CommandIcon, SettingsIcon, TeamIcon } from "icons";
 import { Logo } from "@/components/ui";
 import type { User, Workspace } from "@/types";
+import {
+  getOnboardingWorkspaceUrl,
+  withOnboardingCallbackUrl,
+} from "@/modules/onboarding/routing";
 import { ActionCard } from "./components/action-card";
-
-const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
 const getRedirectUrl = (
   workspaces: Workspace[],
   lastUsedWorkspaceId?: string,
+  callbackUrl?: string,
 ) => {
   const activeWorkspace =
-    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ||
-    workspaces[0];
+    workspaces.find((workspace) => workspace.id === lastUsedWorkspaceId) ??
+    workspaces.at(0);
   if (!activeWorkspace) {
-    return "/onboarding/create";
+    return withOnboardingCallbackUrl("/onboarding/create", callbackUrl);
   }
 
-  if (isFortyOneApp) {
-    return `https://${activeWorkspace.slug}.fortyone.app/my-work`;
-  }
-
-  return `/${activeWorkspace.slug}/my-work`;
+  return getOnboardingWorkspaceUrl(activeWorkspace.slug, callbackUrl);
 };
 
 export const Welcome = ({
+  callbackUrl,
   workspaces,
   profile,
 }: {
+  callbackUrl?: string;
   workspaces: Workspace[];
   profile: User;
 }) => {
-  const redirectUrl = getRedirectUrl(workspaces, profile?.lastUsedWorkspaceId);
+  const redirectUrl = getRedirectUrl(
+    workspaces,
+    profile.lastUsedWorkspaceId,
+    callbackUrl,
+  );
 
   return (
     <Container className="max-w-md md:max-w-xl">
@@ -87,8 +92,8 @@ export const Welcome = ({
         className="mt-4 md:py-3"
         color="invert"
         fullWidth
-        size="lg"
         href={redirectUrl}
+        size="lg"
       >
         Get Started
       </Button>

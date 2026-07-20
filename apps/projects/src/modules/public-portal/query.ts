@@ -1,8 +1,17 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getApiUrl } from "@/lib/api-url";
-import { toPublicPortal, type ApiPortal } from "./data";
+import {
+  toPublicContributor,
+  toPublicContributorCommentsPage,
+  toPublicPortal,
+  type ApiContributor,
+  type ApiContributorCommentsPage,
+  type ApiPortal,
+} from "./data";
 import type {
+  PublicContributor,
+  PublicContributorCommentsPage,
   PublicPortal,
   PublicPortalWorkspace,
   PublicRequestStatus,
@@ -13,6 +22,7 @@ type ApiResponse<T> = {
 };
 
 export type PublicPortalQuery = {
+  authorId?: string;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -52,8 +62,17 @@ const getWorkspaceSlugFromHost = async () => {
   return subdomain && subdomain !== "cloud" ? subdomain : null;
 };
 
+const getPublicFeedbackPath = async (portalSlug: string) => {
+  const workspaceSlug = await getWorkspaceSlugFromHost();
+
+  return workspaceSlug
+    ? `/workspaces/${workspaceSlug}/portals/${portalSlug}/feedback`
+    : `/portals/${portalSlug}/feedback`;
+};
+
 const buildQuery = (query: PublicPortalQuery) => {
   const params = new URLSearchParams();
+  if (query.authorId) params.set("authorId", query.authorId);
   if (query.page) params.set("page", String(query.page));
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.search?.trim()) params.set("search", query.search.trim());
@@ -113,6 +132,69 @@ export const getPublicPortal = async (
   return toPublicPortal(feedbackPayload.data, workspacePayload?.data);
 };
 
+export const getPublicContributor = async (
+  portalSlug: string,
+  authorId: string,
+): Promise<PublicContributor> => {
+  const apiUrl = getApiUrl();
+
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to load a contributor");
+  }
+
+  const feedbackPath = await getPublicFeedbackPath(portalSlug);
+  const response = await fetch(
+    `${apiUrl}${feedbackPath}/contributors/${authorId}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to load public feedback contributor",
+      response.status,
+    );
+  }
+
+  const payload = (await response.json()) as ApiResponse<ApiContributor>;
+  return toPublicContributor(payload.data);
+};
+
+export const getPublicContributorComments = async (
+  portalSlug: string,
+  authorId: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PublicContributorCommentsPage> => {
+  const apiUrl = getApiUrl();
+
+  if (!apiUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is required to load contributor comments",
+    );
+  }
+
+  const feedbackPath = await getPublicFeedbackPath(portalSlug);
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const response = await fetch(
+    `${apiUrl}${feedbackPath}/contributors/${authorId}/comments?${params.toString()}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to load public feedback contributor comments",
+      response.status,
+    );
+  }
+
+  const payload =
+    (await response.json()) as ApiResponse<ApiContributorCommentsPage>;
+  return toPublicContributorCommentsPage(payload.data);
+};
+
 export const getPublicPortalOrNotFound = async (
   portalSlug: string,
   query: PublicPortalQuery = {},
@@ -120,6 +202,21 @@ export const getPublicPortalOrNotFound = async (
 ) => {
   try {
     return await getPublicPortal(portalSlug, query, cachePolicy);
+  } catch (error) {
+    if (isPublicPortalNotFoundError(error)) {
+      notFound();
+    }
+
+    throw error;
+  }
+};
+
+export const getPublicContributorOrNotFound = async (
+  portalSlug: string,
+  authorId: string,
+) => {
+  try {
+    return await getPublicContributor(portalSlug, authorId);
   } catch (error) {
     if (isPublicPortalNotFoundError(error)) {
       notFound();

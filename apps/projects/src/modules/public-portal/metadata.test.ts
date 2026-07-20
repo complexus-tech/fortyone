@@ -29,6 +29,53 @@ describe("public portal metadata", () => {
       }),
     );
     expect(metadata.robots).toEqual({ follow: true, index: true });
+    expect(metadata.icons).toEqual({
+      apple: "/complexus.png",
+      icon: "/complexus.png",
+      shortcut: "/complexus.png",
+    });
+  });
+
+  it("uses the organization logo for portal icons when one is available", () => {
+    const logoUrl = "https://cdn.example.com/city-roads-logo.png";
+    const metadata = buildPublicPortalMetadata(
+      {
+        ...publicPortalFixture,
+        workspace: {
+          ...publicPortalFixture.workspace,
+          avatarUrl: logoUrl,
+        },
+      },
+      new URL("https://city-roads.fortyone.app/feedback"),
+    );
+
+    expect(metadata.icons).toEqual({
+      apple: logoUrl,
+      icon: logoUrl,
+      shortcut: logoUrl,
+    });
+  });
+
+  it("falls back to the peach portal icon when no logo is available", () => {
+    const fallbackUrl = new URL(
+      "https://city-roads.fortyone.app/api/public-portal/favicon",
+    );
+    const metadata = buildPublicPortalMetadata(
+      {
+        ...publicPortalFixture,
+        workspace: {
+          ...publicPortalFixture.workspace,
+          avatarUrl: null,
+        },
+      },
+      new URL("https://city-roads.fortyone.app/feedback"),
+    );
+
+    expect(metadata.icons).toEqual({
+      apple: fallbackUrl,
+      icon: fallbackUrl,
+      shortcut: fallbackUrl,
+    });
   });
 
   it("uses the clean feedback path for workspace subdomains", () => {

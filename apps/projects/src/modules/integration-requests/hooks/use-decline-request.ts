@@ -13,10 +13,10 @@ export const useDeclineIntegrationRequest = () => {
       declineIntegrationRequestAction(requestId, workspaceSlug),
     onSuccess: (res) => {
       if (res.error?.message) {
-        toast.error("Request", { description: res.error.message });
+        toast.error("Intake item", { description: res.error.message });
         return;
       }
-      toast.success("Request declined");
+      toast.success("Intake item declined");
     },
     onSettled: () => {
       queryClient.invalidateQueries({

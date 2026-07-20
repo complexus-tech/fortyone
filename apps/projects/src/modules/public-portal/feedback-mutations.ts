@@ -100,6 +100,7 @@ const makeOptimisticRequest = ({
 
   return {
     id,
+    authorId: viewer.id,
     slug: id,
     title,
     description,

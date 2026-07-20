@@ -1,6 +1,7 @@
 const PUBLIC_PREFIXES = new Set([
   "/portal",
   "/feedback",
+  "/people",
   "/roadmap",
   "/updates",
 ]);
@@ -25,6 +26,7 @@ export const getCanonicalPublicPath = (
   for (const section of [
     "account",
     "feedback",
+    "people",
     "roadmap",
     "updates",
   ] as const) {
@@ -44,6 +46,7 @@ export const getInternalPublicPath = (
   for (const section of [
     "account",
     "feedback",
+    "people",
     "roadmap",
     "updates",
   ] as const) {

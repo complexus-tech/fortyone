@@ -20,6 +20,15 @@ const (
 	RelationshipCreatedFrom = "created_from"
 	RelationshipLinked      = "linked"
 	RelationshipSolves      = "solves"
+
+	SubmissionSourceInternal    = "internal"
+	SubmissionSourcePortal      = "portal"
+	SubmissionSourceWidget      = "widget"
+	SubmissionSourceIntegration = "integration"
+
+	EmailFrequencyOff    = "off"
+	EmailFrequencyDaily  = "daily"
+	EmailFrequencyWeekly = "weekly"
 )
 
 type CorePortal struct {
@@ -80,6 +89,30 @@ type CoreComment struct {
 	UpdatedAt    time.Time
 }
 
+type CoreContributorStats struct {
+	FeedbackCount int
+	CommentCount  int
+	VoteScore     int
+}
+
+type CoreContributor struct {
+	ID        uuid.UUID
+	Name      string
+	AvatarURL *string
+	JoinedAt  time.Time
+	Stats     CoreContributorStats
+}
+
+type CoreContributorComment struct {
+	ID            uuid.UUID
+	ItemID        uuid.UUID
+	FeedbackTitle string
+	FeedbackSlug  string
+	Body          string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
 type CoreStoryLink struct {
 	ID              uuid.UUID
 	WorkspaceID     uuid.UUID
@@ -109,6 +142,14 @@ type CoreTeamSummary struct {
 	Enabled     bool
 	TotalCount  int
 	UnreadCount int
+}
+
+type CoreBoardReviewer struct {
+	UserID         uuid.UUID
+	Name           string
+	Email          string
+	Role           string
+	EmailFrequency string
 }
 
 type CorePortalSnapshot struct {
@@ -149,6 +190,14 @@ type CoreItemInput struct {
 	Title       string
 	Description string
 	Slug        string
+	Source      string
+}
+
+type CoreBoardReviewerInput struct {
+	WorkspaceID    uuid.UUID
+	BoardID        uuid.UUID
+	UserID         uuid.UUID
+	EmailFrequency string
 }
 
 type CorePublicItemInput struct {
@@ -230,7 +279,12 @@ type Repository interface {
 	ListBoards(ctx context.Context, portalID uuid.UUID) ([]CoreBoard, error)
 	GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (CoreBoard, error)
 	CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error)
+	ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error)
+	SetBoardReviewer(ctx context.Context, input CoreBoardReviewerInput) (CoreBoardReviewer, error)
 	ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error)
+	GetContributor(ctx context.Context, portalID, authorID uuid.UUID) (CoreContributor, error)
+	ContributorExists(ctx context.Context, portalID, authorID uuid.UUID) (bool, error)
+	ListContributorComments(ctx context.Context, input CoreListContributorCommentsInput) (CoreContributorCommentsPage, error)
 	ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error)
 	ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error)
 	ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error)
@@ -256,6 +310,7 @@ type CoreListItemsInput struct {
 	PortalID    uuid.UUID
 	TeamID      *uuid.UUID
 	ViewerID    uuid.UUID
+	AuthorID    uuid.UUID
 	Status      string
 	BoardID     *uuid.UUID
 	Search      string
@@ -267,6 +322,20 @@ type CoreListItemsInput struct {
 type CoreItemsPage struct {
 	Items   []CoreItem
 	HasMore bool
+}
+
+type CoreListContributorCommentsInput struct {
+	PortalID uuid.UUID
+	AuthorID uuid.UUID
+	Page     int
+	PageSize int
+}
+
+type CoreContributorCommentsPage struct {
+	Comments []CoreContributorComment
+	Page     int
+	PageSize int
+	HasMore  bool
 }
 
 type StoryService interface {

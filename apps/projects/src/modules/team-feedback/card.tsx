@@ -11,8 +11,9 @@ import {
   NotificationsUnreadIcon,
   RequestsIcon,
 } from "icons";
-import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
+import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, Dot } from "@/components/ui";
+import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
 import { useWorkspacePath } from "@/hooks";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
 import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
@@ -76,8 +77,7 @@ export const TeamFeedbackCard = ({
               "border-border hover:bg-surface-muted block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
               {
                 "bg-surface-muted": isActive,
-                "border-l-primary dark:border-l-primary border-l-[1.5px]":
-                  isUnread,
+                [LIST_ITEM_ATTENTION_BORDER]: isUnread,
               },
             )}
           >
@@ -94,9 +94,15 @@ export const TeamFeedbackCard = ({
             </Flex>
             <Flex align="center" gap={3} justify="between">
               <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                <Avatar
+                  className="shrink-0"
+                  name={feedback.authorName}
+                  size="xs"
+                  src={feedback.authorAvatar}
+                />
                 <Dot className="size-3" color={feedback.board.color} />
                 <Text className="line-clamp-1" color="muted">
-                  {feedback.authorName} in {feedback.board.name}
+                  in {feedback.board.name}
                 </Text>
               </Flex>
               <FeedbackStatus status={feedback.status} />

@@ -70,7 +70,7 @@ export const ListIntegrationRequests = () => {
               <Flex align="center" className="h-full px-6" justify="center">
                 <Box>
                   <Text align="center" className="mb-3" fontSize="xl">
-                    No requests
+                    No intake items
                   </Text>
                   <Text align="center" color="muted">
                     New integration items will appear here before becoming

@@ -17,6 +17,7 @@ const getQuery = (request: NextRequest): PublicPortalQuery => {
 
   return {
     ...parsePublicPortalFilters(searchParams),
+    authorId: searchParams.get("authorId") ?? undefined,
     page: Number.isFinite(page) ? page : 1,
     pageSize: Number.isFinite(pageSize) ? pageSize : 20,
   };

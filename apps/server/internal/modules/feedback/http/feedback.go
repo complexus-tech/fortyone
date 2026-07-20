@@ -3,6 +3,7 @@ package feedbackhttp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -160,6 +161,113 @@ func (h *Handlers) GetWorkspacePortal(ctx context.Context, w http.ResponseWriter
 	return web.Respond(ctx, w, toAppPortalSnapshot(portal), http.StatusOK)
 }
 
+func (h *Handlers) GetPublicContributor(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	authorID, err := publicContributorID(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	contributor, err := h.feedback.GetPublicContributor(ctx, web.Params(r, "portalSlug"), authorID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return h.respondPublicContributor(ctx, w, contributor)
+}
+
+func (h *Handlers) GetWorkspacePublicContributor(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	authorID, err := publicContributorID(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	contributor, err := h.feedback.GetWorkspacePublicContributor(
+		ctx,
+		web.Params(r, "workspaceSlug"),
+		web.Params(r, "portalSlug"),
+		authorID,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return h.respondPublicContributor(ctx, w, contributor)
+}
+
+func (h *Handlers) respondPublicContributor(ctx context.Context, w http.ResponseWriter, contributor feedback.CoreContributor) error {
+	contributor.AvatarURL = h.resolveAuthorAvatar(ctx, contributor.AvatarURL, make(map[string]*string))
+	return web.Respond(ctx, w, toAppContributor(contributor), http.StatusOK)
+}
+
+func (h *Handlers) ListPublicContributorComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	authorID, err := publicContributorID(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	page, pageSize := publicContributorPagination(r)
+	comments, err := h.feedback.ListPublicContributorComments(
+		ctx,
+		web.Params(r, "portalSlug"),
+		authorID,
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return respondPublicContributorComments(ctx, w, comments)
+}
+
+func (h *Handlers) ListWorkspacePublicContributorComments(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	authorID, err := publicContributorID(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	page, pageSize := publicContributorPagination(r)
+	comments, err := h.feedback.ListWorkspacePublicContributorComments(
+		ctx,
+		web.Params(r, "workspaceSlug"),
+		web.Params(r, "portalSlug"),
+		authorID,
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return respondPublicContributorComments(ctx, w, comments)
+}
+
+func respondPublicContributorComments(ctx context.Context, w http.ResponseWriter, page feedback.CoreContributorCommentsPage) error {
+	comments := make([]AppContributorComment, 0, len(page.Comments))
+	for _, comment := range page.Comments {
+		comments = append(comments, toAppContributorComment(comment))
+	}
+	nextPage := 0
+	if page.HasMore {
+		nextPage = page.Page + 1
+	}
+	return web.Respond(ctx, w, AppContributorCommentsResponse{
+		Comments: comments,
+		Pagination: AppItemsPagination{
+			Page:     page.Page,
+			PageSize: page.PageSize,
+			HasMore:  page.HasMore,
+			NextPage: nextPage,
+		},
+	}, http.StatusOK)
+}
+
+func publicContributorID(r *http.Request) (uuid.UUID, error) {
+	authorID, err := uuid.Parse(web.Params(r, "authorId"))
+	if err != nil || authorID == uuid.Nil {
+		return uuid.Nil, fmt.Errorf("%w: contributor id must be a non-nil UUID", feedback.ErrInvalidInput)
+	}
+	return authorID, nil
+}
+
+func publicContributorPagination(r *http.Request) (int, int) {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	return page, pageSize
+}
+
 func (h *Handlers) applyItemsQuery(ctx context.Context, r *http.Request, portal *feedback.CorePortalSnapshot) error {
 	query := r.URL.Query()
 	page, _ := strconv.Atoi(query.Get("page"))
@@ -178,6 +286,13 @@ func (h *Handlers) applyItemsQuery(ctx context.Context, r *http.Request, portal 
 			return err
 		}
 		input.BoardID = &parsed
+	}
+	if authorID := query.Get("authorId"); authorID != "" {
+		parsed, err := uuid.Parse(authorID)
+		if err != nil || parsed == uuid.Nil {
+			return fmt.Errorf("%w: authorId must be a non-nil UUID", feedback.ErrInvalidInput)
+		}
+		input.AuthorID = parsed
 	}
 	items, err := h.feedback.ListItems(ctx, input)
 	if err != nil {
@@ -437,6 +552,55 @@ func (h *Handlers) CreateBoard(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	return web.Respond(ctx, w, toAppBoard(board), http.StatusCreated)
+}
+
+func (h *Handlers) ListBoardReviewers(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	boardID, err := uuid.Parse(web.Params(r, "boardId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	reviewers, err := h.feedback.ListBoardReviewers(ctx, workspace.ID, boardID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	response := make([]AppBoardReviewer, 0, len(reviewers))
+	for _, reviewer := range reviewers {
+		response = append(response, toAppBoardReviewer(reviewer))
+	}
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
+func (h *Handlers) SetBoardReviewer(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	boardID, err := uuid.Parse(web.Params(r, "boardId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	userID, err := uuid.Parse(web.Params(r, "userId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppSetBoardReviewer
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	reviewer, err := h.feedback.SetBoardReviewer(ctx, feedback.CoreBoardReviewerInput{
+		WorkspaceID:    workspace.ID,
+		BoardID:        boardID,
+		UserID:         userID,
+		EmailFrequency: input.EmailFrequency,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, toAppBoardReviewer(reviewer), http.StatusOK)
 }
 
 func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -38,3 +38,17 @@ export type CreateFeedbackBoardInput = {
   name: string;
   color: string;
 };
+
+export type FeedbackReviewerEmailFrequency = "off" | "daily" | "weekly";
+
+export type FeedbackReviewer = {
+  userId: string;
+  name: string;
+  email: string;
+  role: "admin" | "member";
+  emailFrequency: FeedbackReviewerEmailFrequency;
+};
+
+export type UpdateFeedbackReviewerInput = {
+  emailFrequency: FeedbackReviewerEmailFrequency;
+};

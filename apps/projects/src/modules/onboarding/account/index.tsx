@@ -2,7 +2,7 @@ import { Box, Text } from "ui";
 import { Logo } from "@/components/ui";
 import { CreateAccountForm } from "./components/create-account-form";
 
-export const CreateAccount = () => {
+export const CreateAccount = ({ callbackUrl }: { callbackUrl?: string }) => {
   return (
     <Box className="w-full px-6 md:max-w-xl">
       <Logo asIcon />
@@ -12,7 +12,7 @@ export const CreateAccount = () => {
       <Text className="mb-6" color="muted">
         Create an account to get started.
       </Text>
-      <CreateAccountForm />
+      <CreateAccountForm callbackUrl={callbackUrl} />
     </Box>
   );
 };

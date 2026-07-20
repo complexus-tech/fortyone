@@ -13,6 +13,7 @@ import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
@@ -70,11 +71,10 @@ export const NotificationCard = ({
           >
             <Box
               className={cn(
-                "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+                "border-border hover:bg-surface-muted block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
                 {
                   "bg-surface-muted": pathname.includes(id),
-                  "border-l-primary dark:border-l-primary border-l-[1.5px]":
-                    isUnread,
+                  [LIST_ITEM_ATTENTION_BORDER]: isUnread,
                 },
               )}
             >

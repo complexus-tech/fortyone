@@ -41,12 +41,39 @@ func TestItemSelectQuerySupportsNamedPaginationParameters(t *testing.T) {
 	require.False(t, strings.Contains(boundQuery, ":"), "bound query contains an uncompiled named parameter")
 }
 
+func TestBuildListContributorCommentsQueryScopesAndPaginates(t *testing.T) {
+	portalID := uuid.New()
+	authorID := uuid.New()
+	query, params := buildListContributorCommentsQuery(feedback.CoreListContributorCommentsInput{
+		PortalID: portalID,
+		AuthorID: authorID,
+		Page:     3,
+		PageSize: 20,
+	})
+
+	require.Contains(t, query, "fi.portal_id = :portal_id")
+	require.Contains(t, query, "fc.author_id = :author_id")
+	require.Contains(t, query, "ORDER BY fc.created_at DESC, fc.id DESC")
+	require.Contains(t, query, "LIMIT :limit OFFSET :offset")
+	require.Equal(t, portalID, params["portal_id"])
+	require.Equal(t, authorID, params["author_id"])
+	require.Equal(t, 21, params["limit"])
+	require.Equal(t, 40, params["offset"])
+
+	boundQuery, args, err := sqlx.BindNamed(sqlx.DOLLAR, query, params)
+	require.NoError(t, err)
+	require.Len(t, args, 4)
+	require.False(t, strings.Contains(boundQuery, ":"), "bound query contains an uncompiled named parameter")
+}
+
 func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 	portalID := uuid.New()
 	boardID := uuid.New()
+	authorID := uuid.New()
 	query, params := buildListItemsQuery(feedback.CoreListItemsInput{
 		PortalID: portalID,
 		BoardID:  &boardID,
+		AuthorID: authorID,
 		Status:   feedback.StatusReviewing,
 		Search:   `traffic lights -closed`,
 		Sort:     "top",
@@ -57,9 +84,11 @@ func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 	require.Contains(t, query, feedbackItemSearchVector+" @@ websearch_to_tsquery('english', :search)")
 	require.Contains(t, query, projectedFeedbackStatus+" = :status")
 	require.Contains(t, query, "fi.board_id = :board_id")
+	require.Contains(t, query, "fi.author_id = :author_id")
 	require.Contains(t, query, "ORDER BY vote_count DESC, fi.created_at DESC")
 	require.Equal(t, portalID, params["portal_id"])
 	require.Equal(t, boardID, params["board_id"])
+	require.Equal(t, authorID, params["author_id"])
 	require.Equal(t, feedback.StatusReviewing, params["status"])
 	require.Equal(t, `traffic lights -closed`, params["search"])
 	require.Equal(t, 21, params["limit"])
@@ -135,6 +164,47 @@ func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
 	require.Equal(t, storyTitle, item.StoryLinks[0].StoryTitle)
 	require.True(t, item.StoryLinks[0].IsPrimary)
 	require.Equal(t, readAt, *item.ReadAt)
+}
+
+func TestToCoreBoardReviewerMapsDigestPreference(t *testing.T) {
+	userID := uuid.New()
+	reviewer := toCoreBoardReviewer(boardReviewerRow{
+		UserID:         userID,
+		Name:           "Ada Lovelace",
+		Email:          "ada@example.com",
+		Role:           "admin",
+		EmailFrequency: feedback.EmailFrequencyDaily,
+	})
+
+	require.Equal(t, userID, reviewer.UserID)
+	require.Equal(t, "Ada Lovelace", reviewer.Name)
+	require.Equal(t, "ada@example.com", reviewer.Email)
+	require.Equal(t, "admin", reviewer.Role)
+	require.Equal(t, feedback.EmailFrequencyDaily, reviewer.EmailFrequency)
+}
+
+func TestToCoreContributorMapsProfileAndNetVoteScore(t *testing.T) {
+	authorID := uuid.New()
+	joinedAt := time.Now().AddDate(-1, 0, 0)
+	avatar := "profiles/ada.webp"
+
+	contributor := toCoreContributor(contributorRow{
+		ID:            authorID,
+		Name:          "Ada Lovelace",
+		AvatarURL:     &avatar,
+		JoinedAt:      joinedAt,
+		FeedbackCount: 4,
+		CommentCount:  7,
+		VoteScore:     -3,
+	})
+
+	require.Equal(t, authorID, contributor.ID)
+	require.Equal(t, "Ada Lovelace", contributor.Name)
+	require.Equal(t, avatar, *contributor.AvatarURL)
+	require.Equal(t, joinedAt, contributor.JoinedAt)
+	require.Equal(t, 4, contributor.Stats.FeedbackCount)
+	require.Equal(t, 7, contributor.Stats.CommentCount)
+	require.Equal(t, -3, contributor.Stats.VoteScore)
 }
 
 func TestBuildListItemsQuerySortsFeedback(t *testing.T) {

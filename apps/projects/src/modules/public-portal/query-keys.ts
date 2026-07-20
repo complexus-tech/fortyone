@@ -33,6 +33,18 @@ export const publicPortalKeys = {
     [...publicPortalKeys.feedback(portalSlug), "detail"] as const,
   feedbackDetail: (portalSlug: string, requestId: string) =>
     [...publicPortalKeys.feedbackDetails(portalSlug), requestId] as const,
+  authorFeedback: (portalSlug: string, authorId: string) =>
+    [...publicPortalKeys.feedback(portalSlug), "author", authorId] as const,
+  authorProfile: (portalSlug: string, authorId: string) =>
+    [
+      ...publicPortalKeys.authorFeedback(portalSlug, authorId),
+      "profile",
+    ] as const,
+  authorComments: (portalSlug: string, authorId: string) =>
+    [
+      ...publicPortalKeys.authorFeedback(portalSlug, authorId),
+      "comments",
+    ] as const,
   notifications: (portalSlug: string) =>
     [...publicPortalKeys.portal(portalSlug), "notifications"] as const,
   notificationList: (portalSlug: string) =>

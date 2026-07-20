@@ -8,8 +8,8 @@ import {
   ArrowRight2Icon,
   BacklogIcon,
   DeleteIcon,
-  DownloadIcon,
   DragIcon,
+  IntakeIcon,
   LogoutIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
@@ -90,7 +90,7 @@ export const Team = ({
   const links = [
     {
       name: "Intake",
-      icon: <DownloadIcon className="h-[1.15rem]" />,
+      icon: <IntakeIcon className="h-[1.15rem]" />,
       href: withWorkspace(`/teams/${id}/requests`),
       count: intakeCount,
       disabled: !hasIntake,

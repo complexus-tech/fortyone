@@ -40,13 +40,13 @@ export const useUpdateIntegrationRequest = () => {
           context.previous,
         );
       }
-      toast.error("Failed to update request", {
+      toast.error("Failed to update intake item", {
         description: error.message || "Your changes were not saved",
       });
     },
     onSuccess: (res) => {
       if (res.error?.message) {
-        toast.error("Failed to update request", {
+        toast.error("Failed to update intake item", {
           description: res.error.message,
         });
       }

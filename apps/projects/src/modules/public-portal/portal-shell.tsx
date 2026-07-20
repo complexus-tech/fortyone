@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import { PublicPortalUserMenu } from "./user-menu";
 import { PublicPortalNotifications } from "./notifications-popover";
+import { getFeedbackSignupPath } from "./feedback-setup";
 import { getPortalCallbackUrl, getPortalPath } from "./utils";
 
 const navItems = [
@@ -131,5 +132,14 @@ export const PublicPortalShell = ({
     <Box className="bg-background min-h-0 flex-1 overflow-y-auto">
       {children}
     </Box>
+    <Button
+      className="bg-surface-elevated/90 shadow-shadow fixed right-4 bottom-4 z-30 h-10 border-[0.5px] px-3 shadow-lg backdrop-blur md:right-6 md:bottom-6"
+      color="tertiary"
+      href={viewer?.feedbackSetupHref ?? getFeedbackSignupPath()}
+      size="sm"
+      variant="outline"
+    >
+      Create your own board
+    </Button>
   </Box>
 );

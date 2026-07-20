@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, PriorityIcon } from "@/components/ui";
+import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
 import { useWorkspacePath } from "@/hooks";
 import type { IntegrationRequest } from "./types";
 import { useAcceptIntegrationRequest } from "./hooks/use-accept-request";
@@ -65,7 +66,8 @@ export const IntegrationRequestCard = ({
         >
           <Box
             className={cn(
-              "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+              "border-border hover:bg-surface-muted block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+              LIST_ITEM_ATTENTION_BORDER,
               {
                 "bg-surface-muted": isActive,
               },
@@ -116,8 +118,8 @@ export const IntegrationRequestCard = ({
         </ContextMenu.Group>
       </ContextMenu.Items>
       <ConfirmDialog
-        confirmText="Decline request"
-        description="Declining removes this item from the team request queue."
+        confirmText="Decline intake item"
+        description="Declining removes this item from the team's intake queue."
         isLoading={declineRequest.isPending}
         isOpen={isDeclining}
         loadingText="Declining..."
@@ -134,7 +136,7 @@ export const IntegrationRequestCard = ({
             },
           });
         }}
-        title="Decline this request?"
+        title="Decline this intake item?"
       />
     </ContextMenu>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Flex, Menu, Text } from "ui";
-import { CheckIcon, CloseIcon, MoreVerticalIcon, RequestsIcon } from "icons";
+import { CheckIcon, CloseIcon, IntakeIcon, MoreVerticalIcon } from "icons";
 import { ConfirmDialog } from "@/components/ui";
 import { MobileMenuButton } from "@/components/shared";
 import { useAcceptAllIntegrationRequests } from "./hooks/use-accept-all-requests";
@@ -29,7 +29,7 @@ export const IntegrationRequestsHeader = ({
     >
       <Flex align="center" className="gap-2">
         <MobileMenuButton />
-        <RequestsIcon className="h-5 w-auto" />
+        <IntakeIcon className="h-5 w-auto" />
         <Text>Intake</Text>
       </Flex>
       <Flex align="center" gap={2}>
@@ -48,7 +48,7 @@ export const IntegrationRequestsHeader = ({
           <Menu.Items align="end">
             <Menu.Group className="mt-1 mb-3 px-4">
               <Text color="muted" textOverflow="truncate">
-                Manage requests
+                Manage intake
               </Text>
             </Menu.Group>
             <Menu.Separator className="mb-1.5" />
@@ -60,7 +60,7 @@ export const IntegrationRequestsHeader = ({
                 }}
               >
                 <CheckIcon className="h-5 w-auto" />
-                Accept all requests
+                Accept all intake items
               </Menu.Item>
               <Menu.Item
                 className="text-danger"
@@ -70,7 +70,7 @@ export const IntegrationRequestsHeader = ({
                 }}
               >
                 <CloseIcon className="text-danger h-5 w-auto" />
-                Decline all requests
+                Decline all intake items
               </Menu.Item>
             </Menu.Group>
           </Menu.Items>
@@ -78,8 +78,8 @@ export const IntegrationRequestsHeader = ({
       </Flex>
 
       <ConfirmDialog
-        confirmText="Accept all requests"
-        description="Accept every pending request in this team. Each accepted request will become a story."
+        confirmText="Accept all intake items"
+        description="Accept every pending intake item in this team. Each accepted item will become a story."
         isLoading={acceptAllRequests.isPending}
         isOpen={isAcceptingAll}
         loadingText="Accepting..."
@@ -93,12 +93,12 @@ export const IntegrationRequestsHeader = ({
             },
           });
         }}
-        title="Accept all requests?"
+        title="Accept all intake items?"
       />
 
       <ConfirmDialog
-        confirmText="Decline all requests"
-        description="Decline every pending request in this team. Original items remain available in their source integrations when supported."
+        confirmText="Decline all intake items"
+        description="Decline every pending intake item in this team. Original items remain available in their source integrations when supported."
         isLoading={declineAllRequests.isPending}
         isOpen={isDecliningAll}
         loadingText="Declining..."
@@ -112,7 +112,7 @@ export const IntegrationRequestsHeader = ({
             },
           });
         }}
-        title="Decline all requests?"
+        title="Decline all intake items?"
       />
     </Flex>
   );

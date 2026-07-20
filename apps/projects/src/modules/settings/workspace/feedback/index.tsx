@@ -12,6 +12,7 @@ import {
   useFeedbackPortals,
   useUpdateFeedbackPortalMutation,
 } from "./hooks";
+import { FeedbackReviewersDialog } from "./reviewers-dialog";
 
 const colorOptions = [
   { label: "Green", value: "green" },
@@ -285,6 +286,7 @@ export const FeedbackSettings = () => {
               <Flex align="center" gap={3} justify="between">
                 <Text className="w-40">Team</Text>
                 <Text className="w-40">Portal</Text>
+                <Text className="w-24 text-right">Reviewers</Text>
               </Flex>
             </Flex>
             {boards.map((board) => (
@@ -320,6 +322,12 @@ export const FeedbackSettings = () => {
                   <Text className="w-40" color="muted">
                     {board.portalName}
                   </Text>
+                  <Flex className="w-24" justify="end">
+                    <FeedbackReviewersDialog
+                      board={board}
+                      teamName={board.team?.name ?? "team"}
+                    />
+                  </Flex>
                 </Flex>
               </Flex>
             ))}

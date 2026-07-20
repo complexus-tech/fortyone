@@ -68,6 +68,34 @@ type AppComment struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
+type AppContributorStats struct {
+	FeedbackCount int `json:"feedbackCount"`
+	CommentCount  int `json:"commentCount"`
+	VoteScore     int `json:"voteScore"`
+}
+
+type AppContributor struct {
+	ID        uuid.UUID           `json:"id"`
+	Name      string              `json:"name"`
+	AvatarURL *string             `json:"avatarUrl"`
+	JoinedAt  time.Time           `json:"joinedAt"`
+	Stats     AppContributorStats `json:"stats"`
+}
+
+type AppContributorFeedback struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+	Slug  string    `json:"slug"`
+}
+
+type AppContributorComment struct {
+	ID        uuid.UUID              `json:"id"`
+	Body      string                 `json:"body"`
+	CreatedAt time.Time              `json:"createdAt"`
+	UpdatedAt time.Time              `json:"updatedAt"`
+	Feedback  AppContributorFeedback `json:"feedback"`
+}
+
 type AppStoryLink struct {
 	ID              uuid.UUID `json:"id"`
 	WorkspaceID     uuid.UUID `json:"workspaceId"`
@@ -126,6 +154,18 @@ type AppCreateBoard struct {
 	OrderIndex int       `json:"orderIndex"`
 }
 
+type AppBoardReviewer struct {
+	UserID         uuid.UUID `json:"userId"`
+	Name           string    `json:"name"`
+	Email          string    `json:"email"`
+	Role           string    `json:"role"`
+	EmailFrequency string    `json:"emailFrequency"`
+}
+
+type AppSetBoardReviewer struct {
+	EmailFrequency string `json:"emailFrequency"`
+}
+
 type AppCreateItem struct {
 	PortalID    uuid.UUID `json:"portalId"`
 	BoardID     uuid.UUID `json:"boardId"`
@@ -173,6 +213,11 @@ type AppTeamFeedbackResponse struct {
 	Pagination AppItemsPagination `json:"pagination"`
 }
 
+type AppContributorCommentsResponse struct {
+	Comments   []AppContributorComment `json:"comments"`
+	Pagination AppItemsPagination      `json:"pagination"`
+}
+
 func toAppPortal(core feedback.CorePortal) AppPortal {
 	return AppPortal{
 		ID:          core.ID,
@@ -197,6 +242,16 @@ func toAppBoard(core feedback.CoreBoard) AppBoard {
 		OrderIndex:  core.OrderIndex,
 		CreatedAt:   core.CreatedAt,
 		UpdatedAt:   core.UpdatedAt,
+	}
+}
+
+func toAppBoardReviewer(core feedback.CoreBoardReviewer) AppBoardReviewer {
+	return AppBoardReviewer{
+		UserID:         core.UserID,
+		Name:           core.Name,
+		Email:          core.Email,
+		Role:           core.Role,
+		EmailFrequency: core.EmailFrequency,
 	}
 }
 
@@ -240,6 +295,34 @@ func toAppComment(core feedback.CoreComment) AppComment {
 		Body:         core.Body,
 		CreatedAt:    core.CreatedAt,
 		UpdatedAt:    core.UpdatedAt,
+	}
+}
+
+func toAppContributor(core feedback.CoreContributor) AppContributor {
+	return AppContributor{
+		ID:        core.ID,
+		Name:      core.Name,
+		AvatarURL: core.AvatarURL,
+		JoinedAt:  core.JoinedAt,
+		Stats: AppContributorStats{
+			FeedbackCount: core.Stats.FeedbackCount,
+			CommentCount:  core.Stats.CommentCount,
+			VoteScore:     core.Stats.VoteScore,
+		},
+	}
+}
+
+func toAppContributorComment(core feedback.CoreContributorComment) AppContributorComment {
+	return AppContributorComment{
+		ID:        core.ID,
+		Body:      core.Body,
+		CreatedAt: core.CreatedAt,
+		UpdatedAt: core.UpdatedAt,
+		Feedback: AppContributorFeedback{
+			ID:    core.ItemID,
+			Title: core.FeedbackTitle,
+			Slug:  core.FeedbackSlug,
+		},
 	}
 }
 

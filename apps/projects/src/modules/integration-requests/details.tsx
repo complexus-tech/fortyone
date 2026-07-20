@@ -249,6 +249,7 @@ const RequestIntegrationBanner = ({
           <Menu>
             <Menu.Button>
               <button
+                aria-label="Intake actions"
                 className="text-primary hover:text-primary/80 rounded-md p-1 transition"
                 type="button"
               >
@@ -275,7 +276,7 @@ const RequestIntegrationBanner = ({
                 </Menu.Item>
                 <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
                   <CheckIcon className="text-icon h-5 w-auto" />
-                  Accept request
+                  Accept intake item
                 </Menu.Item>
                 <Menu.Item
                   className="text-danger"
@@ -283,7 +284,7 @@ const RequestIntegrationBanner = ({
                   onSelect={onDecline}
                 >
                   <CloseIcon className="text-danger" />
-                  Decline request...
+                  Decline intake item...
                 </Menu.Item>
               </Menu.Group>
             </Menu.Items>
@@ -922,10 +923,10 @@ export const IntegrationRequestDetails = ({
       <Box className="flex h-dvh items-center justify-center px-6">
         <Box>
           <Text align="center" className="mb-3" fontSize="xl">
-            Request not found
+            Intake item not found
           </Text>
           <Text align="center" color="muted">
-            This request may have already been handled.
+            This intake item may have already been handled.
           </Text>
         </Box>
       </Box>
@@ -1056,8 +1057,8 @@ export const IntegrationRequestDetails = ({
         </Box>
       </Box>
       <ConfirmDialog
-        confirmText="Decline request"
-        description="Declining removes this item from the team request queue. You can still find the original item in the source integration."
+        confirmText="Decline intake item"
+        description="Declining removes this item from the team's intake queue. You can still find the original item in the source integration."
         isLoading={declineRequest.isPending}
         isOpen={isDeclining}
         loadingText="Declining..."
@@ -1077,7 +1078,7 @@ export const IntegrationRequestDetails = ({
             },
           });
         }}
-        title="Decline this request?"
+        title="Decline this intake item?"
       />
     </Box>
   );

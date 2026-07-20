@@ -94,6 +94,26 @@ type commentRow struct {
 	UpdatedAt    time.Time  `db:"updated_at"`
 }
 
+type contributorRow struct {
+	ID            uuid.UUID `db:"id"`
+	Name          string    `db:"name"`
+	AvatarURL     *string   `db:"avatar_url"`
+	JoinedAt      time.Time `db:"joined_at"`
+	FeedbackCount int       `db:"feedback_count"`
+	CommentCount  int       `db:"comment_count"`
+	VoteScore     int       `db:"vote_score"`
+}
+
+type contributorCommentRow struct {
+	ID            uuid.UUID `db:"id"`
+	ItemID        uuid.UUID `db:"item_id"`
+	FeedbackTitle string    `db:"feedback_title"`
+	FeedbackSlug  string    `db:"feedback_slug"`
+	Body          string    `db:"body"`
+	CreatedAt     time.Time `db:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
+}
+
 type storyLinkRow struct {
 	ID              uuid.UUID  `db:"id"`
 	WorkspaceID     uuid.UUID  `db:"workspace_id"`
@@ -123,6 +143,14 @@ type teamSummaryRow struct {
 	Enabled     bool      `db:"enabled"`
 	TotalCount  int       `db:"total_count"`
 	UnreadCount int       `db:"unread_count"`
+}
+
+type boardReviewerRow struct {
+	UserID         uuid.UUID `db:"user_id"`
+	Name           string    `db:"name"`
+	Email          string    `db:"email"`
+	Role           string    `db:"role"`
+	EmailFrequency string    `db:"email_frequency"`
 }
 
 const feedbackItemSearchVector = "to_tsvector('english', fi.title || ' ' || fi.description || ' ' || fi.slug)"
@@ -268,16 +296,176 @@ func (r *Repo) GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (feedb
 }
 
 func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (feedback.CoreBoard, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return feedback.CoreBoard{}, err
+	}
+	defer tx.Rollback()
+
 	var row boardRow
-	err := r.db.GetContext(ctx, &row, `
+	err = tx.GetContext(ctx, &row, `
 		INSERT INTO feedback_boards (workspace_id, portal_id, team_id, name, slug, color, order_index)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		SELECT $1, $2, $3, $4, $5, $6, $7
+		FROM feedback_portals fp
+		INNER JOIN teams t ON t.team_id = $3 AND t.workspace_id = $1
+		WHERE fp.id = $2 AND fp.workspace_id = $1
 		RETURNING id, workspace_id, portal_id, team_id, name, slug, color, order_index, created_at, updated_at
 	`, input.WorkspaceID, input.PortalID, input.TeamID, input.Name, input.Slug, input.Color, input.OrderIndex)
 	if err != nil {
 		return feedback.CoreBoard{}, err
 	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO feedback_board_subscriptions (board_id, user_id, email_frequency)
+		SELECT $1, wm.user_id, $4
+		FROM workspace_members wm
+		INNER JOIN team_members tm
+			ON tm.team_id = $3
+			AND tm.user_id = wm.user_id
+		INNER JOIN users u
+			ON u.user_id = wm.user_id
+			AND u.is_active = true
+			AND u.is_system = false
+		WHERE wm.workspace_id = $2
+			AND wm.role = 'admin'
+		ON CONFLICT (board_id, user_id) DO NOTHING
+	`, row.ID, input.WorkspaceID, input.TeamID, feedback.EmailFrequencyDaily); err != nil {
+		return feedback.CoreBoard{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return feedback.CoreBoard{}, err
+	}
 	return toCoreBoard(row), nil
+}
+
+func (r *Repo) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]feedback.CoreBoardReviewer, error) {
+	var boardExists bool
+	if err := r.db.GetContext(ctx, &boardExists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM feedback_boards
+			WHERE workspace_id = $1 AND id = $2
+		)
+	`, workspaceID, boardID); err != nil {
+		return nil, err
+	}
+	if !boardExists {
+		return nil, sql.ErrNoRows
+	}
+
+	var rows []boardReviewerRow
+	if err := r.db.SelectContext(ctx, &rows, `
+		SELECT u.user_id,
+			COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
+			u.email,
+			wm.role::text AS role,
+			COALESCE(fbs.email_frequency, $3) AS email_frequency
+		FROM feedback_boards fb
+		INNER JOIN team_members tm ON tm.team_id = fb.team_id
+		INNER JOIN workspace_members wm
+			ON wm.workspace_id = fb.workspace_id
+			AND wm.user_id = tm.user_id
+			AND wm.role IN ('admin', 'member')
+		INNER JOIN users u
+			ON u.user_id = tm.user_id
+			AND u.is_active = true
+			AND u.is_system = false
+		LEFT JOIN feedback_board_subscriptions fbs
+			ON fbs.board_id = fb.id
+			AND fbs.user_id = u.user_id
+		WHERE fb.workspace_id = $1 AND fb.id = $2
+		ORDER BY lower(COALESCE(NULLIF(trim(u.full_name), ''), u.email)), u.user_id
+	`, workspaceID, boardID, feedback.EmailFrequencyOff); err != nil {
+		return nil, err
+	}
+
+	reviewers := make([]feedback.CoreBoardReviewer, 0, len(rows))
+	for _, row := range rows {
+		reviewers = append(reviewers, toCoreBoardReviewer(row))
+	}
+	return reviewers, nil
+}
+
+func (r *Repo) SetBoardReviewer(ctx context.Context, input feedback.CoreBoardReviewerInput) (feedback.CoreBoardReviewer, error) {
+	if input.EmailFrequency == feedback.EmailFrequencyOff {
+		return r.removeBoardReviewer(ctx, input)
+	}
+
+	var row boardReviewerRow
+	err := r.db.GetContext(ctx, &row, `
+		WITH eligible AS (
+			SELECT fb.id AS board_id,
+				u.user_id,
+				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
+				u.email,
+				wm.role::text AS role
+			FROM feedback_boards fb
+			INNER JOIN team_members tm
+				ON tm.team_id = fb.team_id
+				AND tm.user_id = $3
+			INNER JOIN workspace_members wm
+				ON wm.workspace_id = fb.workspace_id
+				AND wm.user_id = tm.user_id
+				AND wm.role IN ('admin', 'member')
+			INNER JOIN users u
+				ON u.user_id = tm.user_id
+				AND u.is_active = true
+				AND u.is_system = false
+			WHERE fb.workspace_id = $1 AND fb.id = $2
+		), saved AS (
+			INSERT INTO feedback_board_subscriptions (board_id, user_id, email_frequency)
+			SELECT board_id, user_id, $4
+			FROM eligible
+			ON CONFLICT (board_id, user_id) DO UPDATE
+			SET email_frequency = EXCLUDED.email_frequency,
+				updated_at = now()
+			RETURNING user_id, email_frequency
+		)
+		SELECT eligible.user_id, eligible.name, eligible.email, eligible.role, saved.email_frequency
+		FROM eligible
+		INNER JOIN saved ON saved.user_id = eligible.user_id
+	`, input.WorkspaceID, input.BoardID, input.UserID, input.EmailFrequency)
+	if err != nil {
+		return feedback.CoreBoardReviewer{}, err
+	}
+	return toCoreBoardReviewer(row), nil
+}
+
+func (r *Repo) removeBoardReviewer(ctx context.Context, input feedback.CoreBoardReviewerInput) (feedback.CoreBoardReviewer, error) {
+	var row boardReviewerRow
+	err := r.db.GetContext(ctx, &row, `
+		WITH eligible AS (
+			SELECT fb.id AS board_id,
+				u.user_id,
+				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
+				u.email,
+				wm.role::text AS role
+			FROM feedback_boards fb
+			INNER JOIN team_members tm
+				ON tm.team_id = fb.team_id
+				AND tm.user_id = $3
+			INNER JOIN workspace_members wm
+				ON wm.workspace_id = fb.workspace_id
+				AND wm.user_id = tm.user_id
+				AND wm.role IN ('admin', 'member')
+			INNER JOIN users u
+				ON u.user_id = tm.user_id
+				AND u.is_active = true
+				AND u.is_system = false
+			WHERE fb.workspace_id = $1 AND fb.id = $2
+		), removed AS (
+			DELETE FROM feedback_board_subscriptions fbs
+			USING eligible
+			WHERE fbs.board_id = eligible.board_id
+				AND fbs.user_id = eligible.user_id
+			RETURNING fbs.user_id
+		)
+		SELECT eligible.user_id, eligible.name, eligible.email, eligible.role, $4 AS email_frequency
+		FROM eligible
+	`, input.WorkspaceID, input.BoardID, input.UserID, feedback.EmailFrequencyOff)
+	if err != nil {
+		return feedback.CoreBoardReviewer{}, err
+	}
+	return toCoreBoardReviewer(row), nil
 }
 
 func (r *Repo) ListItems(ctx context.Context, input feedback.CoreListItemsInput) (feedback.CoreItemsPage, error) {
@@ -303,7 +491,7 @@ func (r *Repo) ListItems(ctx context.Context, input feedback.CoreListItemsInput)
 }
 
 func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]any) {
-	where := make([]string, 0, 5)
+	where := make([]string, 0, 6)
 	params := map[string]any{
 		"limit":  input.PageSize + 1,
 		"offset": (input.Page - 1) * input.PageSize,
@@ -334,6 +522,10 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 		where = append(where, "fi.board_id = :board_id")
 		params["board_id"] = *input.BoardID
 	}
+	if input.AuthorID != uuid.Nil {
+		where = append(where, "fi.author_id = :author_id")
+		params["author_id"] = input.AuthorID
+	}
 	if input.Search != "" {
 		where = append(where, feedbackItemSearchVector+" @@ websearch_to_tsquery('english', :search)")
 		params["search"] = input.Search
@@ -349,6 +541,127 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 	}
 	query := fmt.Sprintf("%s WHERE %s ORDER BY %s LIMIT :limit OFFSET :offset", selectQuery, strings.Join(where, " AND "), orderBy)
 	return query, params
+}
+
+func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID) (feedback.CoreContributor, error) {
+	var row contributorRow
+	err := r.db.GetContext(ctx, &row, `
+		SELECT u.user_id AS id,
+			COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS name,
+			u.avatar_url,
+			u.created_at AS joined_at,
+			CAST((
+				SELECT COUNT(*)
+				FROM feedback_items authored_feedback
+				WHERE authored_feedback.portal_id = $1
+					AND authored_feedback.author_id = u.user_id
+			) AS integer) AS feedback_count,
+			CAST((
+				SELECT COUNT(*)
+				FROM feedback_comments authored_comment
+				INNER JOIN feedback_items commented_feedback
+					ON commented_feedback.id = authored_comment.item_id
+				WHERE commented_feedback.portal_id = $1
+					AND authored_comment.author_id = u.user_id
+			) AS integer) AS comment_count,
+			CAST(COALESCE((
+				SELECT SUM(received_vote.direction)
+				FROM feedback_votes received_vote
+				INNER JOIN feedback_items voted_feedback
+					ON voted_feedback.id = received_vote.item_id
+				WHERE voted_feedback.portal_id = $1
+					AND voted_feedback.author_id = u.user_id
+			), 0) AS integer) AS vote_score
+		FROM users u
+		WHERE u.user_id = $2
+			AND (
+				EXISTS (
+					SELECT 1
+					FROM feedback_items contributed_feedback
+					WHERE contributed_feedback.portal_id = $1
+						AND contributed_feedback.author_id = u.user_id
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM feedback_comments contributed_comment
+					INNER JOIN feedback_items contributed_to_feedback
+						ON contributed_to_feedback.id = contributed_comment.item_id
+					WHERE contributed_to_feedback.portal_id = $1
+						AND contributed_comment.author_id = u.user_id
+				)
+			)
+	`, portalID, authorID)
+	if err != nil {
+		return feedback.CoreContributor{}, err
+	}
+	return toCoreContributor(row), nil
+}
+
+func (r *Repo) ContributorExists(ctx context.Context, portalID, authorID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.GetContext(ctx, &exists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM feedback_items contributed_feedback
+			WHERE contributed_feedback.portal_id = $1
+				AND contributed_feedback.author_id = $2
+			UNION ALL
+			SELECT 1
+			FROM feedback_comments contributed_comment
+			INNER JOIN feedback_items contributed_to_feedback
+				ON contributed_to_feedback.id = contributed_comment.item_id
+			WHERE contributed_to_feedback.portal_id = $1
+				AND contributed_comment.author_id = $2
+		)
+	`, portalID, authorID)
+	return exists, err
+}
+
+func (r *Repo) ListContributorComments(ctx context.Context, input feedback.CoreListContributorCommentsInput) (feedback.CoreContributorCommentsPage, error) {
+	var rows []contributorCommentRow
+	query, params := buildListContributorCommentsQuery(input)
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return feedback.CoreContributorCommentsPage{}, err
+	}
+	defer stmt.Close()
+	if err := stmt.SelectContext(ctx, &rows, params); err != nil {
+		return feedback.CoreContributorCommentsPage{}, err
+	}
+	hasMore := len(rows) > input.PageSize
+	if hasMore {
+		rows = rows[:input.PageSize]
+	}
+	comments := make([]feedback.CoreContributorComment, 0, len(rows))
+	for _, row := range rows {
+		comments = append(comments, toCoreContributorComment(row))
+	}
+	return feedback.CoreContributorCommentsPage{
+		Comments: comments,
+		Page:     input.Page,
+		PageSize: input.PageSize,
+		HasMore:  hasMore,
+	}, nil
+}
+
+func buildListContributorCommentsQuery(input feedback.CoreListContributorCommentsInput) (string, map[string]any) {
+	return `
+		SELECT fc.id, fc.item_id,
+			fi.title AS feedback_title,
+			fi.slug AS feedback_slug,
+			fc.body, fc.created_at, fc.updated_at
+		FROM feedback_comments fc
+		INNER JOIN feedback_items fi ON fi.id = fc.item_id
+		WHERE fi.portal_id = :portal_id
+			AND fc.author_id = :author_id
+		ORDER BY fc.created_at DESC, fc.id DESC
+		LIMIT :limit OFFSET :offset
+	`, map[string]any{
+			"portal_id": input.PortalID,
+			"author_id": input.AuthorID,
+			"limit":     input.PageSize + 1,
+			"offset":    (input.Page - 1) * input.PageSize,
+		}
 }
 
 func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback.CoreComment, error) {
@@ -549,8 +862,8 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 	var row itemRow
 	err := r.db.GetContext(ctx, &row, `
 		WITH inserted AS (
-			INSERT INTO feedback_items (workspace_id, portal_id, board_id, author_id, title, description, slug)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO feedback_items (workspace_id, portal_id, board_id, author_id, title, description, slug, submission_source)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING *
 		)
 		SELECT inserted.id, inserted.workspace_id, inserted.portal_id, inserted.board_id, inserted.author_id,
@@ -568,7 +881,7 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 		FROM inserted
 		LEFT JOIN users u ON u.user_id = inserted.author_id
 		INNER JOIN feedback_boards fb ON fb.id = inserted.board_id
-	`, input.WorkspaceID, input.PortalID, input.BoardID, input.AuthorID, input.Title, input.Description, input.Slug)
+	`, input.WorkspaceID, input.PortalID, input.BoardID, input.AuthorID, input.Title, input.Description, input.Slug, input.Source)
 	if err != nil {
 		return feedback.CoreItem{}, err
 	}
@@ -829,6 +1142,16 @@ func toCoreBoard(row boardRow) feedback.CoreBoard {
 	}
 }
 
+func toCoreBoardReviewer(row boardReviewerRow) feedback.CoreBoardReviewer {
+	return feedback.CoreBoardReviewer{
+		UserID:         row.UserID,
+		Name:           row.Name,
+		Email:          row.Email,
+		Role:           row.Role,
+		EmailFrequency: row.EmailFrequency,
+	}
+}
+
 func toCoreItem(row itemRow) feedback.CoreItem {
 	authorID := uuid.Nil
 	if row.AuthorID != nil {
@@ -901,6 +1224,32 @@ func toCoreComment(row commentRow) feedback.CoreComment {
 		Body:         row.Body,
 		CreatedAt:    row.CreatedAt,
 		UpdatedAt:    row.UpdatedAt,
+	}
+}
+
+func toCoreContributor(row contributorRow) feedback.CoreContributor {
+	return feedback.CoreContributor{
+		ID:        row.ID,
+		Name:      row.Name,
+		AvatarURL: row.AvatarURL,
+		JoinedAt:  row.JoinedAt,
+		Stats: feedback.CoreContributorStats{
+			FeedbackCount: row.FeedbackCount,
+			CommentCount:  row.CommentCount,
+			VoteScore:     row.VoteScore,
+		},
+	}
+}
+
+func toCoreContributorComment(row contributorCommentRow) feedback.CoreContributorComment {
+	return feedback.CoreContributorComment{
+		ID:            row.ID,
+		ItemID:        row.ItemID,
+		FeedbackTitle: row.FeedbackTitle,
+		FeedbackSlug:  row.FeedbackSlug,
+		Body:          row.Body,
+		CreatedAt:     row.CreatedAt,
+		UpdatedAt:     row.UpdatedAt,
 	}
 }
 

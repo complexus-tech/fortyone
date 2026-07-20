@@ -6,7 +6,9 @@ import type {
   CreateFeedbackBoardInput,
   FeedbackBoard,
   FeedbackPortal,
+  FeedbackReviewer,
   UpdateFeedbackPortalInput,
+  UpdateFeedbackReviewerInput,
 } from "./types";
 
 export const updateFeedbackPortal = async (
@@ -39,6 +41,24 @@ export const createFeedbackBoard = async (
       input,
       ctx,
     );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const updateFeedbackBoardReviewer = async (
+  boardId: string,
+  userId: string,
+  input: UpdateFeedbackReviewerInput,
+  workspaceSlug: string,
+) => {
+  try {
+    const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
+    return await put<
+      UpdateFeedbackReviewerInput,
+      ApiResponse<FeedbackReviewer>
+    >(`feedback/boards/${boardId}/reviewers/${userId}`, input, ctx);
   } catch (error) {
     return getApiError(error);
   }
