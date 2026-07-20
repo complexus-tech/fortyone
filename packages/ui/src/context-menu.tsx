@@ -127,9 +127,13 @@ const SubTrigger = forwardRef<
 ));
 
 type MenuProps = ComponentProps<typeof ContextMenuPrimitive.Root>;
-export const ContextMenu = ({ children, ...rest }: MenuProps) => {
+export const ContextMenu = ({
+  children,
+  modal = false,
+  ...rest
+}: MenuProps) => {
   return (
-    <ContextMenuPrimitive.Root {...rest}>
+    <ContextMenuPrimitive.Root modal={modal} {...rest}>
       <div>{children}</div>
     </ContextMenuPrimitive.Root>
   );

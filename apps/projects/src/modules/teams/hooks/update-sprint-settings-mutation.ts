@@ -10,8 +10,17 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (input: UpdateSprintSettingsInput) =>
-      updateSprintSettingsAction(teamId, input, workspaceSlug),
+    mutationFn: async (input: UpdateSprintSettingsInput) => {
+      const response = await updateSprintSettingsAction(
+        teamId,
+        input,
+        workspaceSlug,
+      );
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      return response;
+    },
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: teamKeys.settings(workspaceSlug, teamId),
@@ -50,10 +59,7 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
         },
       });
     },
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: teamKeys.settings(workspaceSlug, teamId),
       });
@@ -62,6 +68,9 @@ export const useUpdateSprintSettingsMutation = (teamId: string) => {
       });
       queryClient.invalidateQueries({
         queryKey: sprintKeys.running(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: sprintKeys.team(workspaceSlug, teamId),
       });
     },
   });

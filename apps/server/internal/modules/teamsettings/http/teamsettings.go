@@ -77,7 +77,12 @@ func (h *Handlers) UpdateSprintSettings(ctx context.Context, w http.ResponseWrit
 	}
 
 	updates := toCoreUpdateTeamSprintSettings(input)
-	result, err := h.teamsettings.UpdateSprintSettings(ctx, teamID, workspace.ID, updates)
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	result, err := h.teamsettings.UpdateSprintSettings(ctx, teamID, workspace.ID, updates, &actorID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, teamSettingsErrorStatus(err))
 	}
@@ -169,6 +174,8 @@ func teamSettingsErrorStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, teamsettings.ErrInvalidEstimateScheme):
 		return http.StatusBadRequest
+	case errors.Is(err, teamsettings.ErrSprintScheduleConflict):
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}

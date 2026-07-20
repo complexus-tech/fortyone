@@ -48,6 +48,7 @@ func (r *repo) Create(ctx context.Context, sprint sprints.CoreNewSprint, actorID
 			end_date,
 			created_at,
 			updated_at,
+			schedule_managed_by_automation,
 			0 as total_stories,
 			0 as cancelled_stories,
 			0 as completed_stories,
@@ -128,6 +129,9 @@ func (r *repo) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 		setClauses = append(setClauses, "end_date = :end_date")
 		params["end_date"] = *updates.EndDate
 	}
+	if updates.StartDate != nil || updates.EndDate != nil {
+		setClauses = append(setClauses, "schedule_managed_by_automation = false")
+	}
 
 	setClauses = append(setClauses, "updated_at = NOW()")
 	query += strings.Join(setClauses, ", ")
@@ -178,6 +182,7 @@ func (r *repo) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.
 			s.end_date,
 			s.created_at,
 			s.updated_at,
+			s.schedule_managed_by_automation,
 			COALESCE(ss.total, 0) as total_stories,
 			COALESCE(ss.cancelled, 0) as cancelled_stories,
 			COALESCE(ss.completed, 0) as completed_stories,

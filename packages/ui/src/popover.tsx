@@ -4,8 +4,8 @@ import { cn } from "lib";
 import { forwardRef, ElementRef, ComponentPropsWithoutRef } from "react";
 
 type PopoverProps = ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>;
-export const Popover = (props: PopoverProps) => (
-  <PopoverPrimitive.Root {...props} />
+export const Popover = ({ modal = false, ...props }: PopoverProps) => (
+  <PopoverPrimitive.Root modal={modal} {...props} />
 );
 
 const PopoverTrigger = PopoverPrimitive.Trigger;

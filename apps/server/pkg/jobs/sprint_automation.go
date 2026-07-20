@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -54,6 +55,15 @@ func ProcessSprintAutoCreation(ctx context.Context, db *sqlx.DB, log *logger.Log
 
 	// Process each team
 	for _, team := range teams {
+		if _, err := teamsettingsService.ReconcileSprintSchedule(ctx, team, nil); err != nil {
+			log.Error(ctx, "Failed to reconcile sprint schedule for team",
+				"error", err,
+				"team_id", team.TeamID,
+				"workspace_id", team.WorkspaceID)
+			errors++
+			continue
+		}
+
 		sprintsCreatedForTeam, err := createSprintsForTeam(ctx, db, log, team)
 		if err != nil {
 			log.Error(ctx, "Failed to create sprints for team",
@@ -138,18 +148,16 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 		"target_count", team.UpcomingSprintsCount,
 		"sprints_to_create", sprintsToCreate)
 
-	// Calculate start date for the first sprint
+	// Anchor new sprints after the active or latest upcoming sprint. This prevents
+	// a multi-week active sprint from being overlapped when no future sprint exists.
 	startDate := calculateNextSprintStartDate(team.SprintStartDay)
-
-	// If there are existing sprints, start after the last one
-	if existingCount > 0 {
-		lastSprintEndDate, err := getLastSprintEndDate(ctx, db, team.TeamID, team.WorkspaceID)
-		if err != nil {
-			span.RecordError(err)
-			return 0, fmt.Errorf("failed to get last sprint end date: %w", err)
-		}
-		// Start the day after the last sprint ends
-		startDate = lastSprintEndDate.AddDate(0, 0, 1)
+	lastSprintEndDate, found, err := getLastOpenSprintEndDate(ctx, db, team.TeamID, team.WorkspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return 0, fmt.Errorf("failed to get sprint schedule boundary: %w", err)
+	}
+	if found {
+		startDate = calculateSprintStartDateAfter(lastSprintEndDate, team.SprintStartDay)
 	}
 
 	tx, err := db.BeginTxx(ctx, nil)
@@ -169,8 +177,11 @@ func createSprintsForTeam(ctx context.Context, db *sqlx.DB, log *logger.Logger, 
 		sprintName := fmt.Sprintf("Sprint %d", sprintNumber)
 
 		query := `
-			INSERT INTO sprints (name, team_id, workspace_id, start_date, end_date, created_at, updated_at)
-			VALUES (:name, :team_id, :workspace_id, :start_date, :end_date, NOW(), NOW())
+			INSERT INTO sprints (
+				name, team_id, workspace_id, start_date, end_date,
+				schedule_managed_by_automation, created_at, updated_at
+			)
+			VALUES (:name, :team_id, :workspace_id, :start_date, :end_date, true, NOW(), NOW())
 			RETURNING sprint_id
 		`
 
@@ -367,7 +378,10 @@ func DisableAutomationForInactiveTeams(ctx context.Context, db *sqlx.DB, log *lo
 }
 
 func calculateNextSprintStartDate(startDay string) time.Time {
-	now := time.Now()
+	return calculateSprintStartDateAfter(time.Now(), startDay)
+}
+
+func calculateSprintStartDateAfter(anchor time.Time, startDay string) time.Time {
 
 	// Map day names to time.Weekday
 	dayMap := map[string]time.Weekday{
@@ -386,13 +400,13 @@ func calculateNextSprintStartDate(startDay string) time.Time {
 	}
 
 	// Calculate days until next occurrence of target day
-	daysUntilTarget := (int(targetDay) - int(now.Weekday()) + 7) % 7
+	daysUntilTarget := (int(targetDay) - int(anchor.Weekday()) + 7) % 7
 	if daysUntilTarget == 0 {
 		// If today is the target day, start next week
 		daysUntilTarget = 7
 	}
 
-	return now.AddDate(0, 0, daysUntilTarget)
+	return anchor.AddDate(0, 0, daysUntilTarget)
 }
 
 // getExistingUpcomingSprintsCount returns the number of sprints that haven't started yet
@@ -434,9 +448,9 @@ func getExistingUpcomingSprintsCount(ctx context.Context, db *sqlx.DB, teamID, w
 	return count, nil
 }
 
-// getLastSprintEndDate returns the end date of the last sprint for the team
-func getLastSprintEndDate(ctx context.Context, db *sqlx.DB, teamID, workspaceID uuid.UUID) (time.Time, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getLastSprintEndDate")
+// getLastOpenSprintEndDate returns the latest active or upcoming schedule boundary.
+func getLastOpenSprintEndDate(ctx context.Context, db *sqlx.DB, teamID, workspaceID uuid.UUID) (time.Time, bool, error) {
+	ctx, span := web.AddSpan(ctx, "jobs.getLastOpenSprintEndDate")
 	defer span.End()
 
 	query := `
@@ -445,6 +459,7 @@ func getLastSprintEndDate(ctx context.Context, db *sqlx.DB, teamID, workspaceID 
 		WHERE 
 			team_id = :team_id
 			AND workspace_id = :workspace_id
+			AND end_date >= CURRENT_DATE
 		ORDER BY end_date DESC
 		LIMIT 1
 	`
@@ -457,21 +472,24 @@ func getLastSprintEndDate(ctx context.Context, db *sqlx.DB, teamID, workspaceID 
 	stmt, err := db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		span.RecordError(err)
-		return time.Time{}, fmt.Errorf("failed to prepare statement: %w", err)
+		return time.Time{}, false, fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
 	var endDate time.Time
 	if err := stmt.GetContext(ctx, &endDate, params); err != nil {
+		if err == sql.ErrNoRows {
+			return time.Time{}, false, nil
+		}
 		span.RecordError(err)
-		return time.Time{}, fmt.Errorf("failed to get last sprint end date: %w", err)
+		return time.Time{}, false, fmt.Errorf("failed to get last sprint end date: %w", err)
 	}
 
 	span.AddEvent("last sprint end date retrieved", trace.WithAttributes(
 		attribute.String("end_date", endDate.Format("2006-01-02")),
 	))
 
-	return endDate, nil
+	return endDate, true, nil
 }
 
 // incrementAutoSprintNumbers increments sprint numbers for multiple teams using individual updates

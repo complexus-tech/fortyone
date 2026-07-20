@@ -9,6 +9,7 @@ export type Sprint = {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  scheduleManagedByAutomation: boolean;
   stats: {
     total: number;
     cancelled: number;

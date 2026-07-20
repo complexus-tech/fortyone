@@ -15,6 +15,7 @@ import { Avatar, Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
 import { useWorkspacePath } from "@/hooks";
+import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
 import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
@@ -165,7 +166,7 @@ export const TeamFeedbackCard = ({
             className="text-danger"
             disabled={isLinked || feedback.status === "closed"}
             onSelect={() => {
-              setIsClosing(true);
+              openDialogAfterMenuClose(setIsClosing);
             }}
           >
             <CloseIcon className="text-danger" />

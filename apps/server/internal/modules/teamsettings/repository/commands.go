@@ -14,9 +14,20 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates teamsettings.CoreUpdateTeamSprintSettings) (teamsettings.CoreTeamSprintSettings, error) {
+func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates teamsettings.CoreUpdateTeamSprintSettings, actorID *uuid.UUID) (teamsettings.CoreTeamSprintSettings, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.teamsettings.UpdateSprintSettings")
 	defer span.End()
+
+	// Ensure the default settings row exists before opening the update transaction.
+	if _, err := r.GetSprintSettings(ctx, teamID, workspaceID); err != nil {
+		return teamsettings.CoreTeamSprintSettings{}, err
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return teamsettings.CoreTeamSprintSettings{}, fmt.Errorf("begin sprint settings update: %w", err)
+	}
+	defer tx.Rollback()
 
 	query := "UPDATE team_sprint_settings SET "
 	var setClauses []string
@@ -58,7 +69,7 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 	query += strings.Join(setClauses, ", ")
 	query += " WHERE team_id = :team_id AND workspace_id = :workspace_id;"
 
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -85,10 +96,30 @@ func (r *repo) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uui
 		return teamsettings.CoreTeamSprintSettings{}, err
 	}
 
-	// Get the updated settings
-	updatedSettings, err := r.GetSprintSettings(ctx, teamID, workspaceID)
-	if err != nil {
-		return teamsettings.CoreTeamSprintSettings{}, err
+	var updated dbTeamSprintSettings
+	if err := tx.GetContext(ctx, &updated, `
+		SELECT
+			team_id, workspace_id, auto_create_sprints, upcoming_sprints_count,
+			sprint_duration_weeks, sprint_start_day, move_incomplete_stories_enabled,
+			last_auto_sprint_number, next_auto_sprint_number, auto_create_disabled_at,
+			auto_create_disabled_reason, created_at, updated_at
+		FROM team_sprint_settings
+		WHERE team_id = $1 AND workspace_id = $2
+		FOR UPDATE
+	`, teamID, workspaceID); err != nil {
+		return teamsettings.CoreTeamSprintSettings{}, fmt.Errorf("get updated sprint settings: %w", err)
+	}
+	updatedSettings := toCoreTeamSprintSettings(updated)
+
+	cadenceChanged := updates.SprintDurationWeeks != nil || updates.SprintStartDay != nil
+	if cadenceChanged && updatedSettings.AutoCreateSprints {
+		if _, err := r.reconcileSprintScheduleTx(ctx, tx, updatedSettings, actorID); err != nil {
+			return teamsettings.CoreTeamSprintSettings{}, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return teamsettings.CoreTeamSprintSettings{}, fmt.Errorf("commit sprint settings update: %w", err)
 	}
 
 	r.log.Info(ctx, "Team sprint settings updated successfully.")

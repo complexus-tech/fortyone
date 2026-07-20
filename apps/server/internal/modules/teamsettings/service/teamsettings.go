@@ -15,7 +15,8 @@ import (
 // Repository provides access to the team settings storage.
 type Repository interface {
 	GetSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamSprintSettings, error)
-	UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamSprintSettings) (CoreTeamSprintSettings, error)
+	UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamSprintSettings, actorID *uuid.UUID) (CoreTeamSprintSettings, error)
+	ReconcileSprintSchedule(ctx context.Context, settings CoreTeamSprintSettings, actorID *uuid.UUID) (int, error)
 	GetStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamStoryAutomationSettings, error)
 	UpdateStoryAutomationSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamStoryAutomationSettings) (CoreTeamStoryAutomationSettings, error)
 	GetEstimationSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (CoreTeamEstimationSettings, error)
@@ -26,13 +27,14 @@ type Repository interface {
 
 // Validation errors
 var (
-	ErrInvalidSprintStartDay = errors.New("sprint start day must be Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday")
-	ErrInvalidSprintDuration = errors.New("sprint duration must be between 1 and 8 weeks")
-	ErrInvalidUpcomingCount  = errors.New("upcoming sprints count must be between 0 and 10")
-	ErrInvalidNextAutoNumber = errors.New("next auto sprint number must be between 1 and 10000")
-	ErrInvalidCloseMonths    = errors.New("auto-close inactive months must be between 1 and 24")
-	ErrInvalidArchiveMonths  = errors.New("auto-archive months must be between 1 and 24")
-	ErrInvalidEstimateScheme = errors.New("estimate scheme must be one of: points, hours, tshirt, ideal_days")
+	ErrInvalidSprintStartDay  = errors.New("sprint start day must be Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday")
+	ErrInvalidSprintDuration  = errors.New("sprint duration must be between 1 and 8 weeks")
+	ErrInvalidUpcomingCount   = errors.New("upcoming sprints count must be between 0 and 10")
+	ErrInvalidNextAutoNumber  = errors.New("next auto sprint number must be between 1 and 10000")
+	ErrInvalidCloseMonths     = errors.New("auto-close inactive months must be between 1 and 24")
+	ErrInvalidArchiveMonths   = errors.New("auto-archive months must be between 1 and 24")
+	ErrInvalidEstimateScheme  = errors.New("estimate scheme must be one of: points, hours, tshirt, ideal_days")
+	ErrSprintScheduleConflict = errors.New("an upcoming sprint with custom dates conflicts with the automated schedule")
 )
 
 // Service provides team settings-related operations.
@@ -123,7 +125,7 @@ func (s *Service) GetSprintSettings(ctx context.Context, teamID, workspaceID uui
 }
 
 // UpdateSprintSettings updates the sprint settings for a team.
-func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamSprintSettings) (CoreTeamSprintSettings, error) {
+func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID, updates CoreUpdateTeamSprintSettings, actorID *uuid.UUID) (CoreTeamSprintSettings, error) {
 	s.log.Info(ctx, "business.core.teamsettings.updateSprintSettings")
 	ctx, span := web.AddSpan(ctx, "business.core.teamsettings.UpdateSprintSettings")
 	defer span.End()
@@ -134,7 +136,7 @@ func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID 
 		return CoreTeamSprintSettings{}, err
 	}
 
-	result, err := s.repo.UpdateSprintSettings(ctx, teamID, workspaceID, updates)
+	result, err := s.repo.UpdateSprintSettings(ctx, teamID, workspaceID, updates, actorID)
 	if err != nil {
 		span.RecordError(err)
 		return CoreTeamSprintSettings{}, err
@@ -152,6 +154,11 @@ func (s *Service) UpdateSprintSettings(ctx context.Context, teamID, workspaceID 
 		attribute.String("workspace.id", workspaceID.String()),
 	))
 	return result, nil
+}
+
+// ReconcileSprintSchedule aligns automation-managed future sprints with the team's cadence.
+func (s *Service) ReconcileSprintSchedule(ctx context.Context, settings CoreTeamSprintSettings, actorID *uuid.UUID) (int, error) {
+	return s.repo.ReconcileSprintSchedule(ctx, settings, actorID)
 }
 
 // GetStoryAutomationSettings returns the story automation settings for a team.

@@ -224,8 +224,10 @@ const Body = ({ className, ...props }: BodyProps) => (
   />
 );
 
-export const Dialog = ({ children, ...rest }: DialogProps) => (
-  <DialogPrimitive.Root {...rest}>{children}</DialogPrimitive.Root>
+export const Dialog = ({ children, modal = true, ...rest }: DialogProps) => (
+  <DialogPrimitive.Root modal={modal} {...rest}>
+    {children}
+  </DialogPrimitive.Root>
 );
 
 Dialog.Header = DialogHeader;

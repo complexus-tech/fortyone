@@ -6,6 +6,7 @@ import {
   FilterIcon,
   GitIcon,
   TeamIcon,
+  SprintsIcon,
   WarningIcon,
   WorkflowIcon,
 } from "icons";
@@ -17,6 +18,7 @@ import { MembersSettings } from "./components/members";
 import { WorkflowSettings } from "./components/workflows";
 import { DeleteTeam } from "./components/delete";
 import { Automations } from "./components/automations";
+import { SprintSettings } from "./components/sprints";
 
 export const TeamManagement = () => {
   const tabs = [
@@ -24,6 +26,7 @@ export const TeamManagement = () => {
     "members",
     "workflows",
     "automations",
+    "sprints",
     "delete",
   ] as const;
   const { teamId } = useParams<{ teamId: string }>();
@@ -77,6 +80,12 @@ export const TeamManagement = () => {
               Automations
             </Tabs.Tab>
             <Tabs.Tab
+              leftIcon={<SprintsIcon className="h-[1.1rem]" />}
+              value="sprints"
+            >
+              Sprints
+            </Tabs.Tab>
+            <Tabs.Tab
               leftIcon={<WarningIcon className="h-[1.1rem]" />}
               value="delete"
             >
@@ -100,6 +109,9 @@ export const TeamManagement = () => {
           </Tabs.Panel>
           <Tabs.Panel value="automations">
             <Automations />
+          </Tabs.Panel>
+          <Tabs.Panel value="sprints">
+            <SprintSettings />
           </Tabs.Panel>
         </Box>
       </Tabs>

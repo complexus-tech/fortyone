@@ -135,9 +135,9 @@ const CheckboxItem = forwardRef<
 ));
 
 type MenuProps = ComponentProps<typeof DropdownMenu.Root>;
-export const Menu = ({ children, ...rest }: MenuProps) => {
+export const Menu = ({ children, modal = false, ...rest }: MenuProps) => {
   return (
-    <DropdownMenu.Root {...rest}>
+    <DropdownMenu.Root modal={modal} {...rest}>
       <div>{children}</div>
     </DropdownMenu.Root>
   );

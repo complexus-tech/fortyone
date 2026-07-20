@@ -20,7 +20,7 @@ import { useUserRole } from "@/hooks/role";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { useUpdateTeamMemberAIContextMutation } from "@/modules/teams/hooks/update-team-member-ai-context-mutation";
-import { openDialogAfterMenuClose } from "./menu-dialog-state";
+import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 
 type TeamMemberRowProps = {
   member: Member;

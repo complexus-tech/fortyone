@@ -38,6 +38,7 @@ import { ConfirmDialog, Dot } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { getAuthorPathByPortalSlug } from "@/modules/public-portal/utils";
+import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { Option } from "@/modules/story/components/options";
 import {
   getStoryCommentEditorExtensions,
@@ -647,10 +648,10 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                 feedback={feedback}
                 isPlanning={planFeedback.isPending}
                 onClose={() => {
-                  setIsClosing(true);
+                  openDialogAfterMenuClose(setIsClosing);
                 }}
                 onLink={() => {
-                  setIsLinking(true);
+                  openDialogAfterMenuClose(setIsLinking);
                 }}
                 onOpenStory={() => {
                   if (linkedStory) openStory(linkedStory.storyId);
