@@ -10,6 +10,21 @@ function makeRevealsVisible() {
   });
 }
 
+function forEachRevealElement(
+  node: Node,
+  callback: (element: HTMLElement) => void,
+) {
+  if (!(node instanceof HTMLElement)) {
+    return;
+  }
+
+  if (node.matches(REVEAL_SELECTOR)) {
+    callback(node);
+  }
+
+  node.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(callback);
+}
+
 export const LandingRevealObserver = () => {
   useEffect(() => {
     const root = document.documentElement;
@@ -43,11 +58,35 @@ export const LandingRevealObserver = () => {
       },
     );
 
-    elements.forEach((element) => {
-      observer.observe(element);
+    const observeElement = (element: HTMLElement) => {
+      if (element.dataset.visible !== "true") {
+        observer.observe(element);
+      }
+    };
+
+    elements.forEach(observeElement);
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          forEachRevealElement(node, (element) => {
+            observer.unobserve(element);
+          });
+        });
+
+        mutation.addedNodes.forEach((node) => {
+          forEachRevealElement(node, observeElement);
+        });
+      });
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
     });
 
     return () => {
+      mutationObserver.disconnect();
       observer.disconnect();
       root.classList.remove("landing-reveal-ready");
     };
