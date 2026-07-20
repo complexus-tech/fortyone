@@ -349,18 +349,8 @@ export const FeedbackSettings = () => {
                           <MoreHorizontalIcon className="h-5 w-auto" />
                         </Button>
                       </Menu.Button>
-                      <Menu.Items align="end" className="w-48">
+                      <Menu.Items align="end" className="w-56">
                         <Menu.Group>
-                          <Menu.Item
-                            onSelect={() => {
-                              openDialogAfterMenuClose((open) => {
-                                if (open) setBoardToDelete(board);
-                              });
-                            }}
-                          >
-                            <DeleteIcon />
-                            Delete Board
-                          </Menu.Item>
                           <Menu.Item
                             onSelect={() => {
                               openDialogAfterMenuClose((open) => {
@@ -373,7 +363,17 @@ export const FeedbackSettings = () => {
                             }}
                           >
                             <TeamIcon />
-                            Manage reviewers
+                            Manage Reviewers
+                          </Menu.Item>
+                          <Menu.Item
+                            onSelect={() => {
+                              openDialogAfterMenuClose((open) => {
+                                if (open) setBoardToDelete(board);
+                              });
+                            }}
+                          >
+                            <DeleteIcon />
+                            Delete Board
                           </Menu.Item>
                         </Menu.Group>
                       </Menu.Items>

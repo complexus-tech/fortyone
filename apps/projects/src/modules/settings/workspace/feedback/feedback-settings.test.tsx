@@ -454,7 +454,19 @@ describe("FeedbackSettings", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Options for Road safety" }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Manage reviewers" }));
+    const manageReviewers = screen.getByRole("button", {
+      name: "Manage Reviewers",
+    });
+    const deleteBoardOption = screen.getByRole("button", {
+      name: "Delete Board",
+    });
+
+    expect(manageReviewers.parentElement?.parentElement).toHaveClass("w-56");
+    expect(manageReviewers.compareDocumentPosition(deleteBoardOption)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    fireEvent.click(manageReviewers);
 
     await waitFor(() => {
       expect(mockUseFeedbackBoardReviewers).toHaveBeenLastCalledWith(

@@ -57,6 +57,19 @@ import type {
   TeamFeedbackStatus,
 } from "./types";
 
+const LINKED_STORY_TITLE_MAX_LENGTH = 16;
+
+const truncateLinkedStoryTitle = (title: string) => {
+  if (title.length <= LINKED_STORY_TITLE_MAX_LENGTH) return title;
+
+  return `${title.slice(0, LINKED_STORY_TITLE_MAX_LENGTH)}...`;
+};
+
+const formatLinkedStoryTitle = (
+  title: string | null | undefined,
+  fallback: string,
+) => (title ? truncateLinkedStoryTitle(title) : fallback);
+
 const getStatusBannerCopy = (
   status: TeamFeedbackStatus,
   storyTerm: string,
@@ -121,7 +134,7 @@ const FeedbackBanner = ({
     ? `Feedback is linked to a ${storyTerm}`
     : copy.primary;
   const secondaryCopy = linkedStory
-    ? linkedStory.storyTitle || `Open linked ${storyTerm}`
+    ? formatLinkedStoryTitle(linkedStory.storyTitle, `Open linked ${storyTerm}`)
     : copy.secondary;
 
   return (
@@ -151,7 +164,11 @@ const FeedbackBanner = ({
               >
                 {primaryCopy}
               </Text>
-              <Text className="line-clamp-1 text-[0.92rem]" color="muted">
+              <Text
+                className="line-clamp-1 text-[0.92rem]"
+                color="muted"
+                title={linkedStory.storyTitle || undefined}
+              >
                 {secondaryCopy}
               </Text>
             </button>
@@ -479,6 +496,7 @@ const FeedbackProperties = ({
           value={
             linkedStory && linkedStoryHref ? (
               <Button
+                aria-label={linkedStory.storyTitle || `Open ${storyTerm}`}
                 className="max-w-full"
                 color="tertiary"
                 href={linkedStoryHref}
@@ -486,8 +504,14 @@ const FeedbackProperties = ({
                 size="sm"
                 variant="naked"
               >
-                <span className="truncate">
-                  {linkedStory.storyTitle || `Open ${storyTerm}`}
+                <span
+                  className="truncate"
+                  title={linkedStory.storyTitle || undefined}
+                >
+                  {formatLinkedStoryTitle(
+                    linkedStory.storyTitle,
+                    `Open ${storyTerm}`,
+                  )}
                 </span>
               </Button>
             ) : (

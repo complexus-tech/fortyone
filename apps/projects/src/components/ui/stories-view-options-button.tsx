@@ -251,7 +251,9 @@ export const StoriesViewOptionsButton = ({
               >
                 <span className="flex min-w-0 items-center gap-1.5">
                   <ArrowUpDownIcon className="text-text-muted h-4 w-auto shrink-0" />
-                  <Select.Input />
+                  <Select.Input>
+                    {orderDirection === "asc" ? "Asc" : "Desc"}
+                  </Select.Input>
                 </span>
               </Select.Trigger>
               <Select.Content className="ring-border/70 shadow-2xl ring-1">
