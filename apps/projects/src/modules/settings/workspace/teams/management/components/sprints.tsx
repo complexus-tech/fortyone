@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { isAfter, startOfDay, startOfToday } from "date-fns";
 import { Box, Text, Switch, Select, Flex, Input, Button, Dialog } from "ui";
 import { SectionHeader } from "@/modules/settings/components/section-header";
@@ -23,22 +23,14 @@ export const SprintSettings = () => {
   const [pendingCadenceUpdate, setPendingCadenceUpdate] =
     useState<UpdateSprintSettingsInput | null>(null);
   const currentNextSprintNumber = sprintSettings?.nextAutoSprintNumber ?? 1;
-  const upcomingManagedSprints = useMemo(
-    () =>
-      sprints.filter(
-        (sprint) =>
-          sprint.scheduleManagedByAutomation &&
-          isAfter(startOfDay(new Date(sprint.startDate)), startOfToday()),
-      ),
-    [sprints],
+  const upcomingManagedSprints = sprints.filter(
+    (sprint) =>
+      sprint.scheduleManagedByAutomation &&
+      isAfter(startOfDay(new Date(sprint.startDate)), startOfToday()),
   );
-  const assignedStoryCount = useMemo(
-    () =>
-      upcomingManagedSprints.reduce(
-        (total, sprint) => total + sprint.stats.total,
-        0,
-      ),
-    [upcomingManagedSprints],
+  const assignedStoryCount = upcomingManagedSprints.reduce(
+    (total, sprint) => total + sprint.stats.total,
+    0,
   );
 
   const handleNextSprintDialogOpenChange = (open: boolean) => {
@@ -329,7 +321,7 @@ export const SprintSettings = () => {
               value={nextSprintNumber}
             />
           </Dialog.Body>
-          <Dialog.Footer className="gap-2">
+          <Dialog.Footer className="justify-end gap-2">
             <Button
               color="tertiary"
               onClick={() => {
@@ -383,7 +375,7 @@ export const SprintSettings = () => {
               with custom dates will not be changed.
             </Text>
           </Dialog.Body>
-          <Dialog.Footer className="gap-2">
+          <Dialog.Footer className="justify-end gap-2">
             <Button
               color="tertiary"
               disabled={updateSprintSettings.isPending}

@@ -11,6 +11,7 @@ import {
   WorkflowIcon,
 } from "icons";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
+import { useTerminology } from "@/hooks";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { TeamColor } from "@/components/ui";
 import { GeneralSettings } from "./components/general";
@@ -30,6 +31,7 @@ export const TeamManagement = () => {
     "delete",
   ] as const;
   const { teamId } = useParams<{ teamId: string }>();
+  const { getTermDisplay } = useTerminology();
   const { data: team } = useTeam(teamId);
   const [tab, setTab] = useQueryState(
     "tab",
@@ -83,7 +85,10 @@ export const TeamManagement = () => {
               leftIcon={<SprintsIcon className="h-[1.1rem]" />}
               value="sprints"
             >
-              Sprints
+              {getTermDisplay("sprintTerm", {
+                capitalize: true,
+                variant: "plural",
+              })}
             </Tabs.Tab>
             <Tabs.Tab
               leftIcon={<WarningIcon className="h-[1.1rem]" />}
