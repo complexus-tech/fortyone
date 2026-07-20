@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { cn } from "lib";
-import { ArrowDownIcon, LinkIcon, PlusIcon, TeamIcon } from "icons";
+import { ArrowDownIcon, DeleteIcon, LinkIcon, PlusIcon, TeamIcon } from "icons";
 import { Box, Button, Dialog, Flex, Input, Switch, Text } from "ui";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
-import type { FeedbackPortal } from "./types";
+import type { FeedbackBoard, FeedbackPortal } from "./types";
 import {
   useCreateFeedbackBoardMutation,
+  useDeleteFeedbackBoardMutation,
   useFeedbackPortals,
   useUpdateFeedbackPortalMutation,
 } from "./hooks";
@@ -230,6 +232,10 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
 export const FeedbackSettings = () => {
   const { data: portals = [], isLoading } = useFeedbackPortals();
   const { data: teams = [] } = useTeams();
+  const [boardToDelete, setBoardToDelete] = useState<FeedbackBoard | null>(
+    null,
+  );
+  const deleteBoard = useDeleteFeedbackBoardMutation();
   const primaryPortal = portals.at(0);
 
   const teamsById = new Map(teams.map((team) => [team.id, team]));
@@ -293,7 +299,7 @@ export const FeedbackSettings = () => {
               <Flex align="center" gap={3} justify="between">
                 <Text className="w-40">Team</Text>
                 <Text className="w-40">Portal</Text>
-                <Text className="w-24 text-right">Reviewers</Text>
+                <Text className="w-40 text-right">Actions</Text>
               </Flex>
             </Flex>
             {boards.map((board) => (
@@ -318,11 +324,23 @@ export const FeedbackSettings = () => {
                   <Text className="w-40" color="muted">
                     {board.portalName}
                   </Text>
-                  <Flex className="w-24" justify="end">
+                  <Flex align="center" className="w-40" gap={1} justify="end">
                     <FeedbackReviewersDialog
                       board={board}
                       teamName={board.team?.name ?? "team"}
                     />
+                    <Button
+                      aria-label={`Delete ${board.name}`}
+                      asIcon
+                      color="tertiary"
+                      onClick={() => {
+                        setBoardToDelete(board);
+                      }}
+                      size="sm"
+                      variant="naked"
+                    >
+                      <DeleteIcon className="text-danger h-4.5 w-auto" />
+                    </Button>
                   </Flex>
                 </Flex>
               </Flex>
@@ -330,6 +348,28 @@ export const FeedbackSettings = () => {
           </>
         )}
       </Box>
+      <ConfirmDialog
+        confirmText="Delete board"
+        description="This permanently deletes the board and all feedback submitted to it. This action cannot be undone."
+        isLoading={deleteBoard.isPending}
+        isOpen={Boolean(boardToDelete)}
+        loadingText="Deleting..."
+        onCancel={() => {
+          setBoardToDelete(null);
+        }}
+        onClose={() => {
+          setBoardToDelete(null);
+        }}
+        onConfirm={() => {
+          if (!boardToDelete) return;
+          deleteBoard.mutate(boardToDelete.id, {
+            onSuccess: () => {
+              setBoardToDelete(null);
+            },
+          });
+        }}
+        title={`Delete ${boardToDelete?.name ?? "board"}?`}
+      />
     </Box>
   );
 };

@@ -6,6 +6,7 @@ import { useWorkspacePath } from "@/hooks";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import {
   createFeedbackBoard,
+  deleteFeedbackBoard,
   updateFeedbackBoardReviewer,
   updateFeedbackPortal,
 } from "./actions";
@@ -99,6 +100,35 @@ export const useCreateFeedbackBoardMutation = () => {
     },
     onError: (error) => {
       toast.error("Failed to create board", {
+        description: error.message,
+      });
+    },
+  });
+};
+
+export const useDeleteFeedbackBoardMutation = () => {
+  const queryClient = useQueryClient();
+  const { workspaceSlug } = useWorkspacePath();
+
+  return useMutation({
+    mutationFn: async (boardId: string) => {
+      const response = await deleteFeedbackBoard(boardId, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      return boardId;
+    },
+    onSuccess: () => {
+      toast.success("Board deleted");
+      void queryClient.invalidateQueries({
+        queryKey: feedbackKeys.portals(workspaceSlug),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: feedbackKeys.teamSummaries(workspaceSlug),
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to delete board", {
         description: error.message,
       });
     },

@@ -344,6 +344,13 @@ func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBo
 	return s.repo.CreateBoard(ctx, input)
 }
 
+func (s *Service) DeleteBoard(ctx context.Context, workspaceID, boardID uuid.UUID) error {
+	if workspaceID == uuid.Nil || boardID == uuid.Nil {
+		return invalidInput("workspace and board ids are required")
+	}
+	return s.repo.DeleteBoard(ctx, workspaceID, boardID)
+}
+
 func (s *Service) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error) {
 	if workspaceID == uuid.Nil || boardID == uuid.Nil {
 		return nil, invalidInput("workspace and board ids are required")

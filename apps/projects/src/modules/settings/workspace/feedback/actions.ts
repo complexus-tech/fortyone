@@ -1,4 +1,4 @@
-import { post, put } from "@/lib/http";
+import { post, put, remove } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
@@ -41,6 +41,19 @@ export const createFeedbackBoard = async (
       input,
       ctx,
     );
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const deleteFeedbackBoard = async (
+  boardId: string,
+  workspaceSlug: string,
+) => {
+  try {
+    const session = await auth();
+    const ctx = { session: session!, workspaceSlug };
+    return await remove<ApiResponse<null>>(`feedback/boards/${boardId}`, ctx);
   } catch (error) {
     return getApiError(error);
   }

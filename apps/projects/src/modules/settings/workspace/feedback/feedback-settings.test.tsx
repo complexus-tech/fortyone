@@ -10,6 +10,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
   useCreateFeedbackBoardMutation,
+  useDeleteFeedbackBoardMutation,
   useFeedbackBoardReviewers,
   useFeedbackPortals,
   useUpdateFeedbackBoardReviewerMutation,
@@ -28,6 +29,7 @@ jest.mock("icons", () => {
 
   return {
     ArrowDownIcon: Icon,
+    DeleteIcon: Icon,
     LinkIcon: Icon,
     PlusIcon: Icon,
     TeamIcon: Icon,
@@ -58,17 +60,25 @@ jest.mock("ui", () => {
     fontWeight?: string;
   }) => React.createElement(as, props, children);
   const Button = ({
+    asIcon: _asIcon,
     children,
     color: _color,
     href,
     leftIcon,
+    loading: _loading,
+    loadingText: _loadingText,
     size: _size,
+    variant: _variant,
     ...props
   }: ComponentPropsWithoutRef<"button"> & {
     color?: string;
     href?: string;
     leftIcon?: ReactNode;
+    loading?: boolean;
+    loadingText?: string;
     size?: string;
+    asIcon?: boolean;
+    variant?: string;
   }) =>
     React.createElement(
       href ? "a" : "button",
@@ -90,8 +100,9 @@ jest.mock("ui", () => {
     React.createElement("div", props, children);
   const DialogContent = ({
     children,
+    hideClose: _hideClose,
     ...props
-  }: ComponentPropsWithoutRef<"div">) => {
+  }: ComponentPropsWithoutRef<"div"> & { hideClose?: boolean }) => {
     const open = React.useContext(DialogContext);
     return open ? React.createElement("div", props, children) : null;
   };
@@ -183,6 +194,7 @@ jest.mock("ui", () => {
 
 jest.mock("./hooks", () => ({
   useCreateFeedbackBoardMutation: jest.fn(),
+  useDeleteFeedbackBoardMutation: jest.fn(),
   useFeedbackBoardReviewers: jest.fn(),
   useFeedbackPortals: jest.fn(),
   useUpdateFeedbackBoardReviewerMutation: jest.fn(),
@@ -194,6 +206,9 @@ const mockUseFeedbackPortals = jest.mocked(useFeedbackPortals);
 const mockUseFeedbackBoardReviewers = jest.mocked(useFeedbackBoardReviewers);
 const mockUseCreateFeedbackBoardMutation = jest.mocked(
   useCreateFeedbackBoardMutation,
+);
+const mockUseDeleteFeedbackBoardMutation = jest.mocked(
+  useDeleteFeedbackBoardMutation,
 );
 const mockUseUpdateFeedbackBoardReviewerMutation = jest.mocked(
   useUpdateFeedbackBoardReviewerMutation,
@@ -227,6 +242,7 @@ const portal = {
 };
 
 describe("FeedbackSettings", () => {
+  const deleteBoard = jest.fn();
   const updatePortal = jest.fn();
   const updateReviewer = jest.fn();
 
@@ -243,6 +259,10 @@ describe("FeedbackSettings", () => {
     mockUseCreateFeedbackBoardMutation.mockReturnValue({
       isPending: false,
       mutateAsync: jest.fn(),
+    } as never);
+    mockUseDeleteFeedbackBoardMutation.mockReturnValue({
+      isPending: false,
+      mutate: deleteBoard,
     } as never);
     mockUseFeedbackBoardReviewers.mockReturnValue({
       data: [
@@ -341,6 +361,25 @@ describe("FeedbackSettings", () => {
     render(<FeedbackSettings />);
 
     expect(screen.getByRole("button", { name: "Create Board" })).toBeDisabled();
+  });
+
+  it("requires confirmation before deleting a board", () => {
+    render(<FeedbackSettings />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Road safety" }));
+
+    expect(screen.getByText("Delete Road safety?")).toBeInTheDocument();
+    expect(
+      screen.getByText(/permanently deletes the board and all feedback/i),
+    ).toBeInTheDocument();
+    expect(deleteBoard).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete board" }));
+
+    expect(deleteBoard).toHaveBeenCalledWith(
+      "board-1",
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
   });
 
   it("offers only teams that do not already have a board", () => {

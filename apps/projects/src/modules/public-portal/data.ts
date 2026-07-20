@@ -89,16 +89,6 @@ type ApiFeedbackStoryLink = {
   relationship: PublicFeedbackStoryLink["relationship"];
 };
 
-const boardColorClasses: Record<string, string> = {
-  blue: "bg-info",
-  cyan: "bg-info",
-  green: "bg-success",
-  pink: "bg-primary",
-  purple: "bg-secondary",
-  red: "bg-danger",
-  yellow: "bg-warning",
-};
-
 const dateLabel = (value: string) => {
   const date = new Date(value);
 
@@ -186,7 +176,6 @@ export const toPublicPortal = (
       name: board.name,
       slug: board.slug,
       color: board.color,
-      colorClassName: boardColorClasses[board.color] ?? "bg-success",
     }),
   );
 

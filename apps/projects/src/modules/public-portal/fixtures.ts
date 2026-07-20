@@ -15,19 +15,16 @@ export const publicPortalFixture: PublicPortal = {
       id: "road-repairs",
       name: "Road repairs",
       color: "#22C55E",
-      colorClassName: "bg-success",
     },
     {
       id: "drainage",
       name: "Drainage",
       color: "#06B6D4",
-      colorClassName: "bg-info",
     },
     {
       id: "traffic-lights",
       name: "Traffic lights",
       color: "#F59E0B",
-      colorClassName: "bg-warning",
     },
   ],
   requests: [

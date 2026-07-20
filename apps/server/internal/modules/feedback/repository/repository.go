@@ -343,6 +343,24 @@ func (r *Repo) CreateBoard(ctx context.Context, input feedback.CoreBoardInput) (
 	return toCoreBoard(row), nil
 }
 
+func (r *Repo) DeleteBoard(ctx context.Context, workspaceID, boardID uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `
+		DELETE FROM feedback_boards
+		WHERE workspace_id = $1 AND id = $2
+	`, workspaceID, boardID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return feedback.ErrNotFound
+	}
+	return nil
+}
+
 func isBoardTeamConflict(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) &&

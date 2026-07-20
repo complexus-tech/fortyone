@@ -560,6 +560,21 @@ func (h *Handlers) CreateBoard(ctx context.Context, w http.ResponseWriter, r *ht
 	return web.Respond(ctx, w, toAppBoard(board), http.StatusCreated)
 }
 
+func (h *Handlers) DeleteBoard(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	boardID, err := uuid.Parse(web.Params(r, "boardId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.feedback.DeleteBoard(ctx, workspace.ID, boardID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) ListBoardReviewers(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {

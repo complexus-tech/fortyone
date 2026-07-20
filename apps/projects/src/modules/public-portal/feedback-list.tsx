@@ -231,9 +231,7 @@ export const PublicFeedbackList = ({
                 }}
                 type="button"
               >
-                <span
-                  className={cn("size-2 rounded-full", meta.dotClassName)}
-                />
+                <span className={cn("size-2 rounded-sm", meta.dotClassName)} />
                 <span>{meta.label}</span>
               </button>
             );

@@ -704,7 +704,11 @@ describe("Public portal UI", () => {
     render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
 
     expect(screen.getByText("All boards")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Drainage" }));
+    const drainageBoard = screen.getByRole("button", { name: "Drainage" });
+    const drainageMarker = drainageBoard.querySelector("span");
+    expect(drainageMarker).toHaveStyle({ backgroundColor: "#06B6D4" });
+    expect(drainageMarker).toHaveClass("rounded-sm");
+    fireEvent.click(drainageBoard);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(

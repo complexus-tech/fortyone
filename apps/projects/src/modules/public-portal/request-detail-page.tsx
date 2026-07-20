@@ -107,7 +107,10 @@ export const PublicPortalRequestDetailPage = ({
                 <Text color="muted">Board</Text>
                 <Flex align="center" gap={2}>
                   <span
-                    className={`${board.colorClassName} size-2 rounded-full`}
+                    className="size-2 rounded-sm"
+                    style={{
+                      backgroundColor: board.color ?? "var(--color-text-muted)",
+                    }}
                   />
                   <Text>{board.name}</Text>
                 </Flex>

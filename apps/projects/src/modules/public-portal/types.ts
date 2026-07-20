@@ -23,7 +23,6 @@ export type PublicRequestBoard = {
   name: string;
   slug?: string;
   color?: string;
-  colorClassName: string;
 };
 
 export type PublicRequestComment = {

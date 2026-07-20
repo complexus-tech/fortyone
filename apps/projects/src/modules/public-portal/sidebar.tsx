@@ -114,7 +114,7 @@ export const PublicPortalSidebar = ({
           }}
           type="button"
         >
-          <span className="bg-text-muted size-2 rounded-full" />
+          <span className="bg-text-muted size-2 rounded-sm" />
           <Text fontWeight={!selectedBoardId ? "semibold" : "normal"}>
             All boards
           </Text>
@@ -135,7 +135,12 @@ export const PublicPortalSidebar = ({
             }}
             type="button"
           >
-            <span className={`${board.colorClassName} size-2 rounded-full`} />
+            <span
+              className="size-2 rounded-sm"
+              style={{
+                backgroundColor: board.color ?? "var(--color-text-muted)",
+              }}
+            />
             <Text
               color={selectedBoardId === board.id ? undefined : "muted"}
               fontWeight={selectedBoardId === board.id ? "semibold" : "normal"}

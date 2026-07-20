@@ -116,6 +116,16 @@ func (r *repoStub) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreB
 	return board, nil
 }
 
+func (r *repoStub) DeleteBoard(ctx context.Context, workspaceID, boardID uuid.UUID) error {
+	for index, board := range r.boards {
+		if board.WorkspaceID == workspaceID && board.ID == boardID {
+			r.boards = append(r.boards[:index], r.boards[index+1:]...)
+			return nil
+		}
+	}
+	return sql.ErrNoRows
+}
+
 func TestCreateBoardRequiresAndPreservesCreator(t *testing.T) {
 	t.Parallel()
 
@@ -146,6 +156,20 @@ func TestCreateBoardRequiresAndPreservesCreator(t *testing.T) {
 		Name:        "Missing creator",
 	})
 	require.ErrorIs(t, err, ErrInvalidInput)
+}
+
+func TestDeleteBoardRequiresWorkspaceAndBoard(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{boards: []CoreBoard{{ID: boardID, WorkspaceID: workspaceID}}}
+	service := New(repo, nil)
+
+	require.ErrorIs(t, service.DeleteBoard(context.Background(), uuid.Nil, boardID), ErrInvalidInput)
+	require.ErrorIs(t, service.DeleteBoard(context.Background(), workspaceID, uuid.Nil), ErrInvalidInput)
+	require.NoError(t, service.DeleteBoard(context.Background(), workspaceID, boardID))
+	require.Empty(t, repo.boards)
 }
 
 func (r *repoStub) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error) {

@@ -281,6 +281,7 @@ type Repository interface {
 	ListBoards(ctx context.Context, portalID uuid.UUID) ([]CoreBoard, error)
 	GetBoard(ctx context.Context, portalID, boardID uuid.UUID) (CoreBoard, error)
 	CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error)
+	DeleteBoard(ctx context.Context, workspaceID, boardID uuid.UUID) error
 	ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid.UUID) ([]CoreBoardReviewer, error)
 	SetBoardReviewer(ctx context.Context, input CoreBoardReviewerInput) (CoreBoardReviewer, error)
 	ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error)

@@ -21,7 +21,7 @@ export const RequestStatusPill = ({
         meta.badgeClassName,
       )}
     >
-      <span className={cn("size-2 rounded-full", meta.dotClassName)} />
+      <span className={cn("size-2 rounded-sm", meta.dotClassName)} />
       {meta.label}
     </span>
   );
