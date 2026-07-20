@@ -241,7 +241,7 @@ export const FeedbackSettings = () => {
   const teamsById = new Map(teams.map((team) => [team.id, team]));
 
   const boards = portals.flatMap((portal) =>
-    portal.boards.map((board) => ({
+    (portal.boards ?? []).map((board) => ({
       ...board,
       portalName: portal.name,
       team: teamsById.get(board.teamId),

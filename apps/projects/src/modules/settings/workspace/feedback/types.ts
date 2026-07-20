@@ -21,7 +21,7 @@ export type FeedbackPortal = {
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
-  boards: FeedbackBoard[];
+  boards?: FeedbackBoard[];
 };
 
 export type FeedbackBoardWithTeam = FeedbackBoard & {

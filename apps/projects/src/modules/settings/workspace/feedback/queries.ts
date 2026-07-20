@@ -10,7 +10,10 @@ export const getFeedbackPortals = async (
     "feedback/portals",
     ctx,
   );
-  return response.data ?? [];
+  return (response.data ?? []).map((portal) => ({
+    ...portal,
+    boards: portal.boards ?? [],
+  }));
 };
 
 export const getFeedbackBoardReviewers = async (

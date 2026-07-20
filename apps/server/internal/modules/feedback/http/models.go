@@ -15,7 +15,7 @@ type AppPortal struct {
 	IsPublic     bool       `json:"isPublic"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
-	Boards       []AppBoard `json:"boards,omitempty"`
+	Boards       []AppBoard `json:"boards"`
 	Items        []AppItem  `json:"items,omitempty"`
 	ItemsHasMore bool       `json:"itemsHasMore"`
 }

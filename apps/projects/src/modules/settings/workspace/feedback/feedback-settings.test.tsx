@@ -363,6 +363,22 @@ describe("FeedbackSettings", () => {
     expect(screen.getByRole("button", { name: "Create Board" })).toBeDisabled();
   });
 
+  it("keeps board creation available when the API omits an empty board list", () => {
+    mockUseFeedbackPortals.mockReturnValue({
+      data: [{ ...portal, boards: undefined }],
+      isLoading: false,
+    } as never);
+
+    render(<FeedbackSettings />);
+
+    expect(screen.getByText("No boards found")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Board" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Create Board" }));
+    expect(screen.getByRole("combobox", { name: "Owning team" })).toHaveValue(
+      "team-1",
+    );
+  });
+
   it("requires confirmation before deleting a board", () => {
     render(<FeedbackSettings />);
 
