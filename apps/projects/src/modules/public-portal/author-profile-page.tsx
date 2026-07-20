@@ -29,6 +29,11 @@ type ApiResponse<T> = {
 export type PublicContributorTab = "comments" | "feedback";
 
 const PAGE_SIZE = 20;
+const CONTRIBUTOR_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
 
 const fetchAuthorFeedbackPage = async ({
   authorId,
@@ -202,10 +207,7 @@ const formatContributorSince = (joinedAt: string) => {
   const date = new Date(joinedAt);
   if (Number.isNaN(date.getTime())) return "—";
 
-  return new Intl.DateTimeFormat(undefined, {
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  return CONTRIBUTOR_DATE_FORMATTER.format(date);
 };
 
 const ContributorStats = ({
@@ -455,7 +457,7 @@ export const PublicPortalAuthorProfilePage = ({
   if (isCommentsPending) {
     commentsContent = (
       <Text className="py-10 text-center" color="muted">
-        Loading comments...
+        Loading comments…
       </Text>
     );
   } else if (comments.length > 0) {
@@ -466,7 +468,7 @@ export const PublicPortalAuthorProfilePage = ({
 
   return (
     <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
-      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 py-8 pb-28 md:h-full md:min-h-0 md:grid-cols-[minmax(0,1fr)_19rem] md:overflow-hidden md:px-6 md:py-10">
+      <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 pt-8 md:h-full md:min-h-0 md:grid-cols-[minmax(0,1fr)_19rem] md:overflow-hidden md:px-6 md:pt-10">
         <Flex className="min-h-0 md:h-full" direction="column">
           <Box className="shrink-0">
             <Flex align="center" className="gap-4">
@@ -501,10 +503,22 @@ export const PublicPortalAuthorProfilePage = ({
             onValueChange={changeTab}
             value={activeTab}
           >
-            <Tabs.List className="mx-0 shrink-0">
-              <Tabs.Tab value="feedback">Feedback</Tabs.Tab>
-              <Tabs.Tab value="comments">Comments</Tabs.Tab>
-            </Tabs.List>
+            <Box className="border-border/60 shrink-0 border-b pb-3">
+              <Tabs.List className="mx-0 shrink-0 md:mx-0">
+                <Tabs.Tab
+                  leftIcon={<RequestsIcon className="h-4 text-current" />}
+                  value="feedback"
+                >
+                  Feedback
+                </Tabs.Tab>
+                <Tabs.Tab
+                  leftIcon={<CommentIcon className="h-4 text-current" />}
+                  value="comments"
+                >
+                  Comments
+                </Tabs.Tab>
+              </Tabs.List>
+            </Box>
             <Tabs.Panel
               className="hide-scrollbar min-h-0 pt-3 md:flex-1 md:overflow-y-auto"
               value="feedback"
@@ -527,7 +541,7 @@ export const PublicPortalAuthorProfilePage = ({
               <div ref={feedbackSentinelRef} />
               {isFetchingNextFeedbackPage ? (
                 <Text className="py-6 text-center" color="muted">
-                  Loading more feedback...
+                  Loading more feedback…
                 </Text>
               ) : null}
               {isFeedbackError ? (
@@ -544,7 +558,7 @@ export const PublicPortalAuthorProfilePage = ({
               <div ref={commentsSentinelRef} />
               {isFetchingNextCommentsPage ? (
                 <Text className="py-6 text-center" color="muted">
-                  Loading more comments...
+                  Loading more comments…
                 </Text>
               ) : null}
               {isCommentsError ? (

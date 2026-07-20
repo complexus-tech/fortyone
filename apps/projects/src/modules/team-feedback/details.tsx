@@ -15,8 +15,6 @@ import {
   CommentIcon,
   LinkIcon,
   MoreHorizontalIcon,
-  NotificationsCheckIcon,
-  NotificationsUnreadIcon,
   RequestsIcon,
   StoryIcon,
   ThumbsUpIcon,
@@ -89,22 +87,18 @@ const statusBannerCopy: Record<
 const FeedbackBanner = ({
   feedback,
   isPlanning,
-  isUpdatingReadState,
   onClose,
   onLink,
   onOpenStory,
   onPlan,
-  onReadStateChange,
   onReview,
 }: {
   feedback: TeamFeedbackItem;
   isPlanning: boolean;
-  isUpdatingReadState: boolean;
   onClose: () => void;
   onLink: () => void;
   onOpenStory: () => void;
   onPlan: () => void;
-  onReadStateChange: (isRead: boolean) => void;
   onReview: () => void;
 }) => {
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
@@ -187,21 +181,8 @@ const FeedbackBanner = ({
             </Menu.Button>
             <Menu.Items align="end">
               <Menu.Group>
-                <Menu.Item
-                  disabled={isUpdatingReadState}
-                  onSelect={() => {
-                    onReadStateChange(!feedback.readAt);
-                  }}
-                >
-                  {feedback.readAt ? (
-                    <NotificationsUnreadIcon />
-                  ) : (
-                    <NotificationsCheckIcon />
-                  )}
-                  {feedback.readAt ? "Mark as unread" : "Mark as read"}
-                </Menu.Item>
                 <Menu.Item disabled={!canPlan || isPlanning} onSelect={onPlan}>
-                  <CheckIcon className="h-5 w-auto" />
+                  <CheckIcon className="text-icon h-5 w-auto" />
                   {isPlanning ? "Planning feedback..." : "Plan feedback"}
                 </Menu.Item>
                 {linkedStory ? (
@@ -535,8 +516,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     refetch,
   } = useTeamFeedbackItem(feedbackId);
   const planFeedback = usePlanTeamFeedback();
-  const { isPending: isUpdatingReadState, mutate: setReadState } =
-    useSetTeamFeedbackReadState();
+  const { mutate: setReadState } = useSetTeamFeedbackReadState();
   const updateStatus = useUpdateTeamFeedbackStatus();
   const lastAutoReadFeedbackId = useRef<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
@@ -641,7 +621,6 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
               <FeedbackBanner
                 feedback={feedback}
                 isPlanning={planFeedback.isPending}
-                isUpdatingReadState={isUpdatingReadState}
                 onClose={() => {
                   setIsClosing(true);
                 }}
@@ -652,9 +631,6 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   if (linkedStory) openStory(linkedStory.storyId);
                 }}
                 onPlan={handlePlan}
-                onReadStateChange={(isRead) => {
-                  setReadState({ feedbackId: feedback.id, isRead });
-                }}
                 onReview={handleReview}
               />
               <Text

@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { Avatar, Box, Flex, Text } from "ui";
 import { PublicPortalShell } from "./portal-shell";
 import { RequestStatusPill } from "./request-card";
 import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
-import { getBoard, getRequestCallbackUrl } from "./utils";
+import { getAuthorPath, getBoard, getRequestCallbackUrl } from "./utils";
 import { FeedbackVoteButton } from "./feedback-controls";
 import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackDiscussion } from "./feedback-comments";
@@ -22,6 +23,25 @@ export const PublicPortalRequestDetailPage = ({
 }) => {
   const { data: activeRequest } = usePublicFeedbackDetail({ portal, request });
   const board = getBoard(portal, activeRequest.boardId);
+  const authorPath = getAuthorPath(portal, activeRequest.authorId);
+  const authorIdentity = (
+    <Flex align="start" className="w-fit" gap={3}>
+      <Avatar
+        name={activeRequest.authorName}
+        size="md"
+        src={activeRequest.authorAvatar}
+        style={{
+          backgroundColor: getPublicAvatarColor(activeRequest.authorName),
+        }}
+      />
+      <Box className="min-w-0 flex-1">
+        <Text className="text-[1.05rem]" fontWeight="semibold">
+          {activeRequest.authorName}
+        </Text>
+        <Text color="muted">{activeRequest.createdAtLabel}</Text>
+      </Box>
+    </Flex>
+  );
 
   return (
     <PublicPortalShell
@@ -32,22 +52,16 @@ export const PublicPortalRequestDetailPage = ({
     >
       <Box className="mx-auto grid w-full max-w-[78rem] gap-7 px-4 py-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6">
         <main>
-          <Flex align="start" gap={3}>
-            <Avatar
-              name={activeRequest.authorName}
-              size="md"
-              src={activeRequest.authorAvatar}
-              style={{
-                backgroundColor: getPublicAvatarColor(activeRequest.authorName),
-              }}
-            />
-            <Box className="min-w-0 flex-1">
-              <Text className="text-[1.05rem]" fontWeight="semibold">
-                {activeRequest.authorName}
-              </Text>
-              <Text color="muted">{activeRequest.createdAtLabel}</Text>
-            </Box>
-          </Flex>
+          {authorPath ? (
+            <Link
+              className="focus-visible:ring-ring block w-fit rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+              href={authorPath}
+            >
+              {authorIdentity}
+            </Link>
+          ) : (
+            authorIdentity
+          )}
 
           <Text as="h1" className="mt-8 text-2xl" fontWeight="semibold">
             {activeRequest.title}

@@ -1,19 +1,58 @@
 "use client";
 
+import { cn } from "lib";
 import { Button, Flex, Menu, Text } from "ui";
 import { CheckIcon, MoreVerticalIcon, RequestsIcon } from "icons";
 import { MobileMenuButton } from "@/components/shared";
+import { Dot } from "@/components/ui";
+import { feedbackStatusMeta } from "./status-meta";
 import type { TeamFeedbackListStatus } from "./types";
 
-const filters: { label: string; value: TeamFeedbackListStatus }[] = [
-  { label: "All active feedback", value: "active" },
-  { label: "All feedback", value: "all" },
-  { label: "Pending review", value: "pending" },
-  { label: "In review", value: "reviewing" },
-  { label: "Planned", value: "planned" },
-  { label: "In progress", value: "in_progress" },
-  { label: "Completed", value: "completed" },
-  { label: "Closed", value: "closed" },
+const filters: {
+  colorClassName: string;
+  label: string;
+  value: TeamFeedbackListStatus;
+}[] = [
+  {
+    colorClassName: "text-foreground",
+    label: "All active feedback",
+    value: "active",
+  },
+  {
+    colorClassName: "text-text-muted",
+    label: "All feedback",
+    value: "all",
+  },
+  {
+    colorClassName: feedbackStatusMeta.pending.colorClassName,
+    label: "Pending review",
+    value: "pending",
+  },
+  {
+    colorClassName: feedbackStatusMeta.reviewing.colorClassName,
+    label: "In review",
+    value: "reviewing",
+  },
+  {
+    colorClassName: feedbackStatusMeta.planned.colorClassName,
+    label: feedbackStatusMeta.planned.label,
+    value: "planned",
+  },
+  {
+    colorClassName: feedbackStatusMeta.in_progress.colorClassName,
+    label: feedbackStatusMeta.in_progress.label,
+    value: "in_progress",
+  },
+  {
+    colorClassName: feedbackStatusMeta.completed.colorClassName,
+    label: feedbackStatusMeta.completed.label,
+    value: "completed",
+  },
+  {
+    colorClassName: feedbackStatusMeta.closed.colorClassName,
+    label: feedbackStatusMeta.closed.label,
+    value: "closed",
+  },
 ];
 
 export const TeamFeedbackHeader = ({
@@ -63,6 +102,7 @@ export const TeamFeedbackHeader = ({
                   <CheckIcon className="h-4 w-auto" strokeWidth={2.2} />
                 ) : null}
               </span>
+              <Dot className={cn("size-3", filter.colorClassName)} />
               {filter.label}
             </Menu.Item>
           ))}

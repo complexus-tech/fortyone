@@ -429,9 +429,13 @@ jest.mock("ui", () => {
   );
   const TabsTab = ({
     children,
+    leftIcon,
+    rightIcon,
     value,
     ...props
   }: ReactTypes.ButtonHTMLAttributes<HTMLButtonElement> & {
+    leftIcon?: ReactTypes.ReactNode;
+    rightIcon?: ReactTypes.ReactNode;
     value: string;
   }) => (
     <TabsContext.Consumer>
@@ -445,7 +449,9 @@ jest.mock("ui", () => {
           type="button"
           {...props}
         >
+          {leftIcon}
           {children}
+          {rightIcon}
         </button>
       )}
     </TabsContext.Consumer>
@@ -1110,12 +1116,28 @@ describe("Public portal UI", () => {
       "/portal/city-roads/feedback/resurface-market-road-before-rainy-season",
     );
     expect(card?.firstElementChild).toBe(requestLink);
-    expect(card).toHaveTextContent("Public Works");
+    expect(card).not.toHaveTextContent("Public Works");
     expect(card).toHaveTextContent("Road repairs");
-    expect(screen.getByRole("link", { name: /Public Works/ })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", {
+        name: "View Public Works's profile",
+      }),
+    ).toHaveAttribute(
       "href",
       "/portal/city-roads/people/00000000-0000-4000-8000-000000000003",
     );
+
+    const columnMarkers = [
+      ["Planned", "var(--color-primary)"],
+      ["In Progress", "var(--color-info)"],
+      ["Done", "var(--color-success)"],
+    ] as const;
+    columnMarkers.forEach(([label, color]) => {
+      const heading = screen.getByText(label);
+      const marker = heading.parentElement?.querySelector("[aria-hidden=true]");
+
+      expect(marker).toHaveStyle({ backgroundColor: color });
+    });
 
     const voteCount = screen.getByText("18");
     expect(voteCount.closest("button")).toBeNull();
@@ -1335,6 +1357,10 @@ describe("Public portal UI", () => {
     expect(screen.getByLabelText("Comment")).toBeInTheDocument();
     expect(screen.getByText("Road repairs")).toBeInTheDocument();
     expect(screen.getByText("Copy link")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /A\. Ndlovu/ })).toHaveAttribute(
+      "href",
+      "/portal/city-roads/people/00000000-0000-4000-8000-000000000001",
+    );
   });
 
   it("returns logged-out commenters to the same feedback item", () => {

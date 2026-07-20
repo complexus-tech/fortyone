@@ -137,7 +137,7 @@ export const TeamFeedbackCard = ({
             disabled={!canPlan || planFeedback.isPending}
             onSelect={handlePlan}
           >
-            <CheckIcon />
+            <CheckIcon className="text-icon" />
             Plan feedback
           </ContextMenu.Item>
           <ContextMenu.Item

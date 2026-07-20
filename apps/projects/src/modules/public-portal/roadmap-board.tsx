@@ -10,7 +10,7 @@ import { cn } from "lib";
 import { Dot } from "@/components/ui/dot";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { publicPortalKeys } from "./query-keys";
-import { roadmapStatuses, requestStatusMeta } from "./status";
+import { roadmapStatuses } from "./status";
 import type { PublicPortal, PublicRequest } from "./types";
 import { getAuthorPath, getBoard, getRequestPath } from "./utils";
 import { getPublicAvatarColor } from "./avatar-color";
@@ -27,16 +27,19 @@ const roadmapLabels = {
     title: "Planned",
     description: "Committed and queued",
     emptyTitle: "Nothing planned yet",
+    markerColor: "var(--color-primary)",
   },
   in_progress: {
     title: "In Progress",
     description: "Actively being delivered",
     emptyTitle: "Nothing in progress",
+    markerColor: "var(--color-info)",
   },
   completed: {
     title: "Done",
     description: "Recently completed",
     emptyTitle: "Nothing completed yet",
+    markerColor: "var(--color-success)",
   },
 };
 
@@ -135,6 +138,20 @@ const BoardBadge = ({
   return <PublicBoardPill board={board} />;
 };
 
+const RoadmapAuthorAvatar = ({ request }: { request: PublicRequest }) => (
+  <span className="border-border bg-surface-elevated flex size-6.5 shrink-0 items-center justify-center rounded-lg border-[0.5px] p-0.5">
+    <Avatar
+      name={request.authorName}
+      rounded="md"
+      size="xs"
+      src={request.authorAvatar}
+      style={{
+        backgroundColor: getPublicAvatarColor(request.authorName),
+      }}
+    />
+  </span>
+);
+
 const RoadmapRequestCard = ({
   portal,
   request,
@@ -163,25 +180,15 @@ const RoadmapRequestCard = ({
         <Flex align="center" className="min-w-0 flex-1 gap-1.5" wrap>
           {authorPath ? (
             <Link
-              className="hover:text-foreground flex min-w-0 items-center gap-1.5 transition-opacity hover:opacity-80"
+              aria-label={`View ${request.authorName}'s profile`}
+              className="focus-visible:ring-ring shrink-0 rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
               href={authorPath}
             >
-              <span className="border-border bg-surface-elevated flex h-7 shrink-0 items-center justify-center rounded-md border-[0.5px] px-1">
-                <Avatar
-                  name={request.authorName}
-                  rounded="md"
-                  size="xs"
-                  src={request.authorAvatar}
-                  style={{
-                    backgroundColor: getPublicAvatarColor(request.authorName),
-                  }}
-                />
-              </span>
-              <Text className="max-w-36 truncate text-[0.9rem]" color="muted">
-                {request.authorName}
-              </Text>
+              <RoadmapAuthorAvatar request={request} />
             </Link>
-          ) : null}
+          ) : (
+            <RoadmapAuthorAvatar request={request} />
+          )}
           <BoardBadge portal={portal} request={request} />
         </Flex>
         <RoadmapVote voteCount={request.voteCount} />
@@ -218,7 +225,6 @@ const RoadmapColumn = ({
     columnState;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const column = roadmapLabels[status];
-  const meta = requestStatusMeta[status];
   const isEmpty = !isPending && !isError && items.length === 0;
 
   useEffect(() => {
@@ -264,8 +270,8 @@ const RoadmapColumn = ({
       <Box className="shrink-0 px-1 pt-2 pb-4">
         <Flex align="center" justify="between">
           <Flex align="center" className="min-w-0" gap={2}>
-            <Dot className={cn("size-2.5", meta.dotClassName)} />
-            <Text className="truncate" fontWeight="medium">
+            <Dot className="size-2.5" color={column.markerColor} />
+            <Text as="h2" className="truncate" fontWeight="medium">
               {column.title}
             </Text>
           </Flex>
@@ -297,7 +303,7 @@ const RoadmapColumn = ({
 const RoadmapEmptyState = () => (
   <Flex
     align="center"
-    className="min-h-[calc(100dvh-11rem)] px-4 text-center md:min-h-[calc(100dvh-8.5rem)]"
+    className="min-h-56 flex-1 px-4 text-center"
     direction="column"
     justify="center"
   >
@@ -331,11 +337,11 @@ export const RoadmapBoard = ({ portal }: { portal: PublicPortal }) => {
     );
 
   return (
-    <Box className="mx-auto w-full max-w-[78rem] px-4 pt-8 pb-6 md:px-6">
+    <Box className="mx-auto flex min-h-full w-full max-w-[78rem] flex-col px-4 pt-8 md:h-full md:min-h-0 md:overflow-hidden md:px-6">
       {isRoadmapEmpty ? (
         <RoadmapEmptyState />
       ) : (
-        <Box className="grid min-h-[calc(100dvh-11rem)] gap-5 md:min-h-[calc(100dvh-8.5rem)] md:grid-cols-3">
+        <Box className="grid min-h-0 flex-1 gap-5 md:grid-cols-3">
           {roadmapStatuses.map((status) => (
             <RoadmapColumn
               columnState={columns[status]}
