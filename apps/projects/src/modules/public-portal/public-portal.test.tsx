@@ -1170,6 +1170,19 @@ describe("Public portal UI", () => {
     expect(card?.firstElementChild).toBe(requestLink);
     expect(card).not.toHaveTextContent("Public Works");
     expect(card).toHaveTextContent("Road repairs");
+
+    const roadmapSummary = screen.getByText(
+      "Committed and queued for the next resurfacing cycle.",
+    );
+    expect(roadmapSummary.closest("a")?.nextElementSibling).toHaveClass("mt-3");
+    expect(screen.getByText("Road repairs").parentElement).toHaveClass(
+      "h-[1.7rem]",
+    );
+
+    const columnDescription = screen.getByText("Committed and queued");
+    expect(columnDescription).toHaveClass("text-base");
+    expect(columnDescription.parentElement).toHaveClass("pb-3");
+
     expect(
       screen.getByRole("link", {
         name: "View Public Works's profile",

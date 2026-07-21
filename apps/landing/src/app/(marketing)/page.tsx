@@ -11,6 +11,7 @@ import {
   FeedbackWorkflow,
   HowItWorks,
   PlatformWorkflow,
+  Testimonials,
 } from "@/modules/home";
 import kanbanImgLight from "../../../public/images/product/kanban-light.webp";
 import kanbanImg from "../../../public/images/product/kanban.webp";
@@ -61,6 +62,7 @@ export default function Page() {
       <SampleClients />
       <HowItWorks />
       <FeedbackWorkflow />
+      <Testimonials />
       <CoreValues />
       <PlatformWorkflow />
       <Integrations />

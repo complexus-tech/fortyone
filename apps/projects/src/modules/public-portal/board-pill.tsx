@@ -13,7 +13,7 @@ const getBoardPillStyle = (color?: string) => {
 
 export const PublicBoardPill = ({ board }: { board: PublicRequestBoard }) => (
   <span
-    className="border-border bg-surface-muted/40 inline-flex h-6.5 min-w-0 items-center gap-1.5 rounded-md border px-2 text-[0.9rem] font-medium"
+    className="border-border bg-surface-muted/40 inline-flex h-[1.7rem] min-w-0 items-center gap-1.5 rounded-md border px-2 text-[0.9rem] font-medium"
     style={getBoardPillStyle(board.color)}
   >
     <Dot color={board.color ?? "var(--color-text-muted)"} />

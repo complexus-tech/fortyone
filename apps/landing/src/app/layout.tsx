@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
-import { mono, sans } from "@/styles/fonts";
+import { mono, sans, serif } from "@/styles/fonts";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
@@ -65,7 +65,7 @@ const isProduction = process.env.NODE_ENV === "production";
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
-      className={cn(sans.variable, mono.variable)}
+      className={cn(sans.variable, mono.variable, serif.variable)}
       lang="en"
       suppressHydrationWarning
     >

@@ -176,7 +176,7 @@ const RoadmapRequestCard = ({
           </Text>
         ) : null}
       </Link>
-      <Flex align="end" className="mt-4 min-w-0 gap-3" justify="between">
+      <Flex align="end" className="mt-3 min-w-0 gap-3" justify="between">
         <Flex align="center" className="min-w-0 flex-1 gap-1.5" wrap>
           {authorPath ? (
             <Link
@@ -267,7 +267,7 @@ const RoadmapColumn = ({
 
   return (
     <Box className="flex min-h-0 min-w-0 flex-col" key={status}>
-      <Box className="shrink-0 px-1 pt-2 pb-4">
+      <Box className="shrink-0 px-1 pt-2 pb-3">
         <Flex align="center" justify="between">
           <Flex align="center" className="min-w-0" gap={2}>
             <Dot className="size-2.5" color={column.markerColor} />
@@ -279,7 +279,7 @@ const RoadmapColumn = ({
             {items.length}
           </Text>
         </Flex>
-        <Text className="mt-1.5 text-sm leading-5" color="muted">
+        <Text className="mt-1.5 text-base leading-5" color="muted">
           {column.description}
         </Text>
       </Box>

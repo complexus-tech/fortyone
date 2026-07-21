@@ -12,6 +12,7 @@
   --font-body: -apple-system, BlinkMacSystemFont, var(--font-inter), sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, var(--font-inter),
     sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
 }
 
 :root {
