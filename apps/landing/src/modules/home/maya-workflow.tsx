@@ -1,7 +1,7 @@
 import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
-import mayaImageLight from "../../../public/images/product/maya-task-light.webp";
-import mayaImageDark from "../../../public/images/product/maya-task.webp";
+import mayaImgLight from "../../../public/images/product/maya-task-light.webp";
+import mayaImg from "../../../public/images/product/maya-task.webp";
 import { ProductScreenshot } from "./product-screenshot";
 
 export const MayaWorkflow = () => {
@@ -27,8 +27,9 @@ export const MayaWorkflow = () => {
       <ProductScreenshot
         alt="Maya reviewing project work and recommended next actions in FortyOne"
         containerClassName="mt-10 md:mt-16"
-        darkImage={mayaImageDark}
-        lightImage={mayaImageLight}
+        darkImage={mayaImg}
+        lightImage={mayaImgLight}
+        priority
       />
     </Box>
   );
