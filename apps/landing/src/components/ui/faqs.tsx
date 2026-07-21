@@ -135,7 +135,7 @@ export const Faqs = () => {
       <Container className="grid grid-cols-1 gap-8 md:grid-cols-[auto_1fr] md:justify-between md:gap-16">
         <Box data-landing-reveal>
           <Text as="h2" className="mb-2 text-4xl md:mb-12 md:text-5xl">
-            Questions worth <br /> answering.
+            What teams ask <br /> before getting started.
           </Text>
         </Box>
 

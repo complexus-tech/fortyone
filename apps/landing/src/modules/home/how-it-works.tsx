@@ -653,14 +653,14 @@ export const HowItWorks = () => {
       {/* Headline */}
       <Box data-landing-reveal>
         <Text as="h2" className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl">
-          Keep the original request attached to the work.
+          Keep every request connected to the work it shaped.
         </Text>
       </Box>
 
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          description="Turn selected feedback, company goals, and team requests into clear tasks with the source context attached."
+          description="Turn selected feedback, company goals, and team requests into clear, actionable tasks."
           title="Plan the right work."
         >
           <TaskGoalCard />
@@ -674,7 +674,7 @@ export const HowItWorks = () => {
         </FeatureCard>
         <FeatureCard
           delay={0.2}
-          description="Bring conversations, files, and commits into the task so the team can see where the work came from."
+          description="Bring conversations, files, and commits into each task so the team can trace every decision."
           title="Keep the source attached."
         >
           <IntegrationCard />
