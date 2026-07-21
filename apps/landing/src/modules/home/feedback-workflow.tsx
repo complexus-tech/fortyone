@@ -17,8 +17,8 @@ export const FeedbackWorkflow = () => {
           <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
             <Text className="w-full max-w-xl leading-relaxed opacity-70 md:mb-0.5">
               Give customers one place to submit requests and vote on ideas.
-              When a request is accepted, turn it into planned work without
-              losing who asked or why.
+              Prioritise what matters, move accepted feedback into the project
+              plan, and let customers follow progress on a public roadmap.
             </Text>
           </Box>
         </Box>

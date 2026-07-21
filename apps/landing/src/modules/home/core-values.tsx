@@ -32,45 +32,45 @@ function AiIcon({ className, ...props }: Icon) {
 const capabilities = [
   {
     icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Work tied to goals.",
+    title: "Priorities tied to outcomes.",
     description:
-      "Connect tasks to company goals so the team knows why each item matters.",
+      "Connect planned work to company goals so teams understand what deserves attention first.",
   },
   {
     icon: (
       <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Capacity-aware assignments.",
+    title: "Plans that fit capacity.",
     description:
-      "Use workload and task context to find an owner without overloading the team.",
+      "Balance new work against availability before the same people become a bottleneck.",
   },
   {
     icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "AI help with planning.",
+    title: "Estimate before committing.",
     description:
-      "Fill in missing estimates, find time for the work, and flag delivery risk early.",
+      "Use AI to fill in missing estimates and give the team a realistic starting point.",
   },
   {
     icon: (
       <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "One place for the project.",
+    title: "One shared project plan.",
     description:
-      "Keep plans, tasks, owners, and progress together. No one has to rebuild the latest status by hand.",
+      "Keep owners, dates, tasks, and progress together as priorities change.",
   },
   {
     icon: (
       <RequestsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
     ),
-    title: "Feedback tied to delivery.",
+    title: "Clear ownership and next steps.",
     description:
-      "Collect requests in a public portal, route them to the right team, and turn selected feedback into planned work.",
+      "Give every task an owner and make the next decision easy to see.",
   },
   {
     icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Context from your tools.",
+    title: "Engineering updates stay linked.",
     description:
-      "Attach conversations, files, and commits to the work they created.",
+      "Connect commits and delivery activity to the tasks they move forward.",
   },
 ];
 
@@ -78,8 +78,8 @@ export const CoreValues = () => {
   return (
     <FeatureGrid
       cards={capabilities}
-      description="Feedback and goals stay with the tasks they create. Owners can see what was requested, why it matters, and how the work is going."
-      mainHeading="Know where the work came from and why it matters."
+      description="Once the right work is chosen, add owners, estimates, capacity, and delivery context so every team knows what happens next."
+      mainHeading="Turn priorities into a plan every team can follow."
       // smallHeading="What's inside"
     />
   );

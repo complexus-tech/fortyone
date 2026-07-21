@@ -167,7 +167,7 @@ export const Testimonials = () => {
           className="m-0 text-4xl md:text-5xl"
           id="testimonials-title"
         >
-          How teams work <br /> with more clarity.
+          How teams turn <br /> requests into progress.
         </Text>
       </Box>
 
