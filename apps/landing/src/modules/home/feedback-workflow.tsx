@@ -11,7 +11,7 @@ export const FeedbackWorkflow = () => {
         <Box className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
           <Box data-landing-reveal>
             <Text as="h2" className="max-w-4xl pb-1 text-4xl md:text-5xl">
-              Bring customer feedback into the project plan.
+              Collect feedback and show customers what happens next.
             </Text>
           </Box>
           <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>

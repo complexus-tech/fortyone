@@ -57,7 +57,7 @@ export const Integrations = () => {
               as="h2"
               className="h-max max-w-2xl pb-2 text-4xl md:mt-6 md:text-5xl"
             >
-              Your tools bring the context. FortyOne turns it into a plan.
+              Keep project work connected across the tools your team uses.
             </Text>
           </Box>
           <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
