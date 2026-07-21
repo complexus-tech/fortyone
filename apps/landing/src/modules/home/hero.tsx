@@ -30,7 +30,7 @@ export const Hero = () => {
           </Text>
 
           <Box className="landing-hero-copy">
-            <Text className="w-full max-w-xl opacity-70 md:mb-0.5">
+            <Text className="w-full max-w-xl opacity-60 md:mb-0.5">
               Collect requests, decide what matters, and move accepted feedback
               into the project plan without losing its context.
             </Text>
