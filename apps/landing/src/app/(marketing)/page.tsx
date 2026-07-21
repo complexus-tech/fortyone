@@ -10,6 +10,7 @@ import {
   CoreValues,
   FeedbackWorkflow,
   HowItWorks,
+  MayaWorkflow,
   PlatformWorkflow,
   Testimonials,
 } from "@/modules/home";
@@ -65,6 +66,7 @@ export default function Page() {
       <Testimonials />
       <CoreValues />
       <PlatformWorkflow />
+      <MayaWorkflow />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />

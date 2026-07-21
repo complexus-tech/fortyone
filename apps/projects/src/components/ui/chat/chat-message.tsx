@@ -109,6 +109,8 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-createMemory": "Saving to memory",
   "tool-updateMemory": "Updating memory",
   "tool-deleteMemory": "Removing memory",
+  "tool-listCustomerFeedbackTool": "Reading customer feedback",
+  "tool-getCustomerFeedbackTool": "Getting feedback details",
   "tool-theme": "Changing theme",
 };
 

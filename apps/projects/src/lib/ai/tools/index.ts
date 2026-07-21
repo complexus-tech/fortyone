@@ -108,6 +108,7 @@ import {
   postRequestGitHubCommentTool,
   updateIntegrationRequestTool,
 } from "./integration-requests";
+import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -165,6 +166,7 @@ export {
   postRequestGitHubCommentTool,
   updateIntegrationRequestTool,
 } from "./integration-requests";
+export { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 
 export const tools = {
   navigation,
@@ -208,6 +210,9 @@ export const tools = {
   declineAllIntegrationRequestsTool,
   getRequestGitHubCommentsTool,
   postRequestGitHubCommentTool,
+  // Customer feedback
+  listCustomerFeedbackTool,
+  getCustomerFeedbackTool,
   // Teams
   listTeams,
   listPublicTeams,
