@@ -1,7 +1,8 @@
 import createMDX from "@next/mdx";
 
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://cloud.fortyone.app")
-  .replace(/\/$/, "");
+const appUrl = (
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://cloud.fortyone.app"
+).replace(/\/$/, "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,16 +19,17 @@ const nextConfig = {
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-    ],
+    unoptimized: true,
+    // remotePatterns: [
+    //   {
+    //     protocol: "https",
+    //     hostname: "lh3.googleusercontent.com",
+    //   },
+    //   {
+    //     protocol: "https",
+    //     hostname: "images.unsplash.com",
+    //   },
+    // ],
   },
   async redirects() {
     return [
