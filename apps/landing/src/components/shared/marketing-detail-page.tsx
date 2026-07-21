@@ -82,7 +82,7 @@ function FeatureCardFrame({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-[320px] items-end overflow-hidden rounded-2xl">
       <Image
         alt=""
-        className="object-cover dark:opacity-40"
+        className="object-cover grayscale-100 dark:opacity-40"
         fill
         quality={100}
         sizes="(max-width: 767px) 100vw, 380px"
@@ -331,7 +331,7 @@ export function MarketingDetailPage({
               <div className="shadow-shadow relative mx-auto max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
                 <Image
                   alt=""
-                  className="h-[240px] w-full object-cover md:h-[320px]"
+                  className="h-[240px] w-full object-cover grayscale-100 md:h-[320px]"
                   placeholder="blur"
                   priority
                   src={meshImage}

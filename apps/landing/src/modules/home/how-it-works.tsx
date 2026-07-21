@@ -84,8 +84,8 @@ function IntegrationTile({
   return (
     <Flex
       align="center"
-      justify="between"
       className={cn(CARD_SURFACE_CLASS, "gap-2.5 px-4 py-2")}
+      justify="between"
     >
       <Flex align="center" className="min-w-0 gap-2">
         <Box className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-black/4">
@@ -112,7 +112,7 @@ function TaskGoalCard() {
   return (
     <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3 backdrop-blur-sm")}>
-        <Flex align="center" justify="between" className="gap-3">
+        <Flex align="center" className="gap-3" justify="between">
           <Flex align="center" className="min-w-0 gap-2.5">
             <Box className="bg-success/15 flex size-7 shrink-0 items-center justify-center rounded-lg">
               <Box className="bg-success size-2 rounded-full" />
@@ -269,7 +269,7 @@ function AIAssignmentCard() {
       </Box>
 
       <Box className={cn(CARD_SURFACE_CLASS, "grid gap-2.5 p-4")}>
-        <Flex align="center" justify="between" className="gap-3">
+        <Flex align="center" className="gap-3" justify="between">
           <Box>
             <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
               Best owner
@@ -335,7 +335,7 @@ function ProgressCard() {
   return (
     <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "w-full p-4")}>
-        <Flex align="center" justify="between" className="mb-3 gap-3">
+        <Flex align="center" className="mb-3 gap-3" justify="between">
           <Text
             className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
           >
@@ -353,8 +353,8 @@ function ProgressCard() {
           ].map(([task, status]) => (
             <Flex
               align="center"
-              justify="between"
               className="border-border bg-surface-muted/30 rounded-lg border px-3 py-2"
+              justify="between"
               key={task}
             >
               <Flex align="center" className="min-w-0 gap-2">
@@ -397,9 +397,9 @@ function ProgressCard() {
         </Button>
         <Button
           aria-label="More actions"
+          asIcon
           className={cn(CARD_TEXT_CLASS, "text-foreground shadow-lg")}
           color="tertiary"
-          asIcon
           rounded="lg"
           size="sm"
           type="button"
@@ -444,7 +444,7 @@ function CapacityCard() {
   return (
     <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")}>
-        <Flex align="center" justify="between" className="gap-3">
+        <Flex align="center" className="gap-3" justify="between">
           <Box>
             <Text
               className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
@@ -486,7 +486,7 @@ function CapacityCard() {
       <Box className="grid gap-2">
         {teams.map((team) => (
           <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")} key={team.name}>
-            <Flex align="center" justify="between" className="mb-2 gap-3">
+            <Flex align="center" className="mb-2 gap-3" justify="between">
               <Box className="min-w-0">
                 <Text
                   className={cn(
@@ -565,7 +565,7 @@ function ControlCard() {
           ["Start", "Wed 10:00"],
           ["Task", "Move API handoff"],
         ].map(([label, value]) => (
-          <Flex align="center" justify="between" className="gap-3" key={label}>
+          <Flex align="center" className="gap-3" justify="between" key={label}>
             <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
               {label}
             </Text>
@@ -624,10 +624,10 @@ function FeatureCard({
       style={{ transitionDelay: `${delay * 1000}ms` }}
     >
       <Box className="flex h-full flex-col">
-        <Box className="relative flex h-[280px] shrink-0 items-end overflow-hidden rounded-2xl md:h-[330px]">
+        <Box className="relative flex h-70 shrink-0 items-end overflow-hidden rounded-2xl md:h-83">
           <Image
             alt=""
-            className="object-cover dark:opacity-40"
+            className="object-cover grayscale-100 dark:opacity-40"
             fill
             quality={100}
             sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
