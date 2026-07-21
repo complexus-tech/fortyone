@@ -26,7 +26,7 @@ export const ProductScreenshot = ({
         className={cn("relative mt-12 overflow-visible", containerClassName)}
       >
         <Box className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible">
-          <Box className="border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur md:rounded-2xl md:p-[0.35rem]">
+          <Box className="border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur-md md:rounded-2xl md:p-[0.35rem]">
             <Flex
               align="center"
               className="mt-1 mb-2 justify-start px-1.5 md:justify-between"
@@ -54,7 +54,7 @@ export const ProductScreenshot = ({
               />
               <Image
                 alt={alt}
-                className="border-border/40 relative -top-px h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden"
+                className="border-border/40 relative h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden"
                 priority={priority}
                 quality={100}
                 sizes="(max-width: 767px) 150vw, 100vw"
