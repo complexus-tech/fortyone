@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
 import { getAllPosts } from "@/lib/posts";
+import {
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+  getCanonicalUrl,
+} from "@/lib/seo";
 import { BlogJsonLd } from "./json-ld";
 import styles from "./blog-list.module.css";
 
@@ -20,15 +25,24 @@ export const metadata: Metadata = {
     "team productivity tips",
     "project management best practices",
   ],
+  alternates: {
+    canonical: getCanonicalUrl("/blog"),
+  },
   openGraph: {
     title: "Project Management Resources & Guides | FortyOne Blog",
     description:
       "Access expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
+    url: getCanonicalUrl("/blog"),
+    siteName: "FortyOne",
+    type: "website",
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
+    card: "summary_large_image",
     title: "Project Management Resources & Guides | FortyOne Blog",
     description:
       "Access expert insights, best practices, and guides on OKR implementation, project management, and team collaboration strategies.",
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 

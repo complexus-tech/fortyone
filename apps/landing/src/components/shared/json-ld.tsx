@@ -5,6 +5,8 @@ import type {
   Product,
   FAQPage,
 } from "schema-dts";
+import { homeFaqs } from "@/lib/home-faqs";
+import { getCanonicalUrl } from "@/lib/seo";
 
 const softwareApplication: WithContext<WebApplication> = {
   "@context": "https://schema.org",
@@ -12,6 +14,7 @@ const softwareApplication: WithContext<WebApplication> = {
   name: "FortyOne",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
+  url: getCanonicalUrl("/"),
   offers: {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
@@ -50,6 +53,9 @@ const softwareApplication: WithContext<WebApplication> = {
     "Progress Tracking",
     "Sprint Planning",
     "Kanban Boards",
+    "Customer Feedback Management",
+    "Feedback Portals",
+    "Public Product Roadmaps",
     "Analytics & Insights",
     "Tasks",
   ],
@@ -120,48 +126,14 @@ const product: WithContext<Product> = {
 const faq: WithContext<FAQPage> = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What makes FortyOne an AI project manager?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "FortyOne combines project management software with an AI assistant that can turn project context into tasks, suggest owners, add estimates, plan timing, and surface delivery risks before work slips.",
-      },
+  mainEntity: homeFaqs.map(({ question, answer }) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: answer,
     },
-    {
-      "@type": "Question",
-      name: "What happens when I assign work to AI?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The AI reviews the task, team context, workload, estimates, and availability, then helps find the right owner, schedule, and next action. Admins can review important AI actions before they are applied.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is the free plan actually free?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. There is no credit card and no trial expiry. The Hobby plan supports one team and up to five members, enough to run a real sprint and decide whether FortyOne should scale with you.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can FortyOne plan around my team's calendar?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Google Calendar integration lets FortyOne sync availability so AI can recommend better schedules and work windows without storing private event details unnecessarily.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can we create tasks from Slack?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Slack support lets teams create tasks from Slack and ask the AI assistant for help where conversations already happen, while keeping the project plan in FortyOne.",
-      },
-    },
-  ],
+  })),
 };
 
 export const JsonLd = () => {

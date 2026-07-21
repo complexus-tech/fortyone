@@ -3,14 +3,15 @@ import type { Metadata } from "next";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
+import { DEFAULT_SOCIAL_IMAGE, DEFAULT_TWITTER_IMAGE } from "@/lib/seo";
 import { mono, sans, serif } from "@/styles/fonts";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne | AI Project Manager for Modern Teams",
+  title: "FortyOne | Customer Feedback and Project Management",
   description:
-    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -29,6 +30,9 @@ export const metadata: Metadata = {
     "kanban boards",
     "strategic planning",
     "project roadmap",
+    "customer feedback management",
+    "feedback portal",
+    "public product roadmap",
     "team objectives",
     "productivity tools",
     "work management",
@@ -38,9 +42,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne | AI Project Manager for Modern Teams",
+    title: "FortyOne | Customer Feedback and Project Management",
     description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+    images: [DEFAULT_SOCIAL_IMAGE],
     siteName: "FortyOne",
     url: "/",
   },
@@ -48,16 +53,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne | AI Project Manager for Modern Teams",
+    title: "FortyOne | Customer Feedback and Project Management",
     description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
-  },
-  alternates: {
-    canonical: "https://www.fortyone.app",
-    languages: {
-      "en-US": "https://www.fortyone.app",
-      "x-default": "https://www.fortyone.app",
-    },
+      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 const isProduction = process.env.NODE_ENV === "production";

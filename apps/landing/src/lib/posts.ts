@@ -4,6 +4,13 @@ import matter from "gray-matter";
 
 const postsDir = path.join(process.cwd(), "src/content/blog");
 
+export type PostMetadata = {
+  title: string;
+  description: string;
+  date: string;
+  featuredImage: string;
+};
+
 export function getAllPosts() {
   const filenames = fs.readdirSync(postsDir);
   return filenames
@@ -14,12 +21,7 @@ export function getAllPosts() {
 
       return {
         slug: name.replace(/\.mdx$/, ""),
-        metadata: metadata as {
-          title: string;
-          description: string;
-          date: string;
-          featuredImage: string;
-        },
+        metadata: metadata as PostMetadata,
       };
     })
     .sort(
@@ -33,5 +35,5 @@ export function getPostBySlug(slug: string) {
   const fullPath = path.join(postsDir, `${slug}.mdx`);
   const source = fs.readFileSync(fullPath, "utf8");
   const { data: metadata, content } = matter(source);
-  return { slug, metadata, content };
+  return { slug, metadata: metadata as PostMetadata, content };
 }

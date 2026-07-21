@@ -7,6 +7,7 @@ import { Box, Flex, Text } from "ui";
 import { CallToAction } from "@/components/shared";
 import { Container } from "@/components/ui";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
+import { getCanonicalUrl } from "@/lib/seo";
 import { mdxComponents } from "@/mdx-components";
 import styles from "./article.module.css";
 
@@ -25,7 +26,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const canonicalUrl = `https://www.fortyone.app/blog/${slug}`;
+  const canonicalUrl = getCanonicalUrl(`/blog/${slug}`);
   return {
     title: post.metadata.title,
     description: post.metadata.description,
@@ -70,13 +71,14 @@ export default async function BlogPost({
     return notFound();
   }
 
-  const canonicalUrl = `https://www.fortyone.app/blog/${slug}`;
+  const canonicalUrl = getCanonicalUrl(`/blog/${slug}`);
+  const featuredImageUrl = getCanonicalUrl(post.metadata.featuredImage);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.metadata.title,
     description: post.metadata.description,
-    image: [post.metadata.featuredImage],
+    image: [featuredImageUrl],
     datePublished: post.metadata.date,
     dateModified: post.metadata.date,
     mainEntityOfPage: canonicalUrl,
@@ -116,7 +118,7 @@ export default async function BlogPost({
         <header className="border-border mb-12 border-b pb-10 md:mb-14 md:pb-12">
           <Flex align="center" className="gap-2 text-sm">
             <Text color="muted">
-              {dateFormatter.format(new Date(post.metadata.date as string))}
+              {dateFormatter.format(new Date(post.metadata.date))}
             </Text>
             <span aria-hidden="true">·</span>
             <Text color="muted">{getReadingTime(post.content)} min read</Text>

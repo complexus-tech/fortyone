@@ -5,6 +5,130 @@ export type Feature = MarketingDetail;
 
 export const features: Feature[] = [
   {
+    slug: "customer-feedback",
+    label: featureLabels["customer-feedback"],
+    heroTitle: "FortyOne Customer Feedback",
+    metaTitle: "Customer Feedback Management and Roadmaps | FortyOne",
+    metaDescription:
+      "Collect customer requests, prioritize feedback, publish roadmap progress, and turn accepted ideas into project work without losing the original request.",
+    intro: [
+      "Customer feedback is most useful when teams can connect it to a decision and show what happens next. Otherwise, requests collect in separate tools while the project plan moves on without them.",
+      "FortyOne gives customers a place to submit requests, vote, and follow progress. Teams can organize feedback into boards, review what matters, and move accepted requests into the project plan.",
+      "The original request stays connected to the task, owner, estimate, goal, and delivery status so teams can act without losing the customer context behind the work.",
+    ],
+    benefits: [
+      [
+        "One feedback portal",
+        "Customers can submit requests, vote on ideas, and follow progress from one public workspace.",
+      ],
+      [
+        "Clear prioritization",
+        "Teams can compare feedback by board, status, votes, customer context, and product priorities.",
+      ],
+      [
+        "Connected delivery",
+        "Accepted feedback becomes planned work while the original request remains attached.",
+      ],
+      [
+        "Visible progress",
+        "Public roadmaps and status updates show customers what is planned, active, completed, or closed.",
+      ],
+    ],
+    previewCards: [
+      {
+        heading: "Customer request",
+        subheading: "Feedback ready for review",
+        badge: "12 votes",
+        rows: [
+          { label: "Board", value: "Product feedback" },
+          { label: "Status", value: "Reviewing" },
+        ],
+      },
+      {
+        heading: "Project work",
+        subheading: "Accepted request connected to delivery",
+        rows: [
+          { label: "Owner", value: "Product team" },
+          { label: "Roadmap", value: "Planned for Q3" },
+        ],
+      },
+    ],
+    sections: [
+      {
+        id: "collect",
+        title: "Collect customer feedback in one place",
+        paragraphs: [
+          "Customers should not need to send the same request through email, support chat, and meetings. FortyOne provides a public feedback portal where they can submit ideas, add context, vote, and see related requests.",
+          "Feedback boards help route each request to the team that owns the decision without exposing the internal project workspace.",
+        ],
+        rows: [
+          ["Submit", "Customers describe the request and why it matters"],
+          ["Vote", "Other customers can support an existing idea"],
+          ["Organize", "Boards route feedback to the responsible team"],
+          ["Discuss", "Comments keep clarification attached to the request"],
+        ],
+        promptTitle: "Feedback review",
+        prompt:
+          "Review active customer feedback, group related requests, summarize the underlying need, and show which items need a product decision.",
+      },
+      {
+        id: "prioritize",
+        title: "Prioritize requests with customer and project context",
+        paragraphs: [
+          "Vote counts are useful, but they are not the whole decision. FortyOne helps teams review the customer need alongside company goals, existing work, delivery risk, and available capacity.",
+          "Teams can move requests through reviewing, planned, in progress, completed, or closed states while keeping the decision visible.",
+        ],
+        cards: [
+          {
+            heading: "Feedback signal",
+            subheading: "Requests grouped before planning",
+            rows: [
+              { label: "Related requests", value: "8 customers" },
+              { label: "Primary need", value: "Faster reporting exports" },
+            ],
+          },
+          {
+            heading: "Planning decision",
+            subheading: "Context ready for review",
+            badge: "Planned",
+            rows: [
+              { label: "Goal", value: "Improve customer retention" },
+              { label: "Owner", value: "Platform team" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "deliver",
+        title: "Turn accepted feedback into trackable project work",
+        paragraphs: [
+          "Once a request is accepted, FortyOne can connect it to a task with an owner, estimate, schedule, goal, and delivery status.",
+          "The task keeps a link to the original feedback, and customers can follow progress on the public roadmap without seeing internal planning details.",
+        ],
+        rows: [
+          ["Request", "The customer problem and supporting discussion"],
+          ["Task", "The work the team accepted into the project plan"],
+          ["Owner", "Who is responsible for delivery"],
+          ["Roadmap", "The customer-facing status of the work"],
+        ],
+      },
+    ],
+    questions: [
+      [
+        "Can customers submit and vote on feedback?",
+        "Yes. Customers can submit requests, vote on ideas, comment, and follow status changes from a public feedback portal.",
+      ],
+      [
+        "Can feedback become a project task?",
+        "Yes. Accepted feedback can be connected to a task with an owner, estimate, goal, schedule, and delivery status.",
+      ],
+      [
+        "Can customers see what the team is working on?",
+        "Yes. Teams can publish roadmap progress while keeping internal project details private.",
+      ],
+    ],
+  },
+  {
     slug: "goals",
     label: featureLabels.goals,
     heroTitle: "FortyOne Goals",

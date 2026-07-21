@@ -3,6 +3,11 @@ import { CallToAction, JsonLd } from "@/components/shared";
 import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
 import {
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+  getCanonicalUrl,
+} from "@/lib/seo";
+import {
   Hero,
   ProductScreenshot,
   SampleClients,
@@ -32,7 +37,13 @@ export const metadata: Metadata = {
     "OKR software",
     "team alignment tool",
     "project planning software",
+    "customer feedback management",
+    "feedback portal",
+    "public product roadmap",
   ],
+  alternates: {
+    canonical: getCanonicalUrl("/"),
+  },
   openGraph: {
     title: "FortyOne | Customer Feedback and Project Management",
     description:
@@ -40,12 +51,14 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "FortyOne",
     type: "website",
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     title: "FortyOne | Customer Feedback and Project Management",
     description:
       "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
     card: "summary_large_image",
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 
