@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { cn } from "lib";
 import { Text, Box, Button, Flex } from "ui";
-import { AiIcon, GitHubIcon, MoreHorizontalIcon, SettingsIcon } from "icons";
+import { AiIcon, CommentIcon, GitHubIcon, SettingsIcon } from "icons";
 import { Container } from "@/components/ui";
 import meshImage from "../../../public/images/meshing.webp";
 
@@ -50,26 +50,6 @@ function SlackIcon({ className }: { className?: string }) {
   );
 }
 
-function LinearIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2.414 15.536a.5.5 0 0 1-.048-.604 10 10 0 0 1 6.702-4.792.5.5 0 0 1 .556.32l2.04 5.61a.5.5 0 0 1-.14.547 10 10 0 0 1-4.586 2.319.5.5 0 0 1-.552-.208l-3.972-3.192Z"
-        fill="#5E6AD2"
-      />
-      <path
-        d="M3.804 12.196a10 10 0 0 1 16-3.998 10 10 0 0 1 .198 14.002.5.5 0 0 1-.593.106L3.951 12.752a.5.5 0 0 1-.147-.556Z"
-        fill="#5E6AD2"
-      />
-    </svg>
-  );
-}
-
 function IntegrationTile({
   action,
   icon,
@@ -107,42 +87,52 @@ function IntegrationTile({
   );
 }
 
-/* ─── Card 01: Task → Goal ────────────────────────────────── */
-function TaskGoalCard() {
+/* ─── Card 01: Request → planned work ─────────────────────── */
+function RequestToWorkCard() {
   return (
     <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3 backdrop-blur-sm")}>
         <Flex align="center" className="gap-3" justify="between">
           <Flex align="center" className="min-w-0 gap-2.5">
-            <Box className="bg-success/15 flex size-7 shrink-0 items-center justify-center rounded-lg">
-              <Box className="bg-success size-2 rounded-full" />
+            <Box className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+              <CommentIcon className="text-primary size-4" strokeWidth={2} />
             </Box>
-            <Text className={cn(CARD_TEXT_CLASS, "text-text-muted truncate")}>
-              Connect task to objective...
-            </Text>
+            <Box className="min-w-0">
+              <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+                Customer feedback
+              </Text>
+              <Text
+                className={cn(
+                  CARD_TEXT_CLASS,
+                  "text-foreground truncate font-semibold",
+                )}
+              >
+                Make onboarding easier
+              </Text>
+            </Box>
           </Flex>
+          <Text
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-primary/10 text-primary shrink-0 rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
+            12 votes
+          </Text>
+        </Flex>
+      </Box>
+      <Box className={cn(CARD_SURFACE_CLASS, "flex-1 p-4")}>
+        <Flex align="center" className="mb-3 gap-3" justify="between">
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Planned task
+          </Text>
           <Text
             className={cn(
               CARD_META_TEXT_CLASS,
               "bg-accent text-text-secondary rounded-lg px-2.5 py-1 font-semibold",
             )}
           >
-            Goal
-          </Text>
-        </Flex>
-      </Box>
-      <Box className={cn(CARD_SURFACE_CLASS, "flex-1 p-4")}>
-        <Flex align="center" className="mb-3 gap-2">
-          <Box
-            className={cn(
-              CARD_META_TEXT_CLASS,
-              "bg-accent text-text-secondary rounded-lg px-2.5 py-1 font-semibold",
-            )}
-          >
-            Q2 Objective
-          </Box>
-          <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
-            Improve activation rate
+            PRD-142
           </Text>
         </Flex>
         <Box className="border-border-strong ml-3 border-l-2 border-dashed pl-4">
@@ -154,27 +144,32 @@ function TaskGoalCard() {
               Redesign onboarding flow
             </Text>
           </Flex>
-          <Box
+          <Text
             className={cn(
               CARD_META_TEXT_CLASS,
               "bg-success/10 text-success mt-2 ml-5.5 w-max rounded-lg px-2.5 py-1 font-semibold",
             )}
           >
-            In Progress
-          </Box>
+            Planned
+          </Text>
         </Box>
       </Box>
-      {/* Linked source */}
       <Flex
         align="center"
         className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-2.5")}
       >
-        <GitHubIcon className="size-4 shrink-0" />
+        <CommentIcon className="text-text-muted size-4 shrink-0" />
         <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
-          Linked to <span className="text-foreground font-medium">#142</span>
+          Original request attached
         </Text>
-        <LinearIcon className="ml-auto size-4 shrink-0" />
-        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>OBJ-7</Text>
+        <Text
+          className={cn(
+            CARD_META_TEXT_CLASS,
+            "bg-accent text-text-secondary ml-auto rounded-lg px-2 py-1 font-semibold",
+          )}
+        >
+          Goal · Activation
+        </Text>
       </Flex>
     </Box>
   );
@@ -259,10 +254,10 @@ function AIAssignmentCard() {
             <Text
               className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
             >
-              AI assignment plan
+              Maya&apos;s work plan
             </Text>
             <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
-              Story: launch customer portal
+              Task: redesign onboarding flow
             </Text>
           </Box>
         </Flex>
@@ -290,7 +285,7 @@ function AIAssignmentCard() {
           </Text>
         </Flex>
         <Box className="bg-surface-muted h-2 overflow-hidden rounded-full">
-          <Box className="bg-success h-full w-[82%] rounded-full" />
+          <Box className="bg-success h-full w-[92%] rounded-full" />
         </Box>
       </Box>
 
@@ -376,44 +371,28 @@ function ProgressCard() {
         </Box>
       </Box>
 
-      <Flex className="ml-auto gap-2">
-        <Button
-          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
-          color="invert"
-          rounded="lg"
-          size="sm"
-          type="button"
-        >
-          Approve
-        </Button>
-        <Button
-          className={cn(CARD_TEXT_CLASS, "shadow-lg")}
-          color="tertiary"
-          rounded="lg"
-          size="sm"
-          type="button"
-        >
-          Done
-        </Button>
-        <Button
-          aria-label="More actions"
-          asIcon
-          className={cn(CARD_TEXT_CLASS, "text-foreground shadow-lg")}
-          color="tertiary"
-          rounded="lg"
-          size="sm"
-          type="button"
-        >
-          <MoreHorizontalIcon className="h-4 w-auto text-current" />
-        </Button>
-      </Flex>
+      <Box className="grid grid-cols-2 gap-2">
+        <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-2.5")}>
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Blocked
+          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>2 tasks</Text>
+        </Box>
+        <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-2.5")}>
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            At risk
+          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>1 task</Text>
+        </Box>
+      </Box>
 
       <Flex
         align="center"
         className={cn(CARD_SURFACE_CLASS, "mt-auto w-full gap-2.5 px-4 py-2.5")}
       >
+        <Box className="bg-success size-2 rounded-full" />
         <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
-          Shared to
+          Updated from team activity
         </Text>
         <Flex className="ml-auto gap-2">
           <SlackIcon className="size-4" />
@@ -540,7 +519,7 @@ function ControlCard() {
               <Text
                 className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
               >
-                Review before apply
+                Review before applying
               </Text>
               <Text
                 className={cn(
@@ -552,7 +531,7 @@ function ControlCard() {
               </Text>
             </Flex>
             <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted mt-1")}>
-              AI suggested an estimate, owner, and safer start time.
+              Maya proposed an estimate, owner, and safer start time.
             </Text>
           </Box>
         </Flex>
@@ -660,22 +639,22 @@ export const HowItWorks = () => {
       {/* Feature cards with mesh backgrounds */}
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
-          description="Turn selected feedback, company goals, and team requests into clear, actionable tasks."
-          title="Plan the right work."
+          description="Turn selected feedback into a task with the original request, goal, and decision attached."
+          title="From request to planned work."
         >
-          <TaskGoalCard />
+          <RequestToWorkCard />
         </FeatureCard>
         <FeatureCard
           delay={0.1}
-          description="Let AI use workload, estimates, and availability to suggest an owner and time for the work."
-          title="Assign with context."
+          description="Let Maya use workload, estimates, and availability to propose an owner and work window."
+          title="Give the work a realistic plan."
         >
           <AIAssignmentCard />
         </FeatureCard>
         <FeatureCard
           delay={0.2}
-          description="Bring conversations, files, and commits into each task so the team can trace every decision."
-          title="The original context stays with the task."
+          description="Bring conversations, files, and commits into the task so the team can trace the decisions behind it."
+          title="Keep every source attached."
         >
           <IntegrationCard />
         </FeatureCard>

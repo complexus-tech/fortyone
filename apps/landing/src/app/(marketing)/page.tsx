@@ -74,10 +74,10 @@ export default function Page() {
         url="complexus.fortyone.app/my-work"
       />
       <SampleClients />
-      <FeedbackWorkflow />
       <HowItWorks />
-      <MayaWorkflow />
+      <FeedbackWorkflow />
       <Testimonials />
+      <MayaWorkflow />
       <PlatformWorkflow />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
