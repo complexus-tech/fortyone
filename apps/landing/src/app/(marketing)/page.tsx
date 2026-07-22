@@ -72,6 +72,7 @@ export default function Page() {
         darkImage={kanbanImg}
         lightImage={kanbanImgLight}
         priority
+        url="complexus.fortyone.app/my-work"
       />
       <SampleClients />
       <HowItWorks />

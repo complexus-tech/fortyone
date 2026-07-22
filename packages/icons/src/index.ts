@@ -130,6 +130,7 @@ export * from "./thumbs-up";
 export * from "./thumbs-down";
 export * from "./ai";
 export * from "./reload";
+export * from "./refresh";
 export * from "./history";
 export * from "./microphone";
 export * from "./voice";

@@ -1,8 +1,8 @@
 import type { ImageProps } from "next/image";
 import Image from "next/image";
-import { ArrowDown2Icon } from "icons";
+import { ArrowDown2Icon, ArrowLeft2Icon, RefreshIcon } from "icons";
 import { cn } from "lib";
-import { Box, Flex } from "ui";
+import { Box, Flex, Text } from "ui";
 import { Container, Dot } from "@/components/ui";
 
 export type ProductScreenshotProps = {
@@ -11,6 +11,7 @@ export type ProductScreenshotProps = {
   darkImage: ImageProps["src"];
   lightImage: ImageProps["src"];
   priority?: boolean;
+  url: string;
 };
 
 export const ProductScreenshot = ({
@@ -19,6 +20,7 @@ export const ProductScreenshot = ({
   darkImage,
   lightImage,
   priority = false,
+  url,
 }: ProductScreenshotProps) => {
   return (
     <Box data-landing-reveal>
@@ -29,17 +31,38 @@ export const ProductScreenshot = ({
           <Box className="border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur-md md:rounded-2xl md:p-[0.35rem]">
             <Flex
               align="center"
-              className="mt-1 mb-2 justify-start px-1.5 md:justify-between"
+              className="relative mt-1 mb-2 min-h-4 justify-start px-1.5 md:justify-between"
             >
               <Flex aria-hidden="true" className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
                 <Dot className="text-warning size-2.5" />
                 <Dot className="text-success size-2.5" />
               </Flex>
+              <Flex
+                align="center"
+                className="absolute left-1/2 -translate-x-1/2 gap-2"
+              >
+                <ArrowLeft2Icon
+                  aria-hidden="true"
+                  className="text-text-muted hidden h-3.5 opacity-70 sm:block"
+                  strokeWidth={2.25}
+                />
+                <Text
+                  as="span"
+                  className="bg-surface-muted text-text-muted dark:bg-surface-elevated max-w-[calc(100vw-7rem)] truncate rounded-md px-2 py-0.5 text-[0.625rem] leading-4 font-medium md:max-w-md md:text-center md:text-xs"
+                >
+                  {url}
+                </Text>
+                <RefreshIcon
+                  aria-hidden="true"
+                  className="text-text-muted hidden h-3.5 opacity-70 sm:block"
+                  strokeWidth={2.25}
+                />
+              </Flex>
               <ArrowDown2Icon
                 aria-hidden="true"
-                className="hidden h-3.5 md:block"
-                strokeWidth={2.5}
+                className="text-text-muted hidden h-3.5 opacity-70 md:block"
+                strokeWidth={2.25}
               />
             </Flex>
 

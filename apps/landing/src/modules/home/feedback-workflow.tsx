@@ -29,6 +29,7 @@ export const FeedbackWorkflow = () => {
         containerClassName="mt-10 md:mt-16"
         darkImage={feedbackImageDark}
         lightImage={feedbackImageLight}
+        url="complexus.fortyone.app/feedback"
       />
     </Box>
   );

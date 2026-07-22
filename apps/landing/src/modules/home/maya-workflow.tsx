@@ -30,6 +30,7 @@ export const MayaWorkflow = () => {
         darkImage={mayaImg}
         lightImage={mayaImgLight}
         priority
+        url="complexus.fortyone.app/maya"
       />
     </Box>
   );
