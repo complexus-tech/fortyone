@@ -675,7 +675,7 @@ export const HowItWorks = () => {
         <FeatureCard
           delay={0.2}
           description="Bring conversations, files, and commits into each task so the team can trace every decision."
-          title="Keep the source attached."
+          title="The original context stays with the task."
         >
           <IntegrationCard />
         </FeatureCard>
@@ -696,21 +696,21 @@ export const PlatformWorkflow = () => {
       <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
         <FeatureCard
           description="Keep goals, tasks, and progress connected so the team can see what is done and what needs attention."
-          title="Track delivery."
+          title="Progress without the status chase."
         >
           <ProgressCard />
         </FeatureCard>
         <FeatureCard
           delay={0.1}
           description="Check team workload before new assignments create a bottleneck."
-          title="Plan around capacity."
+          title="See the bottleneck before assigning."
         >
           <CapacityCard />
         </FeatureCard>
         <FeatureCard
           delay={0.2}
           description="Approve or edit important suggestions before they change the plan."
-          title="Review AI changes."
+          title="Maya proposes. Your team approves."
         >
           <ControlCard />
         </FeatureCard>

@@ -52,7 +52,7 @@ export const plans: Plan[] = [
       sso: true,
       rbac: true,
       emailSupport: true,
-      objectives: "Up to 5 objectives",
+      objectives: "Up to 20 objectives",
       trackOKRs: true,
       unlimitedGuests: true,
       customWorkflows: true,

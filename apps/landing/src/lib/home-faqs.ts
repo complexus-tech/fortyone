@@ -7,7 +7,7 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "What makes FortyOne different from a task manager?",
     answer:
-      "FortyOne connects customer feedback and company goals to the tasks that deliver them. Teams can decide what to build without losing the original request or the reason behind the work.",
+      "Most task managers start after the work has already been chosen. FortyOne starts with the request: customers submit and vote on feedback, your team decides what should move forward, planned feedback becomes linked project work, and customers can follow delivery on the public roadmap. The original request stays attached, so the team never loses why the work exists.",
   },
   {
     question: "How does customer feedback work?",

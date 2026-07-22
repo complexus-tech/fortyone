@@ -28,7 +28,8 @@ const packages = [
     name: "Professional",
     cta: "Try Professional",
     href: SIGNUP_URL,
-    overview: "For growing teams that need goals and more room to plan.",
+    overview:
+      "For teams that need shared goals, custom workflows, and room to plan across multiple teams.",
     price: 7,
     features: [
       "Everything in Hobby",
@@ -44,7 +45,8 @@ const packages = [
     name: "Business",
     cta: "Try Business",
     href: SIGNUP_URL,
-    overview: "For organizations coordinating work across several teams.",
+    overview:
+      "For organizations coordinating multiple teams with private spaces, shared terminology, and no planning limits.",
     price: 10,
     features: [
       "Everything in Professional",

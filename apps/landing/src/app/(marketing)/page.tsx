@@ -12,7 +12,6 @@ import {
   ProductScreenshot,
   SampleClients,
   Integrations,
-  CoreValues,
   FeedbackWorkflow,
   HowItWorks,
   MayaWorkflow,
@@ -75,12 +74,11 @@ export default function Page() {
         url="complexus.fortyone.app/my-work"
       />
       <SampleClients />
-      <HowItWorks />
       <FeedbackWorkflow />
-      <Testimonials />
-      <CoreValues />
-      <PlatformWorkflow />
+      <HowItWorks />
       <MayaWorkflow />
+      <Testimonials />
+      <PlatformWorkflow />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />
