@@ -14,14 +14,14 @@ const testimonialButtonClassName =
 const testimonials = [
   {
     quote:
-      "Customer feedback now comes into one place, where we can prioritise requests and turn the right ideas into planned work. Our public roadmap also shows customers what the team is working on and what is coming next.",
+      "We now keep customer feedback in one place. We can see what matters, plan the right work, and keep customers updated through our public roadmap without constant follow-up emails.",
     author: "Tshaxedue Gondo",
     role: "Founder & Spatial Data Scientist",
     company: "Miningo Technologies",
   },
   {
     quote:
-      "We plan product work in one shared view, with priorities, owners, and delivery risks clear to the whole team. GitHub keeps engineering updates connected to each task, so we spend less time rebuilding context and more time delivering.",
+      "Product and engineering now work from the same plan. Everyone knows what matters, who owns it, and where work is blocked. We spend less time in status meetings and more time shipping.",
     author: "Dominic Chingoma",
     role: "Head of Engineering & CTO",
     company: "Fin",
