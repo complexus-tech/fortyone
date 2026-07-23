@@ -29,24 +29,25 @@ export const ProductScreenshot = ({
       <Container
         className={cn("relative mt-12 overflow-visible", containerClassName)}
       >
-        <Box className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible">
+        <Box
+          className={cn(
+            "relative md:mr-0 md:w-auto md:overflow-visible",
+            cropBrowserOnMobile
+              ? "-mr-5 w-[calc(100%+1.25rem)] overflow-hidden"
+              : "w-full overflow-visible",
+          )}
+        >
           <Box
             className={cn(
-              "border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur-md md:rounded-2xl md:p-[0.35rem]",
-              {
-                "border-r-0 pr-0 md:border-r md:pr-[0.35rem]":
-                  cropBrowserOnMobile,
-              },
+              "border-border/70 bg-surface/90 dark:bg-surface/65 relative border p-0.5 backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem]",
+              cropBrowserOnMobile
+                ? "rounded-l-xl rounded-r-none border-r-0 pr-0"
+                : "rounded-xl",
             )}
           >
             <Flex
               align="center"
-              className={cn(
-                "relative justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between",
-                cropBrowserOnMobile
-                  ? "mt-0.5 mb-1 min-h-3"
-                  : "mt-1 mb-2 min-h-4",
-              )}
+              className="relative mt-0.5 mb-1 min-h-3 justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between"
             >
               <Flex aria-hidden="true" className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
@@ -55,10 +56,7 @@ export const ProductScreenshot = ({
               </Flex>
               <Flex
                 align="center"
-                className={cn(
-                  "absolute left-1/2 -translate-x-1/2 gap-2",
-                  cropBrowserOnMobile && "hidden md:flex",
-                )}
+                className="absolute left-1/2 hidden -translate-x-1/2 gap-2 md:flex"
               >
                 <ArrowLeft2Icon
                   aria-hidden="true"
@@ -84,27 +82,46 @@ export const ProductScreenshot = ({
               />
             </Flex>
 
-            <Box className="relative overflow-hidden rounded-l-lg rounded-r-none md:rounded-xl">
+            <Box
+              className={cn(
+                "relative overflow-hidden md:rounded-xl",
+                cropBrowserOnMobile
+                  ? "rounded-l-lg rounded-r-none"
+                  : "rounded-lg",
+              )}
+            >
               <Image
                 alt={alt}
                 className={cn(
-                  "border-border/50 relative hidden h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
-                  cropBrowserOnMobile && "border-r-0 md:border-r",
+                  "border-border/50 relative hidden border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
+                  cropBrowserOnMobile
+                    ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
+                    : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}
                 quality={100}
-                sizes="(max-width: 767px) 150vw, 100vw"
+                sizes={
+                  cropBrowserOnMobile
+                    ? "(max-width: 767px) 150vw, 100vw"
+                    : "100vw"
+                }
                 src={darkImage}
               />
               <Image
                 alt={alt}
                 className={cn(
-                  "border-border/40 relative h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
-                  cropBrowserOnMobile && "border-r-0 md:border-r",
+                  "border-border/40 relative border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
+                  cropBrowserOnMobile
+                    ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
+                    : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}
                 quality={100}
-                sizes="(max-width: 767px) 150vw, 100vw"
+                sizes={
+                  cropBrowserOnMobile
+                    ? "(max-width: 767px) 150vw, 100vw"
+                    : "100vw"
+                }
                 src={lightImage}
               />
             </Box>
