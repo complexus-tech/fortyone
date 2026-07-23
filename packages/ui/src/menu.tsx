@@ -195,7 +195,10 @@ const Separator = forwardRef<
   ComponentPropsWithoutRef<typeof DropdownMenu.Separator>
 >(({ className, ...rest }, ref) => (
   <DropdownMenu.Separator
-    className={cn("my-1.5 border-b-[0.5px] border-border", className)}
+    className={cn(
+      "my-1.5 border-b-[0.5px] border-border dark:border-border-strong/80",
+      className,
+    )}
     ref={ref}
     {...rest}
   />
