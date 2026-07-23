@@ -316,7 +316,8 @@ export const ChatInput = ({
       )}
       <Box
         className={cn("py-2", {
-          "rounded-lg border-0 bg-black/[0.035] dark:bg-white/[0.035]": isPopup,
+          "rounded-lg border-[0.5px] border-black/[0.07] bg-black/[0.035] dark:border-white/[0.07] dark:bg-white/[0.035]":
+            isPopup,
           "border-border rounded-2xl border": !isPopup,
         })}
       >

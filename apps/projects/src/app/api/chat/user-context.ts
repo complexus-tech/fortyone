@@ -1,9 +1,14 @@
-import { auth } from "@/auth";
 import type { Memory } from "@/modules/ai-chats/types";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
 
-export async function getUserContext({
+type UserContextIdentity = {
+  id: string;
+  name?: string | null;
+};
+
+export function getUserContext({
+  user,
   currentPath,
   currentTheme,
   resolvedTheme,
@@ -15,6 +20,7 @@ export async function getUserContext({
   memories,
   totalMessages,
 }: {
+  user?: UserContextIdentity;
   currentPath: string;
   currentTheme: string;
   resolvedTheme: string;
@@ -26,7 +32,7 @@ export async function getUserContext({
   };
   teams: Team[];
   memories: Memory[];
-  username: string;
+  username?: string;
   terminology: {
     stories: string;
     sprints: string;
@@ -38,12 +44,13 @@ export async function getUserContext({
     current: number;
     limit: number;
   };
-}): Promise<string> {
-  const session = await auth();
-  if (!session?.user) {
+}): string {
+  if (!user) {
     return "";
   }
 
+  const displayName = user.name ?? "User";
+  const usernameLabel = username ? ` (@${username})` : "";
   const now = new Date();
   const currentDate = now.toISOString().split("T")[0];
   const currentTime = now.toLocaleTimeString("en-US", {
@@ -55,7 +62,9 @@ export async function getUserContext({
 
   const teamsSummary =
     teams.length > 0
-      ? teams.map((team) => `${team.name} (${team.code}) [${team.id}]`).join(", ")
+      ? teams
+          .map((team) => `${team.name} (${team.code}) [${team.id}]`)
+          .join(", ")
       : "None";
 
   const memoriesSummary =
@@ -70,7 +79,7 @@ export async function getUserContext({
 
   return `
 Runtime context:
-- User: ${session.user.name} (@${username}) [${session.user.id}]
+- User: ${displayName}${usernameLabel} [${user.id}]
 - Workspace: ${workspace.name} (${workspace.slug}) [${workspace.id}]
 - Workspace role: ${workspace.userRole}
 - Current path: ${currentPath}
@@ -104,7 +113,7 @@ Memories:
 ${memoriesSummary}
 
 "Me" resolution:
-- When the user says "me", "my", or "assign to me", resolve to ${session.user.name} [${session.user.id}].
+- When the user says "me", "my", or "assign to me", resolve to ${displayName} [${user.id}].
 
 Date handling:
 - Server dates are UTC.

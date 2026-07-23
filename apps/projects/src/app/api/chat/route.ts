@@ -8,7 +8,6 @@ import {
   convertToModelMessages,
   stepCountIs,
   streamText,
-  smoothStream,
   wrapLanguageModel,
 } from "ai";
 import type { NextRequest } from "next/server";
@@ -21,6 +20,10 @@ import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
 
 export const maxDuration = 120;
+
+const MAX_OUTPUT_TOKENS = 2000;
+const MAX_TOOL_STEPS = 8;
+const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v1";
 
 export async function POST(req: NextRequest) {
   const {
@@ -35,29 +38,29 @@ export async function POST(req: NextRequest) {
     terminology,
     workspace,
     memories,
-    webSearchEnabled = true,
     provider = "openai",
     totalMessages,
   } = await req.json();
-  const modelMessages = await convertToModelMessages(
-    messagesFromRequest as UIMessage[],
-  );
+
+  const [modelMessages, session] = await Promise.all([
+    convertToModelMessages(messagesFromRequest as UIMessage[]),
+    auth(),
+  ]);
 
   // Get user context for "me" resolution
-  const userContext = await getUserContext({
+  const userContext = getUserContext({
+    user: session?.user,
     currentPath,
     currentTheme,
     resolvedTheme,
     subscription,
     memories,
     teams,
-    username,
+    username: username ?? subscription?.username,
     terminology,
     workspace,
     totalMessages,
   });
-
-  const session = await auth();
 
   const phClient = posthogServer();
 
@@ -92,8 +95,8 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model,
       messages: modelMessages,
-      maxOutputTokens: 4000,
-      stopWhen: [stepCountIs(25)],
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      stopWhen: [stepCountIs(MAX_TOOL_STEPS)],
       tools: {
         ...tools,
         // ...(webSearchEnabled
@@ -103,17 +106,14 @@ export async function POST(req: NextRequest) {
         //   : {}),
       },
       system: systemPrompt + userContext,
-      experimental_transform: smoothStream({
-        delayInMs: 20,
-        chunking: "word",
-      }),
       experimental_context: {
         workspaceSlug: workspace?.slug,
       },
       providerOptions: {
         openai: {
-          reasoningEffort: "high",
-          textVerbosity: "medium",
+          promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace?.id ?? "unknown"}`,
+          reasoningEffort: "low",
+          textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig: {
@@ -132,6 +132,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
+    // eslint-disable-next-line no-console -- Preserve server-side diagnostics.
     console.error("[chat/route] Stream error:", error);
     throw new Error(
       "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.",

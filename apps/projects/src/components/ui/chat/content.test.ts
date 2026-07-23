@@ -29,8 +29,25 @@ describe("ChatContent", () => {
     expect(layoutSource).not.toContain("ResizablePanel");
     expect(popupSource).toContain("w-[min(440px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
-    expect(popupSource).toContain("border-border");
+    expect(popupSource).toContain("border-border/70 dark:border-border");
     expect(popupSource).toContain("<ChatContent isPopup />");
+  });
+
+  it("uses a subtle prompt border inside the popup", () => {
+    const source = readSource("src/components/ui/chat/chat-input.tsx");
+
+    expect(source).toContain(
+      "border-[0.5px] border-black/[0.07] bg-black/[0.035]",
+    );
+    expect(source).toContain("dark:border-white/[0.07]");
+  });
+
+  it("keeps the popup avatar perfectly circular", () => {
+    const source = readSource("src/components/ui/chat/chat-header.tsx");
+
+    expect(source).toContain('className="h-10 w-10"');
+    expect(source).toContain('rounded="full"');
+    expect(source).not.toContain('className="size-10 rounded-full"');
   });
 
   it("uses compact prompt rows in the popup empty state", () => {

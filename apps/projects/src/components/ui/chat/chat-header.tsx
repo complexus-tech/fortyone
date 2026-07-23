@@ -53,7 +53,7 @@ export const ChatHeader = ({
         <Flex align="center" className="min-w-0 flex-1" gap={3}>
           {isPopup ? (
             <Avatar
-              className="size-10 rounded-full"
+              className="h-10 w-10"
               name={
                 profile?.fullName || profile?.username || session?.user.name
               }
