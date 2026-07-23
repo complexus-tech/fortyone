@@ -228,13 +228,12 @@ export const TeamFeedbackCard = ({
                 Mark as reviewing
               </ContextMenu.Item>
               <ContextMenu.Item
-                className="text-danger"
                 disabled={isLinked || feedback.status === "closed"}
                 onSelect={() => {
                   openDialogAfterMenuClose(setIsClosing);
                 }}
               >
-                <CloseIcon className="text-danger" />
+                <CloseIcon />
                 Close feedback...
               </ContextMenu.Item>
             </ContextMenu.Group>

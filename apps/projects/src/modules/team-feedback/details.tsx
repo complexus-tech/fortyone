@@ -14,6 +14,7 @@ import {
   ClockIcon,
   CloseIcon,
   CommentIcon,
+  DeleteIcon,
   LinkIcon,
   MoreHorizontalIcon,
   ReplyIcon,
@@ -38,6 +39,7 @@ import {
 import { BodyContainer } from "@/components/shared";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
 import { useSession } from "@/lib/auth/client";
 import {
   getAuthorPathByPortalSlug,
@@ -54,6 +56,7 @@ import { useCreateTeamFeedbackComment } from "./hooks/use-create-comment";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
 import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
 import { useTeamFeedbackItem } from "./hooks/use-feedback";
+import { useTrashTeamFeedback } from "./hooks/use-trash";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
 import { LinkFeedbackStoryDialog } from "./link-story-dialog";
 import { FeedbackStatus } from "./status";
@@ -90,23 +93,29 @@ const getStatusBannerCopy = (status: TeamFeedbackStatus): string => {
 };
 
 const FeedbackBanner = ({
+  canManageTrash,
   feedback,
   isPlanning,
+  isTrashing,
   onClose,
   onLink,
   onOpenStory,
   portalHref,
   onPlan,
   onReview,
+  onTrash,
 }: {
+  canManageTrash: boolean;
   feedback: TeamFeedbackItem;
   isPlanning: boolean;
+  isTrashing: boolean;
   onClose: () => void;
   onLink: () => void;
   onOpenStory: () => void;
   portalHref?: string;
   onPlan: () => void;
   onReview: () => void;
+  onTrash: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
   const storyTerm = getTermDisplay("storyTerm");
@@ -163,16 +172,6 @@ const FeedbackBanner = ({
           )}
         </Flex>
         <Flex align="center" className="shrink-0" gap={1}>
-          {linkedStory ? (
-            <button
-              aria-label={`Open linked ${storyTerm}`}
-              className="text-primary hover:text-primary/80 rounded-md p-1 transition"
-              onClick={onOpenStory}
-              type="button"
-            >
-              <LinkIcon className="text-current" />
-            </button>
-          ) : null}
           {portalHref ? (
             <Button
               aria-label="Open in feedback portal"
@@ -229,18 +228,29 @@ const FeedbackBanner = ({
                   <LinkIcon className="h-5 w-auto" />
                   Link existing {storyTerm}
                 </Menu.Item>
-              </Menu.Group>
-              <Menu.Separator />
-              <Menu.Group>
                 <Menu.Item
-                  className="text-danger"
                   disabled={isLinked || feedback.status === "closed"}
                   onSelect={onClose}
                 >
-                  <CloseIcon className="text-danger h-5 w-auto" />
+                  <CloseIcon className="h-5 w-auto" />
                   Close feedback...
                 </Menu.Item>
               </Menu.Group>
+              {canManageTrash ? (
+                <>
+                  <Menu.Separator />
+                  <Menu.Group>
+                    <Menu.Item
+                      className="text-danger"
+                      disabled={isLinked || isTrashing}
+                      onSelect={onTrash}
+                    >
+                      <DeleteIcon className="text-danger h-5 w-auto" />
+                      Move to trash...
+                    </Menu.Item>
+                  </Menu.Group>
+                </>
+              ) : null}
             </Menu.Items>
           </Menu>
         </Flex>
@@ -295,7 +305,9 @@ const FeedbackCommentComposer = ({
     content: "",
     editable: true,
     extensions: getStoryCommentEditorExtensions({
-      placeholder: parentId ? "Reply to comment..." : "Leave a comment...",
+      placeholder: parentId
+        ? "Write a public reply..."
+        : "Write a public comment...",
     }),
     immediatelyRender: false,
   });
@@ -373,11 +385,6 @@ const FeedbackCommentComposer = ({
             </Button>
           </Flex>
         </Flex>
-        {!parentId ? (
-          <Text className="mt-1.5 text-[0.95rem]" color="muted">
-            Comments are visible on the feedback portal.
-          </Text>
-        ) : null}
       </Box>
     </Flex>
   );
@@ -688,6 +695,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { withWorkspace } = useWorkspacePath();
+  const { userRole } = useUserRole();
   const {
     data: feedback,
     isError,
@@ -697,10 +705,12 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   const { data: feedbackPortals = [] } = useFeedbackPortals();
   const planFeedback = usePlanTeamFeedback();
   const { mutate: setReadState } = useSetTeamFeedbackReadState();
+  const trashFeedback = useTrashTeamFeedback();
   const updateStatus = useUpdateTeamFeedbackStatus();
   const lastAutoReadFeedbackId = useRef<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
+  const [isTrashing, setIsTrashing] = useState(false);
 
   useEffect(() => {
     if (
@@ -813,8 +823,10 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                 Back to feedback
               </Button>
               <FeedbackBanner
+                canManageTrash={userRole === "admin"}
                 feedback={feedback}
                 isPlanning={planFeedback.isPending}
+                isTrashing={trashFeedback.isPending}
                 onClose={() => {
                   openDialogAfterMenuClose(setIsClosing);
                 }}
@@ -826,6 +838,9 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                 }}
                 onPlan={handlePlan}
                 onReview={handleReview}
+                onTrash={() => {
+                  openDialogAfterMenuClose(setIsTrashing);
+                }}
                 portalHref={portalHref}
               />
               <Text
@@ -893,6 +908,28 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
         onLinked={openStory}
         onOpenChange={setIsLinking}
         teamId={feedbackTeamId}
+      />
+      <ConfirmDialog
+        confirmText="Move to trash"
+        description="This feedback will be hidden from team lists and the public portal. You can restore it from Trash for 30 days."
+        isLoading={trashFeedback.isPending}
+        isOpen={isTrashing}
+        loadingText="Moving..."
+        onCancel={() => {
+          setIsTrashing(false);
+        }}
+        onClose={() => {
+          setIsTrashing(false);
+        }}
+        onConfirm={() => {
+          trashFeedback.mutate(feedback.id, {
+            onSuccess: () => {
+              setIsTrashing(false);
+              router.push(listHref);
+            },
+          });
+        }}
+        title="Move this feedback to trash?"
       />
       <ConfirmDialog
         confirmText="Close feedback"
