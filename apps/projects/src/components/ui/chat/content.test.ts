@@ -27,7 +27,7 @@ describe("ChatContent", () => {
     expect(chatSource).toContain("<ChatButton");
     expect(chatSource).toContain("<ChatRail />");
     expect(layoutSource).not.toContain("ResizablePanel");
-    expect(popupSource).toContain("w-[min(420px,calc(100vw-36px))]");
+    expect(popupSource).toContain("w-[min(440px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
     expect(popupSource).toContain("border-border");
     expect(popupSource).toContain("<ChatContent isPopup />");

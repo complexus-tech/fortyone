@@ -16,7 +16,6 @@ import {
   CommentIcon,
   LinkIcon,
   MoreHorizontalIcon,
-  NewTabIcon,
   ReplyIcon,
   RequestsIcon,
   StoryIcon,
@@ -181,7 +180,7 @@ const FeedbackBanner = ({
               className="text-primary hover:text-primary/80"
               color="tertiary"
               href={portalHref}
-              leftIcon={<NewTabIcon className="h-5 text-current" />}
+              leftIcon={<LinkIcon className="h-5 text-current" />}
               size="sm"
               target="_blank"
               title="Open in feedback portal"

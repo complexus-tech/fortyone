@@ -66,7 +66,7 @@ export const SuggestedPrompts = ({
 
   if (isPopup) {
     return (
-      <Box className="px-[18px] pt-9 pb-[18px]">
+      <Box className="px-[18px] pt-14 pb-[18px]">
         <Text as="h2" className="text-4xl leading-[1.08] tracking-[-0.04em]">
           Hi, {name}! Ask me anything!
         </Text>

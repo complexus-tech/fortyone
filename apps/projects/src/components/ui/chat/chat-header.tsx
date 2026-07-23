@@ -50,21 +50,24 @@ export const ChatHeader = ({
   return (
     <>
       <Flex align="center" className="w-full" justify="between">
-        <Flex align="center" className="min-w-0 flex-1" gap={2}>
+        <Flex align="center" className="min-w-0 flex-1" gap={3}>
           {isPopup ? (
             <Avatar
-              className="size-[34px]"
+              className="size-10 rounded-full"
               name={
                 profile?.fullName || profile?.username || session?.user.name
               }
+              rounded="full"
               size="md"
               src={profile?.avatarUrl || session?.user.image}
             />
           ) : null}
           {isPopup ? (
             <Box className="min-w-0">
-              <Text className="text-base leading-5">Maya</Text>
-              <Text className="text-sm leading-5" color="muted">
+              <Text className="text-lg leading-6" fontWeight="medium">
+                Maya
+              </Text>
+              <Text className="text-base leading-6" color="muted">
                 AI project assistant
               </Text>
             </Box>
