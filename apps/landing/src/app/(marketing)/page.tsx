@@ -68,6 +68,7 @@ export default function Page() {
       <Hero />
       <ProductScreenshot
         alt="FortyOne project board showing planned work, active tasks, and MyAI project guidance"
+        cropBrowserOnMobile
         darkImage={kanbanImg}
         lightImage={kanbanImgLight}
         priority

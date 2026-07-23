@@ -8,6 +8,7 @@ import { Container, Dot } from "@/components/ui";
 export type ProductScreenshotProps = {
   alt: string;
   containerClassName?: string;
+  cropBrowserOnMobile?: boolean;
   darkImage: ImageProps["src"];
   lightImage: ImageProps["src"];
   priority?: boolean;
@@ -17,6 +18,7 @@ export type ProductScreenshotProps = {
 export const ProductScreenshot = ({
   alt,
   containerClassName,
+  cropBrowserOnMobile = false,
   darkImage,
   lightImage,
   priority = false,
@@ -28,10 +30,23 @@ export const ProductScreenshot = ({
         className={cn("relative mt-12 overflow-visible", containerClassName)}
       >
         <Box className="relative -mr-5 w-[calc(100%+1.25rem)] overflow-hidden md:mr-0 md:w-auto md:overflow-visible">
-          <Box className="border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur-md md:rounded-2xl md:p-[0.35rem]">
+          <Box
+            className={cn(
+              "border-border/70 bg-surface/90 dark:bg-surface/65 relative rounded-l-xl rounded-r-none border p-0.5 backdrop-blur-md md:rounded-2xl md:p-[0.35rem]",
+              {
+                "border-r-0 pr-0 md:border-r md:pr-[0.35rem]":
+                  cropBrowserOnMobile,
+              },
+            )}
+          >
             <Flex
               align="center"
-              className="relative mt-1 mb-2 min-h-4 justify-start px-1.5 md:justify-between"
+              className={cn(
+                "relative justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between",
+                cropBrowserOnMobile
+                  ? "mt-0.5 mb-1 min-h-3"
+                  : "mt-1 mb-2 min-h-4",
+              )}
             >
               <Flex aria-hidden="true" className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
@@ -40,7 +55,10 @@ export const ProductScreenshot = ({
               </Flex>
               <Flex
                 align="center"
-                className="absolute left-1/2 -translate-x-1/2 gap-2"
+                className={cn(
+                  "absolute left-1/2 -translate-x-1/2 gap-2",
+                  cropBrowserOnMobile && "hidden md:flex",
+                )}
               >
                 <ArrowLeft2Icon
                   aria-hidden="true"
@@ -69,7 +87,10 @@ export const ProductScreenshot = ({
             <Box className="relative overflow-hidden rounded-l-lg rounded-r-none md:rounded-xl">
               <Image
                 alt={alt}
-                className="border-border/50 relative hidden h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block"
+                className={cn(
+                  "border-border/50 relative hidden h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
+                  cropBrowserOnMobile && "border-r-0 md:border-r",
+                )}
                 priority={priority}
                 quality={100}
                 sizes="(max-width: 767px) 150vw, 100vw"
@@ -77,7 +98,10 @@ export const ProductScreenshot = ({
               />
               <Image
                 alt={alt}
-                className="border-border/40 relative h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden"
+                className={cn(
+                  "border-border/40 relative h-88 w-auto max-w-none rounded-l-lg rounded-r-none border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
+                  cropBrowserOnMobile && "border-r-0 md:border-r",
+                )}
                 priority={priority}
                 quality={100}
                 sizes="(max-width: 767px) 150vw, 100vw"
