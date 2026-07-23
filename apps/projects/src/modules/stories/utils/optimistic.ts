@@ -34,7 +34,6 @@ export const moveStoryBetweenGroups = (
 ): StoryGroup[] => {
   let moved: DetailedStory | undefined;
 
-  // 1. Remove the story from its current group, remembering it.
   const withoutStory = groups.map((g) => {
     const remaining = g.stories.filter((s) => {
       if (s.id === storyId) {
@@ -47,15 +46,30 @@ export const moveStoryBetweenGroups = (
       }
       return true;
     });
-    return { ...g, stories: remaining };
+
+    if (remaining.length === g.stories.length) {
+      return { ...g, stories: remaining };
+    }
+
+    return {
+      ...g,
+      loadedCount: Math.max(0, g.loadedCount - 1),
+      stories: remaining,
+      totalCount: Math.max(0, g.totalCount - 1),
+    };
   });
 
-  // If we couldn't find the story or no target, just return cleaned groups.
   if (!moved || !targetKey) return withoutStory;
 
-  // 2. Insert into target group.
   return withoutStory.map((g) =>
-    g.key === targetKey ? { ...g, stories: [moved!, ...g.stories] } : g,
+    g.key === targetKey
+      ? {
+          ...g,
+          loadedCount: g.loadedCount + 1,
+          stories: [moved!, ...g.stories],
+          totalCount: g.totalCount + 1,
+        }
+      : g,
   );
 };
 

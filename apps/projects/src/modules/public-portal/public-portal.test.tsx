@@ -1065,11 +1065,13 @@ describe("Public portal UI", () => {
         "Add pedestrian crossing near East Avenue school",
       ),
     ).toHaveClass("line-clamp-1", "text-base");
-    expect(
-      within(notificationLink)
-        .getByText("2026-07-20T08:00:00.000Z")
-        .closest("p"),
-    ).toHaveClass("text-sm");
+    const timestamp = within(notificationLink)
+      .getByText("2026-07-20T08:00:00.000Z")
+      .closest("p");
+    expect(timestamp).toHaveClass("shrink-0", "text-sm", "whitespace-nowrap");
+    expect(timestamp?.parentElement?.parentElement).toBe(
+      notificationMessage.parentElement?.parentElement,
+    );
     expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
     expect(notificationLink).toHaveAttribute(
       "href",
@@ -1199,8 +1201,26 @@ describe("Public portal UI", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
-    expect(await screen.findByText("3 unread")).toBeInTheDocument();
+    const notificationsButton = screen.getByRole("button", {
+      name: "Notifications",
+    });
+    expect(
+      await within(notificationsButton).findByText("3"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(notificationsButton);
+    const notificationMessage = await screen.findByText(
+      "Tariro Moyo commented on your feedback",
+    );
+    const notificationList = notificationMessage.closest(".hide-scrollbar");
+    expect(notificationList).toHaveClass(
+      "max-h-[min(30rem,calc(100dvh-7rem))]",
+    );
+    expect(notificationList).not.toHaveClass(
+      "h-[min(30rem,calc(100dvh-7rem))]",
+      "min-h-80",
+    );
+    expect(screen.queryByText("3 unread")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("menuitem", {
         name: "Mark all as read",
@@ -1211,7 +1231,9 @@ describe("Public portal UI", () => {
       expect(
         markAllPublicPortalNotificationsReadActionMock,
       ).toHaveBeenCalledWith("city-roads");
-      expect(screen.queryByText("3 unread")).not.toBeInTheDocument();
+      expect(
+        within(notificationsButton).queryByText("3"),
+      ).not.toBeInTheDocument();
     });
     expect(toast.success).toHaveBeenCalledWith(
       "All notifications marked as read",
@@ -1238,7 +1260,8 @@ describe("Public portal UI", () => {
       }),
     );
 
-    expect(await screen.findByText("100 unread")).toHaveClass("text-[0.95rem]");
+    expect(await screen.findByText("You're all caught up")).toBeInTheDocument();
+    expect(screen.queryByText("100 unread")).not.toBeInTheDocument();
   });
 
   it("reuses fresh notification data when the popover is reopened", async () => {
@@ -1333,6 +1356,7 @@ describe("Public portal UI", () => {
     );
     expect(emptyColumn.parentElement?.parentElement).not.toHaveClass(
       "border-[0.5px]",
+      "transition",
     );
     expect(
       screen.queryByText("Add pedestrian crossing near East Avenue school"),

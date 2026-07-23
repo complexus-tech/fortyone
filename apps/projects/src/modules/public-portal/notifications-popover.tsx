@@ -101,7 +101,7 @@ const NotificationsSkeleton = () => (
 const EmptyNotifications = () => (
   <Flex
     align="center"
-    className="h-full px-8 text-center"
+    className="px-8 py-12 text-center"
     direction="column"
     justify="center"
   >
@@ -139,9 +139,9 @@ const NotificationItem = ({
         onRead(notification);
       }}
     >
-      <Flex align="start" gap={3}>
+      <Flex align="center" gap={3}>
         <Avatar
-          className="mt-0.5 shrink-0"
+          className="shrink-0"
           name={notification.actor.name}
           rounded="full"
           size="sm"
@@ -150,25 +150,35 @@ const NotificationItem = ({
             backgroundColor: getPublicAvatarColor(notification.actor.name),
           }}
         />
-        <Box className="min-w-0 flex-1">
-          <Flex align="start" gap={2} justify="between">
+        <Flex
+          align="center"
+          className="min-w-0 flex-1"
+          gap={3}
+          justify="between"
+        >
+          <Box className="min-w-0 flex-1">
             <Text
               className="line-clamp-1 text-base leading-6"
               fontWeight={isUnread ? "semibold" : "medium"}
             >
               {renderNotificationMessage(notification)}
             </Text>
+            <Text
+              className="mt-1 line-clamp-1 text-base leading-6"
+              color="muted"
+            >
+              {notification.feedback.title}
+            </Text>
+          </Box>
+          <Flex align="center" className="shrink-0" gap={2}>
             {isUnread ? (
-              <span className="bg-primary mt-1.5 size-2 shrink-0 rounded-full" />
+              <span className="bg-primary size-2 shrink-0 rounded-full" />
             ) : null}
+            <Text className="shrink-0 text-sm whitespace-nowrap" color="muted">
+              <TimeAgo timestamp={notification.createdAt} />
+            </Text>
           </Flex>
-          <Text className="mt-1 line-clamp-1 text-base leading-6" color="muted">
-            {notification.feedback.title}
-          </Text>
-          <Text className="mt-1 text-sm" color="muted">
-            <TimeAgo timestamp={notification.createdAt} />
-          </Text>
-        </Box>
+        </Flex>
       </Flex>
     </Link>
   );
@@ -407,16 +417,7 @@ export const PublicPortalNotifications = ({
           justify="between"
         >
           <Text fontWeight="semibold">Notifications</Text>
-          <Flex align="center" gap={1}>
-            {unreadCount > 0 ? (
-              <Text
-                className="text-[0.95rem] tabular-nums"
-                color="muted"
-                fontWeight="medium"
-              >
-                {unreadCount} unread
-              </Text>
-            ) : null}
+          <Flex align="center">
             <Menu>
               <Menu.Button>
                 <Button
@@ -481,7 +482,7 @@ export const PublicPortalNotifications = ({
             </Menu>
           </Flex>
         </Flex>
-        <Box className="hide-scrollbar h-[min(30rem,calc(100dvh-7rem))] min-h-80 overflow-y-auto py-1">
+        <Box className="hide-scrollbar max-h-[min(30rem,calc(100dvh-7rem))] overflow-y-auto py-1">
           {notificationsQuery.isPending ? <NotificationsSkeleton /> : null}
           {notificationsQuery.isError ? (
             <Flex
