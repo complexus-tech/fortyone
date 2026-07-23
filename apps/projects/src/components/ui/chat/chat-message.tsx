@@ -360,7 +360,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "bg-state-hover/80 dark:bg-surface-elevated rounded-tr-md":
+              "bg-state-hover/80 rounded-tr-md dark:bg-white/[0.08]":
                 message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}

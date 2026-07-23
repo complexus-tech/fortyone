@@ -27,9 +27,11 @@ describe("ChatContent", () => {
     expect(chatSource).toContain("<ChatButton");
     expect(chatSource).toContain("<ChatRail />");
     expect(layoutSource).not.toContain("ResizablePanel");
-    expect(popupSource).toContain("w-[min(440px,calc(100vw-36px))]");
+    expect(popupSource).toContain("w-[min(460px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
     expect(popupSource).toContain("border-border/70 dark:border-border");
+    expect(popupSource).toContain("bg-white/80");
+    expect(popupSource).toContain("dark:bg-surface/80");
     expect(popupSource).toContain("<ChatContent isPopup />");
   });
 

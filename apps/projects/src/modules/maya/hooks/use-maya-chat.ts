@@ -309,7 +309,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
       attachments.map(async (file) => ({
         type: "file",
         mediaType: file.type,
-        name: file.name,
+        filename: file.name,
         url: await fileToBase64(file),
       })),
     );

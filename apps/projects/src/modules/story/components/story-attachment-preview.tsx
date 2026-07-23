@@ -102,10 +102,14 @@ export const StoryAttachmentPreview = ({
 
           {isInChat && onDelete ? (
             <Button
+              aria-label={`Remove ${file.filename}`}
               asIcon
               className="absolute top-2 right-2"
               color="invert"
-              onClick={onDelete}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
               rounded="full"
               size="xs"
             >
@@ -148,6 +152,7 @@ export const StoryAttachmentPreview = ({
             </Flex>
             {isInChat && onDelete ? (
               <Button
+                aria-label={`Remove ${file.filename}`}
                 asIcon
                 color="invert"
                 onClick={onDelete}

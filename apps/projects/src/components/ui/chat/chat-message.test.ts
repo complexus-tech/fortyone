@@ -10,7 +10,9 @@ describe("ChatMessage", () => {
   it("uses story-list surface colors for user prompts instead of inverse colors", () => {
     const source = readSource("src/components/ui/chat/chat-message.tsx");
 
-    expect(source).toContain("bg-state-hover/80 dark:bg-surface-elevated");
+    expect(source).toContain(
+      "bg-state-hover/80 rounded-tr-md dark:bg-white/[0.08]",
+    );
     expect(source).not.toContain("text-foreground-inverse");
     expect(source).not.toContain("bg-background-inverse rounded-tr-md");
   });

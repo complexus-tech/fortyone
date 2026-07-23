@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
@@ -37,6 +37,9 @@ type ChatInputProps = {
   realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
 };
 
+const MAX_ATTACHMENT_COUNT = 5;
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+
 const SendIcon = () => {
   return (
     <svg
@@ -67,13 +70,20 @@ const AttachmentPreviewItem = ({
   file: File;
   onDelete: () => void;
 }) => {
-  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    const nextObjectUrl = URL.createObjectURL(file);
+    setObjectUrl(nextObjectUrl);
+
     return () => {
-      URL.revokeObjectURL(objectUrl);
+      URL.revokeObjectURL(nextObjectUrl);
     };
-  }, [objectUrl]);
+  }, [file]);
+
+  if (!objectUrl) {
+    return null;
+  }
 
   return (
     <StoryAttachmentPreview
@@ -83,7 +93,7 @@ const AttachmentPreviewItem = ({
         size: file.size,
         mimeType: file.type,
         url: objectUrl,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(file.lastModified).toISOString(),
         uploadedBy: "me",
       }}
       isInChat
@@ -150,7 +160,7 @@ export const ChatInput = ({
     const errors: string[] = [];
     fileRejections.forEach((file) => {
       if (file.errors[0]?.code === "file-too-large") {
-        errors.push(`File ${file.file.name} size exceeds 10MB limit`);
+        errors.push(`File ${file.file.name} size exceeds 5MB limit`);
       } else if (file.errors[0]?.code === "file-invalid-type") {
         errors.push("Invalid file type");
       } else if (file.errors[0]?.code === "too-many-files") {
@@ -167,7 +177,7 @@ export const ChatInput = ({
       });
     }
   };
-  const { open } = useDropzone({
+  const { getInputProps, open } = useDropzone({
     noClick: true,
     noKeyboard: true,
     accept: {
@@ -177,11 +187,23 @@ export const ChatInput = ({
       "image/gif": [".gif"],
       "application/pdf": [".pdf"],
     },
-    maxFiles: 5,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxFiles: MAX_ATTACHMENT_COUNT,
+    maxSize: MAX_ATTACHMENT_SIZE_BYTES,
     minSize: 100, // 100 bytes
-    onDrop: async (acceptedFiles) => {
-      onAttachmentsChange([...attachments, ...acceptedFiles]);
+    onDrop: (acceptedFiles) => {
+      const remainingSlots = Math.max(
+        0,
+        MAX_ATTACHMENT_COUNT - attachments.length,
+      );
+      const filesToAdd = acceptedFiles.slice(0, remainingSlots);
+
+      if (filesToAdd.length < acceptedFiles.length) {
+        toast.error(`You can attach up to ${MAX_ATTACHMENT_COUNT} files`);
+      }
+
+      if (filesToAdd.length > 0) {
+        onAttachmentsChange([...attachments, ...filesToAdd]);
+      }
     },
     onDropRejected,
   });
@@ -389,13 +411,29 @@ export const ChatInput = ({
         </Box>
         <Flex align="center" className="mb-1 px-3" gap={2} justify="between">
           <Flex align="center" gap={2}>
-            <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
+            <input
+              {...getInputProps({
+                "aria-label": "Choose files to attach",
+              })}
+            />
+            <Tooltip
+              side="bottom"
+              title={
+                attachments.length >= MAX_ATTACHMENT_COUNT
+                  ? `Maximum of ${MAX_ATTACHMENT_COUNT} files attached`
+                  : `Add files (max ${MAX_ATTACHMENT_COUNT} files, 5MB each)`
+              }
+            >
               <Button
                 className="gap-1"
                 color="tertiary"
-                disabled={isLiveVoiceActive}
+                disabled={
+                  isLiveVoiceActive ||
+                  attachments.length >= MAX_ATTACHMENT_COUNT
+                }
                 onClick={open}
                 rounded="md"
+                type="button"
                 variant="naked"
               >
                 <PlusIcon /> Attach files
