@@ -15,9 +15,12 @@ import (
 )
 
 type notificationRepoStub struct {
-	notification    CoreNotification
-	insertedResults []bool
-	createCalls     int
+	notification           CoreNotification
+	insertedResults        []bool
+	createCalls            int
+	portalListCalls        int
+	portalUnreadOnly       bool
+	markAllPortalReadCalls int
 }
 
 func (r *notificationRepoStub) Create(context.Context, CoreNewNotification) (CoreNotification, bool, error) {
@@ -69,7 +72,9 @@ func (r *notificationRepoStub) MarkAsUnread(context.Context, uuid.UUID, uuid.UUI
 	return nil
 }
 
-func (r *notificationRepoStub) ListPortalFeedback(context.Context, uuid.UUID, string, int, int) ([]CorePortalNotification, error) {
+func (r *notificationRepoStub) ListPortalFeedback(_ context.Context, _ uuid.UUID, _ string, unreadOnly bool, _, _ int) ([]CorePortalNotification, error) {
+	r.portalListCalls++
+	r.portalUnreadOnly = unreadOnly
 	return nil, nil
 }
 
@@ -78,6 +83,11 @@ func (r *notificationRepoStub) GetPortalFeedbackUnreadCount(context.Context, uui
 }
 
 func (r *notificationRepoStub) MarkPortalFeedbackAsRead(context.Context, uuid.UUID, uuid.UUID, string) error {
+	return nil
+}
+
+func (r *notificationRepoStub) MarkAllPortalFeedbackAsRead(context.Context, uuid.UUID, string) error {
+	r.markAllPortalReadCalls++
 	return nil
 }
 
@@ -210,4 +220,25 @@ func TestCreatePublishesOnlyWorkspaceNotificationsToGenericRealtimeChannel(t *te
 			require.Len(t, taskService.digestPayloads, 1)
 		})
 	}
+}
+
+func TestListPortalFeedbackPassesUnreadFilter(t *testing.T) {
+	repo := &notificationRepoStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
+
+	_, err := service.ListPortalFeedback(context.Background(), uuid.New(), " city-roads ", true, 11, 0)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, repo.portalListCalls)
+	require.True(t, repo.portalUnreadOnly)
+}
+
+func TestMarkAllPortalFeedbackAsRead(t *testing.T) {
+	repo := &notificationRepoStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
+
+	err := service.MarkAllPortalFeedbackAsRead(context.Background(), uuid.New(), "city-roads")
+
+	require.NoError(t, err)
+	require.Equal(t, 1, repo.markAllPortalReadCalls)
 }

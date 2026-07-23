@@ -49,10 +49,12 @@ func (h *Handlers) ListPortalFeedback(ctx context.Context, w http.ResponseWriter
 	}
 
 	page, pageSize := portalNotificationPagination(r)
+	unreadOnly := r.URL.Query().Get("unreadOnly") == "true"
 	portalNotifications, err := h.notifications.ListPortalFeedback(
 		ctx,
 		userID,
 		web.Params(r, "portalSlug"),
+		unreadOnly,
 		pageSize+1,
 		(page-1)*pageSize,
 	)
@@ -97,9 +99,20 @@ func (h *Handlers) MarkPortalFeedbackAsRead(ctx context.Context, w http.Response
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
+func (h *Handlers) MarkAllPortalFeedbackAsRead(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if err := h.notifications.MarkAllPortalFeedbackAsRead(ctx, userID, web.Params(r, "portalSlug")); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func portalNotificationPagination(r *http.Request) (int, int) {
 	page := 1
-	pageSize := 20
+	pageSize := 10
 	if parsed, err := strconv.Atoi(r.URL.Query().Get("page")); err == nil && parsed > 0 {
 		page = parsed
 	}

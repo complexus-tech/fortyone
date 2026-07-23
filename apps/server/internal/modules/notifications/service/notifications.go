@@ -30,9 +30,10 @@ type Repository interface {
 	DeleteAllNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
 	DeleteReadNotifications(ctx context.Context, userID, workspaceID uuid.UUID) (int64, error)
 	MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUID) error
-	ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]CorePortalNotification, error)
+	ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, unreadOnly bool, limit, offset int) ([]CorePortalNotification, error)
 	GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUID, portalSlug string) (int, error)
 	MarkPortalFeedbackAsRead(ctx context.Context, notificationID, userID uuid.UUID, portalSlug string) error
+	MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID, portalSlug string) error
 }
 
 var ErrNotificationNotFound = errors.New("notification not found")
@@ -346,7 +347,7 @@ func (s *Service) MarkAsUnread(ctx context.Context, notificationID, userID uuid.
 
 // ListPortalFeedback returns only feedback notifications belonging to the
 // requested public portal and recipient.
-func (s *Service) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]CorePortalNotification, error) {
+func (s *Service) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, unreadOnly bool, limit, offset int) ([]CorePortalNotification, error) {
 	portalSlug = strings.TrimSpace(portalSlug)
 	if userID == uuid.Nil || portalSlug == "" {
 		return nil, errors.New("user id and portal slug are required")
@@ -360,7 +361,7 @@ func (s *Service) ListPortalFeedback(ctx context.Context, userID uuid.UUID, port
 	if offset < 0 {
 		offset = 0
 	}
-	return s.repo.ListPortalFeedback(ctx, userID, portalSlug, limit, offset)
+	return s.repo.ListPortalFeedback(ctx, userID, portalSlug, unreadOnly, limit, offset)
 }
 
 func (s *Service) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUID, portalSlug string) (int, error) {
@@ -377,4 +378,12 @@ func (s *Service) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, 
 		return errors.New("notification id, user id, and portal slug are required")
 	}
 	return s.repo.MarkPortalFeedbackAsRead(ctx, notificationID, userID, portalSlug)
+}
+
+func (s *Service) MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID, portalSlug string) error {
+	portalSlug = strings.TrimSpace(portalSlug)
+	if userID == uuid.Nil || portalSlug == "" {
+		return errors.New("user id and portal slug are required")
+	}
+	return s.repo.MarkAllPortalFeedbackAsRead(ctx, userID, portalSlug)
 }

@@ -47,8 +47,13 @@ export const publicPortalKeys = {
     ] as const,
   notifications: (portalSlug: string) =>
     [...publicPortalKeys.portal(portalSlug), "notifications"] as const,
-  notificationList: (portalSlug: string) =>
+  notificationLists: (portalSlug: string) =>
     [...publicPortalKeys.notifications(portalSlug), "list"] as const,
+  notificationList: (portalSlug: string, unreadOnly = false) =>
+    [
+      ...publicPortalKeys.notificationLists(portalSlug),
+      { unreadOnly },
+    ] as const,
   notificationUnreadCount: (portalSlug: string) =>
     [...publicPortalKeys.notifications(portalSlug), "unread"] as const,
   roadmaps: (portalSlug: string) =>

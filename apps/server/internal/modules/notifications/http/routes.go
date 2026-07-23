@@ -32,6 +32,7 @@ func Routes(cfg Config, app *web.App) {
 
 	app.Get("/portals/{portalSlug}/notifications", h.ListPortalFeedback, auth)
 	app.Get("/portals/{portalSlug}/notifications/unread-count", h.GetPortalFeedbackUnreadCount, auth)
+	app.Put("/portals/{portalSlug}/notifications/read-all", h.MarkAllPortalFeedbackAsRead, auth)
 	app.Put("/portals/{portalSlug}/notifications/{id}/read", h.MarkPortalFeedbackAsRead, auth)
 
 	// Notifications

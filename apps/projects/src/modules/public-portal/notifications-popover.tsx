@@ -1,7 +1,7 @@
 "use client";
 
 import type { InfiniteData } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   useInfiniteQuery,
@@ -9,14 +9,31 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BellIcon } from "icons";
-import { Avatar, Badge, Box, Button, Flex, Popover, Text, TimeAgo } from "ui";
+import {
+  BellIcon,
+  CheckIcon,
+  MoreVerticalIcon,
+  NotificationsCheckIcon,
+  NotificationsUnreadIcon,
+} from "icons";
+import {
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Flex,
+  Menu,
+  Popover,
+  Text,
+  TimeAgo,
+} from "ui";
 import { cn } from "lib";
 import { toast } from "sonner";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import {
   getPublicPortalNotificationsAction,
   getPublicPortalUnreadCountAction,
+  markAllPublicPortalNotificationsReadAction,
   markPublicPortalNotificationReadAction,
 } from "./notification-actions";
 import type {
@@ -28,13 +45,18 @@ import { getPublicAvatarColor } from "./avatar-color";
 import { publicPortalKeys } from "./query-keys";
 import { getRequestPathBySlug } from "./utils";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
-const getNotificationPage = async (portalSlug: string, page: number) => {
+const getNotificationPage = async (
+  portalSlug: string,
+  page: number,
+  unreadOnly: boolean,
+) => {
   const response = await getPublicPortalNotificationsAction({
     page,
     pageSize: PAGE_SIZE,
     portalSlug,
+    unreadOnly,
   });
 
   if (response.error?.message || !response.data) {
@@ -77,7 +99,12 @@ const NotificationsSkeleton = () => (
 );
 
 const EmptyNotifications = () => (
-  <Flex align="center" className="px-8 py-14 text-center" direction="column">
+  <Flex
+    align="center"
+    className="h-full px-8 text-center"
+    direction="column"
+    justify="center"
+  >
     <BellIcon className="text-text-muted h-8 w-auto" strokeWidth={1.5} />
     <Text className="mt-4" fontWeight="semibold">
       You&apos;re all caught up
@@ -153,12 +180,17 @@ export const PublicPortalNotifications = ({
   portal: PublicPortal;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const queryClient = useQueryClient();
+  const notificationListKey = publicPortalKeys.notificationList(
+    portal.slug,
+    showUnreadOnly,
+  );
   const notificationsQuery = useInfiniteQuery({
     enabled: isOpen,
-    queryKey: publicPortalKeys.notificationList(portal.slug),
-    queryFn: ({ pageParam }) => getNotificationPage(portal.slug, pageParam),
+    queryKey: notificationListKey,
+    queryFn: ({ pageParam }) =>
+      getNotificationPage(portal.slug, pageParam, showUnreadOnly),
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     initialPageParam: 1,
@@ -186,16 +218,15 @@ export const PublicPortalNotifications = ({
       }
     },
     onMutate: async (notificationId) => {
-      const listKey = publicPortalKeys.notificationList(portal.slug);
       const unreadKey = publicPortalKeys.notificationUnreadCount(portal.slug);
       await Promise.all([
-        queryClient.cancelQueries({ queryKey: listKey }),
+        queryClient.cancelQueries({ queryKey: notificationListKey }),
         queryClient.cancelQueries({ queryKey: unreadKey }),
       ]);
       const previousNotifications =
         queryClient.getQueryData<
           InfiniteData<PublicPortalNotificationsPage, number>
-        >(listKey);
+        >(notificationListKey);
       const previousUnreadCount = queryClient.getQueryData<number>(unreadKey);
       const wasUnread = previousNotifications?.pages.some((page) =>
         page.notifications.some(
@@ -206,7 +237,7 @@ export const PublicPortalNotifications = ({
 
       queryClient.setQueryData<
         InfiniteData<PublicPortalNotificationsPage, number>
-      >(listKey, (current) =>
+      >(notificationListKey, (current) =>
         current
           ? {
               ...current,
@@ -233,7 +264,7 @@ export const PublicPortalNotifications = ({
     onError: (error, _notificationId, context) => {
       if (context?.previousNotifications) {
         queryClient.setQueryData(
-          publicPortalKeys.notificationList(portal.slug),
+          notificationListKey,
           context.previousNotifications,
         );
       }
@@ -254,21 +285,87 @@ export const PublicPortalNotifications = ({
     },
   });
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!isOpen || !sentinel || !hasNextPage) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting && !isFetchingNextPage) {
-        void fetchNextPage();
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const response = await markAllPublicPortalNotificationsReadAction(
+        portal.slug,
+      );
+      if (response.error?.message) {
+        throw new Error(response.error.message);
       }
-    });
-    observer.observe(sentinel);
+    },
+    onMutate: async () => {
+      const listsKey = publicPortalKeys.notificationLists(portal.slug);
+      const unreadKey = publicPortalKeys.notificationUnreadCount(portal.slug);
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: listsKey }),
+        queryClient.cancelQueries({ queryKey: unreadKey }),
+      ]);
 
-    return () => {
-      observer.disconnect();
-    };
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isOpen]);
+      const previousLists = queryClient.getQueriesData<
+        InfiniteData<PublicPortalNotificationsPage, number>
+      >({ queryKey: listsKey });
+      const previousUnreadCount = queryClient.getQueryData<number>(unreadKey);
+      const readAt = new Date().toISOString();
+
+      previousLists.forEach(([queryKey, current]) => {
+        const queryFilter = queryKey.at(-1) as
+          | { unreadOnly?: boolean }
+          | undefined;
+        queryClient.setQueryData(queryKey, (existing: typeof current) => {
+          if (!existing) return existing;
+          if (queryFilter?.unreadOnly) {
+            return {
+              ...existing,
+              pages: existing.pages.map((page) => ({
+                ...page,
+                notifications: [],
+                pagination: {
+                  ...page.pagination,
+                  hasMore: false,
+                },
+              })),
+            };
+          }
+          return {
+            ...existing,
+            pages: existing.pages.map((page) => ({
+              ...page,
+              notifications: page.notifications.map((notification) => ({
+                ...notification,
+                readAt,
+              })),
+            })),
+          };
+        });
+      });
+      queryClient.setQueryData(unreadKey, 0);
+
+      return { previousLists, previousUnreadCount };
+    },
+    onError: (error, _variables, context) => {
+      context?.previousLists.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
+      if (context?.previousUnreadCount !== undefined) {
+        queryClient.setQueryData(
+          publicPortalKeys.notificationUnreadCount(portal.slug),
+          context.previousUnreadCount,
+        );
+      }
+      toast.error("Unable to mark notifications as read", {
+        description: error.message,
+      });
+    },
+    onSuccess: () => {
+      toast.success("All notifications marked as read");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: publicPortalKeys.notifications(portal.slug),
+      });
+    },
+  });
 
   return (
     <Popover
@@ -310,17 +407,81 @@ export const PublicPortalNotifications = ({
           justify="between"
         >
           <Text fontWeight="semibold">Notifications</Text>
-          {unreadCount > 0 ? (
-            <Text
-              className="text-[0.95rem] tabular-nums"
-              color="muted"
-              fontWeight="medium"
-            >
-              {unreadCount} unread
-            </Text>
-          ) : null}
+          <Flex align="center" gap={1}>
+            {unreadCount > 0 ? (
+              <Text
+                className="text-[0.95rem] tabular-nums"
+                color="muted"
+                fontWeight="medium"
+              >
+                {unreadCount} unread
+              </Text>
+            ) : null}
+            <Menu>
+              <Menu.Button>
+                <Button
+                  aria-label="Notification actions"
+                  asIcon
+                  className="text-text-muted"
+                  color="tertiary"
+                  size="sm"
+                  variant="naked"
+                >
+                  <MoreVerticalIcon />
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end" className="w-56" sideOffset={8}>
+                <Menu.Group>
+                  <Menu.Item
+                    active={!showUnreadOnly}
+                    className="justify-between"
+                    onSelect={() => {
+                      setShowUnreadOnly(false);
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <BellIcon className="h-5 w-auto" />
+                      All notifications
+                    </span>
+                    {!showUnreadOnly ? (
+                      <CheckIcon className="h-4 w-auto" />
+                    ) : null}
+                  </Menu.Item>
+                  <Menu.Item
+                    active={showUnreadOnly}
+                    className="justify-between"
+                    onSelect={() => {
+                      setShowUnreadOnly(true);
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <NotificationsUnreadIcon className="h-5 w-auto" />
+                      Unread only
+                    </span>
+                    {showUnreadOnly ? (
+                      <CheckIcon className="h-4 w-auto" />
+                    ) : null}
+                  </Menu.Item>
+                </Menu.Group>
+                <Menu.Separator />
+                <Menu.Group>
+                  <Menu.Item
+                    disabled={
+                      unreadCount === 0 || markAllReadMutation.isPending
+                    }
+                    onSelect={() => {
+                      markAllReadMutation.mutate();
+                    }}
+                  >
+                    <NotificationsCheckIcon className="h-5 w-auto" />
+                    Mark all as read
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
+          </Flex>
         </Flex>
-        <Box className="hide-scrollbar max-h-[min(30rem,calc(100dvh-7rem))] overflow-y-auto py-1">
+        <Box className="hide-scrollbar h-[min(30rem,calc(100dvh-7rem))] min-h-80 overflow-y-auto py-1">
           {notificationsQuery.isPending ? <NotificationsSkeleton /> : null}
           {notificationsQuery.isError ? (
             <Flex
@@ -363,9 +524,24 @@ export const PublicPortalNotifications = ({
               portal={portal}
             />
           ))}
-          <div ref={sentinelRef} />
-          {notificationsQuery.isFetchingNextPage ? (
-            <NotificationsSkeleton />
+          {hasNextPage ? (
+            <Flex
+              align="center"
+              className="border-border/60 dark:border-border-strong/80 border-t-[0.5px] px-3 py-2"
+              justify="center"
+            >
+              <Button
+                color="tertiary"
+                disabled={isFetchingNextPage}
+                onClick={() => {
+                  void fetchNextPage();
+                }}
+                size="sm"
+                variant="naked"
+              >
+                {isFetchingNextPage ? "Loading..." : "Load more notifications"}
+              </Button>
+            </Flex>
           ) : null}
         </Box>
       </Popover.Content>

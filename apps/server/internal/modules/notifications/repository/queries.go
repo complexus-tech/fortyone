@@ -161,7 +161,7 @@ func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID
 	return corePrefs, nil
 }
 
-func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, limit, offset int) ([]notifications.CorePortalNotification, error) {
+func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalSlug string, unreadOnly bool, limit, offset int) ([]notifications.CorePortalNotification, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.ListPortalFeedback")
 	defer span.End()
 
@@ -183,9 +183,10 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 			AND fp.is_public = true
 			AND n.entity_type::text = 'feedback'
 			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND ($3 = false OR n.read_at IS NULL)
 		ORDER BY n.created_at DESC
-		LIMIT $3 OFFSET $4
-	`, userID, portalSlug, limit, offset); err != nil {
+		LIMIT $4 OFFSET $5
+	`, userID, portalSlug, unreadOnly, limit, offset); err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("list portal feedback notifications: %w", err)
 	}

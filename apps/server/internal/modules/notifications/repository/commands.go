@@ -536,3 +536,35 @@ func (r *repo) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, use
 	}
 	return nil
 }
+
+func (r *repo) MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID, portalSlug string) error {
+	ctx, span := web.AddSpan(ctx, "business.repository.notifications.MarkAllPortalFeedbackAsRead")
+	defer span.End()
+
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE notifications n
+		SET read_at = CURRENT_TIMESTAMP
+		FROM feedback_items fi
+		INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+		WHERE n.recipient_id = $1
+			AND w.slug = $2
+			AND fp.is_public = true
+			AND fi.id = n.entity_id
+			AND fi.workspace_id = n.workspace_id
+			AND n.entity_type::text = 'feedback'
+			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND n.read_at IS NULL
+	`, userID, portalSlug)
+	if err != nil {
+		span.RecordError(err)
+		return fmt.Errorf("mark all portal feedback notifications as read: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get portal notification rows affected: %w", err)
+	}
+	span.SetAttributes(attribute.Int64("notifications.count", rows))
+	return nil
+}

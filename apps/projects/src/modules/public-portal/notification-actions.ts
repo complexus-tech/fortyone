@@ -10,6 +10,7 @@ type NotificationPageInput = {
   page: number;
   pageSize?: number;
   portalSlug: string;
+  unreadOnly?: boolean;
 };
 
 type NotificationInput = {
@@ -19,8 +20,9 @@ type NotificationInput = {
 
 export const getPublicPortalNotificationsAction = async ({
   page,
-  pageSize = 20,
+  pageSize = 10,
   portalSlug,
+  unreadOnly = false,
 }: NotificationPageInput): Promise<
   ApiResponse<PublicPortalNotificationsPage>
 > => {
@@ -37,6 +39,9 @@ export const getPublicPortalNotificationsAction = async ({
       page: String(page),
       pageSize: String(pageSize),
     });
+    if (unreadOnly) {
+      params.set("unreadOnly", "true");
+    }
     return await get<ApiResponse<PublicPortalNotificationsPage>>(
       `portals/${portalSlug}/notifications?${params.toString()}`,
     );
@@ -84,6 +89,26 @@ export const markPublicPortalNotificationReadAction = async ({
     await client.put(
       `portals/${portalSlug}/notifications/${notificationId}/read`,
     );
+    return { data: null };
+  } catch (error) {
+    return getApiError(error);
+  }
+};
+
+export const markAllPublicPortalNotificationsReadAction = async (
+  portalSlug: string,
+): Promise<ApiResponse<null>> => {
+  try {
+    const session = await auth();
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Please log in to update notifications" },
+      };
+    }
+
+    const client = createApiClient();
+    await client.put(`portals/${portalSlug}/notifications/read-all`);
     return { data: null };
   } catch (error) {
     return getApiError(error);

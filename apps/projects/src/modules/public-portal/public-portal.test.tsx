@@ -20,6 +20,7 @@ import {
 import {
   getPublicPortalNotificationsAction,
   getPublicPortalUnreadCountAction,
+  markAllPublicPortalNotificationsReadAction,
   markPublicPortalNotificationReadAction,
 } from "./notification-actions";
 import {
@@ -51,6 +52,34 @@ const portalViewer = {
   id: "00000000-0000-4000-8000-000000000001",
   name: "Ada Ndlovu",
 };
+
+const createPortalNotification = (
+  id: string,
+  readAt: string | null = null,
+) => ({
+  id,
+  type: "feedback_comment" as const,
+  title: "New feedback comment",
+  message: {
+    template: "{actor} commented on your feedback",
+    variables: {
+      actor: { type: "string", value: "Tariro Moyo" },
+    },
+  },
+  actor: {
+    id: "user-2",
+    name: "Tariro Moyo",
+    avatarUrl: null,
+  },
+  feedback: {
+    id: "req-1",
+    title: "Add pedestrian crossing near East Avenue school",
+    slug: "add-pedestrian-crossing-near-east-avenue-school",
+    path: "/feedback/add-pedestrian-crossing-near-east-avenue-school",
+  },
+  createdAt: "2026-07-20T08:00:00.000Z",
+  readAt,
+});
 
 const createRoadmapQueryClient = () =>
   new QueryClient({
@@ -112,7 +141,10 @@ jest.mock("icons", () => {
     KanbanIcon: Icon,
     ListIcon: Icon,
     LogoutIcon: Icon,
+    MoreVerticalIcon: Icon,
     MoonIcon: Icon,
+    NotificationsCheckIcon: Icon,
+    NotificationsUnreadIcon: Icon,
     PlusIcon: Icon,
     RequestsIcon: Icon,
     RoadmapIcon: Icon,
@@ -159,13 +191,16 @@ jest.mock("./notification-actions", () => ({
   getPublicPortalNotificationsAction: jest.fn(async () => ({
     data: {
       notifications: [],
-      pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+      pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 10 },
     },
   })),
   getPublicPortalUnreadCountAction: jest.fn(async () => ({
     data: { count: 0 },
   })),
   markPublicPortalNotificationReadAction: jest.fn(async () => ({
+    data: null,
+  })),
+  markAllPublicPortalNotificationsReadAction: jest.fn(async () => ({
     data: null,
   })),
 }));
@@ -183,6 +218,9 @@ const getPublicPortalUnreadCountActionMock = jest.mocked(
 );
 const markPublicPortalNotificationReadActionMock = jest.mocked(
   markPublicPortalNotificationReadAction,
+);
+const markAllPublicPortalNotificationsReadActionMock = jest.mocked(
+  markAllPublicPortalNotificationsReadAction,
 );
 
 const render = (element: ReactTypes.ReactElement) => {
@@ -344,8 +382,33 @@ jest.mock("ui", () => {
     <div>{children}</div>
   );
   const MenuSeparator = () => <hr />;
-  const MenuItem = ({ children }: { children: ReactTypes.ReactNode }) => (
-    <div>{children}</div>
+  const MenuItem = ({
+    active: _active,
+    children,
+    disabled,
+    onSelect,
+    ...props
+  }: ReactTypes.HTMLAttributes<HTMLDivElement> & {
+    active?: boolean;
+    disabled?: boolean;
+    onSelect?: () => void;
+  }) => (
+    <div
+      aria-disabled={disabled}
+      onClick={() => {
+        if (!disabled) onSelect?.();
+      }}
+      onKeyDown={(event) => {
+        if (!disabled && (event.key === "Enter" || event.key === " ")) {
+          onSelect?.();
+        }
+      }}
+      role="menuitem"
+      tabIndex={0}
+      {...getDomProps(props)}
+    >
+      {children}
+    </div>
   );
   const MenuSubMenu = ({ children }: { children: ReactTypes.ReactNode }) => (
     <div>{children}</div>
@@ -549,13 +612,16 @@ describe("Public portal UI", () => {
     getPublicPortalNotificationsActionMock.mockResolvedValue({
       data: {
         notifications: [],
-        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 10 },
       },
     });
     getPublicPortalUnreadCountActionMock.mockResolvedValue({
       data: { count: 0 },
     });
     markPublicPortalNotificationReadActionMock.mockResolvedValue({
+      data: null,
+    });
+    markAllPublicPortalNotificationsReadActionMock.mockResolvedValue({
       data: null,
     });
     Object.defineProperty(navigator, "clipboard", {
@@ -963,33 +1029,8 @@ describe("Public portal UI", () => {
   it("shows feedback notifications and marks an unread item as read", async () => {
     getPublicPortalNotificationsActionMock.mockResolvedValue({
       data: {
-        notifications: [
-          {
-            id: "notification-1",
-            type: "feedback_comment",
-            title: "New feedback comment",
-            message: {
-              template: "{actor} commented on your feedback",
-              variables: {
-                actor: { type: "string", value: "Tariro Moyo" },
-              },
-            },
-            actor: {
-              id: "user-2",
-              name: "Tariro Moyo",
-              avatarUrl: null,
-            },
-            feedback: {
-              id: "req-1",
-              title: "Add pedestrian crossing near East Avenue school",
-              slug: "add-pedestrian-crossing-near-east-avenue-school",
-              path: "/feedback/add-pedestrian-crossing-near-east-avenue-school",
-            },
-            createdAt: "2026-07-20T08:00:00.000Z",
-            readAt: null,
-          },
-        ],
-        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 20 },
+        notifications: [createPortalNotification("notification-1")],
+        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 10 },
       },
     });
     getPublicPortalUnreadCountActionMock.mockResolvedValue({
@@ -1046,6 +1087,135 @@ describe("Public portal UI", () => {
         portalSlug: "city-roads",
       });
     });
+  });
+
+  it("loads ten notifications per page only when requested", async () => {
+    getPublicPortalNotificationsActionMock.mockImplementation(
+      async ({ page }) => ({
+        data: {
+          notifications: [
+            createPortalNotification(
+              `notification-${page}`,
+              "2026-07-20T09:00:00.000Z",
+            ),
+          ],
+          pagination: {
+            hasMore: page === 1,
+            nextPage: page + 1,
+            page,
+            pageSize: 10,
+          },
+        },
+      }),
+    );
+
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+    expect(
+      await screen.findByRole("button", { name: "Load more notifications" }),
+    ).toBeInTheDocument();
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
+      portalSlug: "city-roads",
+      unreadOnly: false,
+    });
+    expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Load more notifications" }),
+    );
+
+    await waitFor(() => {
+      expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledWith({
+        page: 2,
+        pageSize: 10,
+        portalSlug: "city-roads",
+        unreadOnly: false,
+      });
+    });
+  });
+
+  it("filters portal notifications to unread items", async () => {
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+    await screen.findByText("You're all caught up");
+    const actionsButton = screen.getByRole("button", {
+      name: "Notification actions",
+    });
+    expect(actionsButton).toHaveClass("text-text-muted");
+
+    fireEvent.click(
+      screen.getByRole("menuitem", {
+        name: "Unread only",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(getPublicPortalNotificationsActionMock).toHaveBeenLastCalledWith({
+        page: 1,
+        pageSize: 10,
+        portalSlug: "city-roads",
+        unreadOnly: true,
+      });
+    });
+  });
+
+  it("marks all portal notifications as read", async () => {
+    getPublicPortalUnreadCountActionMock.mockResolvedValue({
+      data: { count: 3 },
+    });
+    getPublicPortalNotificationsActionMock.mockResolvedValue({
+      data: {
+        notifications: [createPortalNotification("notification-1")],
+        pagination: { hasMore: false, nextPage: 2, page: 1, pageSize: 10 },
+      },
+    });
+    markAllPublicPortalNotificationsReadActionMock.mockImplementation(
+      async () => {
+        getPublicPortalUnreadCountActionMock.mockResolvedValue({
+          data: { count: 0 },
+        });
+        return { data: null };
+      },
+    );
+
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+    expect(await screen.findByText("3 unread")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("menuitem", {
+        name: "Mark all as read",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        markAllPublicPortalNotificationsReadActionMock,
+      ).toHaveBeenCalledWith("city-roads");
+      expect(screen.queryByText("3 unread")).not.toBeInTheDocument();
+    });
+    expect(toast.success).toHaveBeenCalledWith(
+      "All notifications marked as read",
+    );
   });
 
   it("shows the unread notification count using the projects badge pattern", async () => {
