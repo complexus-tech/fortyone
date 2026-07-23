@@ -54,15 +54,20 @@ export const ChatContent = () => {
 
         <Flex className="min-h-0 flex-1" direction="column">
           <ChatMessages
-            messages={chat.messages}
+            isVoiceSpeaking={chat.realtimeVoice.isSpeaking}
+            messages={chat.displayMessages}
             onPromptSelect={chat.handleSuggestedPrompt}
             regenerate={chat.regenerate}
             status={chat.status}
             value={chat.input}
           />
-          {chat.error ? (
+          {chat.error || chat.realtimeVoice.error ? (
             <Box className="mb-4 px-6">
-              <Text>{chat.error.message || "An error occurred."} </Text>
+              <Text>
+                {chat.realtimeVoice.error ||
+                  chat.error?.message ||
+                  "An error occurred."}{" "}
+              </Text>
               <Button
                 className="mt-2"
                 leftIcon={<ReloadIcon className="text-current" />}
@@ -74,7 +79,7 @@ export const ChatContent = () => {
               </Button>
             </Box>
           ) : null}
-          {chat.messages.length === 0 ? (
+          {chat.displayMessages.length === 0 ? (
             <SuggestedPrompts
               fromIndex={needsUpgrade ? 1 : 0}
               onPromptSelect={chat.handleSuggestedPrompt}
@@ -86,13 +91,14 @@ export const ChatContent = () => {
             isLiveVoiceVisible={isInternalUser}
             isOnPage
             liveVoiceDisabled={needsUpgrade}
-            messagesCount={chat.messages.length}
+            messagesCount={chat.displayMessages.length}
             onAttachmentsChange={chat.setAttachments}
             onChange={(event) => {
               chat.setInput(event.target.value);
             }}
             onSend={chat.handleSend}
             onStop={chat.handleStop}
+            realtimeVoice={chat.realtimeVoice}
             status={chat.status}
             value={chat.input}
           />

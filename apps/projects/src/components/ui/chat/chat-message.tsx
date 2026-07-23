@@ -14,6 +14,7 @@ import { AttachmentsDisplay } from "./attachments-display";
 import { AnalyticsReport } from "./analytics-report";
 
 type ChatMessageProps = {
+  isAnimating?: boolean;
   isLast: boolean;
   message: MayaUIMessage;
   profile: User | undefined;
@@ -208,19 +209,17 @@ export const hasVisibleMessageContent = (
 };
 
 const RenderMessage = ({
+  isAnimating,
   message,
   onPromptSelect,
-  status,
   deferToolOutputs = false,
 }: {
+  isAnimating: boolean;
   message: MayaUIMessage;
-  status: ChatStatus;
   deferToolOutputs?: boolean;
   onPromptSelect: (prompt: string) => void;
 }) => {
   const pathname = usePathname();
-  const isStreaming = status === "streaming";
-  const isAssistant = message.role === "assistant";
 
   const textParts = message.parts.filter((part) => part.type === "text");
   const toolParts = message.parts.filter(isToolMessagePart);
@@ -260,7 +259,7 @@ const RenderMessage = ({
               panZoom: true,
             },
           }}
-          isAnimating={Boolean(isStreaming && isAssistant)}
+          isAnimating={isAnimating}
           key={`${message.id}-text-${index}`}
         >
           {part.text}
@@ -315,6 +314,7 @@ const RenderMessage = ({
 };
 
 export const ChatMessage = ({
+  isAnimating = false,
   isLast,
   message,
   profile,
@@ -360,14 +360,16 @@ export const ChatMessage = ({
           >
             <RenderMessage
               deferToolOutputs={deferToolOutputs}
+              isAnimating={isAnimating}
               message={message}
               onPromptSelect={onPromptSelect}
-              status={status}
             />
           </Box>
           <AttachmentsDisplay message={message} />
           <Flex className="mt-2 px-0.5" justify="between">
-            {message.role === "assistant" && status !== "streaming" && (
+            {message.role === "assistant" &&
+            status !== "streaming" &&
+            !isAnimating ? (
               <Flex gap={2} justify="end">
                 <Tooltip title={`Create ${getTermDisplay("storyTerm")}`}>
                   <Button
@@ -400,7 +402,7 @@ export const ChatMessage = ({
                     {hasCopied ? <CheckIcon /> : <CopyIcon />}
                   </Button>
                 </Tooltip>
-                {isLast ? (
+                {isLast && message.metadata?.source !== "voice" ? (
                   <Tooltip title="Retry">
                     <Button
                       asIcon
@@ -416,7 +418,7 @@ export const ChatMessage = ({
                   </Tooltip>
                 ) : null}
               </Flex>
-            )}
+            ) : null}
           </Flex>
         </Flex>
       </Flex>

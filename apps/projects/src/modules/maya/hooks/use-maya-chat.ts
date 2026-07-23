@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -32,6 +32,8 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
 import { canSendMayaMessage } from "../utils/message-limit";
+import { mergeRealtimeVoiceMessages } from "../utils/realtime-voice-messages";
+import { useMayaRealtimeVoice } from "./use-maya-realtime-voice";
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -66,6 +68,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
   const handleNewChat = () => {
     const newChatId = generateId();
+    realtimeVoice.disconnect();
+    realtimeVoice.clearMessages();
     config.clearChatRef(newChatId);
     setMessages([]);
     setInput("");
@@ -73,6 +77,8 @@ export const useMayaChat = (config: MayaChatConfig) => {
   };
 
   const handleChatSelect = async (chatId: string) => {
+    realtimeVoice.disconnect();
+    realtimeVoice.clearMessages();
     // Fetch messages for the new chat ID directly
     const newMessages = await queryClient.fetchQuery({
       queryKey: aiChatKeys.messages(chatId),
@@ -220,6 +226,14 @@ export const useMayaChat = (config: MayaChatConfig) => {
     },
     messages: aiChatMessages,
   });
+  const realtimeVoice = useMayaRealtimeVoice({
+    conversationMessages: messages,
+    currentPath: pathname,
+  });
+  const displayMessages = useMemo(
+    () => mergeRealtimeVoiceMessages(messages, realtimeVoice.messages),
+    [messages, realtimeVoice.messages],
+  );
 
   const handleRegenerate = (messageId?: string) => {
     regenerate({
@@ -328,11 +342,13 @@ export const useMayaChat = (config: MayaChatConfig) => {
   return {
     // Chat state
     messages,
+    displayMessages,
     input,
     status,
     error,
     attachments,
     currentChatId,
+    realtimeVoice,
 
     // Chat actions
     setInput,

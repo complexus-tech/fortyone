@@ -13,6 +13,7 @@ import {
 import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
+  isVoiceSpeaking?: boolean;
   messages: MayaUIMessage[];
   status: ChatStatus;
   value: string;
@@ -21,6 +22,7 @@ type ChatMessagesProps = {
 };
 
 export const ChatMessages = ({
+  isVoiceSpeaking = false,
   messages,
   status,
   value,
@@ -34,9 +36,14 @@ export const ChatMessages = ({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const isWorking = status === "submitted" || status === "streaming";
   const latestAssistantMessage = messages.findLast(
-    (message) => message.role === "assistant",
+    (message) =>
+      message.role === "assistant" && message.metadata?.source !== "voice",
   );
   const latestAssistantMessageId = latestAssistantMessage?.id;
+  const latestVoiceAssistantMessageId = messages.findLast(
+    (message) =>
+      message.role === "assistant" && message.metadata?.source === "voice",
+  )?.id;
   const visibleMessages = messages.filter((message) =>
     hasVisibleMessageContent(
       message,
@@ -92,6 +99,12 @@ export const ChatMessages = ({
           return (
             <ChatMessage
               deferToolOutputs={deferToolOutputs}
+              isAnimating={
+                (status === "streaming" &&
+                  message.id === latestAssistantMessageId) ||
+                (isVoiceSpeaking &&
+                  message.id === latestVoiceAssistantMessageId)
+              }
               isLast={message.id === messages.at(-1)?.id}
               key={message.id}
               message={message}

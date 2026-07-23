@@ -2,7 +2,9 @@ package mayahttp
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
+	"unicode/utf8"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	"github.com/google/uuid"
@@ -31,6 +33,34 @@ type AppRealtimeSession struct {
 	MaxSessionSeconds   int       `json:"maxSessionSeconds"`
 	RemainingSeconds    int       `json:"remainingSeconds"`
 	MonthlyLimitSeconds int       `json:"monthlyLimitSeconds"`
+}
+
+type AppRealtimeSessionRequest struct {
+	CurrentPath string                           `json:"currentPath"`
+	Messages    []AppRealtimeConversationMessage `json:"messages"`
+}
+
+type AppRealtimeConversationMessage struct {
+	Role string `json:"role"`
+	Text string `json:"text"`
+}
+
+func (r AppRealtimeSessionRequest) Validate() error {
+	if utf8.RuneCountInString(r.CurrentPath) > 512 {
+		return errors.New("currentPath must be 512 characters or fewer")
+	}
+	if len(r.Messages) > 24 {
+		return errors.New("messages must contain 24 items or fewer")
+	}
+	for _, message := range r.Messages {
+		if message.Role != "user" && message.Role != "assistant" {
+			return errors.New("message role must be user or assistant")
+		}
+		if utf8.RuneCountInString(message.Text) > 4_000 {
+			return errors.New("message text must be 4000 characters or fewer")
+		}
+	}
+	return nil
 }
 
 type AppRealtimeEndSessionRequest struct {
@@ -211,12 +241,14 @@ type openAIRealtimeClientSecretRequest struct {
 }
 
 type openAIRealtimeSessionConfig struct {
-	Type         string                    `json:"type"`
-	Model        string                    `json:"model"`
-	Instructions string                    `json:"instructions"`
-	Audio        openAIRealtimeAudioConfig `json:"audio"`
-	Tools        []openAIRealtimeTool      `json:"tools,omitempty"`
-	ToolChoice   string                    `json:"tool_choice,omitempty"`
+	Type             string                    `json:"type"`
+	Model            string                    `json:"model"`
+	Instructions     string                    `json:"instructions"`
+	MaxOutputTokens  int                       `json:"max_output_tokens,omitempty"`
+	OutputModalities []string                  `json:"output_modalities,omitempty"`
+	Audio            openAIRealtimeAudioConfig `json:"audio"`
+	Tools            []openAIRealtimeTool      `json:"tools,omitempty"`
+	ToolChoice       string                    `json:"tool_choice,omitempty"`
 }
 
 type openAIRealtimeAudioConfig struct {
@@ -225,7 +257,19 @@ type openAIRealtimeAudioConfig struct {
 }
 
 type openAIRealtimeAudioInputConfig struct {
-	TurnDetection openAIRealtimeTurnDetectionConfig `json:"turn_detection"`
+	NoiseReduction openAIRealtimeNoiseReductionConfig `json:"noise_reduction"`
+	Transcription  openAIRealtimeTranscriptionConfig  `json:"transcription"`
+	TurnDetection  openAIRealtimeTurnDetectionConfig  `json:"turn_detection"`
+}
+
+type openAIRealtimeNoiseReductionConfig struct {
+	Type string `json:"type"`
+}
+
+type openAIRealtimeTranscriptionConfig struct {
+	Language string `json:"language"`
+	Model    string `json:"model"`
+	Prompt   string `json:"prompt"`
 }
 
 type openAIRealtimeTurnDetectionConfig struct {

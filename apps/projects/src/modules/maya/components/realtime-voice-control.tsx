@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Tooltip } from "ui";
-import { LoadingIcon, StopIcon, VoiceIcon } from "icons";
+import { StopIcon, VoiceIcon } from "icons";
 import type { useMayaRealtimeVoice } from "../hooks/use-maya-realtime-voice";
 
 type RealtimeVoiceControlProps = {
@@ -9,11 +9,18 @@ type RealtimeVoiceControlProps = {
   voice: ReturnType<typeof useMayaRealtimeVoice>;
 };
 
-const getButtonLabel = (
-  status: ReturnType<typeof useMayaRealtimeVoice>["status"],
-) => {
+const getButtonLabel = (voice: ReturnType<typeof useMayaRealtimeVoice>) => {
+  const { isSpeaking, remainingSeconds, status } = voice;
   if (status === "connecting") return "Connecting";
-  if (status === "connected") return "End voice";
+  if (status === "disconnecting") return "Ending";
+  if (status === "connected") {
+    const seconds = Math.max(0, remainingSeconds ?? 0);
+    const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(
+      2,
+      "0",
+    )}`;
+    return `${isSpeaking ? "Speaking" : "Listening"} · ${time}`;
+  }
   return "Live voice";
 };
 
@@ -24,12 +31,11 @@ export const RealtimeVoiceControl = ({
   const { connect, disconnect, status } = voice;
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
-  const label = getButtonLabel(status);
+  const isDisconnecting = status === "disconnecting";
+  const isActive = status !== "idle";
+  const label = getButtonLabel(voice);
 
   const buttonIcon = (() => {
-    if (isConnecting) {
-      return <LoadingIcon className="h-5 w-auto animate-spin text-current" />;
-    }
     if (isConnected) {
       return <StopIcon className="h-5 w-auto text-current dark:text-current" />;
     }
@@ -40,7 +46,7 @@ export const RealtimeVoiceControl = ({
     <Tooltip
       side="bottom"
       title={
-        isConnected
+        isActive
           ? "End the realtime voice session"
           : "Start a realtime voice conversation"
       }
@@ -49,7 +55,7 @@ export const RealtimeVoiceControl = ({
         aria-label={label}
         className="shrink-0 gap-1.5"
         color="invert"
-        disabled={disabled || isConnecting}
+        disabled={disabled || isConnecting || isDisconnecting}
         leftIcon={buttonIcon}
         onClick={() => {
           if (isConnected) {

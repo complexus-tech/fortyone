@@ -37,7 +37,8 @@ import (
 
 const defaultPlanningWindow = 14 * 24 * time.Hour
 const defaultRealtimeBaseURL = "https://api.openai.com/v1"
-const defaultRealtimeModel = "gpt-realtime-2"
+const defaultRealtimeModel = "gpt-realtime-2.1-mini"
+const defaultRealtimeTranscriptionModel = "gpt-4o-mini-transcribe"
 const defaultRealtimeVoice = "marin"
 const realtimeMonthlyVoiceLimit = 5 * time.Minute
 const realtimeMaxSessionDuration = 5 * time.Minute
@@ -165,6 +166,11 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, h.statusCode(err))
 	}
 
+	var req AppRealtimeSessionRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
 	sessionID, maxSessionDuration, remainingDuration, err := h.startRealtimeVoiceSession(ctx, workspace.ID, userID)
 	if err != nil {
 		if errors.Is(err, ErrMayaRealtimeMonthlyLimitExceeded) {
@@ -173,7 +179,7 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	session, err := h.createRealtimeClientSecret(ctx, workspace.ID, userID)
+	session, err := h.createRealtimeClientSecret(ctx, workspace.ID, userID, req)
 	if err != nil {
 		h.endRealtimeVoiceSession(ctx, workspace.ID, userID, sessionID)
 		h.log.Error(ctx, "failed to create realtime maya session", "error", err, "workspace_id", workspace.ID, "user_id", userID)
@@ -933,7 +939,7 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 	}, nil
 }
 
-func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, userID uuid.UUID) (AppRealtimeSession, error) {
+func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, userID uuid.UUID, sessionRequest AppRealtimeSessionRequest) (AppRealtimeSession, error) {
 	terminology := h.realtimeTerminology(ctx, workspaceID)
 	workspaceTeams, err := h.teams.List(ctx, workspaceID, userID)
 	if err != nil {
@@ -945,28 +951,7 @@ func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, 
 	}
 
 	payload := openAIRealtimeClientSecretRequest{
-		Session: openAIRealtimeSessionConfig{
-			Type:         "realtime",
-			Model:        defaultRealtimeModel,
-			Instructions: realtimeInstructions(terminology, workspaceTeams, currentUser),
-			Tools:        realtimeTools(),
-			ToolChoice:   "auto",
-			Audio: openAIRealtimeAudioConfig{
-				Input: openAIRealtimeAudioInputConfig{
-					TurnDetection: openAIRealtimeTurnDetectionConfig{
-						Type:              "server_vad",
-						Threshold:         0.75,
-						PrefixPaddingMs:   300,
-						SilenceDurationMs: 700,
-						CreateResponse:    true,
-						InterruptResponse: true,
-					},
-				},
-				Output: openAIRealtimeAudioOutputConfig{
-					Voice: defaultRealtimeVoice,
-				},
-			},
-		},
+		Session: newRealtimeSessionConfig(terminology, workspaceTeams, currentUser, sessionRequest),
 	}
 
 	body, err := json.Marshal(payload)
@@ -1024,11 +1009,49 @@ func (h *Handlers) createRealtimeClientSecret(ctx context.Context, workspaceID, 
 	}, nil
 }
 
-func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam, currentUser AppRealtimeVoiceUser) string {
-	return strings.Join([]string{
+func newRealtimeSessionConfig(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam, currentUser AppRealtimeVoiceUser, sessionRequest AppRealtimeSessionRequest) openAIRealtimeSessionConfig {
+	return openAIRealtimeSessionConfig{
+		Type:             "realtime",
+		Model:            defaultRealtimeModel,
+		Instructions:     realtimeInstructions(terminology, workspaceTeams, currentUser, sessionRequest),
+		MaxOutputTokens:  500,
+		OutputModalities: []string{"audio"},
+		Tools:            realtimeTools(),
+		ToolChoice:       "auto",
+		Audio: openAIRealtimeAudioConfig{
+			Input: openAIRealtimeAudioInputConfig{
+				NoiseReduction: openAIRealtimeNoiseReductionConfig{
+					Type: "near_field",
+				},
+				Transcription: openAIRealtimeTranscriptionConfig{
+					Language: "en",
+					Model:    defaultRealtimeTranscriptionModel,
+					Prompt:   realtimeTranscriptionPrompt(terminology, workspaceTeams),
+				},
+				TurnDetection: openAIRealtimeTurnDetectionConfig{
+					Type:              "server_vad",
+					Threshold:         0.75,
+					PrefixPaddingMs:   300,
+					SilenceDurationMs: 700,
+					CreateResponse:    true,
+					InterruptResponse: true,
+				},
+			},
+			Output: openAIRealtimeAudioOutputConfig{
+				Voice: defaultRealtimeVoice,
+			},
+		},
+	}
+}
+
+func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam, currentUser AppRealtimeVoiceUser, sessionRequest AppRealtimeSessionRequest) string {
+	instructions := []string{
 		"You are Maya, the project management assistant inside FortyOne.",
 		"Your job is to help users manage work in FortyOne: work items, teams, priorities, assignments, workload, objectives, key results, activity, and workspace insights.",
 		"In voice mode, be concise, natural, and direct. Prefer one to three spoken sentences unless the user asks for detail.",
+		"Sound warm, sharp, curious, and genuinely enjoyable to talk to. Let personality come through as natural, context-dependent banter rather than a scripted joke.",
+		"Use more playful energy for casual conversation and a lighter touch for professional or operational requests. Keep confirmations, failures, permissions, and sensitive topics straightforward and respectful.",
+		"Avoid puns, dad jokes, forced analogies, corporate wordplay, fixed joke templates, and unrelated quips.",
 		"Stay focused on project management inside FortyOne. Briefly redirect off-topic requests back to project-management help.",
 		"Use available tools whenever facts, permissions, current state, IDs, or state changes are involved.",
 		fmt.Sprintf("The current authenticated user is %s (@%s). When the user says me, my, or assign to me, resolve that to this user.", currentUser.Name, currentUser.Username),
@@ -1055,7 +1078,57 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"If a tool returns needsAssignee, ask which team member should be assigned.",
 		"If a tool returns needsStoryReference, ask which existing work item the user meant, using the returned references and titles.",
 		"If a tool fails, repeat the useful error briefly. Do not invent a fallback workflow.",
-	}, " ")
+	}
+
+	if currentPath := strings.TrimSpace(sessionRequest.CurrentPath); currentPath != "" {
+		instructions = append(instructions, fmt.Sprintf("The user started voice mode from the FortyOne path %q. Use it only to resolve references such as this page or this story when the conversation supports that interpretation.", currentPath))
+	}
+	if recentConversation := realtimeConversationContext(sessionRequest.Messages); recentConversation != "" {
+		instructions = append(instructions, "Continue naturally from this recent typed and voice conversation. Do not repeat information the user already received:\n"+recentConversation)
+	}
+
+	return strings.Join(instructions, " ")
+}
+
+func realtimeConversationContext(messages []AppRealtimeConversationMessage) string {
+	if len(messages) == 0 {
+		return ""
+	}
+
+	lines := make([]string, 0, len(messages))
+	for _, message := range messages {
+		text := strings.TrimSpace(message.Text)
+		if text == "" {
+			continue
+		}
+		speaker := "User"
+		if message.Role == "assistant" {
+			speaker = "Maya"
+		}
+		lines = append(lines, speaker+": "+text)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func realtimeTranscriptionPrompt(terminology AppRealtimeTerminology, workspaceTeams []teams.CoreTeam) string {
+	terms := []string{
+		"FortyOne",
+		"Maya",
+		terminology.Story,
+		terminology.Stories,
+		terminology.Sprint,
+		terminology.Sprints,
+		terminology.Objective,
+		terminology.Objectives,
+		terminology.KeyResult,
+		terminology.KeyResults,
+	}
+	for _, team := range workspaceTeams {
+		if name := strings.TrimSpace(team.Name); name != "" {
+			terms = append(terms, name)
+		}
+	}
+	return "Expect FortyOne workspace terminology, names, and references including: " + strings.Join(terms, ", ") + "."
 }
 
 func realtimeTools() []openAIRealtimeTool {

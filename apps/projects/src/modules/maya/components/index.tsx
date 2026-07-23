@@ -29,12 +29,13 @@ export const MayaChat = () => {
   };
   const {
     // Chat state
-    messages,
+    displayMessages,
     input,
     status,
     error,
     attachments,
     currentChatId,
+    realtimeVoice,
 
     // Chat actions
     setInput,
@@ -74,15 +75,18 @@ export const MayaChat = () => {
       />
       <BodyContainer className="mx-auto flex max-w-4xl flex-col">
         <ChatMessages
-          messages={messages}
+          isVoiceSpeaking={realtimeVoice.isSpeaking}
+          messages={displayMessages}
           onPromptSelect={handleSuggestedPrompt}
           regenerate={regenerate}
           status={status}
           value={input}
         />
-        {error ? (
+        {error || realtimeVoice.error ? (
           <Box className="mb-4 px-6">
-            <Text>{error.message || "An error occurred."} </Text>
+            <Text>
+              {realtimeVoice.error || error?.message || "An error occurred."}{" "}
+            </Text>
             <Button
               className="mt-2"
               leftIcon={<ReloadIcon className="text-current" />}
@@ -95,7 +99,7 @@ export const MayaChat = () => {
           </Box>
         ) : null}
 
-        {messages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
         ) : null}
         {needsUpgrade ? <LimitReached isOnPage /> : null}
@@ -104,13 +108,14 @@ export const MayaChat = () => {
           isLiveVoiceVisible={isInternalUser}
           isOnPage
           liveVoiceDisabled={needsUpgrade}
-          messagesCount={messages.length}
+          messagesCount={displayMessages.length}
           onAttachmentsChange={setAttachments}
           onChange={(e) => {
             setInput(e.target.value);
           }}
           onSend={handleSend}
           onStop={handleStop}
+          realtimeVoice={realtimeVoice}
           status={status}
           value={input}
         />

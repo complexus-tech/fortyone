@@ -18,7 +18,7 @@ import ky from "ky";
 import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
-import { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
+import type { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 
@@ -34,6 +34,7 @@ type ChatInputProps = {
   messagesCount: number;
   isLiveVoiceVisible?: boolean;
   liveVoiceDisabled?: boolean;
+  realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
 };
 
 const SendIcon = () => {
@@ -103,6 +104,7 @@ export const ChatInput = ({
   messagesCount,
   isLiveVoiceVisible = false,
   liveVoiceDisabled = false,
+  realtimeVoice,
 }: ChatInputProps) => {
   const { getTermDisplay } = useTerminology();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -112,7 +114,6 @@ export const ChatInput = ({
   const handleAutoStop = useCallback(() => {
     processRecordingRef.current();
   }, []);
-  const realtimeVoice = useMayaRealtimeVoice();
   const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts =
     messagesCount > 2
@@ -413,7 +414,7 @@ export const ChatInput = ({
                 ? "Transcribing..."
                 : isRecording
                   ? "Cancel"
-                  : "Talk"}
+                  : "Record"}
             </Button>
             {isLiveVoiceVisible ? (
               <RealtimeVoiceControl
