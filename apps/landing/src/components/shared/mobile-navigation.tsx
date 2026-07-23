@@ -23,6 +23,8 @@ const NavMenuButton = ({
 }) => {
   return (
     <button
+      aria-expanded={open}
+      aria-label={open ? "Close navigation menu" : "Open navigation menu"}
       className="flex aspect-square h-10 items-center justify-center"
       onClick={() => {
         setOpen(!open);
@@ -79,7 +81,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="bg-surface/90 m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0"
+          className="bg-background dark:bg-background m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >
