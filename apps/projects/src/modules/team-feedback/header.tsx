@@ -96,7 +96,7 @@ export const TeamFeedbackHeader = ({
               size="sm"
             />
           </Menu.Button>
-          <Menu.Items align="end">
+          <Menu.Items align="end" className="w-48">
             <Menu.Group className="mt-1 mb-3 px-4">
               <Text color="muted" textOverflow="truncate">
                 Filter feedback
