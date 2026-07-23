@@ -11,6 +11,7 @@ import (
 const (
 	TypeTokenCleanup        = "cleanup:tokens"
 	TypeDeleteStories       = "cleanup:deleted_stories"
+	TypeDeleteFeedback      = "cleanup:deleted_feedback"
 	TypeWebhookCleanup      = "cleanup:stripe_webhooks"
 	TypeWorkspaceCleanup    = "cleanup:deleted_workspaces"
 	TypeChatSessionsCleanup = "cleanup:deleted_chat_sessions"

@@ -199,6 +199,9 @@ func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (Cor
 		if input.TeamID != nil && item.Board.TeamID != *input.TeamID {
 			continue
 		}
+		if input.DeletedOnly != (item.DeletedAt != nil) {
+			continue
+		}
 		if input.ViewerID != uuid.Nil && r.reads != nil {
 			if readAt, ok := r.reads[feedbackReadKey(item.ID, input.ViewerID)]; ok {
 				item.ReadAt = &readAt
@@ -304,7 +307,7 @@ func (r *repoStub) ListStoryFeedbackLinks(ctx context.Context, workspaceID, stor
 
 func (r *repoStub) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error) {
 	for _, item := range r.items {
-		if item.WorkspaceID == workspaceID && item.ID == itemID {
+		if item.WorkspaceID == workspaceID && item.ID == itemID && item.DeletedAt == nil {
 			return item, nil
 		}
 	}
@@ -415,6 +418,31 @@ func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uui
 		}
 	}
 	return item, statusChanged, nil
+}
+
+func (r *repoStub) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	for index, item := range r.items {
+		if item.WorkspaceID != workspaceID || item.ID != itemID || item.DeletedAt != nil {
+			continue
+		}
+		if len(item.StoryLinks) > 0 && item.StoryLinks[0].IsPrimary {
+			return ErrStoryManaged
+		}
+		deletedAt := time.Now()
+		r.items[index].DeletedAt = &deletedAt
+		return nil
+	}
+	return ErrNotFound
+}
+
+func (r *repoStub) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	for index, item := range r.items {
+		if item.WorkspaceID == workspaceID && item.ID == itemID && item.DeletedAt != nil {
+			r.items[index].DeletedAt = nil
+			return nil
+		}
+	}
+	return ErrNotFound
 }
 
 func (r *repoStub) CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error) {
@@ -1331,6 +1359,93 @@ func TestListTeamItemsCarriesTrimmedSearch(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, repo.listItemInputs, 1)
 	require.Equal(t, "export filters", repo.listItemInputs[0].Search)
+}
+
+func TestListTeamItemsScopesTrashToDeletedFeedback(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	deletedAt := time.Now()
+	repo := &repoStub{items: []CoreItem{
+		{ID: uuid.New(), WorkspaceID: workspaceID, Board: CoreBoard{TeamID: teamID}},
+		{ID: uuid.New(), WorkspaceID: workspaceID, DeletedAt: &deletedAt, Board: CoreBoard{TeamID: teamID}},
+	}}
+	service := New(repo, nil)
+
+	page, err := service.ListTeamItems(
+		context.Background(),
+		workspaceID,
+		teamID,
+		uuid.New(),
+		ListStatusTrashed,
+		"",
+		1,
+		25,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, page.Items, 1)
+	require.NotNil(t, page.Items[0].DeletedAt)
+	require.True(t, repo.listItemInputs[0].DeletedOnly)
+	require.Equal(t, "all", repo.listItemInputs[0].Status)
+}
+
+func TestListTeamItemsTreatsLegacyAllFilterAsActive(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	_, err := service.ListTeamItems(
+		context.Background(),
+		workspaceID,
+		teamID,
+		uuid.New(),
+		"all",
+		"",
+		1,
+		25,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, repo.listItemInputs, 1)
+	require.Equal(t, "active", repo.listItemInputs[0].Status)
+	require.False(t, repo.listItemInputs[0].DeletedOnly)
+}
+
+func TestTrashAndRestoreItemLifecycle(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{ID: itemID, WorkspaceID: workspaceID}}}
+	service := New(repo, nil)
+
+	require.NoError(t, service.TrashItem(context.Background(), workspaceID, itemID))
+	require.NotNil(t, repo.items[0].DeletedAt)
+	require.NoError(t, service.RestoreItem(context.Background(), workspaceID, itemID))
+	require.Nil(t, repo.items[0].DeletedAt)
+	require.ErrorIs(t, service.TrashItem(context.Background(), uuid.Nil, itemID), ErrInvalidInput)
+	require.ErrorIs(t, service.RestoreItem(context.Background(), workspaceID, uuid.Nil), ErrInvalidInput)
+}
+
+func TestTrashItemRejectsFeedbackManagedByPrimaryStory(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{items: []CoreItem{{
+		ID:          itemID,
+		WorkspaceID: workspaceID,
+		StoryLinks:  []CoreStoryLink{{IsPrimary: true}},
+	}}}
+	service := New(repo, nil)
+
+	require.ErrorIs(t, service.TrashItem(context.Background(), workspaceID, itemID), ErrStoryManaged)
+	require.Nil(t, repo.items[0].DeletedAt)
 }
 
 func TestFeedbackReadStateIsPerUserAndDrivesTeamSummary(t *testing.T) {

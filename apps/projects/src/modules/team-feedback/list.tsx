@@ -12,25 +12,26 @@ import { useTeamFeedbackInfinite } from "./hooks/use-team-feedback";
 import type { TeamFeedbackListStatus } from "./types";
 
 const emptyStateCopy: Record<TeamFeedbackListStatus, string> = {
-  active: "New customer ideas will appear here for your team to review.",
-  all: "Customer ideas submitted to this team will appear here.",
+  active:
+    "Active customer ideas that have not been completed or closed will appear here.",
   pending: "There is no new feedback waiting for review.",
   reviewing: "No feedback is currently being reviewed.",
   planned: "No feedback has been planned yet.",
   in_progress: "No feedback is currently in progress.",
   completed: "No feedback has been completed yet.",
   closed: "No feedback has been closed.",
+  trashed: "Deleted feedback will remain available here for 30 days.",
 };
 
 const feedbackListStatuses: TeamFeedbackListStatus[] = [
   "active",
-  "all",
   "pending",
   "reviewing",
   "planned",
   "in_progress",
   "completed",
   "closed",
+  "trashed",
 ];
 
 export const ListTeamFeedback = () => {

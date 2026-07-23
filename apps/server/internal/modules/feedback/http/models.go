@@ -51,6 +51,8 @@ type AppItem struct {
 	CommentCount   int            `json:"commentCount"`
 	RoadmapSummary *string        `json:"roadmapSummary,omitempty"`
 	ReadAt         *time.Time     `json:"readAt"`
+	DeletedAt      *time.Time     `json:"deletedAt,omitempty"`
+	RestoreUntil   *time.Time     `json:"restoreUntil,omitempty"`
 	Board          *AppBoard      `json:"board,omitempty"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
@@ -280,10 +282,15 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		CommentCount:   core.CommentCount,
 		RoadmapSummary: core.RoadmapSummary,
 		ReadAt:         core.ReadAt,
+		DeletedAt:      core.DeletedAt,
 		CreatedAt:      core.CreatedAt,
 		UpdatedAt:      core.UpdatedAt,
 		Comments:       comments,
 		StoryLinks:     links,
+	}
+	if core.DeletedAt != nil {
+		restoreUntil := core.DeletedAt.Add(30 * 24 * time.Hour)
+		item.RestoreUntil = &restoreUntil
 	}
 	if core.Board.ID != uuid.Nil {
 		board := toAppBoard(core.Board)

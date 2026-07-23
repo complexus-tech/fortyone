@@ -181,6 +181,7 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 		WHERE n.recipient_id = $1
 			AND w.slug = $2
 			AND fp.is_public = true
+			AND fi.deleted_at IS NULL
 			AND n.entity_type::text = 'feedback'
 			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
 			AND ($3 = false OR n.read_at IS NULL)
@@ -214,6 +215,7 @@ func (r *repo) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUI
 		WHERE n.recipient_id = $1
 			AND w.slug = $2
 			AND fp.is_public = true
+			AND fi.deleted_at IS NULL
 			AND n.entity_type::text = 'feedback'
 			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
 			AND n.read_at IS NULL

@@ -150,30 +150,25 @@ const NotificationItem = ({
             backgroundColor: getPublicAvatarColor(notification.actor.name),
           }}
         />
-        <Flex
-          align="center"
-          className="min-w-0 flex-1"
-          gap={3}
-          justify="between"
-        >
-          <Box className="min-w-0 flex-1">
+        <Box className="min-w-0 flex-1">
+          <Flex align="center" gap={2} justify="between">
             <Text
-              className="line-clamp-1 text-base leading-6"
+              className="line-clamp-1 min-w-0 flex-1 text-base leading-6"
               fontWeight={isUnread ? "semibold" : "medium"}
             >
               {renderNotificationMessage(notification)}
             </Text>
+            {isUnread ? (
+              <span className="bg-primary size-2 shrink-0 rounded-full" />
+            ) : null}
+          </Flex>
+          <Flex align="center" className="mt-1" gap={3} justify="between">
             <Text
-              className="mt-1 line-clamp-1 text-base leading-6"
+              className="line-clamp-1 min-w-0 flex-1 text-base leading-6"
               color="muted"
             >
               {notification.feedback.title}
             </Text>
-          </Box>
-          <Flex align="center" className="shrink-0 self-end" gap={2}>
-            {isUnread ? (
-              <span className="bg-primary size-2 shrink-0 rounded-full" />
-            ) : null}
             <Text
               className="shrink-0 text-sm leading-6 whitespace-nowrap"
               color="muted"
@@ -181,7 +176,7 @@ const NotificationItem = ({
               <TimeAgo timestamp={notification.createdAt} />
             </Text>
           </Flex>
-        </Flex>
+        </Box>
       </Flex>
     </Link>
   );

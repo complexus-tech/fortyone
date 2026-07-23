@@ -130,6 +130,24 @@ func TestAppPortalDoesNotExposeRemovedDescription(t *testing.T) {
 	}
 }
 
+func TestAppItemIncludesThirtyDayRestoreWindow(t *testing.T) {
+	t.Parallel()
+
+	deletedAt := time.Date(2026, time.July, 23, 8, 0, 0, 0, time.UTC)
+	item := toAppItem(feedback.CoreItem{
+		ID:        uuid.New(),
+		DeletedAt: &deletedAt,
+	}, nil, nil)
+
+	if item.DeletedAt == nil || !item.DeletedAt.Equal(deletedAt) {
+		t.Fatalf("deleted at = %v, want %v", item.DeletedAt, deletedAt)
+	}
+	wantRestoreUntil := deletedAt.Add(30 * 24 * time.Hour)
+	if item.RestoreUntil == nil || !item.RestoreUntil.Equal(wantRestoreUntil) {
+		t.Fatalf("restore until = %v, want %v", item.RestoreUntil, wantRestoreUntil)
+	}
+}
+
 func TestAppBoardReviewerUsesAutoSaveContract(t *testing.T) {
 	t.Parallel()
 

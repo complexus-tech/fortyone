@@ -519,6 +519,7 @@ func (r *repo) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, use
 			AND fp.is_public = true
 			AND fi.id = n.entity_id
 			AND fi.workspace_id = n.workspace_id
+			AND fi.deleted_at IS NULL
 			AND n.entity_type::text = 'feedback'
 			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
 	`, notificationID, userID, portalSlug)
@@ -552,6 +553,7 @@ func (r *repo) MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID
 			AND fp.is_public = true
 			AND fi.id = n.entity_id
 			AND fi.workspace_id = n.workspace_id
+			AND fi.deleted_at IS NULL
 			AND n.entity_type::text = 'feedback'
 			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
 			AND n.read_at IS NULL

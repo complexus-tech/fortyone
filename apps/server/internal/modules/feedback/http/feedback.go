@@ -353,6 +353,9 @@ func (h *Handlers) ListTeamItems(ctx context.Context, w http.ResponseWriter, r *
 	if status == "" {
 		status = "active"
 	}
+	if status == feedback.ListStatusTrashed && workspace.UserRole != string(mid.RoleAdmin) {
+		return web.RespondError(ctx, w, errors.New("you don't have permission to access trashed feedback"), http.StatusForbidden)
+	}
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
 	itemsPage, err := h.feedback.ListTeamItems(ctx, workspace.ID, teamID, userID, status, search, page, pageSize)
 	if err != nil {
@@ -377,6 +380,36 @@ func (h *Handlers) ListTeamItems(ctx context.Context, w http.ResponseWriter, r *
 			NextPage: page + 1,
 		},
 	}, http.StatusOK)
+}
+
+func (h *Handlers) TrashItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.feedback.TrashItem(ctx, workspace.ID, itemID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) RestoreItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.feedback.RestoreItem(ctx, workspace.ID, itemID); err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 func (h *Handlers) GetItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

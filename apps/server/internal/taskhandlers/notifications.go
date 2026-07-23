@@ -146,6 +146,10 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			AND n.email_sent_at IS NULL
 			AND u.is_active = true
 			AND u.is_system = false
+			AND (
+				n.entity_type::text <> 'feedback'
+				OR (fi.id IS NOT NULL AND fi.deleted_at IS NULL)
+			)
 			AND NULLIF(TRIM(u.email), '') IS NOT NULL;
 		`
 
@@ -203,6 +207,10 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			AND n.email_sent_at IS NULL
 			AND u.is_active = true
 			AND u.is_system = false
+			AND (
+				n.entity_type::text <> 'feedback'
+				OR (fi.id IS NOT NULL AND fi.deleted_at IS NULL)
+			)
 			AND NULLIF(TRIM(u.email), '') IS NOT NULL
 			AND CAST(COALESCE(np.preferences -> CAST(n.type AS TEXT) ->> 'email', 'true') AS BOOLEAN) = true
 		ORDER BY n.created_at ASC;

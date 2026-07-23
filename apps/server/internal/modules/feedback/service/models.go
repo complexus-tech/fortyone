@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	StatusPending    = "pending"
-	StatusReviewing  = "reviewing"
-	StatusPlanned    = "planned"
-	StatusInProgress = "in_progress"
-	StatusCompleted  = "completed"
-	StatusClosed     = "closed"
+	StatusPending     = "pending"
+	StatusReviewing   = "reviewing"
+	StatusPlanned     = "planned"
+	StatusInProgress  = "in_progress"
+	StatusCompleted   = "completed"
+	StatusClosed      = "closed"
+	ListStatusTrashed = "trashed"
 
 	RelationshipCreatedFrom = "created_from"
 	RelationshipLinked      = "linked"
@@ -75,6 +76,7 @@ type CoreItem struct {
 	Board          CoreBoard
 	StoryLinks     []CoreStoryLink
 	ReadAt         *time.Time
+	DeletedAt      *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -307,6 +309,8 @@ type Repository interface {
 	GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error)
+	TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error
+	RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error
 	CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error)
 	ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error)
 	LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error)
@@ -326,6 +330,7 @@ type CoreListItemsInput struct {
 	Sort        string
 	Page        int
 	PageSize    int
+	DeletedOnly bool
 }
 
 type CoreItemsPage struct {

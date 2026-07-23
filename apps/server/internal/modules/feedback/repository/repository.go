@@ -82,6 +82,7 @@ type itemRow struct {
 	UpdatedAt         time.Time  `db:"updated_at"`
 	StatusChanged     bool       `db:"status_changed"`
 	ReadAt            *time.Time `db:"read_at"`
+	DeletedAt         *time.Time `db:"deleted_at"`
 }
 
 type commentRow struct {
@@ -542,6 +543,11 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 		params["workspace_id"] = input.WorkspaceID
 		params["team_id"] = *input.TeamID
 	}
+	if input.DeletedOnly {
+		where = append(where, "fi.deleted_at IS NOT NULL", "fi.deleted_at >= NOW() - INTERVAL '30 days'")
+	} else {
+		where = append(where, "fi.deleted_at IS NULL")
+	}
 	selectQuery := itemSelectQuery()
 	if input.ViewerID != uuid.Nil {
 		selectQuery = itemSelectQueryForViewer(":viewer_id")
@@ -550,7 +556,7 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 	switch input.Status {
 	case "", "all":
 	case "active":
-		where = append(where, projectedFeedbackStatus+" IN ('pending', 'reviewing')")
+		where = append(where, projectedFeedbackStatus+" IN ('pending', 'reviewing', 'planned', 'in_progress')")
 	default:
 		where = append(where, projectedFeedbackStatus+" = :status")
 		params["status"] = input.Status
@@ -592,6 +598,7 @@ func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID)
 				FROM feedback_items authored_feedback
 				WHERE authored_feedback.portal_id = $1
 					AND authored_feedback.author_id = u.user_id
+					AND authored_feedback.deleted_at IS NULL
 			) AS integer) AS feedback_count,
 			CAST((
 				SELECT COUNT(*)
@@ -600,6 +607,7 @@ func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID)
 					ON commented_feedback.id = authored_comment.item_id
 				WHERE commented_feedback.portal_id = $1
 					AND authored_comment.author_id = u.user_id
+					AND commented_feedback.deleted_at IS NULL
 			) AS integer) AS comment_count,
 			CAST(COALESCE((
 				SELECT SUM(received_vote.direction)
@@ -608,6 +616,7 @@ func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID)
 					ON voted_feedback.id = received_vote.item_id
 				WHERE voted_feedback.portal_id = $1
 					AND voted_feedback.author_id = u.user_id
+					AND voted_feedback.deleted_at IS NULL
 			), 0) AS integer) AS vote_score
 		FROM users u
 		WHERE u.user_id = $2
@@ -617,6 +626,7 @@ func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID)
 					FROM feedback_items contributed_feedback
 					WHERE contributed_feedback.portal_id = $1
 						AND contributed_feedback.author_id = u.user_id
+						AND contributed_feedback.deleted_at IS NULL
 				)
 				OR EXISTS (
 					SELECT 1
@@ -625,6 +635,7 @@ func (r *Repo) GetContributor(ctx context.Context, portalID, authorID uuid.UUID)
 						ON contributed_to_feedback.id = contributed_comment.item_id
 					WHERE contributed_to_feedback.portal_id = $1
 						AND contributed_comment.author_id = u.user_id
+						AND contributed_to_feedback.deleted_at IS NULL
 				)
 			)
 	`, portalID, authorID)
@@ -642,6 +653,7 @@ func (r *Repo) ContributorExists(ctx context.Context, portalID, authorID uuid.UU
 			FROM feedback_items contributed_feedback
 			WHERE contributed_feedback.portal_id = $1
 				AND contributed_feedback.author_id = $2
+				AND contributed_feedback.deleted_at IS NULL
 			UNION ALL
 			SELECT 1
 			FROM feedback_comments contributed_comment
@@ -649,6 +661,7 @@ func (r *Repo) ContributorExists(ctx context.Context, portalID, authorID uuid.UU
 				ON contributed_to_feedback.id = contributed_comment.item_id
 			WHERE contributed_to_feedback.portal_id = $1
 				AND contributed_comment.author_id = $2
+				AND contributed_to_feedback.deleted_at IS NULL
 		)
 	`, portalID, authorID)
 	return exists, err
@@ -691,6 +704,7 @@ func buildListContributorCommentsQuery(input feedback.CoreListContributorComment
 		INNER JOIN feedback_items fi ON fi.id = fc.item_id
 		WHERE fi.portal_id = :portal_id
 			AND fc.author_id = :author_id
+			AND fi.deleted_at IS NULL
 		ORDER BY fc.created_at DESC, fc.id DESC
 		LIMIT :limit OFFSET :offset
 	`, map[string]any{
@@ -711,7 +725,7 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback
 		FROM feedback_comments fc
 		INNER JOIN feedback_items fi ON fi.id = fc.item_id
 		LEFT JOIN users u ON u.user_id = fc.author_id
-		WHERE fi.portal_id = $1
+		WHERE fi.portal_id = $1 AND fi.deleted_at IS NULL
 		ORDER BY fc.created_at DESC, fc.id DESC
 	`, portalID); err != nil {
 		return nil, err
@@ -766,7 +780,7 @@ func (r *Repo) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]feedba
 		SELECT fsl.id, fsl.workspace_id, fsl.item_id, fsl.story_id, fsl.relationship, fsl.is_primary, fsl.created_by_user_id, fsl.created_at
 		FROM feedback_story_links fsl
 		INNER JOIN feedback_items fi ON fi.id = fsl.item_id
-		WHERE fi.portal_id = $1
+		WHERE fi.portal_id = $1 AND fi.deleted_at IS NULL
 		ORDER BY fsl.is_primary DESC, fsl.created_at ASC
 	`, portalID); err != nil {
 		return nil, err
@@ -807,6 +821,7 @@ func (r *Repo) ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID 
 		INNER JOIN feedback_items fi ON fi.id = fsl.item_id AND fi.workspace_id = fsl.workspace_id
 		INNER JOIN feedback_boards fb ON fb.id = fi.board_id AND fb.workspace_id = fsl.workspace_id
 		WHERE fsl.workspace_id = $1 AND fsl.story_id = $2 AND fsl.is_primary = true
+			AND fi.deleted_at IS NULL
 		ORDER BY fsl.created_at ASC
 	`, workspaceID, storyID); err != nil {
 		return nil, err
@@ -821,7 +836,7 @@ func (r *Repo) ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID 
 func (r *Repo) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (feedback.CoreItem, error) {
 	var row itemRow
 	err := r.db.GetContext(ctx, &row, itemSelectQuery()+`
-		WHERE fi.workspace_id = $1 AND fi.id = $2
+		WHERE fi.workspace_id = $1 AND fi.id = $2 AND fi.deleted_at IS NULL
 	`, workspaceID, itemID)
 	if err != nil {
 		return feedback.CoreItem{}, err
@@ -836,6 +851,7 @@ func (r *Repo) GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uu
 		FROM feedback_item_reads fir
 		INNER JOIN feedback_items fi ON fi.id = fir.item_id
 		WHERE fi.workspace_id = $1 AND fir.item_id = $2 AND fir.user_id = $3
+			AND fi.deleted_at IS NULL
 	`, workspaceID, itemID, userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -854,7 +870,9 @@ func (r *Repo) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.U
 			COUNT(fi.id) FILTER (WHERE fi.id IS NOT NULL AND fir.item_id IS NULL)::int AS unread_count
 		FROM feedback_boards fb
 		INNER JOIN team_members tm ON tm.team_id = fb.team_id AND tm.user_id = $2
-		LEFT JOIN feedback_items fi ON fi.board_id = fb.id AND fi.workspace_id = fb.workspace_id
+		LEFT JOIN feedback_items fi ON fi.board_id = fb.id
+			AND fi.workspace_id = fb.workspace_id
+			AND fi.deleted_at IS NULL
 		LEFT JOIN feedback_item_reads fir ON fir.item_id = fi.id AND fir.user_id = $2
 		WHERE fb.workspace_id = $1
 		GROUP BY fb.team_id
@@ -880,7 +898,7 @@ func (r *Repo) MarkItemRead(ctx context.Context, workspaceID, itemID, userID uui
 		INSERT INTO feedback_item_reads (item_id, user_id)
 		SELECT fi.id, $3
 		FROM feedback_items fi
-		WHERE fi.workspace_id = $1 AND fi.id = $2
+		WHERE fi.workspace_id = $1 AND fi.id = $2 AND fi.deleted_at IS NULL
 		ON CONFLICT (item_id, user_id)
 		DO UPDATE SET read_at = feedback_item_reads.read_at
 		RETURNING read_at
@@ -896,6 +914,7 @@ func (r *Repo) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID u
 		USING feedback_items fi
 		WHERE fi.id = fir.item_id AND fi.workspace_id = $1
 			AND fir.item_id = $2 AND fir.user_id = $3
+			AND fi.deleted_at IS NULL
 	`, workspaceID, itemID, userID)
 	return err
 }
@@ -903,7 +922,7 @@ func (r *Repo) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID u
 func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (feedback.CoreItem, error) {
 	var row itemRow
 	err := r.db.GetContext(ctx, &row, itemSelectQuery()+`
-		WHERE fi.portal_id = $1 AND fi.id = $2
+		WHERE fi.portal_id = $1 AND fi.id = $2 AND fi.deleted_at IS NULL
 	`, portalID, itemID)
 	if err != nil {
 		return feedback.CoreItem{}, err
@@ -932,7 +951,7 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
 			fb.color AS board_color, fb.order_index AS board_order_index,
 			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
-			inserted.created_at, inserted.updated_at
+			inserted.deleted_at, inserted.created_at, inserted.updated_at
 		FROM inserted
 		LEFT JOIN users u ON u.user_id = inserted.author_id
 		INNER JOIN feedback_boards fb ON fb.id = inserted.board_id
@@ -950,6 +969,7 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			SELECT id, status
 			FROM feedback_items
 			WHERE workspace_id = $1 AND id = $2
+				AND deleted_at IS NULL
 				AND ($5 OR NOT EXISTS (
 					SELECT 1
 					FROM feedback_story_links fsl
@@ -977,7 +997,7 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
 			fb.color AS board_color, fb.order_index AS board_order_index,
 			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
-			updated.created_at, updated.updated_at,
+			updated.deleted_at, updated.created_at, updated.updated_at,
 			(updated.previous_status IS DISTINCT FROM updated.status) AS status_changed
 		FROM updated
 		LEFT JOIN users u ON u.user_id = updated.author_id
@@ -1002,6 +1022,65 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 		return feedback.CoreItem{}, false, err
 	}
 	return toCoreItem(row), row.StatusChanged, nil
+}
+
+func (r *Repo) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE feedback_items
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL
+			AND NOT EXISTS (
+				SELECT 1
+				FROM feedback_story_links fsl
+				WHERE fsl.item_id = feedback_items.id AND fsl.is_primary = true
+			)
+	`, workspaceID, itemID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected > 0 {
+		return nil
+	}
+
+	var storyManaged bool
+	if err := r.db.GetContext(ctx, &storyManaged, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM feedback_story_links
+			WHERE workspace_id = $1 AND item_id = $2 AND is_primary = true
+		)
+	`, workspaceID, itemID); err != nil {
+		return err
+	}
+	if storyManaged {
+		return feedback.ErrStoryManaged
+	}
+	return feedback.ErrNotFound
+}
+
+func (r *Repo) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE feedback_items
+		SET deleted_at = NULL, updated_at = NOW()
+		WHERE workspace_id = $1 AND id = $2
+			AND deleted_at IS NOT NULL
+			AND deleted_at >= NOW() - INTERVAL '30 days'
+	`, workspaceID, itemID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return feedback.ErrNotFound
+	}
+	return nil
 }
 
 func (r *Repo) CreateComment(ctx context.Context, input feedback.CoreCommentInput) (feedback.CoreComment, error) {
@@ -1158,7 +1237,7 @@ func itemSelectQueryForViewer(viewerReference string) string {
 			primary_link.created_at AS primary_created_at,
 			projected_story.title AS primary_story_title,
 			` + readAtSelect + `,
-			fi.created_at, fi.updated_at
+			fi.deleted_at, fi.created_at, fi.updated_at
 		FROM feedback_items fi
 		LEFT JOIN users u ON u.user_id = fi.author_id
 		INNER JOIN feedback_boards fb ON fb.id = fi.board_id
@@ -1236,6 +1315,7 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 		CommentCount:   row.CommentCount,
 		RoadmapSummary: row.RoadmapSummary,
 		ReadAt:         row.ReadAt,
+		DeletedAt:      row.DeletedAt,
 		Board: feedback.CoreBoard{
 			ID:          row.BoardID,
 			WorkspaceID: row.WorkspaceID,

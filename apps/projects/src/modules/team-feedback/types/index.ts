@@ -6,7 +6,7 @@ export type TeamFeedbackStatus =
   | "completed"
   | "closed";
 
-export type TeamFeedbackListStatus = "active" | "all" | TeamFeedbackStatus;
+export type TeamFeedbackListStatus = "active" | "trashed" | TeamFeedbackStatus;
 
 export type TeamFeedbackBoard = {
   id: string;
@@ -83,6 +83,8 @@ export type TeamFeedbackItem = {
   commentCount: number;
   readAt?: string | null;
   roadmapSummary?: string | null;
+  deletedAt?: string | null;
+  restoreUntil?: string | null;
   createdAt: string;
   updatedAt: string;
   board: TeamFeedbackBoard;

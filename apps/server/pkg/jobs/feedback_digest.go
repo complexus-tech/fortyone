@@ -481,6 +481,7 @@ func feedbackDigestItemsQuery() string {
 				AND wm.role IN ('admin', 'member')
 			LEFT JOIN users author ON author.user_id = fi.author_id
 			WHERE fi.workspace_id = $2
+				AND fi.deleted_at IS NULL
 				AND fi.submission_source IN ('portal', 'widget', 'integration')
 				AND fi.created_at > bw.window_start
 				AND fi.created_at <= $5

@@ -251,6 +251,14 @@ func (s *Service) listContributorComments(ctx context.Context, portalID, authorI
 }
 
 func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewerID uuid.UUID, status, search string, page, pageSize int) (CoreItemsPage, error) {
+	deletedOnly := status == ListStatusTrashed
+	if deletedOnly {
+		status = "all"
+	} else if status == "all" {
+		// Preserve old team-feedback URLs without exposing terminal feedback in
+		// the broad list. Completed and closed items have dedicated filters.
+		status = "active"
+	}
 	return s.ListItems(ctx, CoreListItemsInput{
 		WorkspaceID: workspaceID,
 		TeamID:      &teamID,
@@ -260,6 +268,7 @@ func (s *Service) ListTeamItems(ctx context.Context, workspaceID, teamID, viewer
 		Sort:        "newest",
 		Page:        page,
 		PageSize:    pageSize,
+		DeletedOnly: deletedOnly,
 	})
 }
 
@@ -323,6 +332,20 @@ func (s *Service) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (C
 		return CoreItem{}, invalidInput("workspace id and feedback id are required")
 	}
 	return s.repo.GetItem(ctx, workspaceID, itemID)
+}
+
+func (s *Service) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return invalidInput("workspace id and feedback id are required")
+	}
+	return s.repo.TrashItem(ctx, workspaceID, itemID)
+}
+
+func (s *Service) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return invalidInput("workspace id and feedback id are required")
+	}
+	return s.repo.RestoreItem(ctx, workspaceID, itemID)
 }
 
 func (s *Service) CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error) {

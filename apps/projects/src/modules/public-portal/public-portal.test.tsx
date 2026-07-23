@@ -1060,11 +1060,15 @@ describe("Public portal UI", () => {
     expect(notificationMessage).toHaveClass("line-clamp-1", "text-base");
     expect(notificationLink).toHaveClass("border-b-0");
     expect(notificationLink).not.toHaveClass("bg-state-hover/50");
-    expect(
-      within(notificationLink).getByText(
-        "Add pedestrian crossing near East Avenue school",
-      ),
-    ).toHaveClass("line-clamp-1", "text-base");
+    const notificationDescription = within(notificationLink).getByText(
+      "Add pedestrian crossing near East Avenue school",
+    );
+    expect(notificationDescription).toHaveClass(
+      "min-w-0",
+      "flex-1",
+      "line-clamp-1",
+      "text-base",
+    );
     const timestamp = within(notificationLink)
       .getByText("2026-07-20T08:00:00.000Z")
       .closest("p");
@@ -1074,9 +1078,11 @@ describe("Public portal UI", () => {
       "leading-6",
       "whitespace-nowrap",
     );
-    expect(timestamp?.parentElement).toHaveClass("self-end");
-    expect(timestamp?.parentElement?.parentElement).toBe(
-      notificationMessage.parentElement?.parentElement,
+    expect(notificationMessage).toHaveClass("min-w-0", "flex-1");
+    const unreadDot = notificationLink.querySelector(".bg-primary");
+    expect(unreadDot?.parentElement).toBe(notificationMessage.parentElement);
+    expect(timestamp?.parentElement).toBe(
+      notificationDescription.parentElement,
     );
     expect(getPublicPortalNotificationsActionMock).toHaveBeenCalledTimes(1);
     expect(notificationLink).toHaveAttribute(

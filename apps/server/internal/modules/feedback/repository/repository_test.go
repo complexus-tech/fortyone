@@ -96,6 +96,7 @@ func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 	require.Contains(t, query, "fi.board_id = :board_id")
 	require.Contains(t, query, "fi.author_id = :author_id")
 	require.Contains(t, query, "ORDER BY vote_count DESC, fi.created_at DESC")
+	require.Contains(t, query, "fi.deleted_at IS NULL")
 	require.Equal(t, portalID, params["portal_id"])
 	require.Equal(t, boardID, params["board_id"])
 	require.Equal(t, authorID, params["author_id"])
@@ -123,11 +124,27 @@ func TestBuildListItemsQueryScopesTeamFeedbackAcrossBoards(t *testing.T) {
 	require.Contains(t, query, "fb.team_id = :team_id")
 	require.Contains(t, query, "feedback_read.user_id = :viewer_id")
 	require.Contains(t, query, "feedback_read.read_at")
-	require.Contains(t, query, projectedFeedbackStatus+" IN ('pending', 'reviewing')")
+	require.Contains(t, query, projectedFeedbackStatus+" IN ('pending', 'reviewing', 'planned', 'in_progress')")
 	require.NotContains(t, query, "fi.portal_id = :portal_id")
 	require.Equal(t, workspaceID, params["workspace_id"])
 	require.Equal(t, teamID, params["team_id"])
 	require.Equal(t, viewerID, params["viewer_id"])
+}
+
+func TestBuildListItemsQueryScopesTrashToRecoveryWindow(t *testing.T) {
+	teamID := uuid.New()
+	query, _ := buildListItemsQuery(feedback.CoreListItemsInput{
+		WorkspaceID: uuid.New(),
+		TeamID:      &teamID,
+		Status:      "all",
+		Page:        1,
+		PageSize:    25,
+		DeletedOnly: true,
+	})
+
+	require.Contains(t, query, "fi.deleted_at IS NOT NULL")
+	require.Contains(t, query, "fi.deleted_at >= NOW() - INTERVAL '30 days'")
+	require.NotContains(t, query, "fi.deleted_at IS NULL")
 }
 
 func TestProjectedFeedbackStatusCoversEveryStoryCategory(t *testing.T) {

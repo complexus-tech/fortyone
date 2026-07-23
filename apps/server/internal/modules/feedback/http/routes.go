@@ -66,6 +66,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceSlug}/feedback/boards/{boardId}/reviewers/{userId}", h.SetBoardReviewer, auth, workspace, adminOnly)
 	app.Post("/workspaces/{workspaceSlug}/feedback/items", h.CreateItem, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/feedback/items/{itemId}/status", h.UpdateItemStatus, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/feedback/items/{itemId}", h.TrashItem, auth, workspace, adminOnly)
+	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/restore", h.RestoreItem, auth, workspace, adminOnly)
 	app.Put("/workspaces/{workspaceSlug}/feedback/items/{itemId}/read", h.MarkItemRead, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/feedback/items/{itemId}/unread", h.MarkItemUnread, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/feedback/items/{itemId}/comments", h.CreateComment, auth, workspace)

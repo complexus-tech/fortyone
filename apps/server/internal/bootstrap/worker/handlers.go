@@ -32,6 +32,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
 	mux.HandleFunc(tasks.TypeDeleteStories, cleanupHandlers.HandleDeleteStories)
+	mux.HandleFunc(tasks.TypeDeleteFeedback, cleanupHandlers.HandleDeleteFeedback)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
 	mux.HandleFunc(tasks.TypeChatSessionsCleanup, cleanupHandlers.HandleChatSessionsCleanup)
 	mux.HandleFunc(tasks.TypeWorkspaceCleanup, cleanupHandlers.HandleWorkspaceCleanup)

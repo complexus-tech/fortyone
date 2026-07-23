@@ -18,6 +18,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"30 0 * * *",
+		asynq.NewTask(tasks.TypeDeleteFeedback, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register delete feedback task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"@weekly", // Sunday 00:00 AM
 		asynq.NewTask(tasks.TypeTokenCleanup, nil),
 		asynq.Queue("cleanup"),
