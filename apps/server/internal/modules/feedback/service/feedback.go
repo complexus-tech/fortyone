@@ -502,16 +502,40 @@ func (s *Service) CreatePublicComment(ctx context.Context, input CorePublicComme
 		WorkspaceID: portal.WorkspaceID,
 		ItemID:      item.ID,
 		AuthorID:    input.AuthorID,
+		ParentID:    input.ParentID,
 		Body:        input.Body,
 	}, item)
 }
 
 func (s *Service) createComment(ctx context.Context, input CoreCommentInput, item CoreItem) (CoreComment, error) {
+	var parent *CoreComment
+	if input.ParentID != nil {
+		if *input.ParentID == uuid.Nil {
+			return CoreComment{}, invalidInput("parent comment is required")
+		}
+		parentComment, err := s.repo.GetComment(ctx, input.WorkspaceID, input.ItemID, *input.ParentID)
+		if err != nil {
+			return CoreComment{}, err
+		}
+		if parentComment.ParentID != nil {
+			return CoreComment{}, invalidInput("replies can only be one level deep")
+		}
+		parent = &parentComment
+	}
+
 	comment, err := s.repo.CreateComment(ctx, input)
 	if err != nil {
 		return CoreComment{}, err
 	}
+
+	recipients := map[uuid.UUID]struct{}{}
 	if shouldNotify(item.AuthorID, input.AuthorID) {
+		recipients[item.AuthorID] = struct{}{}
+	}
+	if parent != nil && shouldNotify(parent.AuthorID, input.AuthorID) {
+		recipients[parent.AuthorID] = struct{}{}
+	}
+	for recipientID := range recipients {
 		s.publish(ctx, events.Event{
 			Type: events.FeedbackCommentCreated,
 			Payload: events.FeedbackCommentCreatedPayload{
@@ -520,8 +544,9 @@ func (s *Service) createComment(ctx context.Context, input CoreCommentInput, ite
 				FeedbackTitle: item.Title,
 				FeedbackSlug:  item.Slug,
 				WorkspaceID:   item.WorkspaceID,
-				RecipientID:   item.AuthorID,
+				RecipientID:   recipientID,
 				Content:       comment.Body,
+				IsReply:       parent != nil && recipientID == parent.AuthorID,
 			},
 			Timestamp: time.Now(),
 			ActorID:   input.AuthorID,

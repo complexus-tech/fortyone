@@ -31,6 +31,7 @@ type ChatInputProps = {
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
+  isPopup?: boolean;
   messagesCount: number;
   liveVoiceDisabled?: boolean;
   realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
@@ -100,6 +101,7 @@ export const ChatInput = ({
   attachments,
   onAttachmentsChange,
   isOnPage,
+  isPopup = false,
   messagesCount,
   liveVoiceDisabled = false,
   realtimeVoice,
@@ -281,7 +283,12 @@ export const ChatInput = ({
   }, [processRecording]);
 
   return (
-    <Box className="sticky bottom-0 px-6 pb-3">
+    <Box
+      className={cn("sticky bottom-0", {
+        "px-3 pb-2.5": isPopup,
+        "px-6 pb-3": !isPopup,
+      })}
+    >
       {recordingState !== "idle" && (
         <Flex
           align="center"
@@ -307,7 +314,12 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="border-border rounded-2xl border py-2">
+      <Box
+        className={cn("py-2", {
+          "rounded-lg border-0 bg-black/[0.035] dark:bg-white/[0.035]": isPopup,
+          "border-border rounded-2xl border": !isPopup,
+        })}
+      >
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment) => (
@@ -342,6 +354,7 @@ export const ChatInput = ({
               "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
               {
                 "md:min-h-[3.7rem]": isOnPage,
+                "px-4 text-[0.95rem]": isPopup,
               },
             )}
             disabled={isLiveVoiceActive}
@@ -356,7 +369,13 @@ export const ChatInput = ({
           {!value && (
             <Box
               aria-hidden="true"
-              className="text-text-muted pointer-events-none absolute top-2 left-5 text-[1.1rem] transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none"
+              className={cn(
+                "text-text-muted pointer-events-none absolute top-2 transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
+                {
+                  "left-4 text-[0.95rem]": isPopup,
+                  "left-5 text-[1.1rem]": !isPopup,
+                },
+              )}
             >
               {recordingState === "idle"
                 ? placeholderTexts[currentPlaceholderIndex]
@@ -451,7 +470,14 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       </Box>
-      <Text align="center" className="pt-2 opacity-90" color="muted">
+      <Text
+        align="center"
+        className={cn("opacity-90", {
+          "pt-1.5 text-xs": isPopup,
+          "pt-2": !isPopup,
+        })}
+        color="muted"
+      >
         Maya can make mistakes, so double-check important info.
       </Text>
     </Box>

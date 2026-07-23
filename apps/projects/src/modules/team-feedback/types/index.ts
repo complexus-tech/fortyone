@@ -26,6 +26,7 @@ export type TeamFeedbackComment = {
   workspaceId: string;
   itemId: string;
   authorId: string;
+  parentId?: string | null;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
@@ -117,4 +118,5 @@ export type PlanTeamFeedbackResult = {
 
 export type CreateTeamFeedbackCommentInput = {
   body: string;
+  parentId?: string;
 };

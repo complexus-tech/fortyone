@@ -734,6 +734,7 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 		WorkspaceID: workspace.ID,
 		ItemID:      itemID,
 		AuthorID:    userID,
+		ParentID:    input.ParentID,
 		Body:        input.Body,
 	})
 	if err != nil {
@@ -760,6 +761,7 @@ func (h *Handlers) CreatePublicComment(ctx context.Context, w http.ResponseWrite
 		PortalSlug: web.Params(r, "portalSlug"),
 		ItemID:     itemID,
 		AuthorID:   userID,
+		ParentID:   input.ParentID,
 		Body:       input.Body,
 	})
 	if err != nil {

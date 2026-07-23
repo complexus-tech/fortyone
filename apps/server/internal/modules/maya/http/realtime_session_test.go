@@ -1,11 +1,13 @@
 package mayahttp
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	"github.com/google/uuid"
 )
 
 func TestRealtimeVoiceLimits(t *testing.T) {
@@ -121,5 +123,109 @@ func TestNewRealtimeSessionConfigMatchesPortfolioVoice(t *testing.T) {
 	}
 	if !strings.Contains(config.Instructions, "User: Show my work.") {
 		t.Fatalf("Instructions do not contain recent conversation context")
+	}
+}
+
+func TestRealtimeToolRequestValidation(t *testing.T) {
+	valid := AppRealtimeToolRequest{
+		SessionID: uuid.New(),
+		CallID:    "call-1",
+		Name:      "get_story",
+		Arguments: json.RawMessage(`{"reference":"ENG-42"}`),
+	}
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v, want nil", err)
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*AppRealtimeToolRequest)
+	}{
+		{name: "requires session", mutate: func(request *AppRealtimeToolRequest) { request.SessionID = uuid.Nil }},
+		{name: "requires call id", mutate: func(request *AppRealtimeToolRequest) { request.CallID = "" }},
+		{name: "requires tool name", mutate: func(request *AppRealtimeToolRequest) { request.Name = "" }},
+		{name: "bounds arguments", mutate: func(request *AppRealtimeToolRequest) {
+			request.Arguments = json.RawMessage(strings.Repeat("a", 32_001))
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := valid
+			tt.mutate(&request)
+			if err := request.Validate(); err == nil {
+				t.Fatal("Validate() error = nil, want error")
+			}
+		})
+	}
+}
+
+func TestRealtimeToolsExposeProductCapabilityBundle(t *testing.T) {
+	required := map[string]bool{
+		"navigate":           false,
+		"set_theme":          false,
+		"get_story":          false,
+		"update_story":       false,
+		"story_comments":     false,
+		"sprints":            false,
+		"workload":           false,
+		"recent_activity":    false,
+		"notifications":      false,
+		"customer_feedback":  false,
+		"workspace_briefing": false,
+	}
+	for _, tool := range realtimeTools() {
+		if _, ok := required[tool.Name]; ok {
+			required[tool.Name] = true
+		}
+	}
+	for name, found := range required {
+		if !found {
+			t.Errorf("realtimeTools() missing %q", name)
+		}
+	}
+}
+
+func TestRealtimeConfirmationTokenBindsSessionToolAndPayload(t *testing.T) {
+	handler := &Handlers{secretKey: "test-secret"}
+	sessionID := uuid.New()
+	payload := map[string]any{"story": "ENG-42", "priority": "Urgent"}
+
+	token, err := handler.confirmationToken(sessionID, "update_story", payload)
+	if err != nil {
+		t.Fatalf("confirmationToken() error = %v", err)
+	}
+	valid, err := handler.validateConfirmationToken(sessionID, "update_story", payload, token)
+	if err != nil {
+		t.Fatalf("validateConfirmationToken() error = %v", err)
+	}
+	if !valid {
+		t.Fatal("validateConfirmationToken() = false, want true")
+	}
+
+	changedPayload := map[string]any{"story": "ENG-42", "priority": "Low"}
+	valid, err = handler.validateConfirmationToken(sessionID, "update_story", changedPayload, token)
+	if err != nil {
+		t.Fatalf("validateConfirmationToken() changed payload error = %v", err)
+	}
+	if valid {
+		t.Fatal("validateConfirmationToken() accepted changed payload")
+	}
+
+	valid, err = handler.validateConfirmationToken(uuid.New(), "update_story", payload, token)
+	if err != nil {
+		t.Fatalf("validateConfirmationToken() changed session error = %v", err)
+	}
+	if valid {
+		t.Fatal("validateConfirmationToken() accepted changed session")
+	}
+}
+
+func TestExecuteSetThemeReturnsClientAction(t *testing.T) {
+	response := executeSetTheme(json.RawMessage(`{"theme":"dark"}`))
+	if !response.Success {
+		t.Fatalf("executeSetTheme() success = false, error = %q", response.Error)
+	}
+	if response.ClientAction == nil || response.ClientAction.Type != "theme" || response.ClientAction.Theme != "dark" {
+		t.Fatalf("executeSetTheme() client action = %#v", response.ClientAction)
 	}
 }

@@ -17,10 +17,15 @@ import (
 	"time"
 	"unicode"
 
+	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
+	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
+	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
@@ -47,6 +52,9 @@ var ErrMayaAccessRequired = errors.New("maya agent is available on paid plans an
 var ErrMayaRealtimeNotConfigured = errors.New("maya realtime voice is not configured")
 var ErrMayaRealtimeToolNotConfigured = errors.New("maya realtime tools are not configured")
 var ErrMayaRealtimeMonthlyLimitExceeded = errors.New("monthly realtime voice limit reached")
+var ErrMayaRealtimeSessionInactive = errors.New("realtime voice session is not active")
+var ErrMayaRealtimeToolCallConflict = errors.New("realtime tool call conflicts with an existing call")
+var ErrMayaRealtimeToolCallInProgress = errors.New("realtime tool call is already processing")
 
 var realtimeStoryPriorities = map[string]struct{}{
 	"No Priority": {},
@@ -57,42 +65,54 @@ var realtimeStoryPriorities = map[string]struct{}{
 }
 
 type Handlers struct {
-	db         *sqlx.DB
-	log        *logger.Logger
-	cache      *cache.Service
-	service    *maya.Service
-	workspaces *workspaces.Service
-	stories    *stories.Service
-	states     *states.Service
-	teams      *teams.Service
-	users      *users.Service
-	objectives *objectives.Service
-	keyResults *keyresults.Service
-	search     *search.Service
-	aiAPIKey   string
-	baseURL    string
-	client     *http.Client
-	now        func() time.Time
+	db            *sqlx.DB
+	log           *logger.Logger
+	cache         *cache.Service
+	service       *maya.Service
+	workspaces    *workspaces.Service
+	stories       *stories.Service
+	states        *states.Service
+	teams         *teams.Service
+	users         *users.Service
+	objectives    *objectives.Service
+	keyResults    *keyresults.Service
+	search        *search.Service
+	activities    *activities.Service
+	feedback      *feedback.Service
+	notifications *notifications.Service
+	reports       *reports.Service
+	sprints       *sprints.Service
+	secretKey     string
+	aiAPIKey      string
+	baseURL       string
+	client        *http.Client
+	now           func() time.Time
 }
 
-func New(db *sqlx.DB, log *logger.Logger, cacheService *cache.Service, service *maya.Service, workspacesService *workspaces.Service, storiesService *stories.Service, statesService *states.Service, teamsService *teams.Service, usersService *users.Service, objectivesService *objectives.Service, keyResultsService *keyresults.Service, searchService *search.Service, aiAPIKey string) *Handlers {
+func New(cfg Config) *Handlers {
 	return &Handlers{
-		db:         db,
-		log:        log,
-		cache:      cacheService,
-		service:    service,
-		workspaces: workspacesService,
-		stories:    storiesService,
-		states:     statesService,
-		teams:      teamsService,
-		users:      usersService,
-		objectives: objectivesService,
-		keyResults: keyResultsService,
-		search:     searchService,
-		aiAPIKey:   strings.TrimSpace(aiAPIKey),
-		baseURL:    defaultRealtimeBaseURL,
-		client:     &http.Client{Timeout: 20 * time.Second},
-		now:        time.Now,
+		db:            cfg.DB,
+		log:           cfg.Log,
+		cache:         cfg.Cache,
+		service:       cfg.Service,
+		workspaces:    cfg.Workspaces,
+		stories:       cfg.Stories,
+		states:        cfg.States,
+		teams:         cfg.Teams,
+		users:         cfg.Users,
+		objectives:    cfg.Objectives,
+		keyResults:    cfg.KeyResults,
+		search:        cfg.Search,
+		activities:    cfg.Activities,
+		feedback:      cfg.Feedback,
+		notifications: cfg.Notifications,
+		reports:       cfg.Reports,
+		sprints:       cfg.Sprints,
+		secretKey:     cfg.SecretKey,
+		aiAPIKey:      strings.TrimSpace(cfg.AIAPIKey),
+		baseURL:       defaultRealtimeBaseURL,
+		client:        &http.Client{Timeout: 20 * time.Second},
+		now:           time.Now,
 	}
 }
 
@@ -226,12 +246,23 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 	} else if !ok {
 		return web.RespondError(ctx, w, ErrMayaAccessRequired, http.StatusPaymentRequired)
 	}
-	if h.stories == nil || h.states == nil || h.teams == nil || h.users == nil || h.objectives == nil || h.keyResults == nil || h.search == nil {
+	if h.stories == nil || h.states == nil || h.teams == nil || h.users == nil || h.objectives == nil || h.keyResults == nil || h.search == nil ||
+		h.activities == nil || h.feedback == nil || h.notifications == nil || h.reports == nil || h.sprints == nil {
 		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
 	}
 	var req AppRealtimeToolRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.validateRealtimeVoiceSession(ctx, workspace.ID, userID, req.SessionID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusConflict)
+	}
+	cached, claimed, err := h.claimRealtimeToolCall(ctx, req)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusConflict)
+	}
+	if !claimed {
+		return web.Respond(ctx, w, cached, http.StatusOK)
 	}
 
 	var result AppRealtimeToolResponse
@@ -251,7 +282,29 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 	case "list_key_results":
 		result, err = h.executeListKeyResults(ctx, workspace.ID, userID, req.Arguments)
 	case "create_task":
-		result, err = h.executeCreateTask(ctx, workspace.ID, userID, req.Arguments)
+		result, err = h.executeCreateTask(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
+	case "navigate":
+		result, err = h.executeNavigate(ctx, workspace.ID, userID, req.Arguments)
+	case "set_theme":
+		result = executeSetTheme(req.Arguments)
+	case "get_story":
+		result, err = h.executeGetStory(ctx, workspace.ID, userID, req.Arguments)
+	case "update_story":
+		result, err = h.executeUpdateStory(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
+	case "story_comments":
+		result, err = h.executeStoryComments(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
+	case "sprints":
+		result, err = h.executeSprints(ctx, workspace.ID, userID, req.Arguments)
+	case "workload":
+		result, err = h.executeWorkload(ctx, workspace.ID, userID, req.Arguments)
+	case "recent_activity":
+		result, err = h.executeRecentActivity(ctx, workspace.ID, userID, req.Arguments)
+	case "notifications":
+		result, err = h.executeNotifications(ctx, workspace.ID, userID, req.SessionID, req.Arguments)
+	case "customer_feedback":
+		result, err = h.executeCustomerFeedback(ctx, workspace.ID, userID, req.Arguments)
+	case "workspace_briefing":
+		result, err = h.executeWorkspaceBriefing(ctx, workspace.ID, userID, req.Arguments)
 	case "end_conversation":
 		result = AppRealtimeToolResponse{
 			Success: true,
@@ -273,6 +326,10 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 	if result.Terminology == nil {
 		terminology := h.realtimeTerminology(ctx, workspace.ID)
 		result.Terminology = &terminology
+	}
+	if err := h.completeRealtimeToolCall(ctx, req, result); err != nil {
+		h.log.Error(ctx, "failed to persist maya realtime tool result", "tool", req.Name, "call_id", req.CallID, "error", err)
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	return web.Respond(ctx, w, result, http.StatusOK)
@@ -731,7 +788,7 @@ func (h *Handlers) executeListKeyResults(ctx context.Context, workspaceID, userI
 	}, nil
 }
 
-func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uuid.UUID, rawArgs json.RawMessage) (AppRealtimeToolResponse, error) {
+func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID, sessionID uuid.UUID, rawArgs json.RawMessage) (AppRealtimeToolResponse, error) {
 	var args AppRealtimeCreateTaskArguments
 	if len(rawArgs) > 0 {
 		if err := json.Unmarshal(rawArgs, &args); err != nil {
@@ -757,27 +814,8 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 			Terminology: &terminology,
 		}, nil
 	}
-	if !args.Confirmed {
-		return AppRealtimeToolResponse{
-			Success:              false,
-			RequiresConfirmation: true,
-			Message:              fmt.Sprintf("Ask the user to confirm before creating the %s %q.", terminology.Story, args.Title),
-			Terminology:          &terminology,
-			Confirmation: &AppRealtimeConfirmation{
-				Title:         args.Title,
-				Description:   args.Description,
-				TeamName:      args.TeamName,
-				AssigneeName:  confirmationAssigneeName(args),
-				Priority:      args.Priority,
-				EstimateValue: args.EstimateValue,
-				StartDate:     args.StartDate,
-				EndDate:       args.EndDate,
-				BlockedByRef:  args.BlockedByRef,
-				BlockingRef:   args.BlockingRef,
-				RelatedRef:    args.RelatedRef,
-			},
-		}, nil
-	}
+	isConfirmed := args.Confirmed
+	providedConfirmationToken := strings.TrimSpace(args.ConfirmationToken)
 
 	workspaceTeams, err := h.teams.List(ctx, workspaceID, userID)
 	if err != nil {
@@ -861,6 +899,61 @@ func (h *Handlers) executeCreateTask(ctx context.Context, workspaceID, userID uu
 	if linkResponse != nil {
 		linkResponse.Terminology = &terminology
 		return *linkResponse, nil
+	}
+
+	confirmationInput := struct {
+		Title         string
+		Description   string
+		TeamID        uuid.UUID
+		StatusID      uuid.UUID
+		AssigneeID    *uuid.UUID
+		Priority      string
+		EstimateValue *int16
+		StartDate     *time.Time
+		EndDate       *time.Time
+		BlockedByID   *uuid.UUID
+		BlockingID    *uuid.UUID
+		RelatedID     *uuid.UUID
+	}{
+		Title: args.Title, Description: args.Description, TeamID: team.ID,
+		StatusID: status.ID, AssigneeID: assigneeID, Priority: args.Priority,
+		EstimateValue: args.EstimateValue, StartDate: startDate, EndDate: endDate,
+		BlockedByID: blockedByID, BlockingID: blockingID, RelatedID: relatedID,
+	}
+	expectedConfirmationToken, err := h.confirmationToken(sessionID, "create_task", confirmationInput)
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if !isConfirmed {
+		return AppRealtimeToolResponse{
+			Success:              false,
+			RequiresConfirmation: true,
+			Message:              fmt.Sprintf("Ask the user to confirm before creating the %s %q in %s.", terminology.Story, args.Title, team.Name),
+			Terminology:          &terminology,
+			ConfirmationToken:    expectedConfirmationToken,
+			Confirmation: &AppRealtimeConfirmation{
+				Title:         args.Title,
+				Description:   args.Description,
+				TeamName:      team.Name,
+				AssigneeName:  assigneeName,
+				Priority:      args.Priority,
+				EstimateValue: args.EstimateValue,
+				StartDate:     args.StartDate,
+				EndDate:       args.EndDate,
+				BlockedByRef:  blockedByRef,
+				BlockingRef:   blockingRef,
+				RelatedRef:    relatedRef,
+			},
+		}, nil
+	}
+	confirmed, err := h.validateConfirmationToken(sessionID, "create_task", confirmationInput, providedConfirmationToken)
+	if err != nil {
+		return AppRealtimeToolResponse{}, err
+	}
+	if !confirmed {
+		response := changedConfirmationResponse(expectedConfirmationToken)
+		response.Terminology = &terminology
+		return response, nil
 	}
 
 	description := args.Description
@@ -1028,6 +1121,9 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"Use search_work when the user asks to find or look up work by name, description, topic, or keyword.",
 		fmt.Sprintf("Use list_objectives for %s/%s questions and list_key_results for %s/%s questions.", terminology.Objective, terminology.Objectives, terminology.KeyResult, terminology.KeyResults),
 		fmt.Sprintf("Use create_task when the user asks you to create a %s, task, story, issue, or work item.", terminology.Story),
+		"Use navigate to open FortyOne pages or records, and set_theme to change the application's appearance.",
+		"Use get_story and update_story for story details and confirmed field changes. Use story_comments to read comments or add one after confirmation.",
+		"Use sprints for running sprint lists and sprint summaries, workload for workload or capacity questions, recent_activity for recent workspace changes, notifications for notification questions and confirmed read actions, customer_feedback for customer feedback, and workspace_briefing for a concise operational overview.",
 		"When the user clearly ends the conversation with phrases like bye, goodbye, that's all, thanks that's all, or talk later, say a brief goodbye and call end_conversation.",
 		"Do not guess teams, statuses, permissions, or results. Ask a short clarifying question when the target is ambiguous.",
 		teamSelectionInstruction(workspaceTeams),
@@ -1038,7 +1134,8 @@ func realtimeInstructions(terminology AppRealtimeTerminology, workspaceTeams []t
 		"For assignment during creation: set assignToMe=true when the user says me, myself, or assign to me. Set assigneeName when the user names another person; the backend resolves that name against team members.",
 		"For estimates during creation: set estimateValue only when the user gives a numeric estimate such as 1, 2, 3, 5, or 8. If the estimate is non-numeric or unclear, ask a short clarifying question.",
 		"For blockers and related work during creation: set blockedByRef when the new item is blocked by existing work, blockingRef when the new item blocks existing work, and relatedRef for related existing work. Use a human-readable story reference or title; the backend resolves it.",
-		"If a tool returns requiresConfirmation or needsTeam, ask the requested clarification in plain language.",
+		"If a tool returns requiresConfirmation, ask the requested confirmation in plain language. If the user confirms, repeat the exact same action details with confirmed=true and the returned confirmationToken. Never invent or reuse a token for different details.",
+		"If a tool returns needsTeam, ask the requested clarification in plain language.",
 		"If a tool returns needsAssignee, ask which team member should be assigned.",
 		"If a tool returns needsStoryReference, ask which existing work item the user meant, using the returned references and titles.",
 		"If a tool fails, repeat the useful error briefly. Do not invent a fallback workflow.",
@@ -1096,7 +1193,7 @@ func realtimeTranscriptionPrompt(terminology AppRealtimeTerminology, workspaceTe
 }
 
 func realtimeTools() []openAIRealtimeTool {
-	return []openAIRealtimeTool{
+	tools := []openAIRealtimeTool{
 		{
 			Type:        "function",
 			Name:        "end_conversation",
@@ -1317,11 +1414,16 @@ func realtimeTools() []openAIRealtimeTool {
 						"type":        "boolean",
 						"description": "True only after the user explicitly confirms creating this story.",
 					},
+					"confirmationToken": map[string]any{
+						"type":        "string",
+						"description": "The exact token returned by the preceding confirmation request. Include only after the user confirms without changing details.",
+					},
 				},
 				"required": []string{"title", "confirmed"},
 			},
 		},
 	}
+	return append(tools, realtimeExtendedTools()...)
 }
 
 func (h *Handlers) realtimeTerminology(ctx context.Context, workspaceID uuid.UUID) AppRealtimeTerminology {
@@ -1612,13 +1714,6 @@ func userLocation(user users.CoreUser) *time.Location {
 		return time.UTC
 	}
 	return loc
-}
-
-func confirmationAssigneeName(args AppRealtimeCreateTaskArguments) string {
-	if args.AssignToMe {
-		return "me"
-	}
-	return args.AssigneeName
 }
 
 func (h *Handlers) resolveRealtimeAssignee(ctx context.Context, workspaceID, userID uuid.UUID, team *teams.CoreTeam, args AppRealtimeCreateTaskArguments) (*uuid.UUID, string, *AppRealtimeToolResponse, error) {

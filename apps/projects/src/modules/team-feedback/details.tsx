@@ -16,6 +16,7 @@ import {
   CommentIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  ReplyIcon,
   RequestsIcon,
   StoryIcon,
   ThumbsUpIcon,
@@ -252,41 +253,53 @@ const FeedbackBanner = ({
   );
 };
 
-const CommentRow = ({ comment }: { comment: TeamFeedbackComment }) => (
-  <Box className="relative pb-5">
-    <Flex align="center" gap={1}>
-      <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
-        <Avatar
-          className="relative top-0.5"
-          name={comment.authorName}
-          size="xs"
-          src={comment.authorAvatar ?? undefined}
-        />
-      </Box>
-      <Text className="ml-1 text-black dark:text-white">
-        {comment.authorName}
-      </Text>
-      <Text className="mx-0.5 text-[0.95rem]" color="muted">
-        ·
-      </Text>
-      <Text className="text-[0.95rem]" color="muted">
-        <TimeAgo timestamp={comment.createdAt} />
-      </Text>
-    </Flex>
-    <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6">
-      <Markdown remarkPlugins={[remarkGfm]}>{comment.body}</Markdown>
-    </Box>
-  </Box>
-);
+const compareCommentDates = (
+  first: TeamFeedbackComment,
+  second: TeamFeedbackComment,
+) => new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
 
-const FeedbackCommentComposer = ({ feedbackId }: { feedbackId: string }) => {
+const getCommentThreads = (comments: TeamFeedbackComment[]) => {
+  const repliesByParent = new Map<string, TeamFeedbackComment[]>();
+  const topLevelComments: TeamFeedbackComment[] = [];
+
+  for (const comment of comments) {
+    if (comment.parentId) {
+      const replies = repliesByParent.get(comment.parentId) ?? [];
+      replies.push(comment);
+      repliesByParent.set(comment.parentId, replies);
+    } else {
+      topLevelComments.push(comment);
+    }
+  }
+
+  return topLevelComments
+    .sort((first, second) => compareCommentDates(second, first))
+    .map((comment) => ({
+      comment,
+      replies: (repliesByParent.get(comment.id) ?? []).sort(
+        compareCommentDates,
+      ),
+    }));
+};
+
+const FeedbackCommentComposer = ({
+  feedbackId,
+  onCancel,
+  onSubmitted,
+  parentId,
+}: {
+  feedbackId: string;
+  onCancel?: () => void;
+  onSubmitted?: () => void;
+  parentId?: string;
+}) => {
   const { data: session } = useSession();
   const createComment = useCreateTeamFeedbackComment(feedbackId);
   const editor = useEditor({
     content: "",
-    editable: !createComment.isPending,
+    editable: true,
     extensions: getStoryCommentEditorExtensions({
-      placeholder: "Leave a comment...",
+      placeholder: parentId ? "Reply to comment..." : "Leave a comment...",
     }),
     immediatelyRender: false,
   });
@@ -302,17 +315,24 @@ const FeedbackCommentComposer = ({ feedbackId }: { feedbackId: string }) => {
     const body = serializeStoryCommentToGitHubMarkdown(editor.getJSON());
     if (!body) return;
 
-    createComment.mutate(body, {
-      onSuccess: (response) => {
-        if (!response.error?.message) {
-          editor.commands.clearContent();
-        }
+    editor.commands.clearContent();
+    createComment.mutate(
+      { body, parentId },
+      {
+        onError: () => {
+          if (editor.isEmpty) {
+            editor.commands.setContent(body);
+          }
+        },
+        onSuccess: () => {
+          onSubmitted?.();
+        },
       },
-    });
+    );
   };
 
   return (
-    <Flex align="start" className="mb-6 gap-2">
+    <Flex align="start" className={parentId ? "gap-2" : "mb-6 gap-2"}>
       <Box className="bg-surface flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
         <Avatar
           name={session?.user.name ?? undefined}
@@ -322,35 +342,135 @@ const FeedbackCommentComposer = ({ feedbackId }: { feedbackId: string }) => {
       </Box>
       <Box className="min-w-0 flex-1">
         <Flex
-          className="border-border/40 bg-surface-muted/40 min-h-24 rounded-2xl border px-4 pb-4"
+          className={
+            parentId
+              ? "border-border/40 bg-surface-muted/40 min-h-16 rounded-xl border px-3 pb-3"
+              : "border-border/40 bg-surface-muted/40 min-h-24 rounded-2xl border px-4 pb-4"
+          }
           direction="column"
           gap={2}
           justify="between"
         >
           <TextEditor
-            aria-label="Comment"
+            aria-label={parentId ? "Reply" : "Comment"}
             className="prose-base prose-a:text-foreground leading-6 antialiased"
             editor={editor}
           />
-          <Flex justify="end">
+          <Flex gap={1} justify="end">
+            {onCancel ? (
+              <Button
+                color="tertiary"
+                onClick={onCancel}
+                size="sm"
+                variant="naked"
+              >
+                Cancel
+              </Button>
+            ) : null}
             <Button
               color="tertiary"
-              disabled={createComment.isPending}
-              loading={createComment.isPending}
-              loadingText="Commenting..."
               onClick={handleSubmit}
               size="sm"
               variant="outline"
             >
-              Comment
+              {parentId ? "Reply" : "Comment"}
             </Button>
           </Flex>
         </Flex>
-        <Text className="mt-1.5 text-[0.95rem]" color="muted">
-          Comments are visible on the feedback portal.
-        </Text>
+        {!parentId ? (
+          <Text className="mt-1.5 text-[0.95rem]" color="muted">
+            Comments are visible on the feedback portal.
+          </Text>
+        ) : null}
       </Box>
     </Flex>
+  );
+};
+
+const CommentRow = ({
+  comment,
+  feedbackId,
+  isReply = false,
+  replies = [],
+}: {
+  comment: TeamFeedbackComment;
+  feedbackId: string;
+  isReply?: boolean;
+  replies?: TeamFeedbackComment[];
+}) => {
+  const [isReplying, setIsReplying] = useState(false);
+
+  return (
+    <Box
+      className={
+        isReply
+          ? "border-border ml-9 border-l-2 pt-1 pb-3 pl-2"
+          : "relative pb-5"
+      }
+    >
+      <Flex align="center" gap={1}>
+        <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
+          <Avatar
+            className="relative top-0.5"
+            name={comment.authorName}
+            size="xs"
+            src={comment.authorAvatar ?? undefined}
+          />
+        </Box>
+        <Text className="ml-1 text-black dark:text-white">
+          {comment.authorName}
+        </Text>
+        <Text className="mx-0.5 text-[0.95rem]" color="muted">
+          ·
+        </Text>
+        <Text className="text-[0.95rem]" color="muted">
+          <TimeAgo timestamp={comment.createdAt} />
+        </Text>
+      </Flex>
+      <Box className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-pre:bg-surface-muted prose-pre:text-foreground mt-0.5 ml-9 max-w-full leading-6">
+        <Markdown remarkPlugins={[remarkGfm]}>{comment.body}</Markdown>
+      </Box>
+      {replies.length > 0 ? (
+        <Box className="mt-2">
+          {replies.map((reply) => (
+            <CommentRow
+              comment={reply}
+              feedbackId={feedbackId}
+              isReply
+              key={reply.id}
+            />
+          ))}
+        </Box>
+      ) : null}
+      {!isReply && !isReplying ? (
+        <Button
+          className="mt-2 ml-9 px-2"
+          color="tertiary"
+          leftIcon={<ReplyIcon className="h-4" />}
+          onClick={() => {
+            setIsReplying(true);
+          }}
+          size="sm"
+          variant="naked"
+        >
+          Reply
+        </Button>
+      ) : null}
+      {isReplying ? (
+        <Box className="mt-3 ml-9">
+          <FeedbackCommentComposer
+            feedbackId={feedbackId}
+            onCancel={() => {
+              setIsReplying(false);
+            }}
+            onSubmitted={() => {
+              setIsReplying(false);
+            }}
+            parentId={comment.id}
+          />
+        </Box>
+      ) : null}
+    </Box>
   );
 };
 
@@ -725,9 +845,16 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   Activity feed
                 </Text>
                 <FeedbackCommentComposer feedbackId={feedback.id} />
-                {feedback.comments.map((comment) => (
-                  <CommentRow comment={comment} key={comment.id} />
-                ))}
+                {getCommentThreads(feedback.comments).map(
+                  ({ comment, replies }) => (
+                    <CommentRow
+                      comment={comment}
+                      feedbackId={feedback.id}
+                      key={comment.id}
+                      replies={replies}
+                    />
+                  ),
+                )}
               </Box>
             </Container>
           </BodyContainer>

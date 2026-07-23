@@ -416,8 +416,14 @@ func TestProcessFeedbackCommentCreated(t *testing.T) {
 	assert.Equal(t, "feedback", result[0].EntityType)
 	assert.Equal(t, payload.FeedbackID, result[0].EntityID)
 	assert.Equal(t, payload.FeedbackTitle, result[0].Title)
+	assert.Equal(t, "{actor} commented on your feedback", result[0].Message.Template)
 
 	assert.Empty(t, rules.ProcessFeedbackCommentCreated(context.Background(), payload, recipientID))
+
+	payload.IsReply = true
+	replyResult := rules.ProcessFeedbackCommentCreated(context.Background(), payload, actorID)
+	assert.Len(t, replyResult, 1)
+	assert.Equal(t, "{actor} replied to your comment", replyResult[0].Message.Template)
 }
 
 func TestProcessFeedbackStatusUpdated(t *testing.T) {

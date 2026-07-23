@@ -3,6 +3,7 @@ package mayahttp
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -68,8 +69,32 @@ type AppRealtimeEndSessionRequest struct {
 }
 
 type AppRealtimeToolRequest struct {
+	SessionID uuid.UUID       `json:"sessionId"`
+	CallID    string          `json:"callId"`
 	Name      string          `json:"name"`
 	Arguments json.RawMessage `json:"arguments"`
+}
+
+func (r AppRealtimeToolRequest) Validate() error {
+	if r.SessionID == uuid.Nil {
+		return errors.New("sessionId is required")
+	}
+	if strings.TrimSpace(r.CallID) == "" {
+		return errors.New("callId is required")
+	}
+	if utf8.RuneCountInString(r.CallID) > 128 {
+		return errors.New("callId must be 128 characters or fewer")
+	}
+	if strings.TrimSpace(r.Name) == "" {
+		return errors.New("name is required")
+	}
+	if utf8.RuneCountInString(r.Name) > 80 {
+		return errors.New("name must be 80 characters or fewer")
+	}
+	if len(r.Arguments) > 32_000 {
+		return errors.New("arguments must be 32000 bytes or fewer")
+	}
+	return nil
 }
 
 type AppRealtimeListMyTasksArguments struct {
@@ -107,39 +132,218 @@ type AppRealtimeListKeyResultsArguments struct {
 }
 
 type AppRealtimeCreateTaskArguments struct {
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	TeamName      string `json:"teamName"`
-	AssigneeName  string `json:"assigneeName"`
-	AssignToMe    bool   `json:"assignToMe"`
-	Priority      string `json:"priority"`
-	EstimateValue *int16 `json:"estimateValue"`
-	StartDate     string `json:"startDate"`
-	EndDate       string `json:"endDate"`
-	BlockedByRef  string `json:"blockedByRef"`
-	BlockingRef   string `json:"blockingRef"`
-	RelatedRef    string `json:"relatedRef"`
-	Confirmed     bool   `json:"confirmed"`
+	Title             string `json:"title"`
+	Description       string `json:"description"`
+	TeamName          string `json:"teamName"`
+	AssigneeName      string `json:"assigneeName"`
+	AssignToMe        bool   `json:"assignToMe"`
+	Priority          string `json:"priority"`
+	EstimateValue     *int16 `json:"estimateValue"`
+	StartDate         string `json:"startDate"`
+	EndDate           string `json:"endDate"`
+	BlockedByRef      string `json:"blockedByRef"`
+	BlockingRef       string `json:"blockingRef"`
+	RelatedRef        string `json:"relatedRef"`
+	Confirmed         bool   `json:"confirmed"`
+	ConfirmationToken string `json:"confirmationToken"`
+}
+
+type AppRealtimeNavigateArguments struct {
+	TargetType string `json:"targetType"`
+	Reference  string `json:"reference"`
+	TeamName   string `json:"teamName"`
+	Route      string `json:"route"`
+}
+
+type AppRealtimeSetThemeArguments struct {
+	Theme string `json:"theme"`
+}
+
+type AppRealtimeStoryArguments struct {
+	Reference string `json:"reference"`
+}
+
+type AppRealtimeUpdateStoryArguments struct {
+	Reference         string `json:"reference"`
+	Title             string `json:"title"`
+	Status            string `json:"status"`
+	Priority          string `json:"priority"`
+	AssigneeName      string `json:"assigneeName"`
+	AssignToMe        bool   `json:"assignToMe"`
+	Unassign          bool   `json:"unassign"`
+	EstimateValue     *int16 `json:"estimateValue"`
+	ClearEstimate     bool   `json:"clearEstimate"`
+	StartDate         string `json:"startDate"`
+	ClearStartDate    bool   `json:"clearStartDate"`
+	EndDate           string `json:"endDate"`
+	ClearEndDate      bool   `json:"clearEndDate"`
+	SprintName        string `json:"sprintName"`
+	ClearSprint       bool   `json:"clearSprint"`
+	ObjectiveName     string `json:"objectiveName"`
+	ClearObjective    bool   `json:"clearObjective"`
+	Confirmed         bool   `json:"confirmed"`
+	ConfirmationToken string `json:"confirmationToken"`
+}
+
+type AppRealtimeCommentsArguments struct {
+	Action            string `json:"action"`
+	Reference         string `json:"reference"`
+	Comment           string `json:"comment"`
+	Limit             int    `json:"limit"`
+	Confirmed         bool   `json:"confirmed"`
+	ConfirmationToken string `json:"confirmationToken"`
+}
+
+type AppRealtimeSprintArguments struct {
+	Action   string `json:"action"`
+	Name     string `json:"name"`
+	TeamName string `json:"teamName"`
+	Limit    int    `json:"limit"`
+}
+
+type AppRealtimeWorkloadArguments struct {
+	TeamName string `json:"teamName"`
+	Limit    int    `json:"limit"`
+}
+
+type AppRealtimeActivityArguments struct {
+	Days  int `json:"days"`
+	Limit int `json:"limit"`
+}
+
+type AppRealtimeNotificationsArguments struct {
+	Action            string `json:"action"`
+	Title             string `json:"title"`
+	Limit             int    `json:"limit"`
+	Confirmed         bool   `json:"confirmed"`
+	ConfirmationToken string `json:"confirmationToken"`
+}
+
+type AppRealtimeFeedbackArguments struct {
+	Action   string `json:"action"`
+	Title    string `json:"title"`
+	TeamName string `json:"teamName"`
+	Status   string `json:"status"`
+	Limit    int    `json:"limit"`
+}
+
+type AppRealtimeWorkspaceBriefingArguments struct {
+	Days int `json:"days"`
 }
 
 type AppRealtimeToolResponse struct {
-	Success              bool                        `json:"success"`
-	RequiresConfirmation bool                        `json:"requiresConfirmation,omitempty"`
-	NeedsTeam            bool                        `json:"needsTeam,omitempty"`
-	NeedsAssignee        bool                        `json:"needsAssignee,omitempty"`
-	NeedsStoryReference  bool                        `json:"needsStoryReference,omitempty"`
-	Count                int                         `json:"count,omitempty"`
-	Message              string                      `json:"message,omitempty"`
-	Error                string                      `json:"error,omitempty"`
-	Teams                []AppRealtimeVoiceTeam      `json:"teams,omitempty"`
-	Stories              []AppRealtimeVoiceStory     `json:"stories,omitempty"`
-	Story                *AppRealtimeVoiceStory      `json:"story,omitempty"`
-	Objectives           []AppRealtimeVoiceObjective `json:"objectives,omitempty"`
-	KeyResults           []AppRealtimeVoiceKeyResult `json:"keyResults,omitempty"`
-	Members              []AppRealtimeVoiceMember    `json:"members,omitempty"`
-	User                 *AppRealtimeVoiceUser       `json:"user,omitempty"`
-	Terminology          *AppRealtimeTerminology     `json:"terminology,omitempty"`
-	Confirmation         *AppRealtimeConfirmation    `json:"confirmation,omitempty"`
+	Success              bool                           `json:"success"`
+	RequiresConfirmation bool                           `json:"requiresConfirmation,omitempty"`
+	NeedsTeam            bool                           `json:"needsTeam,omitempty"`
+	NeedsAssignee        bool                           `json:"needsAssignee,omitempty"`
+	NeedsStoryReference  bool                           `json:"needsStoryReference,omitempty"`
+	Count                int                            `json:"count,omitempty"`
+	Message              string                         `json:"message,omitempty"`
+	Error                string                         `json:"error,omitempty"`
+	Teams                []AppRealtimeVoiceTeam         `json:"teams,omitempty"`
+	Stories              []AppRealtimeVoiceStory        `json:"stories,omitempty"`
+	Story                *AppRealtimeVoiceStory         `json:"story,omitempty"`
+	Objectives           []AppRealtimeVoiceObjective    `json:"objectives,omitempty"`
+	KeyResults           []AppRealtimeVoiceKeyResult    `json:"keyResults,omitempty"`
+	Members              []AppRealtimeVoiceMember       `json:"members,omitempty"`
+	User                 *AppRealtimeVoiceUser          `json:"user,omitempty"`
+	Terminology          *AppRealtimeTerminology        `json:"terminology,omitempty"`
+	Confirmation         *AppRealtimeConfirmation       `json:"confirmation,omitempty"`
+	ConfirmationToken    string                         `json:"confirmationToken,omitempty"`
+	ClientAction         *AppRealtimeClientAction       `json:"clientAction,omitempty"`
+	Sprints              []AppRealtimeVoiceSprint       `json:"sprints,omitempty"`
+	Comments             []AppRealtimeVoiceComment      `json:"comments,omitempty"`
+	Activities           []AppRealtimeVoiceActivity     `json:"activities,omitempty"`
+	Notifications        []AppRealtimeVoiceNotification `json:"notifications,omitempty"`
+	FeedbackItems        []AppRealtimeVoiceFeedbackItem `json:"feedbackItems,omitempty"`
+	Workload             *AppRealtimeVoiceWorkload      `json:"workload,omitempty"`
+	Briefing             *AppRealtimeVoiceBriefing      `json:"briefing,omitempty"`
+}
+
+type AppRealtimeClientAction struct {
+	Type  string `json:"type"`
+	Path  string `json:"path,omitempty"`
+	Theme string `json:"theme,omitempty"`
+}
+
+type AppRealtimeVoiceSprint struct {
+	Name                 string    `json:"name"`
+	Team                 string    `json:"team"`
+	Goal                 string    `json:"goal,omitempty"`
+	StartDate            time.Time `json:"startDate"`
+	EndDate              time.Time `json:"endDate"`
+	TotalStories         int       `json:"totalStories"`
+	CompletedStories     int       `json:"completedStories"`
+	StartedStories       int       `json:"startedStories"`
+	CompletionPercentage int       `json:"completionPercentage"`
+	Status               string    `json:"status,omitempty"`
+}
+
+type AppRealtimeVoiceComment struct {
+	Author    string    `json:"author"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type AppRealtimeVoiceActivity struct {
+	Actor     string    `json:"actor"`
+	StoryRef  string    `json:"storyRef,omitempty"`
+	Type      string    `json:"type"`
+	Field     string    `json:"field,omitempty"`
+	Value     string    `json:"value,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type AppRealtimeVoiceNotification struct {
+	Title      string    `json:"title"`
+	Type       string    `json:"type"`
+	EntityType string    `json:"entityType"`
+	IsRead     bool      `json:"isRead"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+type AppRealtimeVoiceFeedbackItem struct {
+	Title          string    `json:"title"`
+	Description    string    `json:"description,omitempty"`
+	Status         string    `json:"status"`
+	Team           string    `json:"team,omitempty"`
+	Author         string    `json:"author,omitempty"`
+	RoadmapSummary string    `json:"roadmapSummary,omitempty"`
+	VoteCount      int       `json:"voteCount"`
+	CommentCount   int       `json:"commentCount"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+type AppRealtimeVoiceWorkloadMember struct {
+	Name           string `json:"name"`
+	OpenStories    int    `json:"openStories"`
+	OverdueStories int    `json:"overdueStories"`
+	UrgentStories  int    `json:"urgentStories"`
+	EstimateTotal  int    `json:"estimateTotal"`
+}
+
+type AppRealtimeVoiceWorkload struct {
+	TotalOpenStories   int                              `json:"totalOpenStories"`
+	TotalEstimate      int                              `json:"totalEstimate"`
+	OverdueStories     int                              `json:"overdueStories"`
+	UnassignedStories  int                              `json:"unassignedStories"`
+	UnestimatedStories int                              `json:"unestimatedStories"`
+	AtRiskMembers      []AppRealtimeVoiceWorkloadMember `json:"atRiskMembers,omitempty"`
+}
+
+type AppRealtimeVoiceBriefing struct {
+	TotalStories      int `json:"totalStories"`
+	CompletedStories  int `json:"completedStories"`
+	ActiveObjectives  int `json:"activeObjectives"`
+	ActiveSprints     int `json:"activeSprints"`
+	TeamMembers       int `json:"teamMembers"`
+	OverdueStories    int `json:"overdueStories"`
+	BlockedStories    int `json:"blockedStories"`
+	AtRiskSprints     int `json:"atRiskSprints"`
+	AtRiskObjectives  int `json:"atRiskObjectives"`
+	FeedbackItems     int `json:"feedbackItems"`
+	UnreadFeedback    int `json:"unreadFeedback"`
+	OverloadedMembers int `json:"overloadedMembers"`
 }
 
 type AppRealtimeTerminology struct {
@@ -168,11 +372,14 @@ type AppRealtimeVoiceStatus struct {
 type AppRealtimeVoiceStory struct {
 	Reference     string                  `json:"reference,omitempty"`
 	Title         string                  `json:"title"`
+	Description   string                  `json:"description,omitempty"`
 	Priority      string                  `json:"priority"`
 	EstimateLabel *string                 `json:"estimateLabel,omitempty"`
 	EstimateValue *int16                  `json:"estimateValue,omitempty"`
 	Team          string                  `json:"team,omitempty"`
 	Assignee      string                  `json:"assignee,omitempty"`
+	Sprint        string                  `json:"sprint,omitempty"`
+	Objective     string                  `json:"objective,omitempty"`
 	Status        *AppRealtimeVoiceStatus `json:"status,omitempty"`
 	BlockedBy     string                  `json:"blockedBy,omitempty"`
 	Blocking      string                  `json:"blocking,omitempty"`

@@ -8,12 +8,23 @@ import { PriorityIcon } from "../priority-icon";
 type SuggestedPromptsProps = {
   onPromptSelect: (prompt: string) => void;
   isOnPage?: boolean;
+  isPopup?: boolean;
   fromIndex?: number;
 };
+
+const POPUP_PROMPTS = [
+  "What should I focus on today?",
+  "What changed since I last checked?",
+  "Which work is at risk?",
+  "Show me the current sprint",
+  "What is blocking my team?",
+  "Help me plan my highest-priority task",
+];
 
 export const SuggestedPrompts = ({
   onPromptSelect,
   isOnPage,
+  isPopup = false,
   fromIndex = 0,
 }: SuggestedPromptsProps) => {
   const { getTermDisplay } = useTerminology();
@@ -52,6 +63,38 @@ export const SuggestedPrompts = ({
       classes: "bg-danger/10 dark:bg-danger/10",
     },
   ];
+
+  if (isPopup) {
+    return (
+      <Box className="px-[18px] pt-9 pb-[18px]">
+        <Text
+          as="h2"
+          className="text-[1.55rem] leading-[1.08] tracking-[-0.04em]"
+          fontWeight="medium"
+        >
+          Ask Maya anything
+        </Text>
+        <Text className="mt-2.5 max-w-sm text-sm leading-[1.55]" color="muted">
+          Ask about priorities, delivery risks, your team, or what to do next.
+        </Text>
+        <Box className="mt-[22px] border-t border-black/[0.07] dark:border-white/[0.07]">
+          {POPUP_PROMPTS.slice(fromIndex).map((prompt) => (
+            <button
+              className="hover:text-primary focus-visible:ring-primary flex min-h-[50px] w-full items-center border-0 border-b border-black/[0.07] bg-transparent px-px py-3 text-left text-sm leading-5 transition-colors focus-visible:ring-2 focus-visible:outline-none dark:border-white/[0.07]"
+              key={prompt}
+              onClick={() => {
+                onPromptSelect(prompt);
+              }}
+              type="button"
+            >
+              {prompt}
+            </button>
+          ))}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       className={cn("px-6 py-4", {

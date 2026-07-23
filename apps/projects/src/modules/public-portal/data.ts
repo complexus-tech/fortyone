@@ -46,6 +46,7 @@ export type ApiFeedbackItem = {
 
 type ApiFeedbackComment = {
   id: string;
+  parentId?: string | null;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
@@ -139,6 +140,7 @@ export const toPublicRequest = (
   const comments: PublicRequestComment[] = (item.comments ?? []).map(
     (comment) => ({
       id: comment.id,
+      parentId: comment.parentId,
       authorName: comment.authorName,
       authorAvatar: comment.authorAvatar,
       body: comment.body,

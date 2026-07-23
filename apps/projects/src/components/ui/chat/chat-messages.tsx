@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
 import { Box, Flex } from "ui";
+import { cn } from "lib";
 import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
@@ -14,6 +15,7 @@ import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
   isVoiceSpeaking?: boolean;
+  isPopup?: boolean;
   messages: MayaUIMessage[];
   status: ChatStatus;
   value: string;
@@ -23,6 +25,7 @@ type ChatMessagesProps = {
 
 export const ChatMessages = ({
   isVoiceSpeaking = false,
+  isPopup = false,
   messages,
   status,
   value,
@@ -88,7 +91,10 @@ export const ChatMessages = ({
 
   return (
     <Box
-      className="hide-scrollbar flex-1 overflow-y-auto p-6"
+      className={cn("hide-scrollbar flex-1 overflow-y-auto", {
+        "px-[18px] py-5": isPopup,
+        "p-6": !isPopup,
+      })}
       onScroll={handleScroll}
     >
       <Flex direction="column" gap={6}>

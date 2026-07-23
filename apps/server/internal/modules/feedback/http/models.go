@@ -57,15 +57,16 @@ type AppItem struct {
 }
 
 type AppComment struct {
-	ID           uuid.UUID `json:"id"`
-	WorkspaceID  uuid.UUID `json:"workspaceId"`
-	ItemID       uuid.UUID `json:"itemId"`
-	AuthorID     uuid.UUID `json:"authorId"`
-	AuthorName   string    `json:"authorName"`
-	AuthorAvatar *string   `json:"authorAvatar"`
-	Body         string    `json:"body"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID           uuid.UUID  `json:"id"`
+	WorkspaceID  uuid.UUID  `json:"workspaceId"`
+	ItemID       uuid.UUID  `json:"itemId"`
+	AuthorID     uuid.UUID  `json:"authorId"`
+	ParentID     *uuid.UUID `json:"parentId"`
+	AuthorName   string     `json:"authorName"`
+	AuthorAvatar *string    `json:"authorAvatar"`
+	Body         string     `json:"body"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 type AppContributorStats struct {
@@ -186,7 +187,8 @@ type AppUpdateItemStatus struct {
 }
 
 type AppCreateComment struct {
-	Body string `json:"body"`
+	Body     string     `json:"body"`
+	ParentID *uuid.UUID `json:"parentId"`
 }
 
 type AppCreateStoryFromItem struct {
@@ -292,6 +294,7 @@ func toAppComment(core feedback.CoreComment) AppComment {
 		WorkspaceID:  core.WorkspaceID,
 		ItemID:       core.ItemID,
 		AuthorID:     core.AuthorID,
+		ParentID:     core.ParentID,
 		AuthorName:   core.AuthorName,
 		AuthorAvatar: core.AuthorAvatar,
 		Body:         core.Body,

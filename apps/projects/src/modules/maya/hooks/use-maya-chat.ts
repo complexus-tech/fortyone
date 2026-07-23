@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -226,9 +226,27 @@ export const useMayaChat = (config: MayaChatConfig) => {
     },
     messages: aiChatMessages,
   });
+  const navigateFromVoice = useCallback(
+    (path: string) => {
+      router.push(withWorkspace(path));
+    },
+    [router, withWorkspace],
+  );
+  const setThemeFromVoice = useCallback(
+    (requestedTheme: "dark" | "light" | "system" | "toggle") => {
+      if (requestedTheme === "toggle") {
+        setTheme(resolvedTheme === "dark" ? "light" : "dark");
+        return;
+      }
+      setTheme(requestedTheme);
+    },
+    [resolvedTheme, setTheme],
+  );
   const realtimeVoice = useMayaRealtimeVoice({
     conversationMessages: messages,
     currentPath: pathname,
+    navigate: navigateFromVoice,
+    setApplicationTheme: setThemeFromVoice,
   });
   const displayMessages = useMemo(
     () => mergeRealtimeVoiceMessages(messages, realtimeVoice.messages),

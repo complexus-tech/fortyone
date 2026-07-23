@@ -1,6 +1,7 @@
 "use client";
 
 import { ReloadIcon } from "icons";
+import { cn } from "lib";
 import { Box, Button, Flex, Text } from "ui";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
@@ -15,7 +16,7 @@ import { ChatMessages } from "./chat-messages";
 import { LimitReached } from "./limit-reached";
 import { SuggestedPrompts } from "./suggested-prompts";
 
-export const ChatContent = () => {
+export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
   const { chat, setIsOpen } = useChatContext();
   const { data: totalMessages = 0 } = useTotalMessages();
   const { data: session } = useSession();
@@ -26,6 +27,7 @@ export const ChatContent = () => {
     limit: getLimit("maxAiMessages"),
     totalMessages,
   });
+  const isWorking = chat.status === "submitted" || chat.status === "streaming";
 
   return (
     <>
@@ -42,25 +44,41 @@ export const ChatContent = () => {
         setIsOpen={chat.setIsSprintOpen}
       />
 
-      <Flex className="bg-background dark:bg-sidebar/40 h-full min-h-0 flex-col">
-        <Box className="flex h-[3.6rem] shrink-0 items-center px-4">
+      <Flex
+        className={cn("h-full min-h-0 flex-col", {
+          "bg-transparent": isPopup,
+          "bg-background dark:bg-sidebar/40": !isPopup,
+        })}
+      >
+        <Box
+          className={cn("flex shrink-0 items-center", {
+            "h-[4rem] border-b border-black/[0.06] px-4 dark:border-white/[0.06]":
+              isPopup,
+            "h-[3.6rem] px-4": !isPopup,
+          })}
+        >
           <ChatHeader
             currentChatId={chat.currentChatId}
             handleChatSelect={chat.handleChatSelect}
             handleNewChat={chat.handleNewChat}
+            hasMessages={chat.displayMessages.length > 0}
+            isPopup={isPopup}
             setIsOpen={setIsOpen}
           />
         </Box>
 
         <Flex className="min-h-0 flex-1" direction="column">
-          <ChatMessages
-            isVoiceSpeaking={chat.realtimeVoice.isSpeaking}
-            messages={chat.displayMessages}
-            onPromptSelect={chat.handleSuggestedPrompt}
-            regenerate={chat.regenerate}
-            status={chat.status}
-            value={chat.input}
-          />
+          {chat.displayMessages.length > 0 || isWorking ? (
+            <ChatMessages
+              isPopup={isPopup}
+              isVoiceSpeaking={chat.realtimeVoice.isSpeaking}
+              messages={chat.displayMessages}
+              onPromptSelect={chat.handleSuggestedPrompt}
+              regenerate={chat.regenerate}
+              status={chat.status}
+              value={chat.input}
+            />
+          ) : null}
           {chat.error || chat.realtimeVoice.error ? (
             <Box className="mb-4 px-6">
               <Text>
@@ -79,16 +97,20 @@ export const ChatContent = () => {
               </Button>
             </Box>
           ) : null}
-          {chat.displayMessages.length === 0 ? (
-            <SuggestedPrompts
-              fromIndex={needsUpgrade ? 1 : 0}
-              onPromptSelect={chat.handleSuggestedPrompt}
-            />
+          {chat.displayMessages.length === 0 && !isWorking ? (
+            <Box className="min-h-0 flex-1 overflow-y-auto">
+              <SuggestedPrompts
+                fromIndex={needsUpgrade ? 1 : 0}
+                isPopup={isPopup}
+                onPromptSelect={chat.handleSuggestedPrompt}
+              />
+            </Box>
           ) : null}
-          {needsUpgrade ? <LimitReached isOnPage /> : null}
+          {needsUpgrade ? <LimitReached isOnPage={!isPopup} /> : null}
           <ChatInput
             attachments={chat.attachments}
-            isOnPage
+            isOnPage={!isPopup}
+            isPopup={isPopup}
             liveVoiceDisabled={needsUpgrade}
             messagesCount={chat.displayMessages.length}
             onAttachmentsChange={chat.setAttachments}

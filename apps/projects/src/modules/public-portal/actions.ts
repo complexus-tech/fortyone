@@ -26,6 +26,7 @@ type VoteInput = ItemInput & {
 
 type CommentInput = ItemInput & {
   body: string;
+  parentId?: string;
 };
 
 export type FeedbackVoteResult = {
@@ -35,6 +36,7 @@ export type FeedbackVoteResult = {
 
 export type CreatedFeedbackComment = {
   id: string;
+  parentId?: string | null;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
@@ -118,7 +120,10 @@ export const createFeedbackCommentAction = async (input: CommentInput) => {
 
     const response = await post<ApiResponse<CreatedFeedbackComment>>(
       `portals/${input.portalSlug}/feedback/items/${input.itemId}/comments`,
-      { body: input.body },
+      {
+        body: input.body,
+        ...(input.parentId ? { parentId: input.parentId } : {}),
+      },
     );
     refreshPortal(input.portalSlug);
     refreshFeedbackItem(input.portalSlug, input.itemSlug);

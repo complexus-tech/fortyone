@@ -175,6 +175,11 @@ func (r *Rules) ProcessFeedbackCommentCreated(ctx context.Context, payload event
 		actorName = "Someone"
 	}
 
+	template := "{actor} commented on your feedback"
+	if payload.IsReply {
+		template = "{actor} replied to your comment"
+	}
+
 	return []CoreNewNotification{{
 		DedupeKey:   fmt.Sprintf("feedback-comment:%s:%s", payload.CommentID, payload.RecipientID),
 		RecipientID: payload.RecipientID,
@@ -185,7 +190,7 @@ func (r *Rules) ProcessFeedbackCommentCreated(ctx context.Context, payload event
 		ActorID:     actorID,
 		Title:       payload.FeedbackTitle,
 		Message: NotificationMessage{
-			Template: "{actor} commented on your feedback",
+			Template: template,
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},

@@ -2,9 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useMediaQuery, useUserRole } from "@/hooks";
+import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
-import { useWorkspacePath } from "@/hooks";
 import { ChatButton } from "./chat-button";
 import { ChatRail } from "./rail";
 import { WorkspaceChatLayout } from "./workspace-chat-layout";
@@ -46,6 +45,7 @@ export const Chat = () => {
           }}
         />
       ) : null}
+      <ChatRail />
     </>
   );
 };

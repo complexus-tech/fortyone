@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api-url";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { useWorkspacePath } from "@/hooks";
+import { feedbackKeys, notificationKeys, sprintKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import {
   applyRealtimeTranscriptUpdate,
@@ -12,6 +13,11 @@ import {
   getRealtimeTranscriptUpdate,
   mergeRealtimeVoiceMessages,
 } from "../utils/realtime-voice-messages";
+import {
+  extractRealtimeClientAction,
+  type RealtimeClientAction,
+  type RealtimeTheme,
+} from "../utils/realtime-client-actions";
 
 type RealtimeVoiceStatus =
   | "idle"
@@ -64,6 +70,7 @@ type RealtimeServerEvent = {
 };
 
 type RealtimeToolOutput = {
+  clientAction?: unknown;
   success?: boolean;
   error?: string;
 };
@@ -71,6 +78,8 @@ type RealtimeToolOutput = {
 type UseMayaRealtimeVoiceOptions = {
   conversationMessages: MayaUIMessage[];
   currentPath: string;
+  navigate: (path: string) => void;
+  setApplicationTheme: (theme: RealtimeTheme) => void;
 };
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -140,6 +149,8 @@ const parseRealtimeToolOutput = async (response: Response) => {
 export const useMayaRealtimeVoice = ({
   conversationMessages,
   currentPath,
+  navigate,
+  setApplicationTheme,
 }: UseMayaRealtimeVoiceOptions) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
@@ -157,6 +168,9 @@ export const useMayaRealtimeVoice = ({
   const goodbyeTimeoutRef = useRef<number | null>(null);
   const sessionEndsAtRef = useRef<number | null>(null);
   const activeSessionIdRef = useRef<string | null>(null);
+  const pendingClientActionRef = useRef<RealtimeClientAction | null>(null);
+  const navigateRef = useRef(navigate);
+  const setApplicationThemeRef = useRef(setApplicationTheme);
   const conversationMessagesRef = useRef(conversationMessages);
   const messagesRef = useRef<MayaUIMessage[]>([]);
   const voiceAnchorMessageIdRef = useRef<string | null>(null);
@@ -171,6 +185,11 @@ export const useMayaRealtimeVoice = ({
   useEffect(() => {
     conversationMessagesRef.current = conversationMessages;
   }, [conversationMessages]);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+    setApplicationThemeRef.current = setApplicationTheme;
+  }, [navigate, setApplicationTheme]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -246,6 +265,7 @@ export const useMayaRealtimeVoice = ({
     dataChannelRef.current?.close();
     dataChannelRef.current = null;
     handledFunctionCallsRef.current.clear();
+    pendingClientActionRef.current = null;
 
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
@@ -313,6 +333,21 @@ export const useMayaRealtimeVoice = ({
     }, 900);
   }, [clearSpeakingTimer]);
 
+  const runPendingClientAction = useCallback(() => {
+    const action = pendingClientActionRef.current;
+    pendingClientActionRef.current = null;
+    if (!action) {
+      return;
+    }
+    if (action.type === "navigate") {
+      if (action.path.startsWith("/") && !action.path.startsWith("//")) {
+        navigateRef.current(action.path);
+      }
+      return;
+    }
+    setApplicationThemeRef.current(action.theme);
+  }, []);
+
   const getVoiceMessageOrder = useCallback((messageId: string) => {
     const existingOrder = voiceMessageOrdersRef.current.get(messageId);
     if (existingOrder !== undefined) {
@@ -369,29 +404,61 @@ export const useMayaRealtimeVoice = ({
         }
       }
 
-      const output = await fetch(
-        `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-tool`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            arguments: toolArguments,
-            name,
-          }),
-        },
-      )
-        .then(parseRealtimeToolOutput)
-        .catch((toolError: unknown) => ({
-          success: false,
-          error: errorMessage(toolError, "Tool execution failed."),
-        }));
-      if (name === "create_task" && output.success === true) {
+      const sessionId = activeSessionIdRef.current;
+      const output: RealtimeToolOutput = sessionId
+        ? await fetch(
+            `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-tool`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                arguments: toolArguments,
+                callId,
+                name,
+                sessionId,
+              }),
+            },
+          )
+            .then(parseRealtimeToolOutput)
+            .catch((toolError: unknown) => ({
+              success: false,
+              error: errorMessage(toolError, "Tool execution failed."),
+            }))
+        : {
+            success: false,
+            error: "The voice session is no longer active.",
+          };
+      if (
+        (name === "create_task" ||
+          name === "update_story" ||
+          name === "story_comments") &&
+        output.success === true
+      ) {
         queryClient.invalidateQueries({
           queryKey: storyKeys.all(workspaceSlug),
         });
+      }
+      if (name === "notifications" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: notificationKeys.all(workspaceSlug),
+        });
+      }
+      if (name === "sprints" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: sprintKeys.all(workspaceSlug),
+        });
+      }
+      if (name === "customer_feedback" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: feedbackKeys.all(workspaceSlug),
+        });
+      }
+      const { action, modelOutput } = extractRealtimeClientAction(output);
+      if (action && output.success === true) {
+        pendingClientActionRef.current = action;
       }
       resetIdleTimer();
 
@@ -406,7 +473,7 @@ export const useMayaRealtimeVoice = ({
           item: {
             type: "function_call_output",
             call_id: callId,
-            output: JSON.stringify(output),
+            output: JSON.stringify(modelOutput),
           },
         }),
       );
@@ -475,6 +542,7 @@ export const useMayaRealtimeVoice = ({
         case "response.audio.done":
           clearSpeakingTimer();
           setIsSpeaking(false);
+          runPendingClientAction();
           break;
         case "response.done":
           clearSpeakingTimer();
@@ -497,6 +565,7 @@ export const useMayaRealtimeVoice = ({
       markSpeaking,
       rememberEventItemOrder,
       resetIdleTimer,
+      runPendingClientAction,
     ],
   );
 

@@ -141,6 +141,7 @@ type FeedbackCommentCreatedPayload struct {
 	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	RecipientID   uuid.UUID `json:"recipient_id"`
 	Content       string    `json:"content"`
+	IsReply       bool      `json:"is_reply"`
 }
 
 // FeedbackStatusUpdatedPayload contains the public feedback data required to

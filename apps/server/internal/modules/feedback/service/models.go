@@ -82,6 +82,7 @@ type CoreComment struct {
 	WorkspaceID  uuid.UUID
 	ItemID       uuid.UUID
 	AuthorID     uuid.UUID
+	ParentID     *uuid.UUID
 	AuthorName   string
 	AuthorAvatar *string
 	Body         string
@@ -214,6 +215,7 @@ type CorePublicCommentInput struct {
 	PortalSlug string
 	ItemID     uuid.UUID
 	AuthorID   uuid.UUID
+	ParentID   *uuid.UUID
 	Body       string
 }
 
@@ -235,6 +237,7 @@ type CoreCommentInput struct {
 	WorkspaceID uuid.UUID
 	ItemID      uuid.UUID
 	AuthorID    uuid.UUID
+	ParentID    *uuid.UUID
 	Body        string
 }
 
@@ -290,6 +293,7 @@ type Repository interface {
 	ListContributorComments(ctx context.Context, input CoreListContributorCommentsInput) (CoreContributorCommentsPage, error)
 	ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error)
 	ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error)
+	GetComment(ctx context.Context, workspaceID, itemID, commentID uuid.UUID) (CoreComment, error)
 	ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error)
 	ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreStoryLink, error)
 	ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]CoreStoryFeedbackLink, error)

@@ -18,6 +18,7 @@ type repoStub struct {
 	portals                    []CorePortal
 	boards                     []CoreBoard
 	items                      []CoreItem
+	comments                   []CoreComment
 	storyLinks                 []CoreStoryLink
 	linkStoryErr               error
 	linkStoryWinner            *CoreStoryLink
@@ -244,7 +245,22 @@ func (r *repoStub) ListComments(ctx context.Context, portalID uuid.UUID) ([]Core
 }
 
 func (r *repoStub) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error) {
-	return []CoreComment{}, nil
+	result := make([]CoreComment, 0, len(r.comments))
+	for _, comment := range r.comments {
+		if comment.WorkspaceID == workspaceID && comment.ItemID == itemID {
+			result = append(result, comment)
+		}
+	}
+	return result, nil
+}
+
+func (r *repoStub) GetComment(ctx context.Context, workspaceID, itemID, commentID uuid.UUID) (CoreComment, error) {
+	for _, comment := range r.comments {
+		if comment.WorkspaceID == workspaceID && comment.ItemID == itemID && comment.ID == commentID {
+			return comment, nil
+		}
+	}
+	return CoreComment{}, sql.ErrNoRows
 }
 
 func (r *repoStub) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error) {
@@ -402,7 +418,9 @@ func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uui
 }
 
 func (r *repoStub) CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error) {
-	return CoreComment{ID: uuid.New(), WorkspaceID: input.WorkspaceID, ItemID: input.ItemID, AuthorID: input.AuthorID, Body: input.Body}, nil
+	comment := CoreComment{ID: uuid.New(), WorkspaceID: input.WorkspaceID, ItemID: input.ItemID, AuthorID: input.AuthorID, ParentID: input.ParentID, Body: input.Body}
+	r.comments = append(r.comments, comment)
+	return comment, nil
 }
 
 func (r *repoStub) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID, vote int) (CoreVoteResult, error) {
@@ -666,6 +684,84 @@ func TestCreatePublicCommentDoesNotPublishSelfNotification(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Empty(t, publisher.events)
+}
+
+func TestCreatePublicCommentReplyTargetsTopLevelComment(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	feedbackAuthorID := uuid.New()
+	parentAuthorID := uuid.New()
+	replierID := uuid.New()
+	parentID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items: []CoreItem{{
+			ID:          itemID,
+			WorkspaceID: workspaceID,
+			PortalID:    portalID,
+			AuthorID:    feedbackAuthorID,
+			Title:       "Safer school crossing",
+			Slug:        "safer-school-crossing",
+		}},
+		comments: []CoreComment{{
+			ID:          parentID,
+			WorkspaceID: workspaceID,
+			ItemID:      itemID,
+			AuthorID:    parentAuthorID,
+			Body:        "Traffic is worst after school.",
+		}},
+	}
+	publisher := &eventPublisherStub{}
+	service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+	comment, err := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   replierID,
+		ParentID:   &parentID,
+		Body:       "Thanks, this is helpful context.",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, &parentID, comment.ParentID)
+	require.Len(t, publisher.events, 2)
+
+	recipients := make(map[uuid.UUID]events.FeedbackCommentCreatedPayload, len(publisher.events))
+	for _, event := range publisher.events {
+		payload := event.Payload.(events.FeedbackCommentCreatedPayload)
+		recipients[payload.RecipientID] = payload
+	}
+	require.False(t, recipients[feedbackAuthorID].IsReply)
+	require.True(t, recipients[parentAuthorID].IsReply)
+}
+
+func TestCreatePublicCommentRejectsNestedReply(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	itemID := uuid.New()
+	topLevelID := uuid.New()
+	replyID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items:   []CoreItem{{ID: itemID, WorkspaceID: workspaceID, PortalID: portalID}},
+		comments: []CoreComment{
+			{ID: topLevelID, WorkspaceID: workspaceID, ItemID: itemID},
+			{ID: replyID, WorkspaceID: workspaceID, ItemID: itemID, ParentID: &topLevelID},
+		},
+	}
+	service := New(repo, nil)
+
+	_, err := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads",
+		ItemID:     itemID,
+		AuthorID:   uuid.New(),
+		ParentID:   &replyID,
+		Body:       "This would be a second-level reply.",
+	})
+
+	require.ErrorIs(t, err, ErrInvalidInput)
+	require.Len(t, repo.comments, 2)
 }
 
 func TestUpdateItemStatusPublishesAuthorNotificationEvent(t *testing.T) {

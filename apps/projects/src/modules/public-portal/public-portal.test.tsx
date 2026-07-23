@@ -104,6 +104,7 @@ jest.mock("icons", () => {
     BellIcon: Icon,
     CheckIcon: Icon,
     CommentIcon: Icon,
+    ReplyIcon: Icon,
     CopyIcon: Icon,
     DashboardIcon: Icon,
     ExternalLinkIcon: Icon,
@@ -1465,6 +1466,44 @@ describe("Public portal UI", () => {
     ).toBeInTheDocument();
     expect(createFeedbackCommentActionMock).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: "req-1" }),
+    );
+  });
+
+  it("adds an optimistic one-level reply to a feedback comment", async () => {
+    createFeedbackCommentActionMock.mockResolvedValueOnce({
+      data: {
+        authorAvatar: null,
+        authorName: "Ada Ndlovu",
+        body: "We see the same issue at pickup.",
+        createdAt: new Date().toISOString(),
+        id: "reply-new",
+        parentId: "comment-1",
+      },
+    });
+    render(
+      <PublicPortalRequestDetailPage
+        portal={publicPortalFixture}
+        request={publicPortalFixture.requests[0]}
+        viewer={portalViewer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+    fireEvent.change(screen.getByLabelText("Reply"), {
+      target: { value: "We see the same issue at pickup." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+    expect(
+      await screen.findByText("We see the same issue at pickup."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("3 comments")).toBeInTheDocument();
+    expect(createFeedbackCommentActionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: "We see the same issue at pickup.",
+        itemId: "req-1",
+        parentId: "comment-1",
+      }),
     );
   });
 

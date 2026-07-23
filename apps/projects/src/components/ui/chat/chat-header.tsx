@@ -1,9 +1,4 @@
-import {
-  CloseIcon,
-  HistoryIcon,
-  NewTabIcon,
-  PlusIcon,
-} from "icons";
+import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
 import { Flex, Button, Text, Tooltip, Box, CircleProgressBar } from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +7,7 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
+import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { HistoryDialog } from "./history-dialog";
 
 export const ChatHeader = ({
@@ -19,11 +15,15 @@ export const ChatHeader = ({
   setIsOpen,
   handleNewChat,
   handleChatSelect,
+  isPopup = false,
+  hasMessages = false,
 }: {
   currentChatId: string;
   setIsOpen: (isOpen: boolean) => void;
   handleNewChat: () => void;
   handleChatSelect: (chatId: string) => void;
+  isPopup?: boolean;
+  hasMessages?: boolean;
 }) => {
   const router = useRouter();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -42,49 +42,62 @@ export const ChatHeader = ({
     <>
       <Flex align="center" className="w-full" justify="between">
         <Flex align="center" className="min-w-0 flex-1" gap={2}>
-          <Tooltip title="New chat">
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={
-                <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
-              }
-              onClick={handleNewChat}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">New chat</span>
-            </Button>
-          </Tooltip>
-          <Tooltip title="Open on new page">
-            <Button
-              asIcon
-              color="tertiary"
-              leftIcon={
-                <NewTabIcon className="text-foreground/70" strokeWidth={2.6} />
-              }
-              onClick={() => {
-                router.push(withWorkspace(`/maya?chatRef=${currentChatId}`));
-                setIsOpen(false);
-              }}
-              size="sm"
-              variant="naked"
-            >
-              <span className="sr-only">Open on new page</span>
-            </Button>
-          </Tooltip>
+          {isPopup ? <MayaAvatar className="size-[34px]" size="md" /> : null}
+          {isPopup ? (
+            <Box className="min-w-0">
+              <Text className="text-[0.95rem] leading-5">Maya</Text>
+              <Text className="text-[0.8rem] leading-4" color="muted">
+                AI project assistant
+              </Text>
+            </Box>
+          ) : (
+            <Tooltip title="New chat">
+              <Button
+                asIcon
+                color="tertiary"
+                leftIcon={
+                  <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
+                }
+                onClick={handleNewChat}
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">New chat</span>
+              </Button>
+            </Tooltip>
+          )}
+          {!isPopup ? (
+            <Tooltip title="Open on new page">
+              <Button
+                asIcon
+                color="tertiary"
+                leftIcon={
+                  <NewTabIcon
+                    className="text-foreground/70"
+                    strokeWidth={2.6}
+                  />
+                }
+                onClick={() => {
+                  router.push(withWorkspace(`/maya?chatRef=${currentChatId}`));
+                  setIsOpen(false);
+                }}
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">Open on new page</span>
+              </Button>
+            </Tooltip>
+          ) : null}
         </Flex>
-        <Text
-          className="shrink-0 px-3 text-base antialiased"
-          fontWeight="semibold"
-        >
-          Chat with Maya
-        </Text>
-        <Flex
-          align="center"
-          className="min-w-0 flex-1 justify-end"
-          gap={2}
-        >
+        {!isPopup ? (
+          <Text
+            className="shrink-0 px-3 text-base antialiased"
+            fontWeight="semibold"
+          >
+            Chat with Maya
+          </Text>
+        ) : null}
+        <Flex align="center" className="min-w-0 flex-1 justify-end" gap={2}>
           {tier !== "enterprise" && !isInternalUser && (
             <Tooltip
               title={
@@ -142,6 +155,17 @@ export const ChatHeader = ({
               </Button>
             </Tooltip>
           )}
+          {isPopup && hasMessages ? (
+            <Button
+              className="px-1.5 text-[0.8rem]"
+              color="tertiary"
+              onClick={handleNewChat}
+              size="sm"
+              variant="naked"
+            >
+              New chat
+            </Button>
+          ) : null}
 
           <Tooltip title="Close">
             <Button

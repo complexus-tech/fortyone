@@ -370,6 +370,7 @@ const toPublicComment = (
   >,
 ): PublicRequestComment => ({
   id: comment.id,
+  parentId: comment.parentId,
   authorName: comment.authorName,
   authorAvatar: comment.authorAvatar,
   body: comment.body,
@@ -388,22 +389,30 @@ export const useCreatePublicFeedbackComment = ({
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (body: string) =>
+    mutationFn: async ({
+      body,
+      parentId,
+    }: {
+      body: string;
+      parentId?: string;
+    }) =>
       getActionData(
         await createFeedbackCommentAction({
           body,
           itemId: request.id,
           itemSlug: request.slug,
+          ...(parentId ? { parentId } : {}),
           portalSlug,
         }),
         "Unable to add comment",
       ),
-    onMutate: async (body) => {
+    onMutate: async ({ body, parentId }) => {
       await queryClient.cancelQueries({
         queryKey: publicPortalKeys.feedback(portalSlug),
       });
       const optimisticComment: PublicRequestComment = {
         id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        parentId,
         authorName: viewer.name,
         authorAvatar: viewer.avatarUrl,
         body,
@@ -413,7 +422,7 @@ export const useCreatePublicFeedbackComment = ({
       updateRequestCaches(queryClient, portalSlug, request.id, (cached) => ({
         ...cached,
         commentCount: cached.commentCount + 1,
-        comments: [...cached.comments, optimisticComment],
+        comments: [optimisticComment, ...cached.comments],
       }));
 
       return { optimisticComment };

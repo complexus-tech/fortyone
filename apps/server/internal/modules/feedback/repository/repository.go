@@ -87,6 +87,7 @@ type commentRow struct {
 	WorkspaceID  uuid.UUID  `db:"workspace_id"`
 	ItemID       uuid.UUID  `db:"item_id"`
 	AuthorID     *uuid.UUID `db:"author_id"`
+	ParentID     *uuid.UUID `db:"parent_id"`
 	AuthorName   string     `db:"author_name"`
 	AuthorAvatar *string    `db:"author_avatar"`
 	Body         string     `db:"body"`
@@ -701,7 +702,7 @@ func buildListContributorCommentsQuery(input feedback.CoreListContributorComment
 func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback.CoreComment, error) {
 	var rows []commentRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id,
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
 			u.avatar_url AS author_avatar,
 			fc.body, fc.created_at, fc.updated_at
@@ -709,7 +710,7 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback
 		INNER JOIN feedback_items fi ON fi.id = fc.item_id
 		LEFT JOIN users u ON u.user_id = fc.author_id
 		WHERE fi.portal_id = $1
-		ORDER BY fc.created_at ASC
+		ORDER BY fc.created_at DESC, fc.id DESC
 	`, portalID); err != nil {
 		return nil, err
 	}
@@ -723,14 +724,14 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID) ([]feedback
 func (r *Repo) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]feedback.CoreComment, error) {
 	var rows []commentRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id,
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
 			u.avatar_url AS author_avatar,
 			fc.body, fc.created_at, fc.updated_at
 		FROM feedback_comments fc
 		LEFT JOIN users u ON u.user_id = fc.author_id
 		WHERE fc.workspace_id = $1 AND fc.item_id = $2
-		ORDER BY fc.created_at ASC
+		ORDER BY fc.created_at DESC, fc.id DESC
 	`, workspaceID, itemID); err != nil {
 		return nil, err
 	}
@@ -739,6 +740,22 @@ func (r *Repo) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UU
 		result = append(result, toCoreComment(row))
 	}
 	return result, nil
+}
+
+func (r *Repo) GetComment(ctx context.Context, workspaceID, itemID, commentID uuid.UUID) (feedback.CoreComment, error) {
+	var row commentRow
+	if err := r.db.GetContext(ctx, &row, `
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
+			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
+			u.avatar_url AS author_avatar,
+			fc.body, fc.created_at, fc.updated_at
+		FROM feedback_comments fc
+		LEFT JOIN users u ON u.user_id = fc.author_id
+		WHERE fc.workspace_id = $1 AND fc.item_id = $2 AND fc.id = $3
+	`, workspaceID, itemID, commentID); err != nil {
+		return feedback.CoreComment{}, err
+	}
+	return toCoreComment(row), nil
 }
 
 func (r *Repo) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]feedback.CoreStoryLink, error) {
@@ -985,17 +1002,17 @@ func (r *Repo) CreateComment(ctx context.Context, input feedback.CoreCommentInpu
 	var row commentRow
 	err := r.db.GetContext(ctx, &row, `
 		WITH inserted AS (
-			INSERT INTO feedback_comments (workspace_id, item_id, author_id, body)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO feedback_comments (workspace_id, item_id, author_id, parent_id, body)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING *
 		)
-		SELECT inserted.id, inserted.workspace_id, inserted.item_id, inserted.author_id,
+		SELECT inserted.id, inserted.workspace_id, inserted.item_id, inserted.author_id, inserted.parent_id,
 			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
 			u.avatar_url AS author_avatar,
 			inserted.body, inserted.created_at, inserted.updated_at
 		FROM inserted
 		LEFT JOIN users u ON u.user_id = inserted.author_id
-	`, input.WorkspaceID, input.ItemID, input.AuthorID, input.Body)
+	`, input.WorkspaceID, input.ItemID, input.AuthorID, input.ParentID, input.Body)
 	if err != nil {
 		return feedback.CoreComment{}, err
 	}
@@ -1254,6 +1271,7 @@ func toCoreComment(row commentRow) feedback.CoreComment {
 		WorkspaceID:  row.WorkspaceID,
 		ItemID:       row.ItemID,
 		AuthorID:     authorID,
+		ParentID:     row.ParentID,
 		AuthorName:   row.AuthorName,
 		AuthorAvatar: row.AuthorAvatar,
 		Body:         row.Body,

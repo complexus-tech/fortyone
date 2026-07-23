@@ -27,6 +27,7 @@ export type PublicRequestBoard = {
 
 export type PublicRequestComment = {
   id: string;
+  parentId?: string | null;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
