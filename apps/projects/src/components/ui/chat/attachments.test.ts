@@ -40,4 +40,16 @@ describe("Maya chat attachments", () => {
     expect(previewSource).toContain("setIsOpen(true)");
     expect(previewSource).toContain("<ObjectViewer");
   });
+
+  it("uses a theme-independent high-contrast remove button over images", () => {
+    const previewSource = readSource(
+      "src/modules/story/components/story-attachment-preview.tsx",
+    );
+
+    expect(previewSource).toContain("border-white/20 bg-black/75");
+    expect(previewSource).toContain("hover:bg-black/90");
+    expect(previewSource).toContain(
+      '<CloseIcon className="h-4 text-white" strokeWidth={3} />',
+    );
+  });
 });

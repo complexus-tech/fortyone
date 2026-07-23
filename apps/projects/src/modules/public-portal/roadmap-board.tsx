@@ -287,7 +287,7 @@ const RoadmapColumn = ({
         className={cn(
           "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl p-2 transition",
           {
-            "border-border/60 bg-surface/20 min-h-56 border-[0.5px] border-dashed":
+            "border-border/60 bg-surface/20 min-h-56 border border-dashed":
               isEmpty,
           },
         )}

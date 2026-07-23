@@ -104,8 +104,8 @@ export const StoryAttachmentPreview = ({
             <Button
               aria-label={`Remove ${file.filename}`}
               asIcon
-              className="absolute top-2 right-2"
-              color="invert"
+              className="absolute top-2 right-2 border-white/20 bg-black/75 shadow-sm backdrop-blur-sm hover:bg-black/90 focus-visible:bg-black/90 focus-visible:ring-2 focus-visible:ring-white/80"
+              color="black"
               onClick={(event) => {
                 event.stopPropagation();
                 onDelete();
@@ -113,10 +113,7 @@ export const StoryAttachmentPreview = ({
               rounded="full"
               size="xs"
             >
-              <CloseIcon
-                className="dark:text-dark h-4 text-white"
-                strokeWidth={3}
-              />
+              <CloseIcon className="h-4 text-white" strokeWidth={3} />
             </Button>
           ) : null}
         </Box>
@@ -154,15 +151,12 @@ export const StoryAttachmentPreview = ({
               <Button
                 aria-label={`Remove ${file.filename}`}
                 asIcon
-                color="invert"
+                color="tertiary"
                 onClick={onDelete}
                 rounded="full"
                 size="sm"
               >
-                <CloseIcon
-                  className="dark:text-dark h-4 text-white"
-                  strokeWidth={3}
-                />
+                <CloseIcon className="h-4 text-current" strokeWidth={3} />
               </Button>
             ) : null}
             {!isInChat && (

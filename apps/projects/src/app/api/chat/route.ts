@@ -18,6 +18,7 @@ import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
+import { normalizeInlineFileData } from "./normalize-file-data";
 
 export const maxDuration = 120;
 
@@ -42,10 +43,11 @@ export async function POST(req: NextRequest) {
     totalMessages,
   } = await req.json();
 
-  const [modelMessages, session] = await Promise.all([
+  const [convertedMessages, session] = await Promise.all([
     convertToModelMessages(messagesFromRequest as UIMessage[]),
     auth(),
   ]);
+  const modelMessages = normalizeInlineFileData(convertedMessages);
 
   // Get user context for "me" resolution
   const userContext = getUserContext({

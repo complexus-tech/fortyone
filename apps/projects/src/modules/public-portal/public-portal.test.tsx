@@ -1325,7 +1325,15 @@ describe("Public portal UI", () => {
     expect(
       await screen.findByText("Resurface Market Road before rainy season"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Nothing in progress")).toBeInTheDocument();
+    const emptyColumn = screen.getByText("Nothing in progress");
+    expect(emptyColumn).toBeInTheDocument();
+    expect(emptyColumn.parentElement?.parentElement).toHaveClass(
+      "border",
+      "border-dashed",
+    );
+    expect(emptyColumn.parentElement?.parentElement).not.toHaveClass(
+      "border-[0.5px]",
+    );
     expect(
       screen.queryByText("Add pedestrian crossing near East Avenue school"),
     ).not.toBeInTheDocument();
