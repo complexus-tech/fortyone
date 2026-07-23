@@ -1068,7 +1068,13 @@ describe("Public portal UI", () => {
     const timestamp = within(notificationLink)
       .getByText("2026-07-20T08:00:00.000Z")
       .closest("p");
-    expect(timestamp).toHaveClass("shrink-0", "text-sm", "whitespace-nowrap");
+    expect(timestamp).toHaveClass(
+      "shrink-0",
+      "text-sm",
+      "leading-6",
+      "whitespace-nowrap",
+    );
+    expect(timestamp?.parentElement).toHaveClass("self-end");
     expect(timestamp?.parentElement?.parentElement).toBe(
       notificationMessage.parentElement?.parentElement,
     );

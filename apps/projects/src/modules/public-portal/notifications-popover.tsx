@@ -170,11 +170,14 @@ const NotificationItem = ({
               {notification.feedback.title}
             </Text>
           </Box>
-          <Flex align="center" className="shrink-0" gap={2}>
+          <Flex align="center" className="shrink-0 self-end" gap={2}>
             {isUnread ? (
               <span className="bg-primary size-2 shrink-0 rounded-full" />
             ) : null}
-            <Text className="shrink-0 text-sm whitespace-nowrap" color="muted">
+            <Text
+              className="shrink-0 text-sm leading-6 whitespace-nowrap"
+              color="muted"
+            >
               <TimeAgo timestamp={notification.createdAt} />
             </Text>
           </Flex>
