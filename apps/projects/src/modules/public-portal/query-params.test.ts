@@ -31,7 +31,7 @@ describe("public portal query params", () => {
       boardId: undefined,
       search: "",
       sort: "top",
-      status: undefined,
+      status: "active",
     });
   });
 
@@ -47,5 +47,15 @@ describe("public portal query params", () => {
     expect(params.get("search")).toBe("traffic signal");
     expect(params.get("sort")).toBe("oldest");
     expect(params.get("status")).toBe("planned");
+  });
+
+  it("keeps the default active filter out of the public URL", () => {
+    const params = toPublicPortalSearchParams({
+      search: "",
+      sort: "top",
+      status: "active",
+    });
+
+    expect(params.get("status")).toBeNull();
   });
 });

@@ -12,9 +12,9 @@ import {
 import type {
   PublicContributor,
   PublicContributorCommentsPage,
+  PublicFeedbackListStatus,
   PublicPortal,
   PublicPortalWorkspace,
-  PublicRequestStatus,
 } from "./types";
 
 type ApiResponse<T> = {
@@ -26,7 +26,7 @@ export type PublicPortalQuery = {
   page?: number;
   pageSize?: number;
   search?: string;
-  status?: PublicRequestStatus;
+  status?: PublicFeedbackListStatus;
   boardId?: string;
   sort?: "top" | "newest" | "oldest";
 };

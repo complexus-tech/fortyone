@@ -669,7 +669,10 @@ describe("Public portal UI", () => {
         }
         const requests = publicPortalFixture.requests.filter(
           (request) =>
-            (!status || request.status === status) &&
+            (!status ||
+              (status === "active"
+                ? request.status !== "completed" && request.status !== "closed"
+                : request.status === status)) &&
             (!boardId || request.boardId === boardId) &&
             (!search ||
               `${request.title} ${request.description}`
@@ -715,6 +718,10 @@ describe("Public portal UI", () => {
       screen.getByRole("button", { name: /new feedback/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("All boards")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Active" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^All$/ }),
+    ).not.toBeInTheDocument();
     expect(feedbackDescription).toHaveClass("line-clamp-2");
     expect(feedbackDescription).not.toHaveClass("max-w-2xl");
     expect(

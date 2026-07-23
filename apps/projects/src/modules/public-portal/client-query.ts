@@ -118,7 +118,11 @@ export const usePublicFeedbackDetail = ({
     queryKey: publicPortalKeys.feedbackDetail(portal.slug, request.id),
     queryFn: async () => {
       const nextPortal = await fetchPublicFeedbackPage({
-        filters: { search: request.slug, sort: "top" },
+        filters: {
+          search: request.slug,
+          sort: "top",
+          status: request.status,
+        },
         page: 1,
         pageSize: 1,
         portalSlug: portal.slug,

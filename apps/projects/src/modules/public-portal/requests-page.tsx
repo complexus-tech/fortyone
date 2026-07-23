@@ -18,6 +18,7 @@ import type {
 const DEFAULT_FILTERS: PublicPortalFilters = {
   search: "",
   sort: "top",
+  status: "active",
 };
 
 export const PublicPortalRequestsPage = ({

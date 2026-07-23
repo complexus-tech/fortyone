@@ -76,7 +76,19 @@ const matchesFilter = (
   filters: PublicPortalFilterKey,
 ) => {
   if (filters.boardId && request.boardId !== filters.boardId) return false;
-  if (filters.status && request.status !== filters.status) return false;
+  if (
+    filters.status === "active" &&
+    (request.status === "completed" || request.status === "closed")
+  ) {
+    return false;
+  }
+  if (
+    filters.status &&
+    filters.status !== "active" &&
+    request.status !== filters.status
+  ) {
+    return false;
+  }
 
   const search = filters.search.toLowerCase();
   return (

@@ -1,10 +1,14 @@
-import type { PublicPortalFilters, PublicRequestStatus } from "./types";
+import type {
+  PublicFeedbackListStatus,
+  PublicPortalFilters,
+  PublicRequestStatus,
+} from "./types";
 
 export type PublicPortalFilterKey = {
   boardId: string | null;
   search: string;
   sort: PublicPortalFilters["sort"];
-  status: PublicRequestStatus | null;
+  status: PublicFeedbackListStatus | null;
 };
 
 export const toPublicPortalFilterKey = (

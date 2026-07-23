@@ -68,6 +68,16 @@ describe("public portal query caching", () => {
     );
   });
 
+  it("requests only active feedback for the default public list", async () => {
+    await getPublicPortal("feedback", { status: "active" });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback?status=active",
+      { cache: "no-store" },
+    );
+  });
+
   it("opts the public roadmap bootstrap into timed revalidation", async () => {
     await getPublicPortal("feedback", {}, { revalidateSeconds: 5 * 60 });
 

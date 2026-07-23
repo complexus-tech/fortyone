@@ -1,4 +1,5 @@
 import type {
+  PublicFeedbackListStatus,
   PublicPortalFilters,
   PublicPortalSort,
   PublicRequestStatus,
@@ -30,6 +31,11 @@ export const isPublicRequestStatus = (
   value === "completed" ||
   value === "closed";
 
+export const isPublicFeedbackListStatus = (
+  value?: string,
+): value is PublicFeedbackListStatus =>
+  value === "active" || isPublicRequestStatus(value);
+
 export const parsePublicPortalFilters = (
   params: SearchParamsSource,
 ): PublicPortalFilters => {
@@ -40,7 +46,7 @@ export const parsePublicPortalFilters = (
     boardId: getParam(params, "boardId") || undefined,
     search: getParam(params, "search")?.trim() ?? "",
     sort: isPublicPortalSort(sort) ? sort : "top",
-    status: isPublicRequestStatus(status) ? status : undefined,
+    status: isPublicFeedbackListStatus(status) ? status : "active",
   };
 };
 
@@ -49,7 +55,9 @@ export const toPublicPortalSearchParams = (filters: PublicPortalFilters) => {
 
   if (filters.boardId) params.set("boardId", filters.boardId);
   if (filters.search.trim()) params.set("search", filters.search.trim());
-  if (filters.status) params.set("status", filters.status);
+  if (filters.status && filters.status !== "active") {
+    params.set("status", filters.status);
+  }
 
   return params;
 };

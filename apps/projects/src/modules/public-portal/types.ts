@@ -8,13 +8,15 @@ export type PublicRequestStatus =
   | "completed"
   | "closed";
 
+export type PublicFeedbackListStatus = "active" | PublicRequestStatus;
+
 export type PublicPortalSort = "top" | "newest" | "oldest";
 
 export type PublicPortalFilters = {
   boardId?: string;
   search: string;
   sort: PublicPortalSort;
-  status?: PublicRequestStatus;
+  status?: PublicFeedbackListStatus;
 };
 
 export type PublicRequestBoard = {

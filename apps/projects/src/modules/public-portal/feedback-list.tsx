@@ -204,15 +204,15 @@ export const PublicFeedbackList = ({
               "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3.5 transition",
               {
                 "border-border bg-surface-elevated text-foreground":
-                  !filters.status,
+                  filters.status === "active",
               },
             )}
             onClick={() => {
-              changeFilters({ status: undefined });
+              changeFilters({ status: "active" });
             }}
             type="button"
           >
-            All
+            Active
           </button>
           {requestFilters.map((filter) => {
             const meta = requestStatusMeta[filter];
