@@ -1,60 +1,74 @@
 "use client";
 
-import { cn } from "lib";
 import { Button, Flex, Menu, Text } from "ui";
-import { CheckIcon, DeleteIcon, MoreVerticalIcon, RequestsIcon } from "icons";
+import { CheckIcon, MoreVerticalIcon, RequestsIcon } from "icons";
 import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
-import { Dot } from "@/components/ui";
 import { useUserRole } from "@/hooks/role";
-import { feedbackStatusMeta } from "./status-meta";
 import type { TeamFeedbackListStatus } from "./types";
 
-const filters: {
-  colorClassName: string;
+type FeedbackFilter = {
   label: string;
   value: TeamFeedbackListStatus;
-}[] = [
+};
+
+const activeFilter: FeedbackFilter = {
+  label: "Active",
+  value: "active",
+};
+
+const ongoingStatusFilters: FeedbackFilter[] = [
   {
-    colorClassName: "text-foreground",
-    label: "Active Feedback",
-    value: "active",
-  },
-  {
-    colorClassName: feedbackStatusMeta.pending.colorClassName,
-    label: "Pending Review",
+    label: "Pending",
     value: "pending",
   },
   {
-    colorClassName: feedbackStatusMeta.reviewing.colorClassName,
     label: "In Review",
     value: "reviewing",
   },
   {
-    colorClassName: feedbackStatusMeta.planned.colorClassName,
-    label: feedbackStatusMeta.planned.label,
+    label: "Planned",
     value: "planned",
   },
   {
-    colorClassName: feedbackStatusMeta.in_progress.colorClassName,
-    label: feedbackStatusMeta.in_progress.label,
+    label: "In Progress",
     value: "in_progress",
   },
+];
+
+const terminalStatusFilters: FeedbackFilter[] = [
   {
-    colorClassName: feedbackStatusMeta.completed.colorClassName,
-    label: feedbackStatusMeta.completed.label,
+    label: "Completed",
     value: "completed",
   },
   {
-    colorClassName: feedbackStatusMeta.closed.colorClassName,
-    label: feedbackStatusMeta.closed.label,
+    label: "Closed",
     value: "closed",
   },
-  {
-    colorClassName: "text-danger",
-    label: "Trash",
-    value: "trashed",
-  },
 ];
+
+const trashFilter: FeedbackFilter = {
+  label: "Trash",
+  value: "trashed",
+};
+
+const FeedbackFilterItem = ({
+  filter,
+  isSelected,
+  onSelect,
+}: {
+  filter: FeedbackFilter;
+  isSelected: boolean;
+  onSelect: () => void;
+}) => (
+  <Menu.Item onSelect={onSelect}>
+    <span className="flex size-5 items-center justify-center">
+      {isSelected ? (
+        <CheckIcon className="h-4 w-auto" strokeWidth={2.2} />
+      ) : null}
+    </span>
+    {filter.label}
+  </Menu.Item>
+);
 
 export const TeamFeedbackHeader = ({
   onSearchChange,
@@ -68,10 +82,6 @@ export const TeamFeedbackHeader = ({
   status: TeamFeedbackListStatus;
 }) => {
   const { userRole } = useUserRole();
-  const visibleFilters =
-    userRole === "admin"
-      ? filters
-      : filters.filter((filter) => filter.value !== "trashed");
 
   return (
     <ExpandableSearchHeader
@@ -94,29 +104,54 @@ export const TeamFeedbackHeader = ({
             </Menu.Group>
             <Menu.Separator className="mb-1.5" />
             <Menu.Group>
-              {visibleFilters.map((filter) => (
-                <Menu.Item
+              <FeedbackFilterItem
+                filter={activeFilter}
+                isSelected={status === activeFilter.value}
+                onSelect={() => {
+                  onStatusChange(activeFilter.value);
+                }}
+              />
+            </Menu.Group>
+            <Menu.Separator className="my-1.5" />
+            <Menu.Group>
+              {ongoingStatusFilters.map((filter) => (
+                <FeedbackFilterItem
+                  filter={filter}
+                  isSelected={status === filter.value}
                   key={filter.value}
                   onSelect={() => {
                     onStatusChange(filter.value);
                   }}
-                >
-                  <span className="flex size-5 items-center justify-center">
-                    {status === filter.value ? (
-                      <CheckIcon className="h-4 w-auto" strokeWidth={2.2} />
-                    ) : null}
-                  </span>
-                  {filter.value === "trashed" ? (
-                    <DeleteIcon
-                      className={cn("size-4", filter.colorClassName)}
-                    />
-                  ) : (
-                    <Dot className={cn("size-3", filter.colorClassName)} />
-                  )}
-                  {filter.label}
-                </Menu.Item>
+                />
               ))}
             </Menu.Group>
+            <Menu.Separator className="my-1.5" />
+            <Menu.Group>
+              {terminalStatusFilters.map((filter) => (
+                <FeedbackFilterItem
+                  filter={filter}
+                  isSelected={status === filter.value}
+                  key={filter.value}
+                  onSelect={() => {
+                    onStatusChange(filter.value);
+                  }}
+                />
+              ))}
+            </Menu.Group>
+            {userRole === "admin" ? (
+              <>
+                <Menu.Separator className="my-1.5" />
+                <Menu.Group>
+                  <FeedbackFilterItem
+                    filter={trashFilter}
+                    isSelected={status === trashFilter.value}
+                    onSelect={() => {
+                      onStatusChange(trashFilter.value);
+                    }}
+                  />
+                </Menu.Group>
+              </>
+            ) : null}
           </Menu.Items>
         </Menu>
       }
