@@ -929,6 +929,10 @@ describe("Public portal UI", () => {
     expect(
       await screen.findByRole("button", { name: "Remove downvote" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove downvote" })
+        .nextElementSibling,
+    ).toBe(screen.getByRole("button", { name: "Upvote" }));
     expect(toggleFeedbackVoteActionMock).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: "req-1", vote: -1 }),
     );

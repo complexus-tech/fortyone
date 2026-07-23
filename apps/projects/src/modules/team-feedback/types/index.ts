@@ -78,6 +78,8 @@ export type TeamFeedbackItem = {
   slug: string;
   status: TeamFeedbackStatus;
   voteCount: number;
+  upvoteCount: number;
+  downvoteCount: number;
   commentCount: number;
   readAt?: string | null;
   roadmapSummary?: string | null;

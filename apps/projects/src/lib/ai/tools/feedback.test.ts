@@ -79,6 +79,8 @@ const feedback: TeamFeedbackItem = {
   slug: "publish-a-customer-roadmap",
   status: "planned",
   voteCount: 12,
+  upvoteCount: 14,
+  downvoteCount: 2,
   commentCount: 1,
   readAt: "2026-07-20T08:30:00.000Z",
   roadmapSummary: "A public roadmap is planned for the next release.",

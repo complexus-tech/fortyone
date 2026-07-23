@@ -46,6 +46,8 @@ type AppItem struct {
 	Slug           string         `json:"slug"`
 	Status         string         `json:"status"`
 	VoteCount      int            `json:"voteCount"`
+	UpvoteCount    int            `json:"upvoteCount"`
+	DownvoteCount  int            `json:"downvoteCount"`
 	CommentCount   int            `json:"commentCount"`
 	RoadmapSummary *string        `json:"roadmapSummary,omitempty"`
 	ReadAt         *time.Time     `json:"readAt"`
@@ -273,6 +275,8 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		Slug:           core.Slug,
 		Status:         core.Status,
 		VoteCount:      core.VoteCount,
+		UpvoteCount:    core.UpvoteCount,
+		DownvoteCount:  core.DownvoteCount,
 		CommentCount:   core.CommentCount,
 		RoadmapSummary: core.RoadmapSummary,
 		ReadAt:         core.ReadAt,

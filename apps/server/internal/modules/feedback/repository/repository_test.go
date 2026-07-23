@@ -144,7 +144,10 @@ func TestProjectedFeedbackStatusCoversEveryStoryCategory(t *testing.T) {
 		require.Contains(t, projectedFeedbackStatus, "projected_state.category = '"+category+"'")
 		require.Contains(t, projectedFeedbackStatus, "THEN '"+status+"'")
 	}
-	require.Contains(t, itemSelectQuery(), "fsl.is_primary = true")
+	query := itemSelectQuery()
+	require.Contains(t, query, "fsl.is_primary = true")
+	require.Contains(t, query, "fv.direction = 1) AS integer) AS upvote_count")
+	require.Contains(t, query, "fv.direction = -1) AS integer) AS downvote_count")
 }
 
 func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
@@ -166,6 +169,8 @@ func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
 		PrimaryRelation:   &relationship,
 		PrimaryCreatedAt:  &createdAt,
 		ReadAt:            &readAt,
+		UpvoteCount:       8,
+		DownvoteCount:     3,
 	})
 
 	require.Len(t, item.StoryLinks, 1)
@@ -174,6 +179,8 @@ func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
 	require.Equal(t, storyTitle, item.StoryLinks[0].StoryTitle)
 	require.True(t, item.StoryLinks[0].IsPrimary)
 	require.Equal(t, readAt, *item.ReadAt)
+	require.Equal(t, 8, item.UpvoteCount)
+	require.Equal(t, 3, item.DownvoteCount)
 }
 
 func TestToCoreBoardReviewerMapsDigestPreference(t *testing.T) {

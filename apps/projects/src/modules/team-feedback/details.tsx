@@ -16,9 +16,11 @@ import {
   CommentIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  NewTabIcon,
   ReplyIcon,
   RequestsIcon,
   StoryIcon,
+  ThumbsDownIcon,
   ThumbsUpIcon,
 } from "icons";
 import {
@@ -38,7 +40,11 @@ import { BodyContainer } from "@/components/shared";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
-import { getAuthorPathByPortalSlug } from "@/modules/public-portal/utils";
+import {
+  getAuthorPathByPortalSlug,
+  getRequestPathBySlugs,
+} from "@/modules/public-portal/utils";
+import { useFeedbackPortals } from "@/modules/settings/workspace/feedback/hooks";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { Option } from "@/modules/story/components/options";
 import {
@@ -71,38 +77,14 @@ const formatLinkedStoryTitle = (
   fallback: string,
 ) => (title ? truncateLinkedStoryTitle(title) : fallback);
 
-const getStatusBannerCopy = (
-  status: TeamFeedbackStatus,
-  storyTerm: string,
-): { primary: string; secondary: string } => {
-  const copy: Record<
-    TeamFeedbackStatus,
-    { primary: string; secondary: string }
-  > = {
-    pending: {
-      primary: "Feedback is ready for review",
-      secondary: "Plan it when the team is ready to commit.",
-    },
-    reviewing: {
-      primary: "Feedback is being reviewed",
-      secondary: "Plan it to add the work to the roadmap.",
-    },
-    planned: {
-      primary: "Feedback is planned",
-      secondary: `Its linked ${storyTerm} now powers the roadmap status.`,
-    },
-    in_progress: {
-      primary: "Feedback is in progress",
-      secondary: `The linked ${storyTerm} is currently being worked on.`,
-    },
-    completed: {
-      primary: "Feedback is completed",
-      secondary: `The linked ${storyTerm} has been delivered.`,
-    },
-    closed: {
-      primary: "Feedback is closed",
-      secondary: "It is no longer in the team's active queue.",
-    },
+const getStatusBannerCopy = (status: TeamFeedbackStatus): string => {
+  const copy: Record<TeamFeedbackStatus, string> = {
+    pending: "Feedback is ready for review",
+    reviewing: "Feedback is being reviewed",
+    planned: "Feedback is planned",
+    in_progress: "Feedback is in progress",
+    completed: "Feedback is completed",
+    closed: "Feedback is closed",
   };
 
   return copy[status];
@@ -114,6 +96,7 @@ const FeedbackBanner = ({
   onClose,
   onLink,
   onOpenStory,
+  portalHref,
   onPlan,
   onReview,
 }: {
@@ -122,6 +105,7 @@ const FeedbackBanner = ({
   onClose: () => void;
   onLink: () => void;
   onOpenStory: () => void;
+  portalHref?: string;
   onPlan: () => void;
   onReview: () => void;
 }) => {
@@ -130,7 +114,7 @@ const FeedbackBanner = ({
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isLinked = Boolean(linkedStory);
   const canPlan = !isLinked && feedback.status !== "closed";
-  const copy = getStatusBannerCopy(feedback.status, storyTerm);
+  const copy = getStatusBannerCopy(feedback.status);
   const linkedStoryTitle = linkedStory
     ? linkedStory.storyTitle || `Open linked ${storyTerm}`
     : null;
@@ -174,10 +158,7 @@ const FeedbackBanner = ({
                 color="primary"
                 fontWeight="medium"
               >
-                {copy.primary}
-              </Text>
-              <Text className="line-clamp-1 text-[0.92rem]" color="muted">
-                {copy.secondary}
+                {copy}
               </Text>
             </Box>
           )}
@@ -192,6 +173,22 @@ const FeedbackBanner = ({
             >
               <LinkIcon className="text-current" />
             </button>
+          ) : null}
+          {portalHref ? (
+            <Button
+              aria-label="Open in feedback portal"
+              asIcon
+              className="text-primary hover:text-primary/80"
+              color="tertiary"
+              href={portalHref}
+              leftIcon={<NewTabIcon className="h-5 text-current" />}
+              size="sm"
+              target="_blank"
+              title="Open in feedback portal"
+              variant="naked"
+            >
+              <span className="sr-only">Open in feedback portal</span>
+            </Button>
           ) : null}
           <Menu>
             <Menu.Button>
@@ -562,13 +559,28 @@ const FeedbackProperties = ({
           className="my-5 md:my-6"
           isCompact={isInline}
           isNotifications={isInline}
-          label="Votes"
+          label="Upvotes"
           value={
             <MetadataValue>
               <ThumbsUpIcon className="h-4" />
               <Text>
-                {feedback.voteCount}{" "}
-                {feedback.voteCount === 1 ? "vote" : "votes"}
+                {feedback.upvoteCount}{" "}
+                {feedback.upvoteCount === 1 ? "upvote" : "upvotes"}
+              </Text>
+            </MetadataValue>
+          }
+        />
+        <Option
+          className="my-5 md:my-6"
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Downvotes"
+          value={
+            <MetadataValue>
+              <ThumbsDownIcon className="h-4" />
+              <Text>
+                {feedback.downvoteCount}{" "}
+                {feedback.downvoteCount === 1 ? "downvote" : "downvotes"}
               </Text>
             </MetadataValue>
           }
@@ -683,6 +695,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     isPending,
     refetch,
   } = useTeamFeedbackItem(feedbackId);
+  const { data: feedbackPortals = [] } = useFeedbackPortals();
   const planFeedback = usePlanTeamFeedback();
   const { mutate: setReadState } = useSetTeamFeedbackReadState();
   const updateStatus = useUpdateTeamFeedbackStatus();
@@ -737,6 +750,13 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   const linkedStoryHref = linkedStory
     ? withWorkspace(`/story/${linkedStory.storyId}`)
     : undefined;
+  const feedbackPortal = feedbackPortals.find(
+    (portal) => portal.id === feedback.portalId,
+  );
+  const portalHref =
+    feedbackPortal?.isPublic === true
+      ? getRequestPathBySlugs(feedbackPortal.slug, feedback.slug)
+      : undefined;
   const status = searchParams.get("status");
   const search = searchParams.get("search");
   const feedbackListHref = withWorkspace(`/teams/${feedbackTeamId}/feedback`);
@@ -807,6 +827,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                 }}
                 onPlan={handlePlan}
                 onReview={handleReview}
+                portalHref={portalHref}
               />
               <Text
                 as="h1"

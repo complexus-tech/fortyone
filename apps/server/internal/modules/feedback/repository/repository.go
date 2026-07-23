@@ -61,6 +61,8 @@ type itemRow struct {
 	Slug              string     `db:"slug"`
 	Status            string     `db:"status"`
 	VoteCount         int        `db:"vote_count"`
+	UpvoteCount       int        `db:"upvote_count"`
+	DownvoteCount     int        `db:"downvote_count"`
 	CommentCount      int        `db:"comment_count"`
 	RoadmapSummary    *string    `db:"roadmap_summary"`
 	BoardTeamID       uuid.UUID  `db:"board_team_id"`
@@ -923,6 +925,8 @@ func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (fe
 			u.avatar_url AS author_avatar,
 			inserted.title, inserted.description, inserted.slug, inserted.status,
 			0 AS vote_count,
+			0 AS upvote_count,
+			0 AS downvote_count,
 			0 AS comment_count,
 			inserted.roadmap_summary,
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
@@ -966,6 +970,8 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			u.avatar_url AS author_avatar,
 			updated.title, updated.description, updated.slug, updated.status,
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = updated.id), 0) AS integer) AS vote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = 1) AS integer) AS upvote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = -1) AS integer) AS downvote_count,
 			(SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id)::int AS comment_count,
 			updated.roadmap_summary,
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
@@ -1139,6 +1145,8 @@ func itemSelectQueryForViewer(viewerReference string) string {
 			u.avatar_url AS author_avatar,
 			fi.title, fi.description, fi.slug, ` + projectedFeedbackStatus + ` AS status,
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id AND fv.direction = 1) AS integer) AS upvote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id AND fv.direction = -1) AS integer) AS downvote_count,
 			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
 			fi.roadmap_summary,
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
@@ -1223,6 +1231,8 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 		Slug:           row.Slug,
 		Status:         row.Status,
 		VoteCount:      row.VoteCount,
+		UpvoteCount:    row.UpvoteCount,
+		DownvoteCount:  row.DownvoteCount,
 		CommentCount:   row.CommentCount,
 		RoadmapSummary: row.RoadmapSummary,
 		ReadAt:         row.ReadAt,

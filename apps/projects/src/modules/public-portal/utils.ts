@@ -8,13 +8,18 @@ const NIL_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
 export const getBoard = (portal: PublicPortal, boardId: string) =>
   portal.boards.find((board) => board.id === boardId);
 
-export const getRequestPathBySlug = (
-  portal: PublicPortal,
+export const getRequestPathBySlugs = (
+  portalSlug: string,
   requestSlug: string,
 ) =>
   isWorkspaceSubdomainDeployment
     ? `/feedback/${requestSlug}`
-    : `/portal/${portal.slug}/feedback/${requestSlug}`;
+    : `/portal/${portalSlug}/feedback/${requestSlug}`;
+
+export const getRequestPathBySlug = (
+  portal: PublicPortal,
+  requestSlug: string,
+) => getRequestPathBySlugs(portal.slug, requestSlug);
 
 export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
   getRequestPathBySlug(portal, request.slug);

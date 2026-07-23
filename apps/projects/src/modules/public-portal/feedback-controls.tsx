@@ -210,6 +210,25 @@ export const FeedbackVoteButton = ({
 
   return (
     <Box className="flex shrink-0 items-center gap-0.5">
+      {showDownvote ? (
+        <Button
+          aria-label={vote === -1 ? "Remove downvote" : "Downvote"}
+          asIcon
+          className={cn("text-text-muted hover:text-foreground h-9", {
+            "text-foreground": vote === -1,
+          })}
+          color="tertiary"
+          disabled={mutation.isPending}
+          onClick={() => {
+            mutation.mutate(-1);
+          }}
+          size="sm"
+          title={vote === -1 ? "Remove downvote" : "Downvote"}
+          variant="naked"
+        >
+          <ThumbsDownIcon className="h-4" strokeWidth={2} />
+        </Button>
+      ) : null}
       <Button
         aria-label={vote === 1 ? "Remove upvote" : "Upvote"}
         className={cn(
@@ -231,25 +250,6 @@ export const FeedbackVoteButton = ({
       >
         {voteCount}
       </Button>
-      {showDownvote ? (
-        <Button
-          aria-label={vote === -1 ? "Remove downvote" : "Downvote"}
-          asIcon
-          className={cn("text-text-muted hover:text-foreground h-9", {
-            "text-foreground": vote === -1,
-          })}
-          color="tertiary"
-          disabled={mutation.isPending}
-          onClick={() => {
-            mutation.mutate(-1);
-          }}
-          size="sm"
-          title={vote === -1 ? "Remove downvote" : "Downvote"}
-          variant="naked"
-        >
-          <ThumbsDownIcon className="h-4" strokeWidth={2} />
-        </Button>
-      ) : null}
     </Box>
   );
 };

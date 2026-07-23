@@ -68,6 +68,8 @@ type CoreItem struct {
 	Slug           string
 	Status         string
 	VoteCount      int
+	UpvoteCount    int
+	DownvoteCount  int
 	CommentCount   int
 	RoadmapSummary *string
 	Board          CoreBoard
