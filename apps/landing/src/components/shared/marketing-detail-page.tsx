@@ -79,7 +79,7 @@ function PromptCard({
 
 function FeatureCardFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-[320px] items-end overflow-hidden rounded-2xl">
+    <div className="relative flex items-end overflow-hidden rounded-2xl md:min-h-80">
       <Image
         alt=""
         className="object-cover grayscale-100 dark:opacity-40"

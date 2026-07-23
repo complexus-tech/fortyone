@@ -603,7 +603,7 @@ function FeatureCard({
       style={{ transitionDelay: `${delay * 1000}ms` }}
     >
       <Box className="flex h-full flex-col">
-        <Box className="relative flex h-70 shrink-0 items-end overflow-hidden rounded-2xl md:h-83">
+        <Box className="relative flex shrink-0 items-end overflow-hidden rounded-2xl md:h-84">
           <Image
             alt=""
             className="object-cover grayscale-100 dark:opacity-40"
