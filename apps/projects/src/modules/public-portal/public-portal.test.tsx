@@ -1016,12 +1016,14 @@ describe("Public portal UI", () => {
     if (!notificationLink)
       throw new Error("Notification link was not rendered");
 
-    expect(notificationMessage).toHaveClass("line-clamp-1");
+    expect(notificationMessage).toHaveClass("line-clamp-1", "text-base");
+    expect(notificationLink).toHaveClass("border-b-0");
+    expect(notificationLink).not.toHaveClass("bg-state-hover/50");
     expect(
       within(notificationLink).getByText(
         "Add pedestrian crossing near East Avenue school",
       ),
-    ).toHaveClass("line-clamp-1", "text-[0.95rem]");
+    ).toHaveClass("line-clamp-1", "text-base");
     expect(
       within(notificationLink)
         .getByText("2026-07-20T08:00:00.000Z")

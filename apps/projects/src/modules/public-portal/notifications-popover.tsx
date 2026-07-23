@@ -89,10 +89,12 @@ const EmptyNotifications = () => (
 );
 
 const NotificationItem = ({
+  isLast,
   notification,
   onRead,
   portal,
 }: {
+  isLast: boolean;
   notification: PublicPortalNotification;
   onRead: (notification: PublicPortalNotification) => void;
   portal: PublicPortal;
@@ -102,8 +104,8 @@ const NotificationItem = ({
   return (
     <Link
       className={cn(
-        "hover:bg-state-hover relative block px-4 py-3 transition-colors",
-        { "bg-state-hover/50": isUnread },
+        "border-border/60 dark:border-border-strong/80 hover:bg-state-hover/40 relative block border-b-[0.5px] px-4 py-3 transition-colors",
+        { "border-b-0": isLast },
       )}
       href={getRequestPathBySlug(portal, notification.feedback.slug)}
       onClick={() => {
@@ -124,7 +126,7 @@ const NotificationItem = ({
         <Box className="min-w-0 flex-1">
           <Flex align="start" gap={2} justify="between">
             <Text
-              className="line-clamp-1 text-[0.95rem] leading-5"
+              className="line-clamp-1 text-base leading-6"
               fontWeight={isUnread ? "semibold" : "medium"}
             >
               {renderNotificationMessage(notification)}
@@ -133,7 +135,7 @@ const NotificationItem = ({
               <span className="bg-primary mt-1.5 size-2 shrink-0 rounded-full" />
             ) : null}
           </Flex>
-          <Text className="mt-1 line-clamp-1 text-[0.95rem]" color="muted">
+          <Text className="mt-1 line-clamp-1 text-base leading-6" color="muted">
             {notification.feedback.title}
           </Text>
           <Text className="mt-1 text-sm" color="muted">
@@ -347,8 +349,9 @@ export const PublicPortalNotifications = ({
           notifications.length === 0 ? (
             <EmptyNotifications />
           ) : null}
-          {notifications.map((notification) => (
+          {notifications.map((notification, index) => (
             <NotificationItem
+              isLast={index === notifications.length - 1}
               key={notification.id}
               notification={notification}
               onRead={(selectedNotification) => {
