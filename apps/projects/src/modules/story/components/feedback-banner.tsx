@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CopyIcon, LinkIcon, MoreHorizontalIcon, RequestsIcon } from "icons";
-import { Box, Flex, Menu, Text, TimeAgo } from "ui";
+import { Box, Flex, Menu, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import type { StoryFeedbackLink } from "@/modules/team-feedback/types";
 
-const relationshipLabel = (relationship: StoryFeedbackLink["relationship"]) =>
-  relationship === "created_from"
-    ? "Created from feedback"
-    : "Linked to feedback";
+const relationshipLabel = (relationship: StoryFeedbackLink["relationship"]) => {
+  switch (relationship) {
+    case "created_from":
+      return "From feedback";
+    case "solves":
+      return "Resolves feedback";
+    default:
+      return "Linked to feedback";
+  }
+};
 
 export const FeedbackBanner = ({ links }: { links: StoryFeedbackLink[] }) => (
   <Box className="mb-3 space-y-2">
@@ -35,22 +41,27 @@ const FeedbackBannerRow = ({ link }: { link: StoryFeedbackLink }) => {
   return (
     <Flex
       align="center"
-      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-2"
+      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
       justify="between"
     >
-      <Link className="min-w-0" href={feedbackHref} title="Open feedback">
+      <Link
+        aria-label={`Open feedback: ${link.feedbackTitle}`}
+        className="min-w-0 flex-1"
+        href={feedbackHref}
+        title={link.feedbackTitle}
+      >
         <Flex align="center" className="min-w-0" gap={2}>
           <RequestsIcon className="text-primary h-5 shrink-0" />
-          <Box className="min-w-0">
-            <Text color="primary" fontWeight="medium">
-              {relationshipLabel(link.relationship)}
-            </Text>
-            <Text className="line-clamp-1" color="muted">
-              {link.feedbackTitle}
-              <span aria-hidden="true"> · </span>
-              Linked <TimeAgo timestamp={link.createdAt} />
-            </Text>
-          </Box>
+          <Text
+            as="span"
+            className="min-w-0 truncate"
+            color="primary"
+            fontWeight="medium"
+          >
+            {relationshipLabel(link.relationship)}
+            <span aria-hidden="true"> · </span>
+            {link.feedbackTitle}
+          </Text>
         </Flex>
       </Link>
       <Flex align="center" className="shrink-0" gap={1}>

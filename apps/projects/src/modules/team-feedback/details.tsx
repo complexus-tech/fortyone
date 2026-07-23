@@ -130,12 +130,9 @@ const FeedbackBanner = ({
   const isLinked = Boolean(linkedStory);
   const canPlan = !isLinked && feedback.status !== "closed";
   const copy = getStatusBannerCopy(feedback.status, storyTerm);
-  const primaryCopy = linkedStory
-    ? `Feedback is linked to a ${storyTerm}`
-    : copy.primary;
-  const secondaryCopy = linkedStory
-    ? formatLinkedStoryTitle(linkedStory.storyTitle, `Open linked ${storyTerm}`)
-    : copy.secondary;
+  const linkedStoryTitle = linkedStory
+    ? linkedStory.storyTitle || `Open linked ${storyTerm}`
+    : null;
 
   return (
     <Box className="mb-6">
@@ -145,7 +142,7 @@ const FeedbackBanner = ({
         gap={3}
         justify="between"
       >
-        <Flex align="center" className="min-w-0" gap={3}>
+        <Flex align="center" className="min-w-0 flex-1" gap={2}>
           {linkedStory ? (
             <StoryIcon className="text-primary h-5 shrink-0" />
           ) : (
@@ -153,23 +150,20 @@ const FeedbackBanner = ({
           )}
           {linkedStory ? (
             <button
-              className="min-w-0 text-left"
+              className="min-w-0 flex-1 text-left"
               onClick={onOpenStory}
               type="button"
             >
               <Text
-                className="line-clamp-1"
+                as="span"
+                className="block min-w-0 truncate"
                 color="primary"
                 fontWeight="medium"
-              >
-                {primaryCopy}
-              </Text>
-              <Text
-                className="line-clamp-1 text-[0.92rem]"
-                color="muted"
                 title={linkedStory.storyTitle || undefined}
               >
-                {secondaryCopy}
+                Linked {storyTerm}
+                <span aria-hidden="true"> · </span>
+                {linkedStoryTitle}
               </Text>
             </button>
           ) : (
@@ -179,10 +173,10 @@ const FeedbackBanner = ({
                 color="primary"
                 fontWeight="medium"
               >
-                {primaryCopy}
+                {copy.primary}
               </Text>
               <Text className="line-clamp-1 text-[0.92rem]" color="muted">
-                {secondaryCopy}
+                {copy.secondary}
               </Text>
             </Box>
           )}
