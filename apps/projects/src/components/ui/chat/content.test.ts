@@ -41,4 +41,24 @@ describe("ChatContent", () => {
     expect(source).toContain("min-h-[52px]");
     expect(source).toContain("border-b");
   });
+
+  it("does not collapse workspace controls while the popup is open", () => {
+    const objectiveHeader = readSource(
+      "src/modules/objectives/stories/header.tsx",
+    );
+    const objectiveOverview = readSource(
+      "src/modules/objectives/stories/overview/index.tsx",
+    );
+    const sprintHeader = readSource("src/modules/sprints/stories/header.tsx");
+    const sprintStories = readSource(
+      "src/modules/sprints/stories/list-stories.tsx",
+    );
+    const storyPage = readSource("src/modules/story/index.tsx");
+
+    expect(objectiveHeader).not.toContain("isChatOpen");
+    expect(objectiveOverview).not.toContain("isChatOpen");
+    expect(sprintHeader).not.toContain("isChatOpen");
+    expect(sprintStories).not.toContain("isChatOpen");
+    expect(storyPage).not.toContain("isChatOpen");
+  });
 });

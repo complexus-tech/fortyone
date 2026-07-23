@@ -40,7 +40,7 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
-  const { isOpen: isChatOpen, openChat } = useChatContext();
+  const { openChat } = useChatContext();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {
@@ -122,7 +122,7 @@ export const Header = ({
               size="sm"
               variant="naked"
             >
-              {isChatOpen ? null : "Smart fill"}
+              Smart fill
             </Button>
           </Tooltip>
         )}
@@ -134,27 +134,21 @@ export const Header = ({
         />
         <StoriesFilterButton
           filters={filters}
-          iconOnly={isChatOpen}
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
-          iconOnly={isChatOpen}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        {!isChatOpen ? (
-          <>
-            <span className="text-text-secondary hidden md:inline">|</span>
-            <Box className="hidden md:block">
-              <SideDetailsSwitch
-                isExpanded={isExpanded}
-                setIsExpanded={setIsExpanded}
-              />
-            </Box>
-          </>
-        ) : null}
+        <span className="text-text-secondary hidden md:inline">|</span>
+        <Box className="hidden md:block">
+          <SideDetailsSwitch
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+          />
+        </Box>
       </Flex>
     </HeaderContainer>
   );

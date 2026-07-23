@@ -14,10 +14,8 @@ import {
   TeamColor,
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useTerminology } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
 import { useObjectiveOptions } from "./provider";
 
 export const Header = ({
@@ -34,7 +32,6 @@ export const Header = ({
   const [tab] = useQueryState("tab", parseAsString.withDefault("overview"));
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
-  const { data: objectives = [] } = useTeamObjectives(teamId);
   const { data: objective } = useObjective(objectiveId, teamId);
   const { name: teamName, color: teamColor } = teams.find(
     (team) => team.id === teamId,
@@ -42,7 +39,6 @@ export const Header = ({
   const objectiveName = objective?.name || "";
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useObjectiveOptions();
-  const { isOpen: isChatOpen } = useChatContext();
 
   useHotkeys("v+l", () => {
     setLayout("list");
@@ -99,12 +95,10 @@ export const Header = ({
             <LayoutSwitcher layout={layout} setLayout={setLayout} />
             <StoriesFilterButton
               filters={filters}
-              iconOnly={isChatOpen}
               resetFilters={resetFilters}
               setFilters={setFilters}
             />
             <StoriesViewOptionsButton
-              iconOnly={isChatOpen}
               layout={layout}
               setViewOptions={setViewOptions}
               viewOptions={viewOptions}
