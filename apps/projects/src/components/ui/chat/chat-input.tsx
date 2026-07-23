@@ -354,7 +354,7 @@ export const ChatInput = ({
               "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
               {
                 "md:min-h-[3.7rem]": isOnPage,
-                "px-4 text-[0.95rem]": isPopup,
+                "px-4": isPopup,
               },
             )}
             disabled={isLiveVoiceActive}
@@ -372,7 +372,7 @@ export const ChatInput = ({
               className={cn(
                 "text-text-muted pointer-events-none absolute top-2 transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
                 {
-                  "left-4 text-[0.95rem]": isPopup,
+                  "left-4 text-[1.1rem]": isPopup,
                   "left-5 text-[1.1rem]": !isPopup,
                 },
               )}
@@ -470,14 +470,7 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       </Box>
-      <Text
-        align="center"
-        className={cn("opacity-90", {
-          "pt-1.5 text-xs": isPopup,
-          "pt-2": !isPopup,
-        })}
-        color="muted"
-      >
+      <Text align="center" className="pt-2 opacity-90" color="muted">
         Maya can make mistakes, so double-check important info.
       </Text>
     </Box>

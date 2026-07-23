@@ -1,10 +1,10 @@
 import { Avatar, Box, Text, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
 import type { ChatStatus } from "ai";
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
 import { usePathname } from "next/navigation";
-import { Streamdown } from "streamdown";
+import { Streamdown, type StreamdownProps } from "streamdown";
 import type { User } from "@/types";
 import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -118,6 +118,12 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
 const DEFAULT_PROGRESS_LABEL = "Working on it";
 
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
+
+const LinkText = ({ children }: ComponentProps<"a">) => <>{children}</>;
+
+const STREAMDOWN_COMPONENTS: NonNullable<StreamdownProps["components"]> = {
+  a: LinkText,
+};
 
 type ToolMessagePart = MayaUIMessage["parts"][number] & {
   state: string;
@@ -249,6 +255,7 @@ const RenderMessage = ({
       {textParts.map((part, index) => (
         <Streamdown
           className="chat-tables"
+          components={STREAMDOWN_COMPONENTS}
           controls={{
             table: true,
             code: true,
@@ -353,7 +360,7 @@ export const ChatMessage = ({
         >
           <Box
             className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "bg-state-hover/80 dark:bg-surface-muted/95 rounded-tr-md":
+              "bg-state-hover/80 dark:bg-surface-elevated rounded-tr-md":
                 message.role === "user",
               "bg-transparent p-0": message.role === "assistant",
             })}

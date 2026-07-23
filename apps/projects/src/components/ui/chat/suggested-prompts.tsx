@@ -67,20 +67,16 @@ export const SuggestedPrompts = ({
   if (isPopup) {
     return (
       <Box className="px-[18px] pt-9 pb-[18px]">
-        <Text
-          as="h2"
-          className="text-[1.55rem] leading-[1.08] tracking-[-0.04em]"
-          fontWeight="medium"
-        >
-          Ask Maya anything
+        <Text as="h2" className="text-4xl leading-[1.08] tracking-[-0.04em]">
+          Hi, {name}! Ask me anything!
         </Text>
-        <Text className="mt-2.5 max-w-sm text-sm leading-[1.55]" color="muted">
+        <Text className="mt-3 max-w-sm text-base leading-6" color="muted">
           Ask about priorities, delivery risks, your team, or what to do next.
         </Text>
         <Box className="mt-[22px] border-t border-black/[0.07] dark:border-white/[0.07]">
           {POPUP_PROMPTS.slice(fromIndex).map((prompt) => (
             <button
-              className="hover:text-primary focus-visible:ring-primary flex min-h-[50px] w-full items-center border-0 border-b border-black/[0.07] bg-transparent px-px py-3 text-left text-sm leading-5 transition-colors focus-visible:ring-2 focus-visible:outline-none dark:border-white/[0.07]"
+              className="hover:text-primary focus-visible:ring-primary flex min-h-[52px] w-full items-center border-0 border-b border-black/[0.07] bg-transparent px-px py-3 text-left text-base leading-6 transition-colors focus-visible:ring-2 focus-visible:outline-none dark:border-white/[0.07]"
               key={prompt}
               onClick={() => {
                 onPromptSelect(prompt);

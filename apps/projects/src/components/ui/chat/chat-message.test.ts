@@ -10,7 +10,7 @@ describe("ChatMessage", () => {
   it("uses story-list surface colors for user prompts instead of inverse colors", () => {
     const source = readSource("src/components/ui/chat/chat-message.tsx");
 
-    expect(source).toContain("bg-state-hover/80 dark:bg-surface-muted/95");
+    expect(source).toContain("bg-state-hover/80 dark:bg-surface-elevated");
     expect(source).not.toContain("text-foreground-inverse");
     expect(source).not.toContain("bg-background-inverse rounded-tr-md");
   });
@@ -25,5 +25,19 @@ describe("ChatMessage", () => {
     const source = readSource("src/components/ui/chat/chat-input.tsx");
 
     expect(source).not.toContain("dark:text-white");
+  });
+
+  it("renders assistant links as plain text", () => {
+    const messageSource = readSource("src/components/ui/chat/chat-message.tsx");
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(messageSource).toContain("a: LinkText");
+    expect(messageSource).toContain("components={STREAMDOWN_COMPONENTS}");
+    expect(promptSource).toContain(
+      "Do not embed internal FortyOne links in responses",
+    );
+    expect(promptSource).not.toContain(
+      "link its human-readable reference or title",
+    );
   });
 });

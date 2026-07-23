@@ -1,13 +1,21 @@
 import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
-import { Flex, Button, Text, Tooltip, Box, CircleProgressBar } from "ui";
+import {
+  Avatar,
+  Flex,
+  Button,
+  Text,
+  Tooltip,
+  Box,
+  CircleProgressBar,
+} from "ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
+import { useProfile } from "@/lib/hooks/profile";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useWorkspacePath } from "@/hooks";
 import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
-import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { HistoryDialog } from "./history-dialog";
 
 export const ChatHeader = ({
@@ -30,6 +38,7 @@ export const ChatHeader = ({
   const { data: chats = [] } = useAiChats();
   const { data: totalMessages = 0 } = useTotalMessages();
   const { data: session } = useSession();
+  const { data: profile } = useProfile();
   const { remaining, getLimit, tier } = useSubscriptionFeatures();
   const { withWorkspace } = useWorkspacePath();
   const isInternalUser = session?.user.isInternal === true;
@@ -42,11 +51,20 @@ export const ChatHeader = ({
     <>
       <Flex align="center" className="w-full" justify="between">
         <Flex align="center" className="min-w-0 flex-1" gap={2}>
-          {isPopup ? <MayaAvatar className="size-[34px]" size="md" /> : null}
+          {isPopup ? (
+            <Avatar
+              className="size-[34px]"
+              name={
+                profile?.fullName || profile?.username || session?.user.name
+              }
+              size="md"
+              src={profile?.avatarUrl || session?.user.image}
+            />
+          ) : null}
           {isPopup ? (
             <Box className="min-w-0">
-              <Text className="text-[0.95rem] leading-5">Maya</Text>
-              <Text className="text-[0.8rem] leading-4" color="muted">
+              <Text className="text-base leading-5">Maya</Text>
+              <Text className="text-sm leading-5" color="muted">
                 AI project assistant
               </Text>
             </Box>
@@ -156,15 +174,20 @@ export const ChatHeader = ({
             </Tooltip>
           )}
           {isPopup && hasMessages ? (
-            <Button
-              className="px-1.5 text-[0.8rem]"
-              color="tertiary"
-              onClick={handleNewChat}
-              size="sm"
-              variant="naked"
-            >
-              New chat
-            </Button>
+            <Tooltip title="New chat">
+              <Button
+                asIcon
+                color="tertiary"
+                leftIcon={
+                  <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
+                }
+                onClick={handleNewChat}
+                size="sm"
+                variant="naked"
+              >
+                <span className="sr-only">New chat</span>
+              </Button>
+            </Tooltip>
           ) : null}
 
           <Tooltip title="Close">
