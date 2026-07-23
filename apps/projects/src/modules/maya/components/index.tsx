@@ -105,7 +105,6 @@ export const MayaChat = () => {
         {needsUpgrade ? <LimitReached isOnPage /> : null}
         <ChatInput
           attachments={attachments}
-          isLiveVoiceVisible={isInternalUser}
           isOnPage
           liveVoiceDisabled={needsUpgrade}
           messagesCount={displayMessages.length}

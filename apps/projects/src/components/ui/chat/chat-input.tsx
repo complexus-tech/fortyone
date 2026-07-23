@@ -32,7 +32,6 @@ type ChatInputProps = {
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
   messagesCount: number;
-  isLiveVoiceVisible?: boolean;
   liveVoiceDisabled?: boolean;
   realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
 };
@@ -102,7 +101,6 @@ export const ChatInput = ({
   onAttachmentsChange,
   isOnPage,
   messagesCount,
-  isLiveVoiceVisible = false,
   liveVoiceDisabled = false,
   realtimeVoice,
 }: ChatInputProps) => {
@@ -416,12 +414,10 @@ export const ChatInput = ({
                   ? "Cancel"
                   : "Record"}
             </Button>
-            {isLiveVoiceVisible ? (
-              <RealtimeVoiceControl
-                disabled={liveVoiceDisabled}
-                voice={realtimeVoice}
-              />
-            ) : null}
+            <RealtimeVoiceControl
+              disabled={liveVoiceDisabled}
+              voice={realtimeVoice}
+            />
             <Button
               aria-label={
                 isRecording

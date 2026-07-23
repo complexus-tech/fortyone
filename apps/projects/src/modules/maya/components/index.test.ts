@@ -13,7 +13,7 @@ describe("MayaChat", () => {
     expect(source).toContain("useSession");
     expect(source).toContain("session?.user.isInternal");
     expect(source).toContain("shouldShowMayaMessageLimit");
-    expect(source).toContain("isLiveVoiceVisible={isInternalUser}");
+    expect(source).not.toContain("isLiveVoiceVisible");
     expect(source).toContain("liveVoiceDisabled={needsUpgrade}");
   });
 });

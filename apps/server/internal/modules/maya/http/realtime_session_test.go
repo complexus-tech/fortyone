@@ -3,9 +3,19 @@ package mayahttp
 import (
 	"strings"
 	"testing"
+	"time"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 )
+
+func TestRealtimeVoiceLimits(t *testing.T) {
+	if realtimeMonthlyVoiceLimit != 10*time.Minute {
+		t.Fatalf("monthly voice limit = %s, want 10m", realtimeMonthlyVoiceLimit)
+	}
+	if realtimeMaxSessionDuration != 5*time.Minute {
+		t.Fatalf("session duration = %s, want 5m", realtimeMaxSessionDuration)
+	}
+}
 
 func TestRealtimeSessionRequestValidation(t *testing.T) {
 	tests := []struct {

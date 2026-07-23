@@ -40,14 +40,13 @@ const defaultRealtimeBaseURL = "https://api.openai.com/v1"
 const defaultRealtimeModel = "gpt-realtime-2.1-mini"
 const defaultRealtimeTranscriptionModel = "gpt-4o-mini-transcribe"
 const defaultRealtimeVoice = "marin"
-const realtimeMonthlyVoiceLimit = 5 * time.Minute
+const realtimeMonthlyVoiceLimit = 10 * time.Minute
 const realtimeMaxSessionDuration = 5 * time.Minute
 
 var ErrMayaAccessRequired = errors.New("maya agent is available on paid plans and active trials")
 var ErrMayaRealtimeNotConfigured = errors.New("maya realtime voice is not configured")
 var ErrMayaRealtimeToolNotConfigured = errors.New("maya realtime tools are not configured")
 var ErrMayaRealtimeMonthlyLimitExceeded = errors.New("monthly realtime voice limit reached")
-var ErrMayaRealtimeInternalAccessRequired = errors.New("realtime voice is only available to internal users")
 
 var realtimeStoryPriorities = map[string]struct{}{
 	"No Priority": {},
@@ -162,10 +161,6 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 	if h.workspaces == nil || h.teams == nil || h.users == nil {
 		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
 	}
-	if err := h.requireRealtimeInternalUser(ctx, userID); err != nil {
-		return web.RespondError(ctx, w, err, h.statusCode(err))
-	}
-
 	var req AppRealtimeSessionRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -202,13 +197,6 @@ func (h *Handlers) EndRealtimeSession(ctx context.Context, w http.ResponseWriter
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	if h.users == nil {
-		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
-	}
-	if err := h.requireRealtimeInternalUser(ctx, userID); err != nil {
-		return web.RespondError(ctx, w, err, h.statusCode(err))
-	}
-
 	var req AppRealtimeEndSessionRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -241,10 +229,6 @@ func (h *Handlers) ExecuteRealtimeTool(ctx context.Context, w http.ResponseWrite
 	if h.stories == nil || h.states == nil || h.teams == nil || h.users == nil || h.objectives == nil || h.keyResults == nil || h.search == nil {
 		return web.RespondError(ctx, w, ErrMayaRealtimeToolNotConfigured, http.StatusServiceUnavailable)
 	}
-	if err := h.requireRealtimeInternalUser(ctx, userID); err != nil {
-		return web.RespondError(ctx, w, err, h.statusCode(err))
-	}
-
 	var req AppRealtimeToolRequest
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -302,8 +286,6 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusServiceUnavailable
 	case errors.Is(err, ErrMayaRealtimeToolNotConfigured):
 		return http.StatusServiceUnavailable
-	case errors.Is(err, ErrMayaRealtimeInternalAccessRequired):
-		return http.StatusForbidden
 	case errors.Is(err, maya.ErrInvalidPlanInput):
 		return http.StatusBadRequest
 	default:
@@ -326,24 +308,6 @@ func (h *Handlers) workspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUI
 		return false, fmt.Errorf("check maya access: %w", err)
 	}
 	return allowed, nil
-}
-
-func (h *Handlers) requireRealtimeInternalUser(ctx context.Context, userID uuid.UUID) error {
-	if h.users == nil {
-		return ErrMayaRealtimeToolNotConfigured
-	}
-	currentUser, err := h.users.GetUser(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("get realtime user: %w", err)
-	}
-	return requireRealtimeInternalUserFlag(currentUser)
-}
-
-func requireRealtimeInternalUserFlag(currentUser users.CoreUser) error {
-	if !currentUser.IsInternal {
-		return ErrMayaRealtimeInternalAccessRequired
-	}
-	return nil
 }
 
 func (h *Handlers) startRealtimeVoiceSession(ctx context.Context, workspaceID, userID uuid.UUID) (uuid.UUID, time.Duration, time.Duration, error) {

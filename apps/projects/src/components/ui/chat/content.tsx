@@ -88,7 +88,6 @@ export const ChatContent = () => {
           {needsUpgrade ? <LimitReached isOnPage /> : null}
           <ChatInput
             attachments={chat.attachments}
-            isLiveVoiceVisible={isInternalUser}
             isOnPage
             liveVoiceDisabled={needsUpgrade}
             messagesCount={chat.displayMessages.length}
