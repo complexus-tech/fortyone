@@ -76,7 +76,7 @@ export const SuggestedPrompts = ({
         <Box className="mt-[22px] border-t border-black/[0.07] dark:border-white/[0.07]">
           {POPUP_PROMPTS.slice(fromIndex).map((prompt) => (
             <button
-              className="hover:text-primary focus-visible:ring-primary flex min-h-[52px] w-full items-center border-0 border-b border-black/[0.07] bg-transparent px-px py-3 text-left text-base leading-6 transition-colors focus-visible:ring-2 focus-visible:outline-none dark:border-white/[0.07]"
+              className="text-foreground hover:text-primary focus-visible:ring-primary flex min-h-[52px] w-full items-center border-0 border-b border-black/[0.07] bg-transparent px-px py-3 text-left text-[1.1rem] leading-[1.4rem] transition-colors focus-visible:ring-2 focus-visible:outline-none dark:border-white/[0.07]"
               key={prompt}
               onClick={() => {
                 onPromptSelect(prompt);

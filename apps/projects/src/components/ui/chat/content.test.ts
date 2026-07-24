@@ -52,12 +52,14 @@ describe("ChatContent", () => {
     expect(source).not.toContain('className="size-10 rounded-full"');
   });
 
-  it("uses compact prompt rows in the popup empty state", () => {
+  it("matches Kanban card typography in the popup prompt rows", () => {
     const source = readSource("src/components/ui/chat/suggested-prompts.tsx");
 
     expect(source).toContain("Hi, {name}! Ask me anything!");
     expect(source).toContain("What should I focus on today?");
     expect(source).toContain("min-h-[52px]");
+    expect(source).toContain("text-foreground");
+    expect(source).toContain("text-[1.1rem] leading-[1.4rem]");
     expect(source).toContain("border-b");
   });
 
