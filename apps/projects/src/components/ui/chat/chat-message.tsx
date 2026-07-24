@@ -13,7 +13,8 @@ import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
 import { AnalyticsReport } from "./analytics-report";
-import { Dot, ObjectiveStatusIcon, PriorityIcon, RowWrapper, StoryStatusIcon } from "@/components/ui";
+import { Dot, PriorityIcon, RowWrapper, StoryStatusIcon } from "@/components/ui";
+import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { TeamColor } from "@/components/ui/team-color";
 import { slugify } from "@/utils";
 
