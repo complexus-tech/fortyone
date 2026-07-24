@@ -220,7 +220,11 @@ export const Footer = () => {
         <Copyright />
         <Flex className="mt-6" justify="between">
           <Text color="muted" fontSize="sm">
-            FortyOne is an open source product of Complexus LLC.
+            Product of{" "}
+            <a className="text-inherit underline" href="https://complexus.tech">
+              Complexus
+            </a>
+            .
           </Text>
           <Flex className="flex gap-5">
             <Tooltip title="System">
