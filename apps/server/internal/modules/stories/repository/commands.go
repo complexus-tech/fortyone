@@ -1047,9 +1047,18 @@ func (r *repo) UpdateStoryStatus(ctx context.Context, storyID uuid.UUID, workspa
 
 func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
 	query := `
-		INSERT INTO story_associations (from_story_id, to_story_id, association_type, workspace_id)
-		VALUES (:from_story_id, :to_story_id, :association_type, :workspace_id)
-		RETURNING id
+		WITH inserted AS (
+			INSERT INTO story_associations (from_story_id, to_story_id, association_type, workspace_id)
+			VALUES (:from_story_id, :to_story_id, :association_type, :workspace_id)
+			RETURNING id, from_story_id, to_story_id
+		)
+		SELECT
+			inserted.id,
+			from_story.title AS from_story_title,
+			to_story.title AS to_story_title
+		FROM inserted
+		INNER JOIN stories from_story ON from_story.id = inserted.from_story_id
+		INNER JOIN stories to_story ON to_story.id = inserted.to_story_id
 	`
 
 	params := map[string]any{
@@ -1059,14 +1068,18 @@ func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, assoc
 		"workspace_id":     workspaceID,
 	}
 
-	var id uuid.UUID
+	var association struct {
+		ID             uuid.UUID `db:"id"`
+		FromStoryTitle string    `db:"from_story_title"`
+		ToStoryTitle   string    `db:"to_story_title"`
+	}
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to prepare insert association: %w", err)
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &id, params); err != nil {
+	if err := stmt.GetContext(ctx, &association, params); err != nil {
 		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to insert association: %w", err)
 	}
 
@@ -1081,10 +1094,12 @@ func (r *repo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, assoc
 	coreToStory := toCoreStory(toStory)
 
 	return stories.CoreStoryAssociation{
-		ID:          id,
-		FromStoryID: fromID,
-		ToStoryID:   toID,
-		Type:        associationType,
+		ID:             association.ID,
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		FromStoryTitle: association.FromStoryTitle,
+		ToStoryTitle:   association.ToStoryTitle,
 		Story: stories.CoreStoryList{
 			ID:          coreToStory.ID,
 			SequenceID:  coreToStory.SequenceID,
@@ -1120,11 +1135,17 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 					to_story_id = :to_story_id,
 					association_type = :association_type
 				WHERE id = :id AND workspace_id = :workspace_id
-				RETURNING id
+				RETURNING id, from_story_id, to_story_id
 			)
-			SELECT updated.id, previous.association_type AS previous_type
+			SELECT
+				updated.id,
+				previous.association_type AS previous_type,
+				from_story.title AS from_story_title,
+				to_story.title AS to_story_title
 			FROM updated
 			CROSS JOIN previous
+			INNER JOIN stories from_story ON from_story.id = updated.from_story_id
+			INNER JOIN stories to_story ON to_story.id = updated.to_story_id
 		`
 
 	params := map[string]any{
@@ -1136,8 +1157,10 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 	}
 
 	var result struct {
-		ID           uuid.UUID `db:"id"`
-		PreviousType string    `db:"previous_type"`
+		ID             uuid.UUID `db:"id"`
+		PreviousType   string    `db:"previous_type"`
+		FromStoryTitle string    `db:"from_story_title"`
+		ToStoryTitle   string    `db:"to_story_title"`
 	}
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -1157,11 +1180,13 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 	coreToStory := toCoreStory(toStory)
 
 	return stories.CoreStoryAssociation{
-		ID:           result.ID,
-		FromStoryID:  fromID,
-		ToStoryID:    toID,
-		Type:         associationType,
-		PreviousType: &result.PreviousType,
+		ID:             result.ID,
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		PreviousType:   &result.PreviousType,
+		FromStoryTitle: result.FromStoryTitle,
+		ToStoryTitle:   result.ToStoryTitle,
 		Story: stories.CoreStoryList{
 			ID:          coreToStory.ID,
 			SequenceID:  coreToStory.SequenceID,
@@ -1186,9 +1211,21 @@ func (r *repo) UpdateAssociation(ctx context.Context, associationID, fromID, toI
 // RemoveAssociation removes an association between two stories.
 func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
 	query := `
-		DELETE FROM story_associations
-		WHERE id = :id AND workspace_id = :workspace_id
-		RETURNING id, from_story_id, to_story_id, association_type
+		WITH deleted AS (
+			DELETE FROM story_associations
+			WHERE id = :id AND workspace_id = :workspace_id
+			RETURNING id, from_story_id, to_story_id, association_type
+		)
+		SELECT
+			deleted.id,
+			deleted.from_story_id,
+			deleted.to_story_id,
+			deleted.association_type,
+			from_story.title AS from_story_title,
+			to_story.title AS to_story_title
+		FROM deleted
+		INNER JOIN stories from_story ON from_story.id = deleted.from_story_id
+		INNER JOIN stories to_story ON to_story.id = deleted.to_story_id
 	`
 
 	params := map[string]any{
@@ -1203,20 +1240,24 @@ func (r *repo) RemoveAssociation(ctx context.Context, associationID, workspaceID
 	defer stmt.Close()
 
 	var association struct {
-		ID          uuid.UUID `db:"id"`
-		FromStoryID uuid.UUID `db:"from_story_id"`
-		ToStoryID   uuid.UUID `db:"to_story_id"`
-		Type        string    `db:"association_type"`
+		ID             uuid.UUID `db:"id"`
+		FromStoryID    uuid.UUID `db:"from_story_id"`
+		ToStoryID      uuid.UUID `db:"to_story_id"`
+		Type           string    `db:"association_type"`
+		FromStoryTitle string    `db:"from_story_title"`
+		ToStoryTitle   string    `db:"to_story_title"`
 	}
 	if err := stmt.GetContext(ctx, &association, params); err != nil {
 		return stories.CoreStoryAssociation{}, fmt.Errorf("failed to delete association: %w", err)
 	}
 
 	return stories.CoreStoryAssociation{
-		ID:          association.ID,
-		FromStoryID: association.FromStoryID,
-		ToStoryID:   association.ToStoryID,
-		Type:        association.Type,
+		ID:             association.ID,
+		FromStoryID:    association.FromStoryID,
+		ToStoryID:      association.ToStoryID,
+		Type:           association.Type,
+		FromStoryTitle: association.FromStoryTitle,
+		ToStoryTitle:   association.ToStoryTitle,
 	}, nil
 }
 

@@ -25,10 +25,12 @@ func (r *activityRecordingRepo) UpdateLabels(ctx context.Context, id uuid.UUID, 
 
 func (r *activityRecordingRepo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
 	return CoreStoryAssociation{
-		ID:          uuid.New(),
-		FromStoryID: fromID,
-		ToStoryID:   toID,
-		Type:        associationType,
+		ID:             uuid.New(),
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		FromStoryTitle: "Source story",
+		ToStoryTitle:   "Related story",
 		Story: CoreStoryList{
 			ID:         toID,
 			SequenceID: 62,
@@ -39,11 +41,13 @@ func (r *activityRecordingRepo) AddAssociation(ctx context.Context, fromID, toID
 
 func (r *activityRecordingRepo) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
 	return CoreStoryAssociation{
-		ID:           associationID,
-		FromStoryID:  fromID,
-		ToStoryID:    toID,
-		Type:         associationType,
-		PreviousType: previousAssociationTypePtr(r.previousAssociationType),
+		ID:             associationID,
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		PreviousType:   previousAssociationTypePtr(r.previousAssociationType),
+		FromStoryTitle: "Source story",
+		ToStoryTitle:   "Updated related story",
 		Story: CoreStoryList{
 			ID:         toID,
 			SequenceID: 63,
@@ -149,6 +153,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Reason == nil || *fromActivity.Reason != "association_added" {
 		t.Fatalf("expected association_added reason, got %v", fromActivity.Reason)
 	}
+	if fromActivity.CurrentValue != "Related story" {
+		t.Fatalf("expected related story title, got %q", fromActivity.CurrentValue)
+	}
 
 	toActivity, ok := activityByStoryID[toStoryID]
 	if !ok {
@@ -159,6 +166,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	}
 	if toActivity.Reason == nil || *toActivity.Reason != "association_added" {
 		t.Fatalf("expected association_added reason, got %v", toActivity.Reason)
+	}
+	if toActivity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", toActivity.CurrentValue)
 	}
 }
 
@@ -196,6 +206,9 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Reason == nil || *fromActivity.Reason != "association_updated" {
 		t.Fatalf("expected association_updated reason, got %v", fromActivity.Reason)
 	}
+	if fromActivity.CurrentValue != "Updated related story" {
+		t.Fatalf("expected related story title, got %q", fromActivity.CurrentValue)
+	}
 
 	toActivity := activityByStoryID[toStoryID]
 	if toActivity.Field != "duplicated_by_id" {
@@ -207,6 +220,9 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	if toActivity.Reason == nil || *toActivity.Reason != "association_updated" {
 		t.Fatalf("expected association_updated reason, got %v", toActivity.Reason)
 	}
+	if toActivity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", toActivity.CurrentValue)
+	}
 }
 
 func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
@@ -215,10 +231,12 @@ func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
 	toStoryID := uuid.New()
 	repo := &activityRecordingRepo{
 		removed: CoreStoryAssociation{
-			ID:          associationID,
-			FromStoryID: fromStoryID,
-			ToStoryID:   toStoryID,
-			Type:        "related",
+			ID:             associationID,
+			FromStoryID:    fromStoryID,
+			ToStoryID:      toStoryID,
+			Type:           "related",
+			FromStoryTitle: "Source story",
+			ToStoryTitle:   "Related story",
 		},
 	}
 	service := newActivityRecordingService(repo)
@@ -245,10 +263,16 @@ func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
 	if activity := activityByStoryID[fromStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
 		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
 	}
+	if activity := activityByStoryID[fromStoryID]; activity.CurrentValue != "Related story" {
+		t.Fatalf("expected related story title, got %q", activity.CurrentValue)
+	}
 	if _, ok := activityByStoryID[toStoryID]; !ok {
 		t.Fatalf("expected activity for target story %s", toStoryID)
 	}
 	if activity := activityByStoryID[toStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
 		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
+	}
+	if activity := activityByStoryID[toStoryID]; activity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", activity.CurrentValue)
 	}
 }

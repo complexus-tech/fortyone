@@ -1302,6 +1302,12 @@ func associationOldValues(assoc CoreStoryAssociation) (any, any) {
 }
 
 func (s *Service) associationActivityValue(storyID uuid.UUID, assoc CoreStoryAssociation) string {
+	if storyID == assoc.FromStoryID && assoc.FromStoryTitle != "" {
+		return assoc.FromStoryTitle
+	}
+	if storyID == assoc.ToStoryID && assoc.ToStoryTitle != "" {
+		return assoc.ToStoryTitle
+	}
 	if assoc.Story.ID == storyID && assoc.Story.Title != "" {
 		return assoc.Story.Title
 	}
