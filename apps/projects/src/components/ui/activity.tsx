@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Badge } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
+import { useSession } from "@/lib/auth/client";
 import {
   CalendarIcon,
   EstimateIcon,
@@ -204,8 +205,12 @@ export const Activity = ({
   const { data: allLabels = [] } = useLabels();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
+  const { data: session } = useSession();
   const storyTerm = getTermDisplay("storyTerm");
   const member = user;
+  const isSelfActivity = session?.user.id === member.id;
+  const actorDisplayName = isSelfActivity ? "You" : member.fullName;
+  const actorDisplayUsername = isSelfActivity ? "you" : member.username;
   const activityAssignees = mayaAssignee
     ? [...members.filter(({ id }) => id !== mayaAssignee.id), mayaAssignee]
     : members;
@@ -529,13 +534,15 @@ export const Activity = ({
                       "mb-0": member.isSystem,
                     })}
                     href={member.isSystem ? "" : `/profile/${member.id}`}
-                  >
+                >
                     <Text fontSize="md" fontWeight="medium">
-                      {member.fullName}
+                      {actorDisplayName}
                     </Text>
-                    <Text color="muted" fontSize="md">
-                      ({member.username})
-                    </Text>
+                    {!isSelfActivity ? (
+                      <Text color="muted" fontSize="md">
+                        ({member.username})
+                      </Text>
+                    ) : null}
                   </Link>
                   {!member.isSystem ? (
                     <Button
@@ -581,7 +588,7 @@ export const Activity = ({
               className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
               fontWeight="medium"
             >
-              {member.username}
+              {actorDisplayUsername}
             </Text>
           </Flex>
         </Tooltip>
