@@ -77,10 +77,6 @@ const resources = [
     href: "/blog",
   },
   {
-    title: "GitHub",
-    href: "https://github.com/complexus-tech/fortyone",
-  },
-  {
     title: "Pitch",
     href: "https://pitch.fortyone.app",
   },
