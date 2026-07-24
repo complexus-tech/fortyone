@@ -47,7 +47,7 @@ const terminalStatusFilters: FeedbackFilter[] = [
 ];
 
 const trashFilter: FeedbackFilter = {
-  label: "Trash",
+  label: "Deleted",
   value: "trashed",
 };
 
