@@ -40,13 +40,23 @@ const StoryRow = ({
   return (
     <Link href={withWorkspace(`/story/${id}/${slugify(title)}`)}>
       <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
-        <Flex align="center" className="relative select-none" gap={2}>
-          <Flex align="center" gap={2}>
-            <Text className="hidden opacity-80 md:block" color="muted">
+        <Flex
+          align="center"
+          className="relative min-w-0 flex-1 select-none"
+          gap={2}
+        >
+          <Flex align="center" className="min-w-0" gap={2}>
+            <Text
+              className="hidden shrink-0 whitespace-nowrap opacity-80 md:block"
+              color="muted"
+            >
               {storyReference}
             </Text>
-            <PriorityIcon className="relative -top-px" priority={priority} />
-            <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
+            <PriorityIcon
+              className="relative -top-px shrink-0"
+              priority={priority}
+            />
+            <Text className="min-w-0 truncate hover:opacity-90">{title}</Text>
           </Flex>
         </Flex>
 

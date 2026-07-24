@@ -226,7 +226,7 @@ export const Activity = ({
     if (isLinkedUrl && typeof newValue === "string") {
       linkedValue = (
         <a
-          className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
+          className="inline-block min-w-0 truncate text-sm text-black underline md:text-[0.95rem] dark:text-white"
           href={newValue}
           rel="noopener noreferrer"
           target="_blank"
@@ -238,7 +238,7 @@ export const Activity = ({
       linkedValue = (
         <Text
           as="span"
-          className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+          className="inline-block min-w-0 truncate text-sm text-black md:text-[0.95rem] dark:text-white"
           fontWeight="medium"
         >
           {currentValue}
@@ -433,7 +433,7 @@ export const Activity = ({
       return (
         <Text
           as="span"
-          className="text-sm md:text-[0.95rem]"
+          className="shrink-0 text-sm md:text-[0.95rem]"
           color="muted"
           key={`text-${segment.text}`}
         >
@@ -442,16 +442,24 @@ export const Activity = ({
       );
     }
 
+    const isTruncatableValue =
+      segment.type === "currentValue" &&
+      (field === "title" || ASSOCIATION_ACTIVITY_FIELDS.has(field));
+
     return (
       <Text
         as="span"
-        className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+        className={cn(
+          "inline-block text-sm text-black md:text-[0.95rem] dark:text-white",
+          isTruncatableValue ? "min-w-0 truncate" : "shrink-0",
+        )}
         fontWeight="medium"
         key={
           segment.type === "oldValue"
             ? `oldValue-${segment.value}`
             : segment.type
         }
+        title={isTruncatableValue ? currentValue : undefined}
       >
         {(() => {
           if (
@@ -495,7 +503,7 @@ export const Activity = ({
           "border-border pointer-events-none absolute top-0 left-4 z-0 h-full border-l border-dashed",
         )}
       />
-      <Flex align="center" className="z-1" gap={1}>
+      <Flex align="center" className="z-1 min-w-0" gap={1}>
         <Tooltip
           className="py-2.5"
           title={
@@ -548,7 +556,7 @@ export const Activity = ({
             </Box>
           }
         >
-          <Flex align="center" className="cursor-pointer" gap={1}>
+          <Flex align="center" className="shrink-0 cursor-pointer" gap={1}>
             <Box
               className={cn(
                 "bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]",
@@ -577,7 +585,7 @@ export const Activity = ({
             </Text>
           </Flex>
         </Tooltip>
-        <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
+        <Box className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm md:text-[0.95rem]">
           {type === "update" ? (
             activityCopy.segments.map(renderUpdateSegment)
           ) : (
@@ -595,7 +603,7 @@ export const Activity = ({
           ) : null}
           <Text
             as="span"
-            className="mx-0.5 text-sm md:text-[0.95rem]"
+            className="mx-0.5 shrink-0 text-sm md:text-[0.95rem]"
             color="muted"
           >
             ·
