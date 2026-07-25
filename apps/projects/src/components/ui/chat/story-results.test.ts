@@ -1,7 +1,12 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import type { ToolMessagePart } from "./tool-output-policy";
-import { getStoryResults, isStoryResultsOutput } from "./story-results-data";
+import {
+  getStoryResults,
+  getVisibleStoryResults,
+  isStoryResultsOutput,
+  STORY_RESULTS_PREVIEW_LIMIT,
+} from "./story-results-data";
 import {
   isRenderableToolPart,
   isSupportingToolType,
@@ -122,5 +127,20 @@ describe("story results generative UI", () => {
     expect(isSupportingToolType(statusesPart.type)).toBe(true);
     expect(isRenderableToolPart(statusesPart)).toBe(false);
     expect(isRenderableToolPart(storiesPart)).toBe(true);
+  });
+
+  it("shows five stories initially and can reveal the complete result", () => {
+    const stories = Array.from(
+      { length: STORY_RESULTS_PREVIEW_LIMIT + 3 },
+      (_, index) => ({
+        id: `story-${index}`,
+        priority: "Medium" as const,
+        statusId: "status-started",
+        title: `Story ${index}`,
+      }),
+    );
+
+    expect(getVisibleStoryResults(stories, false)).toHaveLength(5);
+    expect(getVisibleStoryResults(stories, true)).toHaveLength(8);
   });
 });

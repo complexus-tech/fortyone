@@ -7,6 +7,8 @@ export type StoryResult = {
   title: string;
 };
 
+export const STORY_RESULTS_PREVIEW_LIMIT = 5;
+
 type StoryResultsOutput = Record<string, unknown> & {
   stories: unknown[];
   success: true;
@@ -78,3 +80,8 @@ export const getStoryResults = (output: unknown): StoryResult[] => {
 
   return results;
 };
+
+export const getVisibleStoryResults = (
+  stories: StoryResult[],
+  showAll: boolean,
+) => (showAll ? stories : stories.slice(0, STORY_RESULTS_PREVIEW_LIMIT));

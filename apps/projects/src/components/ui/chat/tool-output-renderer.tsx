@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Box, Button, Flex, Text } from "ui";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
@@ -23,6 +24,10 @@ const getSprintBurndownData = (output: unknown) => {
     : [];
 };
 
+const GenerativeOutputFrame = ({ children }: { children: ReactNode }) => (
+  <div className="mb-3 w-full max-w-full min-w-0">{children}</div>
+);
+
 export const ToolOutputRenderer = ({
   onPromptSelect,
   part,
@@ -35,7 +40,11 @@ export const ToolOutputRenderer = ({
   if (!isRenderableToolPart(part)) return null;
 
   if (isStoryResultToolType(part.type)) {
-    return <StoryResults output={part.output} />;
+    return (
+      <GenerativeOutputFrame>
+        <StoryResults output={part.output} />
+      </GenerativeOutputFrame>
+    );
   }
 
   const output = asToolOutputRecord(part.output);
@@ -44,7 +53,7 @@ export const ToolOutputRenderer = ({
   ) : null;
   const sprintAnalytics =
     part.type === "tool-getSprintAnalyticsTool" ? (
-      <Box className="mb-3">
+      <Box>
         <Text as="h3" className="mt-4 mb-1 text-xl font-semibold antialiased">
           Burndown graph
         </Text>
@@ -59,28 +68,30 @@ export const ToolOutputRenderer = ({
 
   if (part.type === "tool-suggestions") {
     return (
-      <Flex className="mt-4" gap={2} wrap>
-        {getToolSuggestions(part.output).map((suggestion) => (
-          <Button
-            className="truncate"
-            color="tertiary"
-            key={suggestion}
-            onClick={() => {
-              onPromptSelect(suggestion);
-            }}
-            size="sm"
-          >
-            {suggestion}
-          </Button>
-        ))}
-      </Flex>
+      <GenerativeOutputFrame>
+        <Flex className="mt-4" gap={2} wrap>
+          {getToolSuggestions(part.output).map((suggestion) => (
+            <Button
+              className="truncate"
+              color="tertiary"
+              key={suggestion}
+              onClick={() => {
+                onPromptSelect(suggestion);
+              }}
+              size="md"
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </Flex>
+      </GenerativeOutputFrame>
     );
   }
 
   return (
-    <>
+    <GenerativeOutputFrame>
       {report}
       {sprintAnalytics}
-    </>
+    </GenerativeOutputFrame>
   );
 };
