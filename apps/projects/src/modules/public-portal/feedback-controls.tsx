@@ -46,7 +46,7 @@ export const NewFeedbackButton = ({
     editorProps: {
       attributes: {
         "aria-label": "Feedback description",
-        class: "min-h-40 outline-none",
+        class: "min-h-24 outline-none",
       },
     },
     extensions: [
@@ -97,7 +97,7 @@ export const NewFeedbackButton = ({
         New Feedback
       </Button>
       <Dialog.Content className="max-w-4xl" hideClose>
-        <Dialog.Header className="flex items-center justify-between px-6 pt-6">
+        <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-0">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
               <Menu.Button>
@@ -148,12 +148,12 @@ export const NewFeedbackButton = ({
           </Dialog.Title>
           <Dialog.Close />
         </Dialog.Header>
-        <Dialog.Body className="pt-2">
+        <Dialog.Body className="pt-0 pb-3">
           <Box>
             <Input
               aria-label="Feedback title"
               autoFocus
-              className="h-auto border-0 bg-transparent px-0 py-3 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
+              className="h-auto border-0 bg-transparent px-0 pt-1 pb-1 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
               maxLength={MAX_FEEDBACK_TITLE_LENGTH}
               onChange={(event) => {
                 setTitle(event.target.value);
@@ -164,7 +164,7 @@ export const NewFeedbackButton = ({
           </Box>
           <TextEditor
             aria-label="Feedback description"
-            className="min-h-40"
+            className="min-h-24"
             editor={descriptionEditor}
           />
         </Dialog.Body>
