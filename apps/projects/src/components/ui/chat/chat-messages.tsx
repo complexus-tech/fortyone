@@ -6,11 +6,11 @@ import type { ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { useTerminology } from "@/hooks";
+import { ChatMessage } from "./chat-message";
 import {
-  ChatMessage,
   getMessageProgressLabel,
   hasVisibleMessageContent,
-} from "./chat-message";
+} from "./chat-message-utils";
 import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
@@ -47,12 +47,7 @@ export const ChatMessages = ({
     (message) =>
       message.role === "assistant" && message.metadata?.source === "voice",
   )?.id;
-  const visibleMessages = messages.filter((message) =>
-    hasVisibleMessageContent(
-      message,
-      isWorking && message.id === latestAssistantMessageId,
-    ),
-  );
+  const visibleMessages = messages.filter(hasVisibleMessageContent);
   let rawProgressLabel: string | undefined;
   if (isWorking) {
     rawProgressLabel = latestAssistantMessage
@@ -99,12 +94,8 @@ export const ChatMessages = ({
     >
       <Flex direction="column" gap={6}>
         {visibleMessages.map((message) => {
-          const deferToolOutputs =
-            isWorking && message.id === latestAssistantMessageId;
-
           return (
             <ChatMessage
-              deferToolOutputs={deferToolOutputs}
               isAnimating={
                 (status === "streaming" &&
                   message.id === latestAssistantMessageId) ||

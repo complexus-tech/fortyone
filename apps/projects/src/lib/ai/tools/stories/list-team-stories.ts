@@ -196,18 +196,24 @@ export const listTeamStories = tool({
       }
 
       const result = await getGroupedStories(ctx, params);
+      const returnedStoryCount = result.groups.reduce(
+        (count, group) => count + group.stories.length,
+        0,
+      );
 
       return {
         success: true,
+        kind: "story-list",
         stories: result.groups.map((group) => ({
           ...group,
           stories: group.stories,
         })),
+        returnedCount: returnedStoryCount,
         meta: result.meta,
         userRole,
         message: teamId
-          ? `Found ${result.meta.totalGroups} story groups in this team.`
-          : `Found ${result.meta.totalGroups} story groups in this workspace.`,
+          ? `Found ${returnedStoryCount} ${returnedStoryCount === 1 ? "story" : "stories"} in this team.`
+          : `Found ${returnedStoryCount} ${returnedStoryCount === 1 ? "story" : "stories"} in this workspace.`,
       };
     } catch (error) {
       return {

@@ -42,4 +42,17 @@ describe("ChatMessage", () => {
       "link its human-readable reference or title",
     );
   });
+
+  it("renders text and supported tool outputs in their original part order", () => {
+    const source = readSource("src/components/ui/chat/chat-message.tsx");
+    const utilsSource = readSource(
+      "src/components/ui/chat/chat-message-utils.ts",
+    );
+
+    expect(source).toContain("message.parts.map");
+    expect(source).toContain("<ToolOutputRenderer");
+    expect(utilsSource).toContain("isRenderableToolPart(part)");
+    expect(source).not.toContain("const reportParts");
+    expect(source).not.toContain("const suggestionParts");
+  });
 });

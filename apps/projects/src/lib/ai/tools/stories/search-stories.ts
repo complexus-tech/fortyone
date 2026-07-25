@@ -36,7 +36,7 @@ export const searchStories = tool({
 
   execute: async (
     { searchQuery: query, teamId, statusId, assigneeId, priority, limit = 20 },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -48,7 +48,7 @@ export const searchStories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -70,6 +70,7 @@ export const searchStories = tool({
 
       return {
         success: true,
+        kind: "story-list",
         stories: result.stories,
         totalCount: result.totalStories,
         userRole,

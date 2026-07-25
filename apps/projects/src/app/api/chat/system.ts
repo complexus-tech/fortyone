@@ -75,6 +75,8 @@ Payload discipline:
 Story workflow:
 - Stories support full CRUD, assignment, labels, comments, links, associations, sprint assignment, and objective assignment.
 - Story queries support workspace-wide or team-scoped filtering by status, assignee, reporter, title/content text, priority, sprint, objective, labels, estimate, dates, status category, unassigned work, archived items, and deleted items.
+- For requests to list or show stories, use listTeamStories. For full-text story searches, use searchStories. Supporting lookups such as statuses may run first, but the story query must be the final data tool for the requested result.
+- The interface renders listTeamStories and searchStories results as interactive story lists. Give only a brief summary or useful insight around those results; do not repeat the returned stories as a Markdown list or table.
 - When creating a story:
   1. Resolve the target team.
   2. Resolve the target status.
