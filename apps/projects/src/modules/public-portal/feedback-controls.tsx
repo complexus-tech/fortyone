@@ -97,7 +97,7 @@ export const NewFeedbackButton = ({
         New Feedback
       </Button>
       <Dialog.Content className="max-w-4xl" hideClose>
-        <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-0">
+        <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-1">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
               <Menu.Button>
@@ -148,7 +148,7 @@ export const NewFeedbackButton = ({
           </Dialog.Title>
           <Dialog.Close />
         </Dialog.Header>
-        <Dialog.Body className="pt-0 pb-3">
+        <Dialog.Body className="pt-3 pb-3">
           <Box>
             <Input
               aria-label="Feedback title"
