@@ -10,11 +10,20 @@ describe("ChatMessage", () => {
   it("uses story-list surface colors for user prompts instead of inverse colors", () => {
     const source = readSource("src/components/ui/chat/chat-message.tsx");
 
-    expect(source).toContain(
-      "bg-state-hover/80 rounded-tr-md dark:bg-white/[0.08]",
-    );
+    expect(source).toContain("bg-state-hover/80");
+    expect(source).toContain("dark:bg-white/[0.08]");
     expect(source).not.toContain("text-foreground-inverse");
     expect(source).not.toContain("bg-background-inverse rounded-tr-md");
+  });
+
+  it("lets short user prompts use their intrinsic width", () => {
+    const source = readSource("src/components/ui/chat/chat-message.tsx");
+
+    expect(source).toContain("w-fit max-w-[80%] flex-none items-end");
+    expect(source).toContain(
+      "bg-state-hover/80 w-fit rounded-tr-md break-words",
+    );
+    expect(source).toContain("max-w-full flex-1");
   });
 
   it("does not force text colors in chat message markdown", () => {

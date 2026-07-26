@@ -117,22 +117,18 @@ export const ChatMessage = ({
           />
         ) : null}
         <Flex
-          className={cn("min-w-0 flex-1", {
-            "items-end": message.role === "user",
-            "max-w-[80%]": message.role === "user",
-            "max-w-full": message.role === "assistant",
+          className={cn("min-w-0", {
+            "w-fit max-w-[80%] flex-none items-end": message.role === "user",
+            "max-w-full flex-1": message.role === "assistant",
           })}
           direction="column"
         >
           <Box
-            className={cn(
-              "mb-2 w-full max-w-full min-w-0 rounded-2xl px-4 py-3",
-              {
-                "bg-state-hover/80 rounded-tr-md dark:bg-white/[0.08]":
-                  message.role === "user",
-                "bg-transparent p-0": message.role === "assistant",
-              },
-            )}
+            className={cn("mb-2 max-w-full min-w-0 rounded-2xl px-4 py-3", {
+              "bg-state-hover/80 w-fit rounded-tr-md break-words dark:bg-white/[0.08]":
+                message.role === "user",
+              "w-full bg-transparent p-0": message.role === "assistant",
+            })}
           >
             <RenderMessage
               isAnimating={isAnimating}
