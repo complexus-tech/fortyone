@@ -74,6 +74,8 @@ describe("ChatMessage", () => {
     expect(reportSource).toContain(
       "Shows completed and assigned work for each team member.",
     );
+    expect(reportSource).toContain(".slice(0, 5)");
+    expect(reportSource).toContain("maxLabelLength={12}");
     expect(rendererSource).not.toContain("getSprintBurndownData");
     expect(rendererSource).not.toContain("Burndown graph");
     expect(promptSource).toContain(

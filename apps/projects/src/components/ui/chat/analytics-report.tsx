@@ -147,13 +147,15 @@ const PillList = ({
 };
 
 const CompactBarChart = ({
-  data,
-  xKey,
   bars,
+  data,
+  maxLabelLength = 15,
+  xKey,
 }: {
-  data: ChartRow[];
-  xKey: string;
   bars: { key: string; color: string; name?: string }[];
+  data: ChartRow[];
+  maxLabelLength?: number;
+  xKey: string;
 }) => {
   const { resolvedTheme } = useTheme();
   if (!data.length) return <EmptyChart />;
@@ -175,7 +177,7 @@ const CompactBarChart = ({
           dataKey={xKey}
           minTickGap={12}
           tick={{ fill: tickColor, fontSize: 13 }}
-          tickFormatter={formatCategoryTick}
+          tickFormatter={(value) => formatCategoryTick(value, maxLabelLength)}
           tickLine={{ stroke: axisColor }}
         />
         <YAxis
@@ -298,9 +300,9 @@ const formatChartDate = (value: unknown) => {
   return Number.isNaN(date.getTime()) ? String(value) : format(date, "MMM d");
 };
 
-const formatCategoryTick = (value: unknown) => {
+const formatCategoryTick = (value: unknown, maxLength = 15) => {
   const label = String(value ?? "");
-  return label.length > 15 ? `${label.slice(0, 14)}…` : label;
+  return label.length > maxLength ? `${label.slice(0, maxLength - 1)}…` : label;
 };
 
 const AnalyticsChartTooltip = ({
@@ -873,10 +875,23 @@ export const AnalyticsReport = ({
     const overview = asRecord(analytics.overview);
     const storyBreakdown = asRecord(analytics.storyBreakdown);
     const burndown = asSingleSprintBurndown(analytics.burndown);
-    const teamAllocation = asRows(analytics.teamAllocation).filter(
-      (member) =>
-        Number(member.assigned ?? 0) > 0 || Number(member.completed ?? 0) > 0,
-    );
+    const teamAllocation = [...asRows(analytics.teamAllocation)]
+      .filter(
+        (member) =>
+          Number(member.assigned ?? 0) > 0 || Number(member.completed ?? 0) > 0,
+      )
+      .sort((firstMember, secondMember) => {
+        const assignedDifference =
+          Number(secondMember.assigned ?? 0) -
+          Number(firstMember.assigned ?? 0);
+        if (assignedDifference) return assignedDifference;
+
+        return (
+          Number(secondMember.completed ?? 0) -
+          Number(firstMember.completed ?? 0)
+        );
+      })
+      .slice(0, 5);
 
     return (
       <Box className="mt-3 space-y-4">
@@ -927,6 +942,7 @@ export const AnalyticsReport = ({
               { key: "assigned", color: COLORS.primary, name: "Assigned" },
             ]}
             data={teamAllocation}
+            maxLabelLength={12}
             xKey="username"
           />
         </ChartSection>
