@@ -79,7 +79,21 @@ describe("ChatMessage", () => {
     expect(rendererSource).not.toContain("getSprintBurndownData");
     expect(rendererSource).not.toContain("Burndown graph");
     expect(promptSource).toContain(
-      "After a single-sprint generative report, give only one brief summary",
+      "After a single-sprint generative report, add at most one brief interpretation",
+    );
+  });
+
+  it("tells Maya never to duplicate generative UI data in text", () => {
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(promptSource).toContain(
+      "Treat every generative UI result as the canonical, complete presentation of its data",
+    );
+    expect(promptSource).toContain(
+      "Never repeat, enumerate, summarize, or reformat information already visible in generative UI",
+    );
+    expect(promptSource).toContain(
+      "normally return no follow-up text after the UI",
     );
   });
 });
