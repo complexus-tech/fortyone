@@ -70,14 +70,23 @@ const EmptyChart = () => (
 const ChartSection = ({
   title,
   children,
+  description,
 }: {
   title: string;
   children: ReactNode;
+  description?: string;
 }) => (
   <Box className="space-y-2">
-    <Text className="text-foreground font-semibold dark:text-white">
-      {title}
-    </Text>
+    <Box>
+      <Text className="text-foreground font-semibold dark:text-white">
+        {title}
+      </Text>
+      {description ? (
+        <Text className="mt-1 text-base leading-6" color="muted">
+          {description}
+        </Text>
+      ) : null}
+    </Box>
     {children}
   </Box>
 );
@@ -894,7 +903,10 @@ export const AnalyticsReport = ({
             { label: "Blocked", value: Number(storyBreakdown.blocked ?? 0) },
           ]}
         />
-        <ChartSection title="Burndown">
+        <ChartSection
+          description="Tracks remaining work against the ideal sprint pace."
+          title="Burndown"
+        >
           {burndown.length ? (
             <BurndownChart
               burndownData={burndown}
@@ -905,7 +917,10 @@ export const AnalyticsReport = ({
             <EmptyChart />
           )}
         </ChartSection>
-        <ChartSection title="Team allocation">
+        <ChartSection
+          description="Shows completed and assigned work for each team member."
+          title="Team allocation"
+        >
           <CompactBarChart
             bars={[
               { key: "completed", color: COLORS.success, name: "Completed" },

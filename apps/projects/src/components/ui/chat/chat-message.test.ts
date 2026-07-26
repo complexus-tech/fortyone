@@ -67,7 +67,13 @@ describe("ChatMessage", () => {
 
     expect(reportSource).toContain("<BurndownChart");
     expect(reportSource).toContain("workingDays={asWorkingDays");
-    expect(reportSource).toContain('<ChartSection title="Team allocation">');
+    expect(reportSource).toContain('title="Team allocation"');
+    expect(reportSource).toContain(
+      "Tracks remaining work against the ideal sprint pace.",
+    );
+    expect(reportSource).toContain(
+      "Shows completed and assigned work for each team member.",
+    );
     expect(rendererSource).not.toContain("getSprintBurndownData");
     expect(rendererSource).not.toContain("Burndown graph");
     expect(promptSource).toContain(
