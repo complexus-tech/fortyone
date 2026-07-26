@@ -16,4 +16,11 @@ describe("MayaChat", () => {
     expect(source).not.toContain("isLiveVoiceVisible");
     expect(source).toContain("liveVoiceDisabled={needsUpgrade}");
   });
+
+  it("keeps the full Maya page at a focused reading width", () => {
+    const source = readSource("src/modules/maya/components/index.tsx");
+
+    expect(source).toContain('className="mx-auto flex max-w-3xl flex-col"');
+    expect(source).not.toContain("max-w-4xl");
+  });
 });

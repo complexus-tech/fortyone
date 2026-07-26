@@ -73,7 +73,7 @@ export const MayaChat = () => {
         handleChatSelect={handleChatSelect}
         handleNewChat={handleNewChat}
       />
-      <BodyContainer className="mx-auto flex max-w-4xl flex-col">
+      <BodyContainer className="mx-auto flex max-w-3xl flex-col">
         <ChatMessages
           isVoiceSpeaking={realtimeVoice.isSpeaking}
           messages={displayMessages}
