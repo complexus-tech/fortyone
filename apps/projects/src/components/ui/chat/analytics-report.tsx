@@ -1,12 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { format } from "date-fns";
 import { cn } from "lib";
 import { Box, Button, Flex, Text } from "ui";
+import { useTheme } from "next-themes";
+import type { TooltipProps } from "recharts";
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -15,6 +17,8 @@ import {
   YAxis,
 } from "recharts";
 import { useTerminology } from "@/hooks";
+import { BurndownChart } from "@/modules/sprints/stories/burndown";
+import type { SprintAnalytics as SingleSprintAnalytics } from "@/modules/sprints/types";
 
 type ChartRow = Record<string, string | number | null | undefined>;
 
@@ -43,7 +47,7 @@ const MetricGrid = ({ metrics }: { metrics: Metric[] }) => (
   <Box className="grid grid-cols-2 gap-2 md:grid-cols-3">
     {metrics.map((metric) => (
       <Box
-        className="border-border/70 bg-surface-muted/30 rounded-lg border px-3 py-2.5 dark:border-white/12 dark:bg-white/[0.03]"
+        className="border-border/35 bg-surface-muted/15 rounded-xl border px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.015]"
         key={metric.label}
       >
         <Text className="text-foreground/55 text-xs font-medium tracking-wide uppercase dark:text-white/45">
@@ -142,26 +146,60 @@ const CompactBarChart = ({
   xKey: string;
   bars: { key: string; color: string; name?: string }[];
 }) => {
+  const { resolvedTheme } = useTheme();
   if (!data.length) return <EmptyChart />;
 
+  const isDark = resolvedTheme === "dark";
+  const axisColor = isDark
+    ? "rgba(255, 255, 255, 0.09)"
+    : "rgba(15, 23, 42, 0.12)";
+  const tickColor = isDark ? "#A1A1AA" : "#64748B";
+
   return (
-    <ResponsiveContainer height={240} width="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 8 }}>
-        <CartesianGrid
-          stroke="#E5E7EB"
-          strokeDasharray="3 3"
-          vertical={false}
+    <ResponsiveContainer height={260} width="100%">
+      <BarChart
+        data={data}
+        margin={{ top: 12, right: 4, left: -12, bottom: 8 }}
+      >
+        <XAxis
+          axisLine={{ stroke: axisColor }}
+          dataKey={xKey}
+          minTickGap={12}
+          tick={{ fill: tickColor, fontSize: 13 }}
+          tickFormatter={formatCategoryTick}
+          tickLine={{ stroke: axisColor }}
         />
-        <XAxis dataKey={xKey} tick={{ fontSize: 11 }} tickLine={false} />
-        <YAxis tick={{ fontSize: 11 }} tickLine={false} />
-        <ChartTooltip />
+        <YAxis
+          axisLine={false}
+          tick={{ fill: tickColor, fontSize: 13 }}
+          tickLine={false}
+          width={36}
+        />
+        <ChartTooltip
+          allowEscapeViewBox={{ x: false, y: true }}
+          content={<AnalyticsChartTooltip />}
+          cursor={{
+            fill: isDark
+              ? "rgba(255, 255, 255, 0.035)"
+              : "rgba(15, 23, 42, 0.035)",
+          }}
+          wrapperStyle={{ outline: "none" }}
+        />
         {bars.map((bar) => (
           <Bar
+            activeBar={{
+              fillOpacity: 0.82,
+              stroke: isDark
+                ? "rgba(255, 255, 255, 0.3)"
+                : "rgba(15, 23, 42, 0.18)",
+              strokeWidth: 1,
+            }}
             dataKey={bar.key}
             fill={bar.color}
             key={bar.key}
+            maxBarSize={48}
             name={bar.name}
-            radius={[4, 4, 0, 0]}
+            radius={[7, 7, 2, 2]}
           />
         ))}
       </BarChart>
@@ -178,24 +216,60 @@ const CompactLineChart = ({
   xKey: string;
   lines: { key: string; color: string; name?: string }[];
 }) => {
+  const { resolvedTheme } = useTheme();
   if (!data.length) return <EmptyChart />;
 
+  const isDark = resolvedTheme === "dark";
+  const axisColor = isDark
+    ? "rgba(255, 255, 255, 0.09)"
+    : "rgba(15, 23, 42, 0.12)";
+  const tickColor = isDark ? "#A1A1AA" : "#64748B";
+  const isDateAxis = xKey.toLowerCase().includes("date");
+
   return (
-    <ResponsiveContainer height={240} width="100%">
+    <ResponsiveContainer height={260} width="100%">
       <LineChart
         data={data}
-        margin={{ top: 8, right: 8, left: -18, bottom: 8 }}
+        margin={{ top: 12, right: 4, left: -12, bottom: 8 }}
       >
-        <CartesianGrid
-          stroke="#E5E7EB"
-          strokeDasharray="3 3"
-          vertical={false}
+        <XAxis
+          axisLine={{ stroke: axisColor }}
+          dataKey={xKey}
+          minTickGap={16}
+          tick={{ fill: tickColor, fontSize: 13 }}
+          tickFormatter={isDateAxis ? formatChartDate : formatCategoryTick}
+          tickLine={{ stroke: axisColor }}
         />
-        <XAxis dataKey={xKey} tick={{ fontSize: 11 }} tickLine={false} />
-        <YAxis tick={{ fontSize: 11 }} tickLine={false} />
-        <ChartTooltip />
+        <YAxis
+          axisLine={false}
+          tick={{ fill: tickColor, fontSize: 13 }}
+          tickLine={false}
+          width={36}
+        />
+        <ChartTooltip
+          allowEscapeViewBox={{ x: false, y: true }}
+          content={
+            <AnalyticsChartTooltip
+              formatLabel={isDateAxis ? formatChartDate : undefined}
+            />
+          }
+          cursor={{
+            stroke: isDark
+              ? "rgba(255, 255, 255, 0.16)"
+              : "rgba(15, 23, 42, 0.18)",
+            strokeDasharray: "3 4",
+            strokeWidth: 1,
+          }}
+          wrapperStyle={{ outline: "none" }}
+        />
         {lines.map((line) => (
           <Line
+            activeDot={{
+              fill: line.color,
+              r: 6,
+              stroke: isDark ? "#18181B" : "#FFFFFF",
+              strokeWidth: 3,
+            }}
             dataKey={line.key}
             dot={false}
             key={line.key}
@@ -208,6 +282,90 @@ const CompactLineChart = ({
       </LineChart>
     </ResponsiveContainer>
   );
+};
+
+const formatChartDate = (value: unknown) => {
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : format(date, "MMM d");
+};
+
+const formatCategoryTick = (value: unknown) => {
+  const label = String(value ?? "");
+  return label.length > 15 ? `${label.slice(0, 14)}…` : label;
+};
+
+const AnalyticsChartTooltip = ({
+  active,
+  formatLabel,
+  label,
+  payload,
+}: TooltipProps<number, string> & {
+  formatLabel?: (value: unknown) => string;
+}) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <Box className="border-border/40 bg-surface-elevated/85 text-foreground z-50 min-w-40 rounded-2xl border-[0.5px] p-4 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/[0.08] dark:shadow-black/20">
+      <Text className="text-base font-semibold">
+        {formatLabel ? formatLabel(label) : String(label ?? "")}
+      </Text>
+      <Box className="mt-2 space-y-1.5">
+        {payload.map((entry) => (
+          <Flex
+            align="center"
+            className="gap-2 text-[0.95rem] font-medium"
+            key={String(entry.dataKey)}
+          >
+            <span
+              aria-hidden
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <Text className="text-foreground/75 dark:text-white/70">
+              {entry.name}:{" "}
+              <span className="text-foreground dark:text-white">
+                {entry.value}
+              </span>
+            </Text>
+          </Flex>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+const asSingleSprintBurndown = (
+  value: unknown,
+): SingleSprintAnalytics["burndown"] =>
+  asRows(value).flatMap((row) => {
+    const date = typeof row.date === "string" ? row.date : "";
+    const ideal = Number(row.ideal);
+    const remaining = Number(row.remaining);
+    const parsedDate = new Date(date);
+
+    if (
+      !date ||
+      Number.isNaN(parsedDate.getTime()) ||
+      !Number.isFinite(ideal) ||
+      !Number.isFinite(remaining)
+    ) {
+      return [];
+    }
+
+    return [{ date, ideal, remaining }];
+  });
+
+const asWorkingDays = (
+  value: unknown,
+): SingleSprintAnalytics["workingDays"] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+
+  const workingDays = value.filter(
+    (day): day is number =>
+      typeof day === "number" && Number.isInteger(day) && day >= 1 && day <= 7,
+  );
+
+  return workingDays.length ? workingDays : undefined;
 };
 
 const completionRate = (completed: unknown, total: unknown) => {
@@ -705,6 +863,11 @@ export const AnalyticsReport = ({
     const analytics = asRecord(output.analytics ?? output.analyticsReport);
     const overview = asRecord(analytics.overview);
     const storyBreakdown = asRecord(analytics.storyBreakdown);
+    const burndown = asSingleSprintBurndown(analytics.burndown);
+    const teamAllocation = asRows(analytics.teamAllocation).filter(
+      (member) =>
+        Number(member.assigned ?? 0) > 0 || Number(member.completed ?? 0) > 0,
+    );
 
     return (
       <Box className="mt-3 space-y-4">
@@ -732,14 +895,15 @@ export const AnalyticsReport = ({
           ]}
         />
         <ChartSection title="Burndown">
-          <CompactLineChart
-            data={asRows(analytics.burndown)}
-            lines={[
-              { key: "ideal", color: COLORS.muted, name: "Ideal" },
-              { key: "remaining", color: COLORS.primary, name: "Remaining" },
-            ]}
-            xKey="date"
-          />
+          {burndown.length ? (
+            <BurndownChart
+              burndownData={burndown}
+              className="h-72"
+              workingDays={asWorkingDays(analytics.workingDays)}
+            />
+          ) : (
+            <EmptyChart />
+          )}
         </ChartSection>
         <ChartSection title="Team allocation">
           <CompactBarChart
@@ -747,7 +911,7 @@ export const AnalyticsReport = ({
               { key: "completed", color: COLORS.success, name: "Completed" },
               { key: "assigned", color: COLORS.primary, name: "Assigned" },
             ]}
-            data={asRows(analytics.teamAllocation)}
+            data={teamAllocation}
             xKey="username"
           />
         </ChartSection>

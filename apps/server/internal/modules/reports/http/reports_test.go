@@ -1,13 +1,15 @@
 package reportshttp
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
 
-func TestParseReportFiltersAcceptsDateOnlyValuesAndAssignees(t *testing.T) {
+func TestReportFiltersDecodeCommaSeparatedQueryValues(t *testing.T) {
 	t.Parallel()
 
 	teamID := uuid.New()
@@ -16,17 +18,22 @@ func TestParseReportFiltersAcceptsDateOnlyValuesAndAssignees(t *testing.T) {
 	sprintID := uuid.New()
 	objectiveID := uuid.New()
 
-	got, err := parseReportFilters(map[string]interface{}{
-		"teamIds":      teamID.String() + "," + secondTeamID.String(),
-		"assigneeIds":  assigneeID.String(),
-		"sprintIds":    sprintID.String(),
-		"objectiveIds": objectiveID.String(),
-		"startDate":    "2026-06-01",
-		"endDate":      "2026-06-24",
-	})
-
+	var queryFilters AppReportFilterQuery
+	query, err := web.GetFilters(url.Values{
+		"teamIds":      []string{teamID.String() + "," + secondTeamID.String()},
+		"assigneeIds":  []string{assigneeID.String()},
+		"sprintIds":    []string{sprintID.String()},
+		"objectiveIds": []string{objectiveID.String()},
+		"startDate":    []string{"2026-06-01"},
+		"endDate":      []string{"2026-06-24"},
+	}, &queryFilters)
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected query decoding to succeed, got %v", err)
+	}
+
+	got, err := parseReportFilters(query)
+	if err != nil {
+		t.Fatalf("expected report filter parsing to succeed, got %v", err)
 	}
 	if got.StartDate == nil || got.StartDate.Format(time.DateOnly) != "2026-06-01" {
 		t.Fatalf("expected start date 2026-06-01, got %#v", got.StartDate)

@@ -113,6 +113,8 @@ Workload and activity workflow:
 Sprint workflow:
 - Sprints are managed through existing settings and automation behavior.
 - Do not invent direct sprint-creation capabilities if they are not supported by tools.
+- For questions about one particular sprint, resolve it first and use getSprintDetailsTool or getSprintAnalyticsTool so the interface can render the sprint metrics, burndown, and team allocation as generative UI.
+- After a single-sprint generative report, give only one brief summary or useful insight below it. Do not repeat the report metrics, burndown points, or team allocation as Markdown.
 
 Analytics workflow:
 - For summaries, comparisons, trends, or rankings:

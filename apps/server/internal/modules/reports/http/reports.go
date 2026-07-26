@@ -330,7 +330,7 @@ func (h *Handlers) GetWorkspaceOverview(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -358,7 +358,7 @@ func (h *Handlers) GetStoryAnalytics(ctx context.Context, w http.ResponseWriter,
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -386,7 +386,7 @@ func (h *Handlers) GetObjectiveProgress(ctx context.Context, w http.ResponseWrit
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -414,7 +414,7 @@ func (h *Handlers) GetTeamPerformance(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -446,7 +446,7 @@ func (h *Handlers) GetWorkloadAnalysis(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -484,7 +484,7 @@ func (h *Handlers) GetPulseReport(ctx context.Context, w http.ResponseWriter, r 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -522,7 +522,7 @@ func (h *Handlers) GetSprintAnalytics(ctx context.Context, w http.ResponseWriter
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -550,7 +550,7 @@ func (h *Handlers) GetTimelineTrends(ctx context.Context, w http.ResponseWriter,
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -578,7 +578,7 @@ func (h *Handlers) GetWorkspaceCommandCenterReport(ctx context.Context, w http.R
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppReportFilters
+	var af AppReportFilterQuery
 	query, err := web.GetFilters(r.URL.Query(), &af)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)

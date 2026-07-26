@@ -55,4 +55,23 @@ describe("ChatMessage", () => {
     expect(source).not.toContain("const reportParts");
     expect(source).not.toContain("const suggestionParts");
   });
+
+  it("renders one polished generative report for a specific sprint", () => {
+    const rendererSource = readSource(
+      "src/components/ui/chat/tool-output-renderer.tsx",
+    );
+    const reportSource = readSource(
+      "src/components/ui/chat/analytics-report.tsx",
+    );
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(reportSource).toContain("<BurndownChart");
+    expect(reportSource).toContain("workingDays={asWorkingDays");
+    expect(reportSource).toContain('<ChartSection title="Team allocation">');
+    expect(rendererSource).not.toContain("getSprintBurndownData");
+    expect(rendererSource).not.toContain("Burndown graph");
+    expect(promptSource).toContain(
+      "After a single-sprint generative report, give only one brief summary",
+    );
+  });
 });

@@ -52,6 +52,18 @@ type AppReportFilters struct {
 	ObjectiveIDs []uuid.UUID `json:"objectiveIds" query:"objectiveIds"`
 }
 
+// AppReportFilterQuery represents the wire format used by analytics query
+// parameters. Multi-value filters arrive as comma-separated strings and are
+// converted to UUID slices by parseReportFilters.
+type AppReportFilterQuery struct {
+	TeamIDs      string `json:"teamIds"`
+	AssigneeIDs  string `json:"assigneeIds"`
+	StartDate    string `json:"startDate"`
+	EndDate      string `json:"endDate"`
+	SprintIDs    string `json:"sprintIds"`
+	ObjectiveIDs string `json:"objectiveIds"`
+}
+
 type AppTrackWorkspaceAnalyticsEventRequest struct {
 	EventName   string         `json:"eventName"`
 	Surface     string         `json:"surface"`
