@@ -1,10 +1,49 @@
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
+  isAnalyticsReportOutput,
   isRenderableToolPart,
   isSupportingToolType,
   isToolMessagePart,
 } from "./tool-output-policy";
+
+const TEAM_SCOPED_RESULT_TYPES = new Set([
+  "tool-listTeamStories",
+  "tool-listSprints",
+  "tool-listRunningSprints",
+  "tool-listTeamObjectivesTool",
+  "tool-listTeamMembers",
+  "tool-listCustomerFeedbackTool",
+  "tool-listIntegrationRequestsTool",
+]);
+
+const TEAM_RESOLVER_TYPES = new Set(["tool-listTeams", "tool-listPublicTeams"]);
+
+export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
+  const toolParts = message.parts.flatMap((part, index) =>
+    isToolMessagePart(part) && isRenderableToolPart(part)
+      ? [{ index, part }]
+      : [],
+  );
+
+  return new Set(
+    toolParts.flatMap(({ index, part }, toolIndex) => {
+      const laterToolParts = toolParts.slice(toolIndex + 1);
+      const feedsLaterReport =
+        !isAnalyticsReportOutput(part.output) &&
+        laterToolParts.some(({ part: laterPart }) =>
+          isAnalyticsReportOutput(laterPart.output),
+        );
+      const feedsLaterTeamResult =
+        TEAM_RESOLVER_TYPES.has(part.type) &&
+        laterToolParts.some(({ part: laterPart }) =>
+          TEAM_SCOPED_RESULT_TYPES.has(laterPart.type),
+        );
+
+      return feedsLaterReport || feedsLaterTeamResult ? [] : [index];
+    }),
+  );
+};
 
 /** Maps tool part types to the single progress label shown below the chat. */
 const TOOL_THINKING_LABELS: Record<string, string> = {
@@ -62,11 +101,13 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-notifications": "Checking notifications",
   "tool-workspacePerformanceReportTool": "Building workspace report",
   "tool-workspaceCommandCenterReportTool": "Building command center",
+  "tool-pulseReportTool": "Building workspace pulse",
   "tool-storyPerformanceReportTool": "Building story report",
   "tool-objectiveProgressReportTool": "Building objective report",
   "tool-teamPerformanceReportTool": "Building team report",
   "tool-sprintPerformanceReportTool": "Building sprint report",
   "tool-timelineTrendsReportTool": "Building trends report",
+  "tool-workloadPlanningTool": "Analyzing workload",
   "tool-mayaWorkPlanTool": "Planning work",
   "tool-getGitHubIntegrationTool": "Checking GitHub integration",
   "tool-createGitHubInstallSessionTool": "Creating GitHub install link",

@@ -50,7 +50,7 @@ const MetricGrid = ({ metrics }: { metrics: Metric[] }) => (
         className="border-border/35 bg-surface-muted/15 rounded-xl border px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.015]"
         key={metric.label}
       >
-        <Text className="text-foreground/55 text-xs font-medium tracking-wide uppercase dark:text-white/45">
+        <Text className="text-foreground/55 text-base font-medium dark:text-white/45">
           {metric.label}
         </Text>
         <Text className="text-foreground mt-1 text-lg font-semibold dark:text-white">
@@ -62,7 +62,7 @@ const MetricGrid = ({ metrics }: { metrics: Metric[] }) => (
 );
 
 const EmptyChart = () => (
-  <Box className="text-foreground/60 bg-surface-muted/50 flex h-32 items-center justify-center rounded-lg text-sm dark:bg-white/[0.03] dark:text-white/55">
+  <Box className="text-foreground/60 bg-surface-muted/30 flex h-32 items-center justify-center rounded-lg text-base dark:bg-white/[0.02] dark:text-white/55">
     No chart data available
   </Box>
 );
@@ -96,11 +96,11 @@ const KeyValueList = ({
 }: {
   rows: { label: string; value: string | number | null | undefined }[];
 }) => (
-  <Box className="border-border/70 divide-border/70 divide-y overflow-hidden rounded-lg border dark:divide-white/10 dark:border-white/12">
+  <Box className="border-border/40 divide-border/50 divide-y overflow-hidden rounded-lg border dark:divide-white/[0.07] dark:border-white/[0.07]">
     {rows.map((row) => (
       <Flex
         align="center"
-        className="bg-surface-muted/20 gap-3 px-3 py-2.5 text-sm dark:bg-white/[0.02]"
+        className="bg-surface-muted/10 gap-3 px-3 py-2.5 text-base dark:bg-white/[0.01]"
         justify="between"
         key={row.label}
       >
@@ -126,7 +126,7 @@ const PillList = ({
 }) => {
   if (!items.length) {
     return (
-      <Text className="text-foreground/60 bg-surface-muted/50 rounded-lg px-3 py-2 text-sm dark:bg-white/[0.03] dark:text-white/55">
+      <Text className="text-foreground/60 bg-surface-muted/30 rounded-lg px-3 py-2 text-base dark:bg-white/[0.02] dark:text-white/55">
         {emptyText}
       </Text>
     );
@@ -136,7 +136,7 @@ const PillList = ({
     <Flex className="flex-wrap gap-2">
       {items.map((item) => (
         <Text
-          className="border-border/70 bg-surface-muted/40 text-foreground/90 rounded-full border px-3 py-1.5 text-sm font-medium dark:border-white/12 dark:bg-white/[0.03] dark:text-white/85"
+          className="border-border/40 bg-surface-muted/20 text-foreground/90 rounded-full border px-3 py-1.5 text-base font-medium dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/85"
           key={item}
         >
           {item}
@@ -389,6 +389,47 @@ const completionRate = (completed: unknown, total: unknown) => {
 const ratioPercent = (value: unknown) =>
   `${Math.round(Number(value ?? 0) * 100)}%`;
 
+const RiskList = ({ risks }: { risks: ChartRow[] }) => {
+  if (!risks.length) {
+    return (
+      <Text className="text-text-muted border-border/50 border-y py-3 text-base dark:border-white/[0.07]">
+        No active risks found.
+      </Text>
+    );
+  }
+
+  return (
+    <Box className="border-border/50 divide-border/50 divide-y border-y dark:divide-white/[0.07] dark:border-white/[0.07]">
+      {risks.slice(0, 5).map((risk) => {
+        const severity = String(risk.severity ?? "low");
+        let tone = "bg-info";
+        if (severity === "high") tone = "bg-danger";
+        if (severity === "medium") tone = "bg-warning";
+
+        return (
+          <Flex
+            align="center"
+            className="min-w-0 gap-3 py-3 text-base"
+            justify="between"
+            key={String(
+              risk.kind ??
+                `${String(risk.title ?? "Risk")}-${String(risk.severity ?? "low")}`,
+            )}
+          >
+            <span className={`size-2.5 shrink-0 rounded-full ${tone}`} />
+            <Text className="min-w-0 flex-1 truncate">
+              {String(risk.title ?? "Risk")}
+            </Text>
+            <Text className="text-text-muted shrink-0">
+              {Number(risk.count ?? 0)}
+            </Text>
+          </Flex>
+        );
+      })}
+    </Box>
+  );
+};
+
 export const AnalyticsReport = ({
   output,
 }: {
@@ -401,7 +442,12 @@ export const AnalyticsReport = ({
     variant: "plural",
   });
   const kind = output.kind;
-  const title = String(output.title ?? "Performance report");
+  const title = String(
+    output.title ??
+      (kind === "workload-analysis-report"
+        ? "Workload analysis"
+        : "Performance report"),
+  );
 
   if (kind === "github-integration-report") {
     const summary = asRecord(output.summary);
@@ -418,7 +464,7 @@ export const AnalyticsReport = ({
             <Text className="text-foreground text-xl font-semibold dark:text-white">
               {title}
             </Text>
-            <Text className="text-foreground/60 text-sm dark:text-white/55">
+            <Text className="text-foreground/60 text-base dark:text-white/55">
               {connected
                 ? "GitHub is connected to this workspace."
                 : "GitHub is not connected to this workspace."}
@@ -426,7 +472,7 @@ export const AnalyticsReport = ({
           </Box>
           <Text
             className={cn(
-              "rounded-full border px-3 py-1.5 text-sm font-semibold",
+              "rounded-full border px-3 py-1.5 text-base font-semibold",
               connected
                 ? "border-border/70 bg-surface-muted/40 text-foreground/85 dark:border-white/12 dark:bg-white/[0.03] dark:text-white/85"
                 : "border-warning/20 bg-warning/10 text-warning dark:border-warning/20 dark:bg-warning/10 dark:text-warning",
@@ -504,7 +550,7 @@ export const AnalyticsReport = ({
         </ChartSection>
 
         {!installations.length ? (
-          <Text className="text-foreground/60 text-sm dark:text-white/55">
+          <Text className="text-foreground/60 text-base dark:text-white/55">
             Ask Maya to connect GitHub to generate an installation link.
           </Text>
         ) : null}
@@ -522,7 +568,7 @@ export const AnalyticsReport = ({
           <Text className="text-foreground text-xl font-semibold dark:text-white">
             {title}
           </Text>
-          <Text className="text-foreground/60 text-sm dark:text-white/55">
+          <Text className="text-foreground/60 text-base dark:text-white/55">
             Automation rules for {String(team.name ?? "this team")}.
           </Text>
         </Box>
@@ -562,13 +608,13 @@ export const AnalyticsReport = ({
           <Text className="text-foreground text-xl font-semibold dark:text-white">
             {title}
           </Text>
-          <Text className="text-foreground/60 text-sm dark:text-white/55">
+          <Text className="text-foreground/60 text-base dark:text-white/55">
             GitHub links attached to {String(story.ref ?? `this ${storyTerm}`)}.
           </Text>
         </Box>
 
         {!links.length ? (
-          <Text className="text-foreground/60 bg-surface-muted/50 rounded-lg px-3 py-2 text-sm dark:bg-white/[0.03] dark:text-white/55">
+          <Text className="text-foreground/60 bg-surface-muted/30 rounded-lg px-3 py-2 text-base dark:bg-white/[0.02] dark:text-white/55">
             No GitHub links are attached to this {storyTerm}.
           </Text>
         ) : (
@@ -583,7 +629,7 @@ export const AnalyticsReport = ({
                     <Text className="text-foreground font-semibold dark:text-white">
                       {String(link.title ?? link.refName ?? "GitHub link")}
                     </Text>
-                    <Text className="text-foreground/60 text-sm dark:text-white/55">
+                    <Text className="text-foreground/60 text-base dark:text-white/55">
                       {String(link.repositoryFullName ?? "")}
                       {link.number ? ` #${String(link.number)}` : ""}
                     </Text>
@@ -740,6 +786,152 @@ export const AnalyticsReport = ({
     );
   }
 
+  if (kind === "pulse-report") {
+    const report = asRecord(output.report);
+    const summary = asRecord(report.summary);
+    const workload = asRecord(report.workload);
+    const members = [...asRows(workload.members)]
+      .sort(
+        (firstMember, secondMember) =>
+          Number(secondMember.openStories ?? 0) -
+          Number(firstMember.openStories ?? 0),
+      )
+      .slice(0, 5);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Text className="text-xl font-semibold">{title}</Text>
+        <MetricGrid
+          metrics={[
+            {
+              label: "Open work",
+              value: Number(summary.openStories ?? 0),
+            },
+            {
+              label: "Overdue",
+              value: Number(summary.overdueStories ?? 0),
+            },
+            {
+              label: "Blocked",
+              value: Number(summary.blockedStories ?? 0),
+            },
+            {
+              label: "At-risk sprints",
+              value: Number(summary.atRiskSprints ?? 0),
+            },
+            {
+              label: "At-risk objectives",
+              value: Number(summary.atRiskObjectives ?? 0),
+            },
+            {
+              label: "Pending requests",
+              value: Number(summary.pendingRequests ?? 0),
+            },
+          ]}
+        />
+        <ChartSection
+          description="Shows the five members carrying the most open work."
+          title="Highest workload"
+        >
+          <CompactBarChart
+            bars={[
+              { key: "openStories", color: COLORS.primary, name: "Open" },
+              { key: "overdueStories", color: "#EF4444", name: "Overdue" },
+            ]}
+            data={members}
+            maxLabelLength={12}
+            xKey="username"
+          />
+        </ChartSection>
+        <ChartSection
+          description="The most important delivery issues that need attention."
+          title="Active risks"
+        >
+          <RiskList risks={asRows(report.risks)} />
+        </ChartSection>
+      </Box>
+    );
+  }
+
+  if (kind === "workload-analysis-report") {
+    const analysis = asRecord(output.analysis);
+    const summary = asRecord(analysis.summary);
+    const risks = asRecord(analysis.risks);
+    const members = [...asRows(analysis.members)]
+      .sort(
+        (firstMember, secondMember) =>
+          Number(secondMember.openStories ?? 0) -
+          Number(firstMember.openStories ?? 0),
+      )
+      .slice(0, 5);
+
+    return (
+      <Box className="mt-3 space-y-4">
+        <Text className="text-xl font-semibold">{title}</Text>
+        <MetricGrid
+          metrics={[
+            {
+              label: "Open work",
+              value: Number(summary.totalOpenStories ?? 0),
+            },
+            {
+              label: "Estimate",
+              value: Number(summary.totalEstimate ?? 0),
+            },
+            {
+              label: "Overdue",
+              value: Number(summary.overdueStories ?? 0),
+            },
+            {
+              label: "Urgent",
+              value: Number(summary.urgentStories ?? 0),
+            },
+            {
+              label: "Unassigned",
+              value: Number(summary.unassignedStories ?? 0),
+            },
+            {
+              label: "Unestimated",
+              value: Number(summary.unestimatedStories ?? 0),
+            },
+          ]}
+        />
+        <ChartSection
+          description="Shows the five members carrying the most open work."
+          title="Workload by member"
+        >
+          <CompactBarChart
+            bars={[
+              { key: "openStories", color: COLORS.primary, name: "Open" },
+              { key: "overdueStories", color: "#EF4444", name: "Overdue" },
+            ]}
+            data={members}
+            maxLabelLength={12}
+            xKey="username"
+          />
+        </ChartSection>
+        <ChartSection title="Workload risks">
+          <KeyValueList
+            rows={[
+              {
+                label: "Overloaded members",
+                value: asRows(risks.overloadedMembers).length,
+              },
+              {
+                label: "Members with overdue work",
+                value: asRows(risks.overdueMembers).length,
+              },
+              {
+                label: "High-priority work",
+                value: Number(risks.highPriorityStories ?? 0),
+              },
+            ]}
+          />
+        </ChartSection>
+      </Box>
+    );
+  }
+
   if (kind === "story-performance-report") {
     const analytics = asRecord(output.analytics);
 
@@ -809,7 +1001,7 @@ export const AnalyticsReport = ({
         <Flex align="center" justify="between">
           <Text className="text-xl font-semibold">{title}</Text>
           {focusMember.userId ? (
-            <Text className="text-muted text-sm">
+            <Text className="text-muted text-base">
               {completionRate(focusMember.completed, focusMember.assigned)}{" "}
               complete
             </Text>
@@ -832,7 +1024,8 @@ export const AnalyticsReport = ({
               { key: "completed", color: COLORS.success, name: "Completed" },
               { key: "assigned", color: COLORS.primary, name: "Assigned" },
             ]}
-            data={asRows(performance.memberContributions).slice(0, 8)}
+            data={asRows(performance.memberContributions).slice(0, 5)}
+            maxLabelLength={12}
             xKey="username"
           />
         </ChartSection>

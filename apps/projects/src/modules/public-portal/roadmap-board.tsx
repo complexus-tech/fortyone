@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { RoadmapIcon, ThumbsUpIcon } from "icons";
+import { ThumbsUpIcon } from "icons";
 import { Avatar, Box, Flex, Text } from "ui";
 import { cn } from "lib";
 import { Dot } from "@/components/ui/dot";
@@ -300,23 +300,6 @@ const RoadmapColumn = ({
   );
 };
 
-const RoadmapEmptyState = () => (
-  <Flex
-    align="center"
-    className="min-h-56 flex-1 px-4 text-center"
-    direction="column"
-    justify="center"
-  >
-    <RoadmapIcon className="text-text-muted h-16 w-auto" strokeWidth={1.3} />
-    <Text as="h2" className="mt-7" fontSize="3xl">
-      Nothing is on the roadmap yet
-    </Text>
-    <Text className="mt-3 max-w-md" color="muted">
-      Feedback will appear here once the team plans it for delivery.
-    </Text>
-  </Flex>
-);
-
 export const RoadmapBoard = ({ portal }: { portal: PublicPortal }) => {
   const planned = useRoadmapColumn(portal, "planned");
   const inProgress = useRoadmapColumn(portal, "in_progress");
@@ -326,32 +309,19 @@ export const RoadmapBoard = ({ portal }: { portal: PublicPortal }) => {
     in_progress: inProgress,
     planned,
   };
-  const hasLoadedEveryColumn = roadmapStatuses.every(
-    (status) => !columns[status].isPending,
-  );
-  const isRoadmapEmpty =
-    hasLoadedEveryColumn &&
-    roadmapStatuses.every(
-      (status) =>
-        !columns[status].isError && columns[status].items.length === 0,
-    );
 
   return (
     <Box className="mx-auto flex min-h-full w-full max-w-[78rem] flex-col px-4 pt-8 md:h-full md:min-h-0 md:overflow-hidden md:px-6">
-      {isRoadmapEmpty ? (
-        <RoadmapEmptyState />
-      ) : (
-        <Box className="grid min-h-0 flex-1 gap-5 md:grid-cols-3">
-          {roadmapStatuses.map((status) => (
-            <RoadmapColumn
-              columnState={columns[status]}
-              key={status}
-              portal={portal}
-              status={status}
-            />
-          ))}
-        </Box>
-      )}
+      <Box className="grid min-h-0 flex-1 gap-5 md:grid-cols-3">
+        {roadmapStatuses.map((status) => (
+          <RoadmapColumn
+            columnState={columns[status]}
+            key={status}
+            portal={portal}
+            status={status}
+          />
+        ))}
+      </Box>
     </Box>
   );
 };

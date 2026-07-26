@@ -1604,7 +1604,7 @@ describe("Public portal UI", () => {
     );
   });
 
-  it("renders a roadmap empty state when no feedback has been planned", async () => {
+  it("keeps every roadmap column visible when no feedback has been planned", async () => {
     global.fetch = jest.fn(
       async () =>
         ({
@@ -1621,16 +1621,29 @@ describe("Public portal UI", () => {
 
     renderRoadmap();
 
+    const emptyColumnLabels = [
+      "Nothing planned yet",
+      "Nothing in progress",
+      "Nothing completed yet",
+    ];
+
+    expect(await screen.findByText(emptyColumnLabels[0])).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", {
-        name: "Nothing is on the roadmap yet",
-      }),
+      screen.getByRole("heading", { name: "Planned" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Feedback will appear here once the team plans it for delivery.",
-      ),
+      screen.getByRole("heading", { name: "In Progress" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Done" })).toBeInTheDocument();
+    expect(screen.getAllByText("0")).toHaveLength(3);
+    emptyColumnLabels.forEach((label) => {
+      const emptyColumn = screen.getByText(label).parentElement?.parentElement;
+
+      expect(emptyColumn).toHaveClass("border", "border-dashed");
+    });
+    expect(
+      screen.queryByText("Nothing is on the roadmap yet"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders a public request detail page with comments and metadata", () => {

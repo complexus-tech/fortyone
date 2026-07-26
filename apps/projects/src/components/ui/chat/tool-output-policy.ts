@@ -1,4 +1,8 @@
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import {
+  ENTITY_RESULT_TOOL_TYPES,
+  getEntityResultsModel,
+} from "./entity-results-data";
 import { isStoryResultsOutput } from "./story-results-data";
 
 export type ToolMessagePart = MayaUIMessage["parts"][number] & {
@@ -27,6 +31,9 @@ export const isSupportingToolType = (type: string) =>
 
 export const isStoryResultToolType = (type: string) =>
   STORY_RESULT_TOOL_TYPES.has(type);
+
+export const isEntityResultToolType = (type: string) =>
+  ENTITY_RESULT_TOOL_TYPES.has(type);
 
 export const asToolOutputRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -58,6 +65,10 @@ export const isRenderableToolPart = (part: ToolMessagePart) => {
 
   if (isStoryResultToolType(part.type)) {
     return isStoryResultsOutput(part.output);
+  }
+
+  if (isEntityResultToolType(part.type)) {
+    return getEntityResultsModel(part.type, part.output) !== null;
   }
 
   if (part.type === "tool-suggestions") {

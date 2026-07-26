@@ -3,12 +3,14 @@
 import type { ReactNode } from "react";
 import { Button, Flex } from "ui";
 import { AnalyticsReport } from "./analytics-report";
+import { EntityResults } from "./entity-results";
 import { StoryResults } from "./story-results";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   asToolOutputRecord,
   getToolSuggestions,
   isAnalyticsReportOutput,
+  isEntityResultToolType,
   isRenderableToolPart,
   isStoryResultToolType,
 } from "./tool-output-policy";
@@ -30,6 +32,14 @@ export const ToolOutputRenderer = ({
     return (
       <GenerativeOutputFrame>
         <StoryResults output={part.output} />
+      </GenerativeOutputFrame>
+    );
+  }
+
+  if (isEntityResultToolType(part.type)) {
+    return (
+      <GenerativeOutputFrame>
+        <EntityResults output={part.output} toolType={part.type} />
       </GenerativeOutputFrame>
     );
   }

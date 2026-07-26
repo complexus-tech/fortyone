@@ -9,7 +9,10 @@ import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
-import { getMessageText } from "./chat-message-utils";
+import {
+  getMessageText,
+  getVisibleToolPartIndexes,
+} from "./chat-message-utils";
 import { isToolMessagePart } from "./tool-output-policy";
 import { ToolOutputRenderer } from "./tool-output-renderer";
 
@@ -38,6 +41,8 @@ const RenderMessage = ({
   message: MayaUIMessage;
   onPromptSelect: (prompt: string) => void;
 }) => {
+  const visibleToolPartIndexes = getVisibleToolPartIndexes(message);
+
   return (
     <>
       {message.parts.map((part, index) => {
@@ -65,6 +70,8 @@ const RenderMessage = ({
         }
 
         if (isToolMessagePart(part)) {
+          if (!visibleToolPartIndexes.has(index)) return null;
+
           return (
             <ToolOutputRenderer
               key={`${message.id}-${part.type}-${index}`}
