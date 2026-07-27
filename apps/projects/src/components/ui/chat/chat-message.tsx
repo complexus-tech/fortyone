@@ -118,7 +118,7 @@ const UserPrompt = ({ text }: { text: string }) => {
       {canExpand ? (
         <button
           aria-expanded={isExpanded}
-          className="text-text-muted hover:text-foreground focus-visible:ring-foreground/40 mt-2 flex items-center gap-1 rounded-sm text-sm font-medium transition-colors outline-none focus-visible:ring-2"
+          className="text-text-muted hover:text-foreground focus-visible:ring-foreground/40 mt-2 flex items-center gap-1 rounded-sm text-base font-medium transition-colors outline-none focus-visible:ring-2"
           onClick={() => {
             setIsExpanded((current) => !current);
           }}
