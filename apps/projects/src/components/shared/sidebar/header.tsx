@@ -1,13 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Button, Flex, Badge, Box, Menu } from "ui";
-import {
-  NewStoryIcon,
-  SearchIcon,
-  BellIcon,
-  PlusIcon,
-  ArrowDown2Icon,
-} from "icons";
+import { Badge, Box, Button, Flex } from "ui";
+import { BellIcon, PlusIcon, SearchIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import {

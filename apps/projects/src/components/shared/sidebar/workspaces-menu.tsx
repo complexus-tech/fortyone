@@ -68,7 +68,7 @@ export const WorkspacesMenu = () => {
     <Menu>
       <Menu.Button>
         <Button
-          className="gap-1.5 pl-1"
+          className="max-w-full min-w-0 gap-1.5 pl-1"
           color="tertiary"
           data-workspace-switcher
           leftIcon={

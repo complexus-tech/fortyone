@@ -12,7 +12,6 @@ import {
   IntakeIcon,
   LogoutIcon,
   MoreHorizontalIcon,
-  ObjectiveIcon,
   RequestsIcon,
   SettingsIcon,
   SprintsIcon,
@@ -24,7 +23,6 @@ import { useSession } from "@/lib/auth/client";
 import {
   useLocalStorage,
   useTerminology,
-  useFeatures,
   useUserRole,
   useSprintsEnabled,
   useWorkspacePath,
@@ -51,7 +49,6 @@ export const Team = ({
   idx: number;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const features = useFeatures();
   const sprintsEnabled = useSprintsEnabled(id);
   const { data: session } = useSession();
   const [isLeaving, setIsLeaving] = useState(false);
@@ -112,12 +109,6 @@ export const Team = ({
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
       href: withWorkspace(`/teams/${id}/stories`),
-    },
-    {
-      name: getTermDisplay("objectiveTerm", { variant: "plural" }),
-      icon: <ObjectiveIcon />,
-      href: withWorkspace(`/teams/${id}/objectives`),
-      disabled: !features.objectiveEnabled,
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
@@ -263,7 +254,12 @@ export const Team = ({
                       pathname.startsWith(withWorkspace("/dashboard"))
                     : pathname.startsWith(href);
                 return (
-                  <NavLink active={isActive} href={href} key={name}>
+                  <NavLink
+                    active={isActive}
+                    className={isActive ? "text-foreground" : undefined}
+                    href={href}
+                    key={name}
+                  >
                     {icon}
                     <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                       <span className="capitalize">{name}</span>
