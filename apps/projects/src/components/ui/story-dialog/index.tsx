@@ -116,7 +116,7 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="border-border bg-surface dark:bg-surface-elevated/95 max-w-[88rem] overflow-clip rounded-2xl border md:mt-auto md:mb-auto"
+        className="border-border bg-surface dark:bg-surface/95 max-w-[88rem] overflow-clip rounded-2xl border md:mt-auto md:mb-auto"
         hideClose
         overlayClassName="bg-black/10"
       >
@@ -129,7 +129,7 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="sticky top-0 z-2 px-6 py-4"
+                className="border-border/40 bg-surface/75 supports-[backdrop-filter]:bg-surface/65 sticky top-0 z-2 border-b px-6 py-4 backdrop-blur-xl"
                 gap={2}
                 justify="between"
               >

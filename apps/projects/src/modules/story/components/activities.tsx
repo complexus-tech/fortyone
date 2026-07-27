@@ -49,16 +49,24 @@ export const Activities = ({
       </Text>
 
       <Tabs defaultValue="comments">
-        <Tabs.List className="mx-0 mb-5 md:mx-0">
+        <Tabs.List
+          className={cn("mx-0 mb-5 md:mx-0", {
+            "dark:bg-surface-elevated": isDialog,
+          })}
+        >
           <Tabs.Tab
-            className="gap-1 px-2"
+            className={cn("gap-1 px-2", {
+              "dark:data-[state=active]:bg-surface-prominent/55": isDialog,
+            })}
             leftIcon={<CommentIcon className="h-[1.1rem]" />}
             value="comments"
           >
             Comments
           </Tabs.Tab>
           <Tabs.Tab
-            className="gap-1 px-2"
+            className={cn("gap-1 px-2", {
+              "dark:data-[state=active]:bg-surface-prominent/55": isDialog,
+            })}
             leftIcon={<ClockIcon className="h-[1.1rem]" />}
             value="updates"
           >
@@ -66,7 +74,9 @@ export const Activities = ({
           </Tabs.Tab>
           {hasGitHubLinks ? (
             <Tabs.Tab
-              className="gap-1 px-2"
+              className={cn("gap-1 px-2", {
+                "dark:data-[state=active]:bg-surface-prominent/55": isDialog,
+              })}
               leftIcon={<GitHubIcon className="h-[1.05rem]" />}
               value="github"
             >

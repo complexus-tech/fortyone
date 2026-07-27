@@ -14,6 +14,7 @@ import {
 import { Thinking } from "./thinking";
 
 type ChatMessagesProps = {
+  isOnPage?: boolean;
   isVoiceSpeaking?: boolean;
   isPopup?: boolean;
   messages: MayaUIMessage[];
@@ -24,6 +25,7 @@ type ChatMessagesProps = {
 };
 
 export const ChatMessages = ({
+  isOnPage = false,
   isVoiceSpeaking = false,
   isPopup = false,
   messages,
@@ -86,13 +88,19 @@ export const ChatMessages = ({
 
   return (
     <Box
-      className={cn("hide-scrollbar flex-1 overflow-y-auto", {
+      className={cn("flex-1 overflow-y-auto", {
+        "hide-scrollbar": !isOnPage,
         "px-[18px] py-5": isPopup,
-        "p-6": !isPopup,
       })}
       onScroll={handleScroll}
     >
-      <Flex direction="column" gap={6}>
+      <Flex
+        className={cn({
+          "mx-auto w-full max-w-3xl px-6 py-5": isOnPage,
+        })}
+        direction="column"
+        gap={6}
+      >
         {visibleMessages.map((message) => {
           return (
             <ChatMessage

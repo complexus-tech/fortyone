@@ -73,8 +73,9 @@ export const MayaChat = () => {
         handleChatSelect={handleChatSelect}
         handleNewChat={handleNewChat}
       />
-      <BodyContainer className="mx-auto flex max-w-3xl flex-col">
+      <BodyContainer className="flex flex-col overflow-hidden">
         <ChatMessages
+          isOnPage
           isVoiceSpeaking={realtimeVoice.isSpeaking}
           messages={displayMessages}
           onPromptSelect={handleSuggestedPrompt}
@@ -82,42 +83,44 @@ export const MayaChat = () => {
           status={status}
           value={input}
         />
-        {error || realtimeVoice.error ? (
-          <Box className="mb-4 px-6">
-            <Text>
-              {realtimeVoice.error || error?.message || "An error occurred."}{" "}
-            </Text>
-            <Button
-              className="mt-2"
-              leftIcon={<ReloadIcon className="text-current" />}
-              onClick={() => {
-                regenerate();
-              }}
-            >
-              Retry
-            </Button>
-          </Box>
-        ) : null}
+        <Box className="mx-auto flex w-full max-w-3xl shrink-0 flex-col">
+          {error || realtimeVoice.error ? (
+            <Box className="mb-4 px-6">
+              <Text>
+                {realtimeVoice.error || error?.message || "An error occurred."}{" "}
+              </Text>
+              <Button
+                className="mt-2"
+                leftIcon={<ReloadIcon className="text-current" />}
+                onClick={() => {
+                  regenerate();
+                }}
+              >
+                Retry
+              </Button>
+            </Box>
+          ) : null}
 
-        {displayMessages.length === 0 ? (
-          <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
-        ) : null}
-        {needsUpgrade ? <LimitReached isOnPage /> : null}
-        <ChatInput
-          attachments={attachments}
-          isOnPage
-          liveVoiceDisabled={needsUpgrade}
-          messagesCount={displayMessages.length}
-          onAttachmentsChange={setAttachments}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
-          onSend={handleSend}
-          onStop={handleStop}
-          realtimeVoice={realtimeVoice}
-          status={status}
-          value={input}
-        />
+          {displayMessages.length === 0 ? (
+            <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
+          ) : null}
+          {needsUpgrade ? <LimitReached isOnPage /> : null}
+          <ChatInput
+            attachments={attachments}
+            isOnPage
+            liveVoiceDisabled={needsUpgrade}
+            messagesCount={displayMessages.length}
+            onAttachmentsChange={setAttachments}
+            onChange={(e) => {
+              setInput(e.target.value);
+            }}
+            onSend={handleSend}
+            onStop={handleStop}
+            realtimeVoice={realtimeVoice}
+            status={status}
+            value={input}
+          />
+        </Box>
       </BodyContainer>
 
       <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
