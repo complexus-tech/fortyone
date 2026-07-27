@@ -1,10 +1,10 @@
 import { usePathname } from "next/navigation";
 import { Flex, Text } from "ui";
 import {
+  ActiveSprintIcon,
   AiIcon,
   AnalyticsIcon,
   DashboardIcon,
-  GridIcon,
   ObjectiveIcon,
   OKRIcon,
   UserIcon,
@@ -63,7 +63,7 @@ export const Navigation = () => {
       name: `Active ${getTermDisplay("sprintTerm", {
         variant: runningSprints.length > 1 ? "plural" : "singular",
       })}`,
-      icon: <GridIcon />,
+      icon: <ActiveSprintIcon />,
       href:
         runningSprints.length > 1
           ? withWorkspace("/sprints")
