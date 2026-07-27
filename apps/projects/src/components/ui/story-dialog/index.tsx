@@ -135,11 +135,11 @@ export const StoryDialog = ({
               >
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[8px]"
+                  className="pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[1px]"
                 />
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-foreground/80 bg-surface-muted/85 dark:bg-accent/85 shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide backdrop-blur-md"
+                    className="text-foreground/80 bg-surface-muted/85 dark:bg-accent/85 shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide backdrop-blur-[1px]"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
@@ -155,7 +155,7 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="bg-surface-muted/85 dark:bg-accent/85 ml-5 border-0 backdrop-blur-md"
+                      className="bg-surface-muted/85 dark:bg-accent/85 ml-5 border-0 backdrop-blur-[1px]"
                       color="tertiary"
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
@@ -170,7 +170,7 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-md"
+                      className="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-[1px]"
                       color="tertiary"
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
