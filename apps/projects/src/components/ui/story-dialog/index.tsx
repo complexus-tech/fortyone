@@ -135,7 +135,7 @@ export const StoryDialog = ({
               >
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[1px]"
+                  className="from-surface dark:from-surface/80 pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] bg-gradient-to-b to-transparent [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[1px]"
                 />
                 <Flex align="center" gap={2}>
                   <Button
