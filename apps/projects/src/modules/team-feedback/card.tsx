@@ -17,6 +17,7 @@ import { Avatar, Box, Button, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
 import { useWorkspacePath } from "@/hooks";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUserRole } from "@/hooks/role";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
@@ -76,7 +77,9 @@ export const TeamFeedbackCard = ({
       {
         onSuccess: (response) => {
           if (!response.error?.message && response.data?.storyId) {
-            router.push(withWorkspace(`/story/${response.data.storyId}`));
+            router.push(
+              withWorkspace(getStoryPath({ id: response.data.storyId })),
+            );
           }
         },
       },

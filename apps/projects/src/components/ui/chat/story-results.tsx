@@ -3,6 +3,7 @@
 import { Tooltip } from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useStatuses } from "@/lib/hooks/statuses";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { PriorityIcon } from "../priority-icon";
 import { Dot } from "../dot";
 import { GenerativeList, GenerativeListItem } from "./generative-list";
@@ -30,7 +31,7 @@ export const StoryResults = ({ output }: { output: unknown }) => {
         return (
           <GenerativeListItem
             ariaLabel={`Open ${story.title}. Priority: ${story.priority}. Status: ${status?.name ?? "Unknown"}.`}
-            href={withWorkspace(`/story/${story.id}`)}
+            href={withWorkspace(getStoryPath(story))}
             key={story.id}
             leading={
               <Tooltip title={`Priority: ${story.priority}`}>

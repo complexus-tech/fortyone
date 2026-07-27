@@ -75,9 +75,11 @@ func TestFormatWeeklyDigestEmailContentUsesCompactNotificationRows(t *testing.T)
 
 func TestFormatOverdueStoriesEmailContentUsesCompactNotificationRows(t *testing.T) {
 	dueSoon := OverdueStory{
-		ID:      uuid.New(),
-		Title:   "Design launch",
-		EndDate: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
+		ID:         uuid.New(),
+		Title:      "Design launch",
+		EndDate:    time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
+		TeamCode:   "PRD",
+		SequenceID: 571,
 	}
 	dueToday := OverdueStory{
 		ID:    uuid.New(),
@@ -94,6 +96,7 @@ func TestFormatOverdueStoriesEmailContentUsesCompactNotificationRows(t *testing.
 	require.Contains(t, rendered, "You have <strong")
 	require.Contains(t, rendered, "3 tasks</strong> that need attention")
 	require.Contains(t, rendered, ">Design launch</a> is due July 8, 2026")
+	require.Contains(t, rendered, `href="https://product.fortyone.app/work/PRD-571"`)
 	require.Contains(t, rendered, ">Prepare metrics</a> is due today")
 	require.Contains(t, rendered, ">Review pricing</a> is <strong")
 	require.Contains(t, rendered, "3 days</strong> overdue")

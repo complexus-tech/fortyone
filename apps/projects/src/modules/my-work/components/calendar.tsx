@@ -40,7 +40,7 @@ import type {
 } from "@/lib/queries/calendar/types";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import type { Story } from "@/modules/stories/types";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { buildCalendarEventLayouts } from "./calendar-layout";
 
 const weekStartsOn = 1 as const;
@@ -95,8 +95,8 @@ const getStoryCode = (story: Story) =>
 const getStoryHref = (
   withWorkspace: (path: string) => string,
   storyId: string,
-  title: string,
-) => withWorkspace(`/story/${storyId}/${slugify(title)}`);
+  storyCode?: string,
+) => withWorkspace(getStoryPath({ id: storyCode || storyId }));
 
 const hours = Array.from(
   { length: visibleEndHour - visibleStartHour + 1 },
@@ -155,11 +155,7 @@ const CalendarTimedBlock = ({
       : "Focus";
   const href =
     block.blockType === "work" && block.storyId
-      ? getStoryHref(
-          withWorkspace,
-          block.storyId,
-          block.storyTitle ?? block.title,
-        )
+      ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
       : null;
 
   return (
@@ -748,7 +744,9 @@ export const MyWorkCalendar = () => {
                     <Box
                       className={cn(
                         "flex h-7 min-w-7 items-center justify-center rounded-md px-2",
-                        today ? "bg-primary text-primary-foreground" : "text-foreground",
+                        today
+                          ? "bg-primary text-primary-foreground"
+                          : "text-foreground",
                       )}
                     >
                       <Text

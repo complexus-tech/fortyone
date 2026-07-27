@@ -14,7 +14,7 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
@@ -38,7 +38,7 @@ const StoryRow = ({
 }: {
   story: Story;
   duration: number | null;
-  getTeamCode: (teamId: string) => string;
+  getTeamCode: (teamId: string) => string | undefined;
   handleUpdate: (storyId: string, data: Partial<DetailedStory>) => void;
 }) => {
   // Import router and userRole directly in this component
@@ -75,7 +75,13 @@ const StoryRow = ({
           });
         }
         router.prefetch(
-          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+          withWorkspace(
+            getStoryPath({
+              id: story.id,
+              sequenceId: story.sequenceId,
+              teamCode: getTeamCode(story.teamId),
+            }),
+          ),
         );
       }}
     >
@@ -90,7 +96,9 @@ const StoryRow = ({
               className="line-clamp-1 w-[4.1rem] shrink-0 text-[0.95rem]"
               color="muted"
             >
-              {getTeamCode(story.teamId)}-{story.sequenceId}
+              {getTeamCode(story.teamId) ||
+                getTermDisplay("storyTerm").toUpperCase()}
+              -{story.sequenceId}
             </Text>
             <AssigneesMenu>
               <Tooltip
@@ -189,7 +197,13 @@ const StoryRow = ({
 
             <Link
               className="flex min-w-0 flex-1 items-center gap-1.5"
-              href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
+              href={withWorkspace(
+                getStoryPath({
+                  id: story.id,
+                  sequenceId: story.sequenceId,
+                  teamCode: getTeamCode(story.teamId),
+                }),
+              )}
             >
               <Text
                 className="line-clamp-1 hover:opacity-90"
@@ -249,18 +263,14 @@ type GanttBoardProps = {
 
 export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: teams = [] } = useTeams();
-  const { getTermDisplay } = useTerminology();
   const { mutate } = useUpdateStoryMutation();
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
 
   // Simple function to get team code from teamId
   const getTeamCode = useCallback(
-    (teamId: string): string => {
-      const team = teams.find((t) => t.id === teamId);
-      return team?.code || getTermDisplay("storyTerm").toUpperCase();
-    },
-    [getTermDisplay, teams],
+    (teamId: string) => teams.find((team) => team.id === teamId)?.code,
+    [teams],
   );
 
   // Handle date updates from drag operations
@@ -280,9 +290,17 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   // Handle bar clicks to navigate to story page
   const handleBarClick = useCallback(
     (story: Story) => {
-      router.push(withWorkspace(`/story/${story.id}/${slugify(story.title)}`));
+      router.push(
+        withWorkspace(
+          getStoryPath({
+            id: story.id,
+            sequenceId: story.sequenceId,
+            teamCode: getTeamCode(story.teamId),
+          }),
+        ),
+      );
     },
-    [router, withWorkspace],
+    [getTeamCode, router, withWorkspace],
   );
 
   const handleUpdate = useCallback(

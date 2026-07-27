@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import type {
   GroupedStoriesResponse,
   Story,
@@ -367,11 +367,7 @@ export const useDuplicateStoryMutation = () => {
         action: {
           label: `View ${storyTerm}`,
           onClick: () => {
-            router.push(
-              withWorkspace(
-                `/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`,
-              ),
-            );
+            router.push(withWorkspace(getStoryPath(duplicatedStory)));
           },
         },
       });

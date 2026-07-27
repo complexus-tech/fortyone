@@ -1156,8 +1156,8 @@ func TestBuildWorkspaceURLSupportsSubdomainsAndLocalhost(t *testing.T) {
 		integrationURL := buildWorkspaceURL("https://fortyone.app", "acme", "settings", "workspace", "integrations", "slack")
 		require.Equal(t, "https://acme.fortyone.app/settings/workspace/integrations/slack", integrationURL)
 
-		taskURL := buildTaskURL("https://fortyone.app", "acme", "story-123")
-		require.Equal(t, "https://acme.fortyone.app/story/story-123", taskURL)
+		taskURL := buildTaskURL("https://fortyone.app", "acme", "PRD-571")
+		require.Equal(t, "https://acme.fortyone.app/work/PRD-571", taskURL)
 
 		requestURL := buildRequestURL("https://fortyone.app", "acme", "team-1", "req-1")
 		require.Equal(t, "https://acme.fortyone.app/teams/team-1/requests/req-1", requestURL)

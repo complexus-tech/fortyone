@@ -48,6 +48,7 @@ import {
 import { useFeedbackPortals } from "@/modules/settings/workspace/feedback/hooks";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { Option } from "@/modules/story/components/options";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import {
   getStoryCommentEditorExtensions,
   serializeStoryCommentToGitHubMarkdown,
@@ -757,7 +758,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   const feedbackTeamId = feedback.board.teamId || teamId;
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const linkedStoryHref = linkedStory
-    ? withWorkspace(`/story/${linkedStory.storyId}`)
+    ? withWorkspace(getStoryPath({ id: linkedStory.storyId }))
     : undefined;
   const feedbackPortal = feedbackPortals.find(
     (portal) => portal.id === feedback.portalId,
@@ -780,7 +781,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     : feedbackListHref;
 
   const openStory = (storyId: string) => {
-    router.push(withWorkspace(`/story/${storyId}`));
+    router.push(withWorkspace(getStoryPath({ id: storyId })));
   };
 
   const handlePlan = () => {

@@ -14,7 +14,7 @@ import { useStoryById } from "@/modules/story/hooks/story";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useRestoreStoryMutation } from "@/modules/story/hooks/restore-mutation";
 import { useProfile } from "@/lib/hooks/profile";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useGitHubIntegration } from "@/lib/hooks/github";
@@ -68,10 +68,16 @@ export const OptionsHeader = ({
   };
 
   const getStoryUrl = () => {
+    const storyPath = getStoryPath({
+      id,
+      sequenceId,
+      teamCode: code,
+    });
+
     if (isFortyOneApp) {
-      return `${window.location.origin}/story/${id}`;
+      return `${window.location.origin}${storyPath}`;
     }
-    return `${window.location.origin}/${workspaceSlug}/story/${id}`;
+    return `${window.location.origin}/${workspaceSlug}${storyPath}`;
   };
 
   const copyBranchName = async () => {
@@ -138,7 +144,13 @@ export const OptionsHeader = ({
                 <Button
                   asIcon
                   color="tertiary"
-                  href={withWorkspace(`/story/${id}/${slugify(title)}`)}
+                  href={withWorkspace(
+                    getStoryPath({
+                      id,
+                      sequenceId,
+                      teamCode: code,
+                    }),
+                  )}
                   leftIcon={<MaximizeIcon className="h-5" strokeWidth={2.5} />}
                   variant="naked"
                 >

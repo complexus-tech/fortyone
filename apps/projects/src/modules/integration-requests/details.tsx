@@ -70,6 +70,7 @@ import type { State } from "@/types/states";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { Option } from "@/modules/story/components/options";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -958,7 +959,9 @@ export const IntegrationRequestDetails = ({
     acceptRequest.mutate(request.id, {
       onSuccess: (res) => {
         if (res.data?.acceptedStoryId) {
-          router.push(withWorkspace(`/story/${res.data.acceptedStoryId}`));
+          router.push(
+            withWorkspace(getStoryPath({ id: res.data.acceptedStoryId })),
+          );
         }
       },
     });

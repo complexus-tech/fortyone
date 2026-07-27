@@ -99,6 +99,8 @@ type OverdueStory struct {
 	WorkspaceSlug  string    `db:"workspace_slug"`
 	TeamID         uuid.UUID `db:"team_id"`
 	TeamName       string    `db:"team_name"`
+	TeamCode       string    `db:"team_code"`
+	SequenceID     int       `db:"sequence_id"`
 	StatusName     string    `db:"status_name"`
 	StatusCategory string    `db:"status_category"`
 	DeadlineStatus string    `db:"deadline_status"`
@@ -170,11 +172,11 @@ func overdueStoriesForAssigneeQuery() string {
 	return `
 		WITH story_deadlines AS (
     SELECT 
-        s.id, s.title, s.end_date, s.assignee_id, s.workspace_id, s.team_id,
+        s.id, s.sequence_id, s.title, s.end_date, s.assignee_id, s.workspace_id, s.team_id,
         u.email as assignee_email, 
         COALESCE(NULLIF(u.full_name, ''), u.username) as assignee_name,
         w.name as workspace_name, w.slug as workspace_slug,
-        t.name as team_name, 
+        t.name as team_name, t.code as team_code,
         st.name as status_name, st.category as status_category,
         CASE 
             WHEN s.end_date = CURRENT_DATE THEN 'due_today'
@@ -346,7 +348,7 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 		for _, story := range dueSoonStories {
 			rows = append(rows, fmt.Sprintf(
 				"Task %s is due %s.",
-				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				formatEmailLink(overdueStoryURL(workspaceURL, story), story.Title),
 				html.EscapeString(story.EndDate.Format("January 2, 2006")),
 			))
 		}
@@ -356,7 +358,7 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 		for _, story := range dueTodayStories {
 			rows = append(rows, fmt.Sprintf(
 				"Task %s is due today.",
-				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				formatEmailLink(overdueStoryURL(workspaceURL, story), story.Title),
 			))
 		}
 	}
@@ -369,11 +371,19 @@ func formatOverdueStoriesEmailContent(firstStory OverdueStory, dueSoonStories, d
 			}
 			rows = append(rows, fmt.Sprintf(
 				"Task %s is %s overdue.",
-				formatEmailLink(fmt.Sprintf("%s/story/%s", workspaceURL, story.ID.String()), story.Title),
+				formatEmailLink(overdueStoryURL(workspaceURL, story), story.Title),
 				formatEmailStrong(fmt.Sprintf("%d %s", story.DaysDifference, daysText)),
 			))
 		}
 	}
 
 	return formatCompactNotificationRows("Here's what needs attention.", rows)
+}
+
+func overdueStoryURL(workspaceURL string, story OverdueStory) string {
+	reference := story.ID.String()
+	if teamCode := strings.ToUpper(strings.TrimSpace(story.TeamCode)); teamCode != "" && story.SequenceID > 0 {
+		reference = fmt.Sprintf("%s-%d", teamCode, story.SequenceID)
+	}
+	return fmt.Sprintf("%s/work/%s", strings.TrimRight(workspaceURL, "/"), reference)
 }

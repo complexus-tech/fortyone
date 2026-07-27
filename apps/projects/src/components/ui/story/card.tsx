@@ -7,8 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
-import { slugify } from "@/utils";
 import type { DetailedStory } from "@/modules/story/types";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
@@ -80,7 +80,13 @@ export const StoryCard = ({
           });
         }
         router.prefetch(
-          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+          withWorkspace(
+            getStoryPath({
+              id: story.id,
+              sequenceId: story.sequenceId,
+              teamCode,
+            }),
+          ),
         );
       }}
     >
@@ -105,7 +111,13 @@ export const StoryCard = ({
           >
             <Link
               className="flex justify-between gap-2"
-              href={withWorkspace(`/story/${story.id}/${slugify(story.title)}`)}
+              href={withWorkspace(
+                getStoryPath({
+                  id: story.id,
+                  sequenceId: story.sequenceId,
+                  teamCode,
+                }),
+              )}
               onClick={(e) => {
                 if (isDesktop && openStoryInDialog) {
                   e.preventDefault();

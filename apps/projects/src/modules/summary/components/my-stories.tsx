@@ -9,7 +9,7 @@ import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Story } from "@/modules/stories/types";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
@@ -38,7 +38,11 @@ const StoryRow = ({
     : String(sequenceId);
 
   return (
-    <Link href={withWorkspace(`/story/${id}/${slugify(title)}`)}>
+    <Link
+      href={withWorkspace(
+        getStoryPath({ id, sequenceId, teamCode: team?.code }),
+      )}
+    >
       <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
         <Flex
           align="center"

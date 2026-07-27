@@ -35,7 +35,8 @@ import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { hexToRgba, slugify } from "@/utils";
+import { hexToRgba } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatEstimate } from "@/lib/estimate";
 import { RowWrapper } from "../row-wrapper";
@@ -363,7 +364,11 @@ export const StoryProperties = ({
               {subStories.map((subStory, idx) => (
                 <Link
                   href={withWorkspace(
-                    `/story/${subStory.id}/${slugify(subStory.title)}`,
+                    getStoryPath({
+                      id: subStory.id,
+                      sequenceId: subStory.sequenceId,
+                      teamCode,
+                    }),
                   )}
                   key={subStory.id}
                 >

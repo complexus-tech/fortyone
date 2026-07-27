@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -365,11 +365,7 @@ export const useCreateStoryMutation = () => {
           action: {
             label: `View ${storyTerm}`,
             onClick: () => {
-              router.push(
-                withWorkspace(
-                  `/story/${createdStory.id}/${slugify(createdStory.title)}`,
-                ),
-              );
+              router.push(withWorkspace(getStoryPath(createdStory)));
             },
           },
         });

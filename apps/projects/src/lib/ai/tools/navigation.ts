@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { withWorkspacePath } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 
 export const navigation = tool({
   description:
@@ -125,7 +126,10 @@ export const navigation = tool({
             error: "Entity ID is required for story navigation",
           };
         }
-        routePath = withWorkspacePath(`/story/${entityId}`, workspaceSlug);
+        routePath = withWorkspacePath(
+          getStoryPath({ id: entityId }),
+          workspaceSlug,
+        );
         message = "Navigating to story details";
         break;
 

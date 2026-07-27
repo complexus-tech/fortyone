@@ -326,7 +326,7 @@ func (s *Service) RuntimeCreateStory(ctx context.Context, input CoreRuntimeCreat
 		ID:    story.ID.String(),
 		Ref:   ref,
 		Title: story.Title,
-		URL:   buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, story.ID.String()),
+		URL:   buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, ref),
 	}, nil
 }
 
@@ -1071,7 +1071,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		}
 	}
 
-	s.postSlackTaskAck(ctx, submission.Source, slackWorkspace.BotAccessToken, workspace.Slug, story)
+	s.postSlackTaskAck(ctx, submission.Source, slackWorkspace.BotAccessToken, workspace.Slug, team.Code, story)
 	return interactionClearResponse()
 }
 
@@ -1331,7 +1331,11 @@ func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrat
 		return err
 	}
 	workspaceSlug := metadataString(request.Metadata, "workspace_slug")
-	storyURL := buildTaskURL(s.cfg.WebsiteURL, workspaceSlug, story.ID.String())
+	storyURL := buildTaskURL(
+		s.cfg.WebsiteURL,
+		workspaceSlug,
+		buildStoryReference(story.TeamCode, story.SequenceID, story.ID.String()),
+	)
 	text := fmt.Sprintf("✅ Request accepted in FortyOne: %s", story.Title)
 	if storyURL != "" {
 		text = fmt.Sprintf("✅ Request accepted in FortyOne: <%s|%s>", storyURL, story.Title)
@@ -1889,7 +1893,7 @@ func (s *Service) postSlackRequestAck(ctx context.Context, source requestSourceC
 	}
 }
 
-func (s *Service) postSlackTaskAck(ctx context.Context, source requestSourceContext, botToken, workspaceSlug string, story stories.CoreSingleStory) {
+func (s *Service) postSlackTaskAck(ctx context.Context, source requestSourceContext, botToken, workspaceSlug, teamCode string, story stories.CoreSingleStory) {
 	if source.SlackChannelID == "" {
 		return
 	}
@@ -1897,7 +1901,11 @@ func (s *Service) postSlackTaskAck(ctx context.Context, source requestSourceCont
 	if threadTS == "" {
 		threadTS = source.SlackMessageTS
 	}
-	taskURL := buildTaskURL(s.cfg.WebsiteURL, workspaceSlug, story.ID.String())
+	taskURL := buildTaskURL(
+		s.cfg.WebsiteURL,
+		workspaceSlug,
+		buildStoryReference(teamCode, story.SequenceID, story.ID.String()),
+	)
 	text := fmt.Sprintf("✅ Task created in FortyOne: %s", story.Title)
 	if taskURL != "" {
 		text = fmt.Sprintf("✅ Task created in FortyOne: <%s|%s>", taskURL, story.Title)
@@ -2807,11 +2815,19 @@ func buildWorkspaceURL(websiteURL, workspaceSlug string, routeSegments ...string
 	return baseURL.String()
 }
 
-func buildTaskURL(websiteURL, workspaceSlug, storyID string) string {
-	if strings.TrimSpace(storyID) == "" {
+func buildStoryReference(teamCode string, sequenceID int, fallbackID string) string {
+	normalizedCode := strings.ToUpper(strings.TrimSpace(teamCode))
+	if normalizedCode != "" && sequenceID > 0 {
+		return fmt.Sprintf("%s-%d", normalizedCode, sequenceID)
+	}
+	return strings.TrimSpace(fallbackID)
+}
+
+func buildTaskURL(websiteURL, workspaceSlug, storyReference string) string {
+	if strings.TrimSpace(storyReference) == "" {
 		return ""
 	}
-	return buildWorkspaceURL(websiteURL, workspaceSlug, "story", storyID)
+	return buildWorkspaceURL(websiteURL, workspaceSlug, "work", storyReference)
 }
 
 func buildRequestURL(websiteURL, workspaceSlug, teamID, requestID string) string {

@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
@@ -32,7 +31,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	githubsdk "github.com/google/go-github/v72/github"
 	"github.com/google/uuid"
-	"golang.org/x/text/unicode/norm"
 )
 
 var refPattern = regexp.MustCompile(`\b([A-Za-z]{2,}[ -]?\d+)\b`)
@@ -1608,7 +1606,11 @@ func (s *Service) autoPopulatePRBody(ctx context.Context, repository githubrepos
 	if err != nil || !settings.AutoPopulatePRBody {
 		return
 	}
-	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.StoryID, story.Title)
+	storyURL, err := storyURLFromWebsite(
+		s.cfg.WebsiteURL,
+		repository.WorkspaceSlug,
+		buildStoryReference(story.TeamCode, story.SequenceID, story.StoryID.String()),
+	)
 	if err != nil {
 		return
 	}
@@ -1939,7 +1941,15 @@ func storyCommentMarker(storyID uuid.UUID) string {
 	return fmt.Sprintf("`%s`", storyID.String())
 }
 
-func storyURLFromWebsite(websiteURL, workspaceSlug string, storyID uuid.UUID, storyTitle string) (string, error) {
+func buildStoryReference(teamCode string, sequenceID int, fallbackID string) string {
+	normalizedCode := strings.ToUpper(strings.TrimSpace(teamCode))
+	if normalizedCode != "" && sequenceID > 0 {
+		return fmt.Sprintf("%s-%d", normalizedCode, sequenceID)
+	}
+	return strings.TrimSpace(fallbackID)
+}
+
+func storyURLFromWebsite(websiteURL, workspaceSlug, storyReference string) (string, error) {
 	baseURL, err := url.Parse(strings.TrimRight(websiteURL, "/"))
 	if err != nil {
 		return "", err
@@ -1948,8 +1958,11 @@ func storyURLFromWebsite(websiteURL, workspaceSlug string, storyID uuid.UUID, st
 	if workspaceSlug == "" {
 		return "", errors.New("workspace slug is required")
 	}
+	if strings.TrimSpace(storyReference) == "" {
+		return "", errors.New("story reference is required")
+	}
 
-	baseURL.Path = path.Join("/", "story", storyID.String(), slugifyStoryTitle(storyTitle))
+	baseURL.Path = path.Join("/", "work", storyReference)
 
 	host := baseURL.Hostname()
 	if host == "" {
@@ -1957,7 +1970,7 @@ func storyURLFromWebsite(websiteURL, workspaceSlug string, storyID uuid.UUID, st
 	}
 
 	if isLocalWebsiteHost(host) {
-		baseURL.Path = path.Join("/", workspaceSlug, "story", storyID.String(), slugifyStoryTitle(storyTitle))
+		baseURL.Path = path.Join("/", workspaceSlug, "work", storyReference)
 		return baseURL.String(), nil
 	}
 
@@ -1974,40 +1987,6 @@ func storyURLFromWebsite(websiteURL, workspaceSlug string, storyID uuid.UUID, st
 
 func isLocalWebsiteHost(host string) bool {
 	return strings.EqualFold(host, "localhost") || strings.EqualFold(host, "0.0.0.0") || net.ParseIP(host) != nil
-}
-
-func slugifyStoryTitle(title string) string {
-	normalized := norm.NFD.String(strings.TrimSpace(strings.ToLower(title)))
-	var b strings.Builder
-	lastHyphen := false
-
-	for _, r := range normalized {
-		switch {
-		case unicode.Is(unicode.Mn, r):
-			continue
-		case unicode.IsLetter(r) || unicode.IsDigit(r):
-			b.WriteRune(r)
-			lastHyphen = false
-		case r == '&':
-			if b.Len() > 0 && !lastHyphen {
-				b.WriteByte('-')
-			}
-			b.WriteString("and")
-			lastHyphen = false
-		default:
-			if b.Len() == 0 || lastHyphen {
-				continue
-			}
-			b.WriteByte('-')
-			lastHyphen = true
-		}
-	}
-
-	slug := strings.Trim(b.String(), "-")
-	if slug == "" {
-		return "story"
-	}
-	return slug
 }
 
 func loadPrivateKey(privateKeyBase64 string) (*rsa.PrivateKey, error) {
@@ -2296,11 +2275,6 @@ func (s *Service) updateIssue(ctx context.Context, installationID int64, owner, 
 }
 
 func (s *Service) ensureIssueImportComment(ctx context.Context, repository githubrepository.RepoByExternalRow, issueNumber int, story stories.CoreSingleStory) error {
-	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.ID, story.Title)
-	if err != nil {
-		return err
-	}
-
 	// Some create paths may not hydrate team_code on the freshly returned story.
 	// Re-load before constructing the task key to avoid malformed values like "-418".
 	if strings.TrimSpace(story.TeamCode) == "" {
@@ -2308,6 +2282,15 @@ func (s *Service) ensureIssueImportComment(ctx context.Context, repository githu
 		if loadErr == nil {
 			story = loadedStory
 		}
+	}
+
+	storyURL, err := storyURLFromWebsite(
+		s.cfg.WebsiteURL,
+		repository.WorkspaceSlug,
+		buildStoryReference(story.TeamCode, story.SequenceID, story.ID.String()),
+	)
+	if err != nil {
+		return err
 	}
 
 	exists, err := s.issueHasStoryComment(
@@ -2338,7 +2321,11 @@ func (s *Service) ensureIssueImportComment(ctx context.Context, repository githu
 }
 
 func (s *Service) ensurePRLinkedComment(ctx context.Context, repository githubrepository.RepoByExternalRow, prNumber int, story githubrepository.StoryMatch) error {
-	storyURL, err := storyURLFromWebsite(s.cfg.WebsiteURL, repository.WorkspaceSlug, story.StoryID, story.Title)
+	storyURL, err := storyURLFromWebsite(
+		s.cfg.WebsiteURL,
+		repository.WorkspaceSlug,
+		buildStoryReference(story.TeamCode, story.SequenceID, story.StoryID.String()),
+	)
 	if err != nil {
 		return err
 	}

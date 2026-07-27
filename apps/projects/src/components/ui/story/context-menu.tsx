@@ -21,7 +21,7 @@ import {
   useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
@@ -57,7 +57,13 @@ export const StoryContextMenu = ({
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
 
-  const storyUrl = withWorkspace(`/story/${story.id}/${slugify(story.title)}`);
+  const storyUrl = withWorkspace(
+    getStoryPath({
+      id: story.id,
+      sequenceId: story.sequenceId,
+      teamCode: story.team?.code,
+    }),
+  );
 
   const handleArchive = () => {
     archiveStory([story.id]);

@@ -3,7 +3,9 @@ import type { StoryPriority } from "@/modules/stories/types";
 export type StoryResult = {
   id: string;
   priority: StoryPriority;
+  sequenceId?: number;
   statusId: string;
+  teamCode?: string;
   title: string;
 };
 
@@ -45,7 +47,10 @@ const toStoryResult = (value: unknown): StoryResult | null => {
   return {
     id,
     priority: asStoryPriority(value.priority),
+    sequenceId:
+      typeof value.sequenceId === "number" ? value.sequenceId : undefined,
     statusId,
+    teamCode: typeof value.teamCode === "string" ? value.teamCode : undefined,
     title,
   };
 };

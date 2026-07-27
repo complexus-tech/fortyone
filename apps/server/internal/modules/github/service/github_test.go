@@ -159,3 +159,18 @@ func TestShouldIgnoreFortyOneIssueEcho(t *testing.T) {
 	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "", syncHash, syncHash))
 	require.False(t, shouldIgnoreFortyOneIssueEcho("labeled", "fortyone", syncHash, syncHash))
 }
+
+func TestStoryURLFromWebsiteUsesCanonicalWorkReference(t *testing.T) {
+	hostedURL, err := storyURLFromWebsite("https://fortyone.app", "acme", "PRD-571")
+	require.NoError(t, err)
+	require.Equal(t, "https://acme.fortyone.app/work/PRD-571", hostedURL)
+
+	localURL, err := storyURLFromWebsite("http://localhost:3000", "acme", "PRD-571")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:3000/acme/work/PRD-571", localURL)
+}
+
+func TestBuildStoryReference(t *testing.T) {
+	require.Equal(t, "PRD-571", buildStoryReference(" prd ", 571, "story-id"))
+	require.Equal(t, "story-id", buildStoryReference("", 571, "story-id"))
+}

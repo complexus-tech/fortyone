@@ -276,7 +276,9 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 									FROM
 											stories sub
 									WHERE
-											sub.parent_id = s.id AND sub.deleted_at IS NULL
+											sub.parent_id = s.id
+											AND sub.workspace_id = s.workspace_id
+											AND sub.deleted_at IS NULL
 							), '[]'
 					) AS sub_stories,
 					COALESCE(
@@ -2989,7 +2991,9 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 									FROM
 											stories sub
 									WHERE
-											sub.parent_id = s.id AND sub.deleted_at IS NULL
+											sub.parent_id = s.id
+											AND sub.workspace_id = s.workspace_id
+											AND sub.deleted_at IS NULL
 							), '[]'
 					) AS sub_stories,
 					COALESCE(
@@ -3051,10 +3055,13 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 					) AS associations
 				FROM
 					stories s
-					INNER JOIN teams t ON s.team_id = t.team_id
+					INNER JOIN teams t
+						ON s.team_id = t.team_id
+						AND s.workspace_id = t.workspace_id
 				WHERE
 					s.sequence_id = :sequence_id
 					AND t.code = :team_code
+					AND t.workspace_id = :workspace_id
 					AND s.workspace_id = :workspace_id
 					AND s.deleted_at IS NULL;
     `
@@ -3093,8 +3100,11 @@ func (r *repo) GetStoryIDByRef(ctx context.Context, workspaceId uuid.UUID, teamC
 
 	q := `SELECT s.id
 		  FROM stories s
-		  INNER JOIN teams t ON s.team_id = t.team_id
+		  INNER JOIN teams t
+			ON s.team_id = t.team_id
+			AND s.workspace_id = t.workspace_id
 		  WHERE t.code = :team_code
+			AND t.workspace_id = :workspace_id
 			AND s.sequence_id = :sequence_id
 			AND s.workspace_id = :workspace_id
 			AND s.deleted_at IS NULL

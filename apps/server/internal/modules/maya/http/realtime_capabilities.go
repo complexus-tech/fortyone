@@ -74,7 +74,11 @@ func (h *Handlers) executeNavigate(ctx context.Context, workspaceID, userID uuid
 		if err != nil || response != nil {
 			return responseOrEmpty(response), err
 		}
-		return realtimeNavigationResponse(fmt.Sprintf("/story/%s", story.ID), "story"), nil
+		storyReference := story.ID.String()
+		if teamCode := strings.ToUpper(strings.TrimSpace(story.TeamCode)); teamCode != "" && story.SequenceID > 0 {
+			storyReference = fmt.Sprintf("%s-%d", teamCode, story.SequenceID)
+		}
+		return realtimeNavigationResponse(fmt.Sprintf("/work/%s", storyReference), "story"), nil
 	case "feedback":
 		if strings.TrimSpace(args.TeamName) != "" && resolveRealtimeTeam(teamList, args.TeamName) == nil {
 			return realtimeTeamClarification(teamList, "Ask which team's feedback to open."), nil

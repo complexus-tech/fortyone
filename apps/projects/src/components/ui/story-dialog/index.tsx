@@ -14,7 +14,7 @@ import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import type { Story } from "@/modules/stories/types";
 import { StoryPage } from "../../../modules/story";
 
@@ -135,11 +135,11 @@ export const StoryDialog = ({
               >
                 <div
                   aria-hidden="true"
-                  className="from-surface via-surface/80 pointer-events-none absolute inset-x-0 top-0 -bottom-8 -z-1 bg-gradient-to-b to-transparent [mask-image:linear-gradient(to_bottom,black_0%,black_45%,transparent_100%)] backdrop-blur-xl"
+                  className="pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[8px]"
                 />
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-foreground/80 bg-surface-muted dark:bg-accent shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide"
+                    className="text-foreground/80 bg-surface-muted/85 dark:bg-accent/85 shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide backdrop-blur-md"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
@@ -155,7 +155,7 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="bg-surface-muted dark:bg-accent ml-5 border-0"
+                      className="bg-surface-muted/85 dark:bg-accent/85 ml-5 border-0 backdrop-blur-md"
                       color="tertiary"
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
@@ -170,7 +170,7 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="bg-surface-muted dark:bg-accent border-0"
+                      className="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-md"
                       color="tertiary"
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
@@ -187,7 +187,11 @@ export const StoryDialog = ({
                         asIcon
                         color="tertiary"
                         href={withWorkspace(
-                          `/story/${story?.id}/${slugify(story?.title)}`,
+                          getStoryPath({
+                            id: story?.id ?? storyId,
+                            sequenceId: story?.sequenceId,
+                            teamCode: story?.teamCode,
+                          }),
                         )}
                         leftIcon={
                           <MaximizeIcon

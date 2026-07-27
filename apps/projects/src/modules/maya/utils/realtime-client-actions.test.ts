@@ -5,13 +5,13 @@ import { extractRealtimeClientAction } from "./realtime-client-actions";
 describe("extractRealtimeClientAction", () => {
   it("returns a safe navigation action and hides it from the model", () => {
     const result = extractRealtimeClientAction({
-      clientAction: { path: "/story/story-id", type: "navigate" },
+      clientAction: { path: "/work/story-id", type: "navigate" },
       message: "Opening story.",
       success: true,
     });
 
     expect(result.action).toEqual({
-      path: "/story/story-id",
+      path: "/work/story-id",
       type: "navigate",
     });
     expect(result.modelOutput).toEqual({
