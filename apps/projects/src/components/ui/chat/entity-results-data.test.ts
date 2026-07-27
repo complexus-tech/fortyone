@@ -171,4 +171,34 @@ describe("entity results generative UI", () => {
 
     expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([0, 1]);
   });
+
+  it("renders only the final result when a visible list tool runs repeatedly", () => {
+    const message = {
+      id: "message-3",
+      parts: [
+        {
+          output: { kind: "story-list", stories: [], success: true },
+          state: "output-available",
+          type: "tool-searchStories",
+        },
+        {
+          output: { kind: "story-list", stories: [], success: true },
+          state: "output-available",
+          type: "tool-searchStories",
+        },
+        {
+          output: {
+            kind: "story-list",
+            stories: [{ id: "story-1", title: "Review community" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-searchStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([2]);
+  });
 });

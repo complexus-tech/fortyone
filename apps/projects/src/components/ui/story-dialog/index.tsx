@@ -129,10 +129,14 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="border-border/40 bg-surface/75 supports-[backdrop-filter]:bg-surface/65 sticky top-0 z-2 border-b px-6 py-4 backdrop-blur-xl"
+                className="sticky top-0 isolate z-2 px-6 py-4"
                 gap={2}
                 justify="between"
               >
+                <div
+                  aria-hidden="true"
+                  className="from-surface via-surface/80 pointer-events-none absolute inset-x-0 top-0 -bottom-8 -z-1 bg-gradient-to-b to-transparent [mask-image:linear-gradient(to_bottom,black_0%,black_45%,transparent_100%)] backdrop-blur-xl"
+                />
                 <Flex align="center" gap={2}>
                   <Button
                     className="text-foreground/80 bg-surface-muted dark:bg-accent shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide"

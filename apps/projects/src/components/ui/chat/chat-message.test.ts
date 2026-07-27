@@ -104,5 +104,24 @@ describe("ChatMessage", () => {
     expect(promptSource).toContain(
       "normally return no follow-up text after the UI",
     );
+    expect(promptSource).toContain(
+      "User-facing generative UI tools are presentation tools",
+    );
+    expect(promptSource).toContain(
+      "When stories are only evidence for a comparison, duplicate check, classification, review, or recommendation, use the search tool",
+    );
+    expect(promptSource).toContain(
+      "Empty interactive-list results appear as one plain no-results sentence instead of generative UI",
+    );
+  });
+
+  it("renders empty list results as plain text without generative list chrome", () => {
+    const source = readSource("src/components/ui/chat/generative-list.tsx");
+
+    expect(source).toContain("if (items.length === 0)");
+    expect(source).toContain(
+      '<p className="text-text-muted text-base">{emptyMessage}</p>',
+    );
+    expect(source).not.toContain("{items.length ?");
   });
 });

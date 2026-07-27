@@ -23,6 +23,10 @@ export const GenerativeList = ({
   const remainingItemCount = items.length - GENERATIVE_LIST_PREVIEW_LIMIT;
   const hasAdditionalItems = remainingItemCount > 0;
 
+  if (items.length === 0) {
+    return <p className="text-text-muted text-base">{emptyMessage}</p>;
+  }
+
   return (
     <section
       aria-label={title}
@@ -30,13 +34,7 @@ export const GenerativeList = ({
     >
       <span className="text-text-muted text-base font-medium">{title}</span>
       <div className="border-border/70 grid w-full max-w-full min-w-0 overflow-hidden border-t dark:border-white/[0.09]">
-        {items.length ? (
-          visibleItems
-        ) : (
-          <span className="border-border/70 text-text-muted border-b px-px py-3 text-base dark:border-white/[0.09]">
-            {emptyMessage}
-          </span>
-        )}
+        {visibleItems}
         {hasAdditionalItems ? (
           <button
             className="border-border/70 text-foreground focus-visible:ring-foreground/50 min-h-12 w-full border-b px-px py-3 text-left text-base font-medium transition-opacity outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-white/[0.09]"

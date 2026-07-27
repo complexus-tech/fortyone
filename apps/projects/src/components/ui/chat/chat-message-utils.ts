@@ -39,8 +39,15 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
         laterToolParts.some(({ part: laterPart }) =>
           TEAM_SCOPED_RESULT_TYPES.has(laterPart.type),
         );
+      const hasLaterResultOfSameType = laterToolParts.some(
+        ({ part: laterPart }) => laterPart.type === part.type,
+      );
 
-      return feedsLaterReport || feedsLaterTeamResult ? [] : [index];
+      return feedsLaterReport ||
+        feedsLaterTeamResult ||
+        hasLaterResultOfSameType
+        ? []
+        : [index];
     }),
   );
 };
