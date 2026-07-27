@@ -1,8 +1,14 @@
 import { Avatar, Box, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
 import type { ChatStatus } from "ai";
-import { useState, type ComponentProps } from "react";
-import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
+import {
+  ArrowDown2Icon,
+  CheckIcon,
+  CopyIcon,
+  PlusIcon,
+  ReloadIcon,
+} from "icons";
 import { Streamdown, type StreamdownProps } from "streamdown";
 import type { User } from "@/types";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
@@ -11,6 +17,7 @@ import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
 import {
   getMessageText,
+  getPromptTextSegments,
   getVisibleToolPartIndexes,
 } from "./chat-message-utils";
 import { isToolMessagePart } from "./tool-output-policy";
@@ -32,6 +39,104 @@ const STREAMDOWN_COMPONENTS: NonNullable<StreamdownProps["components"]> = {
   a: LinkText,
 };
 
+const USER_PROMPT_MAX_LINES = 20;
+const USER_PROMPT_LINE_HEIGHT_REM = 1.5;
+
+const UserPrompt = ({ text }: { text: string }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [canExpand, setCanExpand] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const segments = getPromptTextSegments(text);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    const measureOverflow = () => {
+      const lineHeight = Number.parseFloat(
+        window.getComputedStyle(content).lineHeight,
+      );
+      if (!Number.isFinite(lineHeight)) return;
+
+      setCanExpand(
+        content.scrollHeight > lineHeight * USER_PROMPT_MAX_LINES + 1,
+      );
+    };
+
+    const initialMeasurementFrame =
+      window.requestAnimationFrame(measureOverflow);
+    const resizeObserver = new ResizeObserver(measureOverflow);
+    resizeObserver.observe(content);
+
+    return () => {
+      window.cancelAnimationFrame(initialMeasurementFrame);
+      resizeObserver.disconnect();
+    };
+  }, [text]);
+
+  return (
+    <div className="min-w-0">
+      <div
+        className={cn(
+          "min-w-0 text-base leading-6 break-words whitespace-pre-wrap",
+          {
+            "overflow-hidden": !isExpanded,
+          },
+        )}
+        ref={contentRef}
+        style={
+          isExpanded
+            ? undefined
+            : {
+                maxHeight: `${USER_PROMPT_MAX_LINES * USER_PROMPT_LINE_HEIGHT_REM}rem`,
+              }
+        }
+      >
+        {segments.map((segment) =>
+          segment.type === "link" ? (
+            <a
+              className="text-primary focus-visible:ring-primary/50 break-all underline underline-offset-2 transition-opacity outline-none hover:opacity-75 focus-visible:ring-2"
+              href={segment.href}
+              key={`${segment.type}-${segment.start}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {segment.value}
+            </a>
+          ) : (
+            <span key={`${segment.type}-${segment.start}`}>
+              {segment.value}
+            </span>
+          ),
+        )}
+      </div>
+      {canExpand && !isExpanded ? (
+        <span aria-hidden="true" className="mt-1 block">
+          ...
+        </span>
+      ) : null}
+      {canExpand ? (
+        <button
+          aria-expanded={isExpanded}
+          className="text-text-muted hover:text-foreground focus-visible:ring-foreground/40 mt-2 flex items-center gap-1 rounded-sm text-sm font-medium transition-colors outline-none focus-visible:ring-2"
+          onClick={() => {
+            setIsExpanded((current) => !current);
+          }}
+          type="button"
+        >
+          {isExpanded ? "Show less" : "Show more"}
+          <ArrowDown2Icon
+            aria-hidden="true"
+            className={cn("h-4 w-4 transition-transform duration-150", {
+              "rotate-180": isExpanded,
+            })}
+          />
+        </button>
+      ) : null}
+    </div>
+  );
+};
+
 const RenderMessage = ({
   isAnimating,
   message,
@@ -41,6 +146,10 @@ const RenderMessage = ({
   message: MayaUIMessage;
   onPromptSelect: (prompt: string) => void;
 }) => {
+  if (message.role === "user") {
+    return <UserPrompt text={getMessageText(message)} />;
+  }
+
   const visibleToolPartIndexes = getVisibleToolPartIndexes(message);
 
   return (

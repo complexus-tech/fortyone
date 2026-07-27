@@ -19,6 +19,70 @@ const TEAM_SCOPED_RESULT_TYPES = new Set([
 
 const TEAM_RESOLVER_TYPES = new Set(["tool-listTeams", "tool-listPublicTeams"]);
 
+const PROMPT_URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
+const TRAILING_PROMPT_URL_PUNCTUATION = /[.,!?;:]+$/;
+
+export type PromptTextSegment =
+  | { type: "link"; href: string; start: number; value: string }
+  | { type: "text"; start: number; value: string };
+
+export const getPromptTextSegments = (text: string): PromptTextSegment[] => {
+  const segments: PromptTextSegment[] = [];
+  const urlPattern = new RegExp(PROMPT_URL_PATTERN.source, "gi");
+  let previousIndex = 0;
+
+  let match = urlPattern.exec(text);
+
+  while (match) {
+    const matchIndex = match.index;
+    const rawValue = match[0];
+    const trailingPunctuation =
+      TRAILING_PROMPT_URL_PUNCTUATION.exec(rawValue)?.[0] ?? "";
+    const value = rawValue.slice(
+      0,
+      trailingPunctuation ? -trailingPunctuation.length : undefined,
+    );
+
+    if (matchIndex > previousIndex) {
+      segments.push({
+        start: previousIndex,
+        type: "text",
+        value: text.slice(previousIndex, matchIndex),
+      });
+    }
+
+    segments.push({
+      type: "link",
+      href: value.startsWith("www.") ? `https://${value}` : value,
+      start: matchIndex,
+      value,
+    });
+
+    if (trailingPunctuation) {
+      segments.push({
+        start: matchIndex + value.length,
+        type: "text",
+        value: trailingPunctuation,
+      });
+    }
+
+    previousIndex = matchIndex + rawValue.length;
+    match = urlPattern.exec(text);
+  }
+
+  if (previousIndex < text.length) {
+    segments.push({
+      start: previousIndex,
+      type: "text",
+      value: text.slice(previousIndex),
+    });
+  }
+
+  return segments.length > 0
+    ? segments
+    : [{ start: 0, type: "text", value: text }];
+};
+
 export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
   const toolParts = message.parts.flatMap((part, index) =>
     isToolMessagePart(part) && isRenderableToolPart(part)

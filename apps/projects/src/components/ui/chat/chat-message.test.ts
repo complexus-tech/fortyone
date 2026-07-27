@@ -26,6 +26,24 @@ describe("ChatMessage", () => {
     expect(source).toContain("max-w-full flex-1");
   });
 
+  it("clamps long user prompts to 20 lines with an accessible toggle", () => {
+    const source = readSource("src/components/ui/chat/chat-message.tsx");
+
+    expect(source).toContain("const USER_PROMPT_MAX_LINES = 20");
+    expect(source).toContain("aria-expanded={isExpanded}");
+    expect(source).toContain('"Show less" : "Show more"');
+    expect(source).toContain('"overflow-hidden": !isExpanded');
+  });
+
+  it("renders detected user-prompt links as safe external links", () => {
+    const source = readSource("src/components/ui/chat/chat-message.tsx");
+
+    expect(source).toContain("getPromptTextSegments(text)");
+    expect(source).toContain('rel="noopener noreferrer"');
+    expect(source).toContain('target="_blank"');
+    expect(source).toContain("underline underline-offset-2");
+  });
+
   it("does not force text colors in chat message markdown", () => {
     const source = readSource("src/styles/global.css");
 
