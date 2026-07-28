@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Box, Button, ContextMenu, Flex, Menu } from "ui";
 import {
   ArchiveIcon,
-  ArrowRight2Icon,
   BacklogIcon,
+  ChevronRightIcon,
   DeleteIcon,
   DragIcon,
   IntakeIcon,
@@ -164,7 +164,7 @@ export const Team = ({
                   <span className="ml-0.5 block max-w-[15ch] truncate">
                     {teamName}
                   </span>
-                  <ArrowRight2Icon
+                  <ChevronRightIcon
                     className={cn("relative top-[0.5px] h-3.5", {
                       "rotate-90": isOpen,
                     })}

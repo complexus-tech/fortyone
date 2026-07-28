@@ -11,7 +11,7 @@ import {
   NewTabIcon,
   DeleteIcon,
   LoadingIcon,
-  ArrowRight2Icon,
+  ChevronRightIcon,
 } from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
@@ -284,7 +284,7 @@ export const StoryAttachmentPreview = ({
                 onClick={showPreviousFile}
                 rounded="full"
               >
-                <ArrowRight2Icon
+                <ChevronRightIcon
                   className="h-5 rotate-180 text-white dark:text-white"
                   strokeWidth={3.5}
                 />
@@ -297,7 +297,7 @@ export const StoryAttachmentPreview = ({
                 onClick={showNextFile}
                 rounded="full"
               >
-                <ArrowRight2Icon
+                <ChevronRightIcon
                   className="h-5 text-white dark:text-white"
                   strokeWidth={3.5}
                 />
