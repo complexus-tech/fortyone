@@ -18,7 +18,7 @@ export const WorkspaceObjectivesPage = () => {
   const { getTermDisplay } = useTerminology();
   const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
     "objectivesLayout",
-    "list",
+    "gantt",
   );
   const { data: objectives = [], isPending } = useObjectives();
   const [isOpen, setIsOpen] = useState(false);
