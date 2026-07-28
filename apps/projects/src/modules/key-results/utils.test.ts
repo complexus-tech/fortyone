@@ -70,9 +70,11 @@ describe("key result utilities", () => {
         measurementType: "number" as const,
         objectiveId: "objective-1",
         objectiveName: "Improve customer growth",
+        sequenceId: 1,
         startDate: "2026-01-01",
         startValue: 0,
         targetValue: 10,
+        teamCode: "GROW",
         teamId: "team-1",
         teamName: "Growth",
         updatedAt: "2026-01-01",
@@ -86,6 +88,7 @@ describe("key result utilities", () => {
           currentValue: 10,
           id: "kr-2",
           name: "Increase activation",
+          sequenceId: 2,
         },
       ]);
 

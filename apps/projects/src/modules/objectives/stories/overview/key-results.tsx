@@ -84,6 +84,7 @@ const RenderValue = ({
 
 const Okr = ({
   id,
+  sequenceId,
   objectiveId,
   name,
   startValue,
@@ -321,6 +322,7 @@ const Okr = ({
         isOpen={isUpdateOpen}
         keyResult={{
           id,
+          sequenceId,
           objectiveId,
           name,
           startValue,
