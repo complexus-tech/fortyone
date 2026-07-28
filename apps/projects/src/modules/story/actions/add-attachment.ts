@@ -4,6 +4,8 @@ import { getApiError } from "@/utils";
 import { auth } from "@/auth";
 import type { StoryAttachment } from "../types";
 
+const ATTACHMENT_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
+
 export const addAttachmentAction = async (
   storyId: string,
   file: File,
@@ -18,6 +20,7 @@ export const addAttachmentAction = async (
       `stories/${storyId}/attachments`,
       formData,
       ctx,
+      { timeout: ATTACHMENT_UPLOAD_TIMEOUT_MS },
     );
     return res;
   } catch (error) {

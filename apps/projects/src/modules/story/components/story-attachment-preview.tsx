@@ -11,8 +11,7 @@ import {
   NewTabIcon,
   DeleteIcon,
   LoadingIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
+  ArrowRight2Icon,
 } from "icons";
 import MediaThemeSutro from "player.style/sutro/react";
 import { cn } from "lib";
@@ -285,7 +284,10 @@ export const StoryAttachmentPreview = ({
                 onClick={showPreviousFile}
                 rounded="full"
               >
-                <ArrowLeftIcon className="h-5 text-white dark:text-white" />
+                <ArrowRight2Icon
+                  className="h-5 rotate-180 text-white dark:text-white"
+                  strokeWidth={3.5}
+                />
               </Button>
               <Button
                 aria-label="View next attachment"
@@ -295,7 +297,10 @@ export const StoryAttachmentPreview = ({
                 onClick={showNextFile}
                 rounded="full"
               >
-                <ArrowRightIcon className="h-5 text-white dark:text-white" />
+                <ArrowRight2Icon
+                  className="h-5 text-white dark:text-white"
+                  strokeWidth={3.5}
+                />
               </Button>
             </>
           ) : null}
