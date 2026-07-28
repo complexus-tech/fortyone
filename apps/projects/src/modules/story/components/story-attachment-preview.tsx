@@ -280,30 +280,36 @@ export const StoryAttachmentPreview = ({
               <Button
                 aria-label="View previous attachment"
                 asIcon
-                className="absolute top-1/2 left-2 z-20 -translate-y-1/2 border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm hover:bg-black/90 focus-visible:bg-black/90 focus-visible:ring-2 focus-visible:ring-white/80 md:-left-14"
+                className="absolute top-1/2 left-4 z-20 -translate-y-1/2 border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm hover:bg-black/90 focus-visible:bg-black/90 focus-visible:ring-2 focus-visible:ring-white/80"
                 color="black"
                 onClick={showPreviousFile}
                 rounded="full"
               >
-                <ArrowLeftIcon className="h-5" />
+                <ArrowLeftIcon className="h-5 text-white dark:text-white" />
               </Button>
               <Button
                 aria-label="View next attachment"
                 asIcon
-                className="absolute top-1/2 right-2 z-20 -translate-y-1/2 border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm hover:bg-black/90 focus-visible:bg-black/90 focus-visible:ring-2 focus-visible:ring-white/80 md:-right-14"
+                className="absolute top-1/2 right-4 z-20 -translate-y-1/2 border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm hover:bg-black/90 focus-visible:bg-black/90 focus-visible:ring-2 focus-visible:ring-white/80"
                 color="black"
                 onClick={showNextFile}
                 rounded="full"
               >
-                <ArrowRightIcon className="h-5" />
+                <ArrowRightIcon className="h-5 text-white dark:text-white" />
               </Button>
             </>
           ) : null}
-          <Dialog.Header className="border-border-strong flex items-center justify-between border-b-[0.5px] px-3">
-            <Flex align="center" gap={2}>
-              <Dialog.Title>{activeFile.filename}</Dialog.Title>
+          <Dialog.Header className="border-border-strong flex items-center justify-between gap-3 border-b-[0.5px] px-3">
+            <Flex align="center" className="min-w-0" gap={2}>
+              <Dialog.Title className="truncate">
+                {activeFile.filename}
+              </Dialog.Title>
               {canNavigate ? (
-                <Text className="text-sm" color="muted">
+                <Text
+                  className="shrink-0 leading-none"
+                  color="muted"
+                  fontWeight="medium"
+                >
                   {normalizedPreviewIndex + 1} of {previewFiles.length}
                 </Text>
               ) : null}

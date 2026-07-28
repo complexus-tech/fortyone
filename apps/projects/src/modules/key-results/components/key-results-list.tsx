@@ -370,6 +370,7 @@ const KeyResultRow = ({
   selected: boolean;
   setSelected: (selected: boolean) => void;
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [updateMode, setUpdateMode] = useState<"progress" | "other">("other");
@@ -522,7 +523,9 @@ const KeyResultRow = ({
       </ContextMenu>
       <ConfirmDialog
         confirmText="Yes, Delete"
-        description="Are you sure you want to delete this key result? This action cannot be undone."
+        description={`Are you sure you want to delete this ${getTermDisplay(
+          "keyResultTerm",
+        )}? This action cannot be undone.`}
         isOpen={isDeleteOpen}
         onClose={() => {
           setIsDeleteOpen(false);
@@ -533,7 +536,9 @@ const KeyResultRow = ({
             objectiveId: keyResult.objectiveId,
           });
         }}
-        title="Delete Key Result"
+        title={`Delete ${getTermDisplay("keyResultTerm", {
+          capitalize: true,
+        })}`}
       />
       <UpdateKeyResultDialog
         isOpen={isUpdateOpen}
@@ -560,6 +565,7 @@ const ObjectiveGroup = ({
 }) => {
   const pathname = usePathname();
   const { getTermDisplay } = useTerminology();
+  const keyResultLabel = getTermDisplay("keyResultTerm");
   const [isCollapsed, setIsCollapsed] = useLocalStorage(
     `${pathname}:key-results:${group.objectiveId}`,
     false,
@@ -649,7 +655,7 @@ const ObjectiveGroup = ({
               <Text color="muted">{group.averageProgress}%</Text>
             </Flex>
             <NewKeyResultButton
-              aria-label={`Add key result to ${group.objectiveName}`}
+              aria-label={`Add ${keyResultLabel} to ${group.objectiveName}`}
               asIcon
               iconOnly
               leftIcon={

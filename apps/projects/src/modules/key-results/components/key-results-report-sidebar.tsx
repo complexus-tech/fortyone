@@ -13,7 +13,7 @@ import {
 import type { TooltipProps } from "recharts";
 import { Avatar, Box, Divider, Flex, ProgressBar, Tabs, Text } from "ui";
 import { RowWrapper, TeamColor } from "@/components/ui";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { Member } from "@/types";
 import { hexToRgba } from "@/utils";
 import type { KeyResultWithTeam } from "../types";
@@ -51,12 +51,19 @@ const getObjectiveHealth = (progress: number) => {
 };
 
 const DonutTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  const { getTermDisplay } = useTerminology();
+
   if (!active || !payload?.length) return null;
 
   return (
     <Box className="border-border/60 bg-surface-elevated/90 rounded-lg border-[0.5px] px-3 py-2 backdrop-blur">
       <Text fontWeight="medium">{payload[0].name}</Text>
-      <Text color="muted">{payload[0].value} key results</Text>
+      <Text color="muted">
+        {payload[0].value}{" "}
+        {getTermDisplay("keyResultTerm", {
+          variant: payload[0].value === 1 ? "singular" : "plural",
+        })}
+      </Text>
     </Box>
   );
 };
@@ -68,7 +75,7 @@ const DonutChart = ({
   data: { color: string; count: number; label: string }[];
   total: number;
 }) => (
-  <Box className="relative h-40 w-full">
+  <Box className="relative h-36 w-full">
     <Box className="pointer-events-none absolute inset-0 z-1 flex flex-col items-center justify-center">
       <Text fontSize="xl" fontWeight="medium">
         {total}
@@ -81,9 +88,9 @@ const DonutChart = ({
           cornerRadius={3}
           data={data.filter(({ count }) => count > 0)}
           dataKey="count"
-          innerRadius={52}
+          innerRadius={46}
           nameKey="label"
-          outerRadius={72}
+          outerRadius={62}
           paddingAngle={2}
           stroke="none"
         >
@@ -159,6 +166,15 @@ export const KeyResultsReportSidebar = ({
   totalCount: number;
 }) => {
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const keyResultSingular = getTermDisplay("keyResultTerm");
+  const keyResultPlural = getTermDisplay("keyResultTerm", {
+    variant: "plural",
+  });
+  const objectiveSingular = getTermDisplay("objectiveTerm");
+  const objectivePlural = getTermDisplay("objectiveTerm", {
+    variant: "plural",
+  });
   const objectiveStats = new Map<
     string,
     {
@@ -300,11 +316,11 @@ export const KeyResultsReportSidebar = ({
   ];
 
   return (
-    <Box className="bg-surface-muted/30 bg-surface/60 min-h-full pt-6 pb-32">
+    <Box className="bg-surface-muted/30 bg-surface/60 min-h-full overflow-x-hidden pt-6 pb-48">
       <Box className="px-6">
         <Text className="flex items-center gap-1.5" fontSize="lg">
           <OKRIcon className="h-[1.25rem]" />
-          Key result insights
+          {getTermDisplay("keyResultTerm", { capitalize: true })} insights
         </Text>
         <Box className="mt-5">
           <Text fontSize="4xl" fontWeight="medium">
@@ -337,8 +353,11 @@ export const KeyResultsReportSidebar = ({
 
       <Box className="px-6">
         <Flex align="center" className="mb-3" justify="between">
-          <Text>Linked objective health</Text>
-          <Text color="muted">{healthTotal} objectives</Text>
+          <Text>Linked {objectiveSingular} health</Text>
+          <Text color="muted">
+            {healthTotal}{" "}
+            {healthTotal === 1 ? objectiveSingular : objectivePlural}
+          </Text>
         </Flex>
         <HealthDistributionChart
           data={objectiveHealthSegments}
@@ -351,7 +370,10 @@ export const KeyResultsReportSidebar = ({
       <Box className="px-6">
         <Flex align="center" className="mb-3" justify="between">
           <Text>Delivery health</Text>
-          <Text color="muted">{deliveryTotal} key results</Text>
+          <Text color="muted">
+            {deliveryTotal}{" "}
+            {deliveryTotal === 1 ? keyResultSingular : keyResultPlural}
+          </Text>
         </Flex>
         <DonutChart data={deliverySegments} total={deliveryTotal} />
         <ChartLegend data={deliverySegments} />
@@ -362,7 +384,12 @@ export const KeyResultsReportSidebar = ({
       <Box className="px-6">
         <Tabs defaultValue="objectives">
           <Tabs.List className="mx-0 mb-3 md:mx-0">
-            <Tabs.Tab value="objectives">Objectives</Tabs.Tab>
+            <Tabs.Tab value="objectives">
+              {getTermDisplay("objectiveTerm", {
+                variant: "plural",
+                capitalize: true,
+              })}
+            </Tabs.Tab>
             <Tabs.Tab value="leads">Leads</Tabs.Tab>
           </Tabs.List>
           <Tabs.Panel value="objectives">
@@ -441,7 +468,8 @@ export const KeyResultsReportSidebar = ({
                     <Box className="min-w-0">
                       <Text className="truncate">{getDisplayName(lead)}</Text>
                       <Text color="muted">
-                        {count} key result{count === 1 ? "" : "s"}
+                        {count}{" "}
+                        {count === 1 ? keyResultSingular : keyResultPlural}
                       </Text>
                     </Box>
                   </Flex>
@@ -453,8 +481,8 @@ export const KeyResultsReportSidebar = ({
               ))}
             {keyResults.length < totalCount ? (
               <Text className="mt-3" color="muted">
-                Lead coverage reflects the {keyResults.length} loaded key
-                results.
+                Lead coverage reflects the {keyResults.length} loaded{" "}
+                {keyResults.length === 1 ? keyResultSingular : keyResultPlural}.
               </Text>
             ) : null}
           </Tabs.Panel>

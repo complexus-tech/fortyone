@@ -100,13 +100,19 @@ export const Navigation = () => {
 
   const strategyLinks: MenuItem[] = [
     {
-      name: "Objectives",
+      name: getTermDisplay("objectiveTerm", {
+        variant: "plural",
+        capitalize: true,
+      }),
       icon: <ObjectiveIcon />,
       href: withWorkspace("/objectives"),
       disabled: !features.objectiveEnabled,
     },
     {
-      name: "Key results",
+      name: getTermDisplay("keyResultTerm", {
+        variant: "plural",
+        capitalize: true,
+      }),
       icon: <OKRIcon />,
       href: withWorkspace("/key-results"),
       disabled: !features.objectiveEnabled || !features.keyResultEnabled,

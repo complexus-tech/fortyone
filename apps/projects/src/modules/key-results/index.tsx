@@ -13,7 +13,6 @@ import { useMediaQuery, useTerminology } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
-  getActiveKeyResultFilterCount,
   KeyResultsFilterButton,
   KeyResultsFilterBar,
 } from "./components/key-results-filter-button";
@@ -21,6 +20,7 @@ import { KeyResultsList } from "./components/key-results-list";
 import { KeyResultsReportSidebar } from "./components/key-results-report-sidebar";
 import { KeyResultsToolbar } from "./components/key-results-toolbar";
 import { useWorkspaceKeyResultsInfinite } from "./hooks/use-workspace-key-results-infinite";
+import { getActiveKeyResultFilterCount } from "./key-results-filter-utils";
 import type { KeyResultFilters } from "./types";
 import { groupKeyResultsByObjective } from "./utils";
 

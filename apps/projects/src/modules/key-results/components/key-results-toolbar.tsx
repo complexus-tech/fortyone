@@ -5,6 +5,7 @@ import { formatISO } from "date-fns";
 import { AssigneeIcon, CalendarIcon, CloseIcon, DeleteIcon } from "icons";
 import { Button, DatePicker, Flex, Text, Tooltip } from "ui";
 import { AssigneesMenu, ConfirmDialog } from "@/components/ui";
+import { useTerminology } from "@/hooks";
 import { useDeleteKeyResultMutation } from "@/modules/objectives/hooks/use-delete-key-result-mutation";
 import { useUpdateKeyResultMutation } from "@/modules/objectives/hooks/use-update-key-result-mutation";
 import type { KeyResultWithTeam } from "../types";
@@ -16,12 +17,16 @@ export const KeyResultsToolbar = ({
   clearSelection: () => void;
   selectedKeyResults: KeyResultWithTeam[];
 }) => {
+  const { getTermDisplay } = useTerminology();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const { mutate: updateKeyResult } = useUpdateKeyResultMutation();
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
   const teamIds = new Set(selectedKeyResults.map(({ teamId }) => teamId));
   const sharedTeamId =
     teamIds.size === 1 ? selectedKeyResults[0]?.teamId : undefined;
+  const selectedKeyResultLabel = getTermDisplay("keyResultTerm", {
+    variant: selectedKeyResults.length === 1 ? "singular" : "plural",
+  });
 
   const updateSelected = (data: { endDate?: string; lead?: string | null }) => {
     for (const keyResult of selectedKeyResults) {
@@ -108,7 +113,7 @@ export const KeyResultsToolbar = ({
       </Flex>
       <ConfirmDialog
         confirmText="Yes, Delete"
-        description={`Are you sure you want to delete ${selectedKeyResults.length} key result${selectedKeyResults.length === 1 ? "" : "s"}? This action cannot be undone.`}
+        description={`Are you sure you want to delete ${selectedKeyResults.length} ${selectedKeyResultLabel}? This action cannot be undone.`}
         isOpen={isDeleteOpen}
         onClose={() => {
           setIsDeleteOpen(false);
@@ -123,7 +128,10 @@ export const KeyResultsToolbar = ({
           clearSelection();
           setIsDeleteOpen(false);
         }}
-        title="Delete Key Results"
+        title={`Delete ${getTermDisplay("keyResultTerm", {
+          variant: "plural",
+          capitalize: true,
+        })}`}
       />
     </>
   );
