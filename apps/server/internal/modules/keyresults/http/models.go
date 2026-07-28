@@ -16,6 +16,7 @@ import (
 // AppKeyResult represents a key result in the application
 type AppKeyResult struct {
 	ID              uuid.UUID   `json:"id"`
+	SequenceID      int         `json:"sequenceId"`
 	ObjectiveID     uuid.UUID   `json:"objectiveId"`
 	Name            string      `json:"name"`
 	MeasurementType string      `json:"measurementType"`
@@ -53,6 +54,7 @@ type AppUpdateKeyResult struct {
 	CurrentValue    *float64     `json:"currentValue" db:"current_value"`
 	TargetValue     *float64     `json:"targetValue" db:"target_value"`
 	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
+	ClearLead       bool         `json:"clearLead,omitempty" db:"-"`
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
 	StartDate       *date.Date   `json:"startDate" db:"start_date"`
 	EndDate         *date.Date   `json:"endDate" db:"end_date"`
@@ -66,6 +68,7 @@ type AppKeyResultWithObjective struct {
 	ObjectiveID   uuid.UUID `json:"objectiveId"`
 	TeamID        uuid.UUID `json:"teamId"`
 	TeamName      string    `json:"teamName"`
+	TeamCode      string    `json:"teamCode"`
 	WorkspaceID   uuid.UUID `json:"workspaceId"`
 }
 
@@ -83,8 +86,11 @@ type AppKeyResultFilters struct {
 	ObjectiveIDs     []uuid.UUID `json:"objectiveIds"`
 	TeamIDs          []uuid.UUID `json:"teamIds"`
 	MeasurementTypes []string    `json:"measurementTypes"`
+	LeadIDs          []uuid.UUID `json:"leadIds"`
 	CreatedAfter     *time.Time  `json:"createdAfter"`
 	CreatedBefore    *time.Time  `json:"createdBefore"`
+	EndDateAfter     *time.Time  `json:"endDateAfter"`
+	EndDateBefore    *time.Time  `json:"endDateBefore"`
 	UpdatedAfter     *time.Time  `json:"updatedAfter"`
 	UpdatedBefore    *time.Time  `json:"updatedBefore"`
 	Page             int         `json:"page"`
@@ -179,6 +185,7 @@ func (a AppUpdateKeyResult) Validate() error {
 func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 	return AppKeyResult{
 		ID:              kr.ID,
+		SequenceID:      kr.SequenceID,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
@@ -272,6 +279,7 @@ func toAppKeyResultWithObjective(kr keyresults.CoreKeyResultWithObjective) AppKe
 		ObjectiveID:   kr.ObjectiveID,
 		TeamID:        kr.TeamID,
 		TeamName:      kr.TeamName,
+		TeamCode:      kr.TeamCode,
 		WorkspaceID:   kr.WorkspaceID,
 	}
 }

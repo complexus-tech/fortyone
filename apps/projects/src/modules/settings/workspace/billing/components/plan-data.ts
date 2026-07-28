@@ -44,7 +44,7 @@ export const plans: Plan[] = [
     name: "Professional",
     limits: {
       members: "Up to 10 members",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
@@ -63,7 +63,7 @@ export const plans: Plan[] = [
     highlighted: true,
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
@@ -85,7 +85,7 @@ export const plans: Plan[] = [
     name: "Enterprise",
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {

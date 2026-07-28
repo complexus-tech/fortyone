@@ -40,6 +40,36 @@ func (r *Repository) GetAttachmentByID(ctx context.Context, id uuid.UUID) (attac
 	return toCoreAttachment(dbAttachment), nil
 }
 
+// GetAttachmentByBlobName gets an attachment by its storage object name.
+func (r *Repository) GetAttachmentByBlobName(ctx context.Context, blobName string) (attachments.CoreAttachment, error) {
+	r.log.Info(ctx, "repo.attachments.getByBlobName")
+
+	const query = `
+		SELECT attachment_id, filename, blob_name, size, mime_type, uploaded_by, workspace_id, created_at
+		FROM attachments
+		WHERE blob_name = :blob_name
+	`
+
+	rows, err := r.db.NamedQueryContext(ctx, query, map[string]any{
+		"blob_name": blobName,
+	})
+	if err != nil {
+		return attachments.CoreAttachment{}, fmt.Errorf("failed to get attachment by blob name: %w", err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return attachments.CoreAttachment{}, attachments.ErrNotFound
+	}
+
+	var dbAttachment dbAttachment
+	if err := rows.StructScan(&dbAttachment); err != nil {
+		return attachments.CoreAttachment{}, fmt.Errorf("failed to scan attachment: %w", err)
+	}
+
+	return toCoreAttachment(dbAttachment), nil
+}
+
 // GetAttachmentsByStoryID gets all attachments for a story
 func (r *Repository) GetAttachmentsByStoryID(ctx context.Context, storyID uuid.UUID) ([]attachments.CoreAttachment, error) {
 	r.log.Info(ctx, "repo.attachments.getByStoryID")

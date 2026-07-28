@@ -117,6 +117,7 @@ func buildServices(cfg mux.Config) services {
 		attachmentsrepository.New(cfg.Log, cfg.DB),
 		cfg.StorageService,
 		cfg.StorageConfig,
+		cfg.TasksService,
 	)
 
 	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)

@@ -64,12 +64,14 @@ const Items = ({
   onAssigneeSelected,
   disallowEmptySelection = false,
   excludeUsers = EMPTY_EXCLUDED_USERS,
+  showMaya = true,
   teamId,
 }: {
   placeholder?: string;
   align?: "start" | "end" | "center";
   disallowEmptySelection?: boolean;
   excludeUsers?: string[];
+  showMaya?: boolean;
   assigneeId?: string | null;
   teamId?: string;
   onAssigneeSelected: (assigneeId: string | null) => void;
@@ -91,26 +93,27 @@ const Items = ({
     open && Boolean(teamId),
   );
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
-  const mayaQuery = useMayaAssignee(open);
+  const mayaQuery = useMayaAssignee(open && showMaya);
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
+  const excludedUserIds = new Set(excludeUsers);
   const isLoadingMembers =
     membersQuery.isFetching && !membersQuery.isFetchingNextPage;
   const mayaAssignee = mayaQuery.data;
   const canUseBackgroundMaya = hasFeature("backgroundMaya");
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const visibleMayaAssignee =
+    showMaya &&
     mayaAssignee !== undefined &&
-    !excludeUsers.includes(mayaAssignee.id) &&
-    (normalizedQuery === "" ||
-      "maya ai assistant".includes(normalizedQuery))
+    !excludedUserIds.has(mayaAssignee.id) &&
+    (normalizedQuery === "" || "maya ai assistant".includes(normalizedQuery))
       ? mayaAssignee
       : null;
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
   const visibleMembers = members.filter(
     ({ id }) =>
-      !excludeUsers.includes(id) &&
+      !excludedUserIds.has(id) &&
       id !== currentUserId &&
       id !== visibleMayaAssignee?.id,
   );
@@ -220,9 +223,7 @@ const Items = ({
                     {visibleMayaAssignee.id === assigneeId && (
                       <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                     )}
-                    <Text color="muted">
-                      {disallowEmptySelection ? 0 : 1}
-                    </Text>
+                    <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
                   </Flex>
                 </Command.Item>
               ) : null}

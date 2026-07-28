@@ -24,6 +24,7 @@ type CoreNewKeyResult struct {
 // CoreKeyResult represents a key result in the system
 type CoreKeyResult struct {
 	ID              uuid.UUID
+	SequenceID      int
 	ObjectiveID     uuid.UUID
 	Name            string
 	MeasurementType string
@@ -44,11 +45,14 @@ type CoreKeyResultFilters struct {
 	ObjectiveIDs     []uuid.UUID `json:"objectiveIds"`
 	TeamIDs          []uuid.UUID `json:"teamIds"`
 	MeasurementTypes []string    `json:"measurementTypes"`
+	LeadIDs          []uuid.UUID `json:"leadIds"`
 	CreatedBy        []uuid.UUID `json:"createdBy"`
 	WorkspaceID      uuid.UUID   `json:"workspaceId"`
 	CurrentUserID    uuid.UUID   `json:"currentUserId"`
 	CreatedAfter     *time.Time  `json:"createdAfter"`
 	CreatedBefore    *time.Time  `json:"createdBefore"`
+	EndDateAfter     *time.Time  `json:"endDateAfter"`
+	EndDateBefore    *time.Time  `json:"endDateBefore"`
 	UpdatedAfter     *time.Time  `json:"updatedAfter"`
 	UpdatedBefore    *time.Time  `json:"updatedBefore"`
 	Page             int         `json:"page"`
@@ -64,6 +68,7 @@ type CoreKeyResultWithObjective struct {
 	ObjectiveID   uuid.UUID `json:"objectiveId"`
 	TeamID        uuid.UUID `json:"teamId"`
 	TeamName      string    `json:"teamName"`
+	TeamCode      string    `json:"teamCode"`
 	WorkspaceID   uuid.UUID `json:"workspaceId"`
 }
 

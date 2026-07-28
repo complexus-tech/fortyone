@@ -1,42 +1,40 @@
 "use client";
 
-import { format } from "date-fns";
+import { useState } from "react";
 import { OKRIcon } from "icons";
-import Link from "next/link";
-import {
-  Box,
-  BreadCrumbs,
-  Button,
-  Flex,
-  ProgressBar,
-  Skeleton,
-  Text,
-} from "ui";
+import { Box, BreadCrumbs, Button, Flex, Skeleton, Text } from "ui";
 import {
   BodyContainer,
   HeaderContainer,
   MobileMenuButton,
 } from "@/components/shared";
-import { RowWrapper } from "@/components/ui";
-import { useTerminology, useWorkspacePath } from "@/hooks";
-import type { KeyResultWithTeam } from "./types";
+import { BoardDividedPanel, RowWrapper } from "@/components/ui";
+import { useMediaQuery, useTerminology } from "@/hooks";
+import { useMembers } from "@/lib/hooks/members";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import {
+  getActiveKeyResultFilterCount,
+  KeyResultsFilterButton,
+  KeyResultsFilterBar,
+} from "./components/key-results-filter-button";
+import { KeyResultsList } from "./components/key-results-list";
+import { KeyResultsReportSidebar } from "./components/key-results-report-sidebar";
+import { KeyResultsToolbar } from "./components/key-results-toolbar";
 import { useWorkspaceKeyResultsInfinite } from "./hooks/use-workspace-key-results-infinite";
-import { formatKeyResultValue, getKeyResultProgress } from "./utils";
+import type { KeyResultFilters } from "./types";
+import { groupKeyResultsByObjective } from "./utils";
 
-const formatTargetDate = (value: string | null | undefined) => {
-  if (!value) return "No due date";
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "No due date"
-    : format(date, "MMM d, yy");
-};
-
-const KeyResultsHeader = () => {
+const KeyResultsHeader = ({
+  filters,
+  setFilters,
+}: {
+  filters: KeyResultFilters;
+  setFilters: (filters: KeyResultFilters) => void;
+}) => {
   const { getTermDisplay } = useTerminology();
 
   return (
-    <HeaderContainer>
+    <HeaderContainer className="justify-between gap-4">
       <Flex align="center" gap={2}>
         <MobileMenuButton />
         <BreadCrumbs
@@ -51,131 +49,46 @@ const KeyResultsHeader = () => {
           ]}
         />
       </Flex>
-    </HeaderContainer>
-  );
-};
-
-const KeyResultsTableHeader = () => (
-  <Box className="border-border bg-surface/90 sticky top-0 z-1 hidden border-b-[0.5px] py-3 md:block">
-    <Flex align="center" className="min-w-4xl px-12">
-      <Text className="min-w-64 flex-1" color="muted" fontWeight="medium">
-        Key result
-      </Text>
-      <Text
-        className="hidden w-64 shrink-0 lg:block"
-        color="muted"
-        fontWeight="medium"
-      >
-        Objective
-      </Text>
-      <Text className="w-36 shrink-0" color="muted" fontWeight="medium">
-        Team
-      </Text>
-      <Text className="w-44 shrink-0" color="muted" fontWeight="medium">
-        Progress
-      </Text>
-      <Text
-        className="hidden w-36 shrink-0 xl:block"
-        color="muted"
-        fontWeight="medium"
-      >
-        Current / target
-      </Text>
-      <Text
-        className="hidden w-28 shrink-0 lg:block"
-        color="muted"
-        fontWeight="medium"
-      >
-        Due
-      </Text>
-    </Flex>
-  </Box>
-);
-
-const KeyResultRow = ({ keyResult }: { keyResult: KeyResultWithTeam }) => {
-  const { withWorkspace } = useWorkspacePath();
-  const progress = getKeyResultProgress(keyResult);
-  const objectiveHref = withWorkspace(
-    `/teams/${keyResult.teamId}/objectives/${keyResult.objectiveId}`,
-  );
-
-  return (
-    <RowWrapper className="min-w-4xl gap-4 py-3">
-      <Box className="min-w-64 flex-1">
-        <Link
-          className="flex min-w-0 items-center gap-2 hover:opacity-90"
-          href={objectiveHref}
-          prefetch
-        >
-          <Flex
-            align="center"
-            className="bg-surface-muted size-8 shrink-0 rounded-lg"
-            justify="center"
-          >
-            <OKRIcon className="h-4" />
-          </Flex>
-          <Box className="min-w-0">
-            <Text className="truncate">{keyResult.name}</Text>
-            <Text className="truncate lg:hidden" color="muted" fontSize="sm">
-              {keyResult.objectiveName}
-            </Text>
-          </Box>
-        </Link>
-      </Box>
-      <Box className="hidden w-64 shrink-0 lg:block">
-        <Link
-          className="block truncate hover:underline"
-          href={objectiveHref}
-          prefetch
-        >
-          {keyResult.objectiveName}
-        </Link>
-      </Box>
-      <Text className="w-36 shrink-0 truncate" color="muted">
-        {keyResult.teamName}
-      </Text>
-      <Flex align="center" className="w-44 shrink-0" gap={2}>
-        <ProgressBar className="w-24" progress={progress} />
-        <Text className="w-10 shrink-0" fontWeight="medium">
-          {progress}%
-        </Text>
+      <Flex align="center" gap={2}>
+        <KeyResultsFilterButton filters={filters} setFilters={setFilters} />
       </Flex>
-      <Text className="hidden w-36 shrink-0 xl:block">
-        {formatKeyResultValue(
-          keyResult.currentValue,
-          keyResult.measurementType,
-        )}{" "}
-        /{" "}
-        {formatKeyResultValue(keyResult.targetValue, keyResult.measurementType)}
-      </Text>
-      <Text className="hidden w-28 shrink-0 lg:block" color="muted">
-        {formatTargetDate(keyResult.endDate)}
-      </Text>
-    </RowWrapper>
+    </HeaderContainer>
   );
 };
 
 const KeyResultsSkeleton = () => (
   <BodyContainer>
-    <KeyResultsTableHeader />
-    {Array.from({ length: 8 }).map((_, index) => (
-      <RowWrapper className="min-w-4xl gap-4 py-3" key={index}>
-        <Flex align="center" className="min-w-64 flex-1" gap={2}>
-          <Skeleton className="size-8 shrink-0" />
-          <Skeleton className="h-5 w-56" />
-        </Flex>
-        <Skeleton className="hidden h-5 w-64 lg:block" />
-        <Skeleton className="h-5 w-36" />
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="hidden h-5 w-36 xl:block" />
-        <Skeleton className="hidden h-5 w-28 lg:block" />
-      </RowWrapper>
+    {Array.from({ length: 3 }).map((_, groupIndex) => (
+      <Box key={groupIndex}>
+        <Box className="border-border bg-surface-muted/85 border-b-[0.5px] px-5 py-3 md:px-12">
+          <Flex align="center" justify="between">
+            <Skeleton className="h-5 w-64" />
+            <Skeleton className="h-5 w-24" />
+          </Flex>
+        </Box>
+        {Array.from({ length: groupIndex === 0 ? 3 : 2 }).map((_, rowIndex) => (
+          <RowWrapper className="pointer-events-none gap-4 py-3" key={rowIndex}>
+            <Flex align="center" className="min-w-0 flex-1" gap={2}>
+              <Skeleton className="size-5 shrink-0" />
+              <Skeleton className="h-5 w-56" />
+            </Flex>
+            <Skeleton className="h-5 w-40" />
+          </RowWrapper>
+        ))}
+      </Box>
     ))}
   </BodyContainer>
 );
 
 export const WorkspaceKeyResultsPage = () => {
   const { getTermDisplay } = useTerminology();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [filters, setFilters] = useState<KeyResultFilters>({});
+  const [selectedKeyResultIds, setSelectedKeyResultIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const { data: members = [] } = useMembers();
+  const { data: teams = [] } = useTeams();
   const {
     data,
     fetchNextPage,
@@ -185,24 +98,54 @@ export const WorkspaceKeyResultsPage = () => {
     isPending,
     refetch,
   } = useWorkspaceKeyResultsInfinite({
+    ...filters,
     pageSize: 50,
-    orderBy: "updated_at",
-    orderDirection: "desc",
+    orderBy: "objective_name",
+    orderDirection: "asc",
   });
 
   const keyResults = data?.pages.flatMap((page) => page.keyResults) ?? [];
+  const groups = groupKeyResultsByObjective(keyResults);
+  const memberById = new Map(members.map((member) => [member.id, member]));
+  const teamColorById = new Map(teams.map((team) => [team.id, team.color]));
   const totalCount = data?.pages[0]?.totalCount ?? 0;
+  const activeFilterCount = getActiveKeyResultFilterCount(filters);
   const keyResultLabel = getTermDisplay("keyResultTerm", {
     variant: "plural",
   });
 
-  const renderContent = () => {
-    if (isPending) {
-      return <KeyResultsSkeleton />;
-    }
+  const header = (
+    <>
+      <KeyResultsHeader
+        filters={filters}
+        setFilters={(nextFilters) => {
+          setFilters(nextFilters);
+          setSelectedKeyResultIds(new Set());
+        }}
+      />
+      <KeyResultsFilterBar
+        filters={filters}
+        setFilters={(nextFilters) => {
+          setFilters(nextFilters);
+          setSelectedKeyResultIds(new Set());
+        }}
+      />
+    </>
+  );
 
-    if (isError) {
-      return (
+  if (isPending) {
+    return (
+      <>
+        {header}
+        <KeyResultsSkeleton />
+      </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <>
+        {header}
         <BodyContainer className="flex items-center justify-center">
           <Flex align="center" direction="column" gap={4}>
             <Text fontSize="xl" fontWeight="medium">
@@ -219,11 +162,14 @@ export const WorkspaceKeyResultsPage = () => {
             </Button>
           </Flex>
         </BodyContainer>
-      );
-    }
+      </>
+    );
+  }
 
-    if (keyResults.length === 0) {
-      return (
+  if (keyResults.length === 0 && activeFilterCount === 0) {
+    return (
+      <>
+        {header}
         <BodyContainer className="flex items-center justify-center">
           <Flex align="center" direction="column">
             <OKRIcon className="h-12 w-auto" strokeWidth={1.5} />
@@ -236,42 +182,99 @@ export const WorkspaceKeyResultsPage = () => {
             </Text>
           </Flex>
         </BodyContainer>
-      );
-    }
-
-    return (
-      <BodyContainer className="overflow-x-auto">
-        <Box className="border-border border-b-[0.5px] px-5 py-3 md:px-12">
-          <Text color="muted">
-            {totalCount} {keyResultLabel} across all teams
-          </Text>
-        </Box>
-        <KeyResultsTableHeader />
-        {keyResults.map((keyResult) => (
-          <KeyResultRow key={keyResult.id} keyResult={keyResult} />
-        ))}
-        {hasNextPage ? (
-          <Flex className="py-6" justify="center">
-            <Button
-              color="tertiary"
-              loading={isFetchingNextPage}
-              loadingText="Loading key results..."
-              onClick={() => {
-                void fetchNextPage();
-              }}
-            >
-              Load more
-            </Button>
-          </Flex>
-        ) : null}
-      </BodyContainer>
+      </>
     );
-  };
+  }
+
+  const list = (
+    <BodyContainer className="overflow-x-auto">
+      {keyResults.length > 0 ? (
+        <KeyResultsList
+          groups={groups}
+          memberById={memberById}
+          selectedKeyResultIds={selectedKeyResultIds}
+          setSelectedKeyResultIds={setSelectedKeyResultIds}
+          teamColorById={teamColorById}
+        />
+      ) : (
+        <Flex
+          align="center"
+          className="min-h-64"
+          direction="column"
+          justify="center"
+        >
+          <Text fontSize="lg" fontWeight="medium">
+            No matching {keyResultLabel}
+          </Text>
+          <Text className="mt-1" color="muted">
+            Clear or adjust the filters to see more results.
+          </Text>
+          <Button
+            className="mt-4"
+            color="tertiary"
+            onClick={() => {
+              setFilters({});
+              setSelectedKeyResultIds(new Set());
+            }}
+            size="sm"
+          >
+            Clear filters
+          </Button>
+        </Flex>
+      )}
+      {hasNextPage ? (
+        <Flex className="py-6" justify="center">
+          <Button
+            color="tertiary"
+            loading={isFetchingNextPage}
+            loadingText={`Loading ${keyResultLabel}...`}
+            onClick={() => {
+              void fetchNextPage();
+            }}
+          >
+            Load more
+          </Button>
+        </Flex>
+      ) : null}
+      {selectedKeyResultIds.size > 0 ? (
+        <KeyResultsToolbar
+          clearSelection={() => {
+            setSelectedKeyResultIds(new Set());
+          }}
+          selectedKeyResults={keyResults.filter(({ id }) =>
+            selectedKeyResultIds.has(id),
+          )}
+        />
+      ) : null}
+    </BodyContainer>
+  );
 
   return (
     <>
-      <KeyResultsHeader />
-      {renderContent()}
+      {header}
+      {isMobile ? (
+        <>
+          {list}
+          <KeyResultsReportSidebar
+            keyResults={keyResults}
+            memberById={memberById}
+            teamColorById={teamColorById}
+            totalCount={totalCount}
+          />
+        </>
+      ) : (
+        <BoardDividedPanel autoSaveId="workspace:key-results:divided-panel">
+          <BoardDividedPanel.MainPanel>{list}</BoardDividedPanel.MainPanel>
+          <BoardDividedPanel.SideBar isExpanded>
+            <KeyResultsReportSidebar
+              keyResults={keyResults}
+              memberById={memberById}
+              teamColorById={teamColorById}
+              totalCount={totalCount}
+            />
+          </BoardDividedPanel.SideBar>
+        </BoardDividedPanel>
+      )}
     </>
   );
 };

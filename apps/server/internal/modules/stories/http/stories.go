@@ -36,6 +36,7 @@ import (
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -1083,8 +1084,19 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 		return nil
 	}
 
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	const multipartOverheadAllowance = 1 << 20
+	r.Body = http.MaxBytesReader(w, r.Body, validate.MaxAttachmentSize+multipartOverheadAllowance)
+	if err := r.ParseMultipartForm(validate.MaxAttachmentSize); err != nil {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			return web.RespondError(
+				ctx,
+				w,
+				fmt.Errorf("%w: maximum attachment size is 25 MB", attachments.ErrFileTooLarge),
+				http.StatusRequestEntityTooLarge,
+			)
+		}
+		return web.RespondError(ctx, w, fmt.Errorf("invalid upload request: %w", err), http.StatusBadRequest)
 	}
 
 	file, header, err := r.FormFile("file")
@@ -1096,7 +1108,9 @@ func (h *Handlers) UploadStoryAttachment(ctx context.Context, w http.ResponseWri
 	fileInfo, err := h.attachments.UploadAndLinkToStory(ctx, file, header, userID, storyId, workspace.ID)
 	if err != nil {
 		switch {
-		case errors.Is(err, attachments.ErrFileTooLarge), errors.Is(err, attachments.ErrInvalidFileType):
+		case errors.Is(err, attachments.ErrFileTooLarge):
+			return web.RespondError(ctx, w, err, http.StatusRequestEntityTooLarge)
+		case errors.Is(err, attachments.ErrInvalidFileType), errors.Is(err, attachments.ErrInvalidFile):
 			return web.RespondError(ctx, w, err, http.StatusBadRequest)
 		default:
 			return fmt.Errorf("error uploading attachment: %w", err)

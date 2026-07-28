@@ -1,16 +1,14 @@
 "use client";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { Box } from "ui";
 
 export const RowWrapper = ({
   children,
   className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) => {
+  ...props
+}: ComponentProps<typeof Box>) => {
   const pathname = usePathname();
   return (
     <Box
@@ -23,6 +21,7 @@ export const RowWrapper = ({
         className,
       )}
       tabIndex={0}
+      {...props}
     >
       {children}
     </Box>

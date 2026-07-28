@@ -13,38 +13,90 @@ import (
 )
 
 // Create inserts a new key result into the database
-func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error) {
+func (r *repo) Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.Create")
 	defer span.End()
 
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, 0, fmt.Errorf("begin key result transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	var scope struct {
+		TeamID uuid.UUID `db:"team_id"`
+	}
+	if err := tx.GetContext(ctx, &scope, `
+		SELECT team_id
+		FROM objectives
+		WHERE objective_id = $1
+			AND workspace_id = $2
+	`, kr.ObjectiveID, workspaceID); err != nil {
+		return uuid.Nil, 0, fmt.Errorf("resolve key result team: %w", err)
+	}
+
+	var sequenceID int
+	if err := tx.GetContext(ctx, &sequenceID, `
+		INSERT INTO team_key_result_sequences (
+			workspace_id,
+			team_id,
+			current_sequence
+		) VALUES ($1, $2, 1)
+		ON CONFLICT (workspace_id, team_id)
+		DO UPDATE SET current_sequence =
+			team_key_result_sequences.current_sequence + 1
+		RETURNING current_sequence
+	`, workspaceID, scope.TeamID); err != nil {
+		return uuid.Nil, 0, fmt.Errorf("allocate key result sequence: %w", err)
+	}
+
 	const q = `
 		INSERT INTO key_results (
-			objective_id, name, measurement_type,
+			objective_id, team_id, sequence_id, name, measurement_type,
 			start_value, current_value, target_value,
 			lead, start_date, end_date, created_by
 		) VALUES (
-			:objective_id, :name, :measurement_type,
+			:objective_id, :team_id, :sequence_id, :name, :measurement_type,
 			:start_value, :current_value, :target_value,
 			:lead, :start_date, :end_date, :created_by
 		) RETURNING id
 	`
 
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err := tx.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return uuid.Nil, err
+		return uuid.Nil, 0, err
 	}
 	defer stmt.Close()
 
+	params := map[string]any{
+		"objective_id":     kr.ObjectiveID,
+		"team_id":          scope.TeamID,
+		"sequence_id":      sequenceID,
+		"name":             kr.Name,
+		"measurement_type": kr.MeasurementType,
+		"start_value":      kr.StartValue,
+		"current_value":    kr.CurrentValue,
+		"target_value":     kr.TargetValue,
+		"lead":             kr.Lead,
+		"start_date":       kr.StartDate,
+		"end_date":         kr.EndDate,
+		"created_by":       kr.CreatedBy,
+	}
+
 	r.log.Info(ctx, "creating key result")
 	var id uuid.UUID
-	if err := stmt.GetContext(ctx, &id, toDBKeyResult(*kr)); err != nil {
+	if err := stmt.GetContext(ctx, &id, params); err != nil {
 		errMsg := fmt.Sprintf("failed to create key result: %s", err)
 		r.log.Error(ctx, errMsg)
 		span.RecordError(errors.New("failed to create key result"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return uuid.Nil, err
+		return uuid.Nil, 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, 0, fmt.Errorf("commit key result transaction: %w", err)
 	}
 
 	r.log.Info(ctx, "key result created successfully")
@@ -52,7 +104,7 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error)
 		attribute.String("key_result.name", kr.Name),
 	))
 
-	return id, nil
+	return id, sequenceID, nil
 }
 
 // Update modifies data about a key result

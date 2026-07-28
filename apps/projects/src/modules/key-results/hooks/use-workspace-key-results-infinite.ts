@@ -5,7 +5,7 @@ import { useWorkspacePath } from "@/hooks";
 import { getWorkspaceKeyResults } from "../queries/get-workspace-key-results";
 import type { KeyResultFilters, KeyResultListResponse } from "../types";
 
-const keyResultKeys = {
+export const keyResultKeys = {
   all: (workspaceSlug: string) => ["key-results", workspaceSlug] as const,
   lists: (workspaceSlug: string) =>
     [...keyResultKeys.all(workspaceSlug), "list"] as const,

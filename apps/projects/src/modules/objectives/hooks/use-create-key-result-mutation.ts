@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { analyticsKeys } from "@/constants/keys";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { createKeyResult } from "../actions/create-key-result";
 import type { KeyResult, NewObjectiveKeyResult } from "../types";
@@ -42,7 +42,8 @@ export const useCreateKeyResultMutation = () => {
       const optimisticKeyResult: KeyResult = {
         ...newKeyResult,
         id: "optimistic",
-        createdBy: session?.user?.id || "",
+        sequenceId: 0,
+        createdBy: session?.user.id ?? "",
         lead: newKeyResult.lead || null,
         contributors: newKeyResult.contributors || [],
         createdAt: new Date().toISOString(),
@@ -97,6 +98,12 @@ export const useCreateKeyResultMutation = () => {
           workspaceSlug,
           newKeyResult.objectiveId,
         ),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["key-results", workspaceSlug],
+      });
+      queryClient.invalidateQueries({
+        queryKey: analyticsKeys.all(workspaceSlug),
       });
     },
   });

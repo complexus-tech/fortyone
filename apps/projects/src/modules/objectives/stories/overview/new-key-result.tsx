@@ -6,19 +6,23 @@ import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { formatISO } from "date-fns";
-import { useMediaQuery, useTerminology } from "@/hooks";
-import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useCreateKeyResultMutation, useObjective } from "../../hooks";
+import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
+import { useCreateKeyResultMutation } from "../../hooks";
 import type { NewKeyResult, MeasureType } from "../../types";
 
 export const NewKeyResultButton = ({
   color = "tertiary",
+  iconOnly = false,
+  objectiveId: objectiveIdProp,
   ...rest
-}: ButtonProps) => {
+}: ButtonProps & { iconOnly?: boolean; objectiveId?: string }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { objectiveId } = useParams<{ objectiveId: string }>();
-  const { data: objective } = useObjective(objectiveId);
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const { objectiveId: routeObjectiveId } = useParams<{
+    objectiveId?: string;
+  }>();
+  const objectiveId = objectiveIdProp ?? routeObjectiveId ?? "";
+  const { userRole } = useUserRole();
+  const canCreate = Boolean(objectiveId) && userRole !== "guest";
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
   const { getTermDisplay } = useTerminology();
@@ -88,7 +92,7 @@ export const NewKeyResultButton = ({
 
   return (
     <>
-      {isAdminOrOwner ? (
+      {canCreate ? (
         <Button
           color={color}
           onClick={() => {
@@ -96,7 +100,13 @@ export const NewKeyResultButton = ({
           }}
           {...rest}
         >
-          Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+          {iconOnly ? (
+            <span className="sr-only">
+              Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+            </span>
+          ) : (
+            <>Add {getTermDisplay("keyResultTerm", { capitalize: true })}</>
+          )}
         </Button>
       ) : null}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>

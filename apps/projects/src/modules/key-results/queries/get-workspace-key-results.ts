@@ -11,7 +11,7 @@ export const getWorkspaceKeyResults = async (
     skipNulls: true,
     addQueryPrefix: true,
     encodeValuesOnly: true,
-    arrayFormat: "comma",
+    arrayFormat: "repeat",
   });
 
   const keyResults = await get<ApiResponse<KeyResultListResponse>>(

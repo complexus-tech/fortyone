@@ -22,7 +22,7 @@ var (
 
 // Repository defines the storage contract for key results.
 type Repository interface {
-	Create(ctx context.Context, kr *CoreKeyResult) (uuid.UUID, error)
+	Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
@@ -66,7 +66,7 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 		CreatedBy:       nkr.CreatedBy,
 	}
 
-	id, err := s.repo.Create(ctx, &kr)
+	id, sequenceID, err := s.repo.Create(ctx, &kr, workspaceID)
 	if err != nil {
 		return CoreKeyResult{}, fmt.Errorf("create: %w", err)
 	}
@@ -98,6 +98,7 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 
 	return CoreKeyResult{
 		ID:              id,
+		SequenceID:      sequenceID,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,

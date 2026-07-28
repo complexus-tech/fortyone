@@ -20,6 +20,7 @@ const (
 // dbKeyResult represents the database model for a key result
 type dbKeyResult struct {
 	ID              uuid.UUID        `db:"id"`
+	SequenceID      int              `db:"sequence_id"`
 	ObjectiveID     uuid.UUID        `db:"objective_id"`
 	Name            string           `db:"name"`
 	MeasurementType string           `db:"measurement_type"`
@@ -47,6 +48,7 @@ type dbKeyResultWithObjective struct {
 	ObjectiveName string    `db:"objective_name"`
 	TeamID        uuid.UUID `db:"team_id"`
 	TeamName      string    `db:"team_name"`
+	TeamCode      string    `db:"team_code"`
 	WorkspaceID   uuid.UUID `db:"workspace_id"`
 }
 
@@ -63,6 +65,7 @@ func toCoreKeyResult(kr dbKeyResult) CoreKeyResult {
 
 	return CoreKeyResult{
 		ID:              kr.ID,
+		SequenceID:      kr.SequenceID,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
@@ -89,6 +92,7 @@ func toCoreKeyResultWithObjective(kr dbKeyResultWithObjective) CoreKeyResultWith
 		ObjectiveID:   kr.ObjectiveID,
 		TeamID:        kr.TeamID,
 		TeamName:      kr.TeamName,
+		TeamCode:      kr.TeamCode,
 		WorkspaceID:   kr.WorkspaceID,
 	}
 }

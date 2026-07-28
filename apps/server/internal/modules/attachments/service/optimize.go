@@ -2,15 +2,21 @@ package attachments
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"strings"
 
 	_ "image/jpeg"
 	_ "image/png"
 
 	"golang.org/x/image/draw"
 )
+
+const maxImagePixels = 32_000_000
 
 type imageOptimizationPolicy struct {
 	MaxDimension int
@@ -35,6 +41,11 @@ var (
 
 func optimizeImageBytes(data []byte, contentType string, policy imageOptimizationPolicy) (optimizedImage, bool) {
 	if !isOptimizableImageType(contentType) {
+		return optimizedImage{}, false
+	}
+
+	config, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil || config.Width <= 0 || config.Height <= 0 || config.Width*config.Height > maxImagePixels {
 		return optimizedImage{}, false
 	}
 
@@ -81,6 +92,78 @@ func optimizeImageBytes(data []byte, contentType string, policy imageOptimizatio
 	}, true
 }
 
+// OptimizeStoredAttachment compresses an uploaded JPEG or PNG in place.
+func (s *Service) OptimizeStoredAttachment(ctx context.Context, blobName string) error {
+	blobName = strings.TrimSpace(blobName)
+	if blobName == "" {
+		return fmt.Errorf("%w: blob name is required", ErrImageOptimizationSkipped)
+	}
+
+	attachment, err := s.repo.GetAttachmentByBlobName(ctx, blobName)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return ErrImageOptimizationSkipped
+		}
+		return fmt.Errorf("get attachment for optimization: %w", err)
+	}
+
+	if !isOptimizableImageType(normalizeContentType(attachment.MimeType)) {
+		return ErrImageOptimizationNotApplicable
+	}
+
+	data, storageContentType, err := s.storage.DownloadFile(ctx, s.config.AttachmentsBucket, blobName)
+	if err != nil {
+		return fmt.Errorf("download attachment for optimization: %w", err)
+	}
+	if len(data) == 0 {
+		return ErrImageOptimizationSkipped
+	}
+
+	contentType := normalizeContentType(storageContentType)
+	if contentType == "" || contentType == "application/octet-stream" {
+		contentType = normalizeContentType(attachment.MimeType)
+	}
+
+	finalData := data
+	finalContentType := contentType
+	optimized, optimizedOK := optimizeImageBytes(data, contentType, attachmentImagePolicy)
+	if optimizedOK {
+		finalData = optimized.Data
+		finalContentType = optimized.ContentType
+		if _, err := s.storage.UploadFile(
+			ctx,
+			s.config.AttachmentsBucket,
+			blobName,
+			bytes.NewReader(finalData),
+			finalContentType,
+		); err != nil {
+			return fmt.Errorf("replace attachment with optimized image: %w", err)
+		}
+	}
+
+	if err := s.repo.UpdateAttachmentStorageMetadata(
+		ctx,
+		blobName,
+		int64(len(finalData)),
+		finalContentType,
+	); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return ErrImageOptimizationSkipped
+		}
+		return fmt.Errorf("update optimized attachment metadata: %w", err)
+	}
+
+	if !optimizedOK {
+		return ErrImageOptimizationSkipped
+	}
+
+	return nil
+}
+
+func normalizeContentType(contentType string) string {
+	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+}
+
 func constrainedDimensions(width, height, maxDimension int) (int, int, bool) {
 	if maxDimension <= 0 || (width <= maxDimension && height <= maxDimension) {
 		return width, height, false
@@ -98,7 +181,7 @@ func constrainedDimensions(width, height, maxDimension int) (int, int, bool) {
 }
 
 func isOptimizableImageType(contentType string) bool {
-	switch contentType {
+	switch normalizeContentType(contentType) {
 	case "image/jpeg", "image/png":
 		return true
 	default:

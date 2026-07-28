@@ -67,6 +67,27 @@ func (s *AzureStorageService) UploadFile(ctx context.Context, containerName stri
 	return s.GetPublicURL(ctx, containerName, blobName)
 }
 
+// DownloadFile implements storage.StorageService.
+func (s *AzureStorageService) DownloadFile(ctx context.Context, containerName string, blobName string) ([]byte, string, error) {
+	response, err := s.client.DownloadStream(ctx, containerName, blobName, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to download blob: %w", err)
+	}
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read blob: %w", err)
+	}
+
+	contentType := ""
+	if response.ContentType != nil {
+		contentType = *response.ContentType
+	}
+
+	return data, contentType, nil
+}
+
 // GenerateAccessURL implements storage.StorageService.
 func (s *AzureStorageService) GenerateAccessURL(ctx context.Context, containerName string, blobName string, expiry time.Duration) (string, error) {
 	sasToken, err := s.generateSASToken(containerName, blobName, expiry)

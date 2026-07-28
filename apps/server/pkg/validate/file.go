@@ -15,7 +15,7 @@ const (
 	// Maximum file sizes
 	MaxProfileImageSize  = 6 * 1024 * 1024  // 6MB
 	MaxWorkspaceLogoSize = 6 * 1024 * 1024  // 6MB
-	MaxAttachmentSize    = 10 * 1024 * 1024 // 10MB
+	MaxAttachmentSize    = 25 * 1024 * 1024 // 25MB
 )
 
 var (
@@ -43,6 +43,7 @@ var (
 		"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
 		"text/plain": true,
 		"text/csv":   true,
+		"video/mp4":  true,
 	}
 )
 

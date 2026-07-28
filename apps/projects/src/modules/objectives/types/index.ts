@@ -43,6 +43,7 @@ export type MeasureType = "percentage" | "number" | "boolean";
 
 export type KeyResult = {
   id: string;
+  sequenceId: number;
   name: string;
   measurementType: MeasureType;
   objectiveId: string;
@@ -71,6 +72,7 @@ export type NewKeyResult = {
 };
 
 export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">> & {
+  clearLead?: boolean;
   comment?: string;
 };
 

@@ -71,6 +71,36 @@ func (r *Repository) DeleteAttachment(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// UpdateAttachmentStorageMetadata records the final object size and content type.
+func (r *Repository) UpdateAttachmentStorageMetadata(ctx context.Context, blobName string, size int64, mimeType string) error {
+	r.log.Info(ctx, "repo.attachments.updateStorageMetadata")
+
+	const query = `
+		UPDATE attachments
+		SET size = :size, mime_type = :mime_type
+		WHERE blob_name = :blob_name
+	`
+
+	result, err := r.db.NamedExecContext(ctx, query, map[string]any{
+		"blob_name": blobName,
+		"size":      size,
+		"mime_type": mimeType,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update attachment storage metadata: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return attachments.ErrNotFound
+	}
+
+	return nil
+}
+
 // LinkAttachmentToStory links an attachment to a story
 func (r *Repository) LinkAttachmentToStory(ctx context.Context, storyID, attachmentID uuid.UUID) error {
 	r.log.Info(ctx, "repo.attachments.linkToStory")

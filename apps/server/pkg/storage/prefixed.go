@@ -24,6 +24,11 @@ func (s *prefixedStorageService) UploadFile(ctx context.Context, container, file
 	return s.base.UploadFile(ctx, s.bucket, key, data, contentType)
 }
 
+func (s *prefixedStorageService) DownloadFile(ctx context.Context, container, filename string) ([]byte, string, error) {
+	key := s.prefixedKey(container, filename)
+	return s.base.DownloadFile(ctx, s.bucket, key)
+}
+
 func (s *prefixedStorageService) GenerateAccessURL(ctx context.Context, container, filename string, expiry time.Duration) (string, error) {
 	key := s.prefixedKey(container, filename)
 	return s.base.GenerateAccessURL(ctx, s.bucket, key, expiry)

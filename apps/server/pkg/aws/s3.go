@@ -74,6 +74,25 @@ func (s *S3Service) UploadFile(ctx context.Context, bucket, key string, data io.
 	return s.GetPublicURL(ctx, bucket, key)
 }
 
+// DownloadFile implements storage.StorageService.
+func (s *S3Service) DownloadFile(ctx context.Context, bucket, key string) ([]byte, string, error) {
+	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: sdkaws.String(bucket),
+		Key:    sdkaws.String(key),
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to download object from S3: %w", err)
+	}
+	defer output.Body.Close()
+
+	data, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read object from S3: %w", err)
+	}
+
+	return data, sdkaws.ToString(output.ContentType), nil
+}
+
 // GenerateAccessURL implements storage.StorageService.
 func (s *S3Service) GenerateAccessURL(ctx context.Context, bucket, key string, expiry time.Duration) (string, error) {
 	presignClient := s3.NewPresignClient(s.client)

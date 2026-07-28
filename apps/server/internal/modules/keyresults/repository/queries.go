@@ -33,6 +33,7 @@ func (r *repo) List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid
 	const q = `
 		SELECT
 			kr.id,
+			kr.sequence_id,
 			kr.objective_id,
 			kr.name,
 			kr.measurement_type,
@@ -96,6 +97,7 @@ func (r *repo) getKeyResultById(ctx context.Context, id uuid.UUID, workspaceId u
 	const q = `
 		SELECT
 			kr.id,
+			kr.sequence_id,
 			kr.objective_id,
 			kr.name,
 			kr.measurement_type,
@@ -212,11 +214,12 @@ func (r *repo) ListPaginated(ctx context.Context, filters CoreKeyResultFilters) 
 func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[string]any) {
 	query := `
 		SELECT
-			kr.id, kr.objective_id, kr.name, kr.measurement_type,
+			kr.id, kr.sequence_id, kr.objective_id, kr.name, kr.measurement_type,
 			kr.start_value, kr.current_value, kr.target_value,
 			kr.lead, kr.start_date, kr.end_date,
 			kr.created_at, kr.updated_at, kr.created_by,
-			o.name as objective_name, o.team_id, t.name as team_name, o.workspace_id,
+			o.name as objective_name, o.team_id, t.name as team_name,
+			t.code as team_code, o.workspace_id,
 			-- Aggregate contributors from junction table into JSON array
 			COALESCE(
 				(
@@ -254,6 +257,21 @@ func (r *repo) buildPaginatedQuery(filters CoreKeyResultFilters) (string, map[st
 	if len(filters.MeasurementTypes) > 0 {
 		query += " AND kr.measurement_type = ANY(:measurement_types)"
 		params["measurement_types"] = filters.MeasurementTypes
+	}
+
+	if len(filters.LeadIDs) > 0 {
+		query += " AND kr.lead = ANY(:lead_ids)"
+		params["lead_ids"] = filters.LeadIDs
+	}
+
+	if filters.EndDateAfter != nil {
+		query += " AND kr.end_date >= CAST(:end_date_after AS DATE)"
+		params["end_date_after"] = filters.EndDateAfter.Format("2006-01-02")
+	}
+
+	if filters.EndDateBefore != nil {
+		query += " AND kr.end_date <= CAST(:end_date_before AS DATE)"
+		params["end_date_before"] = filters.EndDateBefore.Format("2006-01-02")
 	}
 
 	if filters.CreatedAfter != nil {
@@ -297,6 +315,18 @@ func (r *repo) buildCountQuery(filters CoreKeyResultFilters) string {
 
 	if len(filters.MeasurementTypes) > 0 {
 		query += " AND kr.measurement_type = ANY(:measurement_types)"
+	}
+
+	if len(filters.LeadIDs) > 0 {
+		query += " AND kr.lead = ANY(:lead_ids)"
+	}
+
+	if filters.EndDateAfter != nil {
+		query += " AND kr.end_date >= CAST(:end_date_after AS DATE)"
+	}
+
+	if filters.EndDateBefore != nil {
+		query += " AND kr.end_date <= CAST(:end_date_before AS DATE)"
 	}
 
 	if filters.CreatedAfter != nil {

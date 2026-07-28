@@ -1,6 +1,7 @@
 package workerbootstrap
 
 import (
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
@@ -13,8 +14,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, systemUserID)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, systemUserID)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID)
 
 	mux := asynq.NewServeMux()
@@ -28,6 +29,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeNotificationEmailDigest, workerTaskService.HandleNotificationEmailDigest)
 	mux.HandleFunc(tasks.TypeGitHubStorySync, workerTaskService.HandleGitHubStorySync)
 	mux.HandleFunc(tasks.TypeMayaBatchAssignment, workerTaskService.HandleMayaBatchAssignment)
+	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

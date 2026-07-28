@@ -6,52 +6,72 @@ import { storyKeys } from "@/modules/stories/constants";
 import { addAttachmentAction } from "../actions/add-attachment";
 import type { StoryAttachment } from "../types";
 
+const createObjectUrlHandle = (file: File) => {
+  const url = URL.createObjectURL(file);
+  return {
+    url,
+    revoke: () => {
+      URL.revokeObjectURL(url);
+    },
+  };
+};
+
 export const useUploadAttachmentMutation = (storyId: string) => {
   const queryClient = useQueryClient();
-  const toastid = "upload-attachment";
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
   const mutation = useMutation({
-    mutationFn: (file: File) =>
-      addAttachmentAction(storyId, file, workspaceSlug),
+    mutationFn: async (file: File) => {
+      const response = await addAttachmentAction(storyId, file, workspaceSlug);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!response.data) {
+        throw new Error("The server did not return the uploaded file.");
+      }
+      return response.data;
+    },
     onMutate: async (file) => {
-      toast.loading("Uploading...", { id: toastid, description: file.name });
+      const optimisticId = `temp-${crypto.randomUUID()}`;
+      const preview = createObjectUrlHandle(file);
+      const toastId = `upload-attachment-${optimisticId}`;
+
+      toast.loading("Uploading...", { id: toastId, description: file.name });
       await queryClient.cancelQueries({
         queryKey: storyKeys.attachments(workspaceSlug, storyId),
       });
-      const previousAttachments =
-        queryClient.getQueryData<StoryAttachment[]>(
-          storyKeys.attachments(workspaceSlug, storyId),
-        ) || [];
       const optimisticAttachment: StoryAttachment = {
-        id: `temp-${Date.now()}`,
+        id: optimisticId,
         filename: file.name,
         size: file.size,
         mimeType: file.type,
-        url: URL.createObjectURL(file),
+        url: preview.url,
         createdAt: new Date().toISOString(),
-        uploadedBy: session?.user?.id || "",
+        uploadedBy: session ? session.user.id : "",
       };
-      queryClient.setQueryData(storyKeys.attachments(workspaceSlug, storyId), [
-        ...previousAttachments,
-        optimisticAttachment,
-      ]);
-      return { previousAttachments };
+      queryClient.setQueryData<StoryAttachment[]>(
+        storyKeys.attachments(workspaceSlug, storyId),
+        (current = []) => [...current, optimisticAttachment],
+      );
+
+      return { optimisticId, preview, toastId };
     },
 
     onError: (error, file, context) => {
       if (context) {
-        queryClient.setQueryData(
+        queryClient.setQueryData<StoryAttachment[]>(
           storyKeys.attachments(workspaceSlug, storyId),
-          context.previousAttachments,
+          (current = []) =>
+            current.filter(
+              (attachment) => attachment.id !== context.optimisticId,
+            ),
         );
       }
 
       toast.error(`Failed to upload attachment: ${file.name}`, {
-        id: toastid,
-        description:
-          error.message || "An error occurred while uploading the file",
+        id: context?.toastId,
+        description: error.message || "The upload failed without a response.",
         action: {
           label: "Retry",
           onClick: () => {
@@ -61,23 +81,23 @@ export const useUploadAttachmentMutation = (storyId: string) => {
       });
     },
 
-    onSuccess: (res, _, context) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
-      const attachment = res.data!;
-      // remove the temp attachment and add the new attachment
-      queryClient.setQueryData(storyKeys.attachments(workspaceSlug, storyId), [
-        ...context.previousAttachments,
-        attachment,
-      ]);
+    onSuccess: (attachment, _, context) => {
+      queryClient.setQueryData<StoryAttachment[]>(
+        storyKeys.attachments(workspaceSlug, storyId),
+        (current = []) =>
+          current.map((item) =>
+            item.id === context.optimisticId ? attachment : item,
+          ),
+      );
 
       toast.success("File uploaded", {
-        id: toastid,
-        description: `${res.data?.filename} uploaded`,
+        id: context.toastId,
+        description: `${attachment.filename} uploaded`,
         action: null,
       });
+    },
+    onSettled: (_data, _error, _file, context) => {
+      context?.preview.revoke();
     },
   });
 

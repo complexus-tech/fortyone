@@ -5,13 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
+	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
+	"github.com/complexus-tech/projects-api/pkg/aws"
+	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
+	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/jmoiron/sqlx"
@@ -120,8 +125,41 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, err
 	}
 
+	storageConfig := storage.Config{
+		Provider:          cfg.Storage.Provider,
+		ProfilesBucket:    cfg.Storage.ProfilesBucket,
+		LogosBucket:       cfg.Storage.LogosBucket,
+		AttachmentsBucket: cfg.Storage.AttachmentsBucket,
+		Azure: azure.Config{
+			ConnectionString:   cfg.Azure.StorageConnectionString,
+			StorageAccountName: cfg.Azure.StorageAccountName,
+			AccountKey:         cfg.Azure.StorageAccountKey,
+		},
+		AWS: aws.Config{
+			AccessKeyID:     cfg.AWS.AccessKeyID,
+			SecretAccessKey: cfg.AWS.SecretAccessKey,
+			Region:          cfg.AWS.Region,
+			Endpoint:        cfg.AWS.Endpoint,
+			PublicURL:       cfg.AWS.PublicURL,
+			ForcePathStyle:  cfg.AWS.ForcePathStyle,
+			Bucket:          cfg.AWS.Bucket,
+		},
+	}
+	storageService, err := storage.NewStorageService(storageConfig, log)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize worker storage service: %w", err)
+	}
+	attachmentsService := attachments.New(
+		log,
+		attachmentsrepository.New(log, db),
+		storageService,
+		storageConfig,
+		nil,
+	)
+
 	mayaService := buildMayaService(log, db, cfg, systemUserID)
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, systemUserID)
 
 	return App{
 		log:       log,

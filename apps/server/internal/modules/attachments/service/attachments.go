@@ -3,6 +3,7 @@ package attachments
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -24,26 +26,34 @@ import (
 type Repository interface {
 	CreateAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error)
 	GetAttachmentByID(ctx context.Context, id uuid.UUID) (CoreAttachment, error)
+	GetAttachmentByBlobName(ctx context.Context, blobName string) (CoreAttachment, error)
 	GetAttachmentsByStoryID(ctx context.Context, storyID uuid.UUID) ([]CoreAttachment, error)
+	UpdateAttachmentStorageMetadata(ctx context.Context, blobName string, size int64, mimeType string) error
 	DeleteAttachment(ctx context.Context, id uuid.UUID) error
 	LinkAttachmentToStory(ctx context.Context, storyID, attachmentID uuid.UUID) error
 }
 
+type ImageOptimizationEnqueuer interface {
+	EnqueueAttachmentImageOptimization(payload tasks.AttachmentImageOptimizationPayload) error
+}
+
 // Service manages attachment operations
 type Service struct {
-	log     *logger.Logger
-	repo    Repository
-	storage storage.StorageService
-	config  storage.Config
+	log       *logger.Logger
+	repo      Repository
+	storage   storage.StorageService
+	config    storage.Config
+	optimizer ImageOptimizationEnqueuer
 }
 
 // New creates a new attachment service
-func New(log *logger.Logger, repo Repository, storageService storage.StorageService, config storage.Config) *Service {
+func New(log *logger.Logger, repo Repository, storageService storage.StorageService, config storage.Config, optimizer ImageOptimizationEnqueuer) *Service {
 	return &Service{
-		log:     log,
-		repo:    repo,
-		storage: storageService,
-		config:  config,
+		log:       log,
+		repo:      repo,
+		storage:   storageService,
+		config:    config,
+		optimizer: optimizer,
 	}
 }
 
@@ -56,15 +66,15 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	// Validate file
 	if err := validate.Attachment(file, fileHeader); err != nil {
 		span.RecordError(err)
-		return FileInfo{}, fmt.Errorf("invalid file: %w", err)
+		return FileInfo{}, attachmentValidationError(err)
 	}
 
 	// Generate a unique filename
 	blobName := validate.GenerateFileName(fileHeader.Filename)
-	upload, err := prepareUploadFile(file, fileHeader, attachmentImagePolicy)
+	contentType, err := detectFileContentType(file, fileHeader)
 	if err != nil {
 		span.RecordError(err)
-		return FileInfo{}, fmt.Errorf("failed to prepare attachment upload: %w", err)
+		return FileInfo{}, fmt.Errorf("%w: failed to detect content type", ErrInvalidFile)
 	}
 
 	// Upload to storage
@@ -72,8 +82,8 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 		ctx,
 		s.config.AttachmentsBucket,
 		blobName,
-		bytes.NewReader(upload.Data),
-		upload.ContentType,
+		file,
+		contentType,
 	)
 	if err != nil {
 		span.RecordError(err)
@@ -84,8 +94,8 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
 		Filename:    fileHeader.Filename,
 		BlobName:    blobName,
-		Size:        int64(len(upload.Data)),
-		MimeType:    upload.ContentType,
+		Size:        fileHeader.Size,
+		MimeType:    contentType,
 		UploadedBy:  userID,
 		WorkspaceID: workspaceID,
 	})
@@ -105,8 +115,13 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	)
 	if err != nil {
 		span.RecordError(err)
+		if cleanupErr := s.DeleteAttachment(ctx, attachment.ID, userID); cleanupErr != nil {
+			s.log.Error(ctx, "failed to clean up attachment after access URL failure", "error", cleanupErr, "attachment_id", attachment.ID)
+		}
 		return FileInfo{}, fmt.Errorf("failed to generate access URL: %w", err)
 	}
+
+	s.maybeEnqueueImageOptimization(ctx, blobName, contentType)
 
 	span.AddEvent("attachment created", trace.WithAttributes(
 		attribute.String("attachment_id", attachment.ID.String()),
@@ -125,6 +140,53 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	}, nil
 }
 
+func attachmentValidationError(err error) error {
+	switch {
+	case errors.Is(err, validate.ErrFileTooLarge):
+		return fmt.Errorf("%w: maximum attachment size is 25 MB", ErrFileTooLarge)
+	case errors.Is(err, validate.ErrInvalidFileType):
+		return fmt.Errorf("%w: upload an image, MP4 video, PDF, Word, Excel, PowerPoint, text, or CSV file", ErrInvalidFileType)
+	case errors.Is(err, validate.ErrEmptyFile):
+		return fmt.Errorf("%w: the file is empty", ErrInvalidFile)
+	case errors.Is(err, validate.ErrFileNameTooLong):
+		return fmt.Errorf("%w: filename must be 255 characters or fewer", ErrInvalidFile)
+	default:
+		return fmt.Errorf("%w: %v", ErrInvalidFile, err)
+	}
+}
+
+func detectFileContentType(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
+	buffer := make([]byte, 512)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", err
+	}
+
+	contentType := http.DetectContentType(buffer[:n])
+	if contentType == "application/octet-stream" {
+		if headerContentType := strings.TrimSpace(fileHeader.Header.Get("Content-Type")); headerContentType != "" {
+			contentType = headerContentType
+		}
+	}
+
+	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])), nil
+}
+
+func (s *Service) maybeEnqueueImageOptimization(ctx context.Context, blobName, contentType string) {
+	if s.optimizer == nil || !isOptimizableImageType(contentType) {
+		return
+	}
+
+	if err := s.optimizer.EnqueueAttachmentImageOptimization(tasks.AttachmentImageOptimizationPayload{
+		BlobName: blobName,
+	}); err != nil {
+		s.log.Error(ctx, "failed to enqueue attachment image optimization", "error", err, "blob_name", blobName)
+	}
+}
+
 // GetAttachmentsForStory gets all attachments for a story
 func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID) ([]FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.getForStory")
@@ -138,8 +200,8 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 		return nil, err
 	}
 
-	fileInfos := make([]FileInfo, len(attachments))
-	for i, attachment := range attachments {
+	fileInfos := make([]FileInfo, 0, len(attachments))
+	for _, attachment := range attachments {
 		// Use the stored blob name instead of generating a new one
 		blobName := attachment.BlobName
 
@@ -152,10 +214,11 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 		)
 		if err != nil {
 			span.RecordError(err)
+			s.log.Error(ctx, "failed to generate attachment access URL", "error", err, "attachment_id", attachment.ID)
 			continue
 		}
 
-		fileInfos[i] = FileInfo{
+		fileInfos = append(fileInfos, FileInfo{
 			ID:         attachment.ID,
 			Filename:   attachment.Filename,
 			BlobName:   blobName,
@@ -164,7 +227,7 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 			URL:        accessURL,
 			CreatedAt:  attachment.CreatedAt,
 			UploadedBy: attachment.UploadedBy,
-		}
+		})
 
 	}
 

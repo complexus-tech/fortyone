@@ -139,7 +139,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if ukr.TargetValue != nil {
 		updates["target_value"] = ukr.TargetValue
 	}
-	if ukr.Lead != nil {
+	if ukr.ClearLead {
+		updates["lead"] = nil
+	} else if ukr.Lead != nil {
 		updates["lead"] = ukr.Lead
 	}
 	if ukr.StartDate != nil {
@@ -273,6 +275,10 @@ func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyre
 		filters.MeasurementTypes = measurementTypes
 	}
 
+	if leadIDs := query["leadIds"]; len(leadIDs) > 0 {
+		filters.LeadIDs = parseUUIDArray(leadIDs)
+	}
+
 	if createdAfter := query.Get("createdAfter"); createdAfter != "" {
 		if t, err := time.Parse(time.RFC3339, createdAfter); err == nil {
 			filters.CreatedAfter = &t
@@ -282,6 +288,18 @@ func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyre
 	if createdBefore := query.Get("createdBefore"); createdBefore != "" {
 		if t, err := time.Parse(time.RFC3339, createdBefore); err == nil {
 			filters.CreatedBefore = &t
+		}
+	}
+
+	if endDateAfter := query.Get("endDateAfter"); endDateAfter != "" {
+		if t, err := time.Parse(time.RFC3339, endDateAfter); err == nil {
+			filters.EndDateAfter = &t
+		}
+	}
+
+	if endDateBefore := query.Get("endDateBefore"); endDateBefore != "" {
+		if t, err := time.Parse(time.RFC3339, endDateBefore); err == nil {
+			filters.EndDateBefore = &t
 		}
 	}
 

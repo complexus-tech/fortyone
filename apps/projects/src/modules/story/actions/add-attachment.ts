@@ -21,6 +21,19 @@ export const addAttachmentAction = async (
     );
     return res;
   } catch (error) {
-    return getApiError(error);
+    const response = getApiError(error);
+    if (
+      response.error?.message === "An error occurred" &&
+      error instanceof Error &&
+      error.message.trim()
+    ) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+        },
+      };
+    }
+    return response;
   }
 };

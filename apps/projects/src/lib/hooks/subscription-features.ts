@@ -9,7 +9,7 @@ import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 export const TIER_LIMITS = {
   trial: {
     maxMembers: 10,
-    maxFileUploads: "Unlimited",
+    maxFileUploads: "25MB",
     maxStories: Infinity,
     maxTeams: 3,
     customTerminology: true,
@@ -37,7 +37,7 @@ export const TIER_LIMITS = {
   },
   pro: {
     maxMembers: 10,
-    maxFileUploads: "Unlimited",
+    maxFileUploads: "25MB",
     maxStories: Infinity,
     maxTeams: 3,
     customTerminology: false,
@@ -51,7 +51,7 @@ export const TIER_LIMITS = {
   },
   business: {
     maxMembers: Infinity,
-    maxFileUploads: "Unlimited",
+    maxFileUploads: "25MB",
     maxStories: Infinity,
     maxTeams: Infinity,
     customTerminology: true,
@@ -65,7 +65,7 @@ export const TIER_LIMITS = {
   },
   enterprise: {
     maxMembers: Infinity,
-    maxFileUploads: "Unlimited",
+    maxFileUploads: "25MB",
     maxStories: Infinity,
     maxTeams: Infinity,
     customTerminology: true,

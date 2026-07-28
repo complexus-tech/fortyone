@@ -60,6 +60,26 @@ type Config struct {
 	Website struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
 	}
+	Storage struct {
+		Provider          string `env:"APP_STORAGE_PROVIDER" default:"aws"`
+		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profiles"`
+		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"logos"`
+		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"attachments"`
+	}
+	Azure struct {
+		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
+		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
+		StorageAccountKey       string `env:"APP_AZURE_STORAGE_ACCOUNT_KEY"`
+	}
+	AWS struct {
+		AccessKeyID     string `env:"APP_AWS_ACCESS_KEY_ID"`
+		SecretAccessKey string `env:"APP_AWS_SECRET_ACCESS_KEY"`
+		Region          string `env:"APP_AWS_REGION" default:"us-east-1"`
+		Endpoint        string `env:"APP_AWS_ENDPOINT"`
+		PublicURL       string `env:"APP_AWS_PUBLIC_URL"`
+		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
+		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
+	}
 	AIAPIKey string `env:"OPENAI_API_KEY"`
 	GitHub   struct {
 		AppID            int64  `env:"APP_GITHUB_APP_ID"`

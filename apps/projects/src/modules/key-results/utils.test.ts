@@ -1,6 +1,10 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import { formatKeyResultValue, getKeyResultProgress } from "./utils";
+import {
+  formatKeyResultValue,
+  getKeyResultProgress,
+  groupKeyResultsByObjective,
+} from "./utils";
 
 describe("key result utilities", () => {
   describe("getKeyResultProgress", () => {
@@ -51,6 +55,47 @@ describe("key result utilities", () => {
       expect(formatKeyResultValue(42.5, "percentage")).toBe("42.5%");
       expect(formatKeyResultValue(15000, "number")).toBe("15,000");
       expect(formatKeyResultValue(1, "boolean")).toBe("Complete");
+    });
+  });
+
+  describe("groupKeyResultsByObjective", () => {
+    it("groups key results by objective and calculates average progress", () => {
+      const baseKeyResult = {
+        contributors: [],
+        createdAt: "2026-01-01",
+        createdBy: "user-1",
+        currentValue: 5,
+        endDate: "2026-03-31",
+        lead: null,
+        measurementType: "number" as const,
+        objectiveId: "objective-1",
+        objectiveName: "Improve customer growth",
+        startDate: "2026-01-01",
+        startValue: 0,
+        targetValue: 10,
+        teamId: "team-1",
+        teamName: "Growth",
+        updatedAt: "2026-01-01",
+        workspaceId: "workspace-1",
+      };
+
+      const groups = groupKeyResultsByObjective([
+        { ...baseKeyResult, id: "kr-1", name: "Increase conversion" },
+        {
+          ...baseKeyResult,
+          currentValue: 10,
+          id: "kr-2",
+          name: "Increase activation",
+        },
+      ]);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0]).toMatchObject({
+        averageProgress: 75,
+        objectiveId: "objective-1",
+        objectiveName: "Improve customer growth",
+      });
+      expect(groups[0].keyResults).toHaveLength(2);
     });
   });
 });
