@@ -218,7 +218,7 @@ export const StoryRow = ({
                     <span>
                       <AssigneesMenu.Trigger>
                         <button
-                          className="flex"
+                          className="flex items-center gap-1"
                           disabled={userRole === "guest"}
                           type="button"
                         >
@@ -230,6 +230,14 @@ export const StoryRow = ({
                             size="sm"
                             src={selectedAssignee?.avatarUrl}
                           />
+                          {story.collaboratorCount > 0 ? (
+                            <span
+                              className="text-text-muted text-xs"
+                              title={`${story.collaboratorCount} collaborator${story.collaboratorCount === 1 ? "" : "s"}`}
+                            >
+                              +{story.collaboratorCount}
+                            </span>
+                          ) : null}
                         </button>
                       </AssigneesMenu.Trigger>
                     </span>

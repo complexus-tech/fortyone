@@ -72,3 +72,69 @@ func parseDate(dateStr string) (time.Time, error) {
 func shouldNotify(recipientID, actorID uuid.UUID) bool {
 	return recipientID != actorID
 }
+
+func storyAudience(audienceIDs []uuid.UUID, audienceResolved bool, fallbackAssignee *uuid.UUID) []uuid.UUID {
+	if !audienceResolved {
+		if fallbackAssignee == nil {
+			return nil
+		}
+		return []uuid.UUID{*fallbackAssignee}
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(audienceIDs))
+	result := make([]uuid.UUID, 0, len(audienceIDs))
+	for _, audienceID := range audienceIDs {
+		if audienceID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[audienceID]; exists {
+			continue
+		}
+		seen[audienceID] = struct{}{}
+		result = append(result, audienceID)
+	}
+	return result
+}
+
+func uuidSet(values []uuid.UUID) map[uuid.UUID]struct{} {
+	result := make(map[uuid.UUID]struct{}, len(values))
+	for _, value := range values {
+		if value != uuid.Nil {
+			result[value] = struct{}{}
+		}
+	}
+	return result
+}
+
+func parseUUIDSlice(value any) []uuid.UUID {
+	switch values := value.(type) {
+	case []uuid.UUID:
+		return values
+	case []string:
+		result := make([]uuid.UUID, 0, len(values))
+		for _, item := range values {
+			if parsed, err := uuid.Parse(item); err == nil {
+				result = append(result, parsed)
+			}
+		}
+		return result
+	case []any:
+		result := make([]uuid.UUID, 0, len(values))
+		for _, item := range values {
+			if text, ok := item.(string); ok {
+				if parsed, err := uuid.Parse(text); err == nil {
+					result = append(result, parsed)
+				}
+			}
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+func addNotificationRecipients(recipients map[uuid.UUID]struct{}, notifications []CoreNewNotification) {
+	for _, notification := range notifications {
+		recipients[notification.RecipientID] = struct{}{}
+	}
+}

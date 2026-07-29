@@ -134,6 +134,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
+			(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 			s.reporter_id,
 			s.created_at,
 			s.updated_at,
@@ -157,6 +158,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 								'objective_id', sub.objective_id,
 								'workspace_id', sub.workspace_id,
 								'assignee_id', sub.assignee_id,
+								'collaborator_count', (SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = sub.id),
 								'reporter_id', sub.reporter_id,
 								'created_at', sub.created_at,
 								'updated_at', sub.updated_at,
@@ -195,7 +197,15 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 		WHERE s.workspace_id = :workspace_id 
 		AND s.deleted_at IS NULL
 		AND s.parent_id IS NULL
-		AND (s.assignee_id = :current_user OR s.reporter_id = :current_user)
+		AND (
+			s.assignee_id = :current_user
+			OR s.reporter_id = :current_user
+			OR EXISTS (
+				SELECT 1
+				FROM story_collaborators sc
+				WHERE sc.story_id = s.id AND sc.user_id = :current_user
+			)
+		)
 		ORDER BY s.created_at DESC;
 	`
 
@@ -239,6 +249,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (st
 }
 
 func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (dbStory, error) {
+	currentUser, _ := auth.GetUserID(ctx)
 	query := `
         SELECT
 					s.id,
@@ -261,6 +272,91 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.key_result_id,
 					s.workspace_id,
 					s.assignee_id,
+					COALESCE(
+						(
+							SELECT json_agg(sc.user_id ORDER BY sc.created_at, sc.user_id)
+							FROM story_collaborators sc
+							WHERE sc.story_id = s.id
+						), '[]'
+					) AS collaborators,
+					COALESCE(
+						(
+							SELECT json_agg(audience.user_id ORDER BY audience.user_id)
+							FROM (
+								SELECT s.assignee_id AS user_id
+								WHERE s.assignee_id IS NOT NULL
+								UNION
+								SELECT sc.user_id FROM story_collaborators sc WHERE sc.story_id = s.id
+								UNION
+								SELECT sw.user_id FROM story_watchers sw WHERE sw.story_id = s.id
+							) audience
+							WHERE EXISTS (
+								SELECT 1
+								FROM users audience_user
+								WHERE audience_user.user_id = audience.user_id
+									AND audience_user.is_active = true
+									AND audience_user.is_system = false
+							)
+							AND NOT EXISTS (
+								SELECT 1
+								FROM story_notification_mutes snm
+								WHERE snm.story_id = s.id AND snm.user_id = audience.user_id
+							)
+						), '[]'
+					) AS watcher_ids,
+					(
+						SELECT COUNT(*)
+						FROM (
+							SELECT s.assignee_id AS user_id
+							WHERE s.assignee_id IS NOT NULL
+							UNION
+							SELECT sc.user_id FROM story_collaborators sc WHERE sc.story_id = s.id
+							UNION
+							SELECT sw.user_id FROM story_watchers sw WHERE sw.story_id = s.id
+						) audience
+						WHERE EXISTS (
+							SELECT 1
+							FROM users audience_user
+							WHERE audience_user.user_id = audience.user_id
+								AND audience_user.is_active = true
+								AND audience_user.is_system = false
+						)
+						AND NOT EXISTS (
+							SELECT 1
+							FROM story_notification_mutes snm
+							WHERE snm.story_id = s.id AND snm.user_id = audience.user_id
+						)
+					) AS watcher_count,
+					(
+						:current_user <> '00000000-0000-0000-0000-000000000000'::uuid
+						AND NOT EXISTS (
+							SELECT 1 FROM story_notification_mutes snm
+							WHERE snm.story_id = s.id AND snm.user_id = :current_user
+						)
+						AND (
+							s.assignee_id = :current_user
+							OR EXISTS (
+								SELECT 1 FROM story_collaborators sc
+								WHERE sc.story_id = s.id AND sc.user_id = :current_user
+							)
+							OR EXISTS (
+								SELECT 1 FROM story_watchers sw
+								WHERE sw.story_id = s.id AND sw.user_id = :current_user
+							)
+						)
+					) AS is_watching,
+					CASE
+						WHEN s.assignee_id = :current_user THEN 'assignee'
+						WHEN EXISTS (
+							SELECT 1 FROM story_collaborators sc
+							WHERE sc.story_id = s.id AND sc.user_id = :current_user
+						) THEN 'collaborator'
+						WHEN EXISTS (
+							SELECT 1 FROM story_watchers sw
+							WHERE sw.story_id = s.id AND sw.user_id = :current_user
+						) THEN 'watcher'
+						ELSE NULL
+					END AS watching_reason,
 					s.reporter_id,
 					s.start_date,
 					s.end_date,
@@ -350,6 +446,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 	params := map[string]any{
 		"id":           id,
 		"workspace_id": workspaceId,
+		"current_user": currentUser,
 	}
 
 	var story dbStory
@@ -390,7 +487,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			key == "updated_before" || key == "start_date_after" || key == "start_date_before" ||
 			key == "deadline_after" || key == "deadline_before" ||
 			key == "assigned_to_me" || key == "created_by_me" || key == "has_no_assignee" ||
-			key == "has_blocked_by" || key == "current_user_id" || key == "show_sub_stories" {
+			key == "collaborating_with_me" || key == "has_blocked_by" ||
+			key == "current_user_id" || key == "show_sub_stories" {
 			hasComplexFilters = true
 			break
 		}
@@ -453,6 +551,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
+			(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 			s.reporter_id,
 			s.created_at,
 				s.updated_at,
@@ -538,6 +637,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	if excludedAssigneeIds, ok := filters["excluded_assignee_ids"].([]uuid.UUID); ok {
 		coreFilters.ExcludedAssigneeIDs = excludedAssigneeIds
 	}
+	if collaboratorIds, ok := filters["collaborator_ids"].([]uuid.UUID); ok {
+		coreFilters.CollaboratorIDs = collaboratorIds
+	}
 	if reporterIds, ok := filters["reporter_ids"].([]uuid.UUID); ok {
 		coreFilters.ReporterIDs = reporterIds
 	}
@@ -609,6 +711,9 @@ func mapToCoreFilters(filters map[string]any, workspaceId uuid.UUID) stories.Cor
 	}
 	if assignedToMe, ok := filters["assigned_to_me"].(bool); ok {
 		coreFilters.AssignedToMe = &assignedToMe
+	}
+	if collaboratingWithMe, ok := filters["collaborating_with_me"].(bool); ok {
+		coreFilters.CollaboratingWithMe = &collaboratingWithMe
 	}
 	if createdByMe, ok := filters["created_by_me"].(bool); ok {
 		coreFilters.CreatedByMe = &createdByMe
@@ -1043,6 +1148,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				o.description AS objective_description,
 				s.workspace_id,
 				s.assignee_id,
+				(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 				s.reporter_id,
 				s.created_at,
 				s.updated_at,
@@ -1091,6 +1197,7 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'objective_description', ls.objective_description,
 						'workspace_id', ls.workspace_id,
 						'assignee_id', ls.assignee_id,
+						'collaborator_count', ls.collaborator_count,
 						'reporter_id', ls.reporter_id,
 						'created_at', ls.created_at,
 							'updated_at', ls.updated_at,
@@ -1334,6 +1441,9 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if len(filters.ExcludedAssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
 	}
+	if len(filters.CollaboratorIDs) > 0 {
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM story_collaborators sc_filter WHERE sc_filter.story_id = s.id AND sc_filter.user_id = ANY(:collaborator_ids))")
+	}
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
@@ -1402,17 +1512,8 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
-	// Handle createdByMe and assignedToMe with OR logic when both are true
-	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
-	} else {
-		if filters.AssignedToMe != nil && *filters.AssignedToMe {
-			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-		}
-
-		if filters.CreatedByMe != nil && *filters.CreatedByMe {
-			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
-		}
+	if scopeClause := personalStoryScopeClause(filters); scopeClause != "" {
+		whereClauses = append(whereClauses, scopeClause)
 	}
 
 	// Date range filters
@@ -1801,6 +1902,23 @@ func (r *repo) buildOrderByClause(orderBy, orderDirection string) string {
 	return r.buildOrderByClauseWithAlias(orderBy, orderDirection, "s")
 }
 
+func personalStoryScopeClause(filters stories.CoreStoryFilters) string {
+	scopes := make([]string, 0, 3)
+	if filters.AssignedToMe != nil && *filters.AssignedToMe {
+		scopes = append(scopes, "s.assignee_id = :current_user_id")
+	}
+	if filters.CreatedByMe != nil && *filters.CreatedByMe {
+		scopes = append(scopes, "s.reporter_id = :current_user_id")
+	}
+	if filters.CollaboratingWithMe != nil && *filters.CollaboratingWithMe {
+		scopes = append(scopes, "EXISTS (SELECT 1 FROM story_collaborators sc_me WHERE sc_me.story_id = s.id AND sc_me.user_id = :current_user_id)")
+	}
+	if len(scopes) == 0 {
+		return ""
+	}
+	return "(" + strings.Join(scopes, " OR ") + ")"
+}
+
 // buildOrderByClauseWithAlias builds the ORDER BY clause with a specific table alias
 func (r *repo) buildOrderByClauseWithAlias(orderBy, orderDirection, tableAlias string) string {
 	var column string
@@ -1862,6 +1980,9 @@ func (r *repo) buildQueryParams(filters stories.CoreStoryFilters) map[string]any
 	}
 	if len(filters.ExcludedAssigneeIDs) > 0 {
 		params["excluded_assignee_ids"] = filters.ExcludedAssigneeIDs
+	}
+	if len(filters.CollaboratorIDs) > 0 {
+		params["collaborator_ids"] = filters.CollaboratorIDs
 	}
 	if len(filters.ReporterIDs) > 0 {
 		params["reporter_ids"] = filters.ReporterIDs
@@ -1996,6 +2117,7 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 							'objective_description', sub_objective.description,
 							'workspace_id', sub.workspace_id,
 							'assignee_id', sub.assignee_id,
+							'collaborator_count', (SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = sub.id),
 							'reporter_id', sub.reporter_id,
 							'created_at', sub.created_at,
 							'updated_at', sub.updated_at,
@@ -2048,6 +2170,7 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
+			(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 			s.reporter_id,
 			s.created_at,
 				s.updated_at,
@@ -2131,6 +2254,9 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if len(filters.ExcludedAssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
 	}
+	if len(filters.CollaboratorIDs) > 0 {
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM story_collaborators sc_filter WHERE sc_filter.story_id = s.id AND sc_filter.user_id = ANY(:collaborator_ids))")
+	}
 
 	if len(filters.ReporterIDs) > 0 {
 		whereClauses = append(whereClauses, "s.reporter_id = ANY(:reporter_ids)")
@@ -2212,17 +2338,8 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
-	// Handle createdByMe and assignedToMe with OR logic when both are true
-	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
-	} else {
-		if filters.AssignedToMe != nil && *filters.AssignedToMe {
-			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-		}
-
-		if filters.CreatedByMe != nil && *filters.CreatedByMe {
-			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
-		}
+	if scopeClause := personalStoryScopeClause(filters); scopeClause != "" {
+		whereClauses = append(whereClauses, scopeClause)
 	}
 
 	// Date range filters
@@ -2609,6 +2726,7 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			o.description AS objective_description,
 			s.workspace_id,
 			s.assignee_id,
+			(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 			s.reporter_id,
 			s.created_at,
 				s.updated_at,
@@ -2690,6 +2808,9 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 	}
 	if len(filters.ExcludedAssigneeIDs) > 0 {
 		whereClauses = append(whereClauses, "(s.assignee_id IS NULL OR NOT (s.assignee_id = ANY(:excluded_assignee_ids)))")
+	}
+	if len(filters.CollaboratorIDs) > 0 {
+		whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM story_collaborators sc_filter WHERE sc_filter.story_id = s.id AND sc_filter.user_id = ANY(:collaborator_ids))")
 	}
 
 	if len(filters.ReporterIDs) > 0 {
@@ -2776,17 +2897,8 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 		whereClauses = append(whereClauses, "s.blocked_by_id IS NOT NULL")
 	}
 
-	// Handle createdByMe and assignedToMe with OR logic when both are true
-	if filters.AssignedToMe != nil && *filters.AssignedToMe && filters.CreatedByMe != nil && *filters.CreatedByMe {
-		whereClauses = append(whereClauses, "(s.assignee_id = :current_user_id OR s.reporter_id = :current_user_id)")
-	} else {
-		if filters.AssignedToMe != nil && *filters.AssignedToMe {
-			whereClauses = append(whereClauses, "s.assignee_id = :current_user_id")
-		}
-
-		if filters.CreatedByMe != nil && *filters.CreatedByMe {
-			whereClauses = append(whereClauses, "s.reporter_id = :current_user_id")
-		}
+	if scopeClause := personalStoryScopeClause(filters); scopeClause != "" {
+		whereClauses = append(whereClauses, scopeClause)
 	}
 
 	// Date range filters
@@ -2868,6 +2980,7 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.objective_id,
 			s.workspace_id,
 			s.assignee_id,
+			(SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = s.id) AS collaborator_count,
 			s.reporter_id,
 			s.created_at,
 				s.updated_at,
@@ -2948,12 +3061,24 @@ func (r *repo) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode s
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.QueryByRef")
 	defer span.End()
 
-	story, err := r.getStoryByRef(ctx, workspaceId, teamCode, sequenceID)
-	if err != nil {
+	var storyID uuid.UUID
+	if err := r.db.GetContext(ctx, &storyID, `
+		SELECT s.id
+		FROM stories s
+		INNER JOIN teams t ON t.team_id = s.team_id
+		WHERE s.workspace_id = $1
+			AND t.code = $2
+			AND s.sequence_id = $3;
+	`, workspaceId, teamCode, sequenceID); err != nil {
 		span.RecordError(err)
 		return stories.CoreSingleStory{}, err
 	}
 
+	story, err := r.getStoryById(ctx, storyID, workspaceId)
+	if err != nil {
+		span.RecordError(err)
+		return stories.CoreSingleStory{}, err
+	}
 	return toCoreStory(story), nil
 }
 

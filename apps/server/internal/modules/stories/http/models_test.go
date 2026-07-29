@@ -93,6 +93,27 @@ func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
 	}
 }
 
+func TestParseStoryQueryMapsCollaborationFilters(t *testing.T) {
+	collaboratorID := uuid.New()
+	request := httptest.NewRequest(
+		"GET",
+		"/stories?collaboratorIds="+collaboratorID.String()+"&collaboratingWithMe=true",
+		nil,
+	)
+
+	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	if err != nil {
+		t.Fatalf("expected query to parse, got error: %v", err)
+	}
+
+	if len(query.Filters.CollaboratorIDs) != 1 || query.Filters.CollaboratorIDs[0] != collaboratorID {
+		t.Fatalf("expected collaborator %s, got %v", collaboratorID, query.Filters.CollaboratorIDs)
+	}
+	if query.Filters.CollaboratingWithMe == nil || !*query.Filters.CollaboratingWithMe {
+		t.Fatalf("expected collaboratingWithMe to be parsed, got %v", query.Filters.CollaboratingWithMe)
+	}
+}
+
 func TestToAppStoryListItemIncludesEmbeddedSummaries(t *testing.T) {
 	teamID := uuid.New()
 	objectiveID := uuid.New()

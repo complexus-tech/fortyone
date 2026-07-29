@@ -68,3 +68,37 @@ func TestOrderDirectionIsAppliedToSelectedField(t *testing.T) {
 		t.Fatalf("expected descending deadline order, got %q", got)
 	}
 }
+
+func TestCollaborationFiltersAreIncludedInQueryAndPersonalScope(t *testing.T) {
+	collaboratorID := uuid.New()
+	include := true
+	filters := stories.CoreStoryFilters{
+		CollaboratorIDs:     []uuid.UUID{collaboratorID},
+		AssignedToMe:        &include,
+		CollaboratingWithMe: &include,
+		CreatedByMe:         &include,
+	}
+	repository := &repo{}
+
+	query := repository.buildSimpleWhereClause(filters)
+	for _, expected := range []string{
+		"sc_filter.user_id = ANY(:collaborator_ids)",
+		"s.assignee_id = :current_user_id",
+		"s.reporter_id = :current_user_id",
+		"sc_me.user_id = :current_user_id",
+		" OR ",
+	} {
+		if !strings.Contains(query, expected) {
+			t.Fatalf("expected collaboration query to contain %q, got %q", expected, query)
+		}
+	}
+
+	params := repository.buildQueryParams(filters)
+	collaboratorIDs, ok := params["collaborator_ids"].([]uuid.UUID)
+	if !ok || len(collaboratorIDs) != 1 || collaboratorIDs[0] != collaboratorID {
+		t.Fatalf("expected collaborator filter %s, got %v", collaboratorID, params["collaborator_ids"])
+	}
+	if got := params["current_user_id"]; got == nil {
+		t.Fatal("expected personal collaboration scope to include current_user_id")
+	}
+}

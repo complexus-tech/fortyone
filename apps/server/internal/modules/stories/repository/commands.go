@@ -572,7 +572,7 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 		}
 	}
 
-	query := "UPDATE stories SET "
+	query := "WITH updated_story AS (UPDATE stories SET "
 	var setClauses []string
 	params := map[string]any{"id": id, "workspace_id": workspaceId}
 
@@ -584,7 +584,8 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	setClauses = append(setClauses, "updated_at = NOW()")
 
 	query += strings.Join(setClauses, ", ")
-	query += " WHERE id = :id AND workspace_id = :workspace_id;"
+	query += " WHERE id = :id AND workspace_id = :workspace_id RETURNING id, assignee_id) "
+	query += "DELETE FROM story_collaborators sc USING updated_story us WHERE sc.story_id = us.id AND sc.user_id = us.assignee_id;"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -611,7 +612,7 @@ func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkUpdate")
 	defer span.End()
 
-	query := "UPDATE stories SET "
+	query := "WITH updated_stories AS (UPDATE stories SET "
 	var setClauses []string
 	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
 
@@ -623,7 +624,8 @@ func (r *repo) BulkUpdate(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	setClauses = append(setClauses, "updated_at = NOW()")
 
 	query += strings.Join(setClauses, ", ")
-	query += " WHERE id IN (:ids) AND workspace_id = :workspace_id;"
+	query += " WHERE id IN (:ids) AND workspace_id = :workspace_id RETURNING id, assignee_id) "
+	query += "DELETE FROM story_collaborators sc USING updated_stories us WHERE sc.story_id = us.id AND sc.user_id = us.assignee_id;"
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {

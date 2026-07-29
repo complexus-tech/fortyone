@@ -60,6 +60,10 @@ type Repository interface {
 	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
+	GetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error)
+	SetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID, collaboratorIDs []uuid.UUID) error
+	SetWatching(ctx context.Context, storyID, workspaceID, userID uuid.UUID, watching bool) error
+	GetNotificationAudience(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error)
 }
 
 // MentionsRepository provides access to comment mentions storage.
@@ -250,6 +254,79 @@ func (s *Service) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uu
 		span.RecordError(err)
 	}
 	return nil
+}
+
+// UpdateCollaborators replaces the active collaborators for a story.
+func (s *Service) UpdateCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID, collaboratorIDs []uuid.UUID) error {
+	actorID, _ := auth.GetUserID(ctx)
+
+	story, err := s.repo.Get(ctx, storyID, workspaceID)
+	if err != nil {
+		return err
+	}
+	previousIDs, err := s.repo.GetCollaborators(ctx, storyID, workspaceID)
+	if err != nil {
+		return err
+	}
+	nextIDs := uniqueUUIDs(collaboratorIDs)
+	if sameUUIDSet(previousIDs, nextIDs) {
+		return nil
+	}
+
+	if err := s.repo.SetCollaborators(ctx, storyID, workspaceID, nextIDs); err != nil {
+		return err
+	}
+
+	activity := CoreActivity{
+		StoryID:      storyID,
+		Type:         "update",
+		Field:        "collaborator_ids",
+		CurrentValue: s.formatValue(nextIDs),
+		OldValue:     previousIDs,
+		NewValue:     nextIDs,
+		UserID:       actorID,
+		WorkspaceID:  workspaceID,
+	}
+	if _, err := s.repo.RecordActivities(ctx, []CoreActivity{activity}); err != nil {
+		s.log.Error(ctx, "failed to record collaborator activity", "error", err, "story_id", storyID)
+	}
+
+	audienceIDs, err := s.repo.GetNotificationAudience(ctx, storyID, workspaceID)
+	audienceResolved := err == nil
+	if err != nil {
+		s.log.Error(ctx, "failed to load story notification audience", "error", err, "story_id", storyID)
+		audienceIDs = nil
+	}
+	if s.publisher != nil {
+		event := events.Event{
+			Type: events.StoryUpdated,
+			Payload: events.StoryUpdatedPayload{
+				StoryID:                 storyID,
+				WorkspaceID:             workspaceID,
+				Updates:                 map[string]any{"collaborator_ids": nextIDs},
+				AssigneeID:              story.Assignee,
+				AudienceIDs:             audienceIDs,
+				AudienceResolved:        audienceResolved,
+				PreviousCollaboratorIDs: previousIDs,
+			},
+			Timestamp: time.Now(),
+			ActorID:   actorID,
+		}
+		if err := s.publisher.Publish(context.Background(), event); err != nil {
+			s.log.Error(ctx, "failed to publish collaborators updated event", "error", err)
+		}
+	}
+	return nil
+}
+
+// SetWatching updates the current user's explicit or muted story subscription.
+func (s *Service) SetWatching(ctx context.Context, storyID, workspaceID, userID uuid.UUID, watching bool) error {
+	return s.repo.SetWatching(ctx, storyID, workspaceID, userID, watching)
+}
+
+// GetNotificationAudience returns the non-muted users following a story.
+func (s *Service) GetNotificationAudience(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error) {
+	return s.repo.GetNotificationAudience(ctx, storyID, workspaceID)
 }
 
 // GetStoryLinks returns the links for a story.
@@ -467,11 +544,18 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	))
 
 	if options.publishEvents {
+		audienceIDs, audienceErr := s.repo.GetNotificationAudience(ctx, storyID, workspaceID)
+		audienceResolved := audienceErr == nil
+		if audienceErr != nil {
+			s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", storyID)
+		}
 		payload := events.StoryUpdatedPayload{
-			StoryID:     storyID,
-			WorkspaceID: workspaceID,
-			Updates:     updates,
-			AssigneeID:  story.Assignee, // Current assignee before update
+			StoryID:          storyID,
+			WorkspaceID:      workspaceID,
+			Updates:          updates,
+			AssigneeID:       story.Assignee, // Current assignee before update
+			AudienceIDs:      audienceIDs,
+			AudienceResolved: audienceResolved,
 		}
 
 		event := events.Event{
@@ -772,6 +856,11 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 	}
 
 	actorID := options.actorID
+	audienceIDs, audienceErr := s.repo.GetNotificationAudience(ctx, cnc.StoryID, workspaceID)
+	audienceResolved := audienceErr == nil
+	if audienceErr != nil {
+		s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", cnc.StoryID)
+	}
 
 	// Publish events based on comment type
 	if cnc.Parent != nil {
@@ -782,14 +871,16 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 		} else {
 			// Publish comment reply event
 			payload := events.CommentRepliedPayload{
-				CommentID:       comment.ID,
-				ParentCommentID: *cnc.Parent,
-				ParentAuthorID:  parentComment.UserID,
-				StoryID:         cnc.StoryID,
-				StoryTitle:      story.Title,
-				WorkspaceID:     story.Workspace,
-				Content:         cnc.Comment,
-				Mentions:        cnc.Mentions,
+				CommentID:        comment.ID,
+				ParentCommentID:  *cnc.Parent,
+				ParentAuthorID:   parentComment.UserID,
+				StoryID:          cnc.StoryID,
+				StoryTitle:       story.Title,
+				WorkspaceID:      story.Workspace,
+				Content:          cnc.Comment,
+				Mentions:         cnc.Mentions,
+				AudienceIDs:      audienceIDs,
+				AudienceResolved: audienceResolved,
 			}
 
 			event := events.Event{
@@ -806,13 +897,15 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 	} else {
 		// This is a new comment on the story
 		payload := events.CommentCreatedPayload{
-			CommentID:   comment.ID,
-			StoryID:     cnc.StoryID,
-			StoryTitle:  story.Title,
-			AssigneeID:  story.Assignee,
-			WorkspaceID: story.Workspace,
-			Content:     cnc.Comment,
-			Mentions:    cnc.Mentions,
+			CommentID:        comment.ID,
+			StoryID:          cnc.StoryID,
+			StoryTitle:       story.Title,
+			AssigneeID:       story.Assignee,
+			WorkspaceID:      story.Workspace,
+			Content:          cnc.Comment,
+			Mentions:         cnc.Mentions,
+			AudienceIDs:      audienceIDs,
+			AudienceResolved: audienceResolved,
 		}
 
 		event := events.Event{
@@ -1015,6 +1108,38 @@ func (s *Service) formatValue(value any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(values))
+	result := make([]uuid.UUID, 0, len(values))
+	for _, value := range values {
+		if value == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func sameUUIDSet(left, right []uuid.UUID) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	values := make(map[uuid.UUID]struct{}, len(left))
+	for _, value := range left {
+		values[value] = struct{}{}
+	}
+	for _, value := range right {
+		if _, exists := values[value]; !exists {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) valuesEqual(oldValue, newValue any) bool {

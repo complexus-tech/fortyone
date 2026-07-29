@@ -384,10 +384,15 @@ func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) e
 // NEW: Check if updates contain workspace-worthy changes
 func (c *Consumer) hasSignificantChanges(updates map[string]any) bool {
 	significantFields := map[string]bool{
-		"status_id":   true,
-		"assignee_id": true,
-		"priority":    true,
-		"title":       true,
+		"status_id":        true,
+		"assignee_id":      true,
+		"collaborator_ids": true,
+		"priority":         true,
+		"start_date":       true,
+		"end_date":         true,
+		"sprint_id":        true,
+		"estimate_unit":    true,
+		"title":            true,
 	}
 
 	for field := range updates {

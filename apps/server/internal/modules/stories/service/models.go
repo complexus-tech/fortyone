@@ -39,35 +39,36 @@ type CoreSprintSummary struct {
 
 // CoreStoryList represents a list of stories.
 type CoreStoryList struct {
-	ID               uuid.UUID             `json:"id"`
-	SequenceID       int                   `json:"sequence_id"`
-	Title            string                `json:"title"`
-	EstimateLabel    *string               `json:"estimate_label"`
-	EstimateValue    *int16                `json:"estimate_value"`
-	EstimateScheme   string                `json:"estimate_scheme"`
-	Parent           *uuid.UUID            `json:"parent_id"`
-	Objective        *uuid.UUID            `json:"objective_id"`
-	ObjectiveSummary *CoreObjectiveSummary `json:"objective"`
-	Epic             *uuid.UUID            `json:"epic_id"`
-	Status           *uuid.UUID            `json:"status_id"`
-	Assignee         *uuid.UUID            `json:"assignee_id"`
-	Reporter         *uuid.UUID            `json:"reporter_id"`
-	Priority         string                `json:"priority"`
-	Sprint           *uuid.UUID            `json:"sprint_id"`
-	SprintSummary    *CoreSprintSummary    `json:"sprint"`
-	KeyResult        *uuid.UUID            `json:"key_result_id"`
-	Team             uuid.UUID             `json:"team_id"`
-	TeamSummary      *CoreTeamSummary      `json:"team"`
-	Workspace        uuid.UUID             `json:"workspace_id"`
-	StartDate        *time.Time            `json:"start_date"`
-	EndDate          *time.Time            `json:"end_date"`
-	CreatedAt        time.Time             `json:"created_at"`
-	UpdatedAt        time.Time             `json:"updated_at"`
-	CompletedAt      *time.Time            `json:"completed_at"`
-	DeletedAt        *time.Time            `json:"deleted_at"`
-	ArchivedAt       *time.Time            `json:"archived_at"`
-	Labels           []uuid.UUID           `json:"labels"`
-	SubStories       []CoreStoryList       `json:"subStories"`
+	ID                uuid.UUID             `json:"id"`
+	SequenceID        int                   `json:"sequence_id"`
+	Title             string                `json:"title"`
+	EstimateLabel     *string               `json:"estimate_label"`
+	EstimateValue     *int16                `json:"estimate_value"`
+	EstimateScheme    string                `json:"estimate_scheme"`
+	Parent            *uuid.UUID            `json:"parent_id"`
+	Objective         *uuid.UUID            `json:"objective_id"`
+	ObjectiveSummary  *CoreObjectiveSummary `json:"objective"`
+	Epic              *uuid.UUID            `json:"epic_id"`
+	Status            *uuid.UUID            `json:"status_id"`
+	Assignee          *uuid.UUID            `json:"assignee_id"`
+	CollaboratorCount int                   `json:"collaborator_count"`
+	Reporter          *uuid.UUID            `json:"reporter_id"`
+	Priority          string                `json:"priority"`
+	Sprint            *uuid.UUID            `json:"sprint_id"`
+	SprintSummary     *CoreSprintSummary    `json:"sprint"`
+	KeyResult         *uuid.UUID            `json:"key_result_id"`
+	Team              uuid.UUID             `json:"team_id"`
+	TeamSummary       *CoreTeamSummary      `json:"team"`
+	Workspace         uuid.UUID             `json:"workspace_id"`
+	StartDate         *time.Time            `json:"start_date"`
+	EndDate           *time.Time            `json:"end_date"`
+	CreatedAt         time.Time             `json:"created_at"`
+	UpdatedAt         time.Time             `json:"updated_at"`
+	CompletedAt       *time.Time            `json:"completed_at"`
+	DeletedAt         *time.Time            `json:"deleted_at"`
+	ArchivedAt        *time.Time            `json:"archived_at"`
+	Labels            []uuid.UUID           `json:"labels"`
+	SubStories        []CoreStoryList       `json:"subStories"`
 }
 
 // CoreSingleStory represents a single story.
@@ -85,6 +86,11 @@ type CoreSingleStory struct {
 	Objective       *uuid.UUID
 	Status          *uuid.UUID
 	Assignee        *uuid.UUID
+	Collaborators   []uuid.UUID
+	WatcherIDs      []uuid.UUID
+	WatcherCount    int
+	IsWatching      bool
+	WatchingReason  *string
 	BlockedBy       *uuid.UUID
 	Blocking        *uuid.UUID
 	Related         *uuid.UUID
@@ -245,6 +251,7 @@ type CoreStoryFilters struct {
 	ExcludedStatusIDs      []uuid.UUID `json:"excludedStatusIds"`
 	AssigneeIDs            []uuid.UUID `json:"assigneeIds"`
 	ExcludedAssigneeIDs    []uuid.UUID `json:"excludedAssigneeIds"`
+	CollaboratorIDs        []uuid.UUID `json:"collaboratorIds"`
 	ReporterIDs            []uuid.UUID `json:"reporterIds"`
 	ExcludedReporterIDs    []uuid.UUID `json:"excludedReporterIds"`
 	TitleContains          *string     `json:"titleContains"`
@@ -269,6 +276,7 @@ type CoreStoryFilters struct {
 	HasAssignee            *bool       `json:"hasAssignee"`
 	HasBlockedBy           *bool       `json:"hasBlockedBy"`
 	AssignedToMe           *bool       `json:"assignedToMe"`
+	CollaboratingWithMe    *bool       `json:"collaboratingWithMe"`
 	CreatedByMe            *bool       `json:"createdByMe"`
 	ShowSubStories         *bool       `json:"showSubStories"`
 	CurrentUserID          uuid.UUID   `json:"currentUserId"`

@@ -46,6 +46,7 @@ export type Story = {
   workspaceId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
+  collaboratorCount: number;
   reporterId: string;
   reporter?: UserSummary | null;
   epicId: string | null;
@@ -113,6 +114,7 @@ export type StoryFilters = {
   hasAssignee?: boolean | null;
   hasBlockedBy?: boolean | null;
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -164,6 +166,7 @@ export type GroupedStoryParams = {
   excludedTeamIds?: string[];
   categories?: StateCategory[];
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   storiesPerGroup?: number;
   statusIds?: string[];
@@ -214,6 +217,7 @@ export type GroupStoryParams = {
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   statusIds?: string[];
   excludedStatusIds?: string[];

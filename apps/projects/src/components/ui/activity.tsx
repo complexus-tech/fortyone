@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { Box, Flex, Text, Avatar, TimeAgo, Tooltip, Button, Badge } from "ui";
 import Link from "next/link";
 import { cn } from "lib";
-import { useSession } from "@/lib/auth/client";
 import {
   CalendarIcon,
   EstimateIcon,
@@ -11,6 +10,7 @@ import {
   SprintsIcon,
   TagsIcon,
 } from "icons";
+import { useSession } from "@/lib/auth/client";
 import { formatActivityReasonDates } from "@/lib/activity-format";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
 import { useTerminology, useWorkspacePath } from "@/hooks";
@@ -339,6 +339,10 @@ export const Activity = ({
         );
       },
     },
+    collaborator_ids: {
+      label: "Collaborators",
+      render: (value: string) => <span>{value}</span>,
+    },
     start_date: {
       label: "Start date",
       render: (value: string) => (
@@ -418,10 +422,27 @@ export const Activity = ({
           .map((labelId) => allLabels.find((label) => label.id === labelId))
           .filter((label): label is Label => Boolean(label))
       : [];
-  const displayCurrentValue =
-    field === "labels" && activityLabels.length > 0
-      ? getLabelActivityDisplayValue(activityLabels)
-      : currentValue;
+  const activityCollaborators =
+    field === "collaborator_ids"
+      ? getActivityLabelIds(newValue).flatMap((userId) => {
+          const collaborator = members.find((member) => member.id === userId);
+          return collaborator ? [collaborator] : [];
+        })
+      : [];
+  let collaboratorDisplayValue = "No collaborators";
+  if (activityCollaborators.length === 1) {
+    collaboratorDisplayValue =
+      activityCollaborators[0].fullName || activityCollaborators[0].username;
+  } else if (activityCollaborators.length > 1) {
+    collaboratorDisplayValue = `${activityCollaborators.length} collaborators`;
+  }
+
+  let displayCurrentValue = currentValue;
+  if (field === "labels" && activityLabels.length > 0) {
+    displayCurrentValue = getLabelActivityDisplayValue(activityLabels);
+  } else if (field === "collaborator_ids") {
+    displayCurrentValue = collaboratorDisplayValue;
+  }
   const activityCopy = getActivityCopy({
     currentValue: displayCurrentValue,
     field,
@@ -534,7 +555,7 @@ export const Activity = ({
                       "mb-0": member.isSystem,
                     })}
                     href={member.isSystem ? "" : `/profile/${member.id}`}
-                >
+                  >
                     <Text fontSize="md" fontWeight="medium">
                       {actorDisplayName}
                     </Text>

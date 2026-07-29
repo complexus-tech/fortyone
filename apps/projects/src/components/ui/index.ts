@@ -33,6 +33,7 @@ export * from "./invite-members";
 
 export * from "./story/checkbox";
 export * from "./story/assignees-menu";
+export * from "./story/collaborators-menu";
 export * from "./story/priorities-menu";
 export * from "./story/statuses-menu";
 export * from "./story/modules-menu";

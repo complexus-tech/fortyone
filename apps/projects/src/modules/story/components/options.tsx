@@ -19,6 +19,7 @@ import {
   ObjectiveIcon,
   PlusIcon,
   SprintsIcon,
+  UsersAddIcon,
 } from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -34,6 +35,7 @@ import {
   StoryStatusIcon,
   PriorityIcon,
   LabelsMenu,
+  CollaboratorsMenu,
   StoryLabel,
   ConfirmDialog,
 } from "@/components/ui";
@@ -54,7 +56,8 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
-import { OptionsHeader } from ".";
+import { useUpdateCollaboratorsMutation } from "../hooks/collaboration-mutations";
+import { OptionsHeader } from "./options-header";
 
 export const Option = ({
   label,
@@ -114,6 +117,8 @@ export const Options = ({
     endDate,
     objectiveId,
     assigneeId,
+    collaboratorIds,
+    collaborators,
     reporterId,
     teamId,
     estimateValue,
@@ -140,10 +145,16 @@ export const Options = ({
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = data?.assignee ?? members.find((m) => m.id === assigneeId);
+  const collaboratorNames = collaborators
+    .slice(0, 2)
+    .map(({ fullName, username }) => fullName || username);
+  const remainingCollaboratorCount =
+    collaboratorIds.length - collaboratorNames.length;
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
   const { mutate: updateLabels } = useUpdateLabelsMutation();
+  const { mutate: updateCollaborators } = useUpdateCollaboratorsMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
@@ -443,6 +454,47 @@ export const Options = ({
                   teamId={teamId}
                 />
               </AssigneesMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Collaborators"
+            value={
+              <CollaboratorsMenu>
+                <CollaboratorsMenu.Trigger>
+                  <Button
+                    className={cn("max-w-full font-medium", {
+                      "text-text-muted": collaboratorIds.length === 0,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={<UsersAddIcon className="h-[1.15rem] w-auto" />}
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    <span className="max-w-48 truncate">
+                      {collaboratorIds.length === 0
+                        ? "Add collaborators"
+                        : collaboratorNames.join(", ") ||
+                          `${collaboratorIds.length} selected`}
+                      {collaboratorNames.length > 0 &&
+                      remainingCollaboratorCount > 0
+                        ? ` +${remainingCollaboratorCount}`
+                        : null}
+                    </span>
+                  </Button>
+                </CollaboratorsMenu.Trigger>
+                <CollaboratorsMenu.Items
+                  assigneeId={assigneeId}
+                  collaboratorIds={collaboratorIds}
+                  onCollaboratorsChange={(collaboratorIds) => {
+                    updateCollaborators({ storyId, collaboratorIds });
+                  }}
+                  teamId={teamId}
+                />
+              </CollaboratorsMenu>
             }
           />
           <Option

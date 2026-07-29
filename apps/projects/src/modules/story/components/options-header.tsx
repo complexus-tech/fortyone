@@ -22,6 +22,7 @@ import { MobileMenuButton } from "@/components/shared";
 import { buildGitBranchName } from "@/modules/settings/workspace/integrations/github/branch-format";
 import { useDeleteStoryMutation } from "../hooks/delete-mutation";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
+import { StoryWatchingMenu } from "./watching-menu";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -138,6 +139,7 @@ export const OptionsHeader = ({
           </Text>
         </Flex>
         <Flex align="center" gap={2}>
+          <StoryWatchingMenu storyId={storyId} />
           {isDialog ? (
             <Tooltip side="bottom" title="Fullscreen">
               <span>

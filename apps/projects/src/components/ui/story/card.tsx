@@ -147,7 +147,7 @@ export const StoryCard = ({
                   <span>
                     <AssigneesMenu.Trigger>
                       <Button
-                        asIcon
+                        asIcon={story.collaboratorCount === 0}
                         className="gap-1 px-1"
                         color="tertiary"
                         disabled={userRole === "guest"}
@@ -164,6 +164,14 @@ export const StoryCard = ({
                           size="xs"
                           src={selectedAssignee?.avatarUrl}
                         />
+                        {story.collaboratorCount > 0 ? (
+                          <span
+                            className="text-text-muted pr-0.5 text-xs"
+                            title={`${story.collaboratorCount} collaborator${story.collaboratorCount === 1 ? "" : "s"}`}
+                          >
+                            +{story.collaboratorCount}
+                          </span>
+                        ) : null}
                       </Button>
                     </AssigneesMenu.Trigger>
                   </span>

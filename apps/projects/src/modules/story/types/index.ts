@@ -29,6 +29,13 @@ export type DetailedStory = {
   statusId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
+  collaboratorIds: string[];
+  collaborators: UserSummary[];
+  collaboratorCount: number;
+  watcherCount: number;
+  watchers: UserSummary[];
+  isWatching: boolean;
+  watchingReason: "assignee" | "collaborator" | "watcher" | null;
   reporterId: string;
   reporter?: UserSummary | null;
   priority: StoryPriority;

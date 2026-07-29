@@ -47,10 +47,13 @@ type StoryCreatedPayload struct {
 
 // StoryUpdatedPayload contains data for story update events
 type StoryUpdatedPayload struct {
-	StoryID     uuid.UUID      `json:"story_id"`
-	WorkspaceID uuid.UUID      `json:"workspace_id"`
-	Updates     map[string]any `json:"updates"`
-	AssigneeID  *uuid.UUID     `json:"assignee_id,omitempty"`
+	StoryID                 uuid.UUID      `json:"story_id"`
+	WorkspaceID             uuid.UUID      `json:"workspace_id"`
+	Updates                 map[string]any `json:"updates"`
+	AssigneeID              *uuid.UUID     `json:"assignee_id,omitempty"`
+	AudienceIDs             []uuid.UUID    `json:"audience_ids,omitempty"`
+	AudienceResolved        bool           `json:"audience_resolved"`
+	PreviousCollaboratorIDs []uuid.UUID    `json:"previous_collaborator_ids,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events
@@ -110,25 +113,29 @@ type StoryDuplicatedPayload struct {
 
 // CommentCreatedPayload contains data for comment creation events
 type CommentCreatedPayload struct {
-	CommentID   uuid.UUID   `json:"comment_id"`
-	StoryID     uuid.UUID   `json:"story_id"`
-	StoryTitle  string      `json:"story_title"`
-	AssigneeID  *uuid.UUID  `json:"assignee_id"`
-	WorkspaceID uuid.UUID   `json:"workspace_id"`
-	Content     string      `json:"content"`
-	Mentions    []uuid.UUID `json:"mentions"`
+	CommentID        uuid.UUID   `json:"comment_id"`
+	StoryID          uuid.UUID   `json:"story_id"`
+	StoryTitle       string      `json:"story_title"`
+	AssigneeID       *uuid.UUID  `json:"assignee_id"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	Content          string      `json:"content"`
+	Mentions         []uuid.UUID `json:"mentions"`
+	AudienceIDs      []uuid.UUID `json:"audience_ids,omitempty"`
+	AudienceResolved bool        `json:"audience_resolved"`
 }
 
 // CommentRepliedPayload contains data for comment reply events
 type CommentRepliedPayload struct {
-	CommentID       uuid.UUID   `json:"comment_id"`
-	ParentCommentID uuid.UUID   `json:"parent_comment_id"`
-	ParentAuthorID  uuid.UUID   `json:"parent_author_id"`
-	StoryID         uuid.UUID   `json:"story_id"`
-	StoryTitle      string      `json:"story_title"`
-	WorkspaceID     uuid.UUID   `json:"workspace_id"`
-	Content         string      `json:"content"`
-	Mentions        []uuid.UUID `json:"mentions"`
+	CommentID        uuid.UUID   `json:"comment_id"`
+	ParentCommentID  uuid.UUID   `json:"parent_comment_id"`
+	ParentAuthorID   uuid.UUID   `json:"parent_author_id"`
+	StoryID          uuid.UUID   `json:"story_id"`
+	StoryTitle       string      `json:"story_title"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	Content          string      `json:"content"`
+	Mentions         []uuid.UUID `json:"mentions"`
+	AudienceIDs      []uuid.UUID `json:"audience_ids,omitempty"`
+	AudienceResolved bool        `json:"audience_resolved"`
 }
 
 // FeedbackCommentCreatedPayload contains the public feedback data required to

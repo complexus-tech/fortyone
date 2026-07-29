@@ -212,6 +212,29 @@ func TestNotificationTypes(t *testing.T) {
 	assert.Equal(t, "tom", unassignNotif.Message.Variables["assignee"].Value)
 }
 
+func TestStoryAudienceRespectsResolvedEmptyAudience(t *testing.T) {
+	assigneeID := uuid.New()
+
+	resolved := storyAudience([]uuid.UUID{}, true, &assigneeID)
+	assert.Empty(t, resolved, "an explicitly resolved empty audience must remain empty")
+
+	legacyFallback := storyAudience(nil, false, &assigneeID)
+	assert.Equal(t, []uuid.UUID{assigneeID}, legacyFallback)
+}
+
+func TestStoryAudienceDeduplicatesRecipients(t *testing.T) {
+	first := uuid.New()
+	second := uuid.New()
+
+	audience := storyAudience(
+		[]uuid.UUID{first, uuid.Nil, second, first},
+		true,
+		nil,
+	)
+
+	assert.Equal(t, []uuid.UUID{first, second}, audience)
+}
+
 func TestGenerateUpdateMessage(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -129,6 +129,12 @@ func collectStoryUserIDs(story stories.CoreSingleStory, userIDs map[uuid.UUID]st
 	if story.Reporter != nil {
 		userIDs[*story.Reporter] = struct{}{}
 	}
+	for _, collaboratorID := range story.Collaborators {
+		userIDs[collaboratorID] = struct{}{}
+	}
+	for _, watcherID := range story.WatcherIDs {
+		userIDs[watcherID] = struct{}{}
+	}
 
 	for _, subStory := range story.SubStories {
 		collectStoryListUserIDs(subStory, userIDs)
@@ -839,6 +845,76 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
+func (h *Handlers) UpdateCollaborators(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	var request AppUpdateCollaborators
+	if err := web.Decode(r, &request); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	if err := h.stories.UpdateCollaborators(ctx, storyID, workspace.ID, request.CollaboratorIDs); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	h.invalidateStoryCaches(ctx, workspace.ID, storyID)
+	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
+func (h *Handlers) SetWatching(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	storyID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+		return nil
+	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusUnauthorized)
+		return nil
+	}
+
+	var request AppSetStoryWatching
+	if err := web.Decode(r, &request); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+	if err := h.stories.SetWatching(ctx, storyID, workspace.ID, userID, request.Watching); err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
+
+	h.invalidateStoryCaches(ctx, workspace.ID, storyID)
+	web.Respond(ctx, w, nil, http.StatusNoContent)
+	return nil
+}
+
+func (h *Handlers) invalidateStoryCaches(ctx context.Context, workspaceID, storyID uuid.UUID) {
+	for _, key := range cache.InvalidateStoryKeys(workspaceID, storyID) {
+		if strings.Contains(key, "*") {
+			h.cache.DeleteByPattern(ctx, key)
+		} else {
+			h.cache.Delete(ctx, key)
+		}
+	}
+	h.cache.DeleteByPattern(ctx, fmt.Sprintf(cache.MyStoriesKey+"*", workspaceID.String()))
+}
+
 func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "storieshttp.handlers.GetActivities")
 	defer span.End()
@@ -1388,6 +1464,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.ExcludedStatusIDs = parseUUIDArray(r, "excludedStatusIds")
 	query.Filters.AssigneeIDs = parseUUIDArray(r, "assigneeIds")
 	query.Filters.ExcludedAssigneeIDs = parseUUIDArray(r, "excludedAssigneeIds")
+	query.Filters.CollaboratorIDs = parseUUIDArray(r, "collaboratorIds")
 	query.Filters.ReporterIDs = parseUUIDArray(r, "reporterIds")
 	query.Filters.ExcludedReporterIDs = parseUUIDArray(r, "excludedReporterIds")
 	query.Filters.TitleContains = parseStringParam(r, "titleContains")
@@ -1414,6 +1491,7 @@ func parseStoryQuery(r *http.Request, userID, workspaceID uuid.UUID) (StoryQuery
 	query.Filters.HasAssignee = parseBoolParam(r, "hasAssignee")
 	query.Filters.HasBlockedBy = parseBoolParam(r, "hasBlockedBy")
 	query.Filters.AssignedToMe = parseBoolParam(r, "assignedToMe")
+	query.Filters.CollaboratingWithMe = parseBoolParam(r, "collaboratingWithMe")
 	query.Filters.CreatedByMe = parseBoolParam(r, "createdByMe")
 	query.Filters.ShowSubStories = parseBoolParam(r, "showSubStories")
 	query.Filters.IncludeArchived = parseBoolParam(r, "includeArchived")
@@ -1591,6 +1669,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			ExcludedStatusIDs:      query.Filters.ExcludedStatusIDs,
 			AssigneeIDs:            query.Filters.AssigneeIDs,
 			ExcludedAssigneeIDs:    query.Filters.ExcludedAssigneeIDs,
+			CollaboratorIDs:        query.Filters.CollaboratorIDs,
 			ReporterIDs:            query.Filters.ReporterIDs,
 			ExcludedReporterIDs:    query.Filters.ExcludedReporterIDs,
 			TitleContains:          query.Filters.TitleContains,
@@ -1614,6 +1693,7 @@ func toCoreStoryQuery(query StoryQuery) stories.CoreStoryQuery {
 			HasAssignee:            query.Filters.HasAssignee,
 			HasBlockedBy:           query.Filters.HasBlockedBy,
 			AssignedToMe:           query.Filters.AssignedToMe,
+			CollaboratingWithMe:    query.Filters.CollaboratingWithMe,
 			CreatedByMe:            query.Filters.CreatedByMe,
 			ShowSubStories:         query.Filters.ShowSubStories,
 			IncludeArchived:        query.Filters.IncludeArchived,
@@ -1660,6 +1740,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if len(filters.ExcludedAssigneeIDs) > 0 {
 		result["excluded_assignee_ids"] = filters.ExcludedAssigneeIDs
+	}
+	if len(filters.CollaboratorIDs) > 0 {
+		result["collaborator_ids"] = filters.CollaboratorIDs
 	}
 	if len(filters.ReporterIDs) > 0 {
 		result["reporter_ids"] = filters.ReporterIDs
@@ -1726,6 +1809,9 @@ func coreFiltersToMap(filters stories.CoreStoryFilters) map[string]any {
 	}
 	if filters.AssignedToMe != nil {
 		result["assigned_to_me"] = *filters.AssignedToMe
+	}
+	if filters.CollaboratingWithMe != nil {
+		result["collaborating_with_me"] = *filters.CollaboratingWithMe
 	}
 	if filters.CreatedByMe != nil {
 		result["created_by_me"] = *filters.CreatedByMe

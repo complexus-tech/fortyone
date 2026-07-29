@@ -92,7 +92,10 @@ const getAssociationActivityCopy = ({
   reason,
 }: Omit<ActivityCopyInput, "type">): ActivityCopy | null => {
   const normalizedReason = reason?.trim() ?? "";
-  if (!ASSOCIATION_FIELDS.has(field) && !ASSOCIATION_REASONS.has(normalizedReason)) {
+  if (
+    !ASSOCIATION_FIELDS.has(field) &&
+    !ASSOCIATION_REASONS.has(normalizedReason)
+  ) {
     return null;
   }
 
@@ -110,7 +113,8 @@ const getAssociationActivityCopy = ({
 
   const oldValueText = stringifyActivityValue(oldValue);
   if (normalizedReason === "association_updated" && oldValueText) {
-    const oldRelationshipLabel = normalizeRelationshipLabelForSentence(oldValueText);
+    const oldRelationshipLabel =
+      normalizeRelationshipLabelForSentence(oldValueText);
     return buildCopy(
       [
         { text: "changed", type: "text" },
@@ -159,6 +163,11 @@ const getFieldUpdateSegments = (
             { text: `assigned the ${storyTerm} to`, type: "text" },
             { type: "currentValue" },
           ];
+    case "collaborator_ids":
+      return [
+        { text: "updated collaborators to", type: "text" },
+        { type: "currentValue" },
+      ];
     case "priority":
       return withOptionalOldValue(oldValueText, "changed priority");
     case "estimate_unit":
@@ -187,10 +196,7 @@ const getFieldUpdateSegments = (
             { type: "currentValue" },
             { text: "label", type: "text" },
           ]
-        : [
-            { text: "updated labels", type: "text" },
-            { type: "currentValue" },
-          ];
+        : [{ text: "updated labels", type: "text" }, { type: "currentValue" }];
     default:
       return [
         { text: "changed", type: "text" },
@@ -206,10 +212,7 @@ const withOptionalOldValue = (
   prefix: string,
 ): ActivityCopySegment[] => {
   if (!oldValueText) {
-    return [
-      { text: `${prefix} to`, type: "text" },
-      { type: "currentValue" },
-    ];
+    return [{ text: `${prefix} to`, type: "text" }, { type: "currentValue" }];
   }
 
   return [

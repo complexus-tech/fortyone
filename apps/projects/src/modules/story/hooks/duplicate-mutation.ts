@@ -69,6 +69,7 @@ const updateInfiniteQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:
@@ -135,6 +136,7 @@ const updateGroupedQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:

@@ -67,23 +67,36 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	r.log.Info(ctx, "ProcessStoryUpdate", "payload", payload, "actor_id", actorID)
 
 	var notifications []CoreNewNotification
+	directRecipients := make(map[uuid.UUID]struct{})
 
 	// Handle assignment scenarios
 	if r.isNewAssignment(payload) {
-		notifications = append(notifications, r.handleNewAssignment(ctx, payload, actorID)...)
+		directNotifications := r.handleNewAssignment(ctx, payload, actorID)
+		notifications = append(notifications, directNotifications...)
+		addNotificationRecipients(directRecipients, directNotifications)
 	}
 
 	if r.isReassignment(payload) {
-		notifications = append(notifications, r.handleReassignment(ctx, payload, actorID)...)
+		directNotifications := r.handleReassignment(ctx, payload, actorID)
+		notifications = append(notifications, directNotifications...)
+		addNotificationRecipients(directRecipients, directNotifications)
 	}
 
 	if r.isPureUnassignment(payload) {
-		notifications = append(notifications, r.handlePureUnassignment(ctx, payload, actorID)...)
+		directNotifications := r.handlePureUnassignment(ctx, payload, actorID)
+		notifications = append(notifications, directNotifications...)
+		addNotificationRecipients(directRecipients, directNotifications)
 	}
 
-	// Handle other story updates (status, priority, due date)
+	collaboratorNotifications, collaboratorRecipients := r.handleCollaboratorUpdates(ctx, payload, actorID)
+	notifications = append(notifications, collaboratorNotifications...)
+	for recipientID := range collaboratorRecipients {
+		directRecipients[recipientID] = struct{}{}
+	}
+
+	// Handle other story updates for collaborators, watchers, and the assignee.
 	if r.hasNonAssignmentUpdates(payload) {
-		notifications = append(notifications, r.handleStoryUpdates(ctx, payload, actorID)...)
+		notifications = append(notifications, r.handleStoryUpdates(ctx, payload, actorID, directRecipients)...)
 	}
 
 	return notifications, nil
@@ -101,8 +114,14 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 		}
 	}
 
-	// Rule 1: Notify story assignee when someone comments on their assigned story
-	if payload.AssigneeID != nil && shouldNotify(*payload.AssigneeID, actorID) {
+	excluded := uuidSet(payload.Mentions)
+	for _, recipientID := range storyAudience(payload.AudienceIDs, payload.AudienceResolved, payload.AssigneeID) {
+		if !shouldNotify(recipientID, actorID) {
+			continue
+		}
+		if _, mentioned := excluded[recipientID]; mentioned {
+			continue
+		}
 		message := NotificationMessage{
 			Template: fmt.Sprintf("{actor} left a comment: %s", payload.Content),
 			Variables: map[string]Variable{
@@ -111,7 +130,7 @@ func (r *Rules) ProcessCommentCreated(ctx context.Context, payload events.Commen
 		}
 
 		notification := CoreNewNotification{
-			RecipientID: *payload.AssigneeID,
+			RecipientID: recipientID,
 			WorkspaceID: payload.WorkspaceID,
 			Type:        "story_comment",
 			EntityType:  "story",
@@ -138,8 +157,21 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 		}
 	}
 
-	// Rule 1: Notify parent comment author when someone replies to their comment
-	if shouldNotify(payload.ParentAuthorID, actorID) {
+	audienceIDs := storyAudience(payload.AudienceIDs, payload.AudienceResolved, nil)
+	recipients := append([]uuid.UUID{payload.ParentAuthorID}, audienceIDs...)
+	excluded := uuidSet(payload.Mentions)
+	seen := make(map[uuid.UUID]struct{}, len(recipients))
+	for _, recipientID := range recipients {
+		if !shouldNotify(recipientID, actorID) {
+			continue
+		}
+		if _, mentioned := excluded[recipientID]; mentioned {
+			continue
+		}
+		if _, exists := seen[recipientID]; exists {
+			continue
+		}
+		seen[recipientID] = struct{}{}
 		message := NotificationMessage{
 			Template: fmt.Sprintf("{actor} replied: %s", payload.Content),
 			Variables: map[string]Variable{
@@ -148,7 +180,7 @@ func (r *Rules) ProcessCommentReplied(ctx context.Context, payload events.Commen
 		}
 
 		notification := CoreNewNotification{
-			RecipientID: payload.ParentAuthorID,
+			RecipientID: recipientID,
 			WorkspaceID: payload.WorkspaceID,
 			Type:        "comment_reply",
 			EntityType:  "story",
@@ -242,20 +274,7 @@ func (r *Rules) ProcessUserMentioned(ctx context.Context, payload events.UserMen
 		}
 	}
 
-	// Rule 1: Notify mentioned user (if not the actor)
 	if shouldNotify(payload.MentionedUser, actorID) {
-		// Check if this is a comment on a story - if so, get the story to check assignee
-		// to avoid duplicate notifications if the mentioned user is also the assignee
-		if r.stories != nil {
-			if story, err := r.stories.Get(ctx, payload.StoryID, payload.WorkspaceID); err == nil {
-				// If the mentioned user is the story assignee, they already got a notification
-				// from ProcessCommentCreated, so skip this mention notification
-				if story.Assignee != nil && *story.Assignee == payload.MentionedUser {
-					return notifications, nil
-				}
-			}
-		}
-
 		message := NotificationMessage{
 			Template: fmt.Sprintf("{actor} mentioned you: %s", payload.Content),
 			Variables: map[string]Variable{

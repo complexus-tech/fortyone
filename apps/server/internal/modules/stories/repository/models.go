@@ -29,6 +29,12 @@ type dbStory struct {
 	Team                 uuid.UUID        `db:"team_id"`
 	Status               *uuid.UUID       `db:"status_id"`
 	Assignee             *uuid.UUID       `db:"assignee_id"`
+	Collaborators        *json.RawMessage `db:"collaborators"`
+	WatcherIDs           *json.RawMessage `db:"watcher_ids"`
+	CollaboratorCount    int              `db:"collaborator_count"`
+	WatcherCount         int              `db:"watcher_count"`
+	IsWatching           bool             `db:"is_watching"`
+	WatchingReason       *string          `db:"watching_reason"`
 	Estimate             *float32         `db:"estimate"`
 	EstimateValue        *int16           `db:"estimate_unit"`
 	EstimateScheme       string           `db:"estimate_scheme"`
@@ -99,6 +105,8 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 	var subStories []stories.CoreStoryList
 	var labels []uuid.UUID
 	var associations []stories.CoreStoryAssociation
+	var collaborators []uuid.UUID
+	var watcherIDs []uuid.UUID
 
 	if i.Labels != nil {
 		err := json.Unmarshal(*i.Labels, &labels)
@@ -121,6 +129,17 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		}
 	}
 
+	if i.Collaborators != nil {
+		if err := json.Unmarshal(*i.Collaborators, &collaborators); err != nil {
+			log.Printf("Failed to unmarshal collaborators: %s", err)
+		}
+	}
+	if i.WatcherIDs != nil {
+		if err := json.Unmarshal(*i.WatcherIDs, &watcherIDs); err != nil {
+			log.Printf("Failed to unmarshal watcher ids: %s", err)
+		}
+	}
+
 	return stories.CoreSingleStory{
 		ID:              i.ID,
 		SequenceID:      i.SequenceID,
@@ -136,6 +155,11 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		Workspace:       i.Workspace,
 		Status:          i.Status,
 		Assignee:        i.Assignee,
+		Collaborators:   collaborators,
+		WatcherIDs:      watcherIDs,
+		WatcherCount:    i.WatcherCount,
+		IsWatching:      i.IsWatching,
+		WatchingReason:  i.WatchingReason,
 		BlockedBy:       i.BlockedBy,
 		Blocking:        i.Blocking,
 		Related:         i.Related,
@@ -182,35 +206,36 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 		}
 
 		cl[i] = stories.CoreStoryList{
-			ID:               story.ID,
-			SequenceID:       story.SequenceID,
-			Title:            story.Title,
-			EstimateValue:    story.EstimateValue,
-			EstimateScheme:   story.EstimateScheme,
-			EstimateLabel:    stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
-			Parent:           story.Parent,
-			Objective:        story.Objective,
-			ObjectiveSummary: toCoreObjectiveSummary(story),
-			Sprint:           story.Sprint,
-			SprintSummary:    toCoreSprintSummary(story),
-			Epic:             story.Epic,
-			Team:             story.Team,
-			TeamSummary:      toCoreTeamSummary(story),
-			Workspace:        story.Workspace,
-			Status:           story.Status,
-			Assignee:         story.Assignee,
-			Reporter:         story.Reporter,
-			KeyResult:        story.KeyResult,
-			StartDate:        story.StartDate,
-			EndDate:          story.EndDate,
-			Priority:         story.Priority,
-			CreatedAt:        story.CreatedAt,
-			UpdatedAt:        story.UpdatedAt,
-			CompletedAt:      story.CompletedAt,
-			DeletedAt:        story.DeletedAt,
-			ArchivedAt:       story.ArchivedAt,
-			Labels:           labels,
-			SubStories:       subStories,
+			ID:                story.ID,
+			SequenceID:        story.SequenceID,
+			Title:             story.Title,
+			EstimateValue:     story.EstimateValue,
+			EstimateScheme:    story.EstimateScheme,
+			EstimateLabel:     stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
+			Parent:            story.Parent,
+			Objective:         story.Objective,
+			ObjectiveSummary:  toCoreObjectiveSummary(story),
+			Sprint:            story.Sprint,
+			SprintSummary:     toCoreSprintSummary(story),
+			Epic:              story.Epic,
+			Team:              story.Team,
+			TeamSummary:       toCoreTeamSummary(story),
+			Workspace:         story.Workspace,
+			Status:            story.Status,
+			Assignee:          story.Assignee,
+			CollaboratorCount: story.CollaboratorCount,
+			Reporter:          story.Reporter,
+			KeyResult:         story.KeyResult,
+			StartDate:         story.StartDate,
+			EndDate:           story.EndDate,
+			Priority:          story.Priority,
+			CreatedAt:         story.CreatedAt,
+			UpdatedAt:         story.UpdatedAt,
+			CompletedAt:       story.CompletedAt,
+			DeletedAt:         story.DeletedAt,
+			ArchivedAt:        story.ArchivedAt,
+			Labels:            labels,
+			SubStories:        subStories,
 		}
 	}
 	return cl

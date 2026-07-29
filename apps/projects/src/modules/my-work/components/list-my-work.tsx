@@ -30,12 +30,13 @@ const tabs = [
   "upcoming",
   "blocked",
   "assigned",
+  "collaborating",
   "created",
 ] as const;
 
 type MyWorkTab = (typeof tabs)[number];
 
-const stableTabs = ["all", "assigned", "created"] as const;
+const stableTabs = ["all", "assigned", "collaborating", "created"] as const;
 
 const activeCategories = [
   "backlog",
@@ -91,6 +92,11 @@ const getTabFilterParams = (
         ...baseFilters,
         assignedToMe: true,
       };
+    case "collaborating":
+      return {
+        ...baseFilters,
+        collaboratingWithMe: true,
+      };
     case "created":
       return {
         ...baseFilters,
@@ -102,6 +108,7 @@ const getTabFilterParams = (
         ...baseFilters,
         createdByMe: true,
         assignedToMe: true,
+        collaboratingWithMe: true,
       };
   }
 };
@@ -261,6 +268,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
     upcoming: "Upcoming",
     blocked: "Blocked",
     assigned: "Assigned",
+    collaborating: "Collaborating",
     created: "Created",
   } satisfies Record<MyWorkTab, string>;
 
@@ -304,6 +312,11 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
         <Tabs.Panel value="assigned">
           {tab === "assigned" ? (
             <StoriesPanelContent layout={layout} tab="assigned" />
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel value="collaborating">
+          {tab === "collaborating" ? (
+            <StoriesPanelContent layout={layout} tab="collaborating" />
           ) : null}
         </Tabs.Panel>
         <Tabs.Panel value="created">

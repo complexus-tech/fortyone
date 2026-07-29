@@ -8,6 +8,9 @@ const story: DetailedStory = {
   archivedAt: null,
   assigneeId: null,
   associations: [],
+  collaboratorCount: 0,
+  collaboratorIds: [],
+  collaborators: [],
   completedAt: null,
   createdAt: "2026-07-23T08:00:00.000Z",
   deletedAt: null,
@@ -34,6 +37,10 @@ const story: DetailedStory = {
   teamId: "team-1",
   title: "Ship notifications",
   updatedAt: "2026-07-23T08:00:00.000Z",
+  isWatching: false,
+  watcherCount: 0,
+  watchers: [],
+  watchingReason: null,
   workspaceId: "workspace-1",
 };
 
