@@ -100,14 +100,18 @@ describe("activity copy", () => {
   });
 
   it("uses natural copy for collaborator changes", () => {
-    expect(
-      getActivityCopy({
-        currentValue: "2 collaborators",
-        field: "collaborator_ids",
-        fieldLabel: "Collaborators",
-        type: "update",
-      }).text,
-    ).toBe("updated collaborators to 2 collaborators");
+    const copy = getActivityCopy({
+      currentValue: "2 collaborators",
+      field: "collaborator_ids",
+      fieldLabel: "Collaborators",
+      type: "update",
+    });
+
+    expect(copy.text).toBe("updated collaborators to 2 collaborators");
+    expect(copy.segments).toContainEqual({
+      type: "currentValue",
+      value: "2 collaborators",
+    });
   });
 
   it("does not expose internal association reasons as activity notes", () => {

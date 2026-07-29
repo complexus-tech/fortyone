@@ -15,7 +15,7 @@ const ASSOCIATION_FIELDS = new Set([
 ]);
 
 type ActivityCopySegment =
-  | { type: "currentValue" }
+  | { type: "currentValue"; value: string }
   | { type: "fieldLabel" }
   | { type: "oldValue"; value: string }
   | { text: string; type: "text" };
@@ -105,7 +105,7 @@ const getAssociationActivityCopy = ({
         { text: "removed the", type: "text" },
         { type: "fieldLabel" },
         { text: "relationship with", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ],
       { currentValue, fieldLabel },
     );
@@ -118,7 +118,7 @@ const getAssociationActivityCopy = ({
     return buildCopy(
       [
         { text: "changed", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
         { text: "from", type: "text" },
         { type: "oldValue", value: oldRelationshipLabel },
         { text: "to", type: "text" },
@@ -131,7 +131,7 @@ const getAssociationActivityCopy = ({
   return buildCopy(
     [
       { text: "marked", type: "text" },
-      { type: "currentValue" },
+      { type: "currentValue", value: currentValue },
       { text: "as", type: "text" },
       { type: "fieldLabel" },
     ],
@@ -149,60 +149,83 @@ const getFieldUpdateSegments = (
     case "title":
       return [
         { text: `renamed the ${storyTerm} to`, type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
     case "description":
     case "description_html":
       return [{ text: "updated the description", type: "text" }];
     case "status_id":
-      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
+      return withOptionalOldValue(
+        oldValueText,
+        `moved the ${storyTerm}`,
+        currentValue,
+      );
     case "assignee_id":
       return oldValueText
-        ? withOptionalOldValue(oldValueText, `reassigned the ${storyTerm}`)
+        ? withOptionalOldValue(
+            oldValueText,
+            `reassigned the ${storyTerm}`,
+            currentValue,
+          )
         : [
             { text: `assigned the ${storyTerm} to`, type: "text" },
-            { type: "currentValue" },
+            { type: "currentValue", value: currentValue },
           ];
     case "collaborator_ids":
       return [
         { text: "updated collaborators to", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
     case "priority":
-      return withOptionalOldValue(oldValueText, "changed priority");
+      return withOptionalOldValue(
+        oldValueText,
+        "changed priority",
+        currentValue,
+      );
     case "estimate_unit":
       return [
         { text: `estimated the ${storyTerm} at`, type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
     case "sprint_id":
-      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
+      return withOptionalOldValue(
+        oldValueText,
+        `moved the ${storyTerm}`,
+        currentValue,
+      );
     case "objective_id":
-      return withOptionalOldValue(oldValueText, `moved the ${storyTerm}`);
+      return withOptionalOldValue(
+        oldValueText,
+        `moved the ${storyTerm}`,
+        currentValue,
+      );
     case "start_date":
       return [
         { text: "set the start date to", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
     case "end_date":
       return [
         { text: "set the deadline to", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
     case "labels":
       return !/^\d+ labels?$/.test(currentValue)
         ? [
             { text: "added", type: "text" },
-            { type: "currentValue" },
+            { type: "currentValue", value: currentValue },
             { text: "label", type: "text" },
           ]
-        : [{ text: "updated labels", type: "text" }, { type: "currentValue" }];
+        : [
+            { text: "updated labels", type: "text" },
+            { type: "currentValue", value: currentValue },
+          ];
     default:
       return [
         { text: "changed", type: "text" },
         { type: "fieldLabel" },
         { text: "to", type: "text" },
-        { type: "currentValue" },
+        { type: "currentValue", value: currentValue },
       ];
   }
 };
@@ -210,16 +233,20 @@ const getFieldUpdateSegments = (
 const withOptionalOldValue = (
   oldValueText: string,
   prefix: string,
+  currentValue: string,
 ): ActivityCopySegment[] => {
   if (!oldValueText) {
-    return [{ text: `${prefix} to`, type: "text" }, { type: "currentValue" }];
+    return [
+      { text: `${prefix} to`, type: "text" },
+      { type: "currentValue", value: currentValue },
+    ];
   }
 
   return [
     { text: `${prefix} from`, type: "text" },
     { type: "oldValue", value: oldValueText },
     { text: "to", type: "text" },
-    { type: "currentValue" },
+    { type: "currentValue", value: currentValue },
   ];
 };
 
@@ -229,13 +256,17 @@ const buildCopy = (
 ): ActivityCopy => ({
   segments,
   text: segments
-    .map((segment) => {
-      if (segment.type === "text") return segment.text;
-      if (segment.type === "fieldLabel") return values.fieldLabel;
-      if (segment.type === "oldValue") return segment.value;
-      return values.currentValue;
+    .flatMap((segment) => {
+      let value: string;
+      if (segment.type === "text") {
+        value = segment.text;
+      } else if (segment.type === "fieldLabel") {
+        value = values.fieldLabel;
+      } else {
+        value = segment.value;
+      }
+      return value ? [value] : [];
     })
-    .filter(Boolean)
     .join(" "),
 });
 

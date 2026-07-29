@@ -422,19 +422,24 @@ export const Activity = ({
           .map((labelId) => allLabels.find((label) => label.id === labelId))
           .filter((label): label is Label => Boolean(label))
       : [];
+  const memberById = new Map(members.map((member) => [member.id, member]));
+  const activityCollaboratorIds =
+    field === "collaborator_ids" ? getActivityLabelIds(newValue) : [];
   const activityCollaborators =
     field === "collaborator_ids"
-      ? getActivityLabelIds(newValue).flatMap((userId) => {
-          const collaborator = members.find((member) => member.id === userId);
+      ? activityCollaboratorIds.flatMap((userId) => {
+          const collaborator = memberById.get(userId);
           return collaborator ? [collaborator] : [];
         })
       : [];
   let collaboratorDisplayValue = "No collaborators";
-  if (activityCollaborators.length === 1) {
+  if (activityCollaboratorIds.length === 1) {
     collaboratorDisplayValue =
-      activityCollaborators[0].fullName || activityCollaborators[0].username;
-  } else if (activityCollaborators.length > 1) {
-    collaboratorDisplayValue = `${activityCollaborators.length} collaborators`;
+      activityCollaborators[0]?.fullName ||
+      activityCollaborators[0]?.username ||
+      "1 collaborator";
+  } else if (activityCollaboratorIds.length > 1) {
+    collaboratorDisplayValue = `${activityCollaboratorIds.length} collaborators`;
   }
 
   let displayCurrentValue = currentValue;
@@ -514,9 +519,7 @@ export const Activity = ({
             return <ActivityLabelValue labels={activityLabels} />;
           }
 
-          return fieldMeta.render(
-            segment.type === "oldValue" ? segment.value : currentValue,
-          );
+          return fieldMeta.render(segment.value);
         })()}
       </Text>
     );
