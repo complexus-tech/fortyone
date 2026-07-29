@@ -328,7 +328,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 						)
 					) AS watcher_count,
 					(
-						:current_user <> '00000000-0000-0000-0000-000000000000'::uuid
+						:current_user <> CAST('00000000-0000-0000-0000-000000000000' AS uuid)
 						AND NOT EXISTS (
 							SELECT 1 FROM story_notification_mutes snm
 							WHERE snm.story_id = s.id AND snm.user_id = :current_user
