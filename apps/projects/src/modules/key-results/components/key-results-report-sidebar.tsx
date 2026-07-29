@@ -75,7 +75,7 @@ const DonutChart = ({
   data: { color: string; count: number; label: string }[];
   total: number;
 }) => (
-  <Box className="relative h-36 w-full">
+  <Box className="relative h-32 w-full">
     <Box className="pointer-events-none absolute inset-0 z-1 flex flex-col items-center justify-center">
       <Text fontSize="xl" fontWeight="medium">
         {total}
@@ -88,9 +88,9 @@ const DonutChart = ({
           cornerRadius={3}
           data={data.filter(({ count }) => count > 0)}
           dataKey="count"
-          innerRadius={46}
+          innerRadius={42}
           nameKey="label"
-          outerRadius={62}
+          outerRadius={56}
           paddingAngle={2}
           stroke="none"
         >
@@ -137,7 +137,7 @@ const HealthDistributionChart = ({
   total: number;
 }) => (
   <Box>
-    <Flex className="bg-surface-muted h-3 w-full overflow-hidden rounded-full">
+    <Flex className="bg-surface-muted h-2 w-full overflow-hidden rounded-full">
       {data.map((item) =>
         item.count > 0 ? (
           <Box
@@ -336,7 +336,7 @@ export const KeyResultsReportSidebar = ({
             progress={overallProgress}
           />
           <Text
-            className="shrink-0 rounded-md border px-2.5 py-1"
+            className="shrink-0 rounded-md border px-2 py-0.5"
             fontWeight="medium"
             style={{
               backgroundColor: hexToRgba(overallHealth.color, 0.1),
@@ -405,7 +405,7 @@ export const KeyResultsReportSidebar = ({
                     <Flex align="center" className="min-w-0 flex-1 gap-2">
                       <Flex
                         align="center"
-                        className="shrink-0 gap-1.5 rounded-md border px-2 py-1"
+                        className="shrink-0 gap-1.5 rounded-md border px-1.5 py-0.5"
                         style={{
                           backgroundColor: hexToRgba(teamColor, 0.1),
                           borderColor: hexToRgba(teamColor, 0.2),
