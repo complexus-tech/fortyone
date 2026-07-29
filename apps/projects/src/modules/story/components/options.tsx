@@ -145,11 +145,64 @@ export const Options = ({
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = data?.assignee ?? members.find((m) => m.id === assigneeId);
-  const collaboratorNames = collaborators
-    .slice(0, 2)
-    .map(({ fullName, username }) => fullName || username);
-  const remainingCollaboratorCount =
-    collaboratorIds.length - collaboratorNames.length;
+  const collaboratorLookup = new Map(
+    members.map(({ id, username, fullName, avatarUrl }) => [
+      id,
+      { id, username, fullName, avatarUrl },
+    ]),
+  );
+  for (const collaborator of collaborators) {
+    collaboratorLookup.set(collaborator.id, collaborator);
+  }
+  const selectedCollaborators = collaboratorIds.flatMap((id) => {
+    const collaborator = collaboratorLookup.get(id);
+    return collaborator ? [collaborator] : [];
+  });
+  const visibleCollaborators = selectedCollaborators.slice(0, 5);
+  const hiddenCollaboratorCount =
+    collaboratorIds.length - visibleCollaborators.length;
+  const singleCollaborator = selectedCollaborators.at(0);
+  let collaboratorButtonIcon: ReactNode = (
+    <UsersAddIcon className="h-[1.15rem] w-auto" />
+  );
+  let collaboratorButtonContent: ReactNode = "Collaborators";
+
+  if (collaboratorIds.length === 1) {
+    collaboratorButtonIcon = (
+      <Avatar
+        name={singleCollaborator?.fullName || singleCollaborator?.username}
+        size="xs"
+        src={singleCollaborator?.avatarUrl}
+      />
+    );
+    collaboratorButtonContent = (
+      <span className="max-w-48 truncate">
+        {singleCollaborator?.username ||
+          singleCollaborator?.fullName ||
+          "Collaborator"}
+      </span>
+    );
+  } else if (collaboratorIds.length > 1) {
+    collaboratorButtonIcon = null;
+    collaboratorButtonContent = (
+      <Flex className="-space-x-1.5">
+        {visibleCollaborators.map((collaborator) => (
+          <Avatar
+            className="ring-surface ring-1"
+            key={collaborator.id}
+            name={collaborator.fullName || collaborator.username}
+            size="xs"
+            src={collaborator.avatarUrl}
+          />
+        ))}
+        {hiddenCollaboratorCount > 0 ? (
+          <span className="bg-surface-muted ring-surface flex size-5 items-center justify-center rounded-full text-xs ring-1">
+            +{hiddenCollaboratorCount}
+          </span>
+        ) : null}
+      </Flex>
+    );
+  }
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
@@ -469,21 +522,12 @@ export const Options = ({
                     })}
                     color="tertiary"
                     disabled={isDeleted || isGuest}
-                    leftIcon={<UsersAddIcon className="h-[1.15rem] w-auto" />}
+                    leftIcon={collaboratorButtonIcon}
                     size="sm"
                     type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
-                    <span className="max-w-48 truncate">
-                      {collaboratorIds.length === 0
-                        ? "Add collaborators"
-                        : collaboratorNames.join(", ") ||
-                          `${collaboratorIds.length} selected`}
-                      {collaboratorNames.length > 0 &&
-                      remainingCollaboratorCount > 0
-                        ? ` +${remainingCollaboratorCount}`
-                        : null}
-                    </span>
+                    {collaboratorButtonContent}
                   </Button>
                 </CollaboratorsMenu.Trigger>
                 <CollaboratorsMenu.Items

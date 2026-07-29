@@ -4,15 +4,12 @@ import { CheckIcon } from "icons";
 import {
   createContext,
   use,
-  useCallback,
   useDeferredValue,
-  useEffect,
-  useRef,
   useState,
   type ReactNode,
   type UIEvent,
 } from "react";
-import { Avatar, Button, Command, Divider, Flex, Popover, Text } from "ui";
+import { Avatar, Command, Divider, Flex, Popover, Text } from "ui";
 import { MEMBER_MENU_PAGE_SIZE } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
@@ -20,11 +17,9 @@ import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 const CollaboratorsContext = createContext<{
   open: boolean;
   setOpen: (open: boolean) => void;
-  setOnClose: (onClose: (() => void) | null) => void;
 }>({
   open: false,
   setOpen: () => {},
-  setOnClose: () => {},
 });
 
 const useCollaboratorsMenu = () => use(CollaboratorsContext);
@@ -40,24 +35,9 @@ const Menu = ({ children }: { children: ReactNode }) => {
 
 export const CollaboratorsMenu = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const onCloseRef = useRef<(() => void) | null>(null);
-  const setOnClose = useCallback((onClose: (() => void) | null) => {
-    onCloseRef.current = onClose;
-  }, []);
-  const handleOpenChange = useCallback(
-    (nextOpen: boolean) => {
-      if (open && !nextOpen) {
-        onCloseRef.current?.();
-      }
-      setOpen(nextOpen);
-    },
-    [open],
-  );
 
   return (
-    <CollaboratorsContext.Provider
-      value={{ open, setOnClose, setOpen: handleOpenChange }}
-    >
+    <CollaboratorsContext.Provider value={{ open, setOpen }}>
       <Menu>{children}</Menu>
     </CollaboratorsContext.Provider>
   );
@@ -80,10 +60,8 @@ const Items = ({
   onCollaboratorsChange: (collaboratorIds: string[]) => void;
   teamId: string;
 }) => {
-  const { open, setOnClose, setOpen } = useCollaboratorsMenu();
+  const { open } = useCollaboratorsMenu();
   const [query, setQuery] = useState("");
-  const [draftIds, setDraftIds] = useState(collaboratorIds);
-  const draftIdsRef = useRef(draftIds);
   const deferredQuery = useDeferredValue(query);
   const membersQuery = useTeamMembersInfinite(
     teamId,
@@ -93,31 +71,9 @@ const Items = ({
   );
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
-  const selectedIds = new Set(draftIds);
+  const selectedIds = new Set(collaboratorIds);
   const visibleMembers = members.filter(({ id }) => id !== assigneeId);
   const isLoading = membersQuery.isFetching && !membersQuery.isFetchingNextPage;
-
-  useEffect(() => {
-    draftIdsRef.current = draftIds;
-  }, [draftIds]);
-
-  useEffect(() => {
-    setOnClose(() => {
-      const nextIds = draftIdsRef.current;
-      const currentIds = new Set(collaboratorIds);
-      const selectionChanged =
-        nextIds.length !== collaboratorIds.length ||
-        nextIds.some((id) => !currentIds.has(id));
-
-      if (selectionChanged) {
-        onCollaboratorsChange(nextIds);
-      }
-    });
-
-    return () => {
-      setOnClose(null);
-    };
-  }, [collaboratorIds, onCollaboratorsChange, setOnClose]);
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -133,10 +89,10 @@ const Items = ({
   };
 
   const toggleCollaborator = (memberId: string) => {
-    setDraftIds(
+    onCollaboratorsChange(
       selectedIds.has(memberId)
-        ? draftIds.filter((id) => id !== memberId)
-        : [...draftIds, memberId],
+        ? collaboratorIds.filter((id) => id !== memberId)
+        : [...collaboratorIds, memberId],
     );
   };
 
@@ -146,7 +102,7 @@ const Items = ({
         <Command.Input
           autoFocus
           onValueChange={setQuery}
-          placeholder="Add collaborators..."
+          placeholder="Search collaborators..."
           value={query}
         />
         <Divider className="my-2" />
@@ -198,23 +154,6 @@ const Items = ({
             </Command.Loading>
           ) : null}
         </Command.Group>
-        <Divider className="my-2" />
-        <Flex align="center" className="px-2 pb-1" justify="between">
-          <Text className="max-w-52 text-xs" color="muted">
-            Collaborators are automatically notified of updates.
-          </Text>
-          <Button
-            color="tertiary"
-            onClick={() => {
-              setOpen(false);
-            }}
-            size="xs"
-            type="button"
-            variant="naked"
-          >
-            Done
-          </Button>
-        </Flex>
       </Command>
     </Popover.Content>
   );
