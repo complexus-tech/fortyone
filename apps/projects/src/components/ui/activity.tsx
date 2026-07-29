@@ -22,7 +22,11 @@ import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import type { Label } from "@/types";
-import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
+import {
+  getActivityCopy,
+  getActivityValueIds,
+  getDisplayActivityReason,
+} from "./activity-copy";
 import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -134,13 +138,6 @@ const AssociationActivityBadge = ({
     {label}
   </Badge>
 );
-
-const getActivityLabelIds = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (labelId): labelId is string => typeof labelId === "string",
-  );
-};
 
 const getLabelActivityDisplayValue = (labels: Label[]) => {
   if (labels.length === 1) return labels[0].name;
@@ -418,13 +415,19 @@ export const Activity = ({
   };
   const activityLabels =
     field === "labels"
-      ? getActivityLabelIds(newValue)
+      ? getActivityValueIds(newValue)
           .map((labelId) => allLabels.find((label) => label.id === labelId))
           .filter((label): label is Label => Boolean(label))
       : [];
   const memberById = new Map(members.map((member) => [member.id, member]));
-  const activityCollaboratorIds =
-    field === "collaborator_ids" ? getActivityLabelIds(newValue) : [];
+  const collaboratorIdsFromNewValue = getActivityValueIds(newValue);
+  let activityCollaboratorIds: string[] = [];
+  if (field === "collaborator_ids") {
+    activityCollaboratorIds =
+      collaboratorIdsFromNewValue.length > 0
+        ? collaboratorIdsFromNewValue
+        : getActivityValueIds(currentValue);
+  }
   const activityCollaborators =
     field === "collaborator_ids"
       ? activityCollaboratorIds.flatMap((userId) => {

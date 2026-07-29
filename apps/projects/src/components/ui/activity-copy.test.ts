@@ -1,6 +1,10 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
+import {
+  getActivityCopy,
+  getActivityValueIds,
+  getDisplayActivityReason,
+} from "./activity-copy";
 
 describe("activity copy", () => {
   it("uses natural copy for common story fields", () => {
@@ -112,6 +116,18 @@ describe("activity copy", () => {
       type: "currentValue",
       value: "2 collaborators",
     });
+  });
+
+  it("extracts collaborator IDs from legacy activity values", () => {
+    const collaboratorId = "8d852a9e-b36d-4790-9f92-8234407f1488";
+
+    expect(getActivityValueIds(`[${collaboratorId}]`)).toEqual([
+      collaboratorId,
+    ]);
+    expect(getActivityValueIds(`["${collaboratorId}"]`)).toEqual([
+      collaboratorId,
+    ]);
+    expect(getActivityValueIds([collaboratorId])).toEqual([collaboratorId]);
   });
 
   it("does not expose internal association reasons as activity notes", () => {

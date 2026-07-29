@@ -14,6 +14,9 @@ const ASSOCIATION_FIELDS = new Set([
   "duplicated_by_id",
 ]);
 
+const UUID_PATTERN =
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
+
 type ActivityCopySegment =
   | { type: "currentValue"; value: string }
   | { type: "fieldLabel" }
@@ -38,6 +41,34 @@ type ActivityCopyInput = {
 export const getDisplayActivityReason = (reason?: string | null) => {
   const normalizedReason = reason?.trim() ?? "";
   return ASSOCIATION_REASONS.has(normalizedReason) ? "" : normalizedReason;
+};
+
+export const getActivityValueIds = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => (typeof item === "string" ? [item] : []));
+  }
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return [];
+  }
+
+  try {
+    const parsedValue: unknown = JSON.parse(normalizedValue);
+    if (parsedValue !== value) {
+      const parsedIds = getActivityValueIds(parsedValue);
+      if (parsedIds.length > 0) {
+        return parsedIds;
+      }
+    }
+  } catch {
+    // Legacy activity values use an unquoted `[uuid]` representation.
+  }
+
+  return normalizedValue.match(UUID_PATTERN) ?? [];
 };
 
 export const getActivityCopy = ({
