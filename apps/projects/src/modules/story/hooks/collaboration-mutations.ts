@@ -93,7 +93,27 @@ export const useSetStoryWatchingMutation = () => {
       }
       return response;
     },
-    onError: (error) => {
+    onMutate: async ({ storyId, watching }) => {
+      const queryKey = storyKeys.detail(workspaceSlug, storyId);
+      await queryClient.cancelQueries({ queryKey });
+      const previousStory = queryClient.getQueryData<DetailedStory>(queryKey);
+
+      if (previousStory) {
+        queryClient.setQueryData<DetailedStory>(queryKey, {
+          ...previousStory,
+          isWatching: watching,
+        });
+      }
+
+      return { previousStory };
+    },
+    onError: (error, { storyId }, context) => {
+      if (context?.previousStory) {
+        queryClient.setQueryData(
+          storyKeys.detail(workspaceSlug, storyId),
+          context.previousStory,
+        );
+      }
       toast.error("Failed to update story notifications", {
         description: error.message || "Your preference was not saved",
       });
