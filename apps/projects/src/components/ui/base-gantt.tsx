@@ -16,12 +16,13 @@ import {
   startOfQuarter,
   endOfQuarter,
 } from "date-fns";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { ArrowDown2Icon, ChevronLeftIcon, ChevronRightIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import {
   calculateGanttPosition,
+  calculateTimelineDateFromPosition,
   calculateTimelineDatePosition,
   getColumnWidth,
   getGanttOffscreenDirection,
@@ -890,6 +891,7 @@ const Chart = <T extends GanttItem>({
   onScrollToItem: (item: T) => void;
   barClassName?: string;
 }) => {
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null);
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
 
@@ -902,10 +904,29 @@ const Chart = <T extends GanttItem>({
     dateRange,
     zoomLevel,
   });
+  const hoverDate =
+    hoverPosition === null
+      ? null
+      : calculateTimelineDateFromPosition({
+          position: hoverPosition,
+          dateRange,
+          zoomLevel,
+        });
+
+  const handleTimelineMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setHoverPosition(
+      Math.min(Math.max(event.clientX - bounds.left, 0), timelineMinWidth),
+    );
+  };
 
   return (
     <Box
       className="relative min-h-full flex-1"
+      onMouseLeave={() => {
+        setHoverPosition(null);
+      }}
+      onMouseMove={handleTimelineMouseMove}
       style={{ minWidth: `${timelineMinWidth}px` }}
     >
       <Flex className="pointer-events-none absolute inset-x-0 top-16 bottom-0">
@@ -943,6 +964,23 @@ const Chart = <T extends GanttItem>({
           {format(today, "MMM d").toUpperCase()}
         </Text>
       </Box>
+
+      {hoverPosition !== null && hoverDate ? (
+        <Box
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 z-30"
+          style={{ left: `${hoverPosition}px` }}
+        >
+          <Box className="bg-foreground/25 absolute inset-y-0 w-px -translate-x-1/2" />
+          <Text
+            as="span"
+            className="border-border/70 bg-surface/90 text-foreground absolute top-7 flex h-6 -translate-x-1/2 items-center rounded-lg border-[0.5px] px-2 text-[0.85rem] leading-none whitespace-nowrap shadow-sm backdrop-blur-2xl"
+            fontWeight="medium"
+          >
+            {format(hoverDate, "MMM d").toUpperCase()}
+          </Text>
+        </Box>
+      ) : null}
 
       <Box className="relative z-1">
         <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />

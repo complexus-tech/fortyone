@@ -1,6 +1,6 @@
 import { Flex } from "ui";
 import { cn } from "lib";
-import { ListIcon, GanttIcon } from "icons";
+import { KanbanIcon, ListIcon, GanttIcon } from "icons";
 import type { RoadmapLayoutType } from "@/modules/roadmap/types";
 
 export const RoadmapLayoutSwitcher = ({
@@ -17,7 +17,7 @@ export const RoadmapLayoutSwitcher = ({
   return (
     <Flex
       className={cn(
-        "bg-surface-muted h-[2.1rem] items-center gap-1 rounded-xl",
+        "bg-surface-muted h-[2.2rem] items-center gap-1 rounded-xl md:mr-2",
         {
           "opacity-50": disabled,
         },
@@ -28,7 +28,7 @@ export const RoadmapLayoutSwitcher = ({
         className={cn(
           "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
           {
-            "border-border bg-surface text-text-primary border-[0.5px]":
+            "border-border text-text-primary dark:bg-surface border bg-white":
               layout === "gantt",
           },
         )}
@@ -46,7 +46,25 @@ export const RoadmapLayoutSwitcher = ({
         className={cn(
           "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
           {
-            "border-border bg-surface text-text-primary border-[0.5px]":
+            "border-border text-text-primary dark:bg-surface border bg-white":
+              layout === "kanban",
+          },
+        )}
+        disabled={disabled}
+        onClick={() => {
+          setLayout("kanban");
+        }}
+        title={disabled ? undefined : "Board view"}
+        type="button"
+      >
+        <KanbanIcon className="h-5 w-auto" />
+        <span className="hidden md:inline">Board</span>
+      </button>
+      <button
+        className={cn(
+          "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
+          {
+            "border-border text-text-primary dark:bg-surface border bg-white":
               layout === "list",
           },
         )}

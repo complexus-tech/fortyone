@@ -29,6 +29,7 @@ export const useCreateObjectiveMutation = () => {
       const optimisticObjective: Objective = {
         ...newObjective,
         id: "optimistic",
+        sequenceId: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         workspaceId: "optimistic",

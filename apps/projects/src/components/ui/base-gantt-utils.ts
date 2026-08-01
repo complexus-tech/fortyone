@@ -1,4 +1,5 @@
 import {
+  addDays,
   differenceInDays,
   eachDayOfInterval,
   eachMonthOfInterval,
@@ -105,6 +106,43 @@ export const calculateTimelineDatePosition = ({
   const elapsedDays = differenceInDays(date, periodStart);
 
   return (periodIndex + elapsedDays / daysInPeriod) * columnWidth;
+};
+
+export const calculateTimelineDateFromPosition = ({
+  position,
+  dateRange,
+  zoomLevel,
+}: {
+  position: number;
+  dateRange: { start: Date; end: Date };
+  zoomLevel: ZoomLevel;
+}) => {
+  const columnWidth = getColumnWidth(zoomLevel);
+  const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+  const timelineWidth = periods.length * columnWidth;
+  const clampedPosition = Math.min(Math.max(position, 0), timelineWidth);
+
+  if (zoomLevel === "weeks") {
+    return addDays(dateRange.start, Math.round(clampedPosition / columnWidth));
+  }
+
+  const periodIndex = Math.min(
+    periods.length - 1,
+    Math.floor(clampedPosition / columnWidth),
+  );
+  const period = periods[Math.max(0, periodIndex)];
+  const periodStart =
+    zoomLevel === "months" ? startOfMonth(period) : startOfQuarter(period);
+  const periodEnd =
+    zoomLevel === "months" ? endOfMonth(period) : endOfQuarter(period);
+  const daysInPeriod = differenceInDays(periodEnd, periodStart) + 1;
+  const positionWithinPeriod = clampedPosition - periodIndex * columnWidth;
+  const dayOffset = Math.min(
+    daysInPeriod - 1,
+    Math.floor((positionWithinPeriod / columnWidth) * daysInPeriod),
+  );
+
+  return addDays(periodStart, dayOffset);
 };
 
 export const getGanttOffscreenDirection = (

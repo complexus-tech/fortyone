@@ -60,11 +60,11 @@ export const LayoutSwitcher = ({
           onClick={() => {
             setLayout("kanban");
           }}
-          title={disabled ? undefined : "Kanban Board"}
+          title={disabled ? undefined : "Board view"}
           type="button"
         >
           <KanbanIcon className="h-5 w-auto" />
-          <span className="hidden md:inline">Kanban</span>
+          <span className="hidden md:inline">Board</span>
         </button>
       )}
       {options.includes("gantt") && (

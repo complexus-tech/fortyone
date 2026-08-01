@@ -23,23 +23,34 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 	if err != nil {
 		return objectives.CoreObjective{}, nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
+	defer tx.Rollback()
+
+	var sequenceID int
+	if err := tx.GetContext(ctx, &sequenceID, `
+		INSERT INTO team_objective_sequences (
+			workspace_id,
+			team_id,
+			current_sequence
+		) VALUES ($1, $2, 1)
+		ON CONFLICT (workspace_id, team_id)
+		DO UPDATE SET current_sequence =
+			team_objective_sequences.current_sequence + 1
+		RETURNING current_sequence
+	`, workspaceID, objective.Team); err != nil {
+		return objectives.CoreObjective{}, nil, fmt.Errorf("allocate objective sequence: %w", err)
+	}
 
 	// Insert objective
 	const objQuery = `
 		INSERT INTO objectives (
-			name, description, short_summary, lead_user_id, team_id,
+			sequence_id, name, description, short_summary, lead_user_id, team_id,
 			workspace_id, start_date, end_date, is_private,
 			status_id, priority, created_by
 		) VALUES (
-			:name, :description, :short_summary, :lead_user_id, :team_id,
+			:sequence_id, :name, :description, :short_summary, :lead_user_id, :team_id,
 			:workspace_id, :start_date, :end_date, :is_private,
 			:status_id, :priority, :created_by
-		) RETURNING objectives.objective_id, objectives.name, objectives.description, objectives.short_summary, objectives.lead_user_id, objectives.team_id, objectives.workspace_id, objectives.start_date, objectives.end_date, objectives.is_private, objectives.status_id, objectives.priority, objectives.created_at, objectives.updated_at, objectives.created_by, objectives.health;
+		) RETURNING objectives.objective_id, objectives.sequence_id, objectives.name, objectives.description, objectives.short_summary, objectives.lead_user_id, objectives.team_id, objectives.workspace_id, objectives.start_date, objectives.end_date, objectives.is_private, objectives.status_id, objectives.priority, objectives.created_at, objectives.updated_at, objectives.created_by, objectives.health;
 	`
 
 	var createdObj dbObjective
@@ -49,7 +60,9 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 	}
 	defer stmt.Close()
 
-	if err := stmt.GetContext(ctx, &createdObj, toDBObjective(objective, workspaceID)); err != nil {
+	objectiveParams := toDBObjective(objective, workspaceID)
+	objectiveParams.SequenceID = sequenceID
+	if err := stmt.GetContext(ctx, &createdObj, objectiveParams); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			errMsg := fmt.Sprintf("objective name %s already exists", objective.Name)
 			r.log.Error(ctx, errMsg)

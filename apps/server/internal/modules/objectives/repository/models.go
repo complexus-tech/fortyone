@@ -10,6 +10,7 @@ import (
 
 type dbObjective struct {
 	ID               uuid.UUID                   `db:"objective_id"`
+	SequenceID       int                         `db:"sequence_id"`
 	Name             string                      `db:"name"`
 	Description      *string                     `db:"description"`
 	ShortSummary     *string                     `db:"short_summary"`
@@ -69,6 +70,7 @@ func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObje
 func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 	return objectives.CoreObjective{
 		ID:               dbo.ID,
+		SequenceID:       dbo.SequenceID,
 		Name:             dbo.Name,
 		Description:      dbo.Description,
 		ShortSummary:     dbo.ShortSummary,

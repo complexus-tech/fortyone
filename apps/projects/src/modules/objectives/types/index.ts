@@ -5,6 +5,7 @@ export type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
 
 export type Objective = {
   id: string;
+  sequenceId: number;
   name: string;
   description: string;
   shortSummary: string | null;

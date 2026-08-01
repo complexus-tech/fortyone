@@ -31,3 +31,18 @@ func TestObjectiveShortSummaryMappings(t *testing.T) {
 		t.Fatalf("expected response mapping to preserve short summary, got %#v", appObjective.ShortSummary)
 	}
 }
+
+func TestObjectiveSequenceMapping(t *testing.T) {
+	t.Parallel()
+
+	const sequenceID = 42
+	appObjective := toAppObjective(objectives.CoreObjective{
+		ID:         uuid.New(),
+		SequenceID: sequenceID,
+		Name:       "Launch MVP",
+	})
+
+	if appObjective.SequenceID != sequenceID {
+		t.Fatalf("expected response mapping to preserve sequence ID %d, got %d", sequenceID, appObjective.SequenceID)
+	}
+}

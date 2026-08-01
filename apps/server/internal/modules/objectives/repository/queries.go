@@ -38,6 +38,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 		)
 		SELECT
 			o.objective_id,
+			o.sequence_id,
 			o.name,
 			o.description,
 			o.short_summary,
@@ -146,6 +147,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 		)
 		SELECT
 			o.objective_id,
+			o.sequence_id,
 			o.name,
 			o.description,
 			o.short_summary,

@@ -14,9 +14,9 @@ import Link from "next/link";
 import { ObjectiveIcon, CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth/client";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
@@ -34,7 +34,7 @@ import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { hexToRgba } from "@/utils";
 import { useTerminology, useWorkspacePath } from "@/hooks";
-import { useUpdateObjectiveMutation } from "../hooks";
+import { useUpdateObjectiveMutation } from "../hooks/update-mutation";
 import type { Objective, ObjectiveUpdate, ObjectiveHealth } from "../types";
 
 export const ObjectiveCard = ({
@@ -49,15 +49,20 @@ export const ObjectiveCard = ({
   health,
   priority,
   createdBy,
+  onSelect,
   ...rest
-}: Objective & { isInTeam?: boolean; isInSearch?: boolean }) => {
+}: Objective & {
+  isInTeam?: boolean;
+  isInSearch?: boolean;
+  onSelect?: () => void;
+}) => {
   const { data: session } = useSession();
   const { data: members = [] } = useTeamMembers(teamId);
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useObjectiveStatuses();
   const updateMutation = useUpdateObjectiveMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
-  const canUpdate = isAdminOrOwner || session?.user?.id === leadUser;
+  const canUpdate = isAdminOrOwner || session?.user.id === leadUser;
   const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
   const [comment, setComment] = useState("");
@@ -117,20 +122,37 @@ export const ObjectiveCard = ({
             },
           )}
         >
-          <Link
-            className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
-            href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
-            prefetch
-          >
-            <Flex
-              align="center"
-              className="bg-surface-muted size-8 shrink-0 rounded-lg"
-              justify="center"
+          {onSelect ? (
+            <button
+              className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
+              onClick={onSelect}
+              type="button"
             >
-              <ObjectiveIcon className="h-4" />
-            </Flex>
-            <Text className="min-w-0 truncate pr-2">{name}</Text>
-          </Link>
+              <Flex
+                align="center"
+                className="bg-surface-muted size-8 shrink-0 rounded-lg"
+                justify="center"
+              >
+                <ObjectiveIcon className="h-4" />
+              </Flex>
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+            </button>
+          ) : (
+            <Link
+              className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
+              href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
+              prefetch
+            >
+              <Flex
+                align="center"
+                className="bg-surface-muted size-8 shrink-0 rounded-lg"
+                justify="center"
+              >
+                <ObjectiveIcon className="h-4" />
+              </Flex>
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+            </Link>
+          )}
         </Box>
         <Flex align="center" className="shrink-0 gap-2 md:gap-4">
           {!isInTeam ? (

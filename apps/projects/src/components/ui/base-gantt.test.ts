@@ -2,6 +2,7 @@
 
 import {
   calculateGanttPosition,
+  calculateTimelineDateFromPosition,
   calculateTimelineDatePosition,
   getGanttOffscreenDirection,
 } from "./base-gantt-utils";
@@ -48,6 +49,32 @@ describe("BaseGantt timeline positioning", () => {
     });
 
     expect(position).toBeCloseTo(180 + (45 / 91) * 180);
+  });
+
+  it("returns the hovered day in week zoom", () => {
+    const date = calculateTimelineDateFromPosition({
+      position: 64 * 5,
+      dateRange: {
+        start: new Date("2026-08-01T00:00:00"),
+        end: new Date("2026-08-31T00:00:00"),
+      },
+      zoomLevel: "weeks",
+    });
+
+    expect(date).toEqual(new Date("2026-08-06T00:00:00"));
+  });
+
+  it("returns the hovered day within a fixed-width month", () => {
+    const date = calculateTimelineDateFromPosition({
+      position: 60,
+      dateRange: {
+        start: new Date("2026-08-01T00:00:00"),
+        end: new Date("2026-09-30T00:00:00"),
+      },
+      zoomLevel: "months",
+    });
+
+    expect(date).toEqual(new Date("2026-08-16T00:00:00"));
   });
 
   it.each([

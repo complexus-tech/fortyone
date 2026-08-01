@@ -236,6 +236,7 @@ export const searchTool = tool({
 
         const baseObjective = {
           id: objective.id,
+          sequenceId: objective.sequenceId,
           name: objective.name,
           teamId: objective.teamId,
           team: team

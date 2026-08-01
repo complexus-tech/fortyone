@@ -17,6 +17,7 @@ const (
 
 type CoreObjective struct {
 	ID               uuid.UUID
+	SequenceID       int
 	Name             string
 	Description      *string
 	ShortSummary     *string

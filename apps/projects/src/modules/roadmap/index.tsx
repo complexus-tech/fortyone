@@ -8,12 +8,17 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
 import { RoadmapGanttBoard } from "@/components/ui/roadmap-gantt-board";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
-import { ListObjectives } from "@/modules/objectives/components/list-objectives";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
 import type { Objective } from "@/modules/objectives/types";
 import { RoadmapObjectiveDetails } from "./components/objective-details";
+import { ObjectivesBoard } from "./components/objectives-board";
+import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
+import {
+  DEFAULT_OBJECTIVE_VIEW_OPTIONS,
+  type ObjectiveViewOptions,
+} from "./objective-board-utils";
 import type { RoadmapLayoutType } from "./types";
 
 export const WorkspaceObjectivesPage = () => {
@@ -28,6 +33,10 @@ export const WorkspaceObjectivesPage = () => {
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     "roadmapZoomLevel",
     "months",
+  );
+  const [viewOptions, setViewOptions] = useLocalStorage<ObjectiveViewOptions>(
+    "objectivesViewOptions",
+    DEFAULT_OBJECTIVE_VIEW_OPTIONS,
   );
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(
     null,
@@ -74,27 +83,29 @@ export const WorkspaceObjectivesPage = () => {
     switch (layout) {
       case "gantt":
         return (
-          <Box className="relative h-full min-w-0">
-            <RoadmapGanttBoard
-              className="h-full"
-              objectives={objectives}
-              onObjectiveSelect={setSelectedObjective}
-              onZoomLevelChange={setZoomLevel}
-              selectedObjectiveId={selectedObjective?.id}
-              zoomLevel={zoomLevel}
-            />
-            {selectedObjective ? (
-              <RoadmapObjectiveDetails
-                objective={selectedObjective}
-                onClose={() => {
-                  setSelectedObjective(null);
-                }}
-              />
-            ) : null}
-          </Box>
+          <RoadmapGanttBoard
+            className="h-full"
+            objectives={objectives}
+            onObjectiveSelect={setSelectedObjective}
+            onZoomLevelChange={setZoomLevel}
+            selectedObjectiveId={selectedObjective?.id}
+            zoomLevel={zoomLevel}
+          />
         );
+      case "kanban":
       case "list":
-        return <ListObjectives objectives={objectives} />;
+        return (
+          <ObjectivesBoard
+            layout={layout}
+            objectives={objectives}
+            onCreateObjective={() => {
+              if (userRole !== "guest") setIsOpen(true);
+            }}
+            onObjectiveSelect={setSelectedObjective}
+            setViewOptions={setViewOptions}
+            viewOptions={viewOptions}
+          />
+        );
       default:
         return null;
     }
@@ -128,6 +139,12 @@ export const WorkspaceObjectivesPage = () => {
             layout={layout}
             setLayout={setLayout}
           />
+          {layout !== "gantt" ? (
+            <ObjectiveViewOptionsButton
+              setViewOptions={setViewOptions}
+              viewOptions={viewOptions}
+            />
+          ) : null}
           <Button
             color="invert"
             disabled={userRole === "guest"}
@@ -146,7 +163,17 @@ export const WorkspaceObjectivesPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="h-[calc(100dvh-4rem)]">{renderContent()}</Box>
+      <Box className="relative h-[calc(100dvh-4rem)] min-w-0">
+        {renderContent()}
+        {selectedObjective ? (
+          <RoadmapObjectiveDetails
+            objective={selectedObjective}
+            onClose={() => {
+              setSelectedObjective(null);
+            }}
+          />
+        ) : null}
+      </Box>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
   );

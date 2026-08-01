@@ -194,3 +194,44 @@ final result: passed
 - [ ] Re-run the visual comparison in an authenticated browser session.
 
 final result: blocked
+
+---
+
+# Objectives Board and Timeline Hover Design QA
+
+## Source and implementation evidence
+
+- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-01 at 12.53.47 PM.png` (962 × 1230 pixels).
+- Implementation screenshot: unavailable because browser control is not exposed in the current session and the objectives route requires authentication.
+- Intended implementation viewport: authenticated desktop objectives page in dark mode.
+- State: Timeline view with the pointer over a date column; Board and List views grouped by status.
+
+## Comparison evidence
+
+- Full-view comparison: blocked because an authenticated implementation capture could not be produced.
+- Focused hover-marker comparison: blocked for the same reason.
+- Primary interactions and browser console: not tested in a rendered browser.
+
+## Findings
+
+- The shared Stories layout switcher now presents `Board` instead of `Kanban` without changing its persisted layout value.
+- Objectives now supports Timeline, Board, and List layouts.
+- Objective Board and List views reuse the Stories board dimensions, grouped-header rhythm, card surfaces, controls, and empty-group behavior.
+- Board groups can be changed between Status, Lead, and Priority; objectives can be reordered and dragged between compatible groups.
+- Timeline pointer movement now renders a neutral full-height guide and an `MMM d` date label independently of the peach Today marker.
+- The guide remains below the objective details panel in the stacking order.
+
+## Comparison history
+
+- No visual iteration was possible because the implementation capture was blocked.
+
+## Implementation checklist
+
+- [x] Rename user-facing Kanban labels to Board.
+- [x] Add grouped Objective Board and List layouts.
+- [x] Add status, lead, and priority grouping controls for Board and List.
+- [x] Add drag-to-update grouping behavior in Board view.
+- [x] Add a pointer-following timeline date guide.
+- [ ] Re-run the visual comparison in an authenticated browser session.
+
+final result: blocked

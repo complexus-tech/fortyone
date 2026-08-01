@@ -1,1 +1,1 @@
-export type RoadmapLayoutType = "list" | "gantt";
+export type RoadmapLayoutType = "list" | "kanban" | "gantt";

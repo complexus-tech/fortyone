@@ -13,6 +13,7 @@ import (
 // AppObjectiveList represents a list of objectives in the application.
 type AppObjectiveList struct {
 	ID           uuid.UUID      `json:"id"`
+	SequenceID   int            `json:"sequenceId"`
 	Name         string         `json:"name"`
 	Description  *string        `json:"description"`
 	ShortSummary *string        `json:"shortSummary"`
@@ -71,6 +72,7 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 
 		appObjectives[i] = AppObjectiveList{
 			ID:           objective.ID,
+			SequenceID:   objective.SequenceID,
 			Name:         objective.Name,
 			Description:  objective.Description,
 			ShortSummary: objective.ShortSummary,
@@ -172,6 +174,7 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 
 	return AppObjectiveList{
 		ID:           objective.ID,
+		SequenceID:   objective.SequenceID,
 		Name:         objective.Name,
 		Description:  objective.Description,
 		ShortSummary: objective.ShortSummary,
