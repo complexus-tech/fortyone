@@ -23,6 +23,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
 import {
+  useCanUpdateObjective,
   useDeleteObjectiveMutation,
   useObjective,
   useUpdateObjectiveMutation,
@@ -41,6 +42,7 @@ export const Overview = () => {
   const { getTermDisplay } = useTerminology();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = useCanUpdateObjective();
   const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
@@ -79,7 +81,7 @@ export const Overview = () => {
       }),
     ],
     content: objective?.name || "",
-    editable: isAdminOrOwner,
+    editable: canUpdate,
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
@@ -100,7 +102,7 @@ export const Overview = () => {
       }),
     ],
     content: objective?.description || "",
-    editable: isAdminOrOwner,
+    editable: canUpdate,
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
@@ -185,7 +187,7 @@ export const Overview = () => {
                     });
                   }}
                   placeholder="Add short summary..."
-                  readOnly={!isAdminOrOwner}
+                  readOnly={!canUpdate}
                   rows={3}
                 />
                 <Divider className="my-3 opacity-60" />
@@ -255,7 +257,7 @@ export const Overview = () => {
                 });
               }}
               placeholder="Add short summary..."
-              readOnly={!isAdminOrOwner}
+              readOnly={!canUpdate}
               rows={3}
             />
             <Divider className="my-3 opacity-60" />

@@ -3,12 +3,10 @@ import { Box, Text, Wrapper, ProgressBar, Flex, DatePicker } from "ui";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
 import { differenceInDays, format, formatISO } from "date-fns";
-import { useSession } from "@/lib/auth/client";
-import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useFeatures, useTerminology } from "@/hooks";
 import { useObjective } from "../../hooks/use-objective";
 import { useKeyResults } from "../../hooks/use-key-results";
-import { useUpdateObjectiveMutation } from "../../hooks";
+import { useCanUpdateObjective, useUpdateObjectiveMutation } from "../../hooks";
 import type { KeyResult } from "../../types";
 
 const getProgress = (keyResult: KeyResult) => {
@@ -27,13 +25,11 @@ const getProgress = (keyResult: KeyResult) => {
 export const Summary = () => {
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
-  const { data: session } = useSession();
+  const canUpdate = useCanUpdateObjective();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const updateObjective = useUpdateObjectiveMutation();
   const { data: objective } = useObjective(objectiveId);
   const { data: keyResults = [] } = useKeyResults(objectiveId);
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
-  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
   const completedCount = objective?.stats?.completed ?? 0;
   const totalCount = objective?.stats?.total ?? 0;
 

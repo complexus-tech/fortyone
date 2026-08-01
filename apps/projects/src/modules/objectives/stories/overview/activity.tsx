@@ -1,21 +1,23 @@
 import { ArrowDownIcon, ClockIcon, ObjectiveIcon } from "icons";
 import { Button, Flex, Text, Tabs, Dialog, TextArea } from "ui";
 import { useParams } from "next/navigation";
-import { useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import { HealthMenu } from "@/components/ui/health-menu";
-import { useIsAdminOrOwner } from "@/hooks/owner";
 import { KeyResults } from "@/modules/objectives/stories/overview/key-results";
 import { useFeatures, useTerminology } from "@/hooks";
-import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
+import {
+  useCanUpdateObjective,
+  useObjective,
+  useUpdateObjectiveMutation,
+} from "../../hooks";
 import type { ObjectiveHealth } from "../../types";
 import { Summary } from "./summary";
 import { Updates } from "./updates";
 
 export const Activity = () => {
-  const { data: session } = useSession();
+  const canUpdate = useCanUpdateObjective();
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
@@ -24,8 +26,6 @@ export const Activity = () => {
   const [health, setHealth] = useState<ObjectiveHealth | null>(null);
   const { data: objective } = useObjective(objectiveId);
   const updateMutation = useUpdateObjectiveMutation();
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
-  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const handleUpdate = () => {
     if (!health) {

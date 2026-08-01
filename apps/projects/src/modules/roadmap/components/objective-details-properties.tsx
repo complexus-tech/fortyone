@@ -1,34 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { format, formatISO } from "date-fns";
 import { CalendarIcon } from "icons";
 import { cn } from "lib";
-import {
-  Avatar,
-  Box,
-  Button,
-  DatePicker,
-  Dialog,
-  Flex,
-  Text,
-  TextArea,
-} from "ui";
-import { toast } from "sonner";
-import { useSession } from "@/lib/auth/client";
+import { Avatar, Box, Button, DatePicker, Flex, Text } from "ui";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
-import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useCanUpdateObjective } from "@/modules/objectives/hooks";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
-import type {
-  Objective,
-  ObjectiveHealth,
-  ObjectiveUpdate,
-} from "@/modules/objectives/types";
+import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
+import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
-import { HealthMenu } from "@/components/ui/health-menu";
 import { ObjectiveHealthIcon } from "@/components/ui/objective-health-icon";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
@@ -52,17 +35,10 @@ export const ObjectiveDetailsProperties = ({
 }: {
   objective: Objective;
 }) => {
-  const { data: session } = useSession();
-  const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminology();
   const { data: statuses = [] } = useObjectiveStatuses();
   const { data: members = [] } = useTeamMembers(objective.teamId);
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective.createdBy);
+  const canUpdate = useCanUpdateObjective();
   const updateMutation = useUpdateObjectiveMutation();
-  const [comment, setComment] = useState("");
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
-  const [pendingHealth, setPendingHealth] = useState<ObjectiveHealth>(null);
-  const canUpdate = isAdminOrOwner || session?.user.id === objective.leadUser;
   const status = statuses.find((item) => item.id === objective.statusId);
   const lead = members.find((member) => member.id === objective.leadUser);
 
@@ -71,32 +47,6 @@ export const ObjectiveDetailsProperties = ({
       objectiveId: objective.id,
       data,
     });
-  };
-
-  const closeHealthDialog = () => {
-    setIsCommentOpen(false);
-    setComment("");
-    setPendingHealth(null);
-  };
-
-  const handleHealthUpdate = () => {
-    if (!pendingHealth) {
-      toast.warning("Validation error", {
-        description: "Please select a health status",
-      });
-      return;
-    }
-
-    const trimmedComment = comment.trim();
-    if (!trimmedComment) {
-      toast.warning("Validation error", {
-        description: "Please provide a comment",
-      });
-      return;
-    }
-
-    handleUpdate({ health: pendingHealth, comment: trimmedComment });
-    closeHealthDialog();
   };
 
   return (
@@ -137,29 +87,23 @@ export const ObjectiveDetailsProperties = ({
         <DetailRow
           label="Health"
           value={
-            <HealthMenu>
-              <HealthMenu.Trigger>
-                <Button
-                  align="left"
-                  className={propertyButtonClassName}
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={<ObjectiveHealthIcon health={objective.health} />}
-                  size="sm"
-                  type="button"
-                  variant="naked"
-                >
-                  {objective.health ?? "No health"}
-                </Button>
-              </HealthMenu.Trigger>
-              <HealthMenu.Items
-                health={objective.health}
-                setHealth={(health) => {
-                  setPendingHealth(health);
-                  setIsCommentOpen(true);
-                }}
-              />
-            </HealthMenu>
+            <ObjectiveHealthEditor
+              health={objective.health}
+              objectiveId={objective.id}
+            >
+              <Button
+                align="left"
+                className={propertyButtonClassName}
+                color="tertiary"
+                disabled={!canUpdate}
+                leftIcon={<ObjectiveHealthIcon health={objective.health} />}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                {objective.health ?? "No health"}
+              </Button>
+            </ObjectiveHealthEditor>
           }
         />
         <DetailRow
@@ -198,7 +142,7 @@ export const ObjectiveDetailsProperties = ({
                   align="left"
                   className={propertyButtonClassName}
                   color="tertiary"
-                  disabled={userRole === "guest"}
+                  disabled={!canUpdate}
                   leftIcon={
                     <Avatar
                       className={cn({
@@ -310,61 +254,6 @@ export const ObjectiveDetailsProperties = ({
           }
         />
       </Flex>
-
-      <Dialog
-        onOpenChange={(open) => {
-          if (open) {
-            setIsCommentOpen(true);
-            return;
-          }
-          closeHealthDialog();
-        }}
-        open={isCommentOpen}
-      >
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="flex items-center gap-2 px-6 pt-0.5 text-lg">
-              Change {getTermDisplay("objectiveTerm")} health to{" "}
-              <ObjectiveHealthIcon health={pendingHealth} />
-              {pendingHealth}
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Description>
-            Please provide a brief comment explaining why you&apos;re changing
-            the objective health status.
-          </Dialog.Description>
-          <Dialog.Body>
-            <Text className="mt-3 mb-1.5" color="muted">
-              Comment*
-            </Text>
-            <TextArea
-              className="border-border/80 resize-none rounded-2xl border bg-transparent py-4 leading-normal"
-              onChange={(event) => {
-                setComment(event.target.value);
-              }}
-              placeholder={`e.g, We're on track to complete the ${getTermDisplay("objectiveTerm")} by the end of the quarter.`}
-              rows={4}
-              value={comment}
-            />
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-2">
-            <Button
-              color="tertiary"
-              onClick={closeHealthDialog}
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={!comment.trim() || updateMutation.isPending}
-              loading={updateMutation.isPending}
-              onClick={handleHealthUpdate}
-            >
-              Update health
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
     </>
   );
 };

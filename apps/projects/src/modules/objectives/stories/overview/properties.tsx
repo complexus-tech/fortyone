@@ -3,20 +3,22 @@ import { Text, Flex, Button, Avatar, DatePicker } from "ui";
 import { cn } from "lib";
 import { format, formatISO } from "date-fns";
 import { useParams } from "next/navigation";
-import { useSession } from "@/lib/auth/client";
 import { AssigneesMenu, PrioritiesMenu, PriorityIcon } from "@/components/ui";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
-import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useMediaQuery } from "@/hooks";
 import { hexToRgba } from "@/utils";
 import type { ObjectiveUpdate } from "../../types";
-import { useObjective, useUpdateObjectiveMutation } from "../../hooks";
+import {
+  useCanUpdateObjective,
+  useObjective,
+  useUpdateObjectiveMutation,
+} from "../../hooks";
 import { ObjectiveStatusesMenu } from "../../../../components/ui/objective-statuses-menu";
 
 export const Properties = () => {
-  const { data: session } = useSession();
+  const canUpdate = useCanUpdateObjective();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
@@ -24,8 +26,6 @@ export const Properties = () => {
   const { data: members = [] } = useTeamMembers(objective?.teamId);
   const updateMutation = useUpdateObjectiveMutation();
   const leadUser = members.find((m) => m.id === objective?.leadUser);
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
-  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({

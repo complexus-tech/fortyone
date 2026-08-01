@@ -31,7 +31,7 @@ export const RoadmapObjectiveDetails = ({
   );
 
   return (
-    <Box className="border-border/70 dark:border-border dark:bg-surface absolute top-12 right-3 bottom-6 isolate z-40 w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border bg-white shadow-xl md:w-[34rem]">
+    <Box className="border-border/70 dark:border-border dark:bg-surface absolute top-14 right-3 bottom-4 isolate z-40 w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border bg-white shadow-xl md:w-[34rem]">
       <Flex
         align="center"
         className="border-border/70 dark:border-border dark:bg-surface/80 sticky top-0 z-10 min-h-16 gap-6 border-b-[0.5px] bg-white/80 px-6 backdrop-blur-2xl"

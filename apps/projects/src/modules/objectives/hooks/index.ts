@@ -6,3 +6,4 @@ export * from "./delete-mutation";
 export * from "./use-create-key-result-mutation";
 export * from "./use-update-key-result-mutation";
 export * from "./use-delete-key-result-mutation";
+export * from "./use-can-update-objective";

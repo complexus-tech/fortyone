@@ -12,9 +12,11 @@ import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
+import { useCanUpdateObjective } from "@/modules/objectives/hooks";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
@@ -43,8 +45,7 @@ const ObjectiveRow = ({
   isSelected: boolean;
   onObjectiveSelect: (objective: Objective) => void;
 }) => {
-  // Import userRole directly in this component
-  const { userRole } = useUserRole();
+  const canUpdate = useCanUpdateObjective();
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
@@ -105,11 +106,7 @@ const ObjectiveRow = ({
             >
               <span>
                 <AssigneesMenu.Trigger>
-                  <button
-                    className="flex"
-                    disabled={userRole === "guest"}
-                    type="button"
-                  >
+                  <button className="flex" disabled={!canUpdate} type="button">
                     <Avatar
                       name={
                         selectedAssignee?.fullName || selectedAssignee?.username
@@ -140,7 +137,7 @@ const ObjectiveRow = ({
                   <button
                     aria-label={`Change status: ${statusName}`}
                     className="focus-visible:ring-primary flex rounded-sm outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={userRole === "guest"}
+                    disabled={!canUpdate}
                     type="button"
                   >
                     <ObjectiveStatusIcon statusId={objective.statusId} />
@@ -158,8 +155,20 @@ const ObjectiveRow = ({
         </Flex>
         <Flex align="center" justify="center">
           <Tooltip title={objective.health ?? "No health"}>
-            <span className="flex">
-              <ObjectiveHealthIcon health={objective.health} />
+            <span>
+              <ObjectiveHealthEditor
+                health={objective.health}
+                objectiveId={objective.id}
+              >
+                <button
+                  aria-label={`Change health: ${objective.health ?? "No health"}`}
+                  className="focus-visible:ring-primary flex rounded-sm outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!canUpdate}
+                  type="button"
+                >
+                  <ObjectiveHealthIcon health={objective.health} />
+                </button>
+              </ObjectiveHealthEditor>
             </span>
           </Tooltip>
         </Flex>
@@ -171,7 +180,7 @@ const ObjectiveRow = ({
                   <button
                     aria-label={`Change priority: ${objective.priority ?? "No priority"}`}
                     className="focus-visible:ring-primary flex rounded-sm outline-none select-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={userRole === "guest"}
+                    disabled={!canUpdate}
                     type="button"
                   >
                     <PriorityIcon priority={objective.priority} />
@@ -295,7 +304,7 @@ export const RoadmapGanttBoard = ({
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="border-border/60 bg-background sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] md:w-160">
+        <Box className="border-border/60 bg-background sticky left-0 isolate z-50 w-screen shrink-0 border-r-[0.5px] md:w-160">
           <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 items-center border-b-[0.5px] px-4 md:flex">
             <GanttControls
               className="w-full justify-between"

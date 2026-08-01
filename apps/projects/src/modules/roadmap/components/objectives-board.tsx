@@ -19,7 +19,7 @@ import {
   PlusIcon,
 } from "icons";
 import { cn } from "lib";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Avatar,
   Box,
@@ -39,15 +39,17 @@ import {
 } from "@/components/ui";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
-import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useTerminology, useUserRole } from "@/hooks";
-import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { ObjectiveCard } from "@/modules/objectives/components/card";
+import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
 import { TableHeader } from "@/modules/objectives/components/heading";
-import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks";
+import {
+  useCanUpdateObjective,
+  useUpdateObjectiveMutation,
+} from "@/modules/objectives/hooks";
 import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
 import type { RoadmapLayoutType } from "@/modules/roadmap/types";
 import { hexToRgba } from "@/utils";
@@ -115,12 +117,10 @@ const ObjectiveBoardCard = ({
   onSelect: (objective: Objective) => void;
   isOverlay?: boolean;
 }) => {
-  const { data: session } = useSession();
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
   const updateMutation = useUpdateObjectiveMutation();
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective.createdBy);
-  const canUpdate = isAdminOrOwner || session?.user.id === objective.leadUser;
+  const canUpdate = useCanUpdateObjective();
   const lead = members.find(({ id }) => id === objective.leadUser);
   const status = statuses.find(({ id }) => id === objective.statusId);
   const objectiveReference = teamCode
@@ -251,17 +251,23 @@ const ObjectiveBoardCard = ({
             }}
           />
         </PrioritiesMenu>
-        <Button
-          className="gap-1 pr-2"
-          color="tertiary"
-          rounded="md"
-          size="xs"
-          type="button"
-          variant="outline"
+        <ObjectiveHealthEditor
+          health={objective.health}
+          objectiveId={objective.id}
         >
-          <ObjectiveHealthIcon health={objective.health} />
-          {objective.health ?? "No Health"}
-        </Button>
+          <Button
+            className="gap-1 pr-2"
+            color="tertiary"
+            disabled={!canUpdate}
+            rounded="md"
+            size="xs"
+            type="button"
+            variant="outline"
+          >
+            <ObjectiveHealthIcon health={objective.health} />
+            {objective.health ?? "No Health"}
+          </Button>
+        </ObjectiveHealthEditor>
         <DatePicker>
           <DatePicker.Trigger>
             <Button
@@ -517,11 +523,12 @@ const ObjectivesKanban = ({
   onCreateObjective: () => void;
 }) => {
   const hiddenGroupKeys = getHiddenObjectiveGroupKeys(viewOptions);
+  const hiddenGroupKeySet = new Set(hiddenGroupKeys);
   const visibleGroups = groups.filter(
-    (group) => !hiddenGroupKeys.includes(group.key),
+    (group) => !hiddenGroupKeySet.has(group.key),
   );
   const hiddenGroups = groups.filter((group) =>
-    hiddenGroupKeys.includes(group.key),
+    hiddenGroupKeySet.has(group.key),
   );
 
   return (
@@ -582,14 +589,16 @@ const ObjectivesGroupedList = ({
   onObjectiveSelect: (objective: Objective) => void;
   onCreateObjective: () => void;
 }) => {
-  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   return (
     <BodyContainer className="h-full overflow-x-auto pb-6">
       <Box className="min-w-6xl">
         <TableHeader />
         {groups.map((group) => {
-          const isCollapsed = collapsedGroups.includes(group.key);
+          const isCollapsed = collapsedGroups.has(group.key);
           return (
             <Box key={group.key}>
               <Box className="border-border bg-surface-muted/85 border-b-[0.5px] px-12 py-[0.4rem] backdrop-blur">
@@ -600,11 +609,15 @@ const ObjectivesGroupedList = ({
                   isCollapsed={isCollapsed}
                   onCreateObjective={onCreateObjective}
                   onToggle={() => {
-                    setCollapsedGroups((current) =>
-                      current.includes(group.key)
-                        ? current.filter((key) => key !== group.key)
-                        : [...current, group.key],
-                    );
+                    setCollapsedGroups((current) => {
+                      const next = new Set(current);
+                      if (next.has(group.key)) {
+                        next.delete(group.key);
+                      } else {
+                        next.add(group.key);
+                      }
+                      return next;
+                    });
                   }}
                 />
               </Box>
@@ -652,14 +665,13 @@ export const ObjectivesBoard = ({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
-  const groups = useMemo(
-    () => groupObjectives({ objectives, statuses, members, viewOptions }),
-    [members, objectives, statuses, viewOptions],
-  );
-  const teamCodeById = useMemo(
-    () => new Map(teams.map((team) => [team.id, team.code])),
-    [teams],
-  );
+  const groups = groupObjectives({
+    objectives,
+    statuses,
+    members,
+    viewOptions,
+  });
+  const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveObjective(

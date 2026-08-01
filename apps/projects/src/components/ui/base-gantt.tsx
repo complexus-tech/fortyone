@@ -922,7 +922,7 @@ const Chart = <T extends GanttItem>({
 
   return (
     <Box
-      className="relative min-h-full flex-1"
+      className="relative z-0 min-h-full flex-1"
       onMouseLeave={() => {
         setHoverPosition(null);
       }}

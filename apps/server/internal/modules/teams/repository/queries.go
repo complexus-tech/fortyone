@@ -53,11 +53,20 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			AND t.workspace_id = tss.workspace_id
 		WHERE
 			t.workspace_id = :workspace_id
-			AND EXISTS (
-				SELECT 1
-				FROM team_members tm
-				WHERE tm.team_id = t.team_id
-				AND tm.user_id = :user_id
+			AND (
+				EXISTS (
+					SELECT 1
+					FROM team_members tm
+					WHERE tm.team_id = t.team_id
+						AND tm.user_id = :user_id
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM workspace_members wm
+					WHERE wm.workspace_id = t.workspace_id
+						AND wm.user_id = :user_id
+						AND wm.role = 'admin'
+				)
 			)
 	`
 	if search != "" {
@@ -147,11 +156,20 @@ func (r *repo) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.U
 		WHERE
 			t.team_id = :team_id
 			AND t.workspace_id = :workspace_id
-			AND EXISTS (
-				SELECT 1
-				FROM team_members tm
-				WHERE tm.team_id = t.team_id
-				AND tm.user_id = :user_id
+			AND (
+				EXISTS (
+					SELECT 1
+					FROM team_members tm
+					WHERE tm.team_id = t.team_id
+						AND tm.user_id = :user_id
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM workspace_members wm
+					WHERE wm.workspace_id = t.workspace_id
+						AND wm.user_id = :user_id
+						AND wm.role = 'admin'
+				)
 			)
 	`
 

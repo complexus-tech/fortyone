@@ -17,8 +17,15 @@ export const useUpdateObjectiveMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: ({ objectiveId, data }: UpdateObjectiveVariables) =>
-      updateObjective(objectiveId, data, workspaceSlug),
+    mutationFn: async ({ objectiveId, data }: UpdateObjectiveVariables) => {
+      const response = await updateObjective(objectiveId, data, workspaceSlug);
+
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+
+      return response;
+    },
 
     onMutate: ({ objectiveId, data }) => {
       const prevObjective = queryClient.getQueryData<Objective>(
@@ -119,11 +126,7 @@ export const useUpdateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (res, { objectiveId, data }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_res, { objectiveId, data }) => {
       analytics.track("objective_updated", {
         objectiveId,
         ...data,
