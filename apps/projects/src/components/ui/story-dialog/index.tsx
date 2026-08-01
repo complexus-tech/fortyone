@@ -180,11 +180,7 @@ export const StoryDialog = ({
                       <span className="sr-only">Next</span>
                     </Button>
                   </Tooltip>
-                  <StoryActionsMenu
-                    align="start"
-                    buttonClassName="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-[1px]"
-                    storyId={storyId}
-                  />
+                  <StoryActionsMenu align="start" storyId={storyId} />
                 </Flex>
                 <Flex align="center" className="hidden" gap={2}>
                   <Tooltip side="bottom" title="Fullscreen">

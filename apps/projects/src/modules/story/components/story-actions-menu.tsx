@@ -5,22 +5,157 @@ import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import {
   ArchiveIcon,
+  ArrowRightIcon,
   BellIcon,
+  CheckIcon,
   DeleteIcon,
-  MoreVerticalIcon,
+  DuplicateIcon,
+  MoreHorizontalIcon,
+  NewTabIcon,
   NotificationsOffIcon,
+  ShareIcon,
   UndoIcon,
 } from "icons";
 import { Button, Dialog, Flex, Menu, Text } from "ui";
-import { useTerminology, useUserRole } from "@/hooks";
+import { toast } from "sonner";
+import type { StoryPriority } from "@/modules/stories/types";
+import {
+  useCopyToClipboard,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useStatuses } from "@/lib/hooks/statuses";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
+import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
+import { getStoryPath } from "../utils/story-url";
 import { useSetStoryWatchingMutation } from "../hooks/collaboration-mutations";
+import { useDuplicateStoryMutation } from "../hooks/duplicate-mutation";
 import { useStoryById } from "../hooks/story";
+import { useUpdateStoryMutation } from "../hooks/update-mutation";
+
+const STORY_PRIORITIES: StoryPriority[] = [
+  "No Priority",
+  "Low",
+  "Medium",
+  "High",
+  "Urgent",
+];
+
+interface StoryStatusSubMenuProps {
+  disabled: boolean;
+  statusId: string;
+  storyId: string;
+  teamId: string;
+}
+
+const StoryStatusSubMenu = ({
+  disabled,
+  statusId,
+  storyId,
+  teamId,
+}: StoryStatusSubMenuProps) => {
+  const { data: statuses = [] } = useStatuses();
+  const updateMutation = useUpdateStoryMutation();
+  const teamStatuses = statuses.filter((status) => status.teamId === teamId);
+
+  return (
+    <Menu.SubMenu>
+      <Menu.SubTrigger className="justify-between" disabled={disabled}>
+        <Flex align="center" gap={2}>
+          <StoryStatusIcon statusId={statusId} />
+          Change status
+        </Flex>
+        <ArrowRightIcon
+          className="text-text-muted h-3.5 w-auto"
+          strokeWidth={2.8}
+        />
+      </Menu.SubTrigger>
+      <Menu.SubItems className="min-w-52">
+        <Menu.Group>
+          {teamStatuses.map((status) => (
+            <Menu.Item
+              className="justify-between"
+              key={status.id}
+              onSelect={() => {
+                updateMutation.mutate({
+                  payload: { statusId: status.id },
+                  storyId,
+                });
+              }}
+            >
+              <Flex align="center" gap={2}>
+                <StoryStatusIcon statusId={status.id} />
+                <span className="max-w-44 truncate">{status.name}</span>
+              </Flex>
+              {status.id === statusId ? (
+                <CheckIcon className="h-4 w-auto" />
+              ) : null}
+            </Menu.Item>
+          ))}
+        </Menu.Group>
+      </Menu.SubItems>
+    </Menu.SubMenu>
+  );
+};
+
+interface StoryPrioritySubMenuProps {
+  disabled: boolean;
+  priority: StoryPriority;
+  storyId: string;
+}
+
+const StoryPrioritySubMenu = ({
+  disabled,
+  priority,
+  storyId,
+}: StoryPrioritySubMenuProps) => {
+  const updateMutation = useUpdateStoryMutation();
+
+  return (
+    <Menu.SubMenu>
+      <Menu.SubTrigger className="justify-between" disabled={disabled}>
+        <Flex align="center" gap={2}>
+          <PriorityIcon priority={priority} />
+          Change priority
+        </Flex>
+        <ArrowRightIcon
+          className="text-text-muted h-3.5 w-auto"
+          strokeWidth={2.8}
+        />
+      </Menu.SubTrigger>
+      <Menu.SubItems className="min-w-48">
+        <Menu.Group>
+          {STORY_PRIORITIES.map((option) => (
+            <Menu.Item
+              className="justify-between"
+              key={option}
+              onSelect={() => {
+                updateMutation.mutate({
+                  payload: { priority: option },
+                  storyId,
+                });
+              }}
+            >
+              <Flex align="center" gap={2}>
+                <PriorityIcon priority={option} />
+                {option}
+              </Flex>
+              {option === priority ? (
+                <CheckIcon className="h-4 w-auto" />
+              ) : null}
+            </Menu.Item>
+          ))}
+        </Menu.Group>
+      </Menu.SubItems>
+    </Menu.SubMenu>
+  );
+};
 
 interface ConfirmationDialogProps {
   confirmIcon: ReactNode;
@@ -76,26 +211,27 @@ const ConfirmationDialog = ({
 
 interface StoryActionsMenuProps {
   align?: "center" | "end" | "start";
-  buttonClassName?: string;
   isAdminOrOwner?: boolean;
   storyId: string;
 }
 
 export const StoryActionsMenu = ({
   align = "end",
-  buttonClassName,
   isAdminOrOwner,
   storyId,
 }: StoryActionsMenuProps) => {
   const { data } = useStoryById(storyId);
+  const [_, copyText] = useCopyToClipboard();
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
+  const { withWorkspace } = useWorkspacePath();
   const { isAdminOrOwner: derivedIsAdminOrOwner } = useIsAdminOrOwner(
     data?.reporterId,
   );
   const subscriptionMutation = useSetStoryWatchingMutation();
   const archiveMutation = useBulkArchiveStoryMutation();
   const deleteMutation = useBulkDeleteStoryMutation();
+  const duplicateMutation = useDuplicateStoryMutation();
   const restoreMutation = useBulkRestoreStoryMutation();
   const unarchiveMutation = useBulkUnarchiveStoryMutation();
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -125,6 +261,14 @@ export const StoryActionsMenu = ({
   const isArchived = Boolean(data.archivedAt);
   const isDeleted = Boolean(data.deletedAt);
   const canEdit = userRole !== "guest";
+  const canUpdateProperties = canEdit && !isDeleted;
+  const storyUrl = withWorkspace(
+    getStoryPath({
+      id: data.id,
+      sequenceId: data.sequenceId,
+      teamCode: data.teamCode,
+    }),
+  );
 
   let lifecycleMenuItem: ReactNode;
   if (isDeleted) {
@@ -188,6 +332,15 @@ export const StoryActionsMenu = ({
     setIsUnarchiveOpen(false);
   };
 
+  const handleDuplicate = () => {
+    duplicateMutation.mutate({ story: data, storyId });
+  };
+
+  const handleShare = async () => {
+    await copyText(`${window.location.origin}${storyUrl}`);
+    toast.success("Link copied to clipboard");
+  };
+
   return (
     <>
       <Menu>
@@ -195,15 +348,47 @@ export const StoryActionsMenu = ({
           <Button
             aria-label="More story actions"
             asIcon
-            className={buttonClassName}
             color="tertiary"
-            leftIcon={<MoreVerticalIcon className="h-5 w-auto" />}
+            leftIcon={<MoreHorizontalIcon className="h-5 w-auto" />}
             variant="naked"
           >
             <span className="sr-only">More story actions</span>
           </Button>
         </Menu.Button>
         <Menu.Items align={align} className="min-w-52">
+          <Menu.Group>
+            <StoryStatusSubMenu
+              disabled={!canUpdateProperties}
+              statusId={data.statusId}
+              storyId={storyId}
+              teamId={data.teamId}
+            />
+            <StoryPrioritySubMenu
+              disabled={!canUpdateProperties}
+              priority={data.priority}
+              storyId={storyId}
+            />
+            <Menu.Item
+              disabled={!canEdit || duplicateMutation.isPending}
+              onSelect={handleDuplicate}
+            >
+              <DuplicateIcon />
+              Duplicate
+            </Menu.Item>
+            <Menu.Item
+              onSelect={() => {
+                window.open(storyUrl, "_blank", "noopener,noreferrer");
+              }}
+            >
+              <NewTabIcon />
+              Open in new tab
+            </Menu.Item>
+            <Menu.Item onSelect={handleShare}>
+              <ShareIcon />
+              Copy link
+            </Menu.Item>
+          </Menu.Group>
+          <Menu.Separator className="my-1.5" />
           <Menu.Group>
             <Menu.Item
               disabled={isDeleted || subscriptionMutation.isPending}
@@ -217,10 +402,10 @@ export const StoryActionsMenu = ({
               {data.isWatching ? <NotificationsOffIcon /> : <BellIcon />}
               {data.isWatching ? "Unsubscribe" : "Subscribe"}
             </Menu.Item>
+            {lifecycleMenuItem}
           </Menu.Group>
           <Menu.Separator className="my-1.5" />
           <Menu.Group>
-            {lifecycleMenuItem}
             <Menu.Item
               className="text-danger"
               disabled={!canDelete || deleteMutation.isPending}

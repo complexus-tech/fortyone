@@ -101,77 +101,77 @@ export const OptionsHeader = ({
   };
 
   return (
-    <>
-      <Container className="border-border d flex h-16 w-full items-center justify-between border-b-[0.5px] md:border-b-0 md:px-6">
-        <Flex align="center" gap={2}>
-          <MobileMenuButton />
-          <Text color="muted" fontWeight="semibold" transform="uppercase">
-            {code ? (
-              <>
-                {code}-{sequenceId}
-              </>
-            ) : null}
-          </Text>
-        </Flex>
-        <Flex align="center" gap={2}>
-          <StoryActionsMenu isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
-          {isDialog ? (
-            <Tooltip side="bottom" title="Fullscreen">
-              <span>
-                <Button
-                  asIcon
-                  color="tertiary"
-                  href={withWorkspace(
-                    getStoryPath({
-                      id,
-                      sequenceId,
-                      teamCode: code,
-                    }),
-                  )}
-                  leftIcon={<MaximizeIcon className="h-5" strokeWidth={2.5} />}
-                  variant="naked"
-                >
-                  <span className="sr-only">Fullscreen</span>
-                </Button>
-              </span>
-            </Tooltip>
+    <Container className="border-border d flex h-16 w-full items-center justify-between border-b-[0.5px] md:border-b-0 md:px-6">
+      <Flex align="center" gap={2}>
+        <MobileMenuButton />
+        <Text color="muted" fontWeight="semibold" transform="uppercase">
+          {code ? (
+            <>
+              {code}-{sequenceId}
+            </>
           ) : null}
-
-          <Tooltip
-            title={`Copy ${getTermDisplay("storyTerm", { capitalize: true })} link`}
-          >
-            <Button
-              color="tertiary"
-              leftIcon={<CopyIcon />}
-              onClick={async () => {
-                await copyText(getStoryUrl());
-                toast.info("Success", {
-                  description: `${getTermDisplay("storyTerm", { capitalize: true })} link copied to clipboard`,
-                });
-              }}
-              suppressHydrationWarning
-              variant="naked"
-            >
-              <span className="sr-only">
-                Copy {getTermDisplay("storyTerm")} link
-              </span>
-            </Button>
-          </Tooltip>
-          {userRole !== "guest" && (
-            <Tooltip title="Copy git branch name">
+        </Text>
+      </Flex>
+      <Flex align="center" gap={2}>
+        {isDialog ? (
+          <Tooltip side="bottom" title="Fullscreen">
+            <span>
               <Button
+                asIcon
                 color="tertiary"
-                disabled={!code}
-                leftIcon={<GitIcon />}
-                onClick={copyBranchName}
+                href={withWorkspace(
+                  getStoryPath({
+                    id,
+                    sequenceId,
+                    teamCode: code,
+                  }),
+                )}
+                leftIcon={<MaximizeIcon className="h-5" strokeWidth={2.5} />}
                 variant="naked"
               >
-                <span className="sr-only">Copy git branch name</span>
+                <span className="sr-only">Fullscreen</span>
               </Button>
-            </Tooltip>
-          )}
-        </Flex>
-      </Container>
-    </>
+            </span>
+          </Tooltip>
+        ) : null}
+
+        <Tooltip
+          title={`Copy ${getTermDisplay("storyTerm", { capitalize: true })} link`}
+        >
+          <Button
+            color="tertiary"
+            leftIcon={<CopyIcon />}
+            onClick={async () => {
+              await copyText(getStoryUrl());
+              toast.info("Success", {
+                description: `${getTermDisplay("storyTerm", { capitalize: true })} link copied to clipboard`,
+              });
+            }}
+            suppressHydrationWarning
+            variant="naked"
+          >
+            <span className="sr-only">
+              Copy {getTermDisplay("storyTerm")} link
+            </span>
+          </Button>
+        </Tooltip>
+        {userRole !== "guest" && (
+          <Tooltip title="Copy git branch name">
+            <Button
+              color="tertiary"
+              disabled={!code}
+              leftIcon={<GitIcon />}
+              onClick={copyBranchName}
+              variant="naked"
+            >
+              <span className="sr-only">Copy git branch name</span>
+            </Button>
+          </Tooltip>
+        )}
+        {!isDialog ? (
+          <StoryActionsMenu isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
+        ) : null}
+      </Flex>
+    </Container>
   );
 };
