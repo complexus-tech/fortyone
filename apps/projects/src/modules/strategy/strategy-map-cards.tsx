@@ -53,6 +53,22 @@ import {
 
 const NUMBER_FORMAT = new Intl.NumberFormat();
 
+const getStrategyDescriptionPreview = (description: string | null) => {
+  if (!description) return "";
+  if (!/<\/?[a-z][\s\S]*>/i.test(description)) return description.trim();
+
+  return description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 export const getObjectiveProgress = (objective: Objective) => {
   const total = objective.stats?.total ?? 0;
   const completed = objective.stats?.completed ?? 0;
@@ -200,7 +216,7 @@ export const UltimateGoalNodeCard = memo(
             </Text>
           </button>
           <Text className="mx-auto mt-2 max-w-[36rem] leading-5" color="muted">
-            {description ||
+            {getStrategyDescriptionPreview(description) ||
               "Describe the long-term outcome that every pillar should support."}
           </Text>
           <Flex
@@ -278,9 +294,9 @@ export const PillarNodeCard = memo(
               {name}
             </Text>
           </button>
-          {description ? (
+          {getStrategyDescriptionPreview(description) ? (
             <Text className="mt-1 line-clamp-3 leading-5" color="muted">
-              {description}
+              {getStrategyDescriptionPreview(description)}
             </Text>
           ) : null}
           <Flex align="center" className="mt-2 gap-2">

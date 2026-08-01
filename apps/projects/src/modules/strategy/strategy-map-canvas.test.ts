@@ -64,9 +64,15 @@ describe("StrategyMapCanvas", () => {
     expect(source).toContain('vectorEffect="non-scaling-stroke"');
   });
 
-  it("keeps strategy editor fields and destructive pillar actions polished", () => {
+  it("uses the objective rich-text experience for strategy descriptions", () => {
     const editorSource = readSource(
       "src/modules/strategy/strategy-editor-dialog.tsx",
+    );
+    const descriptionEditorSource = readSource(
+      "src/modules/strategy/strategy-description-editor.tsx",
+    );
+    const detailsSource = readSource(
+      "src/modules/strategy/strategy-node-details.tsx",
     );
     const cardSource = readSource(
       "src/modules/strategy/strategy-map-cards.tsx",
@@ -74,7 +80,20 @@ describe("StrategyMapCanvas", () => {
     const pageSource = readSource("src/modules/strategy/index.tsx");
 
     expect(editorSource).toContain("bg-surface-muted/80");
-    expect(editorSource).toContain("bg-surface-muted/60");
+    expect(editorSource).toContain("StrategyDescriptionEditor");
+    expect(editorSource).toContain('<Dialog.Content size="lg">');
+    expect(editorSource).not.toContain("TextArea");
+    expect(descriptionEditorSource).toContain("useEditor");
+    expect(descriptionEditorSource).toContain("createRichTextStarterKit");
+    expect(descriptionEditorSource).toContain("Underline");
+    expect(descriptionEditorSource).toContain("autolink: true");
+    expect(descriptionEditorSource).toContain("currentEditor.getHTML()");
+    expect(descriptionEditorSource).toContain("currentEditor.isEmpty");
+    expect(descriptionEditorSource).toContain("immediatelyRender: false");
+    expect(descriptionEditorSource).toContain("TextEditor");
+    expect(detailsSource).toContain("StrategyDescriptionEditor");
+    expect(detailsSource).not.toContain("TextArea");
+    expect(cardSource).toContain("getStrategyDescriptionPreview");
     expect(cardSource).toContain("text-danger");
     expect(pageSource).toContain("Delete strategic pillar?");
     expect(pageSource).toContain('color="danger"');

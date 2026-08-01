@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CloseIcon, ObjectiveIcon, StrategyIcon } from "icons";
-import { Box, Button, Flex, Input, Text, TextArea } from "ui";
+import { Box, Button, Flex, Input, Text } from "ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
+import { StrategyDescriptionEditor } from "./strategy-description-editor";
 
 const AUTOSAVE_DELAY = 1000;
 
@@ -57,7 +58,8 @@ const StrategyNodeDetailsForm = ({
   pillarCount,
 }: StrategyNodeDetailsFormProps) => {
   const [name, setName] = useState(initialName);
-  const [description, setDescription] = useState(initialDescription ?? "");
+  const nameRef = useRef(initialName);
+  const descriptionRef = useRef(initialDescription);
   const heading = kind === "goal" ? "Ultimate goal" : "Strategic pillar";
   const { callback: queueSave, flush: flushSave } =
     useDebouncedCallback<StrategyDetailsDraft>(
@@ -68,12 +70,12 @@ const StrategyNodeDetailsForm = ({
       { flushOnUnmount: true },
     );
 
-  const scheduleSave = (nextName: string, nextDescription: string) => {
+  const scheduleSave = (nextName: string, nextDescription: string | null) => {
     const trimmedName = nextName.trim();
     if (!canEdit || !trimmedName) return;
 
     queueSave({
-      description: nextDescription.trim() || null,
+      description: nextDescription,
       name: trimmedName,
     });
   };
@@ -131,27 +133,26 @@ const StrategyNodeDetailsForm = ({
           onBlur={flushSave}
           onChange={(event) => {
             const nextName = event.target.value;
+            nameRef.current = nextName;
             setName(nextName);
-            scheduleSave(nextName, description);
+            scheduleSave(nextName, descriptionRef.current);
           }}
           placeholder={`Name this ${kind}`}
           readOnly={!canEdit}
           value={name}
         />
-        <TextArea
-          aria-label={`${heading} description`}
-          className="mt-1.5 min-h-32 resize-none border-0 bg-transparent px-0 py-1.5 text-[1.05rem] leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
-          maxLength={1000}
+        <StrategyDescriptionEditor
+          ariaLabel={`${heading} description`}
+          className="mt-1.5 min-h-40"
+          content={initialDescription ?? ""}
+          contentClassName="min-h-40"
+          editable={canEdit}
           onBlur={flushSave}
-          onChange={(event) => {
-            const nextDescription = event.target.value;
-            setDescription(nextDescription);
-            scheduleSave(name, nextDescription);
+          onChange={(nextDescription) => {
+            descriptionRef.current = nextDescription;
+            scheduleSave(nameRef.current, nextDescription);
           }}
           placeholder="Add a description..."
-          readOnly={!canEdit}
-          rows={5}
-          value={description}
         />
       </Box>
     </Box>

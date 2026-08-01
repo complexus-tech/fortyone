@@ -2,7 +2,8 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { Button, Dialog, Flex, Input, TextArea } from "ui";
+import { Box, Button, Dialog, Flex, Input, Text } from "ui";
+import { StrategyDescriptionEditor } from "./strategy-description-editor";
 
 type StrategyEditorDialogProps = {
   isOpen: boolean;
@@ -33,13 +34,15 @@ const StrategyEditorForm = ({
   title,
 }: StrategyEditorFormProps) => {
   const [name, setName] = useState(initialName);
-  const [description, setDescription] = useState(initialDescription);
+  const [description, setDescription] = useState<string | null>(
+    initialDescription || null,
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    onSave(trimmedName, description.trim() || null);
+    onSave(trimmedName, description);
   };
 
   return (
@@ -59,15 +62,18 @@ const StrategyEditorForm = ({
             required
             value={name}
           />
-          <TextArea
-            className="bg-surface-muted/60 dark:bg-surface-muted/60 min-h-28 resize-none py-3 leading-6"
-            label="Description"
-            onChange={(event) => {
-              setDescription(event.target.value);
-            }}
-            placeholder="Add context so the strategy is easy to understand"
-            value={description}
-          />
+          <Box>
+            <Text className="mb-2">Description</Text>
+            <StrategyDescriptionEditor
+              ariaLabel="Strategic pillar description"
+              className="min-h-32"
+              content={initialDescription}
+              contentClassName="min-h-32"
+              editable
+              onChange={setDescription}
+              placeholder="Add context so the strategy is easy to understand"
+            />
+          </Box>
         </Flex>
       </Dialog.Body>
       <Dialog.Footer className="justify-end gap-2">
@@ -103,7 +109,7 @@ export const StrategyEditorDialog = ({
   title,
 }: StrategyEditorDialogProps) => (
   <Dialog onOpenChange={onOpenChange} open={isOpen}>
-    <Dialog.Content>
+    <Dialog.Content size="lg">
       <StrategyEditorForm
         initialDescription={initialDescription ?? ""}
         initialName={initialName}
