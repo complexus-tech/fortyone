@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
+import { Box, Flex, Text, Tooltip, Avatar, Button, DatePicker } from "ui";
 import { differenceInDays, formatISO } from "date-fns";
 import { useCallback, useState } from "react";
 import { cn } from "lib";
@@ -24,10 +24,12 @@ import { ObjectiveHealthIcon } from "@/components/ui/objective-health-icon";
 import { PriorityIcon } from "./priority-icon";
 import { ObjectiveStatusIcon } from "./objective-status-icon";
 import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
+import { hexToRgba } from "@/utils";
 
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
-const ROADMAP_COLUMNS = "grid-cols-[2rem_2rem_2rem_2rem_minmax(0,1fr)_5.25rem]";
+const ROADMAP_COLUMNS =
+  "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_5.25rem]";
 
 // Individual Objective Row Component
 const ObjectiveRow = ({
@@ -35,6 +37,7 @@ const ObjectiveRow = ({
   duration,
   handleUpdate,
   statusName,
+  statusColor,
   isSelected,
   onObjectiveSelect,
 }: {
@@ -42,6 +45,7 @@ const ObjectiveRow = ({
   duration: number | null;
   handleUpdate: (objectiveId: string, data: ObjectiveUpdate) => void;
   statusName: string;
+  statusColor?: string;
   isSelected: boolean;
   onObjectiveSelect: (objective: Objective) => void;
 }) => {
@@ -129,19 +133,28 @@ const ObjectiveRow = ({
             />
           </AssigneesMenu>
         </Flex>
-        <Flex align="center" justify="center">
+        <Flex align="center" className="min-w-0">
           <ObjectiveStatusesMenu>
             <Tooltip className="pointer-events-none" title={statusName}>
-              <span>
+              <span className="block w-full min-w-0">
                 <ObjectiveStatusesMenu.Trigger>
-                  <button
+                  <Button
                     aria-label={`Change status: ${statusName}`}
-                    className="focus-visible:ring-primary flex rounded-sm outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-max max-w-full min-w-0 gap-1 pr-2"
+                    color="tertiary"
                     disabled={!canUpdate}
+                    rounded="md"
+                    size="xs"
+                    style={{
+                      backgroundColor: hexToRgba(statusColor, 0.1),
+                      borderColor: hexToRgba(statusColor, 0.2),
+                    }}
                     type="button"
+                    variant="outline"
                   >
                     <ObjectiveStatusIcon statusId={objective.statusId} />
-                  </button>
+                    <span className="min-w-0 truncate">{statusName}</span>
+                  </Button>
                 </ObjectiveStatusesMenu.Trigger>
               </span>
             </Tooltip>
@@ -330,6 +343,9 @@ export const RoadmapGanttBoard = ({
               startDate && endDate
                 ? differenceInDays(endDate, startDate) + 1
                 : null;
+            const status = statuses.find(
+              (status) => status.id === objective.statusId,
+            );
 
             return (
               <ObjectiveRow
@@ -339,10 +355,8 @@ export const RoadmapGanttBoard = ({
                 key={objective.id}
                 objective={objective}
                 onObjectiveSelect={onObjectiveSelect}
-                statusName={
-                  statuses.find((status) => status.id === objective.statusId)
-                    ?.name ?? "No status"
-                }
+                statusColor={status?.color}
+                statusName={status?.name ?? "No status"}
               />
             );
           })}
