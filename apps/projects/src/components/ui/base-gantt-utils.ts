@@ -75,6 +75,38 @@ export const calculateGanttPosition = ({
   };
 };
 
+export const calculateTimelineDatePosition = ({
+  date,
+  dateRange,
+  zoomLevel,
+}: {
+  date: Date;
+  dateRange: { start: Date; end: Date };
+  zoomLevel: ZoomLevel;
+}) => {
+  const columnWidth = getColumnWidth(zoomLevel);
+
+  if (zoomLevel === "weeks") {
+    return differenceInDays(date, dateRange.start) * columnWidth;
+  }
+
+  const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
+  const periodStart =
+    zoomLevel === "months" ? startOfMonth(date) : startOfQuarter(date);
+  const periodEnd =
+    zoomLevel === "months" ? endOfMonth(date) : endOfQuarter(date);
+  const periodIndex = periods.findIndex(
+    (period) => period.getTime() === periodStart.getTime(),
+  );
+
+  if (periodIndex < 0) return 0;
+
+  const daysInPeriod = differenceInDays(periodEnd, periodStart) + 1;
+  const elapsedDays = differenceInDays(date, periodStart);
+
+  return (periodIndex + elapsedDays / daysInPeriod) * columnWidth;
+};
+
 export const getGanttOffscreenDirection = (
   position: { leftPosition: number; width: number },
   viewport: { scrollLeft: number; visibleWidth: number },

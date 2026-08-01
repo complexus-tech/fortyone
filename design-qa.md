@@ -152,3 +152,45 @@ final result: passed
 ## Result
 
 final result: passed
+
+---
+
+# Objectives Today Marker Design QA
+
+## Source and implementation evidence
+
+- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-01 at 10.03.02 AM.png` (2048 × 1303 pixels).
+- Implementation screenshot: unavailable because the available in-app browser session redirects the objectives route to login.
+- Intended implementation viewport: desktop, dark mode, authenticated objectives timeline.
+- Density normalization: not applicable because an implementation capture could not be produced.
+- State: objectives timeline centered on the current date, with the details panel closed.
+
+## Comparison evidence
+
+- Full-view comparison: blocked; the source screenshot was opened at original resolution, but the authenticated implementation state was unavailable.
+- Focused marker comparison: blocked for the same authentication reason.
+- Primary interactions and browser console: not tested because the implementation route could not be reached past login.
+
+## Findings
+
+- No code-level blocker remains. The main navigation contains no duplicate Zoom or Today controls.
+- The timeline now uses a thin peach current-day line, an `MMM d` peach label, an 80% line opacity, and an 8px label radius.
+- The marker is rendered below the objective details panel, whose opaque surface prevents the line from bleeding through.
+- The objective panel top edge moved down one spacing step while retaining its bottom alignment and scroll clearance above Ask Maya AI.
+- The new-objective short summary now matches the description font size and uses a shorter two-row input.
+
+## Comparison history
+
+- No visual iteration was possible because the implementation capture was blocked by authentication.
+
+## Implementation checklist
+
+- [x] Remove duplicate controls from the main page header.
+- [x] Add an accurately positioned current-day marker for week, month, and quarter zoom levels.
+- [x] Apply the requested peach color, 80% line opacity, taller label, and 8px radius.
+- [x] Keep the marker behind the objective details panel.
+- [x] Move property values slightly right.
+- [x] Match short-summary and description text sizing while reducing summary height.
+- [ ] Re-run the visual comparison in an authenticated browser session.
+
+final result: blocked

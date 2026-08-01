@@ -37,7 +37,7 @@ import { PriorityIcon } from "@/components/ui/priority-icon";
 
 const DetailRow = ({ label, value }: { label: string; value: ReactNode }) => (
   <Flex align="center" className="min-h-9" gap={4}>
-    <Text className="w-22 shrink-0" color="muted">
+    <Text className="w-28 shrink-0" color="muted">
       {label}
     </Text>
     <Box className="min-w-0 flex-1">{value}</Box>

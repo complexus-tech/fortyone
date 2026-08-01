@@ -22,6 +22,7 @@ import { ArrowDown2Icon, ChevronLeftIcon, ChevronRightIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
 import {
   calculateGanttPosition,
+  calculateTimelineDatePosition,
   getColumnWidth,
   getGanttOffscreenDirection,
   getTimePeriodsForZoom,
@@ -560,9 +561,6 @@ const TimelineHeader = ({
 
   const timelineMinWidth = periods.length * columnWidth;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const renderPeriodHeader = () => {
     switch (zoomLevel) {
       case "weeks":
@@ -605,36 +603,24 @@ const TimelineHeader = ({
 
             <Flex>
               {periods.map((day) => {
-                const isToday = day.getTime() === today.getTime();
-
                 return (
                   <Box
                     className={cn(
                       "border-border/45 h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center",
                       {
-                        "bg-surface-muted": isWeekend(day) && !isToday,
-                        "border-primary bg-primary dark:border-primary":
-                          isToday,
+                        "bg-surface-muted": isWeekend(day),
                       },
                     )}
                     key={day.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
                     <Flex align="center" className="px-1" justify="between">
-                      {isToday ? (
-                        <Text color="white" fontSize="sm" fontWeight="medium">
-                          Today
-                        </Text>
-                      ) : (
-                        <>
-                          <Text color="muted" fontSize="sm">
-                            {format(day, "d")}
-                          </Text>
-                          <Text color="muted" fontSize="sm">
-                            {format(day, "eeeee")}
-                          </Text>
-                        </>
-                      )}
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "d")}
+                      </Text>
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "eeeee")}
+                      </Text>
                     </Flex>
                   </Box>
                 );
@@ -911,6 +897,11 @@ const Chart = <T extends GanttItem>({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayPosition = calculateTimelineDatePosition({
+    date: today,
+    dateRange,
+    zoomLevel,
+  });
 
   return (
     <Box
@@ -919,8 +910,6 @@ const Chart = <T extends GanttItem>({
     >
       <Flex className="pointer-events-none absolute inset-x-0 top-16 bottom-0">
         {periods.map((period) => {
-          const isToday =
-            zoomLevel === "weeks" && period.getTime() === today.getTime();
           const dayIsYesterday = zoomLevel === "weeks" && isYesterday(period);
 
           return (
@@ -929,9 +918,7 @@ const Chart = <T extends GanttItem>({
                 "border-border/40 min-w-16 flex-1 border-r-[0.5px]",
                 {
                   "bg-surface-muted":
-                    zoomLevel === "weeks" && isWeekend(period) && !isToday,
-                  "border-primary/50 bg-primary/10 dark:border-primary/50":
-                    isToday,
+                    zoomLevel === "weeks" && isWeekend(period),
                   "border-primary/50 dark:border-primary/50": dayIsYesterday,
                 },
               )}
@@ -941,6 +928,21 @@ const Chart = <T extends GanttItem>({
           );
         })}
       </Flex>
+
+      <Box
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 z-20"
+        style={{ left: `${todayPosition}px` }}
+      >
+        <Box className="bg-primary/80 absolute inset-y-0 w-px -translate-x-1/2" />
+        <Text
+          as="span"
+          className="bg-primary text-primary-foreground absolute top-7 flex h-6 -translate-x-1/2 items-center rounded-lg px-2 text-[0.85rem] leading-none whitespace-nowrap shadow-sm"
+          fontWeight="medium"
+        >
+          {format(today, "MMM d").toUpperCase()}
+        </Text>
+      </Box>
 
       <Box className="relative z-1">
         <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />

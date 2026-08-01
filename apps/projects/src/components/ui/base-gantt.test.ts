@@ -2,6 +2,7 @@
 
 import {
   calculateGanttPosition,
+  calculateTimelineDatePosition,
   getGanttOffscreenDirection,
 } from "./base-gantt-utils";
 
@@ -21,6 +22,32 @@ describe("BaseGantt timeline positioning", () => {
       leftPosition: 256,
       width: 192,
     });
+  });
+
+  it("places the current date within its month column", () => {
+    const position = calculateTimelineDatePosition({
+      date: new Date("2026-08-16T00:00:00"),
+      dateRange: {
+        start: new Date("2026-07-01T00:00:00"),
+        end: new Date("2026-09-30T00:00:00"),
+      },
+      zoomLevel: "months",
+    });
+
+    expect(position).toBeCloseTo(120 + (15 / 31) * 120);
+  });
+
+  it("places the current date within its quarter column", () => {
+    const position = calculateTimelineDatePosition({
+      date: new Date("2026-05-16T00:00:00"),
+      dateRange: {
+        start: new Date("2026-01-01T00:00:00"),
+        end: new Date("2026-12-31T00:00:00"),
+      },
+      zoomLevel: "quarters",
+    });
+
+    expect(position).toBeCloseTo(180 + (45 / 91) * 180);
   });
 
   it.each([

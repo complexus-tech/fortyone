@@ -401,7 +401,7 @@ export const NewObjectiveDialog = ({
             />
             <TextArea
               aria-label="Objective short summary"
-              className="mt-3 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              className="mt-3 min-h-14 resize-none border-0 bg-transparent px-0 py-1.5 text-[1.125rem] leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
               maxLength={500}
               onChange={(event) => {
                 setObjectiveForm((current) => ({
@@ -410,7 +410,7 @@ export const NewObjectiveDialog = ({
                 }));
               }}
               placeholder="Add short summary..."
-              rows={3}
+              rows={2}
               value={objectiveForm.shortSummary}
             />
             <Divider className="my-3 opacity-60" />
