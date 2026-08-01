@@ -1,741 +1,172 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useState } from "react";
-import Link from "next/link";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  ArrowDownIcon,
-  DeleteIcon,
-  DragIcon,
-  ObjectiveIcon,
-  OKRIcon,
-} from "icons";
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { cn } from "lib";
-import { Avatar, Badge, Box, Button, Flex, Select, Text } from "ui";
-import {
-  AssigneesMenu,
-  ObjectiveHealthIcon,
-  PrioritiesMenu,
-  PriorityIcon,
-} from "@/components/ui";
-import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
-import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
+import { Box, Flex, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
-import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
-import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
-import {
-  useCanUpdateObjective,
-  useKeyResults,
-  useUpdateObjectiveMutation,
-} from "@/modules/objectives/hooks";
+import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks";
 import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
-import { hexToRgba } from "@/utils";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import {
+  getObjectiveProgress,
+  ObjectiveNodeCard,
+  PillarNodeCard,
+  UltimateGoalNodeCard,
+} from "./strategy-map-cards";
+import {
+  createConnectionPath,
+  createStrategyMapLayout,
+  getObjectiveNodeId,
+  getPillarNodeId,
+  getStrategyConnections,
+  GOAL_NODE_ID,
+  GOAL_NODE_WIDTH,
+  mergeStrategyNodePositions,
+  OBJECTIVE_NODE_WIDTH,
+  parseStoredStrategyNodePositions,
+  PILLAR_NODE_WIDTH,
+  type StrategyNodeDimensions,
+  type StrategyNodePositions,
+} from "./strategy-map-layout";
 import type { StrategicPillar, StrategyMap } from "./types";
 
-const PILLAR_DROP_PREFIX = "pillar:";
-const PILLAR_POSITION_PREFIX = "pillar-position:";
-const UNALIGNED_DROP_ID = "unaligned";
-const NUMBER_FORMAT = new Intl.NumberFormat();
-const MAX_PILLAR_SPACING = 160;
-const MAX_OBJECTIVE_SPACING = 160;
+const LAYOUT_STORAGE_VERSION = 1;
+const CANVAS_INSET = 28;
+const subscribeToStaticStorage = () => () => undefined;
 
-const getObjectiveProgress = (objective: Objective) => {
-  const total = objective.stats?.total ?? 0;
-  const completed = objective.stats?.completed ?? 0;
-  return total > 0 ? Math.round((completed / total) * 100) : 0;
-};
-
-const getKeyResultProgress = (
-  startValue: number,
-  currentValue: number,
-  targetValue: number,
-) => {
-  const range = targetValue - startValue;
-  if (range === 0) return currentValue >= targetValue ? 100 : 0;
-  return Math.max(
-    0,
-    Math.min(100, Math.round(((currentValue - startValue) / range) * 100)),
-  );
-};
-
-const formatValue = (value: number, measurementType: string) => {
-  if (measurementType === "percentage") return `${value}%`;
-  if (measurementType === "boolean") {
-    return value >= 1 ? "Complete" : "Incomplete";
-  }
-  return NUMBER_FORMAT.format(value);
-};
-
-const HierarchyBadge = ({ children }: { children: ReactNode }) => (
-  <Badge color="tertiary" rounded="md" size="md">
-    {children}
-  </Badge>
-);
-
-const CollapseButton = ({
-  isCollapsed,
-  label,
-  onToggle,
-}: {
-  isCollapsed: boolean;
-  label: string;
-  onToggle: () => void;
-}) => (
-  <Button
-    aria-expanded={!isCollapsed}
-    aria-label={label}
-    asIcon
-    color="tertiary"
-    onClick={onToggle}
-    rounded="md"
-    size="sm"
-    type="button"
-    variant="naked"
-  >
-    <ArrowDownIcon
-      className={cn(
-        "text-text-muted h-4 w-auto transition-transform",
-        isCollapsed && "-rotate-90",
-      )}
-      strokeWidth={1.8}
-    />
-  </Button>
-);
-
-const ProgressBar = ({ progress }: { progress: number }) => (
-  <Box className="bg-surface-muted h-1.5 flex-1 overflow-hidden rounded-full">
-    <Box
-      className="bg-foreground h-full rounded-full transition-[width]"
-      style={{ width: `${progress}%` }}
-    />
-  </Box>
-);
-
-type SiblingTreeItem = {
+type ActiveNodeDrag = {
   id: string;
-  node: ReactNode;
-  spacingBefore?: number;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startPosition: { x: number; y: number };
 };
 
-const SiblingTree = ({ items }: { items: SiblingTreeItem[] }) => {
-  if (items.length === 0) return null;
+type ActivePan = {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startScrollLeft: number;
+  startScrollTop: number;
+};
+
+const isInteractiveTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  Boolean(
+    target.closest(
+      "a, button, input, select, textarea, [role='menuitem'], [data-no-drag]",
+    ),
+  );
+
+const getDefaultNodeDimensions = (nodeId: string): StrategyNodeDimensions => {
+  if (nodeId === GOAL_NODE_ID) {
+    return { height: 196, width: GOAL_NODE_WIDTH };
+  }
+  if (nodeId.startsWith("pillar:")) {
+    return { height: 150, width: PILLAR_NODE_WIDTH };
+  }
+  return { height: 174, width: OBJECTIVE_NODE_WIDTH };
+};
+
+const StrategyCanvasNode = ({
+  children,
+  id,
+  isDragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  position,
+}: {
+  children: ReactNode;
+  id: string;
+  isDragging: boolean;
+  onPointerDown: (id: string, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  position: { x: number; y: number };
+}) => (
+  <div
+    className={cn(
+      "group/node absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing",
+      isDragging && "z-30 cursor-grabbing",
+    )}
+    data-dragging={isDragging}
+    data-node-id={id}
+    onPointerCancel={onPointerUp}
+    onPointerDown={(event) => {
+      onPointerDown(id, event);
+    }}
+    onPointerMove={onPointerMove}
+    onPointerUp={onPointerUp}
+    style={{ left: position.x, top: position.y }}
+  >
+    {children}
+  </div>
+);
+
+const CanvasConnections = ({
+  dimensions,
+  objectiveIds,
+  positions,
+  strategy,
+}: {
+  dimensions: Record<string, StrategyNodeDimensions>;
+  objectiveIds: Set<string>;
+  positions: StrategyNodePositions;
+  strategy: StrategyMap;
+}) => {
+  const connections = getStrategyConnections(strategy, objectiveIds);
 
   return (
-    <div className="w-max min-w-full">
-      <span aria-hidden className="bg-border mx-auto block h-8 w-px" />
-      <div className="flex gap-12">
-        {items.map((item, index) => {
-          const isFirst = index === 0;
-          const isLast = index === items.length - 1;
-          const spacingBefore = item.spacingBefore ?? 0;
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+    >
+      <g
+        fill="none"
+        stroke="var(--color-border-strong)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.25"
+      >
+        {connections.map((connection) => {
+          const sourcePosition = positions[connection.sourceId];
+          const targetPosition = positions[connection.targetId];
+
+          const path = createConnectionPath(
+            sourcePosition,
+            dimensions[connection.sourceId] ??
+              getDefaultNodeDimensions(connection.sourceId),
+            targetPosition,
+            dimensions[connection.targetId] ??
+              getDefaultNodeDimensions(connection.targetId),
+          );
 
           return (
-            <div
-              className="relative shrink-0 pt-8"
-              key={item.id}
-              style={{ marginLeft: spacingBefore }}
-            >
-              <span
-                aria-hidden
-                className="bg-border absolute top-0 left-1/2 h-8 w-px"
+            <g key={connection.id}>
+              <path d={path.path} vectorEffect="non-scaling-stroke" />
+              <circle
+                cx={path.targetX}
+                cy={path.targetY}
+                fill="var(--color-text-muted)"
+                r="3"
+                stroke="none"
               />
-              {!isFirst ? (
-                <span
-                  aria-hidden
-                  className="bg-border absolute top-0 right-1/2 h-px"
-                  style={{ left: -(48 + spacingBefore) }}
-                />
-              ) : null}
-              {!isLast ? (
-                <span
-                  aria-hidden
-                  className="bg-border absolute top-0 right-[-3rem] left-1/2 h-px"
-                />
-              ) : null}
-              {item.node}
-            </div>
+            </g>
           );
         })}
-      </div>
-    </div>
-  );
-};
-
-const KeyResultTree = ({ objectiveId }: { objectiveId: string }) => {
-  const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
-
-  if (isPending) {
-    return (
-      <SiblingTree
-        items={[
-          {
-            id: "loading",
-            node: (
-              <Box className="border-border bg-surface-muted/40 h-20 w-[20rem] animate-pulse rounded-xl border" />
-            ),
-          },
-        ]}
-      />
-    );
-  }
-
-  if (keyResults.length === 0) {
-    return (
-      <SiblingTree
-        items={[
-          {
-            id: "empty",
-            node: (
-              <Box className="border-border w-[20rem] rounded-xl border border-dashed px-4 py-3 text-center">
-                <Text color="muted">No key results yet</Text>
-              </Box>
-            ),
-          },
-        ]}
-      />
-    );
-  }
-
-  return (
-    <SiblingTree
-      items={keyResults.map((keyResult) => {
-        const progress = getKeyResultProgress(
-          keyResult.startValue,
-          keyResult.currentValue,
-          keyResult.targetValue,
-        );
-
-        return {
-          id: keyResult.id,
-          node: (
-            <Box className="border-border bg-background w-[20rem] rounded-xl border px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <Flex align="start" className="gap-3">
-                <Box className="bg-surface-muted mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg">
-                  <OKRIcon className="h-4 w-auto" strokeWidth={2} />
-                </Box>
-                <Box className="min-w-0 flex-1">
-                  <HierarchyBadge>Key Result</HierarchyBadge>
-                  <Text className="mt-2 line-clamp-2" fontWeight="medium">
-                    {keyResult.name}
-                  </Text>
-                  <Flex align="center" className="mt-3 gap-3">
-                    <ProgressBar progress={progress} />
-                    <Text className="shrink-0" color="muted">
-                      {formatValue(
-                        keyResult.currentValue,
-                        keyResult.measurementType,
-                      )}
-                      {" / "}
-                      {formatValue(
-                        keyResult.targetValue,
-                        keyResult.measurementType,
-                      )}
-                    </Text>
-                  </Flex>
-                </Box>
-              </Flex>
-            </Box>
-          ),
-        };
-      })}
-    />
-  );
-};
-
-const ObjectiveProperties = ({
-  canEdit,
-  objective,
-}: {
-  canEdit: boolean;
-  objective: Objective;
-}) => {
-  const { data: members = [] } = useMembers();
-  const { data: statuses = [] } = useObjectiveStatuses();
-  const canUpdateObjective = useCanUpdateObjective();
-  const updateMutation = useUpdateObjectiveMutation();
-  const lead = members.find(({ id }) => id === objective.leadUser);
-  const status = statuses.find(({ id }) => id === objective.statusId);
-  const canUpdate = canEdit && canUpdateObjective;
-
-  const handleUpdate = (data: ObjectiveUpdate) => {
-    if (!canUpdate) return;
-    updateMutation.mutate({ objectiveId: objective.id, data });
-  };
-
-  return (
-    <Flex align="center" className="gap-2" wrap>
-      <AssigneesMenu>
-        <AssigneesMenu.Trigger>
-          <Button
-            aria-label={lead ? `Lead: ${lead.username}` : "Add lead"}
-            className="gap-2 px-2"
-            color="tertiary"
-            disabled={!canUpdate}
-            rounded="md"
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Avatar
-              name={lead?.fullName || lead?.username}
-              rounded="md"
-              size="xs"
-              src={lead?.avatarUrl}
-            />
-            <span className="max-w-28 truncate">
-              {lead?.username ?? "Lead"}
-            </span>
-          </Button>
-        </AssigneesMenu.Trigger>
-        <AssigneesMenu.Items
-          assigneeId={objective.leadUser}
-          onAssigneeSelected={(leadUser) => {
-            handleUpdate({ leadUser });
-          }}
-          teamId={objective.teamId}
-        />
-      </AssigneesMenu>
-
-      <ObjectiveStatusesMenu>
-        <ObjectiveStatusesMenu.Trigger>
-          <Button
-            className="gap-2 pr-2.5"
-            disabled={!canUpdate}
-            rounded="md"
-            size="sm"
-            style={{
-              backgroundColor: hexToRgba(status?.color, 0.1),
-              borderColor: hexToRgba(status?.color, 0.22),
-            }}
-            type="button"
-            variant="outline"
-          >
-            <ObjectiveStatusIcon statusId={objective.statusId} />
-            {status?.name ?? "Status"}
-          </Button>
-        </ObjectiveStatusesMenu.Trigger>
-        <ObjectiveStatusesMenu.Items
-          setStatusId={(statusId) => {
-            handleUpdate({ statusId });
-          }}
-          statusId={objective.statusId}
-        />
-      </ObjectiveStatusesMenu>
-
-      <PrioritiesMenu>
-        <PrioritiesMenu.Trigger>
-          <Button
-            className="gap-2 pr-2.5"
-            color="tertiary"
-            disabled={!canUpdate}
-            rounded="md"
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <PriorityIcon
-              className="h-[1.15rem]"
-              priority={objective.priority}
-            />
-            {objective.priority ?? "No Priority"}
-          </Button>
-        </PrioritiesMenu.Trigger>
-        <PrioritiesMenu.Items
-          priority={objective.priority}
-          setPriority={(priority) => {
-            handleUpdate({ priority });
-          }}
-        />
-      </PrioritiesMenu>
-
-      <ObjectiveHealthEditor
-        health={objective.health}
-        objectiveId={objective.id}
-      >
-        <Button
-          className="gap-2 pr-2.5"
-          color="tertiary"
-          disabled={!canUpdate}
-          rounded="md"
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <ObjectiveHealthIcon health={objective.health} />
-          {objective.health ?? "No Health"}
-        </Button>
-      </ObjectiveHealthEditor>
-    </Flex>
-  );
-};
-
-const ObjectiveBranch = ({
-  canEdit,
-  objective,
-  onAlign,
-  pillars,
-}: {
-  canEdit: boolean;
-  objective: Objective;
-  onAlign: (objectiveId: string, pillarId: string | null) => void;
-  pillars: StrategicPillar[];
-}) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const { withWorkspace } = useWorkspacePath();
-  const { data: statuses = [] } = useObjectiveStatuses();
-  const status = statuses.find(({ id }) => id === objective.statusId);
-  const progress = getObjectiveProgress(objective);
-  const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
-    id: objective.id,
-    disabled: !canEdit,
-  });
-
-  return (
-    <div className="w-max min-w-[23rem]" ref={setNodeRef}>
-      <Box
-        className={cn(
-          "border-border bg-surface mx-auto w-[23rem] rounded-xl border p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-[opacity,background-color,border-color]",
-          isDragging && "opacity-40",
-        )}
-        style={{
-          backgroundColor: hexToRgba(status?.color, 0.045),
-          borderColor: hexToRgba(status?.color, 0.2),
-          boxShadow: `inset 3px 0 0 ${status?.color ?? "transparent"}, 0 1px 3px rgba(0,0,0,0.05)`,
-        }}
-      >
-        <Flex align="start" className="gap-3" justify="between">
-          <Box className="min-w-0 flex-1">
-            <Flex align="center" className="gap-2">
-              <HierarchyBadge>Objective</HierarchyBadge>
-              <CollapseButton
-                isCollapsed={isCollapsed}
-                label={`${isCollapsed ? "Show" : "Hide"} key results for ${objective.name}`}
-                onToggle={() => {
-                  setIsCollapsed((current) => !current);
-                }}
-              />
-            </Flex>
-            <Link
-              className="mt-2 block hover:opacity-75"
-              href={withWorkspace(
-                `/teams/${objective.teamId}/objectives/${objective.id}`,
-              )}
-            >
-              <Text
-                className="line-clamp-2 text-[1.1rem]"
-                fontWeight="semibold"
-              >
-                {objective.name}
-              </Text>
-            </Link>
-          </Box>
-          <Flex align="center" className="shrink-0 gap-1.5">
-            <button
-              aria-label={`Drag ${objective.name}`}
-              className="text-text-secondary hover:bg-state-hover hover:text-text-primary flex h-8 w-8 cursor-grab items-center justify-center rounded-lg active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
-              disabled={!canEdit}
-              type="button"
-              {...attributes}
-              {...listeners}
-            >
-              <DragIcon className="h-4 w-4" />
-            </button>
-            <Select
-              disabled={!canEdit}
-              onValueChange={(value) => {
-                onAlign(objective.id, value === "__unaligned" ? null : value);
-              }}
-              value={
-                pillars.find((pillar) =>
-                  pillar.objectiveIds.includes(objective.id),
-                )?.id ?? "__unaligned"
-              }
-            >
-              <Select.Trigger
-                aria-label="Move objective"
-                className="h-8 w-auto bg-transparent px-2.5 text-[1rem]"
-                title="Move objective"
-              >
-                Move
-              </Select.Trigger>
-              <Select.Content align="end">
-                <Select.Option className="text-[1rem]" value="__unaligned">
-                  Unaligned
-                </Select.Option>
-                {pillars.map((pillar) => (
-                  <Select.Option
-                    className="text-[1rem]"
-                    key={pillar.id}
-                    value={pillar.id}
-                  >
-                    {pillar.name}
-                  </Select.Option>
-                ))}
-              </Select.Content>
-            </Select>
-          </Flex>
-        </Flex>
-
-        <Flex align="center" className="mt-4 gap-3">
-          <ProgressBar progress={progress} />
-          <Text color="muted">{progress}%</Text>
-        </Flex>
-        <Box className="mt-4">
-          <ObjectiveProperties canEdit={canEdit} objective={objective} />
-        </Box>
-      </Box>
-
-      {!isCollapsed ? <KeyResultTree objectiveId={objective.id} /> : null}
-    </div>
-  );
-};
-
-const PillarBranch = ({
-  canAdjustSpacing,
-  canEdit,
-  objectiveSpacing,
-  objectives,
-  onAlign,
-  onDelete,
-  onEdit,
-  pillar,
-  pillars,
-}: {
-  canAdjustSpacing: boolean;
-  canEdit: boolean;
-  objectiveSpacing: Record<string, number>;
-  objectives: Objective[];
-  onAlign: (objectiveId: string, pillarId: string | null) => void;
-  onDelete: (pillarId: string) => void;
-  onEdit: (pillar: StrategicPillar) => void;
-  pillar: StrategicPillar;
-  pillars: StrategicPillar[];
-}) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { isOver, setNodeRef } = useDroppable({
-    id: `${PILLAR_DROP_PREFIX}${pillar.id}`,
-    disabled: !canEdit,
-  });
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setNodeRef: setPositionNodeRef,
-    transform,
-  } = useDraggable({
-    id: `${PILLAR_POSITION_PREFIX}${pillar.id}`,
-    disabled: !canEdit || !canAdjustSpacing,
-  });
-  let objectiveTree: ReactNode = null;
-
-  if (!isCollapsed) {
-    objectiveTree = (
-      <SiblingTree
-        items={
-          objectives.length > 0
-            ? objectives.map((objective) => ({
-                id: objective.id,
-                node: (
-                  <ObjectiveBranch
-                    canEdit={canEdit}
-                    objective={objective}
-                    onAlign={onAlign}
-                    pillars={pillars}
-                  />
-                ),
-                spacingBefore: objectiveSpacing[objective.id] ?? 0,
-              }))
-            : [
-                {
-                  id: "empty",
-                  node: (
-                    <Box className="border-border w-[23rem] rounded-xl border border-dashed px-5 py-7 text-center">
-                      <Text color="muted">
-                        Drag an objective here, or use Move on a card.
-                      </Text>
-                    </Box>
-                  ),
-                },
-              ]
-        }
-      />
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "relative w-max min-w-[25rem] shrink-0 transition-colors",
-        isOver && "bg-state-hover rounded-xl",
-      )}
-      ref={setNodeRef}
-    >
-      <div
-        className={cn(
-          "mx-auto w-[23rem] transition-opacity",
-          isDragging && "opacity-60",
-        )}
-        ref={setPositionNodeRef}
-        style={{
-          transform: transform
-            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-            : undefined,
-        }}
-      >
-        <Box className="border-border bg-surface-muted/45 rounded-xl border p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <Flex align="start" className="gap-3" justify="between">
-            <Box className="min-w-0 flex-1">
-              <Flex align="center" className="gap-2">
-                <HierarchyBadge>Strategic Pillar</HierarchyBadge>
-                <CollapseButton
-                  isCollapsed={isCollapsed}
-                  label={`${isCollapsed ? "Show" : "Hide"} objectives for ${pillar.name}`}
-                  onToggle={() => {
-                    setIsCollapsed((current) => !current);
-                  }}
-                />
-              </Flex>
-              <button
-                className="mt-2 block max-w-full text-left hover:opacity-75"
-                disabled={!canEdit}
-                onClick={() => {
-                  onEdit(pillar);
-                }}
-                type="button"
-              >
-                <Text
-                  className="line-clamp-2 text-[1.1rem]"
-                  fontWeight="semibold"
-                >
-                  {pillar.name}
-                </Text>
-              </button>
-            </Box>
-            <Flex align="center" className="shrink-0 gap-1">
-              {canAdjustSpacing ? (
-                <button
-                  aria-label={`Adjust spacing before ${pillar.name}`}
-                  className="text-text-secondary hover:bg-state-hover hover:text-text-primary flex h-8 w-8 cursor-ew-resize items-center justify-center rounded-lg active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
-                  disabled={!canEdit}
-                  title="Drag horizontally to adjust branch spacing"
-                  type="button"
-                  {...attributes}
-                  {...listeners}
-                >
-                  <DragIcon className="h-4 w-4" />
-                </button>
-              ) : null}
-              <Button
-                aria-label={`Delete ${pillar.name}`}
-                asIcon
-                color="tertiary"
-                disabled={!canEdit}
-                onClick={() => {
-                  onDelete(pillar.id);
-                }}
-                rounded="md"
-                size="sm"
-                title="Delete pillar"
-                type="button"
-                variant="naked"
-              >
-                <DeleteIcon className="h-4 w-auto" />
-              </Button>
-            </Flex>
-          </Flex>
-          {pillar.description ? (
-            <Text className="mt-3 line-clamp-3" color="muted">
-              {pillar.description}
-            </Text>
-          ) : null}
-          <Flex align="center" className="mt-4 gap-2">
-            <ObjectiveIcon className="text-text-muted h-4 w-auto" />
-            <Text color="muted">
-              {objectives.length} objective{objectives.length === 1 ? "" : "s"}
-            </Text>
-          </Flex>
-        </Box>
-      </div>
-
-      {objectiveTree}
-    </div>
-  );
-};
-
-const UnalignedObjectives = ({
-  canEdit,
-  objectives,
-  onAlign,
-  pillars,
-}: {
-  canEdit: boolean;
-  objectives: Objective[];
-  onAlign: (objectiveId: string, pillarId: string | null) => void;
-  pillars: StrategicPillar[];
-}) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { isOver, setNodeRef } = useDroppable({
-    id: UNALIGNED_DROP_ID,
-    disabled: !canEdit,
-  });
-  let objectiveContent: ReactNode = null;
-
-  if (!isCollapsed) {
-    objectiveContent =
-      objectives.length > 0 ? (
-        <Box className="grid grid-cols-3 gap-5">
-          {objectives.map((objective) => (
-            <ObjectiveBranch
-              canEdit={canEdit}
-              key={objective.id}
-              objective={objective}
-              onAlign={onAlign}
-              pillars={pillars}
-            />
-          ))}
-        </Box>
-      ) : (
-        <Box className="border-border rounded-xl border border-dashed px-5 py-8 text-center">
-          <Text color="muted">There are no unaligned objectives.</Text>
-        </Box>
-      );
-  }
-
-  return (
-    <div
-      className={cn(
-        "mt-12 w-full max-w-[78rem] rounded-xl p-3 transition-colors",
-        isOver && "bg-state-hover",
-      )}
-      ref={setNodeRef}
-    >
-      <Flex align="center" className="mb-4 gap-2">
-        <CollapseButton
-          isCollapsed={isCollapsed}
-          label={`${isCollapsed ? "Show" : "Hide"} unaligned objectives`}
-          onToggle={() => {
-            setIsCollapsed((current) => !current);
-          }}
-        />
-        <Text fontWeight="semibold">Unaligned objectives</Text>
-        <Text color="muted">
-          Drag an objective here to remove its pillar alignment.
-        </Text>
-      </Flex>
-      {objectiveContent}
-    </div>
+      </g>
+    </svg>
   );
 };
 
@@ -748,6 +179,7 @@ export const StrategyMapCanvas = ({
   onDeletePillar,
   onEditPillar,
   canEdit,
+  resetSignal = 0,
   zoom,
 }: {
   strategy: StrategyMap;
@@ -758,191 +190,540 @@ export const StrategyMapCanvas = ({
   onDeletePillar: (pillarId: string) => void;
   onEditPillar: (pillar: StrategicPillar) => void;
   canEdit: boolean;
+  resetSignal?: number;
   zoom: number;
 }) => {
-  const [activeObjectiveId, setActiveObjectiveId] = useState<string | null>(
+  const { workspaceSlug } = useWorkspacePath();
+  const { data: statuses = [] } = useObjectiveStatuses();
+  const { data: teams = [] } = useTeams();
+  const updateObjective = useUpdateObjectiveMutation();
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const activeDragRef = useRef<ActiveNodeDrag | null>(null);
+  const activePanRef = useRef<ActivePan | null>(null);
+  const positionsRef = useRef<StrategyNodePositions>({});
+  const dimensionsRef = useRef<Record<string, StrategyNodeDimensions>>({});
+  const hasPositionedViewportRef = useRef(false);
+  const previousZoomRef = useRef(zoom);
+  const previousResetSignalRef = useRef(resetSignal);
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [dropTargetPillarId, setDropTargetPillarId] = useState<string | null>(
     null,
   );
-  const [isGoalCollapsed, setIsGoalCollapsed] = useState(false);
-  const [pillarSpacing, setPillarSpacing] = useState<Record<string, number>>(
-    {},
-  );
-  const [objectiveSpacing, setObjectiveSpacing] = useState<
-    Record<string, number>
+  const [isPanning, setIsPanning] = useState(false);
+  const [dimensions, setDimensions] = useState<
+    Record<string, StrategyNodeDimensions>
   >({});
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  const layout = useMemo(
+    () => createStrategyMapLayout(strategy, objectives),
+    [objectives, strategy],
   );
-  const alignedIds = new Set(
-    strategy.pillars.flatMap((pillar) => pillar.objectiveIds),
+  const storageKey = `strategy-map-layout:v${LAYOUT_STORAGE_VERSION}:${workspaceSlug}`;
+  const getStoredLayoutSnapshot = useCallback(
+    () => window.localStorage.getItem(storageKey),
+    [storageKey],
   );
-  const unaligned = objectives.filter(
-    (objective) => !alignedIds.has(objective.id),
+  const storedLayoutValue = useSyncExternalStore(
+    subscribeToStaticStorage,
+    getStoredLayoutSnapshot,
+    () => null,
   );
-  const activeObjective = objectives.find(
-    (objective) => objective.id === activeObjectiveId,
+  const storedPositions = useMemo(
+    () => parseStoredStrategyNodePositions(storedLayoutValue),
+    [storedLayoutValue],
   );
+  const [transientLayout, setTransientLayout] = useState<{
+    positions: StrategyNodePositions;
+    storageKey: string;
+  }>({ positions: {}, storageKey });
+  const positions = useMemo(() => {
+    const transientPositions =
+      transientLayout.storageKey === storageKey
+        ? transientLayout.positions
+        : {};
 
-  const handleDragStart = ({ active }: DragStartEvent) => {
-    const activeId = active.id.toString();
-    if (!activeId.startsWith(PILLAR_POSITION_PREFIX)) {
-      setActiveObjectiveId(activeId);
-    }
-  };
-
-  const handleDragEnd = ({ active, delta, over }: DragEndEvent) => {
-    setActiveObjectiveId(null);
-    if (!canEdit) return;
-
-    const objectiveId = active.id.toString();
-    if (objectiveId.startsWith(PILLAR_POSITION_PREFIX)) {
-      const pillarId = objectiveId.slice(PILLAR_POSITION_PREFIX.length);
-      setPillarSpacing((current) => ({
-        ...current,
-        [pillarId]: Math.max(
-          0,
-          Math.min(MAX_PILLAR_SPACING, (current[pillarId] ?? 0) + delta.x),
-        ),
-      }));
-      return;
-    }
-
-    if (!over) return;
-
-    const destination = over.id.toString();
-    const currentPillarId =
-      strategy.pillars.find((pillar) =>
-        pillar.objectiveIds.includes(objectiveId),
-      )?.id ?? null;
-    let nextPillarId: string | null | undefined;
-
-    if (destination.startsWith(PILLAR_DROP_PREFIX)) {
-      nextPillarId = destination.slice(PILLAR_DROP_PREFIX.length);
-    } else if (destination === UNALIGNED_DROP_ID) {
-      nextPillarId = null;
-    }
-
-    if (nextPillarId === currentPillarId) {
-      if (currentPillarId && Math.abs(delta.x) > 12) {
-        setObjectiveSpacing((current) => ({
-          ...current,
-          [objectiveId]: Math.max(
+    return mergeStrategyNodePositions(layout.positions, {
+      ...storedPositions,
+      ...transientPositions,
+    });
+  }, [layout.positions, storageKey, storedPositions, transientLayout]);
+  const objectiveIds = useMemo(
+    () => new Set(objectives.map((objective) => objective.id)),
+    [objectives],
+  );
+  const objectiveById = useMemo(
+    () => new Map(objectives.map((objective) => [objective.id, objective])),
+    [objectives],
+  );
+  const statusById = useMemo(
+    () => new Map(statuses.map((status) => [status.id, status])),
+    [statuses],
+  );
+  const teamCodeById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team.code])),
+    [teams],
+  );
+  const pillarByObjectiveId = useMemo(() => {
+    const result = new Map<string, string>();
+    strategy.pillars.forEach((pillar) => {
+      pillar.objectiveIds.forEach((objectiveId) => {
+        result.set(objectiveId, pillar.id);
+      });
+    });
+    return result;
+  }, [strategy.pillars]);
+  const averageProgress =
+    objectives.length > 0
+      ? Math.round(
+          objectives.reduce(
+            (total, objective) => total + getObjectiveProgress(objective),
             0,
-            Math.min(
-              MAX_OBJECTIVE_SPACING,
-              (current[objectiveId] ?? 0) + delta.x,
-            ),
-          ),
-        }));
+          ) / objectives.length,
+        )
+      : 0;
+
+  useLayoutEffect(() => {
+    positionsRef.current = positions;
+  }, [positions]);
+
+  const renderedNodeIds = useMemo(() => {
+    const ids = [
+      GOAL_NODE_ID,
+      ...strategy.pillars.map((pillar) => getPillarNodeId(pillar.id)),
+    ];
+    objectives.forEach((objective) => {
+      if (showUnaligned || pillarByObjectiveId.has(objective.id)) {
+        ids.push(getObjectiveNodeId(objective.id));
       }
+    });
+    return ids.join("|");
+  }, [objectives, pillarByObjectiveId, showUnaligned, strategy.pillars]);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const measureNodes = () => {
+      const nextDimensions: Record<string, StrategyNodeDimensions> = {};
+      canvas.querySelectorAll<HTMLElement>("[data-node-id]").forEach((node) => {
+        const nodeId = node.dataset.nodeId;
+        if (!nodeId) return;
+        nextDimensions[nodeId] = {
+          height: node.offsetHeight,
+          width: node.offsetWidth,
+        };
+      });
+      dimensionsRef.current = nextDimensions;
+      setDimensions(nextDimensions);
+    };
+
+    measureNodes();
+    const observer = new ResizeObserver(measureNodes);
+    canvas.querySelectorAll<HTMLElement>("[data-node-id]").forEach((node) => {
+      observer.observe(node);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [renderedNodeIds]);
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const shouldReset =
+      !hasPositionedViewportRef.current ||
+      previousResetSignalRef.current !== resetSignal;
+    previousResetSignalRef.current = resetSignal;
+    if (!shouldReset) return;
+
+    viewport.scrollLeft = Math.max(
+      0,
+      (layout.width * zoom - viewport.clientWidth) / 2,
+    );
+    viewport.scrollTop = 0;
+    hasPositionedViewportRef.current = true;
+  }, [layout.width, resetSignal, zoom]);
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const previousZoom = previousZoomRef.current;
+    previousZoomRef.current = zoom;
+    if (
+      !viewport ||
+      previousZoom === zoom ||
+      !hasPositionedViewportRef.current
+    ) {
       return;
     }
 
-    if (nextPillarId === undefined) return;
-    setObjectiveSpacing((current) => ({ ...current, [objectiveId]: 0 }));
-    onAlign(objectiveId, nextPillarId);
+    const ratio = zoom / previousZoom;
+    viewport.scrollLeft =
+      (viewport.scrollLeft + viewport.clientWidth / 2) * ratio -
+      viewport.clientWidth / 2;
+    viewport.scrollTop =
+      (viewport.scrollTop + viewport.clientHeight / 2) * ratio -
+      viewport.clientHeight / 2;
+  }, [zoom]);
+
+  const persistPositions = useCallback(() => {
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify(positionsRef.current),
+      );
+    } catch {
+      // The canvas remains usable if storage is unavailable or full.
+    }
+  }, [storageKey]);
+
+  const getPointerWorldPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return null;
+      const bounds = viewport.getBoundingClientRect();
+      return {
+        x: (clientX - bounds.left + viewport.scrollLeft) / zoom,
+        y: (clientY - bounds.top + viewport.scrollTop) / zoom,
+      };
+    },
+    [zoom],
+  );
+
+  const getPillarAtPointer = useCallback(
+    (clientX: number, clientY: number) => {
+      const pointer = getPointerWorldPosition(clientX, clientY);
+      if (!pointer) return null;
+
+      return (
+        strategy.pillars.find((pillar) => {
+          const nodeId = getPillarNodeId(pillar.id);
+          const position = positionsRef.current[nodeId];
+          const nodeDimensions =
+            dimensionsRef.current[nodeId] ?? getDefaultNodeDimensions(nodeId);
+
+          return (
+            pointer.x >= position.x &&
+            pointer.x <= position.x + nodeDimensions.width &&
+            pointer.y >= position.y &&
+            pointer.y <= position.y + nodeDimensions.height
+          );
+        })?.id ?? null
+      );
+    },
+    [getPointerWorldPosition, strategy.pillars],
+  );
+
+  const handleNodePointerDown = useCallback(
+    (nodeId: string, event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0 || isInteractiveTarget(event.target)) return;
+      const startPosition = positionsRef.current[nodeId];
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      activeDragRef.current = {
+        id: nodeId,
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startPosition,
+      };
+      setDraggingNodeId(nodeId);
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+    },
+    [],
+  );
+
+  const handleNodePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const drag = activeDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const nodeDimensions =
+        dimensionsRef.current[drag.id] ?? getDefaultNodeDimensions(drag.id);
+      const nextPosition = {
+        x: Math.max(
+          CANVAS_INSET,
+          Math.min(
+            layout.width - nodeDimensions.width - CANVAS_INSET,
+            drag.startPosition.x + (event.clientX - drag.startClientX) / zoom,
+          ),
+        ),
+        y: Math.max(
+          CANVAS_INSET,
+          Math.min(
+            layout.height - nodeDimensions.height - CANVAS_INSET,
+            drag.startPosition.y + (event.clientY - drag.startClientY) / zoom,
+          ),
+        ),
+      };
+      const nextPositions = {
+        ...positionsRef.current,
+        [drag.id]: nextPosition,
+      };
+      positionsRef.current = nextPositions;
+      setTransientLayout({ positions: nextPositions, storageKey });
+
+      if (drag.id.startsWith("objective:")) {
+        const nextDropTarget = getPillarAtPointer(event.clientX, event.clientY);
+        setDropTargetPillarId((current) =>
+          current === nextDropTarget ? current : nextDropTarget,
+        );
+      }
+    },
+    [getPillarAtPointer, layout.height, layout.width, storageKey, zoom],
+  );
+
+  const finishNodeDrag = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>, shouldAlign: boolean) => {
+      const drag = activeDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      if (shouldAlign && drag.id.startsWith("objective:")) {
+        const objectiveId = drag.id.slice("objective:".length);
+        const targetPillarId = getPillarAtPointer(event.clientX, event.clientY);
+        if (
+          targetPillarId &&
+          pillarByObjectiveId.get(objectiveId) !== targetPillarId
+        ) {
+          onAlign(objectiveId, targetPillarId);
+        }
+      }
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      activeDragRef.current = null;
+      setDraggingNodeId(null);
+      setDropTargetPillarId(null);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      persistPositions();
+    },
+    [getPillarAtPointer, onAlign, persistPositions, pillarByObjectiveId],
+  );
+
+  const handleObjectiveUpdate = useCallback(
+    (objectiveId: string, data: ObjectiveUpdate) => {
+      updateObjective.mutate({ objectiveId, data });
+    },
+    [updateObjective],
+  );
+
+  const handleViewportPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (
+      event.button !== 0 ||
+      (event.target instanceof HTMLElement &&
+        event.target.closest("[data-node-id], [data-canvas-control]"))
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    activePanRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startScrollLeft: event.currentTarget.scrollLeft,
+      startScrollTop: event.currentTarget.scrollTop,
+    };
+    setIsPanning(true);
   };
+
+  const handleViewportPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const pan = activePanRef.current;
+    if (!pan || pan.pointerId !== event.pointerId) return;
+    event.currentTarget.scrollLeft =
+      pan.startScrollLeft - (event.clientX - pan.startClientX);
+    event.currentTarget.scrollTop =
+      pan.startScrollTop - (event.clientY - pan.startClientY);
+  };
+
+  const handleViewportPointerUp = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const pan = activePanRef.current;
+    if (!pan || pan.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    activePanRef.current = null;
+    setIsPanning(false);
+  };
+
+  useEffect(
+    () => () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    },
+    [],
+  );
 
   return (
-    <DndContext
-      onDragCancel={() => {
-        setActiveObjectiveId(null);
-      }}
-      onDragEnd={handleDragEnd}
-      onDragStart={handleDragStart}
-      sensors={sensors}
-    >
-      <Box className="bg-surface-muted/20 relative h-full overflow-auto">
-        <Box
-          className="min-w-max origin-top-left p-10 transition-transform"
-          style={{ transform: `scale(${zoom})`, width: `${100 / zoom}%` }}
+    <Box className="relative h-full overflow-hidden">
+      <div
+        className={cn(
+          "bg-surface-muted/20 dark:bg-surface-elevated/35 h-full overflow-auto overscroll-none",
+          isPanning ? "cursor-grabbing" : "cursor-grab",
+        )}
+        onPointerCancel={handleViewportPointerUp}
+        onPointerDown={handleViewportPointerDown}
+        onPointerMove={handleViewportPointerMove}
+        onPointerUp={handleViewportPointerUp}
+        ref={viewportRef}
+        style={{ touchAction: "none" }}
+      >
+        <div
+          className="relative"
+          style={{
+            height: layout.height * zoom,
+            width: layout.width * zoom,
+          }}
         >
-          <Flex align="center" direction="column">
-            <Box className="border-border bg-background w-[34rem] max-w-[calc(100vw-5rem)] rounded-xl border px-6 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <Flex align="start" className="gap-4" justify="between">
-                <button
-                  className="min-w-0 flex-1 text-left hover:opacity-75"
-                  disabled={!canEdit}
-                  onClick={onEditGoal}
-                  type="button"
-                >
-                  <HierarchyBadge>Ultimate Goal</HierarchyBadge>
-                  <Text className="mt-3 text-xl" fontWeight="semibold">
-                    {strategy.ultimateGoal || "Define your ultimate goal"}
-                  </Text>
-                  <Text className="mt-2" color="muted">
-                    {strategy.description ||
-                      "Describe the long-term outcome that every pillar should support."}
-                  </Text>
-                </button>
-                <CollapseButton
-                  isCollapsed={isGoalCollapsed}
-                  label={`${isGoalCollapsed ? "Show" : "Hide"} strategic pillars`}
-                  onToggle={() => {
-                    setIsGoalCollapsed((current) => !current);
+          <div
+            className="bg-surface-muted/15 dark:bg-surface-elevated/25 absolute top-0 left-0 origin-top-left"
+            ref={canvasRef}
+            style={{
+              backgroundImage:
+                "radial-gradient(var(--color-border-strong) 1.15px, transparent 1.15px)",
+              backgroundSize: "22px 22px",
+              height: layout.height,
+              transform: `scale(${zoom})`,
+              width: layout.width,
+            }}
+          >
+            <CanvasConnections
+              dimensions={dimensions}
+              objectiveIds={objectiveIds}
+              positions={positions}
+              strategy={strategy}
+            />
+
+            <StrategyCanvasNode
+              id={GOAL_NODE_ID}
+              isDragging={draggingNodeId === GOAL_NODE_ID}
+              onPointerDown={handleNodePointerDown}
+              onPointerMove={handleNodePointerMove}
+              onPointerUp={(event) => {
+                finishNodeDrag(event, event.type !== "pointercancel");
+              }}
+              position={
+                positions[GOAL_NODE_ID] ?? layout.positions[GOAL_NODE_ID]
+              }
+            >
+              <UltimateGoalNodeCard
+                averageProgress={averageProgress}
+                canEdit={canEdit}
+                description={strategy.description}
+                objectiveCount={objectives.length}
+                onEdit={onEditGoal}
+                pillarCount={strategy.pillars.length}
+                title={strategy.ultimateGoal}
+              />
+            </StrategyCanvasNode>
+
+            {strategy.pillars.map((pillar) => {
+              const nodeId = getPillarNodeId(pillar.id);
+              const alignedObjectiveCount = pillar.objectiveIds.filter((id) =>
+                objectiveById.has(id),
+              ).length;
+              return (
+                <StrategyCanvasNode
+                  id={nodeId}
+                  isDragging={draggingNodeId === nodeId}
+                  key={pillar.id}
+                  onPointerDown={handleNodePointerDown}
+                  onPointerMove={handleNodePointerMove}
+                  onPointerUp={(event) => {
+                    finishNodeDrag(event, event.type !== "pointercancel");
                   }}
-                />
-              </Flex>
-            </Box>
-
-            {!isGoalCollapsed ? (
-              <>
-                {strategy.pillars.length > 0 ? (
-                  <SiblingTree
-                    items={strategy.pillars.map((pillar, index) => ({
-                      id: pillar.id,
-                      node: (
-                        <PillarBranch
-                          canAdjustSpacing={index > 0}
-                          canEdit={canEdit}
-                          objectiveSpacing={objectiveSpacing}
-                          objectives={objectives.filter((objective) =>
-                            pillar.objectiveIds.includes(objective.id),
-                          )}
-                          onAlign={onAlign}
-                          onDelete={onDeletePillar}
-                          onEdit={onEditPillar}
-                          pillar={pillar}
-                          pillars={strategy.pillars}
-                        />
-                      ),
-                      spacingBefore: pillarSpacing[pillar.id] ?? 0,
-                    }))}
-                  />
-                ) : (
-                  <>
-                    <span aria-hidden className="bg-border h-8 w-px shrink-0" />
-                    <Box className="border-border w-[34rem] rounded-xl border border-dashed px-8 py-10 text-center">
-                      <Text fontWeight="medium">
-                        Add the strategic pillars that make the goal achievable.
-                      </Text>
-                    </Box>
-                  </>
-                )}
-
-                {showUnaligned ? (
-                  <UnalignedObjectives
+                  position={positions[nodeId] ?? layout.positions[nodeId]}
+                >
+                  <PillarNodeCard
                     canEdit={canEdit}
-                    objectives={unaligned}
-                    onAlign={onAlign}
-                    pillars={strategy.pillars}
+                    description={pillar.description}
+                    isDropTarget={dropTargetPillarId === pillar.id}
+                    name={pillar.name}
+                    objectiveCount={alignedObjectiveCount}
+                    onDelete={() => {
+                      onDeletePillar(pillar.id);
+                    }}
+                    onEdit={() => {
+                      onEditPillar(pillar);
+                    }}
                   />
-                ) : null}
-              </>
+                </StrategyCanvasNode>
+              );
+            })}
+
+            {strategy.pillars.length === 0 ? (
+              <Box
+                className="border-border text-text-muted absolute rounded-xl border-2 border-dashed px-8 py-7 text-center"
+                style={{
+                  left: (layout.width - GOAL_NODE_WIDTH) / 2,
+                  top: 340,
+                  width: GOAL_NODE_WIDTH,
+                }}
+              >
+                <Text fontWeight="medium">
+                  Add a strategic pillar to start building the map.
+                </Text>
+              </Box>
             ) : null}
-          </Flex>
-        </Box>
-      </Box>
-      <DragOverlay>
-        {activeObjective ? (
-          <Box className="border-border bg-surface w-[23rem] rounded-xl border px-4 py-3 shadow-xl">
-            <HierarchyBadge>Objective</HierarchyBadge>
-            <Text className="mt-2 line-clamp-2" fontWeight="semibold">
-              {activeObjective.name}
-            </Text>
-          </Box>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+
+            {objectives.map((objective) => {
+              const currentPillarId =
+                pillarByObjectiveId.get(objective.id) ?? null;
+              if (!showUnaligned && !currentPillarId) return null;
+              const nodeId = getObjectiveNodeId(objective.id);
+              return (
+                <StrategyCanvasNode
+                  id={nodeId}
+                  isDragging={draggingNodeId === nodeId}
+                  key={objective.id}
+                  onPointerDown={handleNodePointerDown}
+                  onPointerMove={handleNodePointerMove}
+                  onPointerUp={(event) => {
+                    finishNodeDrag(event, event.type !== "pointercancel");
+                  }}
+                  position={positions[nodeId] ?? layout.positions[nodeId]}
+                >
+                  <ObjectiveNodeCard
+                    canEdit={canEdit}
+                    currentPillarId={currentPillarId}
+                    objective={objective}
+                    onAlign={onAlign}
+                    onUpdate={handleObjectiveUpdate}
+                    pillars={strategy.pillars}
+                    status={statusById.get(objective.statusId)}
+                    statuses={statuses}
+                    teamCode={teamCodeById.get(objective.teamId)}
+                  />
+                </StrategyCanvasNode>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Flex
+        align="center"
+        className="border-border bg-surface/90 text-text-muted pointer-events-none absolute bottom-4 left-1/2 z-40 -translate-x-1/2 gap-2 rounded-lg border px-3.5 py-2 text-sm shadow-lg backdrop-blur"
+        data-canvas-control
+      >
+        <span>Drag cards to position</span>
+        <span aria-hidden>·</span>
+        <span>Drag the canvas to pan</span>
+        <span aria-hidden>·</span>
+        <span>Right-click for actions</span>
+      </Flex>
+    </Box>
   );
 };

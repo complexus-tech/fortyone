@@ -9,7 +9,7 @@ import {
   ArrowRightIcon,
   InvitesIcon,
   ArrowRight2Icon,
-  NewTabIcon,
+  ExternalLinkIcon,
 } from "icons";
 import Link from "next/link";
 import { useTheme } from "next-themes";
@@ -192,7 +192,7 @@ export const ProfileMenu = () => {
                   rel="noreferrer"
                   target="_blank"
                 >
-                  <NewTabIcon className="h-[1.15rem]" />
+                  <ExternalLinkIcon className="h-[1.15rem]" />
                   Admin dashboard
                 </a>
               </Menu.Item>

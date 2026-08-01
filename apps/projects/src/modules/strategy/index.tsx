@@ -31,6 +31,7 @@ export const WorkspaceStrategyMapPage = () => {
     null,
   );
   const [zoom, setZoom] = useState(1);
+  const [resetSignal, setResetSignal] = useState(0);
   const showUnaligned = true;
   const isGuest = userRole === "guest";
 
@@ -53,26 +54,30 @@ export const WorkspaceStrategyMapPage = () => {
         <Flex align="center" className="gap-2">
           <Flex
             align="center"
-            className="border-border overflow-hidden rounded-lg border"
+            className="border-border bg-surface/80 dark:bg-surface/70 overflow-hidden rounded-lg border backdrop-blur"
           >
             <button
               aria-label="Zoom out"
               className="hover:bg-state-hover grid h-8 w-9 place-items-center"
               onClick={() => {
-                setZoom((value) => Math.max(0.75, value - 0.1));
+                setZoom((value) =>
+                  Math.max(0.5, Number((value - 0.1).toFixed(2))),
+                );
               }}
               type="button"
             >
               <MinusIcon className="h-4 w-4" />
             </button>
-            <Text className="border-border min-w-14 border-x text-center">
+            <Text className="border-border min-w-14 border-x text-center tabular-nums">
               {Math.round(zoom * 100)}%
             </Text>
             <button
               aria-label="Zoom in"
               className="hover:bg-state-hover grid h-8 w-9 place-items-center"
               onClick={() => {
-                setZoom((value) => Math.min(1.25, value + 0.1));
+                setZoom((value) =>
+                  Math.min(1.6, Number((value + 0.1).toFixed(2))),
+                );
               }}
               type="button"
             >
@@ -82,6 +87,7 @@ export const WorkspaceStrategyMapPage = () => {
               className="border-border hover:bg-state-hover h-8 border-l px-3 font-medium"
               onClick={() => {
                 setZoom(1);
+                setResetSignal((value) => value + 1);
               }}
               type="button"
             >
@@ -121,6 +127,7 @@ export const WorkspaceStrategyMapPage = () => {
             onEditPillar={(pillar) => {
               if (!isGuest) setPillarToEdit(pillar);
             }}
+            resetSignal={resetSignal}
             showUnaligned={showUnaligned}
             strategy={strategy}
             zoom={zoom}
@@ -201,12 +208,12 @@ export const WorkspaceStrategyMapPage = () => {
       >
         <Dialog.Content>
           <Dialog.Header>
-            <Dialog.Title className="px-6 pt-0.5 text-lg">
+            <Dialog.Title className="px-6 pt-0.5 text-xl">
               Delete strategic pillar?
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body>
-            <Text color="muted">
+            <Text className="text-[1rem] leading-6" color="muted">
               Objectives connected to this pillar will move to the unaligned
               section. The objectives and their key results will not be deleted.
             </Text>
