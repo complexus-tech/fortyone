@@ -22,12 +22,42 @@ const useStrategyContext = () => {
   return { session, workspaceSlug };
 };
 
+const handleStrategyError = (error: Error) =>
+  toast.error("Strategy could not be updated", {
+    description: error.message,
+  });
+
 export const useStrategyMap = () => {
   const { session, workspaceSlug } = useStrategyContext();
   return useQuery({
     queryKey: strategyKeys.map(workspaceSlug),
     queryFn: () => getStrategyMap({ session: session!, workspaceSlug }),
     enabled: Boolean(session && workspaceSlug),
+  });
+};
+
+export const useAlignObjectiveMutation = () => {
+  const queryClient = useQueryClient();
+  const { session, workspaceSlug } = useStrategyContext();
+  const ctx = { session: session!, workspaceSlug };
+
+  return useMutation({
+    mutationFn: ({
+      objectiveId,
+      pillarId,
+    }: {
+      objectiveId: string;
+      pillarId: string | null;
+    }) => alignObjective(objectiveId, pillarId, ctx),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: strategyKeys.map(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
+    },
+    onError: handleStrategyError,
   });
 };
 
@@ -39,23 +69,20 @@ export const useStrategyMutations = () => {
     queryClient.invalidateQueries({
       queryKey: strategyKeys.map(workspaceSlug),
     });
-  const handleError = (error: Error) =>
-    toast.error("Strategy could not be updated", {
-      description: error.message,
-    });
+  const alignObjectiveMutation = useAlignObjectiveMutation();
 
   return {
     updateStrategy: useMutation({
       mutationFn: (data: Parameters<typeof updateStrategy>[0]) =>
         updateStrategy(data, ctx),
       onSuccess: refresh,
-      onError: handleError,
+      onError: handleStrategyError,
     }),
     createPillar: useMutation({
       mutationFn: (data: Parameters<typeof createStrategicPillar>[0]) =>
         createStrategicPillar(data, ctx),
       onSuccess: refresh,
-      onError: handleError,
+      onError: handleStrategyError,
     }),
     updatePillar: useMutation({
       mutationFn: ({
@@ -66,28 +93,13 @@ export const useStrategyMutations = () => {
         data: Parameters<typeof updateStrategicPillar>[1];
       }) => updateStrategicPillar(pillarId, data, ctx),
       onSuccess: refresh,
-      onError: handleError,
+      onError: handleStrategyError,
     }),
     deletePillar: useMutation({
       mutationFn: (pillarId: string) => deleteStrategicPillar(pillarId, ctx),
       onSuccess: refresh,
-      onError: handleError,
+      onError: handleStrategyError,
     }),
-    alignObjective: useMutation({
-      mutationFn: ({
-        objectiveId,
-        pillarId,
-      }: {
-        objectiveId: string;
-        pillarId: string | null;
-      }) => alignObjective(objectiveId, pillarId, ctx),
-      onSuccess: () => {
-        refresh();
-        queryClient.invalidateQueries({
-          queryKey: objectiveKeys.list(workspaceSlug),
-        });
-      },
-      onError: handleError,
-    }),
+    alignObjective: alignObjectiveMutation,
   };
 };

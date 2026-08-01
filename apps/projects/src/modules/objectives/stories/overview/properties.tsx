@@ -9,6 +9,7 @@ import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useMediaQuery } from "@/hooks";
 import { hexToRgba } from "@/utils";
+import { ObjectivePillarProperty } from "@/modules/strategy/objective-pillar-property";
 import type { ObjectiveUpdate } from "../../types";
 import {
   useCanUpdateObjective,
@@ -41,6 +42,10 @@ export const Properties = () => {
       <Text className="hidden md:block" color="muted" fontWeight="semibold">
         Properties:
       </Text>
+      <ObjectivePillarProperty
+        objectiveId={objectiveId}
+        variant={isMobile ? "solid" : "naked"}
+      />
       <ObjectiveStatusesMenu>
         <ObjectiveStatusesMenu.Trigger>
           <Button

@@ -14,7 +14,6 @@ import {
   type SelectedStrategyNode,
 } from "./strategy-selected-details";
 import { useStrategyMap, useStrategyMutations } from "./hooks";
-import type { StrategicPillar } from "./types";
 
 export const WorkspaceStrategyMapPage = () => {
   const { userRole } = useUserRole();
@@ -28,12 +27,8 @@ export const WorkspaceStrategyMapPage = () => {
     alignObjective,
     deletePillar,
   } = useStrategyMutations();
-  const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [isPillarOpen, setIsPillarOpen] = useState(false);
   const [pillarToDelete, setPillarToDelete] = useState<string | null>(null);
-  const [pillarToEdit, setPillarToEdit] = useState<StrategicPillar | null>(
-    null,
-  );
   const [selectedNode, setSelectedNode] = useState<SelectedStrategyNode | null>(
     null,
   );
@@ -44,7 +39,7 @@ export const WorkspaceStrategyMapPage = () => {
 
   return (
     <>
-      <HeaderContainer className="justify-between">
+      <HeaderContainer className="bg-surface-muted/20 dark:bg-surface-elevated/20 justify-between backdrop-blur-xl">
         <Flex gap={2}>
           <MobileMenuButton />
           <BreadCrumbs
@@ -128,12 +123,6 @@ export const WorkspaceStrategyMapPage = () => {
             onDeletePillar={(pillarId) => {
               if (!isGuest) setPillarToDelete(pillarId);
             }}
-            onEditGoal={() => {
-              if (!isGuest) setIsGoalOpen(true);
-            }}
-            onEditPillar={(pillar) => {
-              if (!isGuest) setPillarToEdit(pillar);
-            }}
             onSelectGoal={() => {
               setSelectedNode({ type: "goal" });
             }}
@@ -178,25 +167,6 @@ export const WorkspaceStrategyMapPage = () => {
       </Box>
 
       <StrategyEditorDialog
-        initialDescription={strategy?.description}
-        initialName={strategy?.ultimateGoal}
-        isOpen={isGoalOpen}
-        isPending={updateStrategy.isPending}
-        nameLabel="Ultimate goal"
-        onOpenChange={setIsGoalOpen}
-        onSave={(ultimateGoal, description) => {
-          updateStrategy.mutate(
-            { ultimateGoal, description },
-            {
-              onSuccess: () => {
-                setIsGoalOpen(false);
-              },
-            },
-          );
-        }}
-        title="Edit ultimate goal"
-      />
-      <StrategyEditorDialog
         isOpen={isPillarOpen}
         isPending={createPillar.isPending}
         nameLabel="Pillar name"
@@ -216,31 +186,6 @@ export const WorkspaceStrategyMapPage = () => {
           );
         }}
         title="Add strategic pillar"
-      />
-      <StrategyEditorDialog
-        initialDescription={pillarToEdit?.description}
-        initialName={pillarToEdit?.name}
-        isOpen={Boolean(pillarToEdit)}
-        isPending={updatePillar.isPending}
-        nameLabel="Pillar name"
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setPillarToEdit(null);
-        }}
-        onSave={(name, description) => {
-          if (!pillarToEdit) return;
-          updatePillar.mutate(
-            {
-              pillarId: pillarToEdit.id,
-              data: { name, description },
-            },
-            {
-              onSuccess: () => {
-                setPillarToEdit(null);
-              },
-            },
-          );
-        }}
-        title="Edit strategic pillar"
       />
       <Dialog
         onOpenChange={(isOpen) => {

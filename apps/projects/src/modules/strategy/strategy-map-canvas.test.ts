@@ -45,7 +45,7 @@ describe("StrategyMapCanvas", () => {
     expect(source).toContain("PillarNodeCard");
     expect(source).toContain("ObjectiveNodeCard");
     expect(cardSource).toContain("ObjectiveKeyResults");
-    expect(cardSource).toContain("OKRIcon");
+    expect(cardSource).not.toContain("OKRIcon");
     expect(cardSource).toContain("CircleProgressBar");
     expect(cardSource).toContain("ObjectiveStatusesMenu");
     expect(cardSource).toContain("PrioritiesMenu");
@@ -93,7 +93,9 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("[&_circle:first-child]:stroke-danger");
     expect(cardSource).not.toContain("min-h-[2.8rem]");
     expect(cardSource).not.toContain("hover:bg-danger/10");
+    expect(cardSource).toContain("dark:bg-surface-elevated/55");
     expect(canvasSource).toContain("dark:bg-surface-elevated/35");
+    expect(pageSource).toContain("dark:bg-surface-elevated/20");
     expect(pageSource).not.toContain("shadow-sm");
   });
 
@@ -147,7 +149,18 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("data-card-select");
     expect(cardSource).not.toContain("hover:opacity-75");
     expect(detailsSource).toContain("border-0 bg-transparent");
-    expect(detailsSource).toContain("Save changes");
+    expect(detailsSource).toContain("useDebouncedCallback");
+    expect(detailsSource).toContain("AUTOSAVE_DELAY = 1000");
+    expect(detailsSource).toContain("flushOnUnmount: true");
+    expect(detailsSource).toContain("onBlur={flushSave}");
+    expect(detailsSource).not.toContain("Save changes");
+    expect(pageSource).not.toContain('title="Edit ultimate goal"');
+    expect(pageSource).not.toContain('title="Edit strategic pillar"');
+    expect(canvasSource).not.toContain("onEditGoal");
+    expect(canvasSource).not.toContain("onEditPillar");
+    expect(detailsSource.indexOf('className="mb-3 gap-5"')).toBeLessThan(
+      detailsSource.indexOf("<Input"),
+    );
   });
 
   it("uses a right-aligned chevron for key-result expansion", () => {
@@ -158,5 +171,49 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("justify-between gap-1");
     expect(cardSource).toContain('isExpanded && "rotate-90"');
     expect(cardSource).not.toContain("ArrowDownIcon");
+    expect(cardSource).toContain("space-y-4");
+    expect(cardSource).toContain("text-foreground line-clamp-2 text-base");
+    expect(cardSource).toContain("<Tooltip");
+    expect(cardSource).toContain("delayDuration={300}");
+    expect(cardSource).toContain("size={16}");
+    expect(cardSource).not.toContain("text-foreground/75");
+  });
+
+  it("keeps the goal label prominent and pillar content compact", () => {
+    const cardSource = readSource(
+      "src/modules/strategy/strategy-map-cards.tsx",
+    );
+
+    expect(cardSource).toContain(
+      'className="text-text-primary text-[0.74rem] font-bold"',
+    );
+    expect(cardSource).not.toContain('aria-label="Edit ultimate goal"');
+    expect(cardSource).toContain('className="mt-1 w-full text-left"');
+    expect(cardSource).toContain("mt-1 line-clamp-3 leading-5");
+    expect(cardSource).toContain('className="mt-2 gap-2"');
+    expect(cardSource).toContain("text-[0.75rem]");
+  });
+
+  it("shares pillar alignment across objective property surfaces", () => {
+    const pillarPropertySource = readSource(
+      "src/modules/strategy/objective-pillar-property.tsx",
+    );
+    const objectivePropertiesSource = readSource(
+      "src/modules/objectives/stories/overview/properties.tsx",
+    );
+    const roadmapPropertiesSource = readSource(
+      "src/modules/roadmap/components/objective-details-properties.tsx",
+    );
+
+    expect(pillarPropertySource).toContain("useStrategyMap");
+    expect(pillarPropertySource).toContain("useAlignObjectiveMutation");
+    expect(pillarPropertySource).toContain(
+      "if (pillars.length === 0) return null",
+    );
+    expect(pillarPropertySource).toContain("Align to pillar");
+    expect(pillarPropertySource).not.toContain("Add to pillar");
+    expect(pillarPropertySource).toContain("Remove pillar alignment");
+    expect(objectivePropertiesSource).toContain("ObjectivePillarProperty");
+    expect(roadmapPropertiesSource).toContain("ObjectivePillarProperty");
   });
 });

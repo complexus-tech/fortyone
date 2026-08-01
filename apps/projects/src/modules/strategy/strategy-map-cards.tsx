@@ -11,7 +11,6 @@ import {
   EditIcon,
   ExternalLinkIcon,
   ObjectiveIcon,
-  OKRIcon,
   UnlinkIcon,
 } from "icons";
 import { cn } from "lib";
@@ -24,6 +23,7 @@ import {
   DatePicker,
   Flex,
   Text,
+  Tooltip,
 } from "ui";
 import {
   AssigneesMenu,
@@ -100,7 +100,7 @@ const getProgressTrackClassName = (progress: number) => {
 };
 
 const cardClasses = cn(
-  "border-border-strong/65 bg-white shadow-shadow dark:border-border-strong/80 dark:bg-surface",
+  "border-border-strong/65 bg-white shadow-shadow dark:border-border-strong/80 dark:bg-surface-elevated/55",
   "rounded-[14px] border-2 shadow-lg backdrop-blur",
   "transition-[border-color,box-shadow,background-color] duration-150",
   "hover:border-foreground/35 hover:bg-surface-elevated hover:shadow-xl",
@@ -150,7 +150,7 @@ const Metric = ({
       {value}
     </Text>
     <Text
-      className="mt-0.5 truncate text-[0.68rem] tracking-[0.1em] uppercase"
+      className="mt-0.5 truncate text-[0.75rem] tracking-[0.1em] uppercase"
       color="muted"
     >
       {label}
@@ -184,18 +184,7 @@ export const UltimateGoalNodeCard = memo(
           className={cn(cardClasses, "relative px-7 py-6 text-center")}
           style={{ width: GOAL_NODE_WIDTH }}
         >
-          {canEdit ? (
-            <button
-              aria-label="Edit ultimate goal"
-              className="text-text-muted hover:bg-state-hover hover:text-text-primary absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-lg opacity-0 transition-opacity group-hover/node:opacity-100 focus-visible:opacity-100"
-              data-no-drag
-              onClick={onEdit}
-              type="button"
-            >
-              <EditIcon className="h-4 w-4" />
-            </button>
-          ) : null}
-          <NodeEyebrow className="text-text-primary font-semibold">
+          <NodeEyebrow className="text-text-primary text-[0.74rem] font-bold">
             ◆ Ultimate goal
           </NodeEyebrow>
           <button
@@ -278,7 +267,7 @@ export const PillarNodeCard = memo(
             Strategic pillar
           </NodeEyebrow>
           <button
-            className="mt-2 w-full text-left"
+            className="mt-1 w-full text-left"
             data-card-select
             onClick={(event) => {
               if (event.detail === 0) onOpenDetails();
@@ -290,11 +279,11 @@ export const PillarNodeCard = memo(
             </Text>
           </button>
           {description ? (
-            <Text className="mt-2 line-clamp-3 leading-5" color="muted">
+            <Text className="mt-1 line-clamp-3 leading-5" color="muted">
               {description}
             </Text>
           ) : null}
-          <Flex align="center" className="mt-4 gap-2">
+          <Flex align="center" className="mt-2 gap-2">
             <ObjectiveIcon className="text-text-muted h-4 w-4" />
             <Text color="muted">
               {objectiveCount} objective{objectiveCount === 1 ? "" : "s"}
@@ -361,36 +350,55 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
         />
       </button>
       {isExpanded ? (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-3 space-y-4">
           {keyResults.map((keyResult) => {
             const progress = getKeyResultProgress(keyResult);
             return (
-              <li className="flex items-start gap-2.5" key={keyResult.id}>
-                <OKRIcon
-                  className="text-text-muted mt-0.5 h-4 w-4 shrink-0"
-                  strokeWidth={2.5}
-                />
-                <Box className="min-w-0 flex-1">
-                  <Text
-                    className="line-clamp-2 text-[0.9rem] leading-5"
-                    color="muted"
+              <Tooltip
+                className="min-w-44"
+                delayDuration={300}
+                key={keyResult.id}
+                title={
+                  <Box>
+                    <Flex align="center" className="gap-4" justify="between">
+                      <Text>Progress</Text>
+                      <Text className="tabular-nums" fontWeight="semibold">
+                        {progress}%
+                      </Text>
+                    </Flex>
+                    <Text className="mt-1 text-[0.9rem]" color="muted">
+                      {formatValue(
+                        keyResult.currentValue,
+                        keyResult.measurementType,
+                      )}{" "}
+                      of{" "}
+                      {formatValue(
+                        keyResult.targetValue,
+                        keyResult.measurementType,
+                      )}
+                    </Text>
+                  </Box>
+                }
+              >
+                <li className="flex items-start gap-3">
+                  <span
+                    aria-label={`Progress ${progress}%`}
+                    className="mt-0.5 shrink-0"
                   >
-                    {keyResult.name}
-                  </Text>
-                  <Text className="mt-0.5 text-xs tabular-nums" color="muted">
-                    {formatValue(
-                      keyResult.currentValue,
-                      keyResult.measurementType,
-                    )}
-                    {" / "}
-                    {formatValue(
-                      keyResult.targetValue,
-                      keyResult.measurementType,
-                    )}
-                    {` · ${progress}%`}
-                  </Text>
-                </Box>
-              </li>
+                    <CircleProgressBar
+                      className={getProgressTrackClassName(progress)}
+                      progress={progress}
+                      size={16}
+                      strokeWidth={2}
+                    />
+                  </span>
+                  <Box className="min-w-0 flex-1">
+                    <Text className="text-foreground line-clamp-2 text-base leading-5">
+                      {keyResult.name}
+                    </Text>
+                  </Box>
+                </li>
+              </Tooltip>
             );
           })}
         </ul>

@@ -1,9 +1,17 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { CloseIcon, ObjectiveIcon, StrategyIcon } from "icons";
-import { Box, Button, Divider, Flex, Input, Text, TextArea } from "ui";
+import { Box, Button, Flex, Input, Text, TextArea } from "ui";
+import { useDebouncedCallback } from "@/hooks/debounce";
+
+const AUTOSAVE_DELAY = 1000;
+
+type StrategyDetailsDraft = {
+  description: string | null;
+  name: string;
+};
 
 type StrategyNodeDetailsProps = {
   canEdit: boolean;
@@ -50,17 +58,24 @@ const StrategyNodeDetailsForm = ({
 }: StrategyNodeDetailsFormProps) => {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription ?? "");
-  const normalizedInitialDescription = initialDescription?.trim() || null;
-  const hasChanges =
-    name.trim() !== initialName.trim() ||
-    (description.trim() || null) !== normalizedInitialDescription;
   const heading = kind === "goal" ? "Ultimate goal" : "Strategic pillar";
+  const { callback: queueSave, flush: flushSave } =
+    useDebouncedCallback<StrategyDetailsDraft>(
+      (draft) => {
+        onSave(draft.name, draft.description);
+      },
+      AUTOSAVE_DELAY,
+      { flushOnUnmount: true },
+    );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedName = name.trim();
-    if (!canEdit || !trimmedName || !hasChanges) return;
-    onSave(trimmedName, description.trim() || null);
+  const scheduleSave = (nextName: string, nextDescription: string) => {
+    const trimmedName = nextName.trim();
+    if (!canEdit || !trimmedName) return;
+
+    queueSave({
+      description: nextDescription.trim() || null,
+      name: trimmedName,
+    });
   };
 
   return (
@@ -76,73 +91,69 @@ const StrategyNodeDetailsForm = ({
             {heading}
           </Text>
         </Flex>
-        <Button
-          aria-label={`Close ${heading.toLowerCase()} details`}
-          className="-mr-2"
-          color="tertiary"
-          leftIcon={<CloseIcon className="h-4" strokeWidth={3} />}
-          onClick={onClose}
-          size="sm"
-          variant="naked"
-        />
+        <Flex align="center" className="gap-2">
+          {isPending ? (
+            <Text className="text-[0.9rem]" color="muted">
+              Saving...
+            </Text>
+          ) : null}
+          <Button
+            aria-label={`Close ${heading.toLowerCase()} details`}
+            className="-mr-2"
+            color="tertiary"
+            leftIcon={<CloseIcon className="h-4" strokeWidth={3} />}
+            onClick={onClose}
+            size="sm"
+            variant="naked"
+          />
+        </Flex>
       </Flex>
 
-      <form onSubmit={handleSubmit}>
-        <Box className="px-6 pt-6 pb-24">
-          <Input
-            aria-label={`${heading} name`}
-            className="h-auto border-0 bg-transparent px-0 py-1 text-2xl leading-8 font-semibold shadow-none focus-visible:ring-0 dark:bg-transparent"
-            maxLength={200}
-            onChange={(event) => {
-              setName(event.target.value);
-            }}
-            placeholder={`Name this ${kind}`}
-            readOnly={!canEdit}
-            value={name}
-          />
-          <TextArea
-            aria-label={`${heading} description`}
-            className="mt-3 min-h-32 resize-none border-0 bg-transparent px-0 py-1.5 text-[1.05rem] leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
-            maxLength={1000}
-            onChange={(event) => {
-              setDescription(event.target.value);
-            }}
-            placeholder="Add a description..."
-            readOnly={!canEdit}
-            rows={5}
-            value={description}
-          />
-
-          <Divider className="my-5 opacity-60" />
-
-          <Flex align="center" className="gap-5" wrap>
-            {kind === "goal" && pillarCount !== undefined ? (
-              <DetailMetric
-                icon={<StrategyIcon className="text-text-muted h-4 w-4" />}
-                label={`pillar${pillarCount === 1 ? "" : "s"}`}
-                value={pillarCount}
-              />
-            ) : null}
+      <Box className="px-6 pt-6 pb-24">
+        <Flex align="center" className="mb-3 gap-5" wrap>
+          {kind === "goal" && pillarCount !== undefined ? (
             <DetailMetric
-              icon={<ObjectiveIcon className="text-text-muted h-4 w-4" />}
-              label={`objective${objectiveCount === 1 ? "" : "s"}`}
-              value={objectiveCount}
+              icon={<StrategyIcon className="text-text-muted h-4 w-4" />}
+              label={`pillar${pillarCount === 1 ? "" : "s"}`}
+              value={pillarCount}
             />
-          </Flex>
-
-          {canEdit ? (
-            <Flex className="mt-8" justify="end">
-              <Button
-                color="invert"
-                disabled={isPending || !name.trim() || !hasChanges}
-                type="submit"
-              >
-                {isPending ? "Saving..." : "Save changes"}
-              </Button>
-            </Flex>
           ) : null}
-        </Box>
-      </form>
+          <DetailMetric
+            icon={<ObjectiveIcon className="text-text-muted h-4 w-4" />}
+            label={`objective${objectiveCount === 1 ? "" : "s"}`}
+            value={objectiveCount}
+          />
+        </Flex>
+        <Input
+          aria-label={`${heading} name`}
+          className="h-auto border-0 bg-transparent px-0 py-1 text-2xl leading-8 font-semibold shadow-none focus-visible:ring-0 dark:bg-transparent"
+          maxLength={200}
+          onBlur={flushSave}
+          onChange={(event) => {
+            const nextName = event.target.value;
+            setName(nextName);
+            scheduleSave(nextName, description);
+          }}
+          placeholder={`Name this ${kind}`}
+          readOnly={!canEdit}
+          value={name}
+        />
+        <TextArea
+          aria-label={`${heading} description`}
+          className="mt-1.5 min-h-32 resize-none border-0 bg-transparent px-0 py-1.5 text-[1.05rem] leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+          maxLength={1000}
+          onBlur={flushSave}
+          onChange={(event) => {
+            const nextDescription = event.target.value;
+            setDescription(nextDescription);
+            scheduleSave(name, nextDescription);
+          }}
+          placeholder="Add a description..."
+          readOnly={!canEdit}
+          rows={5}
+          value={description}
+        />
+      </Box>
     </Box>
   );
 };

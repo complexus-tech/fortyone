@@ -178,10 +178,8 @@ export const StrategyMapCanvas = ({
   strategy,
   objectives,
   showUnaligned,
-  onEditGoal,
   onAlign,
   onDeletePillar,
-  onEditPillar,
   onSelectGoal,
   onSelectObjective,
   onSelectPillar,
@@ -192,10 +190,8 @@ export const StrategyMapCanvas = ({
   strategy: StrategyMap;
   objectives: Objective[];
   showUnaligned: boolean;
-  onEditGoal: () => void;
   onAlign: (objectiveId: string, pillarId: string | null) => void;
   onDeletePillar: (pillarId: string) => void;
-  onEditPillar: (pillar: StrategicPillar) => void;
   onSelectGoal: () => void;
   onSelectObjective: (objective: Objective) => void;
   onSelectPillar: (pillar: StrategicPillar) => void;
@@ -648,7 +644,7 @@ export const StrategyMapCanvas = ({
                 canEdit={canEdit}
                 description={strategy.description}
                 objectiveCount={objectives.length}
-                onEdit={onEditGoal}
+                onEdit={onSelectGoal}
                 onOpenDetails={onSelectGoal}
                 pillarCount={strategy.pillars.length}
                 title={strategy.ultimateGoal}
@@ -688,7 +684,7 @@ export const StrategyMapCanvas = ({
                       onDeletePillar(pillar.id);
                     }}
                     onEdit={() => {
-                      onEditPillar(pillar);
+                      onSelectPillar(pillar);
                     }}
                     onOpenDetails={() => {
                       onSelectPillar(pillar);
