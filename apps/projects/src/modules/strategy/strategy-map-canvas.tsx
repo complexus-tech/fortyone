@@ -536,6 +536,7 @@ export const StrategyMapCanvas = ({
   ) => {
     if (
       event.button !== 0 ||
+      isInteractiveTarget(event.target) ||
       (event.target instanceof HTMLElement &&
         event.target.closest("[data-node-id], [data-canvas-control]"))
     ) {

@@ -16,6 +16,7 @@ describe("StrategyMapCanvas", () => {
     expect(source).toContain("getPillarAtPointer");
     expect(source).toContain("onPointerDown");
     expect(source).toContain("Right-click for actions");
+    expect(source).toContain("isInteractiveTarget(event.target)");
     expect(cardSource).toContain("Align to pillar");
     expect(cardSource).toContain("Remove pillar alignment");
   });
