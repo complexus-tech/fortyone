@@ -190,10 +190,16 @@ describe("StrategyMapCanvas", () => {
     );
 
     expect(cardSource).toContain("justify-between gap-1");
+    expect(cardSource).toContain(
+      "const [isExpanded, setIsExpanded] = useState(true)",
+    );
+    expect(cardSource).toContain(
+      'className="text-foreground flex w-full items-center',
+    );
     expect(cardSource).toContain('isExpanded && "rotate-90"');
     expect(cardSource).not.toContain("ArrowDownIcon");
     expect(cardSource).toContain("flex items-center gap-2.5 border-b");
-    expect(cardSource).toContain("dark:border-border/30");
+    expect(cardSource).toContain("dark:border-border-strong/55");
     expect(cardSource).toContain("relative top-0.5 shrink-0");
     expect(cardSource).toContain("last:border-b-0");
     expect(cardSource).toContain("text-foreground line-clamp-2 text-base");
