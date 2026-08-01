@@ -18,7 +18,6 @@ type StrategyNodeDetailsProps = {
   canEdit: boolean;
   description: string | null;
   entityKey: string;
-  isPending: boolean;
   kind: "goal" | "pillar";
   name: string;
   objectiveCount: number;
@@ -49,7 +48,6 @@ const DetailMetric = ({
 const StrategyNodeDetailsForm = ({
   canEdit,
   description: initialDescription,
-  isPending,
   kind,
   name: initialName,
   objectiveCount,
@@ -94,11 +92,6 @@ const StrategyNodeDetailsForm = ({
           </Text>
         </Flex>
         <Flex align="center" className="gap-2">
-          {isPending ? (
-            <Text className="text-[0.9rem]" color="muted">
-              Saving...
-            </Text>
-          ) : null}
           <Button
             aria-label={`Close ${heading.toLowerCase()} details`}
             className="-mr-2"
@@ -128,7 +121,7 @@ const StrategyNodeDetailsForm = ({
         </Flex>
         <Input
           aria-label={`${heading} name`}
-          className="h-auto border-0 bg-transparent px-0 py-1 text-2xl leading-8 font-semibold shadow-none focus-visible:ring-0 dark:bg-transparent"
+          className="h-auto border-0 bg-transparent px-0 pt-1 pb-1 text-2xl leading-tight font-medium shadow-none focus-visible:ring-0 dark:bg-transparent"
           maxLength={200}
           onBlur={flushSave}
           onChange={(event) => {
@@ -143,9 +136,8 @@ const StrategyNodeDetailsForm = ({
         />
         <StrategyDescriptionEditor
           ariaLabel={`${heading} description`}
-          className="mt-1.5 min-h-40"
+          className="mt-1.5 min-h-24"
           content={initialDescription ?? ""}
-          contentClassName="min-h-40"
           editable={canEdit}
           onBlur={flushSave}
           onChange={(nextDescription) => {

@@ -345,10 +345,10 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
   if (isPending || keyResults.length === 0) return null;
 
   return (
-    <Box className="border-border mt-4 border-t pt-3" data-no-drag>
+    <Box className="border-border mt-3 border-t" data-no-drag>
       <button
         aria-expanded={isExpanded}
-        className="text-text-muted hover:text-text-primary flex w-full items-center justify-between gap-1 rounded-md text-left text-[0.95rem] transition-colors"
+        className="text-text-muted hover:text-text-primary flex w-full items-center justify-between gap-1 rounded-md py-2.5 text-left text-[0.95rem] transition-colors"
         onClick={() => {
           setIsExpanded((current) => !current);
         }}
@@ -366,7 +366,7 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
         />
       </button>
       {isExpanded ? (
-        <ul className="mt-3 space-y-4">
+        <ul>
           {keyResults.map((keyResult) => {
             const progress = getKeyResultProgress(keyResult);
             return (
@@ -396,15 +396,15 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
                   </Box>
                 }
               >
-                <li className="flex items-start gap-3">
+                <li className="border-border/70 dark:border-border/30 flex items-center gap-2.5 border-b py-3 last:border-b-0 last:pb-0">
                   <span
                     aria-label={`Progress ${progress}%`}
-                    className="mt-0.5 shrink-0"
+                    className="relative top-0.5 shrink-0"
                   >
                     <CircleProgressBar
                       className={getProgressTrackClassName(progress)}
                       progress={progress}
-                      size={16}
+                      size={14}
                       strokeWidth={2}
                     />
                   </span>

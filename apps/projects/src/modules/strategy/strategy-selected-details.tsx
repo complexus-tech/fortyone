@@ -12,8 +12,6 @@ export type SelectedStrategyNode =
 
 export const StrategySelectedDetails = ({
   canEdit,
-  isGoalPending,
-  isPillarPending,
   objectives,
   onClose,
   onSaveGoal,
@@ -22,8 +20,6 @@ export const StrategySelectedDetails = ({
   strategy,
 }: {
   canEdit: boolean;
-  isGoalPending: boolean;
-  isPillarPending: boolean;
   objectives: Objective[];
   onClose: () => void;
   onSaveGoal: (ultimateGoal: string, description: string | null) => void;
@@ -63,7 +59,6 @@ export const StrategySelectedDetails = ({
         canEdit={canEdit}
         description={strategy.description}
         entityKey="ultimate-goal"
-        isPending={isGoalPending}
         kind="goal"
         name={strategy.ultimateGoal}
         objectiveCount={objectives.length}
@@ -80,7 +75,6 @@ export const StrategySelectedDetails = ({
         canEdit={canEdit}
         description={selectedPillar.description}
         entityKey={selectedPillar.id}
-        isPending={isPillarPending}
         kind="pillar"
         name={selectedPillar.name}
         objectiveCount={selectedPillarObjectiveCount}

@@ -79,10 +79,11 @@ describe("StrategyMapCanvas", () => {
     );
     const pageSource = readSource("src/modules/strategy/index.tsx");
 
-    expect(editorSource).toContain("bg-surface-muted/80");
     expect(editorSource).toContain("StrategyDescriptionEditor");
-    expect(editorSource).toContain('<Dialog.Content size="lg">');
+    expect(editorSource).toContain('className="max-w-4xl"');
+    expect(editorSource).toContain("h-auto border-0 bg-transparent");
     expect(editorSource).not.toContain("TextArea");
+    expect(editorSource).not.toContain(">Description</Text>");
     expect(descriptionEditorSource).toContain("useEditor");
     expect(descriptionEditorSource).toContain("createRichTextStarterKit");
     expect(descriptionEditorSource).toContain("Underline");
@@ -173,6 +174,7 @@ describe("StrategyMapCanvas", () => {
     expect(detailsSource).toContain("flushOnUnmount: true");
     expect(detailsSource).toContain("onBlur={flushSave}");
     expect(detailsSource).not.toContain("Save changes");
+    expect(detailsSource).not.toContain("Saving...");
     expect(pageSource).not.toContain('title="Edit ultimate goal"');
     expect(pageSource).not.toContain('title="Edit strategic pillar"');
     expect(canvasSource).not.toContain("onEditGoal");
@@ -190,11 +192,15 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("justify-between gap-1");
     expect(cardSource).toContain('isExpanded && "rotate-90"');
     expect(cardSource).not.toContain("ArrowDownIcon");
-    expect(cardSource).toContain("space-y-4");
+    expect(cardSource).toContain("flex items-center gap-2.5 border-b");
+    expect(cardSource).toContain("dark:border-border/30");
+    expect(cardSource).toContain("relative top-0.5 shrink-0");
+    expect(cardSource).toContain("last:border-b-0");
     expect(cardSource).toContain("text-foreground line-clamp-2 text-base");
     expect(cardSource).toContain("<Tooltip");
     expect(cardSource).toContain("delayDuration={300}");
-    expect(cardSource).toContain("size={16}");
+    expect(cardSource).toContain("size={14}");
+    expect(cardSource).toContain("py-2.5");
     expect(cardSource).not.toContain("text-foreground/75");
   });
 
@@ -214,6 +220,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("shares pillar alignment across objective property surfaces", () => {
+    const hooksSource = readSource("src/modules/strategy/hooks.ts");
     const pillarPropertySource = readSource(
       "src/modules/strategy/objective-pillar-property.tsx",
     );
@@ -234,5 +241,10 @@ describe("StrategyMapCanvas", () => {
     expect(pillarPropertySource).toContain("Remove pillar alignment");
     expect(objectivePropertiesSource).toContain("ObjectivePillarProperty");
     expect(roadmapPropertiesSource).toContain("ObjectivePillarProperty");
+    expect(hooksSource).toContain("onMutate: async");
+    expect(hooksSource).toContain("cancelQueries");
+    expect(hooksSource).toContain("previousStrategy");
+    expect(hooksSource).toContain("setQueryData<StrategyMap>");
+    expect(hooksSource).toContain("alignObjectiveInStrategy");
   });
 });

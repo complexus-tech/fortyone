@@ -145,8 +145,6 @@ export const WorkspaceStrategyMapPage = () => {
         {strategy ? (
           <StrategySelectedDetails
             canEdit={!isGuest}
-            isGoalPending={updateStrategy.isPending}
-            isPillarPending={updatePillar.isPending}
             objectives={objectives}
             onClose={() => {
               setSelectedNode(null);

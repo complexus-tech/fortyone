@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { Box, Button, Dialog, Flex, Input, Text } from "ui";
+import { Button, Dialog, Input } from "ui";
 import { StrategyDescriptionEditor } from "./strategy-description-editor";
 
 type StrategyEditorDialogProps = {
@@ -47,34 +47,31 @@ const StrategyEditorForm = ({
 
   return (
     <form onSubmit={handleSubmit}>
-      <Dialog.Header>
-        <Dialog.Title className="px-6 pt-0.5 text-lg">{title}</Dialog.Title>
+      <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-1">
+        <Dialog.Title className="text-lg">{title}</Dialog.Title>
+        <Dialog.Close />
       </Dialog.Header>
-      <Dialog.Body>
-        <Flex className="gap-5" direction="column">
-          <Input
-            autoFocus
-            className="bg-surface-muted/80 dark:bg-surface-muted/80"
-            label={nameLabel}
-            onChange={(event) => {
-              setName(event.target.value);
-            }}
-            required
-            value={name}
-          />
-          <Box>
-            <Text className="mb-2">Description</Text>
-            <StrategyDescriptionEditor
-              ariaLabel="Strategic pillar description"
-              className="min-h-32"
-              content={initialDescription}
-              contentClassName="min-h-32"
-              editable
-              onChange={setDescription}
-              placeholder="Add context so the strategy is easy to understand"
-            />
-          </Box>
-        </Flex>
+      <Dialog.Body className="pt-3 pb-3">
+        <Input
+          aria-label={nameLabel}
+          autoFocus
+          className="h-auto border-0 bg-transparent px-0 pt-1 pb-1 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
+          maxLength={200}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+          placeholder={nameLabel}
+          required
+          value={name}
+        />
+        <StrategyDescriptionEditor
+          ariaLabel={`${nameLabel} description`}
+          className="min-h-24"
+          content={initialDescription}
+          editable
+          onChange={setDescription}
+          placeholder="Add context so the strategy is easy to understand"
+        />
       </Dialog.Body>
       <Dialog.Footer className="justify-end gap-2">
         <Button
@@ -109,7 +106,7 @@ export const StrategyEditorDialog = ({
   title,
 }: StrategyEditorDialogProps) => (
   <Dialog onOpenChange={onOpenChange} open={isOpen}>
-    <Dialog.Content size="lg">
+    <Dialog.Content className="max-w-4xl" hideClose>
       <StrategyEditorForm
         initialDescription={initialDescription ?? ""}
         initialName={initialName}
