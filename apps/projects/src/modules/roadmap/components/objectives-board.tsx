@@ -24,6 +24,7 @@ import {
   Avatar,
   Box,
   Button,
+  Checkbox,
   DatePicker,
   Flex,
   Popover,
@@ -62,6 +63,7 @@ import {
   type ObjectiveGroup,
   type ObjectiveViewOptions,
 } from "../objective-board-utils";
+import { ObjectivesToolbar } from "./objectives-toolbar";
 
 const GROUP_ID_PREFIX = "objective-group:";
 
@@ -341,6 +343,8 @@ const ObjectiveGroupHeader = ({
   isCollapsed = false,
   onToggle,
   onHide,
+  selectedObjectives,
+  setSelectedObjectives,
 }: {
   group: ObjectiveGroup;
   groupBy: ObjectiveViewOptions["groupBy"];
@@ -349,19 +353,50 @@ const ObjectiveGroupHeader = ({
   isCollapsed?: boolean;
   onToggle?: () => void;
   onHide?: () => void;
+  selectedObjectives?: string[];
+  setSelectedObjectives?: (objectiveIds: string[]) => void;
 }) => {
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+  const groupedObjectiveIds = group.objectives.map(({ id }) => id);
+  const groupedObjectiveIdSet = new Set(groupedObjectiveIds);
+  const selectedObjectiveIdSet = new Set(selectedObjectives ?? []);
 
   return (
     <Flex align="center" gap={2} justify="between">
-      <Flex align="center" className="min-w-0" gap={2}>
+      <Flex align="center" className="relative min-w-0" gap={2}>
+        {selectedObjectives && setSelectedObjectives ? (
+          <Checkbox
+            checked={
+              groupedObjectiveIds.length > 0 &&
+              groupedObjectiveIds.every((id) => selectedObjectiveIdSet.has(id))
+            }
+            className="absolute -left-[1.6rem] hidden rounded md:inline"
+            disabled={userRole === "guest"}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedObjectives(
+                  Array.from(
+                    new Set([...selectedObjectives, ...groupedObjectiveIds]),
+                  ),
+                );
+              } else {
+                setSelectedObjectives(
+                  selectedObjectives.filter(
+                    (id) => !groupedObjectiveIdSet.has(id),
+                  ),
+                );
+              }
+            }}
+          />
+        ) : null}
         <button
           className="focus-visible:ring-primary flex min-w-0 items-center gap-2 rounded-sm outline-none focus-visible:ring-1 disabled:cursor-default"
           disabled={!collapsible}
           onClick={onToggle}
           type="button"
         >
+          <ObjectiveGroupIdentity group={group} groupBy={groupBy} />
           {collapsible ? (
             <ArrowDownIcon
               className={cn("text-text-muted h-4 w-auto transition", {
@@ -370,7 +405,6 @@ const ObjectiveGroupHeader = ({
               strokeWidth={1}
             />
           ) : null}
-          <ObjectiveGroupIdentity group={group} groupBy={groupBy} />
         </button>
         <Tooltip
           title={`Total ${getTermDisplay("objectiveTerm", { variant: "plural" })}`}
@@ -592,6 +626,9 @@ const ObjectivesGroupedList = ({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     () => new Set(),
   );
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+  const selectedObjectiveIdSet = new Set(selectedObjectives);
+  const objectives = groups.flatMap((group) => group.objectives);
 
   return (
     <BodyContainer className="h-full overflow-x-auto pb-6">
@@ -619,6 +656,8 @@ const ObjectivesGroupedList = ({
                       return next;
                     });
                   }}
+                  selectedObjectives={selectedObjectives}
+                  setSelectedObjectives={setSelectedObjectives}
                 />
               </Box>
               {isCollapsed
@@ -630,12 +669,29 @@ const ObjectivesGroupedList = ({
                       onSelect={() => {
                         onObjectiveSelect(objective);
                       }}
+                      onSelectionChange={(checked) => {
+                        setSelectedObjectives((current) =>
+                          checked
+                            ? Array.from(new Set([...current, objective.id]))
+                            : current.filter((id) => id !== objective.id),
+                        );
+                      }}
+                      selected={selectedObjectiveIdSet.has(objective.id)}
                     />
                   ))}
             </Box>
           );
         })}
       </Box>
+      {selectedObjectives.length > 0 ? (
+        <ObjectivesToolbar
+          objectives={objectives}
+          onClear={() => {
+            setSelectedObjectives([]);
+          }}
+          selectedObjectiveIds={selectedObjectives}
+        />
+      ) : null}
     </BodyContainer>
   );
 };

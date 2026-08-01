@@ -17,6 +17,7 @@ import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import type { Story } from "@/modules/stories/types";
 import { StoryPage } from "../../../modules/story";
+import { StoryActionsMenu } from "../../../modules/story/components/story-actions-menu";
 
 const EMPTY_STORIES: Story[] = [];
 
@@ -179,6 +180,11 @@ export const StoryDialog = ({
                       <span className="sr-only">Next</span>
                     </Button>
                   </Tooltip>
+                  <StoryActionsMenu
+                    align="start"
+                    buttonClassName="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-[1px]"
+                    storyId={storyId}
+                  />
                 </Flex>
                 <Flex align="center" className="hidden" gap={2}>
                   <Tooltip side="bottom" title="Fullscreen">

@@ -182,11 +182,7 @@ export const MainDetails = ({
     >
       {mainHeader}
       <Box className="md:hidden">
-        <OptionsHeader
-          isAdminOrOwner={isAdminOrOwner}
-          isNotifications={isNotifications}
-          storyId={storyId}
-        />
+        <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
       </Box>
 
       <Container
@@ -196,11 +192,7 @@ export const MainDetails = ({
       >
         {isNotifications ? (
           <Box className="notification-story-top-options-header relative -top-4.5 -mb-2 hidden [&>div]:h-auto [&>div]:px-0 [&>div]:pt-0">
-            <OptionsHeader
-              isAdminOrOwner={isAdminOrOwner}
-              isNotifications={isNotifications}
-              storyId={storyId}
-            />
+            <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
           </Box>
         ) : null}
         <GitHubSection.Banner storyId={storyId} />

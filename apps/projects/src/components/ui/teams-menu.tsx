@@ -207,7 +207,7 @@ const Items = ({
                 }}
               >
                 <Flex align="center" gap={2}>
-                  <TeamIcon className="h-4" />
+                  <TeamIcon className="h-5 w-auto" />
                   <Text>Manage Teams</Text>
                 </Flex>
               </Command.Item>

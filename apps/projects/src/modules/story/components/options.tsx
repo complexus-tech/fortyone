@@ -366,7 +366,6 @@ export const Options = ({
           <OptionsHeader
             isAdminOrOwner={isAdminOrOwner}
             isDialog={isDialog}
-            isNotifications={isNotifications}
             storyId={storyId}
           />
         </Box>

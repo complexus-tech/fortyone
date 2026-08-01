@@ -5,6 +5,7 @@ import {
   Box,
   Avatar,
   Button,
+  Checkbox,
   DatePicker,
   CircleProgressBar,
 } from "ui";
@@ -44,11 +45,15 @@ export const ObjectiveCard = ({
   health,
   priority,
   onSelect,
+  onSelectionChange,
+  selected = false,
   ...rest
 }: Objective & {
   isInTeam?: boolean;
   isInSearch?: boolean;
   onSelect?: () => void;
+  onSelectionChange?: (checked: boolean) => void;
+  selected?: boolean;
 }) => {
   const canUpdate = useCanUpdateObjective();
   const { data: members = [] } = useTeamMembers(teamId);
@@ -79,23 +84,36 @@ export const ObjectiveCard = ({
       })}
     >
       <Box
-        className={cn("flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20", {
-          "pointer-events-none opacity-40": id === "optimistic",
-        })}
+        className={cn(
+          "relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20",
+          {
+            "pointer-events-none opacity-40": id === "optimistic",
+          },
+        )}
       >
+        {onSelectionChange ? (
+          <Checkbox
+            checked={selected}
+            className="shrink-0 rounded md:absolute md:-left-[1.6rem]"
+            disabled={!canUpdate}
+            onCheckedChange={onSelectionChange}
+          />
+        ) : null}
         {onSelect ? (
           <button
             className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
             onClick={onSelect}
             type="button"
           >
-            <Flex
-              align="center"
-              className="bg-surface-muted size-8 shrink-0 rounded-lg"
-              justify="center"
-            >
-              <ObjectiveIcon className="h-4" />
-            </Flex>
+            {onSelectionChange ? null : (
+              <Flex
+                align="center"
+                className="bg-surface-muted size-8 shrink-0 rounded-lg"
+                justify="center"
+              >
+                <ObjectiveIcon className="h-4" />
+              </Flex>
+            )}
             <Text className="min-w-0 truncate pr-2">{name}</Text>
           </button>
         ) : (
@@ -104,13 +122,15 @@ export const ObjectiveCard = ({
             href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
             prefetch
           >
-            <Flex
-              align="center"
-              className="bg-surface-muted size-8 shrink-0 rounded-lg"
-              justify="center"
-            >
-              <ObjectiveIcon className="h-4" />
-            </Flex>
+            {onSelectionChange ? null : (
+              <Flex
+                align="center"
+                className="bg-surface-muted size-8 shrink-0 rounded-lg"
+                justify="center"
+              >
+                <ObjectiveIcon className="h-4" />
+              </Flex>
+            )}
             <Text className="min-w-0 truncate pr-2">{name}</Text>
           </Link>
         )}
