@@ -121,4 +121,42 @@ describe("StrategyMapCanvas", () => {
     expect(profileMenuSource).not.toContain("NewTabIcon");
     expect(externalLinkIconSource).toContain("strokeWidth = 2");
   });
+
+  it("opens node details without treating controls or drags as card clicks", () => {
+    const pageSource = readSource("src/modules/strategy/index.tsx");
+    const canvasSource = readSource(
+      "src/modules/strategy/strategy-map-canvas.tsx",
+    );
+    const cardSource = readSource(
+      "src/modules/strategy/strategy-map-cards.tsx",
+    );
+    const detailsSource = readSource(
+      "src/modules/strategy/strategy-node-details.tsx",
+    );
+    const selectedDetailsSource = readSource(
+      "src/modules/strategy/strategy-selected-details.tsx",
+    );
+
+    expect(pageSource).toContain("StrategySelectedDetails");
+    expect(selectedDetailsSource).toContain("RoadmapObjectiveDetails");
+    expect(selectedDetailsSource).toContain("StrategyNodeDetails");
+    expect(canvasSource).toContain("CLICK_MOVEMENT_THRESHOLD");
+    expect(canvasSource).toContain("shouldCommit && !wasDragged");
+    expect(canvasSource).toContain('target.closest("[data-card-select]")');
+    expect(cardSource).toContain("onOpenDetails");
+    expect(cardSource).toContain("data-card-select");
+    expect(cardSource).not.toContain("hover:opacity-75");
+    expect(detailsSource).toContain("border-0 bg-transparent");
+    expect(detailsSource).toContain("Save changes");
+  });
+
+  it("uses a right-aligned chevron for key-result expansion", () => {
+    const cardSource = readSource(
+      "src/modules/strategy/strategy-map-cards.tsx",
+    );
+
+    expect(cardSource).toContain("justify-between gap-1");
+    expect(cardSource).toContain('isExpanded && "rotate-90"');
+    expect(cardSource).not.toContain("ArrowDownIcon");
+  });
 });

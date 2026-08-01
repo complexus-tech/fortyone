@@ -9,6 +9,10 @@ import { useUserRole } from "@/hooks";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { StrategyEditorDialog } from "./strategy-editor-dialog";
 import { StrategyMapCanvas } from "./strategy-map-canvas";
+import {
+  StrategySelectedDetails,
+  type SelectedStrategyNode,
+} from "./strategy-selected-details";
 import { useStrategyMap, useStrategyMutations } from "./hooks";
 import type { StrategicPillar } from "./types";
 
@@ -28,6 +32,9 @@ export const WorkspaceStrategyMapPage = () => {
   const [isPillarOpen, setIsPillarOpen] = useState(false);
   const [pillarToDelete, setPillarToDelete] = useState<string | null>(null);
   const [pillarToEdit, setPillarToEdit] = useState<StrategicPillar | null>(
+    null,
+  );
+  const [selectedNode, setSelectedNode] = useState<SelectedStrategyNode | null>(
     null,
   );
   const [zoom, setZoom] = useState(1);
@@ -108,7 +115,7 @@ export const WorkspaceStrategyMapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="h-[calc(100dvh-4rem)]">
+      <Box className="relative h-[calc(100dvh-4rem)]">
         {isStrategyPending || areObjectivesPending || !strategy ? (
           <BoardSkeleton className="h-full" layout="gantt" />
         ) : (
@@ -127,12 +134,47 @@ export const WorkspaceStrategyMapPage = () => {
             onEditPillar={(pillar) => {
               if (!isGuest) setPillarToEdit(pillar);
             }}
+            onSelectGoal={() => {
+              setSelectedNode({ type: "goal" });
+            }}
+            onSelectObjective={(objective) => {
+              setSelectedNode({
+                objectiveId: objective.id,
+                type: "objective",
+              });
+            }}
+            onSelectPillar={(pillar) => {
+              setSelectedNode({ pillarId: pillar.id, type: "pillar" });
+            }}
             resetSignal={resetSignal}
             showUnaligned={showUnaligned}
             strategy={strategy}
             zoom={zoom}
           />
         )}
+
+        {strategy ? (
+          <StrategySelectedDetails
+            canEdit={!isGuest}
+            isGoalPending={updateStrategy.isPending}
+            isPillarPending={updatePillar.isPending}
+            objectives={objectives}
+            onClose={() => {
+              setSelectedNode(null);
+            }}
+            onSaveGoal={(ultimateGoal, description) => {
+              updateStrategy.mutate({ ultimateGoal, description });
+            }}
+            onSavePillar={(pillarId, name, description) => {
+              updatePillar.mutate({
+                pillarId,
+                data: { name, description },
+              });
+            }}
+            selectedNode={selectedNode}
+            strategy={strategy}
+          />
+        ) : null}
       </Box>
 
       <StrategyEditorDialog

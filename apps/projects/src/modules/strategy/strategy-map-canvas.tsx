@@ -42,6 +42,7 @@ import type { StrategicPillar, StrategyMap } from "./types";
 
 const LAYOUT_STORAGE_VERSION = 1;
 const CANVAS_INSET = 28;
+const CLICK_MOVEMENT_THRESHOLD = 4;
 const subscribeToStaticStorage = () => () => undefined;
 
 type ActiveNodeDrag = {
@@ -60,13 +61,16 @@ type ActivePan = {
   startScrollTop: number;
 };
 
-const isInteractiveTarget = (target: EventTarget | null) =>
-  target instanceof HTMLElement &&
-  Boolean(
+const isInteractiveTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.closest("[data-card-select]")) return false;
+
+  return Boolean(
     target.closest(
       "a, button, input, select, textarea, [role='menuitem'], [data-no-drag]",
     ),
   );
+};
 
 const getDefaultNodeDimensions = (nodeId: string): StrategyNodeDimensions => {
   if (nodeId === GOAL_NODE_ID) {
@@ -178,6 +182,9 @@ export const StrategyMapCanvas = ({
   onAlign,
   onDeletePillar,
   onEditPillar,
+  onSelectGoal,
+  onSelectObjective,
+  onSelectPillar,
   canEdit,
   resetSignal = 0,
   zoom,
@@ -189,6 +196,9 @@ export const StrategyMapCanvas = ({
   onAlign: (objectiveId: string, pillarId: string | null) => void;
   onDeletePillar: (pillarId: string) => void;
   onEditPillar: (pillar: StrategicPillar) => void;
+  onSelectGoal: () => void;
+  onSelectObjective: (objective: Objective) => void;
+  onSelectPillar: (pillar: StrategicPillar) => void;
   canEdit: boolean;
   resetSignal?: number;
   zoom: number;
@@ -477,11 +487,20 @@ export const StrategyMapCanvas = ({
   );
 
   const finishNodeDrag = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>, shouldAlign: boolean) => {
+    (
+      event: ReactPointerEvent<HTMLDivElement>,
+      shouldCommit: boolean,
+      onSelect: () => void,
+    ) => {
       const drag = activeDragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
+      const movement = Math.hypot(
+        event.clientX - drag.startClientX,
+        event.clientY - drag.startClientY,
+      );
+      const wasDragged = movement > CLICK_MOVEMENT_THRESHOLD;
 
-      if (shouldAlign && drag.id.startsWith("objective:")) {
+      if (shouldCommit && wasDragged && drag.id.startsWith("objective:")) {
         const objectiveId = drag.id.slice("objective:".length);
         const targetPillarId = getPillarAtPointer(event.clientX, event.clientY);
         if (
@@ -501,6 +520,8 @@ export const StrategyMapCanvas = ({
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       persistPositions();
+
+      if (shouldCommit && !wasDragged) onSelect();
     },
     [getPillarAtPointer, onAlign, persistPositions, pillarByObjectiveId],
   );
@@ -612,7 +633,11 @@ export const StrategyMapCanvas = ({
               onPointerDown={handleNodePointerDown}
               onPointerMove={handleNodePointerMove}
               onPointerUp={(event) => {
-                finishNodeDrag(event, event.type !== "pointercancel");
+                finishNodeDrag(
+                  event,
+                  event.type !== "pointercancel",
+                  onSelectGoal,
+                );
               }}
               position={
                 positions[GOAL_NODE_ID] ?? layout.positions[GOAL_NODE_ID]
@@ -624,6 +649,7 @@ export const StrategyMapCanvas = ({
                 description={strategy.description}
                 objectiveCount={objectives.length}
                 onEdit={onEditGoal}
+                onOpenDetails={onSelectGoal}
                 pillarCount={strategy.pillars.length}
                 title={strategy.ultimateGoal}
               />
@@ -642,7 +668,13 @@ export const StrategyMapCanvas = ({
                   onPointerDown={handleNodePointerDown}
                   onPointerMove={handleNodePointerMove}
                   onPointerUp={(event) => {
-                    finishNodeDrag(event, event.type !== "pointercancel");
+                    finishNodeDrag(
+                      event,
+                      event.type !== "pointercancel",
+                      () => {
+                        onSelectPillar(pillar);
+                      },
+                    );
                   }}
                   position={positions[nodeId] ?? layout.positions[nodeId]}
                 >
@@ -657,6 +689,9 @@ export const StrategyMapCanvas = ({
                     }}
                     onEdit={() => {
                       onEditPillar(pillar);
+                    }}
+                    onOpenDetails={() => {
+                      onSelectPillar(pillar);
                     }}
                   />
                 </StrategyCanvasNode>
@@ -691,7 +726,13 @@ export const StrategyMapCanvas = ({
                   onPointerDown={handleNodePointerDown}
                   onPointerMove={handleNodePointerMove}
                   onPointerUp={(event) => {
-                    finishNodeDrag(event, event.type !== "pointercancel");
+                    finishNodeDrag(
+                      event,
+                      event.type !== "pointercancel",
+                      () => {
+                        onSelectObjective(objective);
+                      },
+                    );
                   }}
                   position={positions[nodeId] ?? layout.positions[nodeId]}
                 >
@@ -700,6 +741,9 @@ export const StrategyMapCanvas = ({
                     currentPillarId={currentPillarId}
                     objective={objective}
                     onAlign={onAlign}
+                    onOpenDetails={() => {
+                      onSelectObjective(objective);
+                    }}
                     onUpdate={handleObjectiveUpdate}
                     pillars={strategy.pillars}
                     status={statusById.get(objective.statusId)}

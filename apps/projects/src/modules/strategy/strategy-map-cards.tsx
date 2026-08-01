@@ -5,7 +5,6 @@ import { memo, useState } from "react";
 import { format, formatISO } from "date-fns";
 import Link from "next/link";
 import {
-  ArrowDownIcon,
   CalendarIcon,
   ChevronRightIcon,
   DeleteIcon,
@@ -166,6 +165,7 @@ export const UltimateGoalNodeCard = memo(
     description,
     objectiveCount,
     onEdit,
+    onOpenDetails,
     pillarCount,
     title,
   }: {
@@ -174,6 +174,7 @@ export const UltimateGoalNodeCard = memo(
     description: string | null;
     objectiveCount: number;
     onEdit: () => void;
+    onOpenDetails: () => void;
     pillarCount: number;
     title: string;
   }) => (
@@ -197,9 +198,18 @@ export const UltimateGoalNodeCard = memo(
           <NodeEyebrow className="text-text-primary font-semibold">
             ◆ Ultimate goal
           </NodeEyebrow>
-          <Text className="mt-3 text-xl leading-7" fontWeight="semibold">
-            {title || "Define your ultimate goal"}
-          </Text>
+          <button
+            className="mt-3 w-full text-center"
+            data-card-select
+            onClick={(event) => {
+              if (event.detail === 0) onOpenDetails();
+            }}
+            type="button"
+          >
+            <Text className="text-xl leading-7" fontWeight="semibold">
+              {title || "Define your ultimate goal"}
+            </Text>
+          </button>
           <Text className="mx-auto mt-2 max-w-[36rem] leading-5" color="muted">
             {description ||
               "Describe the long-term outcome that every pillar should support."}
@@ -242,6 +252,7 @@ export const PillarNodeCard = memo(
     objectiveCount,
     onDelete,
     onEdit,
+    onOpenDetails,
   }: {
     canEdit: boolean;
     description: string | null;
@@ -250,6 +261,7 @@ export const PillarNodeCard = memo(
     objectiveCount: number;
     onDelete: () => void;
     onEdit: () => void;
+    onOpenDetails: () => void;
   }) => (
     <ContextMenu>
       <ContextMenu.Trigger>
@@ -265,12 +277,18 @@ export const PillarNodeCard = memo(
           <NodeEyebrow className="text-[0.74rem] font-semibold">
             Strategic pillar
           </NodeEyebrow>
-          <Text
-            className="mt-2 line-clamp-2 text-[1.08rem]"
-            fontWeight="semibold"
+          <button
+            className="mt-2 w-full text-left"
+            data-card-select
+            onClick={(event) => {
+              if (event.detail === 0) onOpenDetails();
+            }}
+            type="button"
           >
-            {name}
-          </Text>
+            <Text className="line-clamp-2 text-[1.08rem]" fontWeight="semibold">
+              {name}
+            </Text>
+          </button>
           {description ? (
             <Text className="mt-2 line-clamp-3 leading-5" color="muted">
               {description}
@@ -325,20 +343,22 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
     <Box className="border-border mt-4 border-t pt-3" data-no-drag>
       <button
         aria-expanded={isExpanded}
-        className="text-text-muted hover:text-text-primary flex w-full items-center gap-2 rounded-md text-left text-[0.95rem] transition-colors"
+        className="text-text-muted hover:text-text-primary flex w-full items-center justify-between gap-1 rounded-md text-left text-[0.95rem] transition-colors"
         onClick={() => {
           setIsExpanded((current) => !current);
         }}
         type="button"
       >
-        <ArrowDownIcon
+        <span>
+          {keyResults.length} key result{keyResults.length === 1 ? "" : "s"}
+        </span>
+        <ChevronRightIcon
           className={cn(
-            "h-4 w-4 -rotate-90 transition-transform duration-150",
-            isExpanded && "rotate-0",
+            "h-4 w-4 shrink-0 transition-transform duration-150",
+            isExpanded && "rotate-90",
           )}
           strokeWidth={2}
         />
-        {keyResults.length} key result{keyResults.length === 1 ? "" : "s"}
       </button>
       {isExpanded ? (
         <ul className="mt-3 space-y-3">
@@ -385,6 +405,7 @@ export const ObjectiveNodeCard = memo(
     currentPillarId,
     objective,
     onAlign,
+    onOpenDetails,
     onUpdate,
     pillars,
     status,
@@ -395,6 +416,7 @@ export const ObjectiveNodeCard = memo(
     currentPillarId: string | null;
     objective: Objective;
     onAlign: (objectiveId: string, pillarId: string | null) => void;
+    onOpenDetails: () => void;
     onUpdate: (objectiveId: string, data: ObjectiveUpdate) => void;
     pillars: StrategicPillar[];
     status?: ObjectiveStatus;
@@ -423,11 +445,13 @@ export const ObjectiveNodeCard = memo(
             style={{ width: OBJECTIVE_NODE_WIDTH }}
           >
             <Flex align="start" className="gap-3" justify="between">
-              <Link
-                className="focus-visible:ring-foreground/30 min-w-0 flex-1 rounded-sm outline-none hover:opacity-75 focus-visible:ring-1"
-                data-no-drag
-                href={objectivePath}
-                prefetch
+              <button
+                className="focus-visible:ring-foreground/30 min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
+                data-card-select
+                onClick={(event) => {
+                  if (event.detail === 0) onOpenDetails();
+                }}
+                type="button"
               >
                 <Text
                   className="line-clamp-2 text-[1.15rem] leading-[1.45rem]"
@@ -435,7 +459,7 @@ export const ObjectiveNodeCard = memo(
                 >
                   {objective.name}
                 </Text>
-              </Link>
+              </button>
               {objective.sequenceId > 0 ? (
                 <Text
                   className="shrink-0 text-[0.95rem] leading-[1.45rem] uppercase"
