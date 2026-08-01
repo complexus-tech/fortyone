@@ -20,6 +20,10 @@ export const storyKeys = {
     [...storyKeys.all(workspaceSlug), "objectives"] as const,
   objective: (workspaceSlug: string, objectiveId: string) =>
     [...storyKeys.objectives(workspaceSlug), objectiveId] as const,
+  keyResults: (workspaceSlug: string) =>
+    [...storyKeys.all(workspaceSlug), "key-results"] as const,
+  keyResult: (workspaceSlug: string, keyResultId: string) =>
+    [...storyKeys.keyResults(workspaceSlug), keyResultId] as const,
   sprints: (workspaceSlug: string) =>
     [...storyKeys.all(workspaceSlug), "sprints"] as const,
   sprint: (workspaceSlug: string, sprintId: string) =>

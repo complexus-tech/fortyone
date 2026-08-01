@@ -26,6 +26,7 @@ const objective = (overrides: Partial<Objective>): Objective => ({
   updatedAt: "2026-01-02T00:00:00Z",
   createdBy: "member-1",
   statusId: "status-1",
+  keyResultCount: 0,
   priority: "High",
   health: "On Track",
   ...overrides,

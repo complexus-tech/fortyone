@@ -113,10 +113,28 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("[&_circle:first-child]:stroke-danger");
     expect(cardSource).not.toContain("min-h-[2.8rem]");
     expect(cardSource).not.toContain("hover:bg-danger/10");
-    expect(cardSource).toContain("dark:bg-surface-elevated/55");
+    expect(cardSource).toContain("dark:border-foreground/20");
+    expect(cardSource).toContain("dark:bg-accent/70");
+    expect(cardSource).toContain("dark:hover:bg-surface-prominent/55");
+    expect(cardSource).not.toContain("dark:bg-surface-elevated/55");
     expect(canvasSource).toContain("dark:bg-surface-elevated/35");
     expect(pageSource).toContain("dark:bg-surface-elevated/20");
     expect(pageSource).not.toContain("shadow-sm");
+  });
+
+  it("uses faint dark-mode surfaces for strategy objective properties", () => {
+    const cardSource = readSource(
+      "src/modules/strategy/strategy-map-cards.tsx",
+    );
+    const roadmapSource = readSource(
+      "src/modules/roadmap/components/objectives-board.tsx",
+    );
+
+    expect(cardSource).toContain("objectivePropertyControlClasses");
+    expect(cardSource).toContain("dark:bg-state-hover!");
+    expect(cardSource).toContain("dark:hover:bg-state-active!");
+    expect(cardSource).toContain("dark:border-foreground/15");
+    expect(roadmapSource).not.toContain("objectivePropertyControlClasses");
   });
 
   it("uses campaign-style objective references and the shared external-link icon", () => {
@@ -227,6 +245,20 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).toContain("mt-1 line-clamp-3 leading-5");
     expect(cardSource).toContain('className="mt-2 gap-2"');
     expect(cardSource).toContain("text-[0.75rem]");
+  });
+
+  it("shows concept help only for the goal and strategic pillars", () => {
+    const cardSource = readSource(
+      "src/modules/strategy/strategy-map-cards.tsx",
+    );
+
+    expect(cardSource).toContain("HelpIcon");
+    expect(cardSource).toContain('className="h-4 w-4 text-current"');
+    expect(cardSource).toContain('label="ultimate goal"');
+    expect(cardSource).toContain('label="strategic pillar"');
+    expect(cardSource.match(/<StrategyConceptInfo/g)).toHaveLength(2);
+    expect(cardSource).not.toContain("InfoIcon");
+    expect(cardSource).not.toContain("getTermDisplay");
   });
 
   it("shares pillar alignment across objective property surfaces", () => {

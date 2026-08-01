@@ -29,6 +29,7 @@ import {
   EstimateIcon,
   ListIcon,
   ObjectiveIcon,
+  OKRIcon,
   PlusIcon,
   SprintsIcon,
   TagsIcon,
@@ -64,6 +65,8 @@ import {
 } from "@/modules/objectives/hooks/use-objectives";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import { useTerminology } from "@/hooks";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import {
   LABEL_MENU_PAGE_SIZE,
   useLabels,
@@ -99,6 +102,7 @@ export type StoriesFilterField =
   | "labelIds"
   | "estimateValues"
   | "objectiveId"
+  | "keyResultId"
   | "startDate"
   | "endDate"
   | "assignedToMe"
@@ -1030,12 +1034,15 @@ const ObjectiveEditor = ({
                 className="justify-between gap-4"
                 key={objective.id}
                 onSelect={() => {
+                  const objectiveId =
+                    filters.objectiveId === objective.id ? null : objective.id;
                   setFilters({
                     ...filters,
-                    objectiveId:
-                      filters.objectiveId === objective.id
-                        ? null
-                        : objective.id,
+                    objectiveId,
+                    keyResultId:
+                      objectiveId === filters.objectiveId
+                        ? filters.keyResultId
+                        : null,
                   });
                 }}
                 value={objective.name}
@@ -1058,6 +1065,72 @@ const ObjectiveEditor = ({
             <MenuLoadingSkeleton rows={2} />
           </Command.Loading>
         ) : null}
+      </Command.Group>
+    </Command>
+  );
+};
+
+const KeyResultEditor = ({
+  filters,
+  setFilters,
+}: {
+  filters: StoriesFilter;
+  setFilters: (value: StoriesFilter) => void;
+}) => {
+  const { getTermDisplay } = useTerminology();
+  const { data: keyResults = [], isPending } = useKeyResults(
+    filters.objectiveId ?? "",
+    Boolean(filters.objectiveId),
+  );
+
+  return (
+    <Command>
+      <Command.Input
+        autoFocus
+        placeholder={`Search ${getTermDisplay("keyResultTerm", { variant: "plural" })}...`}
+      />
+      <Divider className="my-2" />
+      <Command.Group className="max-h-80 overflow-y-auto">
+        {!filters.objectiveId ? (
+          <Text className="px-3 py-2" color="muted">
+            Select an {getTermDisplay("objectiveTerm")} filter first.
+          </Text>
+        ) : null}
+        {isPending && filters.objectiveId ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={4} />
+          </Command.Loading>
+        ) : null}
+        {!isPending && filters.objectiveId && keyResults.length === 0 ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">
+              No {getTermDisplay("keyResultTerm", { variant: "plural" })} found.
+            </Text>
+          </Command.Empty>
+        ) : null}
+        {keyResults.map((keyResult) => (
+          <Command.Item
+            active={filters.keyResultId === keyResult.id}
+            className="justify-between gap-4"
+            key={keyResult.id}
+            onSelect={() => {
+              setFilters({
+                ...filters,
+                keyResultId:
+                  filters.keyResultId === keyResult.id ? null : keyResult.id,
+              });
+            }}
+            value={keyResult.name}
+          >
+            <Flex align="center" className="min-w-0 flex-1" gap={2}>
+              <OKRIcon className="text-text-secondary h-4 w-auto" />
+              <Text className="max-w-72 truncate">{keyResult.name}</Text>
+            </Flex>
+            {filters.keyResultId === keyResult.id ? (
+              <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+            ) : null}
+          </Command.Item>
+        ))}
       </Command.Group>
     </Command>
   );
@@ -1288,6 +1361,10 @@ const FilterValueEditor = ({
     return <ObjectiveEditor filters={filters} setFilters={setFilters} />;
   }
 
+  if (field === "keyResultId") {
+    return <KeyResultEditor filters={filters} setFilters={setFilters} />;
+  }
+
   if (field === "labelIds") {
     return <LabelEditor filters={filters} setFilters={setFilters} />;
   }
@@ -1440,6 +1517,7 @@ export const StoriesFilterBar = ({
   hiddenFields = EMPTY_FILTER_FIELDS,
   showWhenEmpty = false,
 }: StoriesFilterBarProps) => {
+  const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const scopedTeamId = getScopedStoriesFilterTeamId(
@@ -1454,6 +1532,10 @@ export const StoriesFilterBar = ({
   const { data: teams = [] } = useTeams();
   const { data: sprints = [] } = useTeamSprints(resolvedTeamId);
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
+  const { data: keyResults = [] } = useKeyResults(
+    filters.objectiveId ?? "",
+    Boolean(filters.objectiveId),
+  );
   const { data: allLabels = [] } = useLabels();
   const { data: teamSettings } = useTeamSettings(scopedTeamId);
   const estimateScheme =
@@ -1503,6 +1585,11 @@ export const StoriesFilterBar = ({
     () =>
       new Map(objectives.map((objective) => [objective.id, objective.name])),
     [objectives],
+  );
+  const keyResultById = useMemo(
+    () =>
+      new Map(keyResults.map((keyResult) => [keyResult.id, keyResult.name])),
+    [keyResults],
   );
   const labelById = useMemo(
     () =>
@@ -1675,10 +1762,20 @@ export const StoriesFilterBar = ({
     if (filters.objectiveId) {
       items.push({
         field: "objectiveId",
-        label: "Objective",
+        label: getTermDisplay("objectiveTerm", { capitalize: true }),
         ...getOperatorConfig(filters, "objectiveId"),
         value: objectiveById.get(filters.objectiveId) ?? filters.objectiveId,
         icon: <ObjectiveIcon className="h-4 w-auto" />,
+      });
+    }
+
+    if (filters.keyResultId) {
+      items.push({
+        field: "keyResultId",
+        label: getTermDisplay("keyResultTerm", { capitalize: true }),
+        operator: "is",
+        value: keyResultById.get(filters.keyResultId) ?? filters.keyResultId,
+        icon: <OKRIcon className="h-4 w-auto" />,
       });
     }
 
@@ -1696,6 +1793,8 @@ export const StoriesFilterBar = ({
     filters,
     estimateScheme,
     hiddenFieldSet,
+    getTermDisplay,
+    keyResultById,
     labelById,
     objectiveById,
     sprintById,
@@ -1776,7 +1875,12 @@ export const StoriesFilterBar = ({
     {
       field: "objectiveId",
       icon: <ObjectiveIcon className="h-5 w-auto" />,
-      label: "Objective",
+      label: getTermDisplay("objectiveTerm", { capitalize: true }),
+    },
+    {
+      field: "keyResultId",
+      icon: <OKRIcon className="h-5 w-auto" />,
+      label: getTermDisplay("keyResultTerm", { capitalize: true }),
     },
     {
       field: "startDate",

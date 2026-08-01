@@ -1,3 +1,4 @@
+import { ApiError } from "api-client";
 import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
@@ -8,7 +9,8 @@ export const getStory = async (id: string, ctx: WorkspaceCtx) => {
     const story = await get<ApiResponse<DetailedStory>>(`stories/${id}`, ctx);
     return story.data;
   } catch (error) {
-    return null;
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
   }
 };
 
@@ -20,6 +22,7 @@ export const getStoryRef = async (ref: string, ctx: WorkspaceCtx) => {
     );
     return story.data;
   } catch (error) {
-    return null;
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
   }
 };

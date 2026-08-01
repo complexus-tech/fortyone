@@ -1,6 +1,7 @@
 package stories
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,7 @@ func TestParseStoryRef(t *testing.T) {
 			code, sequenceID, err := service.parseStoryRef(tt.input)
 			if tt.shouldFail {
 				require.Error(t, err)
+				require.True(t, errors.Is(err, ErrInvalidStoryReference))
 				return
 			}
 

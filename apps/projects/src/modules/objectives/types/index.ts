@@ -19,6 +19,7 @@ export type Objective = {
   updatedAt: string;
   createdBy: string;
   statusId: string;
+  keyResultCount: number;
   priority?: StoryPriority;
   health: ObjectiveHealth;
   stats?: {

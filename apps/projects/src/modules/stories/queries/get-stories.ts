@@ -12,6 +12,7 @@ export const getStories = async (
     teamId?: string;
     sprintId?: string;
     objectiveId?: string;
+    keyResultId?: string;
     epicId?: string;
     assigneeId?: string;
     showSubStories?: boolean;

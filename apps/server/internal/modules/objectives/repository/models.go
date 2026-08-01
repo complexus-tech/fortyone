@@ -26,6 +26,7 @@ type dbObjective struct {
 	CreatedAt        time.Time                   `db:"created_at"`
 	UpdatedAt        time.Time                   `db:"updated_at"`
 	CreatedBy        uuid.UUID                   `db:"created_by"`
+	KeyResultCount   int                         `db:"key_result_count"`
 	TotalStories     int                         `db:"total_stories"`
 	CancelledStories int                         `db:"cancelled_stories"`
 	CompletedStories int                         `db:"completed_stories"`
@@ -86,6 +87,7 @@ func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 		Status:           dbo.Status,
 		Priority:         dbo.Priority,
 		Health:           dbo.Health,
+		KeyResultCount:   dbo.KeyResultCount,
 		TotalStories:     dbo.TotalStories,
 		CancelledStories: dbo.CancelledStories,
 		CompletedStories: dbo.CompletedStories,

@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Box, BreadCrumbs, Button, Dialog, Flex, Text } from "ui";
 import { MinusIcon, PlusIcon, StrategyIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { useUserRole } from "@/hooks";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { StrategyEditorDialog } from "./strategy-editor-dialog";
 import { StrategyMapCanvas } from "./strategy-map-canvas";
+import { StrategyMapSkeleton } from "./strategy-map-skeleton";
 import {
   StrategySelectedDetails,
   type SelectedStrategyNode,
@@ -28,6 +28,7 @@ export const WorkspaceStrategyMapPage = () => {
     deletePillar,
   } = useStrategyMutations();
   const [isPillarOpen, setIsPillarOpen] = useState(false);
+  const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [pillarToDelete, setPillarToDelete] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<SelectedStrategyNode | null>(
     null,
@@ -112,7 +113,7 @@ export const WorkspaceStrategyMapPage = () => {
 
       <Box className="relative h-[calc(100dvh-4rem)]">
         {isStrategyPending || areObjectivesPending || !strategy ? (
-          <BoardSkeleton className="h-full" layout="gantt" />
+          <StrategyMapSkeleton />
         ) : (
           <StrategyMapCanvas
             canEdit={!isGuest}
@@ -120,10 +121,17 @@ export const WorkspaceStrategyMapPage = () => {
             onAlign={(objectiveId, pillarId) => {
               if (!isGuest) alignObjective.mutate({ objectiveId, pillarId });
             }}
+            onAddPillar={() => {
+              if (!isGuest) setIsPillarOpen(true);
+            }}
             onDeletePillar={(pillarId) => {
               if (!isGuest) setPillarToDelete(pillarId);
             }}
             onSelectGoal={() => {
+              if (!strategy.ultimateGoal.trim() && !isGuest) {
+                setIsGoalOpen(true);
+                return;
+              }
               setSelectedNode({ type: "goal" });
             }}
             onSelectObjective={(objective) => {
@@ -164,6 +172,25 @@ export const WorkspaceStrategyMapPage = () => {
         ) : null}
       </Box>
 
+      <StrategyEditorDialog
+        initialDescription={strategy?.description ?? ""}
+        initialName={strategy?.ultimateGoal ?? ""}
+        isOpen={isGoalOpen}
+        isPending={updateStrategy.isPending}
+        nameLabel="Ultimate goal"
+        onOpenChange={setIsGoalOpen}
+        onSave={(ultimateGoal, description) => {
+          updateStrategy.mutate(
+            { ultimateGoal, description },
+            {
+              onSuccess: () => {
+                setIsGoalOpen(false);
+              },
+            },
+          );
+        }}
+        title="Add ultimate goal"
+      />
       <StrategyEditorDialog
         isOpen={isPillarOpen}
         isPending={createPillar.isPending}

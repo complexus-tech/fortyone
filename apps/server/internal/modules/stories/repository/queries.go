@@ -59,6 +59,40 @@ func (r *repo) GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uu
 	return scheme, nil
 }
 
+func (r *repo) GetKeyResultObjective(ctx context.Context, keyResultID, workspaceID uuid.UUID) (uuid.UUID, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetKeyResultObjective")
+	defer span.End()
+
+	const query = `
+		SELECT kr.objective_id
+		FROM key_results kr
+		JOIN objectives o ON o.objective_id = kr.objective_id
+		WHERE kr.id = :key_result_id
+		AND o.workspace_id = :workspace_id
+	`
+
+	params := map[string]any{
+		"key_result_id": keyResultID,
+		"workspace_id":  workspaceID,
+	}
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	defer stmt.Close()
+
+	var objectiveID uuid.UUID
+	if err := stmt.GetContext(ctx, &objectiveID, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return uuid.Nil, stories.ErrNotFound
+		}
+		return uuid.Nil, err
+	}
+
+	return objectiveID, nil
+}
+
 func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
 	r.log.Info(ctx, "business.repository.stories.GetStoryLinks")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetStoryLinks")
@@ -327,7 +361,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 							WHERE snm.story_id = s.id AND snm.user_id = audience.user_id
 						)
 					) AS watcher_count,
-					(
+					COALESCE((
 						:current_user <> CAST('00000000-0000-0000-0000-000000000000' AS uuid)
 						AND NOT EXISTS (
 							SELECT 1 FROM story_notification_mutes snm
@@ -344,7 +378,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 								WHERE sw.story_id = s.id AND sw.user_id = :current_user
 							)
 						)
-					) AS is_watching,
+					), false) AS is_watching,
 					CASE
 						WHEN s.assignee_id = :current_user THEN 'assignee'
 						WHEN EXISTS (
@@ -460,8 +494,8 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 
 	err = stmt.GetContext(ctx, &story, params)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return dbStory{}, errors.New("story not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return dbStory{}, stories.ErrNotFound
 		}
 		r.log.Error(ctx, fmt.Sprintf("failed to execute query: %s", err), "id", id)
 		return dbStory{}, err
@@ -3067,10 +3101,13 @@ func (r *repo) QueryByRef(ctx context.Context, workspaceId uuid.UUID, teamCode s
 		FROM stories s
 		INNER JOIN teams t ON t.team_id = s.team_id
 		WHERE s.workspace_id = $1
-			AND t.code = $2
+			AND UPPER(t.code) = $2
 			AND s.sequence_id = $3;
 	`, workspaceId, teamCode, sequenceID); err != nil {
 		span.RecordError(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return stories.CoreSingleStory{}, stories.ErrNotFound
+		}
 		return stories.CoreSingleStory{}, err
 	}
 

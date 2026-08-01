@@ -53,6 +53,19 @@ describe("story filter query mapping", () => {
     });
   });
 
+  it("maps a key result into grouped story query params", () => {
+    const filters = {
+      ...baseFilters,
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    });
+  });
+
   it("maps negated content and collection operators to exclusion params", () => {
     const filters = {
       ...baseFilters,
@@ -122,6 +135,16 @@ describe("story filter query mapping", () => {
     } as unknown as StoriesFilter;
 
     expect(getActiveStoriesFilterCount(filters)).toBe(1);
+  });
+
+  it("counts objective and key result filters independently", () => {
+    const filters = {
+      ...baseFilters,
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    } as StoriesFilter;
+
+    expect(getActiveStoriesFilterCount(filters)).toBe(2);
   });
 });
 

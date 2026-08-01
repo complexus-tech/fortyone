@@ -29,6 +29,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { ObjectiveKeyResultSubMenu } from "@/components/ui/story/objective-key-result-menu";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
@@ -229,6 +230,7 @@ export const StoryActionsMenu = ({
     data?.reporterId,
   );
   const subscriptionMutation = useSetStoryWatchingMutation();
+  const updateMutation = useUpdateStoryMutation();
   const archiveMutation = useBulkArchiveStoryMutation();
   const deleteMutation = useBulkDeleteStoryMutation();
   const duplicateMutation = useDuplicateStoryMutation();
@@ -367,6 +369,15 @@ export const StoryActionsMenu = ({
               disabled={!canUpdateProperties}
               priority={data.priority}
               storyId={storyId}
+            />
+            <ObjectiveKeyResultSubMenu
+              disabled={!canUpdateProperties}
+              keyResultId={data.keyResultId}
+              objectiveId={data.objectiveId}
+              onChange={(payload) => {
+                updateMutation.mutate({ payload, storyId });
+              }}
+              teamId={data.teamId}
             />
             <Menu.Item
               disabled={!canEdit || duplicateMutation.isPending}

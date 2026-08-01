@@ -109,6 +109,7 @@ export type StoryFilters = {
   parentId?: string | null;
   objectiveId?: string | null;
   excludedObjectiveId?: string | null;
+  keyResultId?: string | null;
   epicId?: string | null;
   hasNoAssignee?: boolean | null;
   hasAssignee?: boolean | null;
@@ -188,6 +189,7 @@ export type GroupedStoryParams = {
   parentId?: string;
   objectiveId?: string;
   excludedObjectiveId?: string;
+  keyResultId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
   hasAssignee?: boolean;
@@ -214,6 +216,7 @@ export type GroupStoryParams = {
   groupBy: "priority" | "status" | "assignee" | "none";
   orderBy?: "created" | "updated" | "deadline" | "priority";
   orderDirection?: "asc" | "desc";
+  keyResultId?: string;
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;

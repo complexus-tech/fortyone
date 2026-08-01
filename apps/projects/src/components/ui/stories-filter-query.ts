@@ -53,6 +53,7 @@ export const getGroupedStoryFilterParams = (
       objectiveOperator === "isNot"
         ? filters.objectiveId ?? undefined
         : undefined,
+    keyResultId: filters.keyResultId ?? undefined,
     startDateAfter:
       startDateOperator === "is" || startDateOperator === "isOnOrAfter"
         ? filters.startDate ?? undefined

@@ -12,24 +12,25 @@ import (
 
 // AppObjectiveList represents a list of objectives in the application.
 type AppObjectiveList struct {
-	ID           uuid.UUID      `json:"id"`
-	SequenceID   int            `json:"sequenceId"`
-	Name         string         `json:"name"`
-	Description  *string        `json:"description"`
-	ShortSummary *string        `json:"shortSummary"`
-	LeadUser     *uuid.UUID     `json:"leadUser"`
-	Team         uuid.UUID      `json:"teamId"`
-	Workspace    uuid.UUID      `json:"workspaceId"`
-	StartDate    *time.Time     `json:"startDate"`
-	EndDate      *time.Time     `json:"endDate"`
-	IsPrivate    bool           `json:"isPrivate"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt"`
-	Status       uuid.UUID      `json:"statusId"`
-	Priority     *string        `json:"priority"`
-	Health       *string        `json:"health"`
-	CreatedBy    uuid.UUID      `json:"createdBy"`
-	Stats        ObjectiveStats `json:"stats"`
+	ID             uuid.UUID      `json:"id"`
+	SequenceID     int            `json:"sequenceId"`
+	Name           string         `json:"name"`
+	Description    *string        `json:"description"`
+	ShortSummary   *string        `json:"shortSummary"`
+	LeadUser       *uuid.UUID     `json:"leadUser"`
+	Team           uuid.UUID      `json:"teamId"`
+	Workspace      uuid.UUID      `json:"workspaceId"`
+	StartDate      *time.Time     `json:"startDate"`
+	EndDate        *time.Time     `json:"endDate"`
+	IsPrivate      bool           `json:"isPrivate"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	Status         uuid.UUID      `json:"statusId"`
+	Priority       *string        `json:"priority"`
+	Health         *string        `json:"health"`
+	KeyResultCount int            `json:"keyResultCount"`
+	CreatedBy      uuid.UUID      `json:"createdBy"`
+	Stats          ObjectiveStats `json:"stats"`
 }
 
 type ObjectiveStats struct {
@@ -71,23 +72,24 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 		}
 
 		appObjectives[i] = AppObjectiveList{
-			ID:           objective.ID,
-			SequenceID:   objective.SequenceID,
-			Name:         objective.Name,
-			Description:  objective.Description,
-			ShortSummary: objective.ShortSummary,
-			LeadUser:     objective.LeadUser,
-			Team:         objective.Team,
-			Workspace:    objective.Workspace,
-			StartDate:    objective.StartDate,
-			EndDate:      objective.EndDate,
-			IsPrivate:    objective.IsPrivate,
-			CreatedAt:    objective.CreatedAt,
-			UpdatedAt:    objective.UpdatedAt,
-			Status:       objective.Status,
-			Priority:     objective.Priority,
-			CreatedBy:    objective.CreatedBy,
-			Health:       healthStr,
+			ID:             objective.ID,
+			SequenceID:     objective.SequenceID,
+			Name:           objective.Name,
+			Description:    objective.Description,
+			ShortSummary:   objective.ShortSummary,
+			LeadUser:       objective.LeadUser,
+			Team:           objective.Team,
+			Workspace:      objective.Workspace,
+			StartDate:      objective.StartDate,
+			EndDate:        objective.EndDate,
+			IsPrivate:      objective.IsPrivate,
+			CreatedAt:      objective.CreatedAt,
+			UpdatedAt:      objective.UpdatedAt,
+			Status:         objective.Status,
+			Priority:       objective.Priority,
+			CreatedBy:      objective.CreatedBy,
+			Health:         healthStr,
+			KeyResultCount: objective.KeyResultCount,
 			Stats: ObjectiveStats{
 				Total:     objective.TotalStories,
 				Cancelled: objective.CancelledStories,

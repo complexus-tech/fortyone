@@ -455,13 +455,13 @@ type AppUpdateStory struct {
 	EstimateValue   *int16     `json:"estimateValue" db:"estimate_unit"`
 	Description     string     `json:"description" db:"description"`
 	DescriptionHTML string     `json:"descriptionHTML" db:"description_html"`
-	Parent          uuid.UUID  `json:"parentId" db:"parent_id"`
-	Objective       uuid.UUID  `json:"objectiveId" db:"objective_id"`
+	Parent          *uuid.UUID `json:"parentId" db:"parent_id"`
+	Objective       *uuid.UUID `json:"objectiveId" db:"objective_id"`
 	Status          uuid.UUID  `json:"statusId" db:"status_id"`
 	Assignee        *uuid.UUID `json:"assigneeId" db:"assignee_id"`
 	Priority        string     `json:"priority" db:"priority" validate:"omitempty,oneof='No Priority' Low Medium High Urgent"`
-	Sprint          uuid.UUID  `json:"sprintId" db:"sprint_id"`
-	KeyResult       uuid.UUID  `json:"keyResultId" db:"key_result_id"`
+	Sprint          *uuid.UUID `json:"sprintId" db:"sprint_id"`
+	KeyResult       *uuid.UUID `json:"keyResultId" db:"key_result_id"`
 	StartDate       *date.Date `json:"startDate" db:"start_date"`
 	EndDate         *date.Date `json:"endDate" db:"end_date"`
 }

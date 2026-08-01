@@ -10,6 +10,7 @@ import {
   DeleteIcon,
   EditIcon,
   ExternalLinkIcon,
+  HelpIcon,
   ObjectiveIcon,
   UnlinkIcon,
 } from "icons";
@@ -116,12 +117,15 @@ const getProgressTrackClassName = (progress: number) => {
 };
 
 const cardClasses = cn(
-  "border-border-strong/65 bg-white shadow-shadow dark:border-border-strong/80 dark:bg-surface-elevated/55",
+  "border-border-strong/65 bg-white shadow-shadow dark:border-foreground/20 dark:bg-accent/70",
   "rounded-[14px] border-2 shadow-lg backdrop-blur",
   "transition-[border-color,box-shadow,background-color] duration-150",
-  "hover:border-foreground/35 hover:bg-surface-elevated hover:shadow-xl",
+  "hover:border-foreground/35 hover:bg-surface-elevated hover:shadow-xl dark:hover:bg-surface-prominent/55",
   "group-data-[dragging=true]/node:border-foreground/65 group-data-[dragging=true]/node:shadow-2xl",
 );
+
+const objectivePropertyControlClasses =
+  "dark:border-foreground/15 dark:bg-state-hover! dark:hover:bg-state-active!";
 
 const NodeEyebrow = ({
   children,
@@ -152,6 +156,32 @@ const ContextMenuLabel = ({
     <span className="grid h-4 w-4 place-items-center text-current">{icon}</span>
     <Text>{children}</Text>
   </Flex>
+);
+
+const StrategyConceptInfo = ({
+  description,
+  label,
+}: {
+  description: string;
+  label: string;
+}) => (
+  <Tooltip
+    className="border-border-strong dark:border-border-strong dark:bg-surface-elevated max-w-72 py-2.5"
+    delayDuration={250}
+    title={description}
+  >
+    <button
+      aria-label={`About ${label}`}
+      className="text-text-muted hover:text-foreground inline-grid shrink-0 place-items-center rounded-sm transition-colors"
+      data-no-drag
+      onClick={(event) => {
+        event.stopPropagation();
+      }}
+      type="button"
+    >
+      <HelpIcon className="h-4 w-4 text-current" />
+    </button>
+  </Tooltip>
 );
 
 const Metric = ({
@@ -200,9 +230,15 @@ export const UltimateGoalNodeCard = memo(
           className={cn(cardClasses, "relative px-7 py-6 text-center")}
           style={{ width: GOAL_NODE_WIDTH }}
         >
-          <NodeEyebrow className="text-text-primary text-[0.74rem] font-bold">
-            ◆ Ultimate goal
-          </NodeEyebrow>
+          <Flex align="center" className="gap-1.5" justify="center">
+            <NodeEyebrow className="text-text-primary text-[0.74rem] font-bold">
+              ◆ Ultimate goal
+            </NodeEyebrow>
+            <StrategyConceptInfo
+              description="Defines what winning looks like for the organization and the long-term outcome every part of the strategy should support."
+              label="ultimate goal"
+            />
+          </Flex>
           <button
             className="mt-3 w-full text-center"
             data-card-select
@@ -275,13 +311,19 @@ export const PillarNodeCard = memo(
             cardClasses,
             "px-5 py-5",
             isDropTarget &&
-              "border-foreground bg-surface-elevated ring-foreground/10 ring-4",
+              "border-foreground bg-surface-elevated ring-foreground/10 dark:bg-surface-prominent/55 ring-4",
           )}
           style={{ width: PILLAR_NODE_WIDTH }}
         >
-          <NodeEyebrow className="text-[0.74rem] font-semibold">
-            Strategic pillar
-          </NodeEyebrow>
+          <Flex align="center" className="gap-1.5">
+            <NodeEyebrow className="text-[0.74rem] font-semibold">
+              Strategic pillar
+            </NodeEyebrow>
+            <StrategyConceptInfo
+              description="A how-to-win choice that defines where the organization will focus and differentiate to achieve its ultimate goal."
+              label="strategic pillar"
+            />
+          </Flex>
           <button
             className="mt-1 w-full text-left"
             data-card-select
@@ -346,10 +388,7 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
 
   return (
     <Box
-      className={cn(
-        "border-border mt-3 border-t",
-        !isExpanded && "-mb-2.5",
-      )}
+      className={cn("border-border mt-3 border-t", !isExpanded && "-mb-2.5")}
       data-no-drag
     >
       <button
@@ -505,7 +544,10 @@ export const ObjectiveNodeCard = memo(
                   <Button
                     aria-label={lead ? `Lead: ${lead.username}` : "Add lead"}
                     asIcon
-                    className="gap-1 px-1"
+                    className={cn(
+                      objectivePropertyControlClasses,
+                      "gap-1 px-1",
+                    )}
                     color="tertiary"
                     disabled={!canEdit}
                     size="xs"
@@ -531,7 +573,7 @@ export const ObjectiveNodeCard = memo(
               <ObjectiveStatusesMenu>
                 <ObjectiveStatusesMenu.Trigger>
                   <Button
-                    className="gap-1 pr-2"
+                    className="dark:border-foreground/15 gap-1 pr-2"
                     disabled={!canEdit}
                     rounded="md"
                     size="xs"
@@ -556,7 +598,10 @@ export const ObjectiveNodeCard = memo(
               <PrioritiesMenu>
                 <PrioritiesMenu.Trigger>
                   <Button
-                    className="gap-1 pr-2"
+                    className={cn(
+                      objectivePropertyControlClasses,
+                      "gap-1 pr-2",
+                    )}
                     color="tertiary"
                     disabled={!canEdit}
                     size="xs"
@@ -597,7 +642,7 @@ export const ObjectiveNodeCard = memo(
                 objectiveId={objective.id}
               >
                 <Button
-                  className="gap-1 px-1"
+                  className={cn(objectivePropertyControlClasses, "gap-1 px-1")}
                   color="tertiary"
                   disabled={!canEdit}
                   rounded="md"
@@ -612,7 +657,10 @@ export const ObjectiveNodeCard = memo(
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button
-                    className="gap-1 pr-2"
+                    className={cn(
+                      objectivePropertyControlClasses,
+                      "gap-1 pr-2",
+                    )}
                     color="tertiary"
                     disabled={!canEdit}
                     leftIcon={<CalendarIcon className="h-4" />}

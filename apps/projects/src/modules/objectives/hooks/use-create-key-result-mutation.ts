@@ -94,6 +94,9 @@ export const useCreateKeyResultMutation = () => {
         ),
       });
       queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
         queryKey: objectiveKeys.activitiesInfinite(
           workspaceSlug,
           newKeyResult.objectiveId,

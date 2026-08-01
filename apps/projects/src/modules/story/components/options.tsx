@@ -17,8 +17,9 @@ import {
   CalendarIcon,
   EstimateIcon,
   ObjectiveIcon,
-  PlusIcon,
+  OKRIcon,
   SprintsIcon,
+  TagsIcon,
   UsersAddIcon,
 } from "icons";
 import { cn } from "lib";
@@ -39,7 +40,10 @@ import {
   StoryLabel,
   ConfirmDialog,
 } from "@/components/ui";
-import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import {
+  KeyResultMenu,
+  ObjectiveKeyResultMenu,
+} from "@/components/ui/story/objective-key-result-menu";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -53,6 +57,7 @@ import {
 import { useMembers } from "@/lib/hooks/members";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
@@ -116,6 +121,7 @@ export const Options = ({
     startDate,
     endDate,
     objectiveId,
+    keyResultId,
     assigneeId,
     collaboratorIds,
     collaborators,
@@ -140,6 +146,15 @@ export const Options = ({
   const { data: members = [] } = useMembers();
   const { data: sprint } = useSprint(sprintId, teamId);
   const { data: objective } = useObjective(objectiveId, teamId);
+  const { data: keyResults = [] } = useKeyResults(
+    objectiveId ?? "",
+    Boolean(objectiveId && keyResultId),
+  );
+  const keyResult = keyResults.find(({ id }) => id === keyResultId);
+  const objectiveName =
+    typeof objective?.name === "string" ? objective.name.trim() || null : null;
+  const keyResultName =
+    typeof keyResult?.name === "string" ? keyResult.name.trim() || null : null;
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const name = status?.name;
@@ -694,45 +709,97 @@ export const Options = ({
             }
           />
           {features.objectiveEnabled ? (
-            <Option
-              isCompact={isCompact}
-              isNotifications={isNotifications}
-              label="Objective"
-              value={
-                <ObjectivesMenu>
-                  <ObjectivesMenu.Trigger>
+            <>
+              <Option
+                isCompact={isCompact}
+                isNotifications={isNotifications}
+                label={getTermDisplay("objectiveTerm", { capitalize: true })}
+                value={
+                  <ObjectiveKeyResultMenu
+                    align="end"
+                    keyResultId={keyResultId}
+                    objectiveId={objectiveId}
+                    onChange={(selection) => {
+                      handleUpdate(selection);
+                    }}
+                    teamId={teamId}
+                  >
                     <Button
+                      className="w-fit max-w-[13rem] justify-start font-medium"
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={
-                        objectiveId ? (
-                          <ObjectiveIcon className="h-[1.15rem] w-auto" />
-                        ) : (
-                          <PlusIcon className="h-5 w-auto" />
-                        )
+                        <ObjectiveIcon
+                          className={cn("h-[1.15rem] w-auto shrink-0", {
+                            "text-text-muted": !objectiveId,
+                          })}
+                        />
                       }
                       ref={objectiveButtonRef}
                       size="sm"
-                      title={objectiveId ? objective?.name : undefined}
+                      title={objectiveName ?? undefined}
                       type="button"
                       variant={isCompact ? "solid" : "naked"}
                     >
-                      <span className="inline-block max-w-[12ch] truncate">
-                        {objective?.name || "Add objective"}
+                      <span className="block min-w-0 truncate">
+                        {objectiveId
+                          ? objectiveName ??
+                            getTermDisplay("objectiveTerm", {
+                              capitalize: true,
+                            })
+                          : `Add ${getTermDisplay("objectiveTerm")}`}
                       </span>
                     </Button>
-                  </ObjectivesMenu.Trigger>
-                  <ObjectivesMenu.Items
-                    align="end"
-                    objectiveId={objectiveId ?? undefined}
-                    setObjectiveId={(objectiveId) => {
-                      handleUpdate({ objectiveId });
-                    }}
-                    teamId={teamId}
-                  />
-                </ObjectivesMenu>
-              }
-            />
+                  </ObjectiveKeyResultMenu>
+                }
+              />
+              {objectiveId ? (
+                <Option
+                  isCompact={isCompact}
+                  isNotifications={isNotifications}
+                  label={getTermDisplay("keyResultTerm", {
+                    capitalize: true,
+                  })}
+                  value={
+                    <KeyResultMenu
+                      align="end"
+                      keyResultId={keyResultId}
+                      objectiveId={objectiveId}
+                      onChange={(nextKeyResultId) => {
+                        handleUpdate({ keyResultId: nextKeyResultId });
+                      }}
+                    >
+                      <Button
+                        className="w-fit max-w-[13rem] justify-start font-medium"
+                        color="tertiary"
+                        disabled={isDeleted || isGuest}
+                        leftIcon={
+                          <OKRIcon
+                            className={cn("h-[1.15rem] w-auto shrink-0", {
+                              "text-text-muted": !keyResultId,
+                            })}
+                            strokeWidth={2.4}
+                          />
+                        }
+                        size="sm"
+                        title={keyResultName ?? undefined}
+                        type="button"
+                        variant={isCompact ? "solid" : "naked"}
+                      >
+                        <span className="block min-w-0 truncate">
+                          {keyResultId
+                            ? keyResultName ??
+                              getTermDisplay("keyResultTerm", {
+                                capitalize: true,
+                              })
+                            : `Add ${getTermDisplay("keyResultTerm")}`}
+                        </span>
+                      </Button>
+                    </KeyResultMenu>
+                  }
+                />
+              ) : null}
+            </>
           ) : null}
           {sprintsEnabled ? (
             <Option
@@ -746,11 +813,11 @@ export const Options = ({
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={
-                        sprintId ? (
-                          <SprintsIcon className="h-5 w-auto" />
-                        ) : (
-                          <PlusIcon className="h-5 w-auto" />
-                        )
+                        <SprintsIcon
+                          className={cn("h-5 w-auto", {
+                            "text-text-muted": !sprintId,
+                          })}
+                        />
                       }
                       ref={sprintButtonRef}
                       size="sm"
@@ -842,7 +909,7 @@ export const Options = ({
                             className="m-0"
                             color="tertiary"
                             disabled={isDeleted || isGuest}
-                            leftIcon={<PlusIcon />}
+                            leftIcon={<TagsIcon className="h-4 w-auto" />}
                             ref={labelsButtonRef}
                             rounded="full"
                             size="sm"
@@ -869,7 +936,7 @@ export const Options = ({
                       <Button
                         color="tertiary"
                         disabled={isDeleted || isGuest}
-                        leftIcon={<PlusIcon />}
+                        leftIcon={<TagsIcon className="h-[1.15rem] w-auto" />}
                         ref={emptyLabelsButtonRef}
                         size="sm"
                         type="button"

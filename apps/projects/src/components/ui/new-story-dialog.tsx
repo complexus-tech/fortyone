@@ -74,6 +74,7 @@ import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -84,7 +85,7 @@ import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
 import { StatusesMenu } from "./story/statuses-menu";
 import { TeamColor } from "./team-color";
-import { ObjectivesMenu } from "./story/objectives-menu";
+import { ObjectiveKeyResultMenu } from "./story/objective-key-result-menu";
 import { SprintsMenu } from "./story/sprints-menu";
 import { EstimateMenu } from "./story/estimate-menu";
 import { LabelsMenu } from "./story/labels-menu";
@@ -209,6 +210,7 @@ export const NewStoryDialog = ({
       assigneeId: assigneeId !== undefined ? assigneeId : autoAssignedUserId,
       priority,
       objectiveId: objectiveId || null,
+      keyResultId: null,
       sprintId: sprintId || null,
       estimateValue: null,
       labelIds: [],
@@ -229,6 +231,14 @@ export const NewStoryDialog = ({
   const [createMore, setCreateMore] = useState(false);
   const mutation = useCreateStoryMutation();
   const objective = objectives.find((o) => o.id === storyForm.objectiveId);
+  const { data: keyResults = [] } = useKeyResults(
+    storyForm.objectiveId ?? "",
+    Boolean(storyForm.objectiveId && storyForm.keyResultId),
+  );
+  const keyResult = keyResults.find(({ id }) => id === storyForm.keyResultId);
+  const strategyLinkLabel = keyResult
+    ? `${currentTeam?.code}-${objective?.sequenceId} / ${keyResult.name}`
+    : objective?.name;
   const sprint = sprints.find((s) => s.id === storyForm.sprintId);
   const member =
     mayaAssignee?.id === storyForm.assigneeId
@@ -855,33 +865,36 @@ export const NewStoryDialog = ({
                 </LabelsMenu>
               )}
               {features.objectiveEnabled && objectives.length > 0 ? (
-                <ObjectivesMenu>
-                  <ObjectivesMenu.Trigger>
-                    <Button
-                      className="dark:bg-surface-elevated/90 gap-1 px-2"
-                      color="tertiary"
-                      leftIcon={<ObjectiveIcon />}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <span className="inline-block max-w-[12ch] truncate">
-                        {objective?.name ||
-                          getTermDisplay("objectiveTerm", { capitalize: true })}
-                      </span>
-                    </Button>
-                  </ObjectivesMenu.Trigger>
-                  <ObjectivesMenu.Items
-                    objectiveId={storyForm.objectiveId ?? undefined}
-                    setObjectiveId={(objectiveId) => {
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "objectiveId",
-                        value: objectiveId,
-                      });
-                    }}
-                    teamId={currentTeamId}
-                  />
-                </ObjectivesMenu>
+                <ObjectiveKeyResultMenu
+                  keyResultId={storyForm.keyResultId ?? null}
+                  objectiveId={storyForm.objectiveId ?? null}
+                  onChange={(selection) => {
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "objectiveId",
+                      value: selection.objectiveId,
+                    });
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "keyResultId",
+                      value: selection.keyResultId,
+                    });
+                  }}
+                  teamId={currentTeamId ?? ""}
+                >
+                  <Button
+                    className="dark:bg-surface-elevated/90 gap-1 px-2"
+                    color="tertiary"
+                    leftIcon={<ObjectiveIcon />}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[18ch] truncate">
+                      {strategyLinkLabel ||
+                        getTermDisplay("objectiveTerm", { capitalize: true })}
+                    </span>
+                  </Button>
+                </ObjectiveKeyResultMenu>
               ) : null}
               {sprintsEnabled && sprints.length > 0 ? (
                 <SprintsMenu>

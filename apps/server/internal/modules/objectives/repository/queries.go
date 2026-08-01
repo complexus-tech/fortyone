@@ -35,6 +35,11 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			LEFT JOIN statuses st ON s.status_id = st.status_id
 			WHERE s.deleted_at IS NULL AND s.archived_at IS NULL
 			GROUP BY o.objective_id
+		),
+		key_result_stats AS (
+			SELECT objective_id, COUNT(*) AS total
+			FROM key_results
+			GROUP BY objective_id
 		)
 		SELECT
 			o.objective_id,
@@ -54,6 +59,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			o.created_at,
 			o.updated_at,
 			o.created_by,
+			COALESCE(krs.total, 0) as key_result_count,
 			COALESCE(ss.total, 0) as total_stories,
 			COALESCE(ss.cancelled, 0) as cancelled_stories,
 			COALESCE(ss.completed, 0) as completed_stories,
@@ -61,9 +67,10 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			COALESCE(ss.unstarted, 0) as unstarted_stories,
 			COALESCE(ss.backlog, 0) as backlog_stories
 		FROM
-			objectives o
+		objectives o
 		INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
 		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
+		LEFT JOIN key_result_stats krs ON o.objective_id = krs.objective_id
 	`
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
@@ -144,6 +151,11 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			LEFT JOIN statuses st ON s.status_id = st.status_id
 			WHERE s.deleted_at IS NULL AND s.archived_at IS NULL
 			GROUP BY o.objective_id
+		),
+		key_result_stats AS (
+			SELECT objective_id, COUNT(*) AS total
+			FROM key_results
+			GROUP BY objective_id
 		)
 		SELECT
 			o.objective_id,
@@ -163,6 +175,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			o.priority,
 			o.health,
 			o.created_by,
+			COALESCE(krs.total, 0) as key_result_count,
 			COALESCE(ss.total, 0) as total_stories,
 			COALESCE(ss.cancelled, 0) as cancelled_stories,
 			COALESCE(ss.completed, 0) as completed_stories,
@@ -172,6 +185,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 		FROM
 			objectives o
 		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
+		LEFT JOIN key_result_stats krs ON o.objective_id = krs.objective_id
 		WHERE o.objective_id = :id AND o.workspace_id = :workspace_id;
 	`
 

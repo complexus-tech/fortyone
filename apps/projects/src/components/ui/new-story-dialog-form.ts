@@ -23,6 +23,7 @@ export const buildNewStoryDialogPayload = ({
   startDate: storyForm.startDate,
   assigneeId: storyForm.assigneeId,
   objectiveId: storyForm.objectiveId,
+  keyResultId: storyForm.keyResultId,
   sprintId: storyForm.sprintId,
   estimateValue: storyForm.estimateValue ?? null,
   labelIds: storyForm.labelIds ?? [],

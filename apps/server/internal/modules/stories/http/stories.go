@@ -48,6 +48,17 @@ var (
 	ErrInvalidStoryID = errors.New("story id is not in its proper form")
 )
 
+func storyReadStatus(err error) int {
+	switch {
+	case errors.Is(err, stories.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, stories.ErrInvalidStoryReference):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
 // Handlers provides HTTP handlers for story operations.
 type Handlers struct {
 	stories     *stories.Service
@@ -249,7 +260,7 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 
 	story, err := h.stories.Get(ctx, storyId, workspace.ID)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyReadStatus(err))
 		return nil
 	}
 
@@ -268,7 +279,7 @@ func (h *Handlers) QueryByRef(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 	story, err := h.stories.QueryByRef(ctx, workspace.ID, storyRef)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyReadStatus(err))
 		return nil
 	}
 

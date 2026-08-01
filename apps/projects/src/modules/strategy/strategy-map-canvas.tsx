@@ -179,6 +179,7 @@ export const StrategyMapCanvas = ({
   objectives,
   showUnaligned,
   onAlign,
+  onAddPillar,
   onDeletePillar,
   onSelectGoal,
   onSelectObjective,
@@ -191,6 +192,7 @@ export const StrategyMapCanvas = ({
   objectives: Objective[];
   showUnaligned: boolean;
   onAlign: (objectiveId: string, pillarId: string | null) => void;
+  onAddPillar: () => void;
   onDeletePillar: (pillarId: string) => void;
   onSelectGoal: () => void;
   onSelectObjective: (objective: Objective) => void;
@@ -695,18 +697,22 @@ export const StrategyMapCanvas = ({
             })}
 
             {strategy.pillars.length === 0 ? (
-              <Box
-                className="border-border text-text-muted absolute rounded-xl border-2 border-dashed px-8 py-7 text-center"
+              <button
+                className="border-border text-text-muted hover:border-foreground/35 hover:bg-surface-elevated/35 hover:text-foreground disabled:hover:border-border disabled:hover:text-text-muted absolute rounded-xl border-2 border-dashed px-8 py-7 text-center transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+                data-no-drag
+                disabled={!canEdit}
+                onClick={onAddPillar}
                 style={{
                   left: (layout.width - GOAL_NODE_WIDTH) / 2,
                   top: 340,
                   width: GOAL_NODE_WIDTH,
                 }}
+                type="button"
               >
                 <Text fontWeight="medium">
                   Add a strategic pillar to start building the map.
                 </Text>
-              </Box>
+              </button>
             ) : null}
 
             {objectives.map((objective) => {

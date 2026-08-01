@@ -37,6 +37,7 @@ export const useCreateObjectiveMutation = () => {
         health: null,
         priority: newObjective.priority,
         statusId: newObjective.statusId,
+        keyResultCount: newObjective.keyResults?.length ?? 0,
         description: newObjective.description || "",
         shortSummary: newObjective.shortSummary || null,
         leadUser: newObjective.leadUser || "",

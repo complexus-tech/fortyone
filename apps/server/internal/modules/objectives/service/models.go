@@ -33,6 +33,7 @@ type CoreObjective struct {
 	CreatedBy        uuid.UUID
 	Priority         *string
 	Health           *ObjectiveHealth
+	KeyResultCount   int
 	TotalStories     int
 	CancelledStories int
 	CompletedStories int

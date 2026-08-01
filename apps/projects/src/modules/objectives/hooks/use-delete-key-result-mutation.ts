@@ -100,6 +100,9 @@ export const useDeleteKeyResultMutation = () => {
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
       });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
 
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),

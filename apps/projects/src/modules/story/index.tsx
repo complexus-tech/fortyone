@@ -29,11 +29,40 @@ export const StoryPage = ({
   isDialog?: boolean;
   mainHeader?: ReactNode;
 }) => {
-  const { isPending, data: story } = useStoryById(storyId);
+  const {
+    data: story,
+    isError,
+    isFetching,
+    isPending,
+    refetch,
+  } = useStoryById(storyId);
   const { withWorkspace } = useWorkspacePath();
 
   if (isPending) {
     return <StorySkeleton isDialog={isDialog} />;
+  }
+
+  if (isError) {
+    return (
+      <Box className="flex h-screen items-center justify-center">
+        <Box className="flex flex-col items-center">
+          <StoryMissingIcon className="h-20 w-auto rotate-12" />
+          <Text className="mt-10 mb-6" fontSize="3xl">
+            Unable to load this item
+          </Text>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            Something went wrong while loading this item. Try again in a moment.
+          </Text>
+          <Button
+            color="tertiary"
+            loading={isFetching}
+            onClick={() => void refetch()}
+          >
+            Try again
+          </Button>
+        </Box>
+      </Box>
+    );
   }
 
   return (

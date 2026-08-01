@@ -23,7 +23,9 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("story not found")
+	ErrNotFound                   = errors.New("story not found")
+	ErrInvalidStoryReference      = errors.New("invalid story reference")
+	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
 )
 
 // Repository provides access to the story storage.
@@ -60,6 +62,7 @@ type Repository interface {
 	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
+	GetKeyResultObjective(ctx context.Context, keyResultID, workspaceID uuid.UUID) (uuid.UUID, error)
 	GetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error)
 	SetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID, collaboratorIDs []uuid.UUID) error
 	SetWatching(ctx context.Context, storyID, workspaceID, userID uuid.UUID, watching bool) error
@@ -147,6 +150,22 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	}
 	if ns.Reporter == nil {
 		ns.Reporter = &actorID
+	}
+	if ns.KeyResult != nil {
+		objectiveID, err := s.repo.GetKeyResultObjective(ctx, *ns.KeyResult, workspaceId)
+		if err != nil {
+			return CoreSingleStory{}, fmt.Errorf("resolve key result objective: %w", err)
+		}
+		if ns.Objective != nil && *ns.Objective != objectiveID {
+			return CoreSingleStory{}, fmt.Errorf(
+				"%w: key result %s belongs to objective %s, not %s",
+				ErrObjectiveKeyResultMismatch,
+				*ns.KeyResult,
+				objectiveID,
+				*ns.Objective,
+			)
+		}
+		ns.Objective = &objectiveID
 	}
 
 	story := toCoreSingleStory(ns, workspaceId)
@@ -264,6 +283,7 @@ func (s *Service) UpdateCollaborators(ctx context.Context, storyID, workspaceID 
 	if err != nil {
 		return err
 	}
+
 	previousIDs, err := s.repo.GetCollaborators(ctx, storyID, workspaceID)
 	if err != nil {
 		return err
@@ -317,6 +337,32 @@ func (s *Service) UpdateCollaborators(ctx context.Context, storyID, workspaceID 
 		}
 	}
 	return nil
+}
+
+func optionalUUIDUpdate(value any) (*uuid.UUID, bool) {
+	switch typed := value.(type) {
+	case nil:
+		return nil, true
+	case uuid.UUID:
+		if typed == uuid.Nil {
+			return nil, true
+		}
+		return &typed, true
+	case *uuid.UUID:
+		if typed == nil || *typed == uuid.Nil {
+			return nil, true
+		}
+		return typed, true
+	default:
+		return nil, false
+	}
+}
+
+func sameOptionalUUID(left, right *uuid.UUID) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return *left == *right
 }
 
 // SetWatching updates the current user's explicit or muted story subscription.
@@ -470,6 +516,36 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		span.RecordError(err)
 		s.log.Error(ctx, "failed to get story", "error", err)
 		return err
+	}
+
+	keyResultValue, hasKeyResultUpdate := updates["key_result_id"]
+	if hasKeyResultUpdate {
+		keyResultID, validKeyResultUpdate := optionalUUIDUpdate(keyResultValue)
+		if validKeyResultUpdate && keyResultID != nil {
+			objectiveID, err := s.repo.GetKeyResultObjective(ctx, *keyResultID, workspaceID)
+			if err != nil {
+				span.RecordError(err)
+				return fmt.Errorf("resolve key result objective: %w", err)
+			}
+
+			if objectiveValue, hasObjectiveUpdate := updates["objective_id"]; hasObjectiveUpdate {
+				requestedObjectiveID, validObjectiveUpdate := optionalUUIDUpdate(objectiveValue)
+				if !validObjectiveUpdate || requestedObjectiveID == nil || *requestedObjectiveID != objectiveID {
+					return fmt.Errorf(
+						"%w: key result %s belongs to objective %s",
+						ErrObjectiveKeyResultMismatch,
+						*keyResultID,
+						objectiveID,
+					)
+				}
+			}
+
+			updates["objective_id"] = &objectiveID
+		}
+	} else if objectiveValue, hasObjectiveUpdate := updates["objective_id"]; hasObjectiveUpdate {
+		if objectiveID, validObjectiveUpdate := optionalUUIDUpdate(objectiveValue); validObjectiveUpdate && !sameOptionalUUID(objectiveID, story.Objective) {
+			updates["key_result_id"] = nil
+		}
 	}
 
 	if err := s.applyEstimateUpdate(ctx, workspaceID, story, updates); err != nil {
@@ -1235,12 +1311,12 @@ func (s *Service) parseStoryRef(storyRef string) (string, int, error) {
 	}
 
 	if teamCode == "" || seqStr == "" {
-		return "", 0, fmt.Errorf("invalid story reference format: %s", storyRef)
+		return "", 0, fmt.Errorf("%w: %s", ErrInvalidStoryReference, storyRef)
 	}
 
 	seqID, err := strconv.Atoi(seqStr)
 	if err != nil {
-		return "", 0, fmt.Errorf("invalid sequence number: %s", storyRef)
+		return "", 0, fmt.Errorf("%w: invalid sequence number in %s", ErrInvalidStoryReference, storyRef)
 	}
 
 	return teamCode, seqID, nil
