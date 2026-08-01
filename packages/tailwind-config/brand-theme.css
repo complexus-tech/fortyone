@@ -63,60 +63,60 @@
 .dark {
   color-scheme: dark;
 
-  --color-background: #0e0e0d;
-  --color-foreground: #c4c4c0;
-  --color-foreground-inverse: #0e0e0d;
-  --color-background-inverse: #c4c4c0;
+  --color-background: oklch(0.163 0.0021 106.6);
+  --color-foreground: oklch(0.819 0.0055 106.5);
+  --color-foreground-inverse: oklch(0.163 0.0021 106.6);
+  --color-background-inverse: oklch(0.819 0.0055 106.5);
 
-  --color-surface: #171715;
-  --color-surface-foreground: #c4c4c0;
-  --color-surface-elevated: #1d1d1b;
-  --color-surface-elevated-foreground: #c4c4c0;
-  --color-surface-muted: #171715;
-  --color-surface-muted-foreground: #7b7b76;
-  --color-surface-prominent: #31312e;
-  --color-popover: #1d1d1b;
-  --color-popover-foreground: #c4c4c0;
+  --color-surface: oklch(0.204 0.0039 106.7);
+  --color-surface-foreground: oklch(0.819 0.0055 106.5);
+  --color-surface-elevated: oklch(0.23 0.0038 106.7);
+  --color-surface-elevated-foreground: oklch(0.819 0.0055 106.5);
+  --color-surface-muted: oklch(0.204 0.0039 106.7);
+  --color-surface-muted-foreground: oklch(0.581 0.0075 106.6);
+  --color-surface-prominent: oklch(0.312 0.0052 106.7);
+  --color-popover: oklch(0.23 0.0038 106.7);
+  --color-popover-foreground: oklch(0.819 0.0055 106.5);
 
-  --color-muted: #171715;
-  --color-muted-foreground: #7b7b76;
-  --color-accent: #242421;
-  --color-accent-foreground: #c4c4c0;
+  --color-muted: oklch(0.204 0.0039 106.7);
+  --color-muted-foreground: oklch(0.581 0.0075 106.6);
+  --color-accent: oklch(0.259 0.0055 106.8);
+  --color-accent-foreground: oklch(0.819 0.0055 106.5);
 
-  --color-border: #242421;
-  --color-border-strong: #31312e;
-  --color-input: #242421;
-  --color-shadow: rgb(0 0 0 / 18%);
-  --color-icon: #7b7b76;
+  --color-border: oklch(0.259 0.0055 106.8);
+  --color-border-strong: oklch(0.312 0.0052 106.7);
+  --color-input: oklch(0.259 0.0055 106.8);
+  --color-shadow: oklch(0 0 0 / 18%);
+  --color-icon: oklch(0.581 0.0075 106.6);
 
-  --color-brand: #c75151;
-  --color-brand-foreground: #080807;
-  --color-primary: #c75151;
-  --color-primary-foreground: #080807;
-  --color-ring: #c75151;
-  --color-focus: #c75151;
-  --color-secondary: #c4c4c0;
-  --color-secondary-foreground: #0e0e0d;
-  --color-danger: #aa343c;
+  --color-brand: oklch(0.589 0.1514 22.9);
+  --color-brand-foreground: oklch(0.134 0.0026 106.7);
+  --color-primary: oklch(0.589 0.1514 22.9);
+  --color-primary-foreground: oklch(0.134 0.0026 106.7);
+  --color-ring: oklch(0.589 0.1514 22.9);
+  --color-focus: oklch(0.589 0.1514 22.9);
+  --color-secondary: oklch(0.819 0.0055 106.5);
+  --color-secondary-foreground: oklch(0.163 0.0021 106.6);
+  --color-danger: oklch(0.503 0.1534 20.9);
 
   --color-success: oklch(0.615 0.191 145);
   --color-warning: oklch(0.676 0.184 86);
   --color-info: oklch(0.608 0.143 195);
 
-  --color-text-primary: #c4c4c0;
-  --color-text-secondary: #93938d;
-  --color-text-muted: #7b7b76;
-  --color-text-disabled: #535350;
+  --color-text-primary: oklch(0.819 0.0055 106.5);
+  --color-text-secondary: oklch(0.661 0.0087 106.6);
+  --color-text-muted: oklch(0.581 0.0075 106.6);
+  --color-text-disabled: oklch(0.441 0.0048 106.6);
 
-  --color-state-hover: rgb(196 196 192 / 8%);
-  --color-state-active: rgb(196 196 192 / 12%);
-  --color-state-selected: rgb(196 196 192 / 16%);
-  --color-state-disabled: rgb(196 196 192 / 48%);
+  --color-state-hover: oklch(0.819 0.0055 106.5 / 8%);
+  --color-state-active: oklch(0.819 0.0055 106.5 / 12%);
+  --color-state-selected: oklch(0.819 0.0055 106.5 / 16%);
+  --color-state-disabled: oklch(0.819 0.0055 106.5 / 48%);
 
-  --color-sidebar: #191817;
-  --color-sidebar-foreground: #c4c4c0;
-  --color-sidebar-accent: #211f1a;
-  --color-sidebar-accent-foreground: #c4c4c0;
-  --color-sidebar-border: #242421;
-  --color-skeleton: #242421;
+  --color-sidebar: oklch(0.21 0.0025 67.7);
+  --color-sidebar-foreground: oklch(0.819 0.0055 106.5);
+  --color-sidebar-accent: oklch(0.24 0.0097 88.8);
+  --color-sidebar-accent-foreground: oklch(0.819 0.0055 106.5);
+  --color-sidebar-border: oklch(0.259 0.0055 106.8);
+  --color-skeleton: oklch(0.259 0.0055 106.8);
 }
