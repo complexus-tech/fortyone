@@ -5,6 +5,7 @@ import {
   Dialog,
   Flex,
   Text,
+  TextArea,
   TextEditor,
   DatePicker,
   Menu,
@@ -111,6 +112,7 @@ export const NewObjectiveDialog = ({
   const initialForm: NewObjective = {
     name: "",
     description: "",
+    shortSummary: "",
     leadUser: null,
     teamId: currentTeamId || "",
     startDate: null,
@@ -189,7 +191,7 @@ export const NewObjectiveDialog = ({
     createMutation.mutate({
       ...objectiveForm,
       name: titleEditor.getText(),
-      description: editor.getText(),
+      description: editor.getHTML(),
     });
     setIsOpen(false);
     setIsExpanded(false);
@@ -397,6 +399,21 @@ export const NewObjectiveDialog = ({
               className="text-2xl font-medium"
               editor={titleEditor}
             />
+            <TextArea
+              aria-label="Objective short summary"
+              className="mt-3 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              maxLength={500}
+              onChange={(event) => {
+                setObjectiveForm((current) => ({
+                  ...current,
+                  shortSummary: event.target.value,
+                }));
+              }}
+              placeholder="Add short summary..."
+              rows={3}
+              value={objectiveForm.shortSummary}
+            />
+            <Divider className="my-3 opacity-60" />
             <TextEditor
               className={cn("min-h-20", {
                 "min-h-96": isExpanded,

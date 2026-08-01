@@ -2,6 +2,7 @@ import {
   Container,
   Box,
   Divider,
+  TextArea,
   TextEditor,
   Menu,
   Button,
@@ -172,6 +173,22 @@ export const Overview = () => {
                   </Flex>
                 </Flex>
 
+                <TextArea
+                  aria-label="Objective short summary"
+                  className="mt-4 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+                  defaultValue={objective?.shortSummary ?? ""}
+                  key={`desktop-summary-${objective?.id ?? "loading"}-${objective?.shortSummary ?? ""}`}
+                  maxLength={500}
+                  onChange={(event) => {
+                    debouncedHandleUpdate({
+                      shortSummary: event.target.value,
+                    });
+                  }}
+                  placeholder="Add short summary..."
+                  readOnly={!isAdminOrOwner}
+                  rows={3}
+                />
+                <Divider className="my-3 opacity-60" />
                 <TextEditor
                   className="text-foreground"
                   editor={descriptionEditor}
@@ -226,6 +243,22 @@ export const Overview = () => {
               ) : null}
             </Flex>
 
+            <TextArea
+              aria-label="Objective short summary"
+              className="mt-4 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              defaultValue={objective?.shortSummary ?? ""}
+              key={`mobile-summary-${objective?.id ?? "loading"}-${objective?.shortSummary ?? ""}`}
+              maxLength={500}
+              onChange={(event) => {
+                debouncedHandleUpdate({
+                  shortSummary: event.target.value,
+                });
+              }}
+              placeholder="Add short summary..."
+              readOnly={!isAdminOrOwner}
+              rows={3}
+            />
+            <Divider className="my-3 opacity-60" />
             <TextEditor
               className="text-text-muted"
               editor={descriptionEditor}

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import type { SearchResponse } from "@/modules/search/types";
 import { objectiveKeys } from "../constants";
 import { updateObjective } from "../actions/update-objective";
@@ -37,7 +36,9 @@ export const useUpdateObjectiveMutation = () => {
             ...prevObjective,
             name: data.name ?? prevObjective.name,
             description: data.description ?? prevObjective.description,
+            shortSummary: data.shortSummary ?? prevObjective.shortSummary,
             leadUser: data.leadUser ?? prevObjective.leadUser,
+            health: data.health ?? prevObjective.health,
             startDate: data.startDate ?? prevObjective.startDate,
             endDate: data.endDate ?? prevObjective.endDate,
             statusId: data.statusId ?? prevObjective.statusId,
@@ -53,6 +54,9 @@ export const useUpdateObjectiveMutation = () => {
             objective.id === objectiveId
               ? {
                   ...objective,
+                  name: data.name ?? objective.name,
+                  description: data.description ?? objective.description,
+                  shortSummary: data.shortSummary ?? objective.shortSummary,
                   leadUser: data.leadUser ?? objective.leadUser,
                   startDate: data.startDate ?? objective.startDate,
                   endDate: data.endDate ?? objective.endDate,
@@ -78,6 +82,7 @@ export const useUpdateObjectiveMutation = () => {
                       ...objective,
                       name: data.name ?? objective.name,
                       description: data.description ?? objective.description,
+                      shortSummary: data.shortSummary ?? objective.shortSummary,
                       leadUser: data.leadUser ?? objective.leadUser,
                       startDate: data.startDate ?? objective.startDate,
                       endDate: data.endDate ?? objective.endDate,

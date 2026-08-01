@@ -1,9 +1,8 @@
 import { usePathname } from "next/navigation";
-import { Flex, Text } from "ui";
+import { Flex } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
-  AnalyticsIcon,
   DashboardIcon,
   ObjectiveIcon,
   OKRIcon,
@@ -25,27 +24,6 @@ type MenuItem = {
   href: string;
   disabled?: boolean;
 };
-
-const NavigationSection = ({
-  children,
-  name,
-}: {
-  children: ReactNode;
-  name: string;
-}) => (
-  <Flex className="mt-3 gap-1.5" direction="column">
-    <Text
-      className="mb-1 flex h-7 items-center px-2.5"
-      color="muted"
-      fontWeight="medium"
-    >
-      {name}
-    </Text>
-    <Flex direction="column" gap={1}>
-      {children}
-    </Flex>
-  </Flex>
-);
 
 export const Navigation = () => {
   const pathname = usePathname();
@@ -92,14 +70,6 @@ export const Navigation = () => {
     },
     ...(sprintItem ? [sprintItem] : []),
     {
-      name: "Analytics",
-      icon: <AnalyticsIcon />,
-      href: withWorkspace("/analytics"),
-    },
-  ];
-
-  const strategyLinks: MenuItem[] = [
-    {
       name: getTermDisplay("objectiveTerm", {
         variant: "plural",
         capitalize: true,
@@ -109,13 +79,10 @@ export const Navigation = () => {
       disabled: !features.objectiveEnabled,
     },
     {
-      name: getTermDisplay("keyResultTerm", {
-        variant: "plural",
-        capitalize: true,
-      }),
+      name: "Strategy Map",
       icon: <OKRIcon />,
-      href: withWorkspace("/key-results"),
-      disabled: !features.objectiveEnabled || !features.keyResultEnabled,
+      href: withWorkspace("/strategy-map"),
+      disabled: !features.objectiveEnabled,
     },
   ];
 
@@ -146,15 +113,8 @@ export const Navigation = () => {
     });
 
   return (
-    <>
-      <Flex className="gap-1.5" direction="column">
-        {renderLinks(primaryLinks)}
-      </Flex>
-      {strategyLinks.some(({ disabled }) => !disabled) ? (
-        <NavigationSection name="Strategy">
-          {renderLinks(strategyLinks)}
-        </NavigationSection>
-      ) : null}
-    </>
+    <Flex className="gap-1.5" direction="column">
+      {renderLinks(primaryLinks)}
+    </Flex>
   );
 };

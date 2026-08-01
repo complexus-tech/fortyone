@@ -76,7 +76,7 @@ export const searchTool = tool({
       pageSize = 20,
       includeDetails = false,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -88,7 +88,7 @@ export const searchTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -264,6 +264,7 @@ export const searchTool = tool({
           return {
             ...baseObjective,
             description: objective.description,
+            shortSummary: objective.shortSummary,
             statusId: objective.statusId,
             isPrivate: objective.isPrivate,
             stats: objective.stats,

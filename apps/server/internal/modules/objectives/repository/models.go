@@ -12,6 +12,7 @@ type dbObjective struct {
 	ID               uuid.UUID                   `db:"objective_id"`
 	Name             string                      `db:"name"`
 	Description      *string                     `db:"description"`
+	ShortSummary     *string                     `db:"short_summary"`
 	LeadUser         *uuid.UUID                  `db:"lead_user_id"`
 	Team             uuid.UUID                   `db:"team_id"`
 	Workspace        uuid.UUID                   `db:"workspace_id"`
@@ -50,17 +51,18 @@ type dbKeyResult struct {
 
 func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObjective {
 	return dbObjective{
-		Name:        co.Name,
-		Description: co.Description,
-		LeadUser:    co.LeadUser,
-		Team:        co.Team,
-		Workspace:   workspaceID,
-		StartDate:   co.StartDate,
-		EndDate:     co.EndDate,
-		IsPrivate:   co.IsPrivate,
-		Status:      co.Status,
-		Priority:    co.Priority,
-		CreatedBy:   co.CreatedBy,
+		Name:         co.Name,
+		Description:  co.Description,
+		ShortSummary: co.ShortSummary,
+		LeadUser:     co.LeadUser,
+		Team:         co.Team,
+		Workspace:    workspaceID,
+		StartDate:    co.StartDate,
+		EndDate:      co.EndDate,
+		IsPrivate:    co.IsPrivate,
+		Status:       co.Status,
+		Priority:     co.Priority,
+		CreatedBy:    co.CreatedBy,
 	}
 }
 
@@ -69,6 +71,7 @@ func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
 		ID:               dbo.ID,
 		Name:             dbo.Name,
 		Description:      dbo.Description,
+		ShortSummary:     dbo.ShortSummary,
 		LeadUser:         dbo.LeadUser,
 		Team:             dbo.Team,
 		Workspace:        dbo.Workspace,

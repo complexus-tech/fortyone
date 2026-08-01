@@ -11,6 +11,9 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { ListObjectives } from "@/modules/objectives/components/list-objectives";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
+import type { ZoomLevel } from "@/components/ui/base-gantt";
+import type { Objective } from "@/modules/objectives/types";
+import { RoadmapObjectiveDetails } from "./components/objective-details";
 import type { RoadmapLayoutType } from "./types";
 
 export const WorkspaceObjectivesPage = () => {
@@ -22,6 +25,13 @@ export const WorkspaceObjectivesPage = () => {
   );
   const { data: objectives = [], isPending } = useObjectives();
   const [isOpen, setIsOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
+    "roadmapZoomLevel",
+    "months",
+  );
+  const [selectedObjective, setSelectedObjective] = useState<Objective | null>(
+    null,
+  );
 
   const renderContent = () => {
     if (isPending) {
@@ -63,7 +73,26 @@ export const WorkspaceObjectivesPage = () => {
 
     switch (layout) {
       case "gantt":
-        return <RoadmapGanttBoard className="h-full" objectives={objectives} />;
+        return (
+          <Box className="relative h-full min-w-0">
+            <RoadmapGanttBoard
+              className="h-full"
+              objectives={objectives}
+              onObjectiveSelect={setSelectedObjective}
+              onZoomLevelChange={setZoomLevel}
+              selectedObjectiveId={selectedObjective?.id}
+              zoomLevel={zoomLevel}
+            />
+            {selectedObjective ? (
+              <RoadmapObjectiveDetails
+                objective={selectedObjective}
+                onClose={() => {
+                  setSelectedObjective(null);
+                }}
+              />
+            ) : null}
+          </Box>
+        );
       case "list":
         return <ListObjectives objectives={objectives} />;
       default:
@@ -93,7 +122,7 @@ export const WorkspaceObjectivesPage = () => {
             ]}
           />
         </Flex>
-        <Flex align="center" gap={1}>
+        <Flex align="center" gap={2}>
           <RoadmapLayoutSwitcher
             className="hidden md:flex"
             layout={layout}

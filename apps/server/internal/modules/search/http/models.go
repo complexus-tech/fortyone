@@ -31,19 +31,20 @@ type AppSearchStory struct {
 
 // AppSearchObjective represents an objective in search results for the API.
 type AppSearchObjective struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	LeadUser    *uuid.UUID `json:"leadUser"`
-	Team        uuid.UUID  `json:"teamId"`
-	Workspace   uuid.UUID  `json:"workspaceId"`
-	StartDate   *time.Time `json:"startDate"`
-	EndDate     *time.Time `json:"endDate"`
-	Status      uuid.UUID  `json:"statusId"`
-	Priority    *string    `json:"priority"`
-	Health      *string    `json:"health"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID           uuid.UUID  `json:"id"`
+	Name         string     `json:"name"`
+	Description  *string    `json:"description"`
+	ShortSummary *string    `json:"shortSummary"`
+	LeadUser     *uuid.UUID `json:"leadUser"`
+	Team         uuid.UUID  `json:"teamId"`
+	Workspace    uuid.UUID  `json:"workspaceId"`
+	StartDate    *time.Time `json:"startDate"`
+	EndDate      *time.Time `json:"endDate"`
+	Status       uuid.UUID  `json:"statusId"`
+	Priority     *string    `json:"priority"`
+	Health       *string    `json:"health"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 // AppSearchResponse represents the API response for a search request.
@@ -117,19 +118,20 @@ func toAppSearchObjectives(objectives []search.CoreSearchObjective) []AppSearchO
 // toAppSearchObjective converts a core objective to an app objective.
 func toAppSearchObjective(objective search.CoreSearchObjective) AppSearchObjective {
 	return AppSearchObjective{
-		ID:          objective.ID,
-		Name:        objective.Name,
-		Description: objective.Description,
-		LeadUser:    objective.LeadUser,
-		Team:        objective.Team,
-		Workspace:   objective.Workspace,
-		StartDate:   objective.StartDate,
-		EndDate:     objective.EndDate,
-		Status:      objective.Status,
-		Priority:    objective.Priority,
-		Health:      objective.Health,
-		CreatedAt:   objective.CreatedAt,
-		UpdatedAt:   objective.UpdatedAt,
+		ID:           objective.ID,
+		Name:         objective.Name,
+		Description:  objective.Description,
+		ShortSummary: objective.ShortSummary,
+		LeadUser:     objective.LeadUser,
+		Team:         objective.Team,
+		Workspace:    objective.Workspace,
+		StartDate:    objective.StartDate,
+		EndDate:      objective.EndDate,
+		Status:       objective.Status,
+		Priority:     objective.Priority,
+		Health:       objective.Health,
+		CreatedAt:    objective.CreatedAt,
+		UpdatedAt:    objective.UpdatedAt,
 	}
 }
 

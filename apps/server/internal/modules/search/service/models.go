@@ -30,19 +30,20 @@ type CoreSearchStory struct {
 
 // CoreSearchObjective represents an objective in search results
 type CoreSearchObjective struct {
-	ID          uuid.UUID
-	Name        string
-	Description *string
-	LeadUser    *uuid.UUID
-	Team        uuid.UUID
-	Workspace   uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
-	Status      uuid.UUID
-	Priority    *string
-	Health      *string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           uuid.UUID
+	Name         string
+	Description  *string
+	ShortSummary *string
+	LeadUser     *uuid.UUID
+	Team         uuid.UUID
+	Workspace    uuid.UUID
+	StartDate    *time.Time
+	EndDate      *time.Time
+	Status       uuid.UUID
+	Priority     *string
+	Health       *string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // CoreSearchResult represents the combined search results

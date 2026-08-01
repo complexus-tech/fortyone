@@ -29,6 +29,12 @@ type Repository interface {
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Create(ctx context.Context, objective CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (CoreObjective, []keyresults.CoreKeyResult, error)
 	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (CoreObjectiveAnalytics, error)
+	GetStrategyMap(ctx context.Context, workspaceID uuid.UUID) (CoreStrategyMap, error)
+	UpdateStrategy(ctx context.Context, workspaceID uuid.UUID, strategy CoreStrategyUpdate) error
+	CreateStrategicPillar(ctx context.Context, workspaceID uuid.UUID, pillar CoreNewStrategicPillar) (CoreStrategicPillar, error)
+	UpdateStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID, pillar CoreUpdateStrategicPillar) (CoreStrategicPillar, error)
+	DeleteStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID) error
+	AlignObjective(ctx context.Context, workspaceID, objectiveID uuid.UUID, pillarID *uuid.UUID) error
 }
 
 // Service provides objective-related operations.
@@ -36,6 +42,30 @@ type Service struct {
 	repo          Repository
 	okrActivities *okractivities.Service
 	log           *logger.Logger
+}
+
+func (s *Service) GetStrategyMap(ctx context.Context, workspaceID uuid.UUID) (CoreStrategyMap, error) {
+	return s.repo.GetStrategyMap(ctx, workspaceID)
+}
+
+func (s *Service) UpdateStrategy(ctx context.Context, workspaceID uuid.UUID, strategy CoreStrategyUpdate) error {
+	return s.repo.UpdateStrategy(ctx, workspaceID, strategy)
+}
+
+func (s *Service) CreateStrategicPillar(ctx context.Context, workspaceID uuid.UUID, pillar CoreNewStrategicPillar) (CoreStrategicPillar, error) {
+	return s.repo.CreateStrategicPillar(ctx, workspaceID, pillar)
+}
+
+func (s *Service) UpdateStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID, pillar CoreUpdateStrategicPillar) (CoreStrategicPillar, error) {
+	return s.repo.UpdateStrategicPillar(ctx, workspaceID, pillarID, pillar)
+}
+
+func (s *Service) DeleteStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID) error {
+	return s.repo.DeleteStrategicPillar(ctx, workspaceID, pillarID)
+}
+
+func (s *Service) AlignObjective(ctx context.Context, workspaceID, objectiveID uuid.UUID, pillarID *uuid.UUID) error {
+	return s.repo.AlignObjective(ctx, workspaceID, objectiveID, pillarID)
 }
 
 // New constructs a new objectives service instance with the provided repository.
@@ -99,7 +129,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 
 	activities := []okractivities.CoreNewActivity{}
 	for field, value := range updates {
-		if field == "description" {
+		if field == "description" || field == "short_summary" {
 			continue
 		}
 		activity := okractivities.CoreNewActivity{

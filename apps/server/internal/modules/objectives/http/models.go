@@ -12,22 +12,23 @@ import (
 
 // AppObjectiveList represents a list of objectives in the application.
 type AppObjectiveList struct {
-	ID          uuid.UUID      `json:"id"`
-	Name        string         `json:"name"`
-	Description *string        `json:"description"`
-	LeadUser    *uuid.UUID     `json:"leadUser"`
-	Team        uuid.UUID      `json:"teamId"`
-	Workspace   uuid.UUID      `json:"workspaceId"`
-	StartDate   *time.Time     `json:"startDate"`
-	EndDate     *time.Time     `json:"endDate"`
-	IsPrivate   bool           `json:"isPrivate"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	Status      uuid.UUID      `json:"statusId"`
-	Priority    *string        `json:"priority"`
-	Health      *string        `json:"health"`
-	CreatedBy   uuid.UUID      `json:"createdBy"`
-	Stats       ObjectiveStats `json:"stats"`
+	ID           uuid.UUID      `json:"id"`
+	Name         string         `json:"name"`
+	Description  *string        `json:"description"`
+	ShortSummary *string        `json:"shortSummary"`
+	LeadUser     *uuid.UUID     `json:"leadUser"`
+	Team         uuid.UUID      `json:"teamId"`
+	Workspace    uuid.UUID      `json:"workspaceId"`
+	StartDate    *time.Time     `json:"startDate"`
+	EndDate      *time.Time     `json:"endDate"`
+	IsPrivate    bool           `json:"isPrivate"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	Status       uuid.UUID      `json:"statusId"`
+	Priority     *string        `json:"priority"`
+	Health       *string        `json:"health"`
+	CreatedBy    uuid.UUID      `json:"createdBy"`
+	Stats        ObjectiveStats `json:"stats"`
 }
 
 type ObjectiveStats struct {
@@ -69,21 +70,22 @@ func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 		}
 
 		appObjectives[i] = AppObjectiveList{
-			ID:          objective.ID,
-			Name:        objective.Name,
-			Description: objective.Description,
-			LeadUser:    objective.LeadUser,
-			Team:        objective.Team,
-			Workspace:   objective.Workspace,
-			StartDate:   objective.StartDate,
-			EndDate:     objective.EndDate,
-			IsPrivate:   objective.IsPrivate,
-			CreatedAt:   objective.CreatedAt,
-			UpdatedAt:   objective.UpdatedAt,
-			Status:      objective.Status,
-			Priority:    objective.Priority,
-			CreatedBy:   objective.CreatedBy,
-			Health:      healthStr,
+			ID:           objective.ID,
+			Name:         objective.Name,
+			Description:  objective.Description,
+			ShortSummary: objective.ShortSummary,
+			LeadUser:     objective.LeadUser,
+			Team:         objective.Team,
+			Workspace:    objective.Workspace,
+			StartDate:    objective.StartDate,
+			EndDate:      objective.EndDate,
+			IsPrivate:    objective.IsPrivate,
+			CreatedAt:    objective.CreatedAt,
+			UpdatedAt:    objective.UpdatedAt,
+			Status:       objective.Status,
+			Priority:     objective.Priority,
+			CreatedBy:    objective.CreatedBy,
+			Health:       healthStr,
 			Stats: ObjectiveStats{
 				Total:     objective.TotalStories,
 				Cancelled: objective.CancelledStories,
@@ -116,16 +118,17 @@ func toAppObjectivesResponse(objectives []objectives.CoreObjective, page, pageSi
 
 // AppNewObjective represents the data needed to create a new objective
 type AppNewObjective struct {
-	Name        string            `json:"name" validate:"required"`
-	Description *string           `json:"description"`
-	LeadUser    *uuid.UUID        `json:"leadUser"`
-	Team        uuid.UUID         `json:"teamId" validate:"required"`
-	StartDate   *date.Date        `json:"startDate"`
-	EndDate     *date.Date        `json:"endDate"`
-	IsPrivate   bool              `json:"isPrivate"`
-	Status      uuid.UUID         `json:"statusId"`
-	Priority    *string           `json:"priority"`
-	KeyResults  []AppNewKeyResult `json:"keyResults,omitempty"`
+	Name         string            `json:"name" validate:"required"`
+	Description  *string           `json:"description"`
+	ShortSummary *string           `json:"shortSummary" validate:"omitempty,max=500"`
+	LeadUser     *uuid.UUID        `json:"leadUser"`
+	Team         uuid.UUID         `json:"teamId" validate:"required"`
+	StartDate    *date.Date        `json:"startDate"`
+	EndDate      *date.Date        `json:"endDate"`
+	IsPrivate    bool              `json:"isPrivate"`
+	Status       uuid.UUID         `json:"statusId"`
+	Priority     *string           `json:"priority"`
+	KeyResults   []AppNewKeyResult `json:"keyResults,omitempty"`
 }
 
 // AppNewKeyResult represents a new key result to be created
@@ -145,16 +148,17 @@ type AppNewKeyResult struct {
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective
 func toCoreNewObjective(ano AppNewObjective, createdBy uuid.UUID) objectives.CoreNewObjective {
 	return objectives.CoreNewObjective{
-		Name:        ano.Name,
-		Description: ano.Description,
-		LeadUser:    ano.LeadUser,
-		Team:        ano.Team,
-		StartDate:   ano.StartDate.TimePtr(),
-		EndDate:     ano.EndDate.TimePtr(),
-		IsPrivate:   ano.IsPrivate,
-		Status:      ano.Status,
-		Priority:    ano.Priority,
-		CreatedBy:   createdBy,
+		Name:         ano.Name,
+		Description:  ano.Description,
+		ShortSummary: ano.ShortSummary,
+		LeadUser:     ano.LeadUser,
+		Team:         ano.Team,
+		StartDate:    ano.StartDate.TimePtr(),
+		EndDate:      ano.EndDate.TimePtr(),
+		IsPrivate:    ano.IsPrivate,
+		Status:       ano.Status,
+		Priority:     ano.Priority,
+		CreatedBy:    createdBy,
 	}
 }
 
@@ -167,21 +171,22 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 	}
 
 	return AppObjectiveList{
-		ID:          objective.ID,
-		Name:        objective.Name,
-		Description: objective.Description,
-		LeadUser:    objective.LeadUser,
-		Team:        objective.Team,
-		Workspace:   objective.Workspace,
-		StartDate:   objective.StartDate,
-		EndDate:     objective.EndDate,
-		IsPrivate:   objective.IsPrivate,
-		CreatedAt:   objective.CreatedAt,
-		UpdatedAt:   objective.UpdatedAt,
-		Status:      objective.Status,
-		Priority:    objective.Priority,
-		CreatedBy:   objective.CreatedBy,
-		Health:      healthStr,
+		ID:           objective.ID,
+		Name:         objective.Name,
+		Description:  objective.Description,
+		ShortSummary: objective.ShortSummary,
+		LeadUser:     objective.LeadUser,
+		Team:         objective.Team,
+		Workspace:    objective.Workspace,
+		StartDate:    objective.StartDate,
+		EndDate:      objective.EndDate,
+		IsPrivate:    objective.IsPrivate,
+		CreatedAt:    objective.CreatedAt,
+		UpdatedAt:    objective.UpdatedAt,
+		Status:       objective.Status,
+		Priority:     objective.Priority,
+		CreatedBy:    objective.CreatedBy,
+		Health:       healthStr,
 		Stats: ObjectiveStats{
 			Total:     objective.TotalStories,
 			Cancelled: objective.CancelledStories,
@@ -195,16 +200,67 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 
 // AppUpdateObjective represents the data needed to update an objective
 type AppUpdateObjective struct {
-	Name        *string    `json:"name" db:"name"`
-	Description *string    `json:"description" db:"description"`
-	LeadUser    *uuid.UUID `json:"leadUser" db:"lead_user_id"`
-	StartDate   *date.Date `json:"startDate" db:"start_date"`
-	EndDate     *date.Date `json:"endDate" db:"end_date"`
-	IsPrivate   *bool      `json:"isPrivate" db:"is_private"`
-	Status      *uuid.UUID `json:"statusId" db:"status_id"`
-	Priority    *string    `json:"priority" db:"priority"`
-	Health      *string    `json:"health" db:"health"`
-	Comment     *string    `json:"comment" db:"comment"`
+	Name         *string    `json:"name" db:"name"`
+	Description  *string    `json:"description" db:"description"`
+	ShortSummary *string    `json:"shortSummary" db:"short_summary" validate:"omitempty,max=500"`
+	LeadUser     *uuid.UUID `json:"leadUser" db:"lead_user_id"`
+	StartDate    *date.Date `json:"startDate" db:"start_date"`
+	EndDate      *date.Date `json:"endDate" db:"end_date"`
+	IsPrivate    *bool      `json:"isPrivate" db:"is_private"`
+	Status       *uuid.UUID `json:"statusId" db:"status_id"`
+	Priority     *string    `json:"priority" db:"priority"`
+	Health       *string    `json:"health" db:"health"`
+	Comment      *string    `json:"comment" db:"comment"`
+}
+
+type AppStrategyMap struct {
+	UltimateGoal string               `json:"ultimateGoal"`
+	Description  *string              `json:"description"`
+	Pillars      []AppStrategicPillar `json:"pillars"`
+}
+
+type AppStrategicPillar struct {
+	ID           uuid.UUID   `json:"id"`
+	Name         string      `json:"name"`
+	Description  *string     `json:"description"`
+	OrderIndex   int         `json:"orderIndex"`
+	ObjectiveIDs []uuid.UUID `json:"objectiveIds"`
+}
+
+type AppStrategyUpdate struct {
+	UltimateGoal string  `json:"ultimateGoal" validate:"required"`
+	Description  *string `json:"description"`
+}
+
+type AppNewStrategicPillar struct {
+	Name        string  `json:"name" validate:"required"`
+	Description *string `json:"description"`
+	OrderIndex  int     `json:"orderIndex"`
+}
+
+type AppUpdateStrategicPillar struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	OrderIndex  *int    `json:"orderIndex"`
+}
+
+type AppObjectiveAlignment struct {
+	PillarID *uuid.UUID `json:"pillarId"`
+}
+
+func toAppStrategyMap(strategy objectives.CoreStrategyMap) AppStrategyMap {
+	pillars := make([]AppStrategicPillar, 0, len(strategy.Pillars))
+	for _, pillar := range strategy.Pillars {
+		pillars = append(pillars, AppStrategicPillar{
+			ID: pillar.ID, Name: pillar.Name, Description: pillar.Description,
+			OrderIndex: pillar.OrderIndex, ObjectiveIDs: pillar.ObjectiveIDs,
+		})
+	}
+	return AppStrategyMap{UltimateGoal: strategy.UltimateGoal, Description: strategy.Description, Pillars: pillars}
+}
+
+func toAppStrategicPillar(pillar objectives.CoreStrategicPillar) AppStrategicPillar {
+	return AppStrategicPillar{ID: pillar.ID, Name: pillar.Name, Description: pillar.Description, OrderIndex: pillar.OrderIndex, ObjectiveIDs: pillar.ObjectiveIDs}
 }
 
 // AppKeyResult represents a key result in the application

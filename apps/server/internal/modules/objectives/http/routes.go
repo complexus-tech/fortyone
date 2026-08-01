@@ -48,4 +48,10 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/analytics", h.GetAnalytics, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/activities", h.GetActivities, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/objectives", h.Create, auth, workspace, memberAndAdmin)
+	app.Get("/workspaces/{workspaceSlug}/strategy-map", h.GetStrategyMap, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map", h.UpdateStrategy, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/strategy-map/pillars", h.CreateStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map/pillars/{pillarId}", h.UpdateStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/strategy-map/pillars/{pillarId}", h.DeleteStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map/objectives/{id}", h.AlignObjective, auth, workspace, memberAndAdmin)
 }

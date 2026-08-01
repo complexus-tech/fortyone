@@ -39,3 +39,116 @@ The reference and implementation captures were reviewed together. The reference 
 ## Result
 
 Passed. No visible overflow, unintended card nesting, missing metadata, or broken primary navigation was found in the final browser pass.
+
+---
+
+# Strategy and Objectives Design QA
+
+## References
+
+- Objectives reference: `/Users/joseph/.codex/generated_images/019fb9c4-44cf-7572-bee1-f9ec161c2bd0/exec-ae19cf53-a803-4c5b-9600-123604f4e144.png`
+- Strategy Map reference: `/Users/joseph/.codex/generated_images/019fb9c4-44cf-7572-bee1-f9ec161c2bd0/exec-ee460f02-969b-412a-b5e4-9703e72782eb.png`
+
+## Review
+
+- Strategy hierarchy is explicit: Ultimate Goal, Strategic Pillar, Objective, and expandable Key Result nodes.
+- The canvas uses the product's existing typography, surfaces, borders, and monochrome palette.
+- Objective-to-pillar alignment is visible and editable from each objective card.
+- Key results are loaded only when an objective is expanded and render as nested measurable outcomes.
+- Objectives timeline has stable Owner, Status, Objective, and Duration columns with the Gantt chart alongside.
+- Timeline owner and status controls remain editable, and date dragging/navigation behavior is preserved.
+- Temporary unauthenticated preview routes were removed after visual verification.
+
+## Result
+
+final result: passed
+
+---
+
+# Objectives Timeline Interaction Design QA
+
+## Reference and comparison
+
+- Linear details-panel reference: `/Users/joseph/Downloads/Screenshot 2026-08-01 at 10.04.13 AM.png` (2926 × 1580)
+- FortyOne implementation capture: `/tmp/fortyone-objectives-timeline-implementation.png` (1280 × 720)
+- Side-by-side normalized comparison: `/tmp/fortyone-objectives-timeline-comparison.png` (2560 × 720)
+
+The reference and implementation were reviewed together at a normalized 1280 × 720 density. The implementation intentionally retains FortyOne's application shell, typography, spacing, and semantic colors while matching the reference interaction hierarchy.
+
+## Review
+
+- Objective rows share the same `3.5rem` CSS height on both sides of the timeline, and bars retain their original `2.5rem` height.
+- Key-result markers are intentionally omitted from the timeline; key results remain available in the objective details panel.
+- Off-screen objective locators use circular chevron buttons with a light border, translucent surface, and backdrop blur.
+- Chevron placement uses the rendered sticky-pane width, keeping right-side controls 12px from the actual visible chart edge across root font sizes.
+- Off-screen controls show a muted `MMM yyyy - MMM yyyy` range after left chevrons and before right chevrons.
+- The selected objective panel is widened to 34rem and uses an opaque sidebar surface so timeline lines cannot bleed through.
+- Stored objective HTML renders through the shared Box `html` API with the existing rich-text prose styles.
+- Timeline bars reuse the Maya chat pop-up surface colors and backdrop blur in both themes.
+- Browser verification found no runtime warnings, errors, overflow, or broken primary interaction.
+
+final result: passed
+
+---
+
+# Objectives Timeline Alignment and Surface Design QA
+
+## Source and implementation evidence
+
+- Row-height source crop: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_mcpv1X/Screenshot 2026-08-01 at 10.55.31 AM.png` (732 × 304)
+- Panel-opacity source: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_yiBmU3/Screenshot 2026-08-01 at 10.41.04 AM.png` (2456 × 1334)
+- Final timeline capture: `/tmp/fortyone-objectives-timeline-final.png` (1280 × 720)
+- Final panel capture: `/tmp/fortyone-objective-panel-final.png` (1280 × 720)
+- Focused row comparison: `/tmp/fortyone-objectives-row-comparison.png` (1464 × 304)
+- Full panel comparison: `/tmp/fortyone-objectives-panel-comparison.png` (2560 × 720)
+- Browser viewport: 1280 × 720 CSS pixels, dark mode.
+
+## Findings and comparison history
+
+- Earlier P1: the left objective row resolved from `h-14` to 45.5px while the chart row was hard-coded to 56px. Both now use the same `3.5rem` CSS length, and the final capture shows aligned row boundaries.
+- Earlier P1: the translucent details panel allowed timeline grid lines to show through its content. The panel and sticky header now use an opaque `bg-sidebar` surface with no background alpha.
+- Earlier P2: key-result dots made the timeline bar feel visually noisy. Timeline KR markers were removed; key results remain in the details panel.
+- Earlier P2: off-screen names consumed horizontal space. They were replaced with circular chevron buttons using shared icons, light borders, and `backdrop-blur-2xl`.
+- The right chevron now measures the rendered sticky pane instead of assuming a 576px width, so its anchor follows the real browser-side edge of the chart.
+- Earlier P2: header control heights, radii, and order differed. Zoom now leads, followed by a low-opacity separator, Today, the 2.1rem Timeline/List switcher, and New Objective.
+- The objective bar and chevron controls reuse the Maya chat pop-up surface tokens: `bg-white/80`, `dark:bg-surface/80`, matching borders, and `backdrop-blur-2xl`.
+
+## Required fidelity surfaces
+
+- Typography: existing FortyOne type scale and weights are unchanged; rich objective HTML retains the established prose styles.
+- Spacing and layout: fixed and timeline rows share one CSS height; controls share one height and rounded-xl treatment.
+- Colors and tokens: floating timeline elements use existing Maya surfaces; the objective panel uses the opaque sidebar token.
+- Image and icon quality: shared `ChevronLeftIcon` and `ChevronRightIcon` are used; no custom-drawn assets were introduced.
+- Copy and content: objective names are removed from off-screen locators without changing navigation behavior.
+
+## Functional verification
+
+- Left chevron navigation scrolled to the off-screen objective.
+- Today recentered the timeline.
+- Objective selection opened the opaque details panel, and the close control dismissed it.
+- Browser console contained no warnings or errors.
+- The temporary unauthenticated QA route was removed after verification.
+
+final result: passed
+
+---
+
+# Objectives Timeline Controls Design QA
+
+## Reference
+
+- User screenshot: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_w1GxLF/Screenshot 2026-08-01 at 9.45.26 AM.png`
+
+## Review
+
+- The Owner, Status, Objective, and Duration pane is widened by 2rem, from 34rem to 36rem.
+- Today and Zoom are in the page header immediately before the Timeline/List switcher.
+- The timeline column labels have a dedicated header row and are no longer crowded by controls.
+- Timeline/List remains available, as requested.
+- Today recenters the timeline and all three zoom options remain interactive.
+- The authenticated production route was not bypassed; the temporary preview route was removed after verification.
+- Browser verification found no runtime errors or visible overflow at the tested desktop viewport.
+
+## Result
+
+final result: passed

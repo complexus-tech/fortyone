@@ -32,19 +32,20 @@ type dbStory struct {
 
 // dbObjective represents the database model for an objective in search results.
 type dbObjective struct {
-	ID          uuid.UUID  `db:"objective_id"`
-	Name        string     `db:"name"`
-	Description *string    `db:"description"`
-	LeadUser    *uuid.UUID `db:"lead_user_id"`
-	Team        uuid.UUID  `db:"team_id"`
-	Workspace   uuid.UUID  `db:"workspace_id"`
-	StartDate   *time.Time `db:"start_date"`
-	EndDate     *time.Time `db:"end_date"`
-	Status      uuid.UUID  `db:"status_id"`
-	Priority    *string    `db:"priority"`
-	Health      *string    `db:"health"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
+	ID           uuid.UUID  `db:"objective_id"`
+	Name         string     `db:"name"`
+	Description  *string    `db:"description"`
+	ShortSummary *string    `db:"short_summary"`
+	LeadUser     *uuid.UUID `db:"lead_user_id"`
+	Team         uuid.UUID  `db:"team_id"`
+	Workspace    uuid.UUID  `db:"workspace_id"`
+	StartDate    *time.Time `db:"start_date"`
+	EndDate      *time.Time `db:"end_date"`
+	Status       uuid.UUID  `db:"status_id"`
+	Priority     *string    `db:"priority"`
+	Health       *string    `db:"health"`
+	CreatedAt    time.Time  `db:"created_at"`
+	UpdatedAt    time.Time  `db:"updated_at"`
 }
 
 // toCoreSearchStory converts a dbStory to a CoreSearchStory.
@@ -89,19 +90,20 @@ func toCoreSearchStories(stories []dbStory) []search.CoreSearchStory {
 // toCoreSearchObjective converts a dbObjective to a CoreSearchObjective.
 func toCoreSearchObjective(objective dbObjective) search.CoreSearchObjective {
 	return search.CoreSearchObjective{
-		ID:          objective.ID,
-		Name:        objective.Name,
-		Description: objective.Description,
-		LeadUser:    objective.LeadUser,
-		Team:        objective.Team,
-		Workspace:   objective.Workspace,
-		StartDate:   objective.StartDate,
-		EndDate:     objective.EndDate,
-		Status:      objective.Status,
-		Priority:    objective.Priority,
-		Health:      objective.Health,
-		CreatedAt:   objective.CreatedAt,
-		UpdatedAt:   objective.UpdatedAt,
+		ID:           objective.ID,
+		Name:         objective.Name,
+		Description:  objective.Description,
+		ShortSummary: objective.ShortSummary,
+		LeadUser:     objective.LeadUser,
+		Team:         objective.Team,
+		Workspace:    objective.Workspace,
+		StartDate:    objective.StartDate,
+		EndDate:      objective.EndDate,
+		Status:       objective.Status,
+		Priority:     objective.Priority,
+		Health:       objective.Health,
+		CreatedAt:    objective.CreatedAt,
+		UpdatedAt:    objective.UpdatedAt,
 	}
 }
 

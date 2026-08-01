@@ -7,6 +7,7 @@ export type Objective = {
   id: string;
   name: string;
   description: string;
+  shortSummary: string | null;
   leadUser: string;
   teamId: string;
   workspaceId: string;
@@ -83,6 +84,7 @@ export type NewObjectiveKeyResult = NewKeyResult & {
 export type NewObjective = {
   name: string;
   description?: string;
+  shortSummary?: string;
   leadUser?: string | null;
   teamId: string;
   startDate?: string | null;

@@ -19,6 +19,7 @@ type CoreObjective struct {
 	ID               uuid.UUID
 	Name             string
 	Description      *string
+	ShortSummary     *string
 	LeadUser         *uuid.UUID
 	Team             uuid.UUID
 	Workspace        uuid.UUID
@@ -40,30 +41,63 @@ type CoreObjective struct {
 }
 
 type CoreNewObjective struct {
-	Name        string
-	Description *string
-	LeadUser    *uuid.UUID
-	Team        uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
-	IsPrivate   bool
-	Status      uuid.UUID
-	Priority    *string
-	CreatedBy   uuid.UUID
+	Name         string
+	Description  *string
+	ShortSummary *string
+	LeadUser     *uuid.UUID
+	Team         uuid.UUID
+	StartDate    *time.Time
+	EndDate      *time.Time
+	IsPrivate    bool
+	Status       uuid.UUID
+	Priority     *string
+	CreatedBy    uuid.UUID
 }
 
 type CoreUpdateObjective struct {
+	Name         *string
+	Description  *string
+	ShortSummary *string
+	LeadUser     *uuid.UUID
+	Team         *uuid.UUID
+	StartDate    *time.Time
+	EndDate      *time.Time
+	IsPrivate    *bool
+	Visibility   *string
+	Status       *uuid.UUID
+	Priority     *string
+	Health       *ObjectiveHealth
+}
+
+type CoreStrategyMap struct {
+	UltimateGoal string
+	Description  *string
+	Pillars      []CoreStrategicPillar
+}
+
+type CoreStrategicPillar struct {
+	ID           uuid.UUID
+	Name         string
+	Description  *string
+	OrderIndex   int
+	ObjectiveIDs []uuid.UUID
+}
+
+type CoreStrategyUpdate struct {
+	UltimateGoal string
+	Description  *string
+}
+
+type CoreNewStrategicPillar struct {
+	Name        string
+	Description *string
+	OrderIndex  int
+}
+
+type CoreUpdateStrategicPillar struct {
 	Name        *string
 	Description *string
-	LeadUser    *uuid.UUID
-	Team        *uuid.UUID
-	StartDate   *time.Time
-	EndDate     *time.Time
-	IsPrivate   *bool
-	Visibility  *string
-	Status      *uuid.UUID
-	Priority    *string
-	Health      *ObjectiveHealth
+	OrderIndex  *int
 }
 
 // Objective Analytics Models

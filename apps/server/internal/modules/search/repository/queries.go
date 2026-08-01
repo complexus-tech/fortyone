@@ -250,6 +250,7 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, user
 			o.objective_id,
 			o.name,
 			o.description,
+			o.short_summary,
 			o.lead_user_id,
 			o.team_id,
 			o.workspace_id,

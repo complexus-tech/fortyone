@@ -214,6 +214,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if uo.Description != nil {
 		updates["description"] = *uo.Description
 	}
+	if uo.ShortSummary != nil {
+		updates["short_summary"] = *uo.ShortSummary
+	}
 	if uo.LeadUser != nil {
 		updates["lead_user_id"] = *uo.LeadUser
 	}
