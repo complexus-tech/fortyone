@@ -345,7 +345,13 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
   if (isPending || keyResults.length === 0) return null;
 
   return (
-    <Box className="border-border mt-3 border-t" data-no-drag>
+    <Box
+      className={cn(
+        "border-border mt-3 border-t",
+        !isExpanded && "-mb-2.5",
+      )}
+      data-no-drag
+    >
       <button
         aria-expanded={isExpanded}
         className="text-foreground flex w-full items-center justify-between gap-1 rounded-md py-2.5 text-left text-[0.95rem] transition-colors"
@@ -371,7 +377,7 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
             const progress = getKeyResultProgress(keyResult);
             return (
               <Tooltip
-                className="min-w-44"
+                className="border-border-strong dark:border-border-strong dark:bg-surface-elevated min-w-44"
                 delayDuration={300}
                 key={keyResult.id}
                 title={
@@ -396,7 +402,7 @@ const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
                   </Box>
                 }
               >
-                <li className="border-border/70 dark:border-border-strong/55 flex items-center gap-2.5 border-b py-3 last:border-b-0 last:pb-0">
+                <li className="border-border/70 dark:border-border-strong/55 flex items-center gap-2.5 border-t py-3 last:pb-0">
                   <span
                     aria-label={`Progress ${progress}%`}
                     className="relative top-0.5 shrink-0"

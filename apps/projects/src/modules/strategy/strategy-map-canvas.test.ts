@@ -198,15 +198,19 @@ describe("StrategyMapCanvas", () => {
     );
     expect(cardSource).toContain('isExpanded && "rotate-90"');
     expect(cardSource).not.toContain("ArrowDownIcon");
-    expect(cardSource).toContain("flex items-center gap-2.5 border-b");
+    expect(cardSource).toContain("flex items-center gap-2.5 border-t");
     expect(cardSource).toContain("dark:border-border-strong/55");
     expect(cardSource).toContain("relative top-0.5 shrink-0");
-    expect(cardSource).toContain("last:border-b-0");
+    expect(cardSource).not.toContain("last:border-b-0");
     expect(cardSource).toContain("text-foreground line-clamp-2 text-base");
     expect(cardSource).toContain("<Tooltip");
     expect(cardSource).toContain("delayDuration={300}");
+    expect(cardSource).toContain(
+      "border-border-strong dark:border-border-strong dark:bg-surface-elevated",
+    );
     expect(cardSource).toContain("size={14}");
     expect(cardSource).toContain("py-2.5");
+    expect(cardSource).toContain('!isExpanded && "-mb-2.5"');
     expect(cardSource).not.toContain("text-foreground/75");
   });
 
