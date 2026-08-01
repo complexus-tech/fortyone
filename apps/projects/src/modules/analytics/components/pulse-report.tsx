@@ -95,7 +95,7 @@ const getRiskHref = ({
     case "at_risk_sprints":
       return withWorkspace("/sprints");
     case "at_risk_objectives":
-      return withWorkspace("/roadmaps");
+      return withWorkspace("/roadmap");
     case "pending_requests":
       return firstTeam
         ? withWorkspace(`/teams/${firstTeam.teamId}/requests`)
@@ -366,7 +366,7 @@ export const PulseReportPanel = () => {
         />
         <MetricCard
           count={report.summary.atRiskObjectives}
-          href={withWorkspace("/roadmaps")}
+          href={withWorkspace("/roadmap")}
           title={`At-risk ${objectiveTermPlural}`}
         />
       </Box>

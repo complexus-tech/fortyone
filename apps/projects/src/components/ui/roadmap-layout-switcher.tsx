@@ -26,24 +26,6 @@ export const RoadmapLayoutSwitcher = ({
     >
       <button
         className={cn(
-          "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
-          {
-            "border-border text-text-primary dark:bg-surface border bg-white":
-              layout === "gantt",
-          },
-        )}
-        disabled={disabled}
-        onClick={() => {
-          setLayout("gantt");
-        }}
-        title={disabled ? undefined : "Timeline"}
-        type="button"
-      >
-        <GanttIcon />
-        <span className="hidden md:inline">Timeline</span>
-      </button>
-      <button
-        className={cn(
           "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
           {
             "border-border text-text-primary dark:bg-surface border bg-white":
@@ -59,6 +41,24 @@ export const RoadmapLayoutSwitcher = ({
       >
         <KanbanIcon className="h-5 w-auto" />
         <span className="hidden md:inline">Board</span>
+      </button>
+      <button
+        className={cn(
+          "text-text-secondary enabled:hover:text-text-primary flex h-full items-center gap-1 rounded-xl px-3 font-medium disabled:cursor-not-allowed",
+          {
+            "border-border text-text-primary dark:bg-surface border bg-white":
+              layout === "gantt",
+          },
+        )}
+        disabled={disabled}
+        onClick={() => {
+          setLayout("gantt");
+        }}
+        title={disabled ? undefined : "Timeline"}
+        type="button"
+      >
+        <GanttIcon />
+        <span className="hidden md:inline">Timeline</span>
       </button>
       <button
         className={cn(

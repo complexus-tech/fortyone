@@ -138,7 +138,7 @@ const ObjectiveBoardCard = ({
   return (
     <div
       className={cn(
-        "border-border shadow-shadow hover:bg-surface-elevated dark:bg-surface w-[340px] rounded-xl border-[0.5px] bg-white px-4 pb-4 shadow-lg backdrop-blur transition duration-200 ease-linear select-none",
+        "border-border shadow-shadow hover:bg-surface-elevated dark:border-border/70 dark:bg-surface w-[340px] rounded-xl border-[0.5px] bg-white px-4 pb-4 shadow-lg backdrop-blur transition duration-200 ease-linear select-none",
         {
           "rotate-2 shadow-xl": isOverlay,
           "bg-surface-muted opacity-60": isDragging,
@@ -447,7 +447,7 @@ const HiddenObjectiveGroups = ({
       <Flex direction="column" gap={3}>
         {groups.map((group) => (
           <Box
-            className="border-border bg-surface hover:bg-surface-elevated group flex min-h-14 cursor-pointer items-center justify-between rounded-xl border-[0.5px] px-4 transition duration-200 ease-linear select-none"
+            className="border-border bg-surface hover:bg-surface-elevated group dark:border-border/70 flex min-h-14 cursor-pointer items-center justify-between rounded-xl border-[0.5px] px-4 transition duration-200 ease-linear select-none"
             key={group.key}
             onClick={() => {
               onShow(group.key);
@@ -601,7 +601,7 @@ const ObjectivesGroupedList = ({
           const isCollapsed = collapsedGroups.has(group.key);
           return (
             <Box key={group.key}>
-              <Box className="border-border bg-surface-muted/85 border-b-[0.5px] px-12 py-[0.4rem] backdrop-blur">
+              <Box className="border-border bg-surface-muted/85 dark:border-border/70 border-b-[0.5px] px-12 py-[0.4rem] backdrop-blur">
                 <ObjectiveGroupHeader
                   collapsible
                   group={group}

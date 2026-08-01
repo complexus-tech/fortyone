@@ -46,9 +46,9 @@ export const Commands = () => {
       router.push(withWorkspace("/summary"));
     }
   });
-  useHotkeys("g+o", () => {
-    if (pathname !== withWorkspace("/objectives")) {
-      router.push(withWorkspace("/objectives"));
+  useHotkeys("g+r", () => {
+    if (pathname !== withWorkspace("/roadmap")) {
+      router.push(withWorkspace("/roadmap"));
     }
   });
 

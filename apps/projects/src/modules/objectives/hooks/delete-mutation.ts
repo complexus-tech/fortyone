@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { deleteObjective } from "../actions/delete-objective";
 
@@ -48,7 +47,7 @@ export const useDeleteObjectiveMutation = () => {
         queryKey: objectiveKeys.list(workspaceSlug),
       });
       if (!teamId) {
-        router.replace(withWorkspace("/objectives"));
+        router.replace(withWorkspace("/roadmap"));
       } else {
         router.replace(withWorkspace(`/teams/${teamId}/objectives`));
       }

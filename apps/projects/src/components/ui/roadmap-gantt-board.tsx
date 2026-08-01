@@ -72,7 +72,7 @@ const ObjectiveRow = ({
     >
       <Box
         className={cn(
-          "group border-border hover:bg-state-hover grid h-14 items-center gap-4 border-b-[0.5px] px-4 transition-colors dark:hover:bg-white/[0.025]",
+          "group border-border hover:bg-state-hover/50 dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] px-4 transition-colors dark:hover:bg-white/[0.025]",
           ROADMAP_COLUMNS,
           { "bg-state-active/50 dark:bg-white/[0.03]": isSelected },
         )}
@@ -80,7 +80,7 @@ const ObjectiveRow = ({
         <Flex align="center" justify="center">
           <AssigneesMenu>
             <Tooltip
-              className="py-2.5"
+              className="pointer-events-none py-2.5"
               title={
                 selectedAssignee ? (
                   <Box>
@@ -131,7 +131,7 @@ const ObjectiveRow = ({
         </Flex>
         <Flex align="center" justify="center">
           <ObjectiveStatusesMenu>
-            <Tooltip title={statusName}>
+            <Tooltip className="pointer-events-none" title={statusName}>
               <span>
                 <ObjectiveStatusesMenu.Trigger>
                   <button
@@ -154,7 +154,10 @@ const ObjectiveRow = ({
           </ObjectiveStatusesMenu>
         </Flex>
         <Flex align="center" justify="center">
-          <Tooltip title={objective.health ?? "No health"}>
+          <Tooltip
+            className="pointer-events-none"
+            title={objective.health ?? "No health"}
+          >
             <span>
               <ObjectiveHealthEditor
                 health={objective.health}
@@ -174,7 +177,10 @@ const ObjectiveRow = ({
         </Flex>
         <Flex align="center" justify="center">
           <PrioritiesMenu>
-            <Tooltip title={objective.priority ?? "No priority"}>
+            <Tooltip
+              className="pointer-events-none"
+              title={objective.priority ?? "No priority"}
+            >
               <span>
                 <PrioritiesMenu.Trigger>
                   <button
@@ -304,7 +310,7 @@ export const RoadmapGanttBoard = ({
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="border-border/60 bg-background sticky left-0 isolate z-50 w-screen shrink-0 border-r-[0.5px] md:w-160">
+        <Box className="border-border bg-background dark:border-border/60 sticky left-0 z-40 w-screen shrink-0 border-r-[0.5px] md:w-160">
           <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 items-center border-b-[0.5px] px-4 md:flex">
             <GanttControls
               className="w-full justify-between"

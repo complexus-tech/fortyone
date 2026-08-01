@@ -11,11 +11,14 @@ jest.mock("icons", () => ({
 }));
 
 describe("RoadmapLayoutSwitcher", () => {
-  it("keeps Timeline, Board, and List available while page content loads", () => {
+  it("keeps Board, Timeline, and List in the expected order", () => {
     render(<RoadmapLayoutSwitcher layout="gantt" setLayout={jest.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Timeline" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Board" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "List" })).toBeVisible();
+    const viewButtons = screen.getAllByRole("button");
+
+    expect(viewButtons).toHaveLength(3);
+    expect(viewButtons[0]).toHaveAccessibleName("Board");
+    expect(viewButtons[1]).toHaveAccessibleName("Timeline");
+    expect(viewButtons[2]).toHaveAccessibleName("List");
   });
 });

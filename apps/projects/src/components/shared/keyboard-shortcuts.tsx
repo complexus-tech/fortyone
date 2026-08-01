@@ -126,11 +126,11 @@ export const KeyboardShortcuts = ({
           ),
         },
         {
-          name: `Go to ${getTermDisplay("objectiveTerm", { variant: "plural" })}`,
+          name: "Go to roadmap",
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>g</Kbd>
-              <Kbd>o</Kbd>
+              <Kbd>r</Kbd>
             </Flex>
           ),
         },

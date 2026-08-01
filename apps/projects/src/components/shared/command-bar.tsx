@@ -2,7 +2,7 @@ import { Dialog, Command, Text, Divider, Flex, Box, Kbd } from "ui";
 import {
   PlusIcon,
   NotificationsIcon,
-  ObjectiveIcon,
+  RoadmapIcon,
   SunIcon,
   HelpIcon,
   LogoutIcon,
@@ -173,21 +173,18 @@ export const CommandBar = ({
           },
         },
         {
-          label: getTermDisplay("objectiveTerm", {
-            variant: "plural",
-            capitalize: true,
-          }),
-          icon: <ObjectiveIcon />,
+          label: "Roadmap",
+          icon: <RoadmapIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>g</Kbd>
-              <Kbd>o</Kbd>
+              <Kbd>r</Kbd>
             </Flex>
           ),
           action: () => {
             setIsOpen(false);
-            if (pathname !== withWorkspace("/objectives")) {
-              router.push(withWorkspace("/objectives"));
+            if (pathname !== withWorkspace("/roadmap")) {
+              router.push(withWorkspace("/roadmap"));
             }
           },
         },

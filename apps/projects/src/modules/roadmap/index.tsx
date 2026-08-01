@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { ObjectiveIcon, PlusIcon } from "icons";
+import { ObjectiveIcon, PlusIcon, RoadmapIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
@@ -21,7 +21,7 @@ import {
 } from "./objective-board-utils";
 import type { RoadmapLayoutType } from "./types";
 
-export const WorkspaceObjectivesPage = () => {
+export const RoadmapPage = () => {
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
   const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
@@ -119,15 +119,9 @@ export const WorkspaceObjectivesPage = () => {
           <BreadCrumbs
             breadCrumbs={[
               {
-                name: getTermDisplay("objectiveTerm", {
-                  variant: "plural",
-                  capitalize: true,
-                }),
+                name: "Roadmap",
                 icon: (
-                  <ObjectiveIcon
-                    className="h-[1.1rem] w-auto"
-                    strokeWidth={2}
-                  />
+                  <RoadmapIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
                 ),
               },
             ]}
@@ -178,5 +172,3 @@ export const WorkspaceObjectivesPage = () => {
     </>
   );
 };
-
-export const RoadmapPage = WorkspaceObjectivesPage;

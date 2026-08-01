@@ -4,8 +4,8 @@ import {
   ActiveSprintIcon,
   AiIcon,
   DashboardIcon,
-  ObjectiveIcon,
   OKRIcon,
+  RoadmapIcon,
   UserIcon,
 } from "icons";
 import type { ReactNode } from "react";
@@ -70,12 +70,9 @@ export const Navigation = () => {
     },
     ...(sprintItem ? [sprintItem] : []),
     {
-      name: getTermDisplay("objectiveTerm", {
-        variant: "plural",
-        capitalize: true,
-      }),
-      icon: <ObjectiveIcon />,
-      href: withWorkspace("/objectives"),
+      name: "Roadmap",
+      icon: <RoadmapIcon />,
+      href: withWorkspace("/roadmap"),
       disabled: !features.objectiveEnabled,
     },
     {
