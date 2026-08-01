@@ -2,7 +2,6 @@ const PUBLIC_PREFIXES = new Set([
   "/portal",
   "/feedback",
   "/people",
-  "/roadmap",
   "/updates",
 ]);
 
@@ -23,13 +22,7 @@ export const getCanonicalPublicPath = (
   if (pathname.startsWith(`${portalPrefix}/requests/`)) {
     return pathname.replace(`${portalPrefix}/requests`, "/feedback");
   }
-  for (const section of [
-    "account",
-    "feedback",
-    "people",
-    "roadmap",
-    "updates",
-  ] as const) {
+  for (const section of ["account", "feedback", "people", "updates"] as const) {
     const legacyPrefix = `${portalPrefix}/${section}`;
     if (pathname === legacyPrefix || pathname.startsWith(`${legacyPrefix}/`)) {
       return pathname.replace(legacyPrefix, `/${section}`);
@@ -43,13 +36,7 @@ export const getInternalPublicPath = (
   pathname: string,
   workspaceSlug: string,
 ) => {
-  for (const section of [
-    "account",
-    "feedback",
-    "people",
-    "roadmap",
-    "updates",
-  ] as const) {
+  for (const section of ["account", "feedback", "people", "updates"] as const) {
     const publicPrefix = `/${section}`;
     if (pathname === publicPrefix || pathname.startsWith(`${publicPrefix}/`)) {
       return `/portal/${workspaceSlug}${pathname}`;

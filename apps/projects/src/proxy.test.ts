@@ -21,7 +21,9 @@ describe("workspace public portal routes", () => {
 
   it("recognizes short feedback routes as public", () => {
     expect(isPublicPath("/feedback")).toBe(true);
+    expect(isPublicPath("/feedback/roadmap")).toBe(true);
     expect(isPublicPath("/feedback/improve-mobile-navigation")).toBe(true);
+    expect(isPublicPath("/roadmap")).toBe(false);
     expect(isPublicPath("/feedback-private")).toBe(false);
   });
 
@@ -34,13 +36,26 @@ describe("workspace public portal routes", () => {
     ).toBe("/feedback/improve-mobile-navigation");
   });
 
-  it("rewrites roadmap and update paths through the current workspace", () => {
-    expect(getInternalPublicPath("/roadmap", "art-circles")).toBe(
-      "/portal/art-circles/roadmap",
+  it("rewrites feedback roadmap and update paths through the current workspace", () => {
+    expect(getInternalPublicPath("/feedback/roadmap", "art-circles")).toBe(
+      "/portal/art-circles/feedback/roadmap",
     );
     expect(getInternalPublicPath("/updates", "art-circles")).toBe(
       "/portal/art-circles/updates",
     );
+    expect(getInternalPublicPath("/roadmap", "art-circles")).toBeNull();
+  });
+
+  it("does not redirect the removed legacy portal roadmap URL", () => {
+    expect(
+      getCanonicalPublicPath("/portal/art-circles/roadmap", "art-circles"),
+    ).toBeNull();
+    expect(
+      getCanonicalPublicPath(
+        "/portal/art-circles/feedback/roadmap",
+        "art-circles",
+      ),
+    ).toBe("/feedback/roadmap");
   });
 
   it("keeps portal account settings outside workspace application routes", () => {

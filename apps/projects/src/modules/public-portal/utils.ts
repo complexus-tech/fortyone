@@ -47,10 +47,12 @@ export const getPortalPathBySlug = (
   portalSlug: string,
   path: "" | "account" | "feedback" | "roadmap" | "updates",
 ) => {
+  const routePath = path === "roadmap" ? "feedback/roadmap" : path;
+
   if (isWorkspaceSubdomainDeployment) {
-    return `/${path || "feedback"}`;
+    return `/${routePath || "feedback"}`;
   }
-  return `/portal/${portalSlug}${path ? `/${path}` : ""}`;
+  return `/portal/${portalSlug}${routePath ? `/${routePath}` : ""}`;
 };
 
 export const getPortalCallbackUrl = (

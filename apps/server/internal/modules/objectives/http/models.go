@@ -256,14 +256,21 @@ func toAppStrategyMap(strategy objectives.CoreStrategyMap) AppStrategyMap {
 	for _, pillar := range strategy.Pillars {
 		pillars = append(pillars, AppStrategicPillar{
 			ID: pillar.ID, Name: pillar.Name, Description: pillar.Description,
-			OrderIndex: pillar.OrderIndex, ObjectiveIDs: pillar.ObjectiveIDs,
+			OrderIndex: pillar.OrderIndex, ObjectiveIDs: nonNilObjectiveIDs(pillar.ObjectiveIDs),
 		})
 	}
 	return AppStrategyMap{UltimateGoal: strategy.UltimateGoal, Description: strategy.Description, Pillars: pillars}
 }
 
 func toAppStrategicPillar(pillar objectives.CoreStrategicPillar) AppStrategicPillar {
-	return AppStrategicPillar{ID: pillar.ID, Name: pillar.Name, Description: pillar.Description, OrderIndex: pillar.OrderIndex, ObjectiveIDs: pillar.ObjectiveIDs}
+	return AppStrategicPillar{ID: pillar.ID, Name: pillar.Name, Description: pillar.Description, OrderIndex: pillar.OrderIndex, ObjectiveIDs: nonNilObjectiveIDs(pillar.ObjectiveIDs)}
+}
+
+func nonNilObjectiveIDs(objectiveIDs []uuid.UUID) []uuid.UUID {
+	if objectiveIDs == nil {
+		return []uuid.UUID{}
+	}
+	return objectiveIDs
 }
 
 // AppKeyResult represents a key result in the application

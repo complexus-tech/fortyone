@@ -33,6 +33,7 @@ const (
 	maxPublicFeedbackCommentCharacters     = 10_000
 	defaultContributorCommentsPageSize     = 20
 	maxContributorCommentsPageSize         = 50
+	publicRoadmapSlug                      = "roadmap"
 )
 
 type Service struct {
@@ -409,6 +410,9 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 		return CoreItem{}, invalidInput("feedback title is required")
 	}
 	input.Slug = normalizeSlug(input.Slug)
+	if input.Slug == publicRoadmapSlug {
+		return CoreItem{}, invalidInput("feedback slug roadmap is reserved")
+	}
 	if input.Slug == "" {
 		input.Slug = normalizeSlug(input.Title) + "-" + uuid.NewString()[:8]
 	}

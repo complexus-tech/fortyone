@@ -959,6 +959,21 @@ func TestCreateItemPreservesProvidedSlug(t *testing.T) {
 	require.Equal(t, "custom-feedback-slug", item.Slug)
 }
 
+func TestCreateItemRejectsReservedPublicRoadmapSlug(t *testing.T) {
+	service := New(&repoStub{}, nil)
+
+	_, err := service.CreateItem(context.Background(), CoreItemInput{
+		WorkspaceID: uuid.New(),
+		PortalID:    uuid.New(),
+		BoardID:     uuid.New(),
+		AuthorID:    uuid.New(),
+		Title:       "Roadmap",
+		Slug:        "roadmap",
+	})
+
+	require.ErrorContains(t, err, "feedback slug roadmap is reserved")
+}
+
 func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
 	workspaceID := uuid.New()
 	portalID := uuid.New()

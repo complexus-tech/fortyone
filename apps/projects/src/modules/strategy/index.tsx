@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, BreadCrumbs, Button, Dialog, Flex, Text } from "ui";
-import { OKRIcon, PlusIcon } from "icons";
+import { MinusIcon, PlusIcon, StrategyIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { useUserRole } from "@/hooks";
@@ -30,7 +30,8 @@ export const WorkspaceStrategyMapPage = () => {
   const [pillarToEdit, setPillarToEdit] = useState<StrategicPillar | null>(
     null,
   );
-  const [showUnaligned, setShowUnaligned] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const showUnaligned = true;
   const isGuest = userRole === "guest";
 
   return (
@@ -42,24 +43,51 @@ export const WorkspaceStrategyMapPage = () => {
             breadCrumbs={[
               {
                 name: "Strategy Map",
-                icon: <OKRIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
+                icon: (
+                  <StrategyIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+                ),
               },
             ]}
           />
         </Flex>
         <Flex align="center" className="gap-2">
-          <Text
-            className="border-border rounded-lg border px-3 py-1.5 text-[0.95rem]"
-            color="muted"
+          <Flex
+            align="center"
+            className="border-border overflow-hidden rounded-lg border"
           >
-            All teams
-          </Text>
-          <Text
-            className="border-border rounded-lg border px-3 py-1.5 text-[0.95rem]"
-            color="muted"
-          >
-            {new Date().getFullYear()}
-          </Text>
+            <button
+              aria-label="Zoom out"
+              className="hover:bg-state-hover grid h-8 w-9 place-items-center"
+              onClick={() => {
+                setZoom((value) => Math.max(0.75, value - 0.1));
+              }}
+              type="button"
+            >
+              <MinusIcon className="h-4 w-4" />
+            </button>
+            <Text className="border-border min-w-14 border-x text-center">
+              {Math.round(zoom * 100)}%
+            </Text>
+            <button
+              aria-label="Zoom in"
+              className="hover:bg-state-hover grid h-8 w-9 place-items-center"
+              onClick={() => {
+                setZoom((value) => Math.min(1.25, value + 0.1));
+              }}
+              type="button"
+            >
+              <PlusIcon className="h-4 w-4" />
+            </button>
+            <button
+              className="border-border hover:bg-state-hover h-8 border-l px-3 font-medium"
+              onClick={() => {
+                setZoom(1);
+              }}
+              type="button"
+            >
+              Reset
+            </button>
+          </Flex>
           <Button
             color="invert"
             disabled={isGuest}
@@ -74,45 +102,12 @@ export const WorkspaceStrategyMapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Flex
-        align="center"
-        className="border-border h-12 border-b px-5"
-        justify="between"
-      >
-        <Flex align="center" className="gap-4">
-          <Text fontWeight="medium">Strategy hierarchy</Text>
-          <Text className="text-[0.95rem]" color="muted">
-            Goal → pillars → objectives → key results
-          </Text>
-        </Flex>
-        <button
-          aria-pressed={showUnaligned}
-          className="text-text-secondary hover:text-text-primary flex items-center gap-2 font-medium"
-          onClick={() => {
-            setShowUnaligned((current) => !current);
-          }}
-          type="button"
-        >
-          <span
-            className={`border-border inline-flex h-5 w-9 items-center rounded-full border p-0.5 transition-colors ${
-              showUnaligned ? "bg-foreground" : "bg-surface-muted"
-            }`}
-          >
-            <span
-              className={`bg-background h-3.5 w-3.5 rounded-full transition-transform ${
-                showUnaligned ? "translate-x-3.5" : "translate-x-0"
-              }`}
-            />
-          </span>
-          Show unaligned
-        </button>
-      </Flex>
-
-      <Box className="h-[calc(100dvh-7rem)]">
+      <Box className="h-[calc(100dvh-4rem)]">
         {isStrategyPending || areObjectivesPending || !strategy ? (
           <BoardSkeleton className="h-full" layout="gantt" />
         ) : (
           <StrategyMapCanvas
+            canEdit={!isGuest}
             objectives={objectives}
             onAlign={(objectiveId, pillarId) => {
               if (!isGuest) alignObjective.mutate({ objectiveId, pillarId });
@@ -128,6 +123,7 @@ export const WorkspaceStrategyMapPage = () => {
             }}
             showUnaligned={showUnaligned}
             strategy={strategy}
+            zoom={zoom}
           />
         )}
       </Box>

@@ -45,11 +45,11 @@ export type CreatedFeedbackComment = {
 
 const refreshPortal = (portalSlug: string) => {
   revalidatePath("/feedback");
-  revalidatePath("/roadmap");
+  revalidatePath("/feedback/roadmap");
   revalidatePath("/updates");
   revalidatePath(`/portal/${portalSlug}`);
   revalidatePath(`/portal/${portalSlug}/feedback`);
-  revalidatePath(`/portal/${portalSlug}/roadmap`);
+  revalidatePath(`/portal/${portalSlug}/feedback/roadmap`);
 };
 
 const refreshFeedbackItem = (portalSlug: string, itemSlug?: string) => {

@@ -4,14 +4,20 @@ import type { ApiResponse } from "@/types";
 import type {
   NewStrategicPillar,
   StrategicPillar,
-  StrategyMap,
   StrategyUpdate,
   UpdateStrategicPillar,
 } from "./types";
+import {
+  normalizeStrategyMap,
+  type StrategyMapResponse,
+} from "./normalize-strategy-map";
 
 export const getStrategyMap = async (ctx: WorkspaceCtx) => {
-  const response = await get<ApiResponse<StrategyMap>>("strategy-map", ctx);
-  return response.data ?? { ultimateGoal: "", description: null, pillars: [] };
+  const response = await get<ApiResponse<StrategyMapResponse>>(
+    "strategy-map",
+    ctx,
+  );
+  return normalizeStrategyMap(response.data);
 };
 
 export const updateStrategy = (strategy: StrategyUpdate, ctx: WorkspaceCtx) =>

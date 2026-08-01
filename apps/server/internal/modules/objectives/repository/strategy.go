@@ -58,6 +58,9 @@ func (r *repo) GetStrategyMap(ctx context.Context, workspaceID uuid.UUID) (objec
 	}
 
 	objectiveIDs := make(map[uuid.UUID][]uuid.UUID, len(dbPillars))
+	for _, pillar := range dbPillars {
+		objectiveIDs[pillar.ID] = make([]uuid.UUID, 0)
+	}
 	for _, alignment := range alignments {
 		objectiveIDs[alignment.PillarID] = append(objectiveIDs[alignment.PillarID], alignment.ObjectiveID)
 	}

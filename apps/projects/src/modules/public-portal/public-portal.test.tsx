@@ -733,6 +733,12 @@ describe("Public portal UI", () => {
     expect(
       screen.getByRole("link", { name: "City Roads Program feedback" }),
     ).toHaveAttribute("href", "/portal/city-roads/feedback");
+    for (const link of screen.getAllByRole("link", { name: "Roadmap" })) {
+      expect(link).toHaveAttribute(
+        "href",
+        "/portal/city-roads/feedback/roadmap",
+      );
+    }
     expect(
       screen.getByRole("link", { name: "Create your own board" }),
     ).toHaveAttribute("href", "/city-roads/settings/workspace/feedback");

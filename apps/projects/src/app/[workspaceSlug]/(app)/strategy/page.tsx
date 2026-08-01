@@ -7,6 +7,6 @@ export const metadata: Metadata = {
     "Connect the workspace goal to strategic pillars, objectives, and key results.",
 };
 
-export default function StrategyMapPage() {
+export default function StrategyPage() {
   return <WorkspaceStrategyMapPage />;
 }
