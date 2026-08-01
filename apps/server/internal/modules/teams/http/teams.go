@@ -26,6 +26,13 @@ type Handlers struct {
 	cache *cache.Service
 }
 
+func listTeamsFilter(r *http.Request) teams.CoreListTeamsFilter {
+	return teams.CoreListTeamsFilter{
+		Search:     strings.TrimSpace(r.URL.Query().Get("search")),
+		JoinedOnly: r.URL.Query().Get("joinedOnly") == "true",
+	}
+}
+
 func New(teams *teams.Service, cacheService *cache.Service) *Handlers {
 	return &Handlers{
 		teams: teams,
@@ -44,9 +51,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	filter := teams.CoreListTeamsFilter{
-		Search: strings.TrimSpace(r.URL.Query().Get("search")),
-	}
+	filter := listTeamsFilter(r)
 
 	if paginationRequested(r) {
 		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
@@ -123,9 +128,7 @@ func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	filter := teams.CoreListTeamsFilter{
-		Search: strings.TrimSpace(r.URL.Query().Get("search")),
-	}
+	filter := listTeamsFilter(r)
 
 	if paginationRequested(r) {
 		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)

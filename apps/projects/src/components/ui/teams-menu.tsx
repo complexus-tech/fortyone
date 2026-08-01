@@ -13,8 +13,8 @@ import { PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import {
   TEAM_MENU_PAGE_SIZE,
+  useJoinedTeamsInfinite,
   usePublicTeamsInfinite,
-  useTeamsInfinite,
 } from "@/modules/teams/hooks/teams";
 import { useWorkspacePath } from "@/hooks";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
@@ -66,7 +66,7 @@ const Items = ({
   const { open, setOpen } = useTeamsMenu();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const joinedTeamsQuery = useTeamsInfinite(
+  const joinedTeamsQuery = useJoinedTeamsInfinite(
     deferredQuery,
     TEAM_MENU_PAGE_SIZE,
     open,

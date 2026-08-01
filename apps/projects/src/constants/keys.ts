@@ -78,6 +78,8 @@ export const teamKeys = {
     [...teamKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, id: string) =>
     [...teamKeys.details(workspaceSlug), id] as const,
+  joined: (workspaceSlug: string) =>
+    [...teamKeys.lists(workspaceSlug), "joined"] as const,
   public: (workspaceSlug: string) =>
     [...teamKeys.lists(workspaceSlug), "public"] as const,
   settings: (workspaceSlug: string, id: string) =>

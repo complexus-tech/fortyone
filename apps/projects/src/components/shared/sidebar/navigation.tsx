@@ -75,12 +75,12 @@ export const Navigation = () => {
       href: withWorkspace("/roadmap"),
       disabled: !features.objectiveEnabled,
     },
-    {
-      name: "Strategy Map",
-      icon: <OKRIcon />,
-      href: withWorkspace("/strategy-map"),
-      disabled: !features.objectiveEnabled,
-    },
+    // {
+    //   name: "Strategy Map",
+    //   icon: <OKRIcon />,
+    //   href: withWorkspace("/strategy-map"),
+    //   disabled: !features.objectiveEnabled,
+    // },
   ];
 
   const renderLinks = (links: MenuItem[]) =>

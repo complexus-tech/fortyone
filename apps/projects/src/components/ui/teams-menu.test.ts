@@ -16,4 +16,14 @@ describe("TeamsMenu", () => {
     expect(source).not.toContain("<MenuLoadingSkeleton rows={4} />");
     expect(initialLoaderUsages).toHaveLength(1);
   });
+
+  it("separates joined teams from public teams", () => {
+    const menuSource = readSource("src/components/ui/teams-menu.tsx");
+    const sidebarSource = readSource("src/components/shared/sidebar/teams.tsx");
+
+    expect(menuSource).toContain("useJoinedTeamsInfinite");
+    expect(menuSource).not.toMatch(/\buseTeamsInfinite\b/);
+    expect(sidebarSource).toContain("useJoinedTeams");
+    expect(sidebarSource).not.toMatch(/\buseTeams\b/);
+  });
 });

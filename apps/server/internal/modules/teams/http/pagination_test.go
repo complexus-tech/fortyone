@@ -25,3 +25,20 @@ func TestToAppTeamsResponseClearsNextPageWhenComplete(t *testing.T) {
 		t.Fatalf("expected no next page, got %d", response.Pagination.NextPage)
 	}
 }
+
+func TestListTeamsFilterRequestsJoinedTeamsOnly(t *testing.T) {
+	request := httptest.NewRequest(
+		"GET",
+		"/teams?search=%20Product%20&joinedOnly=true",
+		nil,
+	)
+
+	filter := listTeamsFilter(request)
+
+	if filter.Search != "Product" {
+		t.Fatalf("expected trimmed search, got %q", filter.Search)
+	}
+	if !filter.JoinedOnly {
+		t.Fatal("expected joined-only team filtering")
+	}
+}

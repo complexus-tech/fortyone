@@ -30,9 +30,10 @@ type CoreTeam struct {
 }
 
 type CoreListTeamsFilter struct {
-	Search string
-	Limit  int
-	Offset int
+	Search     string
+	Limit      int
+	Offset     int
+	JoinedOnly bool
 }
 
 type CoreTeamMemberAIContext struct {

@@ -8,7 +8,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useSession } from "@/lib/auth/client";
-import { useTeams } from "@/modules/teams/hooks/teams";
+import { useJoinedTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole } from "@/hooks";
 import { TeamsMenu } from "@/components/ui/teams-menu";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
@@ -28,7 +28,7 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 };
 
 export const Teams = () => {
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useJoinedTeams();
   const { data: feedbackSummaries = [] } = useTeamFeedbackSummaries();
   const { userRole } = useUserRole();
   const { data: session } = useSession();

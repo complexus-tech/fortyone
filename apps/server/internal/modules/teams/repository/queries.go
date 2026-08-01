@@ -21,6 +21,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 	params := map[string]any{
 		"workspace_id": workspaceId,
 		"user_id":      userID,
+		"joined_only":  filter.JoinedOnly,
 	}
 	var teams []dbTeam
 	search := strings.TrimSpace(filter.Search)
@@ -60,12 +61,15 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 					WHERE tm.team_id = t.team_id
 						AND tm.user_id = :user_id
 				)
-				OR EXISTS (
-					SELECT 1
-					FROM workspace_members wm
-					WHERE wm.workspace_id = t.workspace_id
-						AND wm.user_id = :user_id
-						AND wm.role = 'admin'
+				OR (
+					:joined_only = false
+					AND EXISTS (
+						SELECT 1
+						FROM workspace_members wm
+						WHERE wm.workspace_id = t.workspace_id
+							AND wm.user_id = :user_id
+							AND wm.role = 'admin'
+					)
 				)
 			)
 	`
