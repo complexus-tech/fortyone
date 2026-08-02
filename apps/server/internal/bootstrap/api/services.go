@@ -163,8 +163,8 @@ func buildServices(cfg mux.Config) services {
 	)
 
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
-	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
+	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService, keyresults.WithPublisher(cfg.Publisher))
+	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService, objectives.WithPublisher(cfg.Publisher))
 	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, integrationRequestsRepo, attachmentsService, github.Config{
 		AppID:            cfg.GitHubAppID,
 		AppSlug:          cfg.GitHubAppSlug,

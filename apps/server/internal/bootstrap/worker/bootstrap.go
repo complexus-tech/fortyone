@@ -9,6 +9,8 @@ import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
+	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
@@ -17,9 +19,11 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/storage"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 )
 
 type App struct {
@@ -29,6 +33,8 @@ type App struct {
 	scheduler *asynq.Scheduler
 	taskMux   *asynq.ServeMux
 	redisOpt  asynq.RedisClientOpt
+	redis     *redis.Client
+	tasks     *tasks.Service
 }
 
 func New(ctx context.Context, log *logger.Logger) (App, error) {
@@ -47,12 +53,33 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 
 	redisOpt := redisClientOpt(cfg)
 	redisClient := openRedis(cfg)
-	defer redisClient.Close()
 
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		_ = redisClient.Close()
 		_ = db.Close()
 		return App{}, fmt.Errorf("error pinging redis: %w", err)
 	}
+
+	tasksService, err := tasks.New(redisClient, log)
+	if err != nil {
+		_ = redisClient.Close()
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize worker tasks service: %w", err)
+	}
+	resourcesTransferred := false
+	defer func() {
+		if resourcesTransferred {
+			return
+		}
+		_ = tasksService.Close()
+		_ = redisClient.Close()
+	}()
+	notificationsService := notifications.New(
+		log,
+		notificationsrepository.New(log, db),
+		redisClient,
+		tasksService,
+	)
 
 	cacheService := cache.New(redisClient, log)
 	actorResolver := actors.NewResolver(log, db, cacheService)
@@ -159,7 +186,8 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	)
 
 	mayaService := buildMayaService(log, db, cfg, systemUserID)
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, notificationsService, systemUserID)
+	resourcesTransferred = true
 
 	return App{
 		log:       log,
@@ -168,6 +196,8 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		scheduler: scheduler,
 		taskMux:   taskMux,
 		redisOpt:  redisOpt,
+		redis:     redisClient,
+		tasks:     tasksService,
 	}, nil
 }
 
@@ -175,6 +205,14 @@ func (a App) Run(ctx context.Context) error {
 	defer func() {
 		a.log.Info(ctx, "closing database connection")
 		a.db.Close()
+	}()
+	defer func() {
+		if a.tasks != nil {
+			_ = a.tasks.Close()
+		}
+		if a.redis != nil {
+			_ = a.redis.Close()
+		}
 	}()
 
 	monitor := asynqmon.New(asynqmon.Options{

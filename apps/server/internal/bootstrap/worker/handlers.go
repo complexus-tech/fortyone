@@ -4,6 +4,7 @@ import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -14,9 +15,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, systemUserID uuid.UUID) *asynq.ServeMux {
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, notificationsService *notifications.Service, systemUserID uuid.UUID) *asynq.ServeMux {
 	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, systemUserID)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
 
@@ -49,6 +50,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc("overdue:objectives:email", cleanupHandlers.HandleObjectiveOverdueEmail)
 	mux.HandleFunc(tasks.TypeWeeklyDigestEmail, cleanupHandlers.HandleWeeklyDigestEmail)
 	mux.HandleFunc(tasks.TypeFeedbackDigestEmail, cleanupHandlers.HandleFeedbackDigestEmail)
+	mux.HandleFunc(tasks.TypeStrategyCommunications, cleanupHandlers.HandleStrategyCommunications)
 	mux.HandleFunc(tasks.TypeDisableInactiveAutomation, cleanupHandlers.HandleDisableInactiveAutomation)
 
 	// Lifecycle management handlers

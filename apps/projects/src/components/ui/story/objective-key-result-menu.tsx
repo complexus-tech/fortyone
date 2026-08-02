@@ -2,14 +2,8 @@
 
 import type { ReactNode } from "react";
 import { useDeferredValue, useState } from "react";
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  ObjectiveIcon,
-  OKRIcon,
-  SearchIcon,
-} from "icons";
-import { Box, ContextMenu, Divider, Flex, Input, Menu, Text } from "ui";
+import { ArrowRightIcon, CheckIcon, ObjectiveIcon, OKRIcon } from "icons";
+import { Box, ContextMenu, Divider, Flex, Menu, Text } from "ui";
 import { useTerminology } from "@/hooks";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -434,11 +428,9 @@ const ObjectiveContextSubMenu = ({
         </Flex>
       </ContextMenu.SubTrigger>
       <ContextMenu.SubItems className="w-80 max-w-[calc(100vw-2rem)]">
-        <Box className="px-2 pb-1.5">
-          <Input
+        <Box className="px-3 pt-0.5 pb-1.5">
+          <Menu.Input
             autoFocus
-            className="h-8"
-            leftIcon={<SearchIcon className="h-4 w-4" />}
             onChange={(event) => {
               setQuery(event.target.value);
             }}
@@ -449,9 +441,7 @@ const ObjectiveContextSubMenu = ({
               event.stopPropagation();
             }}
             placeholder={`Find ${getTermDisplay("keyResultTerm")}...`}
-            size="sm"
             value={query}
-            variant="solid"
           />
         </Box>
         <ContextMenu.Separator />
@@ -550,11 +540,9 @@ export const ObjectiveKeyResultContextSubMenu = ({
         />
       </ContextMenu.SubTrigger>
       <ContextMenu.SubItems className="w-80 max-w-[calc(100vw-2rem)]">
-        <Box className="px-2 pb-1.5">
-          <Input
+        <Box className="px-3 pt-0.5 pb-1.5">
+          <Menu.Input
             autoFocus
-            className="h-8"
-            leftIcon={<SearchIcon className="h-4 w-4" />}
             onChange={(event) => {
               setQuery(event.target.value);
             }}
@@ -565,9 +553,7 @@ export const ObjectiveKeyResultContextSubMenu = ({
               event.stopPropagation();
             }}
             placeholder={`Find ${getTermDisplay("objectiveTerm")}...`}
-            size="sm"
             value={query}
-            variant="solid"
           />
         </Box>
         <ContextMenu.Separator />

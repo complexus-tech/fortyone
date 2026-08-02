@@ -62,7 +62,7 @@ type Repository interface {
 	UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	RemoveAssociation(ctx context.Context, associationID, workspaceID uuid.UUID) (CoreStoryAssociation, error)
 	GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uuid.UUID) (string, error)
-	GetKeyResultObjective(ctx context.Context, keyResultID, workspaceID uuid.UUID) (uuid.UUID, error)
+	ResolveKeyResult(ctx context.Context, keyResultID, workspaceID uuid.UUID) (CoreKeyResultReference, error)
 	GetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error)
 	SetCollaborators(ctx context.Context, storyID, workspaceID uuid.UUID, collaboratorIDs []uuid.UUID) error
 	SetWatching(ctx context.Context, storyID, workspaceID, userID uuid.UUID, watching bool) error
@@ -152,20 +152,20 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		ns.Reporter = &actorID
 	}
 	if ns.KeyResult != nil {
-		objectiveID, err := s.repo.GetKeyResultObjective(ctx, *ns.KeyResult, workspaceId)
+		keyResult, err := s.repo.ResolveKeyResult(ctx, *ns.KeyResult, workspaceId)
 		if err != nil {
 			return CoreSingleStory{}, fmt.Errorf("resolve key result objective: %w", err)
 		}
-		if ns.Objective != nil && *ns.Objective != objectiveID {
+		if ns.Objective != nil && *ns.Objective != keyResult.ObjectiveID {
 			return CoreSingleStory{}, fmt.Errorf(
 				"%w: key result %s belongs to objective %s, not %s",
 				ErrObjectiveKeyResultMismatch,
 				*ns.KeyResult,
-				objectiveID,
+				keyResult.ObjectiveID,
 				*ns.Objective,
 			)
 		}
-		ns.Objective = &objectiveID
+		ns.Objective = &keyResult.ObjectiveID
 	}
 
 	story := toCoreSingleStory(ns, workspaceId)
@@ -517,30 +517,32 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		s.log.Error(ctx, "failed to get story", "error", err)
 		return err
 	}
+	activityDisplayValues := make(map[string]string)
 
 	keyResultValue, hasKeyResultUpdate := updates["key_result_id"]
 	if hasKeyResultUpdate {
 		keyResultID, validKeyResultUpdate := optionalUUIDUpdate(keyResultValue)
 		if validKeyResultUpdate && keyResultID != nil {
-			objectiveID, err := s.repo.GetKeyResultObjective(ctx, *keyResultID, workspaceID)
+			keyResult, err := s.repo.ResolveKeyResult(ctx, *keyResultID, workspaceID)
 			if err != nil {
 				span.RecordError(err)
 				return fmt.Errorf("resolve key result objective: %w", err)
 			}
+			activityDisplayValues["key_result_id"] = keyResult.Name
 
 			if objectiveValue, hasObjectiveUpdate := updates["objective_id"]; hasObjectiveUpdate {
 				requestedObjectiveID, validObjectiveUpdate := optionalUUIDUpdate(objectiveValue)
-				if !validObjectiveUpdate || requestedObjectiveID == nil || *requestedObjectiveID != objectiveID {
+				if !validObjectiveUpdate || requestedObjectiveID == nil || *requestedObjectiveID != keyResult.ObjectiveID {
 					return fmt.Errorf(
 						"%w: key result %s belongs to objective %s",
 						ErrObjectiveKeyResultMismatch,
 						*keyResultID,
-						objectiveID,
+						keyResult.ObjectiveID,
 					)
 				}
 			}
 
-			updates["objective_id"] = &objectiveID
+			updates["objective_id"] = &keyResult.ObjectiveID
 		}
 	} else if objectiveValue, hasObjectiveUpdate := updates["objective_id"]; hasObjectiveUpdate {
 		if objectiveID, validObjectiveUpdate := optionalUUIDUpdate(objectiveValue); validObjectiveUpdate && !sameOptionalUUID(objectiveID, story.Objective) {
@@ -596,6 +598,9 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		}
 
 		currentValue := s.formatValue(value)
+		if displayValue, ok := activityDisplayValues[field]; ok {
+			currentValue = displayValue
+		}
 		na := CoreActivity{
 			StoryID:      storyID,
 			Type:         "update",

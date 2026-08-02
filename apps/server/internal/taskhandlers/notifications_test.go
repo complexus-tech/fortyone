@@ -28,12 +28,16 @@ func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) 
 	items := []NotificationEmailDigestItem{
 		{
 			NotificationID: uuid.New(),
+			EntityType:     "story",
+			EntityID:       uuid.New(),
 			Title:          "Ship billing states",
 			Message:        rawMessage,
 			CreatedAt:      time.Date(2026, 7, 4, 8, 30, 0, 0, time.UTC),
 		},
 		{
 			NotificationID: uuid.New(),
+			EntityType:     "story",
+			EntityID:       uuid.New(),
 			Title:          "Review onboarding copy",
 			Message:        rawMessage,
 			CreatedAt:      time.Date(2026, 7, 4, 8, 40, 0, 0, time.UTC),
@@ -46,10 +50,11 @@ func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) 
 	require.Contains(t, rendered, "Here&#39;s what changed while you were away.")
 	require.Contains(t, rendered, "Maya Chen")
 	require.Contains(t, rendered, "moved the task to")
-	require.Contains(t, rendered, "for task")
+	require.Contains(t, rendered, "for work")
 	require.Contains(t, rendered, ">Ship billing states</a>")
 	require.Contains(t, rendered, ">Review onboarding copy</a>")
 	require.Contains(t, rendered, "https://product.fortyone.app/notifications/")
+	require.Contains(t, rendered, "entityType=story")
 	require.Contains(t, rendered, "<strong")
 	require.Contains(t, rendered, "font-weight: 600")
 	require.Contains(t, rendered, "padding: 0 0 10px")
@@ -59,6 +64,25 @@ func TestFormatNotificationDigestMessageGroupsUnreadNotifications(t *testing.T) 
 	require.Contains(t, rendered, "border-top: 1px solid #e5e5e5")
 	require.NotContains(t, rendered, "display: block; margin: 0 0 4px")
 	require.NotContains(t, rendered, "font-size: 14px")
+}
+
+func TestNotificationEmailDestinationLinksStrategyThroughNotification(t *testing.T) {
+	workspaceURL := "https://product.fortyone.app"
+	workspaceID := uuid.New()
+	notificationID := uuid.New()
+
+	destination, label := notificationEmailDestination(
+		"strategy",
+		workspaceID,
+		"",
+		notificationID,
+		workspaceURL,
+	)
+
+	require.Contains(t, destination, workspaceURL+"/notifications/"+notificationID.String())
+	require.Contains(t, destination, "entityId="+workspaceID.String())
+	require.Contains(t, destination, "entityType=strategy")
+	require.Equal(t, "strategy", label)
 }
 
 func TestFormatNotificationDigestMessageLinksFeedbackToPublicItem(t *testing.T) {

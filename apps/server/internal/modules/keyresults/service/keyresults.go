@@ -8,7 +8,9 @@ import (
 	"time"
 
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,15 +40,30 @@ type Service struct {
 	repo          Repository
 	okrActivities *okractivities.Service
 	log           *logger.Logger
+	publisher     *publisher.Publisher
+}
+
+// Option configures optional key result service dependencies.
+type Option func(*Service)
+
+// WithPublisher publishes key result changes for notification and integration consumers.
+func WithPublisher(eventPublisher *publisher.Publisher) Option {
+	return func(service *Service) {
+		service.publisher = eventPublisher
+	}
 }
 
 // New creates a new key result service
-func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service) *Service {
-	return &Service{
+func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service, options ...Option) *Service {
+	service := &Service{
 		repo:          repo,
 		okrActivities: okrActivities,
 		log:           log,
 	}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 // Create inserts a new key result into the system
@@ -226,6 +243,30 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		}
 	}
 
+	eventUpdates := make(map[string]any, len(changedUpdates)+1)
+	for field, value := range changedUpdates {
+		eventUpdates[field] = value
+	}
+	if contributorsChanged {
+		eventUpdates["contributors"] = contributors
+	}
+	if s.publisher != nil && hasNotifiableKeyResultUpdate(eventUpdates) {
+		event := events.Event{
+			Type: events.KeyResultUpdated,
+			Payload: events.KeyResultUpdatedPayload{
+				KeyResultID: id,
+				ObjectiveID: previousKR.ObjectiveID,
+				WorkspaceID: workspaceId,
+				Updates:     eventUpdates,
+			},
+			Timestamp: time.Now().UTC(),
+			ActorID:   userID,
+		}
+		if publishErr := s.publisher.Publish(ctx, event); publishErr != nil {
+			s.log.Error(ctx, "failed to publish key result update event", "error", publishErr, "keyResultID", id)
+		}
+	}
+
 	span.AddEvent("key result updated", trace.WithAttributes(
 		attribute.String("key_result.id", id.String()),
 		attribute.Int("fields_changed", len(changedUpdates)),
@@ -233,6 +274,15 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	))
 
 	return nil
+}
+
+func hasNotifiableKeyResultUpdate(updates map[string]any) bool {
+	for _, field := range []string{"lead", "contributors", "current_value", "target_value", "start_date", "end_date"} {
+		if _, exists := updates[field]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 // Delete removes a key result from the system

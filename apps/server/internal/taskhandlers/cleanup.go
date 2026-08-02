@@ -14,20 +14,35 @@ import (
 
 // CleanupHandlers handles cleanup tasks with database access
 type CleanupHandlers struct {
-	log           *logger.Logger
-	db            *sqlx.DB
-	mailerService mailer.Service
-	systemUserID  uuid.UUID
+	log              *logger.Logger
+	db               *sqlx.DB
+	mailerService    mailer.Service
+	systemUserID     uuid.UUID
+	strategyNotifier jobs.StrategyNotificationCreator
 }
 
 // NewCleanupHandlers creates a new CleanupHandlers instance
-func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, mailerService mailer.Service, systemUserID uuid.UUID) *CleanupHandlers {
+func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, mailerService mailer.Service, systemUserID uuid.UUID, strategyNotifier jobs.StrategyNotificationCreator) *CleanupHandlers {
 	return &CleanupHandlers{
-		log:           log,
-		db:            db,
-		mailerService: mailerService,
-		systemUserID:  systemUserID,
+		log:              log,
+		db:               db,
+		mailerService:    mailerService,
+		systemUserID:     systemUserID,
+		strategyNotifier: strategyNotifier,
 	}
+}
+
+// HandleStrategyCommunications creates due strategy planning, check-in, and summary notifications.
+func (c *CleanupHandlers) HandleStrategyCommunications(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing StrategyCommunications task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.ProcessStrategyCommunications(ctx, c.db, c.log, c.strategyNotifier, c.systemUserID); err != nil {
+		c.log.Error(ctx, "Failed to process strategy communications", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("strategy communications failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed StrategyCommunications task", "task_id", t.ResultWriter().TaskID())
+	return nil
 }
 
 // HandleTokenCleanup processes the token cleanup task

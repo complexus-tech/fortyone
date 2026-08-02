@@ -8,7 +8,9 @@ import (
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,6 +44,17 @@ type Service struct {
 	repo          Repository
 	okrActivities *okractivities.Service
 	log           *logger.Logger
+	publisher     *publisher.Publisher
+}
+
+// Option configures optional objective service dependencies.
+type Option func(*Service)
+
+// WithPublisher publishes objective changes for notification and integration consumers.
+func WithPublisher(eventPublisher *publisher.Publisher) Option {
+	return func(service *Service) {
+		service.publisher = eventPublisher
+	}
 }
 
 func (s *Service) GetStrategyMap(ctx context.Context, workspaceID uuid.UUID) (CoreStrategyMap, error) {
@@ -69,12 +82,16 @@ func (s *Service) AlignObjective(ctx context.Context, workspaceID, objectiveID u
 }
 
 // New constructs a new objectives service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service) *Service {
-	return &Service{
+func New(log *logger.Logger, repo Repository, okrActivities *okractivities.Service, options ...Option) *Service {
+	service := &Service{
 		repo:          repo,
 		okrActivities: okrActivities,
 		log:           log,
 	}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 // Get returns an objective by ID.
@@ -151,11 +168,42 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		// Don't fail the update operation if activity recording fails
 	}
 
+	if s.publisher != nil && hasNotifiableObjectiveUpdate(updates) {
+		objective, getErr := s.repo.Get(ctx, id, workspaceId)
+		if getErr != nil {
+			s.log.Error(ctx, "failed to load objective for update event", "error", getErr, "objectiveID", id)
+		} else {
+			event := events.Event{
+				Type: events.ObjectiveUpdated,
+				Payload: events.ObjectiveUpdatedPayload{
+					ObjectiveID: id,
+					WorkspaceID: workspaceId,
+					Updates:     updates,
+					LeadID:      objective.LeadUser,
+				},
+				Timestamp: time.Now().UTC(),
+				ActorID:   userId,
+			}
+			if publishErr := s.publisher.Publish(ctx, event); publishErr != nil {
+				s.log.Error(ctx, "failed to publish objective update event", "error", publishErr, "objectiveID", id)
+			}
+		}
+	}
+
 	span.AddEvent("objective updated", trace.WithAttributes(
 		attribute.String("objective.id", id.String()),
 	))
 
 	return nil
+}
+
+func hasNotifiableObjectiveUpdate(updates map[string]any) bool {
+	for _, field := range []string{"lead_user_id", "status_id", "health", "priority", "start_date", "end_date"} {
+		if _, exists := updates[field]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 // Delete removes an objective from the system

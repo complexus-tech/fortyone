@@ -52,6 +52,15 @@ export function useNotificationConfigs(): NotificationConfig[] {
       });
     }
 
+    if (features.objectiveEnabled) {
+      configs.push({
+        type: "strategy_update",
+        title: "Strategy communications",
+        description:
+          "Get planning reminders, weekly check-ins, and monthly strategy summaries",
+      });
+    }
+
     configs.push({
       type: "reminders",
       title: "Reminders",
@@ -61,7 +70,8 @@ export function useNotificationConfigs(): NotificationConfig[] {
     configs.push({
       type: "weekly_digest",
       title: "Weekly digest",
-      description: "Get a weekly summary of unread updates and work that needs attention",
+      description:
+        "Get a weekly summary of unread updates and work that needs attention",
     });
 
     return configs;

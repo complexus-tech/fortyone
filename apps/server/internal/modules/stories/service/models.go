@@ -196,6 +196,12 @@ type CoreStoryAssociation struct {
 	ToStoryTitle   string        `json:"-"`
 }
 
+// CoreKeyResultReference contains the strategy details needed when linking a story.
+type CoreKeyResultReference struct {
+	ObjectiveID uuid.UUID
+	Name        string
+}
+
 // CoreActivity represents the core model for an activity.
 type CoreActivity struct {
 	ID           uuid.UUID `json:"id"`

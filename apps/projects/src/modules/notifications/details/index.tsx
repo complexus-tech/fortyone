@@ -9,7 +9,6 @@ export const NotificationDetails = ({
 }: {
   notificationId: string;
   entityId: string;
-  entityType: "story" | "objective";
 }) => {
   const hasMounted = useRef(false);
   const { mutate: readNotification } = useReadNotificationMutation(false);

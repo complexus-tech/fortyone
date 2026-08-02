@@ -2,7 +2,9 @@ package consumer
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/url"
@@ -36,6 +38,7 @@ type GitHubCommentSyncer interface {
 
 type Consumer struct {
 	redis             *redis.Client
+	db                *sqlx.DB
 	log               *logger.Logger
 	notifications     *notifications.Service
 	notificationRules *notifications.Rules
@@ -53,6 +56,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 
 	return &Consumer{
 		redis:             redis,
+		db:                db,
 		log:               log,
 		notifications:     notificationsService,
 		notificationRules: notificationRules,
@@ -472,7 +476,7 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 
 	c.log.Info(ctx, "consumer.handleObjectiveUpdated", "objective_id", payload.ObjectiveID, "lead_id", payload.LeadID)
 
-	// Create notification for the lead if assigned/changed and is not the actor
+	// The lead owns the follow-through on meaningful objective changes.
 	if payload.LeadID != nil && *payload.LeadID != event.ActorID {
 		objective, err := c.objectives.Get(ctx, payload.ObjectiveID, payload.WorkspaceID)
 		objectiveName := "an objective"
@@ -488,16 +492,23 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 			actorName = actor.Username
 		}
 
+		title := fmt.Sprintf("Objective updated: %s", objectiveName)
+		template := "{actor} updated the objective {objective}"
+		if _, leadChanged := payload.Updates["lead_user_id"]; leadChanged {
+			title = fmt.Sprintf("You are now leading: %s", objectiveName)
+			template = "{actor} assigned you as lead for {objective}"
+		}
+
 		notification := notifications.CoreNewNotification{
 			RecipientID: *payload.LeadID,
 			WorkspaceID: payload.WorkspaceID,
-			Type:        "objective_assigned", // Or objective_lead_changed
+			Type:        "objective_update",
 			EntityType:  "objective",
 			EntityID:    payload.ObjectiveID,
 			ActorID:     event.ActorID,
-			Title:       fmt.Sprintf("You are now leading: %s", objectiveName),
+			Title:       title,
 			Message: notifications.NotificationMessage{
-				Template: "{actor} assigned you as lead for the objective: {objective}",
+				Template: template,
 				Variables: map[string]notifications.Variable{
 					"actor":     {Value: actorName, Type: "actor"},
 					"objective": {Value: objectiveName, Type: "value"},
@@ -507,14 +518,18 @@ func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Even
 
 		notification = withEventDedupeKey(event, notification, 0)
 		if _, err := c.notifications.Create(ctx, notification); err != nil {
-			c.log.Error(ctx, "failed to create notification for objective lead assignment", "error", err)
-			// Decide if this error should be returned or just logged.
+			return fmt.Errorf("create objective update notification: %w", err)
 		}
 	}
 
-	// TODO: Handle other objective updates if necessary (e.g., status change, due date)
-
 	return nil
+}
+
+type keyResultNotificationContext struct {
+	KeyResultName string     `db:"key_result_name"`
+	ObjectiveName string     `db:"objective_name"`
+	KeyResultLead *uuid.UUID `db:"key_result_lead"`
+	ObjectiveLead *uuid.UUID `db:"objective_lead"`
 }
 
 func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event events.Event) error {
@@ -530,14 +545,74 @@ func (c *Consumer) handleKeyResultUpdated(ctx context.Context, event events.Even
 
 	c.log.Info(ctx, "consumer.handleKeyResultUpdated", "key_result_id", payload.KeyResultID)
 
-	// TODO: Get objective lead to notify them of key result updates.
-	// This requires fetching the Objective to which this Key Result belongs, then fetching the Lead of that Objective.
-	// Example steps:
-	// 1. Fetch KeyResult: kr, err := c.keyResults.Get(ctx, payload.KeyResultID, payload.WorkspaceID) (assuming a keyResults service)
-	// 2. Fetch Objective: obj, err := c.objectives.Get(ctx, kr.ObjectiveID, payload.WorkspaceID)
-	// 3. If obj.LeadID is not nil and not the event.ActorID, then create and send notification.
+	var notificationContext keyResultNotificationContext
+	if err := c.db.GetContext(ctx, &notificationContext, `
+		SELECT
+			kr.name AS key_result_name,
+			o.name AS objective_name,
+			kr.lead AS key_result_lead,
+			o.lead_user_id AS objective_lead
+		FROM key_results kr
+		JOIN objectives o ON o.objective_id = kr.objective_id
+		WHERE kr.id = $1
+			AND o.workspace_id = $2
+	`, payload.KeyResultID, payload.WorkspaceID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.log.Info(ctx, "key result no longer exists; skipping update notification", "key_result_id", payload.KeyResultID)
+			return nil
+		}
+		return fmt.Errorf("load key result notification context: %w", err)
+	}
 
-	c.log.Warn(ctx, "Key result update notification not yet implemented", "key_result_id", payload.KeyResultID)
+	var contributorIDs []uuid.UUID
+	if err := c.db.SelectContext(ctx, &contributorIDs, `
+		SELECT user_id
+		FROM key_result_contributors
+		WHERE key_result_id = $1
+	`, payload.KeyResultID); err != nil {
+		return fmt.Errorf("load key result contributors: %w", err)
+	}
+
+	recipients := make(map[uuid.UUID]struct{}, len(contributorIDs)+2)
+	for _, recipientID := range contributorIDs {
+		recipients[recipientID] = struct{}{}
+	}
+	if notificationContext.KeyResultLead != nil {
+		recipients[*notificationContext.KeyResultLead] = struct{}{}
+	}
+	if notificationContext.ObjectiveLead != nil {
+		recipients[*notificationContext.ObjectiveLead] = struct{}{}
+	}
+	delete(recipients, event.ActorID)
+
+	actorName := "Someone"
+	if actor, actorErr := c.users.GetUser(ctx, event.ActorID); actorErr == nil {
+		actorName = actor.Username
+	}
+
+	for recipientID := range recipients {
+		notification := withEventDedupeKey(event, notifications.CoreNewNotification{
+			RecipientID: recipientID,
+			WorkspaceID: payload.WorkspaceID,
+			Type:        "key_result_update",
+			EntityType:  "objective",
+			EntityID:    payload.ObjectiveID,
+			ActorID:     event.ActorID,
+			Title:       fmt.Sprintf("Key result updated: %s", notificationContext.KeyResultName),
+			Message: notifications.NotificationMessage{
+				Template: "{actor} updated {keyResult} under {objective}",
+				Variables: map[string]notifications.Variable{
+					"actor":     {Value: actorName, Type: "actor"},
+					"keyResult": {Value: notificationContext.KeyResultName, Type: "value"},
+					"objective": {Value: notificationContext.ObjectiveName, Type: "value"},
+				},
+			},
+		}, 0)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("create key result update notification: %w", err)
+		}
+	}
+
 	return nil
 }
 

@@ -4,6 +4,7 @@ import { NotificationDetails } from "@/modules/notifications/details";
 import { getStory } from "@/modules/story/queries/get-story";
 import { auth } from "@/auth";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { readNotification } from "@/modules/notifications/actions/read";
 import { withWorkspacePath } from "@/utils";
 
 export async function generateMetadata({
@@ -13,7 +14,7 @@ export async function generateMetadata({
   params: Promise<{ notificationId: string; workspaceSlug: string }>;
   searchParams: Promise<{
     entityId: string;
-    entityType?: "story" | "objective";
+    entityType?: "story" | "objective" | "key_result" | "strategy";
   }>;
 }): Promise<Metadata> {
   const [{ workspaceSlug }, { entityType, entityId }, session] =
@@ -28,6 +29,10 @@ export async function generateMetadata({
   } else if (entityType === "objective") {
     const objectiveData = await getObjective(entityId, ctx);
     title = objectiveData?.name || "Objective";
+  } else if (entityType === "key_result") {
+    title = "Key result update";
+  } else if (entityType === "strategy") {
+    title = "Strategy update";
   }
   return {
     title,
@@ -41,7 +46,7 @@ export default async function Page({
   params: Promise<{ notificationId: string; workspaceSlug: string }>;
   searchParams: Promise<{
     entityId?: string;
-    entityType?: "story" | "objective";
+    entityType?: "story" | "objective" | "key_result" | "strategy";
   }>;
 }) {
   const { notificationId, workspaceSlug } = await params;
@@ -51,11 +56,27 @@ export default async function Page({
     return redirect(withWorkspacePath("/notifications", workspaceSlug));
   }
 
+  if (entityType === "strategy") {
+    await readNotification(notificationId, workspaceSlug);
+    return redirect(withWorkspacePath("/strategy", workspaceSlug));
+  }
+
+  if (entityType === "objective" || entityType === "key_result") {
+    const session = await auth();
+    const objective = await getObjective(entityId, {
+      session: session!,
+      workspaceSlug,
+    });
+    await readNotification(notificationId, workspaceSlug);
+    return redirect(
+      withWorkspacePath(
+        `/teams/${objective.teamId}/objectives/${objective.id}`,
+        workspaceSlug,
+      ),
+    );
+  }
+
   return (
-    <NotificationDetails
-      entityId={entityId}
-      entityType={entityType}
-      notificationId={notificationId}
-    />
+    <NotificationDetails entityId={entityId} notificationId={notificationId} />
   );
 }

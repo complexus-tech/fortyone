@@ -144,6 +144,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	}
 
 	_, err = scheduler.Register(
+		"0 * * * *", // Hourly; strategy communications are evaluated in each recipient's local timezone
+		asynq.NewTask(tasks.TypeStrategyCommunications, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register strategy communications task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"0 1 * * 0", // Sunday 01:00 AM
 		asynq.NewTask(tasks.TypeWorkspaceInactivityWarning, nil),
 		asynq.Queue("notifications"),

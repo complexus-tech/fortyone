@@ -376,6 +376,12 @@ export const Activity = ({
         <DisplayObjective objectiveId={value} teamId={teamId} />
       ),
     },
+    key_result_id: {
+      label: "Key result",
+      render: (value: string) => (
+        <span>{!value || value.includes("nil") ? "No key result" : value}</span>
+      ),
+    },
     blocked_by_id: {
       label: "Blocked by",
       render: (value: string) => <span>{value}</span>,

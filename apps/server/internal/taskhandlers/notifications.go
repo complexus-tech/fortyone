@@ -32,6 +32,7 @@ type NotificationEmailData struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
 	EntityType       string          `db:"entity_type"`
+	EntityID         uuid.UUID       `db:"entity_id"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	UserEmail        string          `db:"user_email"`
@@ -47,6 +48,7 @@ type NotificationEmailDigestItem struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
 	EntityType       string          `db:"entity_type"`
+	EntityID         uuid.UUID       `db:"entity_id"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	CreatedAt        time.Time       `db:"created_at"`
@@ -66,6 +68,7 @@ type notificationEmailDigestRow struct {
 	NotificationID   uuid.UUID       `db:"notification_id"`
 	NotificationType string          `db:"type"`
 	EntityType       string          `db:"entity_type"`
+	EntityID         uuid.UUID       `db:"entity_id"`
 	Title            string          `db:"title"`
 	Message          json.RawMessage `db:"message"`
 	CreatedAt        time.Time       `db:"created_at"`
@@ -123,6 +126,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			n.notification_id,
 			n.type,
 			n.entity_type,
+			n.entity_id,
 			n.title,
 			n.message,
 			u.email AS user_email,
@@ -183,6 +187,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			n.notification_id,
 			n.type,
 			n.entity_type,
+			n.entity_id,
 			n.title,
 			n.message,
 			n.created_at,
@@ -244,6 +249,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			NotificationID:   row.NotificationID,
 			NotificationType: row.NotificationType,
 			EntityType:       row.EntityType,
+			EntityID:         row.EntityID,
 			Title:            row.Title,
 			Message:          row.Message,
 			CreatedAt:        row.CreatedAt,
@@ -294,7 +300,7 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 		}
 
 		parsedMessage := parseNotificationMessage(notificationMsg)
-		notificationURL, entityLabel := notificationEmailDestination(item.EntityType, item.FeedbackSlug, item.NotificationID, workspaceURL)
+		notificationURL, entityLabel := notificationEmailDestination(item.EntityType, item.EntityID, item.FeedbackSlug, item.NotificationID, workspaceURL)
 		messageContext := fmt.Sprintf(" for %s ", entityLabel)
 		if item.EntityType == "feedback" {
 			messageContext = ": "
@@ -313,11 +319,30 @@ func formatNotificationDigestMessage(items []NotificationEmailDigestItem, worksp
 	return content + "</div></div>", nil
 }
 
-func notificationEmailDestination(entityType, feedbackSlug string, notificationID uuid.UUID, workspaceURL string) (string, string) {
+func notificationEmailDestination(entityType string, entityID uuid.UUID, feedbackSlug string, notificationID uuid.UUID, workspaceURL string) (string, string) {
 	if entityType == "feedback" && feedbackSlug != "" {
 		return fmt.Sprintf("%s/feedback/%s", workspaceURL, url.PathEscape(feedbackSlug)), "feedback"
 	}
-	return fmt.Sprintf("%s/notifications/%s", workspaceURL, notificationID.String()), "task"
+	return fmt.Sprintf(
+		"%s/notifications/%s?entityId=%s&entityType=%s",
+		workspaceURL,
+		notificationID.String(),
+		url.QueryEscape(entityID.String()),
+		url.QueryEscape(entityType),
+	), notificationEntityLabel(entityType)
+}
+
+func notificationEntityLabel(entityType string) string {
+	switch entityType {
+	case "objective", "key_result":
+		return "strategy"
+	case "strategy":
+		return "strategy"
+	case "story":
+		return "work"
+	default:
+		return "update"
+	}
 }
 
 func feedbackOnlyDigest(items []NotificationEmailDigestItem) bool {

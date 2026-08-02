@@ -78,6 +78,20 @@ describe("Story actions menu", () => {
     expect(contextMenu).not.toContain("NewTabIcon");
   });
 
+  it("matches context-menu strategy search fields to the detail picker", () => {
+    const source = readSource(
+      "src/components/ui/story/objective-key-result-menu.tsx",
+    );
+    const contextMenus = source.slice(
+      source.indexOf("const ObjectiveContextSubMenu"),
+      source.indexOf("export const ObjectiveKeyResultSubMenu"),
+    );
+
+    expect(contextMenus.match(/<Menu\.Input/g)).toHaveLength(2);
+    expect(contextMenus).not.toContain('variant="solid"');
+    expect(contextMenus).not.toContain('size="sm"');
+  });
+
   it("shows the menu once per surface and last on the full page", () => {
     const header = readSource(
       "src/modules/story/components/options-header.tsx",

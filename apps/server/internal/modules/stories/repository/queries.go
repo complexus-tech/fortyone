@@ -59,12 +59,12 @@ func (r *repo) GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uu
 	return scheme, nil
 }
 
-func (r *repo) GetKeyResultObjective(ctx context.Context, keyResultID, workspaceID uuid.UUID) (uuid.UUID, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetKeyResultObjective")
+func (r *repo) ResolveKeyResult(ctx context.Context, keyResultID, workspaceID uuid.UUID) (stories.CoreKeyResultReference, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.ResolveKeyResult")
 	defer span.End()
 
 	const query = `
-		SELECT kr.objective_id
+		SELECT kr.objective_id, kr.name
 		FROM key_results kr
 		JOIN objectives o ON o.objective_id = kr.objective_id
 		WHERE kr.id = :key_result_id
@@ -78,19 +78,25 @@ func (r *repo) GetKeyResultObjective(ctx context.Context, keyResultID, workspace
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return uuid.Nil, err
+		return stories.CoreKeyResultReference{}, err
 	}
 	defer stmt.Close()
 
-	var objectiveID uuid.UUID
-	if err := stmt.GetContext(ctx, &objectiveID, params); err != nil {
+	var keyResult struct {
+		ObjectiveID uuid.UUID `db:"objective_id"`
+		Name        string    `db:"name"`
+	}
+	if err := stmt.GetContext(ctx, &keyResult, params); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return uuid.Nil, stories.ErrNotFound
+			return stories.CoreKeyResultReference{}, stories.ErrNotFound
 		}
-		return uuid.Nil, err
+		return stories.CoreKeyResultReference{}, err
 	}
 
-	return objectiveID, nil
+	return stories.CoreKeyResultReference{
+		ObjectiveID: keyResult.ObjectiveID,
+		Name:        keyResult.Name,
+	}, nil
 }
 
 func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {

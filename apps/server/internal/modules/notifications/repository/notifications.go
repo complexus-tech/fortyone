@@ -40,6 +40,10 @@ func getDefaultPreferences() map[string]map[string]bool {
 			"email":  true,
 			"in_app": true,
 		},
+		"strategy_update": {
+			"email":  true,
+			"in_app": true,
+		},
 		"mention": {
 			"email":  true,
 			"in_app": true,

@@ -13,17 +13,18 @@ import (
 
 type strategyLinkRepo struct {
 	Repository
-	story              CoreSingleStory
-	keyResultObjective uuid.UUID
-	updates            map[string]any
+	story      CoreSingleStory
+	keyResult  CoreKeyResultReference
+	updates    map[string]any
+	activities []CoreActivity
 }
 
 func (r *strategyLinkRepo) Get(context.Context, uuid.UUID, uuid.UUID) (CoreSingleStory, error) {
 	return r.story, nil
 }
 
-func (r *strategyLinkRepo) GetKeyResultObjective(context.Context, uuid.UUID, uuid.UUID) (uuid.UUID, error) {
-	return r.keyResultObjective, nil
+func (r *strategyLinkRepo) ResolveKeyResult(context.Context, uuid.UUID, uuid.UUID) (CoreKeyResultReference, error) {
+	return r.keyResult, nil
 }
 
 func (r *strategyLinkRepo) Update(_ context.Context, _ uuid.UUID, _ uuid.UUID, updates map[string]any) error {
@@ -32,6 +33,7 @@ func (r *strategyLinkRepo) Update(_ context.Context, _ uuid.UUID, _ uuid.UUID, u
 }
 
 func (r *strategyLinkRepo) RecordActivities(_ context.Context, activities []CoreActivity) ([]CoreActivity, error) {
+	r.activities = append(r.activities, activities...)
 	return activities, nil
 }
 
@@ -51,8 +53,8 @@ func TestKeyResultUpdateAlignsItsObjective(t *testing.T) {
 	keyResultID := uuid.New()
 	objectiveID := uuid.New()
 	repo := &strategyLinkRepo{
-		story:              CoreSingleStory{ID: storyID, Workspace: workspaceID},
-		keyResultObjective: objectiveID,
+		story:     CoreSingleStory{ID: storyID, Workspace: workspaceID},
+		keyResult: CoreKeyResultReference{ObjectiveID: objectiveID, Name: "Grow enterprise adoption"},
 	}
 
 	err := newStrategyLinkService(repo).updateWithOptions(
@@ -71,6 +73,20 @@ func TestKeyResultUpdateAlignsItsObjective(t *testing.T) {
 	if !ok || updatedObjectiveID == nil || *updatedObjectiveID != objectiveID {
 		t.Fatalf("expected objective %s, got %#v", objectiveID, repo.updates["objective_id"])
 	}
+
+	var keyResultActivity *CoreActivity
+	for i := range repo.activities {
+		if repo.activities[i].Field == "key_result_id" {
+			keyResultActivity = &repo.activities[i]
+			break
+		}
+	}
+	if keyResultActivity == nil {
+		t.Fatal("expected a key result activity to be recorded")
+	}
+	if keyResultActivity.CurrentValue != "Grow enterprise adoption" {
+		t.Fatalf("expected key result name in activity, got %q", keyResultActivity.CurrentValue)
+	}
 }
 
 func TestMatchingObjectiveAndKeyResultUpdateSucceeds(t *testing.T) {
@@ -79,8 +95,8 @@ func TestMatchingObjectiveAndKeyResultUpdateSucceeds(t *testing.T) {
 	keyResultID := uuid.New()
 	objectiveID := uuid.New()
 	repo := &strategyLinkRepo{
-		story:              CoreSingleStory{ID: storyID, Workspace: workspaceID},
-		keyResultObjective: objectiveID,
+		story:     CoreSingleStory{ID: storyID, Workspace: workspaceID},
+		keyResult: CoreKeyResultReference{ObjectiveID: objectiveID, Name: "Grow enterprise adoption"},
 	}
 
 	err := newStrategyLinkService(repo).updateWithOptions(
@@ -111,8 +127,8 @@ func TestMismatchedObjectiveAndKeyResultUpdateIsRejected(t *testing.T) {
 	objectiveID := uuid.New()
 	differentObjectiveID := uuid.New()
 	repo := &strategyLinkRepo{
-		story:              CoreSingleStory{ID: storyID, Workspace: workspaceID},
-		keyResultObjective: objectiveID,
+		story:     CoreSingleStory{ID: storyID, Workspace: workspaceID},
+		keyResult: CoreKeyResultReference{ObjectiveID: objectiveID, Name: "Grow enterprise adoption"},
 	}
 
 	err := newStrategyLinkService(repo).updateWithOptions(
@@ -140,7 +156,9 @@ func TestMismatchedObjectiveAndKeyResultCreateIsRejected(t *testing.T) {
 	objectiveID := uuid.New()
 	differentObjectiveID := uuid.New()
 	reporterID := uuid.New()
-	repo := &strategyLinkRepo{keyResultObjective: objectiveID}
+	repo := &strategyLinkRepo{
+		keyResult: CoreKeyResultReference{ObjectiveID: objectiveID, Name: "Grow enterprise adoption"},
+	}
 
 	_, err := newStrategyLinkService(repo).createWithOptions(
 		context.Background(),

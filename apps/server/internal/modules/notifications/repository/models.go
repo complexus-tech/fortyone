@@ -18,6 +18,7 @@ const (
 	EntityTypeObjective EntityType = "objective"
 	EntityTypeKeyResult EntityType = "key_result"
 	EntityTypeFeedback  EntityType = "feedback"
+	EntityTypeStrategy  EntityType = "strategy"
 )
 
 const (
@@ -29,6 +30,7 @@ const (
 	NotificationTypeMention         NotificationType = "mention"
 	NotificationTypeFeedbackComment NotificationType = "feedback_comment"
 	NotificationTypeFeedbackStatus  NotificationType = "feedback_status_update"
+	NotificationTypeStrategyUpdate  NotificationType = "strategy_update"
 )
 
 type dbNotification struct {
