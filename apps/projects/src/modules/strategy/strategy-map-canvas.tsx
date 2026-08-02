@@ -399,7 +399,12 @@ export const StrategyMapCanvas = ({
     objectives.length > 0
       ? Math.round(
           objectives.reduce(
-            (total, objective) => total + getObjectiveProgress(objective),
+            (total, objective) =>
+              total +
+              getObjectiveProgress(
+                objective,
+                keyResultsByObjective.get(objective.id),
+              ),
             0,
           ) / objectives.length,
         )
@@ -963,6 +968,7 @@ export const StrategyMapCanvas = ({
                       objective.id,
                     )}
                     keyResultCount={objective.keyResultCount}
+                    keyResults={keyResultsByObjective.get(objective.id) ?? []}
                     objective={objective}
                     onAlign={onAlign}
                     onOpenDetails={() => {

@@ -20,7 +20,6 @@ import {
   Avatar,
   Box,
   Button,
-  CircleProgressBar,
   ContextMenu,
   DatePicker,
   Flex,
@@ -37,6 +36,7 @@ import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { useWorkspacePath } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
+import { getKeyResultProgress } from "@/modules/key-results/utils";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
 import type {
   KeyResult,
@@ -69,42 +69,23 @@ const getStrategyDescriptionPreview = (description: string | null) => {
     .trim();
 };
 
-export const getObjectiveProgress = (objective: Objective) => {
+export const getObjectiveProgress = (
+  objective: Objective,
+  keyResults: KeyResult[] = [],
+) => {
+  if (objective.keyResultCount > 0 || keyResults.length > 0) {
+    if (keyResults.length === 0) return 0;
+    return Math.round(
+      keyResults.reduce(
+        (total, keyResult) => total + getKeyResultProgress(keyResult),
+        0,
+      ) / keyResults.length,
+    );
+  }
+
   const total = objective.stats?.total ?? 0;
   const completed = objective.stats?.completed ?? 0;
   return total > 0 ? Math.round((completed / total) * 100) : 0;
-};
-
-const getKeyResultProgress = (keyResult: KeyResult) => {
-  const range = keyResult.targetValue - keyResult.startValue;
-  if (range === 0) {
-    return keyResult.currentValue >= keyResult.targetValue ? 100 : 0;
-  }
-
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(
-        ((keyResult.currentValue - keyResult.startValue) / range) * 100,
-      ),
-    ),
-  );
-};
-
-const getProgressBadgeClassName = (progress: number) => {
-  if (progress < 25) return "border-danger/20 bg-danger/10";
-  if (progress < 50) return "border-warning/20 bg-warning/10";
-  if (progress < 75) return "border-info/20 bg-info/10";
-  return "border-success/20 bg-success/10";
-};
-
-const getProgressTrackClassName = (progress: number) => {
-  if (progress === 0) return "[&_circle:first-child]:stroke-danger";
-  if (progress < 25) return "[&_circle:first-child]:stroke-danger/25";
-  if (progress < 50) return "[&_circle:first-child]:stroke-warning/25";
-  if (progress < 75) return "[&_circle:first-child]:stroke-info/25";
-  return "[&_circle:first-child]:stroke-success/25";
 };
 
 const getProgressFillClassName = (progress: number) => {
@@ -113,6 +94,36 @@ const getProgressFillClassName = (progress: number) => {
   if (progress < 75) return "bg-info";
   return "bg-success";
 };
+
+const StrategyProgressBar = ({
+  className,
+  progress,
+}: {
+  className?: string;
+  progress: number;
+}) => (
+  <Flex align="center" className={cn("gap-2.5", className)}>
+    <div
+      aria-label={`Progress ${progress}%`}
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={progress}
+      className="bg-border h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
+      role="progressbar"
+    >
+      <div
+        className={cn(
+          "h-full rounded-full",
+          getProgressFillClassName(progress),
+        )}
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+    <Text className="shrink-0 text-sm tabular-nums" color="muted">
+      {progress}%
+    </Text>
+  </Flex>
+);
 
 const cardClasses = cn(
   "border-border-strong/65 bg-white shadow-shadow dark:border-foreground/20 dark:bg-accent/70",
@@ -432,27 +443,7 @@ export const KeyResultNodeCard = memo(
             </Text>
           ) : null}
         </Flex>
-        <Flex align="center" className="mt-3 gap-2.5">
-          <div
-            aria-label={`Progress ${progress}%`}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={progress}
-            className="bg-border h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
-            role="progressbar"
-          >
-            <div
-              className={cn(
-                "h-full rounded-full",
-                getProgressFillClassName(progress),
-              )}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <Text className="shrink-0 text-sm tabular-nums" color="muted">
-            {progress}%
-          </Text>
-        </Flex>
+        <StrategyProgressBar className="mt-3" progress={progress} />
         {lead ? (
           <Flex align="center" className="mt-3 gap-2">
             <Avatar
@@ -478,6 +469,7 @@ export const ObjectiveNodeCard = memo(
     currentPillarId,
     isKeyResultsExpanded,
     keyResultCount,
+    keyResults,
     objective,
     onAlign,
     onOpenDetails,
@@ -492,6 +484,7 @@ export const ObjectiveNodeCard = memo(
     currentPillarId: string | null;
     isKeyResultsExpanded: boolean;
     keyResultCount: number;
+    keyResults: KeyResult[];
     objective: Objective;
     onAlign: (objectiveId: string, pillarId: string | null) => void;
     onOpenDetails: () => void;
@@ -504,7 +497,7 @@ export const ObjectiveNodeCard = memo(
   }) => {
     const { withWorkspace } = useWorkspacePath();
     const { data: members = [] } = useMembers();
-    const progress = getObjectiveProgress(objective);
+    const progress = getObjectiveProgress(objective, keyResults);
     const lead = members.find(({ id }) => id === objective.leadUser);
     const objectivePath = withWorkspace(
       `/teams/${objective.teamId}/objectives/${objective.id}`,
@@ -552,6 +545,7 @@ export const ObjectiveNodeCard = memo(
                 </Text>
               ) : null}
             </Flex>
+            <StrategyProgressBar className="mt-3" progress={progress} />
             <Flex align="center" className="mt-3 gap-1.5" data-no-drag wrap>
               <AssigneesMenu>
                 <AssigneesMenu.Trigger>
@@ -636,21 +630,6 @@ export const ObjectiveNodeCard = memo(
                   }}
                 />
               </PrioritiesMenu>
-              <Flex
-                align="center"
-                className={cn(
-                  "h-[1.85rem] gap-1.5 rounded-xl border px-1.5",
-                  getProgressBadgeClassName(progress),
-                )}
-              >
-                <CircleProgressBar
-                  className={getProgressTrackClassName(progress)}
-                  progress={progress}
-                  size={16}
-                  strokeWidth={2}
-                />
-                <Text className="text-[0.95rem] tabular-nums">{progress}%</Text>
-              </Flex>
               <ObjectiveHealthEditor
                 health={objective.health}
                 objectiveId={objective.id}

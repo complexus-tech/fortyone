@@ -49,7 +49,8 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).not.toContain("ObjectiveKeyResults");
     expect(cardSource).toContain("OKRIcon");
     expect(cardSource).toContain("ObjectiveIcon");
-    expect(cardSource).toContain("CircleProgressBar");
+    expect(cardSource).toContain("StrategyProgressBar");
+    expect(cardSource).not.toContain("CircleProgressBar");
     expect(cardSource).toContain("ObjectiveStatusesMenu");
     expect(cardSource).toContain("PrioritiesMenu");
     expect(cardSource).toContain("AssigneesMenu");
@@ -103,7 +104,7 @@ describe("StrategyMapCanvas", () => {
     expect(pageSource).toContain('color="danger"');
   });
 
-  it("keeps objective badges and resting canvas surfaces visually aligned", () => {
+  it("uses key-result progress with story fallback and horizontal bars", () => {
     const cardSource = readSource(
       "src/modules/strategy/strategy-map-cards.tsx",
     );
@@ -112,8 +113,12 @@ describe("StrategyMapCanvas", () => {
     );
     const pageSource = readSource("src/modules/strategy/index.tsx");
 
-    expect(cardSource).toContain("h-[1.85rem] gap-1.5 rounded-xl");
-    expect(cardSource).toContain("[&_circle:first-child]:stroke-danger");
+    expect(cardSource).toContain("objective.keyResultCount > 0");
+    expect(cardSource).toContain("getKeyResultProgress(keyResult)");
+    expect(cardSource).toContain('role="progressbar"');
+    expect(cardSource).toContain("getProgressFillClassName(progress)");
+    expect(cardSource).not.toContain("getProgressBadgeClassName");
+    expect(cardSource).not.toContain("getProgressTrackClassName");
     expect(cardSource).not.toContain("min-h-[2.8rem]");
     expect(cardSource).not.toContain("hover:bg-danger/10");
     expect(cardSource).toContain("dark:border-foreground/20");
