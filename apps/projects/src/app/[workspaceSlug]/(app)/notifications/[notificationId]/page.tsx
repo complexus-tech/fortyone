@@ -68,6 +68,9 @@ export default async function Page({
       workspaceSlug,
     });
     await readNotification(notificationId, workspaceSlug);
+    if (!objective) {
+      return redirect(withWorkspacePath("/notifications", workspaceSlug));
+    }
     return redirect(
       withWorkspacePath(
         `/teams/${objective.teamId}/objectives/${objective.id}`,
